@@ -35,7 +35,7 @@ extern "C" {
 	typedef struct wax_circularWarpBP_struct		// NOT BINARY EQUIVALENT!
 	{
 		wax_spx				bottomRadius;			// Radius the bottom of the source is placed at.
-		int					cellSize;				// 0 = calculated from precision.
+		wax_sizeI			cellSize;				// 0 for width or height = calculated from precision.
 		wax_coordF			center;					// Center of circle, relative to size. Usually { 0.5f, 0.5f }.
 		float				precision;				// Max position error in pixels when cellSize is calculated. 0 = default (0.25).
 		wax_sizeI			size;					// Mandatory. Size of the Warpmap in pixels.
@@ -62,6 +62,12 @@ extern "C" {
 	WAX_EXPORT int			wax_setCircularWarpAngles( wax_obj circularWarp, float startAngle, float sweep );
 	WAX_EXPORT float			wax_circularWarpStartAngle( wax_obj circularWarp );
 	WAX_EXPORT float			wax_circularWarpSweep( wax_obj circularWarp );
+
+	//.____ Drawing _______________________________________________________
+
+	// Source offset that turns the ring by degrees, clockwise if positive, as if startAngle was that much larger.
+
+	WAX_EXPORT wax_coordSPX	wax_circularWarpRotationOffset( wax_obj circularWarp, float degrees );
 
 #ifdef __cplusplus
 }

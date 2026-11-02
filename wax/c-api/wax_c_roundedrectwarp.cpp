@@ -33,7 +33,7 @@ wax_obj wax_createRoundedRectWarp( const wax_roundedRectWarpBP* pCBP, wax_obj wa
 	RoundedRectWarp::Blueprint bp;
 
 	bp.bottomDistance = pCBP->bottomDistance;
-	bp.cellSize = pCBP->cellSize;
+	bp.cellSize = { pCBP->cellSize.w, pCBP->cellSize.h };
 	bp.cornerRadius = pCBP->cornerRadius;
 	if (pCBP->precision > 0.f)
 		bp.precision = pCBP->precision;
@@ -99,4 +99,10 @@ float wax_roundedRectWarpStart( wax_obj roundedRectWarp )
 float wax_roundedRectWarpSweep( wax_obj roundedRectWarp )
 {
 	return getPtr(roundedRectWarp)->sweep();
+}
+
+wax_coordSPX wax_roundedRectWarpShiftOffset( wax_obj roundedRectWarp, float part )
+{
+	CoordSPX offset = getPtr(roundedRectWarp)->shiftOffset(part);
+	return { offset.x, offset.y };
 }

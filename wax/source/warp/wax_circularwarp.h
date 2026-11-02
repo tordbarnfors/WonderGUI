@@ -61,7 +61,7 @@ namespace wax
 		struct Blueprint
 		{
 			spx					bottomRadius = 0;				// Radius the bottom of the source is placed at.
-			int					cellSize = 0;					// Pixels between nodes of the Warpmap. 0 = calculated, see above.
+			SizeI				cellSize;						// Pixels between nodes of the Warpmap. 0 = calculated, see above.
 			CoordF				center = { 0.5f, 0.5f };		// Center of circle, relative to size.
 			Finalizer_p			finalizer = nullptr;
 			float				precision = 0.25f;				// Max position error in pixels when cellSize is calculated.
@@ -94,20 +94,30 @@ namespace wax
 		float		startAngle() const { return m_startAngle; }
 		float		sweep() const { return m_sweep; }
 
+		//.____ Drawing _____________________________________________________
+
+		// Source offset that turns the ring by degrees, clockwise if positive, as if startAngle
+		// was that much larger. Pass it when drawing to turn the ring without generating it again.
+		// Goes by the sweep and source size of the generated Warpmap.
+
+		CoordSPX	rotationOffset( float degrees ) const;
+
 	protected:
 
 		CircularWarp( const Blueprint& bp, WarpmapFactory * pFactory );
 		virtual ~CircularWarp();
 
-		int			_calcCellSize() const override;
-		void		_generateNodes( CoordSPX * pNodes, SizeI nodes, int cellSize ) const override;
+		SizeI		_calcCellSize() const override;
+		void		_generateNodes( CoordSPX * pNodes, SizeI nodes, SizeI cellSize ) const override;
 		spx			_uPeriod() const override;
+		void		_generated() override { m_offsetFactor = _offsetFactor(m_sweep / 360.0, m_sourceSize.w); }
 
 		CoordF		m_center;
 		spx			m_topRadius;
 		spx			m_bottomRadius;
 		float		m_startAngle;
 		float		m_sweep;
+		Factor		m_offsetFactor;								// For rotationOffset(), by the generated Warpmap.
 	};
 
 } // namespace wax

@@ -503,8 +503,8 @@ typedef struct wg_warpmap_calls_struct
 	int					structSize;
 
 	wax_sizeI			(*warpmapPixelSize)(wax_obj warpmap);
-	int					(*warpmapCellSize)(wax_obj warpmap);
-	int					(*setWarpmapPeriods)(wax_obj warpmap, wax_spx uPeriod, wax_spx vPeriod);
+	wax_sizeI			(*warpmapCellSize)(wax_obj warpmap);
+	int					(*importAllWarpmapNodes)(wax_obj warpmap, const wax_coordSPX* pSource, wax_spx uPeriod, wax_spx vPeriod, int pitch);
 	wax_spx				(*warpmapUPeriod)(wax_obj warpmap);
 	wax_spx				(*warpmapVPeriod)(wax_obj warpmap);
 	int					(*importWarpmapNodes)(wax_obj warpmap, const wax_rectI* region, const wax_coordSPX* pSource, int pitch);

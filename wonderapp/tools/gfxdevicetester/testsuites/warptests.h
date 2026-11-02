@@ -3,6 +3,7 @@
 #include <wax_tint.h>
 #include <wax_circularwarp.h>
 #include <wax_roundedrectwarp.h>
+#include <wax_cylinderwarp.h>
 
 #include <cmath>
 #include <vector>
@@ -29,6 +30,7 @@ public:
 		addTest("Identity", &WarpTests::identity);
 		addTest("BlendModes", &WarpTests::blendModes);
 		addTest("Rounded rects", &WarpTests::roundedRects);
+		addTest("Cylinders", &WarpTests::cylinders);
 	}
 
 	bool init(GfxDevice * pDevice, const RectSPX& canvas, wapp::API * pAppAPI)
@@ -109,6 +111,40 @@ public:
 														 (uint8_t*)pixels.data(), PixelFormat::ARGB_8);
 		}
 
+		// A reel strip of 8 slots, each a colored diamond between dark separators, and the same
+		// turned on its side as a label. Even slots that get closer towards the rims is what shows
+		// a cylinder. Sizes are powers of two, as tiling surfaces need to wrap the same everywhere.
+
+		{
+			const int w = 64, h = 256, slot = 32;
+			const Color8 hues[8] = { Color8(220, 40, 40, 255), Color8(240, 160, 20, 255), Color8(220, 210, 30, 255), Color8(60, 180, 60, 255),
+									 Color8(40, 170, 200, 255), Color8(50, 80, 220, 255), Color8(150, 60, 200, 255), Color8(220, 70, 160, 255) };
+
+			std::vector<Color8> strip(w * h), label(h * w);
+
+			for (int y = 0; y < h; y++)
+			{
+				for (int x = 0; x < w; x++)
+				{
+					int ly = y % slot;
+					Color8 c = Color8(235, 228, 210, 255);
+
+					if (ly < 2 || ly >= slot - 2)
+						c = Color8(40, 36, 32, 255);
+					else if (std::abs(x - w / 2) * slot / w + std::abs(ly - slot / 2) < slot / 2 - 4)
+						c = hues[y / slot];
+
+					strip[y * w + x] = c;
+					label[x * h + y] = c;
+				}
+			}
+
+			m_pReelStrip = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear, _.tiling = true),
+														  (uint8_t*)strip.data(), PixelFormat::ARGB_8);
+			m_pReelLabel = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { h, w }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear, _.tiling = true),
+														  (uint8_t*)label.data(), PixelFormat::ARGB_8);
+		}
+
 		// Warpmaps, a set for each size of source they are drawn with.
 
 		m_forGauge = _makeWarps(pWarpmapFactory, m_pGauge->pixelSize() * 64);
@@ -119,10 +155,11 @@ public:
 		m_forSmallRect = _makeWarps(pWarpmapFactory, { 64 * 24, 64 * 16 });
 		m_forBlendRect = _makeWarps(pWarpmapFactory, { 64 * 40, 64 * 24 });
 
-		m_pIdentity = pWarpmapFactory->createWarpmap(WGBP(Warpmap, _.size = m_pSmall->pixelSize(), _.cellSize = 9));
-		m_pIdentityBlit = pWarpmapFactory->createWarpmap(WGBP(Warpmap, _.size = { 64, 32 }, _.cellSize = 7));
+		m_pIdentity = pWarpmapFactory->createWarpmap(WGBP(Warpmap, _.size = m_pSmall->pixelSize(), _.cellSize = { 9, 9 }));
+		m_pIdentityBlit = pWarpmapFactory->createWarpmap(WGBP(Warpmap, _.size = { 64, 32 }, _.cellSize = { 7, 7 }));
 
-		return m_pGauge && m_pTintedGauge && m_pSmall && m_pTiling && m_pNearest && m_pBilinear && m_forGauge.ring && m_forGauge.wave && m_forGauge.stripes;
+		return m_pGauge && m_pTintedGauge && m_pSmall && m_pTiling && m_pNearest && m_pBilinear && m_pReelStrip && m_pReelLabel &&
+			   m_forGauge.ring && m_forGauge.wave && m_forGauge.stripes;
 	}
 
 	bool exit(GfxDevice * pDevice, const RectSPX& canvas)
@@ -288,13 +325,60 @@ public:
 		auto pArc = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 240, 240 }, _.sourceSize = gauge, _.rect = { 64 * 30, 64 * 50, 64 * 180, 64 * 140 },
 												 _.cornerRadius = 64 * 50, _.topDistance = 64 * 25, _.bottomDistance = -64 * 20, _.start = -0.3f, _.sweep = 0.75f), pFactory);
 		auto pFrame = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 240, 240 }, _.sourceSize = surface, _.rect = { 64 * 10, 64 * 30, 64 * 220, 64 * 180 },
-												  _.cornerRadius = 64 * 8, _.topDistance = 0, _.bottomDistance = -64 * 36, _.cellSize = 4), pFactory);
+												  _.cornerRadius = 64 * 8, _.topDistance = 0, _.bottomDistance = -64 * 36, _.cellSize = { 4, 4 }), pFactory);
 
 		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 10 }, pBand->generate(), m_pGauge);
 		pDevice->setBlitSource(m_pTiling);
 		pDevice->warpBlit({ 64 * 260, 64 * 10 }, pSharp->generate());
 		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 260 }, pArc->generate(), m_pTintedGauge);
 		pDevice->warpBlit({ 64 * 260, 64 * 260 }, pFrame->generate());
+		return true;
+	}
+
+	// Top: the reel strip flat, then wrapped around reels: plain, turned and shaded darker towards
+	// the rims as a cylinder would be drawn, and one seen almost to its rims. Bottom: the strip on
+	// its side around a standing cylinder, plain and turned and shaded.
+
+	bool cylinders(GfxDevice * pDevice, const RectSPX& canvas)
+	{
+		auto pFactory = pDevice->warpmapFactory();
+		SizeSPX strip = m_pReelStrip->pixelSize() * 64;
+		SizeSPX label = m_pReelLabel->pixelSize() * 64;
+
+		auto pReel = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 90, 240 }, _.sourceSize = strip, _.span = 110.f), pFactory);
+		auto pWide = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 90, 240 }, _.sourceSize = strip, _.span = 170.f), pFactory);
+		auto pStanding = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 240, 110 }, _.sourceSize = label, _.axis = Axis::Y, _.span = 150.f), pFactory);
+
+		HiColor rim(1200, 1200, 1300, 4096), light = HiColor::White;
+		auto shadeAcross = [&](CoordSPX pos, SizeI size, bool bVertical)
+		{
+			pDevice->setTint({ pos, size * 64 }, Tint::create({ { 0.f, rim }, { 0.5f, light }, { 1.f, rim } }, { 0.f, 0.f }, bVertical ? CoordF(0.f, 1.f) : CoordF(1.f, 0.f)));
+		};
+
+		// The strip flat, for comparison.
+
+		pDevice->setBlitSource(m_pReelStrip);
+		pDevice->blit({ 64 * 10, 64 * 10 }, { 0, 0, 64 * 64, 64 * 240 });
+
+		// Reels.
+
+		pDevice->warpBlit({ 64 * 90, 64 * 10 }, pReel->generate());
+
+		shadeAcross({ 64 * 195, 64 * 10 }, { 90, 240 }, true);
+		pDevice->warpBlit({ 64 * 195, 64 * 10 }, pReel->generate(), pReel->rotationOffset(20.f));
+
+		shadeAcross({ 64 * 300, 64 * 10 }, { 90, 240 }, true);
+		pDevice->warpBlit({ 64 * 300, 64 * 10 }, pWide->generate(), pWide->rotationOffset(20.f));
+		pDevice->clearTint();
+
+		// Standing.
+
+		pDevice->setBlitSource(m_pReelLabel);
+		pDevice->warpBlit({ 64 * 10, 64 * 270 }, pStanding->generate());
+
+		shadeAcross({ 64 * 260, 64 * 270 }, { 240, 110 }, false);
+		pDevice->warpBlit({ 64 * 260, 64 * 270 }, pStanding->generate(), pStanding->rotationOffset(20.f));
+		pDevice->clearTint();
 		return true;
 	}
 
@@ -307,6 +391,8 @@ private:
 	Surface_p	m_pTiling;
 	Surface_p	m_pNearest;
 	Surface_p	m_pBilinear;
+	Surface_p	m_pReelStrip;
+	Surface_p	m_pReelLabel;
 
 	// Warpmaps are made for a source of a certain size.
 
@@ -326,13 +412,13 @@ private:
 		Warps warps;
 
 		warps.ring = CircularWarp::create(WGBP(CircularWarp, _.size = { 240, 240 }, _.sourceSize = source, _.topRadius = 118 * 64, _.bottomRadius = 60 * 64), pFactory)->generate();
-		warps.smallRing = CircularWarp::create(WGBP(CircularWarp, _.size = { 120, 120 }, _.sourceSize = source, _.topRadius = 58 * 64, _.bottomRadius = 25 * 64, _.cellSize = 8), pFactory)->generate();
+		warps.smallRing = CircularWarp::create(WGBP(CircularWarp, _.size = { 120, 120 }, _.sourceSize = source, _.topRadius = 58 * 64, _.bottomRadius = 25 * 64, _.cellSize = { 8, 8 }), pFactory)->generate();
 		warps.arc = CircularWarp::create(WGBP(CircularWarp, _.size = { 240, 240 }, _.sourceSize = source, _.topRadius = 118 * 64, _.bottomRadius = 80 * 64, _.startAngle = -135.f, _.sweep = 270.f), pFactory)->generate();
 		warps.quarter = CircularWarp::create(WGBP(CircularWarp, _.size = { 240, 240 }, _.sourceSize = source, _.center = { 0.f, 1.f }, _.topRadius = 230 * 64, _.bottomRadius = 150 * 64, _.sweep = 90.f), pFactory)->generate();
 		warps.blendRing = CircularWarp::create(WGBP(CircularWarp, _.size = { 150, 150 }, _.sourceSize = source, _.topRadius = 74 * 64, _.bottomRadius = 30 * 64), pFactory)->generate();
 
 		{
-			warps.wave = pFactory->createWarpmap(WGBP(Warpmap, _.size = { 240, 240 }, _.cellSize = 12));
+			warps.wave = pFactory->createWarpmap(WGBP(Warpmap, _.size = { 240, 240 }, _.cellSize = { 12, 12 }));
 
 			SizeI n = warps.wave->nodes();
 			std::vector<CoordSPX> nodes(n.w * n.h);
@@ -353,7 +439,7 @@ private:
 		}
 
 		{
-			warps.stripes = pFactory->createWarpmap(WGBP(Warpmap, _.size = { 200, 240 }, _.cellSize = 10, _.vPeriod = source.h));
+			warps.stripes = pFactory->createWarpmap(WGBP(Warpmap, _.size = { 200, 240 }, _.cellSize = { 10, 10 }, _.vPeriod = source.h));
 
 			SizeI n = warps.stripes->nodes();
 			std::vector<CoordSPX> nodes(n.w * n.h);

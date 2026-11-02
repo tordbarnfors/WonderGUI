@@ -58,6 +58,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <cstring>
 #include <limits>
 
 namespace wax
@@ -133,24 +134,42 @@ namespace wax
 			if (2 * f <= -sum)
 				return 0;
 
-			// |f| < a here. Drop precision so that the products below fit.
+			// |f| < a here. Keep 16 bits of a, more than the 12 bits of the result need, so that
+			// the rest fits in 32 bits and takes 32 bit divisions only. 32 bit CPUs divide those
+			// in hardware or a short routine, 64 bit ones in a much longer one.
 
-			while (a >= (int64_t(1) << 20))
+			while (a >= (int64_t(1) << 24))
+			{
+				a >>= 8;
+				b >>= 8;
+				f >>= 8;
+			}
+
+			while (a >= (int64_t(1) << 16))
 			{
 				a >>= 1;
 				b >>= 1;
 				f >>= 1;
 			}
 
-			int64_t absF = abs64(f);
+			int32_t a32 = int32_t(a);
+			int32_t b32 = int32_t(b);
+			int32_t f32 = int32_t(f);
+			int32_t absF = f32 < 0 ? -f32 : f32;
 
-			if (2 * absF <= a - b)
-				return int(2048 + (f * 4096) / a);
+			if (b32 == 0 || 2 * absF <= a32 - b32)
+				return std::clamp(2048 + (f32 * 4096) / a32, 0, 4096);
 
-			int64_t t = a + b - 2 * absF;						// Twice the height of the corner triangle.
-			int corner = int((t * t * 4096) / (8 * a * b));
+			// The corner triangle has the area t^2 / (8ab), t being twice its height, up to 2b, which
+			// rounding above can take it just outside of. t / a and t / b, at most 2, are taken with
+			// 14 binals, so they multiply within 32 bits.
 
-			return f > 0 ? 4096 - corner : corner;
+			uint32_t t = uint32_t(std::clamp(a32 + b32 - 2 * absF, 0, 2 * b32));
+			uint32_t ta = (t << 14) / uint32_t(a32);
+			uint32_t tb = (t << 14) / uint32_t(b32);
+			int corner = int((ta * tb) >> 19);
+
+			return f32 > 0 ? 4096 - corner : corner;
 		}
 
 		//____ forWrappedSpans() ______________________________________________
@@ -405,6 +424,23 @@ namespace wax
 
 			w.pReadOp = m_pTransformMoveToHiColorKernels[(int)srcFormat][(int)sampleMethod][(int)readOp];
 
+			// Cells all inside the source are drawn straight onto the canvas by the one-pass kernel of
+			// a transform blit or tile, when it has one, as fast as such a blit and without reading into
+			// a buffer and blending by coverage, which costs about as much again. Not when tinted other
+			// than flat, which blits do in spans of their own, nor for paint modes on a canvas without
+			// alpha, which are drawn by their own rules, see above. The blit functions are up to date,
+			// see processCommands().
+
+			w.pDirectOp = nullptr;
+
+			if (m_softTint.isFlat() && !m_bBlitTintRuns && !w.bOpaquePaint)
+			{
+				if (w.bTileRead && m_pTransformTileOp == &SoftBackend::_onePassTransformBlit)
+					w.pDirectOp = m_pTransformTileFirstPassOp;
+				else if (!w.bTileRead && m_pTransformBlitOp == &SoftBackend::_onePassTransformBlit)
+					w.pDirectOp = m_pTransformBlitFirstPassOp;
+			}
+
 			if (!w.pReadOp)
 			{
 				char errorMsg[1024];
@@ -435,7 +471,7 @@ namespace wax
 		if (area.w <= 0 || area.h <= 0)
 			return;
 
-		const int cellSize = pMap->cellSize();
+		const SizeI cellSize = pMap->cellSize();
 		const SizeI nodes = pMap->nodes();
 
 		// Area in pixels of the Warpmap.
@@ -445,10 +481,10 @@ namespace wax
 		int y0 = area.y - w.dest.y;
 		int y1 = y0 + area.h;
 
-		int firstColumn = std::min(x0 / cellSize, nodes.w - 2);
-		int lastColumn = std::min((x1 - 1) / cellSize, nodes.w - 2);
-		int firstRow = std::min(y0 / cellSize, nodes.h - 2);
-		int lastRow = std::min((y1 - 1) / cellSize, nodes.h - 2);
+		int firstColumn = std::min(x0 / cellSize.w, nodes.w - 2);
+		int lastColumn = std::min((x1 - 1) / cellSize.w, nodes.w - 2);
+		int firstRow = std::min(y0 / cellSize.h, nodes.h - 2);
+		int lastRow = std::min((y1 - 1) / cellSize.h, nodes.h - 2);
 
 		int nColumns = lastColumn - firstColumn + 1;
 
@@ -861,6 +897,26 @@ namespace wax
 
 				if (w.pEdgemap)
 					_warpTintSpan(w.pEdgemap->m_segmentTints[kind], pos[0], pos[1], step[0], step[1], length, pColors);
+				else if (w.pDirectOp)
+				{
+					// Straight onto the canvas, except pixels needing reads kept inside the source.
+
+					if ((int)m_warpDrawn.size() < length)
+						m_warpDrawn.resize(length);
+
+					uint8_t* pDrawn = m_warpDrawn.data();
+					std::memset(pDrawn, 0, length);
+
+					_warpReadSpan(pos[0], pos[1], step[0], step[1], length, pColors, nullptr,
+								  pOrigin + y * pitch + beg * m_canvasPixelBytes, { beg, y }, pDrawn);
+
+					for (int k = 0; k < length; k++)
+					{
+						if (!pDrawn[k])
+							addColoredPixel(beg + k, pColors[k]);
+					}
+					continue;
+				}
 				else
 					_warpReadSpan(pos[0], pos[1], step[0], step[1], length, pColors, nullptr);
 
@@ -885,10 +941,27 @@ namespace wax
 				int* pCoverage = m_warpCoverage.data();
 				bool bAny = false;
 
+				// Pixels known to be fully covered, worked out for the row rather than pixel by pixel.
+
+				int insideBeg, insideEnd;
+				_warpInsideRange(pos, step, dy, dyStep, length, insideBeg, insideEnd);
+
 				int64_t sx = pos[0], sy = pos[1], bx = dy[0], by = dy[1];
 
 				for (int k = 0; k < length; k++)
 				{
+					if (k >= insideBeg && k < insideEnd)
+					{
+						pCoverage[k] = 4096;
+						bAny = true;
+
+						sx += step[0];
+						sy += step[1];
+						bx += dyStep[0];
+						by += dyStep[1];
+						continue;
+					}
+
 					int64_t gbx = std::clamp(bx, -c_maxGradient, c_maxGradient);
 					int64_t gby = std::clamp(by, -c_maxGradient, c_maxGradient);
 
@@ -908,7 +981,63 @@ namespace wax
 					continue;
 
 				HiColor* pColors = _warpBuffer(c_maxSegments, length);
-				_warpReadSpan(pos[0], pos[1], step[0], step[1], length, pColors, pCoverage);
+
+				// Runs of fully covered pixels go straight onto the canvas as for solid cells, when the
+				// blit allows it, which long cells with the border of the source in them need to be fast.
+				// Pixels drawn are left out of the rest.
+
+				if (w.pDirectOp)
+				{
+					if ((int)m_warpDrawn.size() < length)
+						m_warpDrawn.resize(length);
+
+					uint8_t* pDrawn = m_warpDrawn.data();
+					std::memset(pDrawn, 0, length);
+
+					for (int k = 0; k < length; )
+					{
+						if (pCoverage[k] < 4096)
+						{
+							k++;
+							continue;
+						}
+
+						int runEnd = k + 1;
+						while (runEnd < length && pCoverage[runEnd] == 4096)
+							runEnd++;
+
+						_warpReadSpan(pos[0] + step[0] * k, pos[1] + step[1] * k, step[0], step[1], runEnd - k, pColors + k, nullptr,
+									  pOrigin + y * pitch + (beg + k) * m_canvasPixelBytes, { beg + k, y }, pDrawn + k);
+
+						for (int j = k; j < runEnd; j++)
+						{
+							if (pDrawn[j])
+								pCoverage[j] = 0;
+						}
+
+						k = runEnd;
+					}
+
+					// The rest, in runs of pixels still covered.
+
+					for (int k = 0; k < length; )
+					{
+						if (pCoverage[k] == 0)
+						{
+							k++;
+							continue;
+						}
+
+						int runEnd = k + 1;
+						while (runEnd < length && pCoverage[runEnd] != 0)
+							runEnd++;
+
+						_warpReadSpan(pos[0] + step[0] * k, pos[1] + step[1] * k, step[0], step[1], runEnd - k, pColors + k, pCoverage + k);
+						k = runEnd;
+					}
+				}
+				else
+					_warpReadSpan(pos[0], pos[1], step[0], step[1], length, pColors, pCoverage);
 
 				for (int k = 0; k < length; k++)
 				{
@@ -1087,6 +1216,65 @@ namespace wax
 		return std::min(coverage, 4096);
 	}
 
+	//____ _warpInsideRange() ___________________________________________________
+	/*
+		Range of pixels insideBeg -> insideEnd of a span along a row of a cell that are fully inside
+		the source, which _warpAxisCoverage() would give 4096 for. Positions are pos + step * k and
+		derivatives along y dy + dyStep * k for pixel k, so per axis that is a range of k, found with
+		the largest extent of a pixel over the span, which makes it at most as large as pixel by
+		pixel. A periodic axis with a gap between copies isn't worked out, its range is empty.
+	*/
+
+	void SoftBackend::_warpInsideRange(const int64_t* pos, const int64_t* step, const int64_t* dy, const int64_t* dyStep, int length, int& insideBeg, int& insideEnd) const
+	{
+		const WarpSetup& w = m_warp;
+
+		insideBeg = 0;
+		insideEnd = length;
+
+		for (int a = 0; a < 2 && insideBeg < insideEnd; a++)
+		{
+			if (w.bAlwaysInside[a])
+				continue;
+
+			if (w.period[a] > 0)
+			{
+				insideEnd = 0;
+				return;
+			}
+
+			int64_t dyEnd = dy[a] + dyStep[a] * (length - 1);
+			int64_t extent = (abs64(step[a]) + std::max(abs64(dy[a]), abs64(dyEnd))) / 2 + 1;
+
+			int64_t lo = extent - pos[a];							// step * k >= lo
+			int64_t hi = w.inside[a] - extent - pos[a];				// step * k <= hi
+
+			int64_t beg, end;
+
+			if (step[a] > 0)
+			{
+				beg = ceilDiv(lo, step[a]);
+				end = floorDiv(hi, step[a]) + 1;
+			}
+			else if (step[a] < 0)
+			{
+				beg = ceilDiv(-hi, -step[a]);
+				end = floorDiv(-lo, -step[a]) + 1;
+			}
+			else
+			{
+				beg = 0;
+				end = (lo <= 0 && hi >= 0) ? length : 0;
+			}
+
+			insideBeg = int(std::clamp(beg, int64_t(insideBeg), int64_t(length)));
+			insideEnd = int(std::clamp(end, int64_t(0), int64_t(insideEnd)));
+		}
+
+		if (insideEnd < insideBeg)
+			insideEnd = insideBeg;
+	}
+
 	//____ _warpEdgemapCoverage() _______________________________________________
 	/*
 		Coverage of each segment of the edgemap for a pixel whose center is at sx, sy (wrapped into the
@@ -1237,9 +1425,14 @@ namespace wax
 		WarpSetup::colorLow). A non-tiling surface is read as if the edge pixels of the source
 		rectangle continued outside it, which the kernels can't do, so positions outside are clamped
 		and read one by one. If pCoverage is set, pixels without coverage are not read.
+
+		If pDirect is set (the first pixel of the span on the canvas, at directPos), pixels that the
+		kernel reads as they are are drawn straight onto the canvas by WarpSetup::pDirectOp instead,
+		and marked in pDrawn. Only for spans all covered.
 	*/
 
-	void SoftBackend::_warpReadSpan(int64_t x, int64_t y, int64_t dx, int64_t dy, int length, HiColor* pOutput, const int* pCoverage)
+	void SoftBackend::_warpReadSpan(int64_t x, int64_t y, int64_t dx, int64_t dy, int length, HiColor* pOutput, const int* pCoverage,
+									uint8_t* pDirect, CoordI directPos, uint8_t* pDrawn)
 	{
 		const WarpSetup& w = m_warp;
 		const SoftSurface* pSource = m_pBlitSource;
@@ -1259,6 +1452,22 @@ namespace wax
 				w.pReadOp(pSource, pos, matrix, (uint8_t*)(pOutput + begin + beg), 8, 0, 1, count, m_colTrans, { 0,0 });
 			};
 
+			// Draws straight onto the canvas if pDirect is set, otherwise reads.
+
+			auto draw = [&](int beg, int count, int64_t posX, int64_t posY)
+			{
+				if (!pDirect)
+				{
+					read(beg, count, posX, posY);
+					return;
+				}
+
+				int i = begin + beg;
+				BinalCoord pos = { binalInt(toBinal(posX)), binalInt(toBinal(posY)) };
+				w.pDirectOp(pSource, pos, matrix, pDirect + i * m_canvasPixelBytes, m_canvasPixelBytes, 0, 1, count, m_colTrans, { directPos.x + i, directPos.y });
+				std::memset(pDrawn + i, 1, count);
+			};
+
 			if (w.bTileRead)
 			{
 				// Kernel wraps around the surface.
@@ -1266,7 +1475,7 @@ namespace wax
 				int64_t maskX = (int64_t(pSource->tileMaskX()) << 16) | (c_one - 1);
 				int64_t maskY = (int64_t(pSource->tileMaskY()) << 16) | (c_one - 1);
 
-				read(0, n, sx & maskX, sy & maskY);
+				draw(0, n, sx & maskX, sy & maskY);
 				return;
 			}
 
@@ -1284,7 +1493,7 @@ namespace wax
 			int innerEnd = std::min(endX, endY);
 
 			if (innerBeg < innerEnd)
-				read(innerBeg, innerEnd - innerBeg, sx + dx * innerBeg, sy + dy * innerBeg);
+				draw(innerBeg, innerEnd - innerBeg, sx + dx * innerBeg, sy + dy * innerBeg);
 			else
 				innerBeg = innerEnd = n;
 
@@ -1313,11 +1522,16 @@ namespace wax
 
 		if (m >= 4096)
 			return 4096;
+		if (m <= 0 || a <= 0)
+			return 0;
 
-		int64_t am = int64_t(a) * m;
-		int64_t den = int64_t(4096 - m) * 4096 + am;
+		// am * 4096 / den, divided by 16 above and below to fit a 32 bit division. den is at least
+		// 4096 here, so den / 16 keeps plenty of precision.
 
-		return den > 0 ? int((am * 4096) / den) : 0;
+		uint32_t am = uint32_t(a) * uint32_t(m);
+		uint32_t den = uint32_t(4096 - m) * 4096 + am;
+
+		return int((am << 8) / (den >> 4));
 	}
 
 	//____ _warpBuffer() ________________________________________________________

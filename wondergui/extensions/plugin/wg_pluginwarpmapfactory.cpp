@@ -39,7 +39,7 @@ namespace wg
 	static wax_warpmapBP convertBlueprint( const Warpmap::Blueprint& bp )
 	{
 		wax_warpmapBP cBP;
-		cBP.cellSize = bp.cellSize;
+		cBP.cellSize = { bp.cellSize.w, bp.cellSize.h };
 		cBP.size = { bp.size.w, bp.size.h };
 		cBP.uPeriod = bp.uPeriod;
 		cBP.vPeriod = bp.vPeriod;

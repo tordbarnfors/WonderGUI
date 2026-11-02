@@ -41,9 +41,10 @@ namespace wax
 	 * The Warpmap is made for a source of sourceSize: the size of the edgemap or of the source
 	 * rectangle of the blit, in spx. The nodes are positions in that source, see Warpmap.
 	 *
-	 * The cell size of the Warpmap decides how closely it follows the shape. It is calculated by the
-	 * generator from precision (max position error in pixels) unless set explicitly, and kept within
-	 * 4 -> 64 pixels.
+	 * The cell size of the Warpmap decides how closely it follows the shape. Width and height of
+	 * cells are calculated by the generator from precision (max position error in pixels) unless
+	 * set explicitly, at least 4 and at most the size of the Warpmap. Along curves it is kept within
+	 * 4 -> 64 pixels, along straight axes cells can span the Warpmap.
 	 *
 	 * When subclassing, implement _generateNodes() and _calcCellSize(), override _uPeriod() and
 	 * _vPeriod() for periodic axes and set m_bDirty when a setting changes.
@@ -68,8 +69,8 @@ namespace wax
 
 		//.____ Precision ___________________________________________________
 
-		bool		setCellSize( int cellSize );					// 0 = calculated from precision.
-		int			cellSize() const;								// Cell size in use, calculated or set.
+		bool		setCellSize( SizeI cellSize );					// 0 for width or height = calculated from precision.
+		SizeI		cellSize() const;								// Cell size in use, calculated or set.
 
 		bool		setPrecision( float precision );
 		float		precision() const { return m_precision; }
@@ -77,8 +78,9 @@ namespace wax
 		//.____ Content _____________________________________________________
 
 		// Generates the Warpmap from current settings, if they have changed since last time, and
-		// returns it. The nodes of the Warpmap are updated in place if nothing but the WarpGenerator
-		// holds it and size and cell size are unchanged. Otherwise a new Warpmap is created, so a
+		// returns it. The nodes of the Warpmap are updated in place, without copying and sent on to
+		// the backend once, if nothing but the WarpGenerator holds it and size and cell size are
+		// unchanged. Otherwise a new Warpmap is created, so a
 		// Warpmap held elsewhere, such as by a draw that isn't rendered yet, never changes. Draw
 		// what generate() returns rather than keeping it.
 
@@ -86,36 +88,84 @@ namespace wax
 
 	protected:
 
-		WarpGenerator( SizeI size, SizeSPX sourceSize, int cellSize, float precision, WarpmapFactory * pFactory );
+		WarpGenerator( SizeI size, SizeSPX sourceSize, SizeI cellSize, float precision, WarpmapFactory * pFactory );
 		virtual ~WarpGenerator();
 
-		static bool		_validateSettings( SizeI size, SizeSPX sourceSize, int cellSize, float precision );
+		static bool		_validateSettings( SizeI size, SizeSPX sourceSize, SizeI cellSize, float precision );
 
-		// Largest cell size that keeps a curve of the given radius (in pixels) within precision.
+		// Largest cell size that keeps a curve of the given radius (in spx) within precision,
+		// within 4 -> 64 pixels. Integers only.
 
-		int				_cellSizeForRadius( double radius ) const;
+		int				_cellSizeForRadius( int64_t radius ) const;
 
-		// A position in spx rounded to a node value, clamped to +-Warpmap::maxNodeValue. NaN, as from a
-		// division by zero, gives -maxNodeValue, far outside the source.
+		// Integer maths for _generateNodes(), which runs once per node and so should avoid floating
+		// point on hardware without an FPU. Set up factors with _factor() once per generate.
 
-		static spx		_toNodeValue( double spxValue );
+		struct Factor
+		{
+			uint32_t	mul = 0;									// value * mul / 2^shift.
+			int			shift = 0;
+			bool		bNegative = false;
+		};
 
-		// Cell size from precision and the shape. Clamped by cellSize().
+		static Factor	_factor( double factor );					// NaN gives a factor of 0.
 
-		virtual int		_calcCellSize() const = 0;
+		// Value multiplied by factor, rounded and clamped to +-2^62.
+
+		static int64_t	_multiply( int64_t value, Factor factor );
+
+		// Angle of x,y in 1/2^32 of a turn, from the x axis towards the y axis, and optionally its
+		// length, rounded. Accurate to a few units of the angle and better than 1/2^26 of the length.
+
+		static uint32_t	_polar( int64_t x, int64_t y, int64_t * pLength = nullptr );
+
+		// Sine and cosine of an angle in 1/2^32 of a turn, with 30 binals. Accurate to a few units.
+
+		static void		_sinCos( uint32_t angle, int32_t& sin, int32_t& cos );
+
+		// Square root rounded down.
+
+		static uint64_t	_sqrt( uint64_t value );
+
+		// Fraction of a turn in 1/2^32 of a turn, whole turns dropped. Not finite gives 0.
+
+		static uint32_t	_toTurn( double turns );
+
+		// A value clamped to +-Warpmap::maxNodeValue.
+
+		static spx		_toNodeValue( int64_t value );
+
+		// Cell width and height from precision and the shape. Kept within 4 -> size of the Warpmap
+		// by cellSize().
+
+		virtual SizeI	_calcCellSize() const = 0;
 
 		// Fills pNodes with nodes.w * nodes.h positions in spx of the source, row by row, nodes being
-		// cellSize pixels apart (the last row and column at the edge). Keep them within Warpmap::maxNodeValue.
+		// cellSize.w pixels apart horizontally and cellSize.h vertically (the last row and column at
+		// the edge). Keep them within Warpmap::maxNodeValue.
 
-		virtual void	_generateNodes( CoordSPX * pNodes, SizeI nodes, int cellSize ) const = 0;
+		virtual void	_generateNodes( CoordSPX * pNodes, SizeI nodes, SizeI cellSize ) const = 0;
 
 		virtual spx		_uPeriod() const { return 0; }			// In spx of the source, 0 = not periodic.
 		virtual spx		_vPeriod() const { return 0; }
 
+		// Called when the Warpmap has been generated, to keep settings that what is drawn with it
+		// depends on, such as for offsets.
+
+		virtual void	_generated() {}
+
+		// Offsets along an axis of the source that move it as if its start was moved: _offsetFactor()
+		// once per generate, from sweep in turns and the length of the source along the axis (spx),
+		// then _offsetFor() for a shift in 1/2^32 of a turn (see _toTurn()), with integers only.
+
+		static Factor	_offsetFactor( double sweepTurns, spx length );
+		static spx		_offsetFor( uint32_t shift, Factor factor );
+
 		SizeI		m_size;
 		SizeSPX		m_sourceSize;
-		int			m_cellSize;										// As set, 0 = calculated.
+		SizeI		m_cellSize;										// As set, 0 = calculated.
 		float		m_precision;
+		int64_t		m_precisionFixed;								// Precision with 16 binals, for _cellSizeForRadius().
 
 		bool		m_bDirty = true;
 

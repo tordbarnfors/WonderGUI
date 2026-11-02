@@ -50,14 +50,15 @@ wax_sizeSPX wax_warpGeneratorSourceSize( wax_obj warpGenerator )
 	return { sz.w, sz.h };
 }
 
-int wax_setWarpGeneratorCellSize( wax_obj warpGenerator, int cellSize )
+int wax_setWarpGeneratorCellSize( wax_obj warpGenerator, wax_sizeI cellSize )
 {
-	return getPtr(warpGenerator)->setCellSize(cellSize);
+	return getPtr(warpGenerator)->setCellSize({ cellSize.w, cellSize.h });
 }
 
-int wax_warpGeneratorCellSize( wax_obj warpGenerator )
+wax_sizeI wax_warpGeneratorCellSize( wax_obj warpGenerator )
 {
-	return getPtr(warpGenerator)->cellSize();
+	SizeI cellSize = getPtr(warpGenerator)->cellSize();
+	return { cellSize.w, cellSize.h };
 }
 
 int wax_setWarpGeneratorPrecision( wax_obj warpGenerator, float precision )

@@ -630,55 +630,43 @@ namespace wax
 			{
 				uint16_t	warpmapId;
 				SizeI		size;
-				uint16_t	cellSize;
-				int			uPeriod;
-				int			vPeriod;
+				uint16_t	cellWidth, cellHeight;
 
 				decoder >> warpmapId;
 				decoder >> size;
-				decoder >> cellSize;
+				decoder >> cellWidth;
+				decoder >> cellHeight;
+
+				m_charStream << "    warpmapId   = " << warpmapId << std::endl;
+				m_charStream << "    size        = " << size.w << ", " << size.h << std::endl;
+				m_charStream << "    cellSize    = " << cellWidth << ", " << cellHeight << std::endl;
+				break;
+			}
+
+			case GfxStream::ChunkId::WarpmapUpdate:
+			{
+				uint16_t	warpmapId;
+				uint16_t	x, y, w, h;
+				int			uPeriod, vPeriod;
+
+				decoder >> warpmapId;
+				decoder >> x;
+				decoder >> y;
+				decoder >> w;
+				decoder >> h;
 				decoder >> uPeriod;
 				decoder >> vPeriod;
 
 				m_charStream << "    warpmapId   = " << warpmapId << std::endl;
-				m_charStream << "    size        = " << size.w << ", " << size.h << std::endl;
-				m_charStream << "    cellSize    = " << cellSize << std::endl;
+				m_charStream << "    region      = " << x << ", " << y << ", " << w << ", " << h << " (nodes)" << std::endl;
 				m_charStream << "    periods     = " << uPeriod << ", " << vPeriod << std::endl;
 				break;
 			}
 
 			case GfxStream::ChunkId::WarpmapNodes:
 			{
-				uint16_t	warpmapId;
-				uint16_t	column;
-				uint16_t	row;
-				uint16_t	nNodes;
-
-				decoder >> warpmapId;
-				decoder >> column;
-				decoder >> row;
-				decoder >> nNodes;
-
-				m_charStream << "    warpmapId   = " << warpmapId << std::endl;
-				m_charStream << "    first node  = " << column << ", " << row << std::endl;
-				m_charStream << "    nodes       = " << nNodes << std::endl;
-
-				decoder.skip(header.size - 8);
-				break;
-			}
-
-			case GfxStream::ChunkId::SetWarpmapPeriods:
-			{
-				uint16_t	warpmapId;
-				int			uPeriod;
-				int			vPeriod;
-
-				decoder >> warpmapId;
-				decoder >> uPeriod;
-				decoder >> vPeriod;
-
-				m_charStream << "    warpmapId   = " << warpmapId << std::endl;
-				m_charStream << "    periods     = " << uPeriod << ", " << vPeriod << std::endl;
+				int toSkip = _readPrintDataInfo(header.size);
+				decoder.skip(toSkip);
 				break;
 			}
 

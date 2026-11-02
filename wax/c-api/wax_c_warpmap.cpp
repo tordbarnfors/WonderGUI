@@ -37,9 +37,10 @@ wax_sizeI wax_warpmapPixelSize(wax_obj warpmap)
 	return { sz.w, sz.h };
 }
 
-int wax_warpmapCellSize(wax_obj warpmap)
+wax_sizeI wax_warpmapCellSize(wax_obj warpmap)
 {
-	return getPtr(warpmap)->cellSize();
+	SizeI cellSize = getPtr(warpmap)->cellSize();
+	return { cellSize.w, cellSize.h };
 }
 
 wax_sizeI wax_warpmapNodes(wax_obj warpmap)
@@ -58,11 +59,6 @@ int wax_warpmapNodeY(wax_obj warpmap, int row)
 	return getPtr(warpmap)->nodeY(row);
 }
 
-int wax_setWarpmapPeriods(wax_obj warpmap, wax_spx uPeriod, wax_spx vPeriod)
-{
-	return getPtr(warpmap)->setPeriods(uPeriod, vPeriod);
-}
-
 wax_spx wax_warpmapUPeriod(wax_obj warpmap)
 {
 	return getPtr(warpmap)->uPeriod();
@@ -76,6 +72,11 @@ wax_spx wax_warpmapVPeriod(wax_obj warpmap)
 int wax_importWarpmapNodes(wax_obj warpmap, const wax_rectI* region, const wax_coordSPX* pSource, int pitch)
 {
 	return getPtr(warpmap)->importNodes(*(const RectI*)region, (const CoordSPX*)pSource, pitch);
+}
+
+int wax_importAllWarpmapNodes(wax_obj warpmap, const wax_coordSPX* pSource, wax_spx uPeriod, wax_spx vPeriod, int pitch)
+{
+	return getPtr(warpmap)->importAllNodes((const CoordSPX*)pSource, uPeriod, vPeriod, pitch);
 }
 
 int wax_exportWarpmapNodes(wax_obj warpmap, const wax_rectI* region, wax_coordSPX* pDestination, int pitch)

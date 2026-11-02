@@ -119,6 +119,12 @@ namespace wg
 	using GfxDeviceFactory_p = wax::DeviceFactory_p;
 	using wax::Error;
 
+	//____ wax_cylinderwarp.h ______________________________________________________
+
+	using wax::CylinderWarp_p;
+	using wax::CylinderWarp_wp;
+	using wax::CylinderWarp;
+
 	//____ wax_dataset.h ___________________________________________________________
 
 	using wax::BasicDataset_p;
@@ -339,6 +345,15 @@ namespace wg
 	//____ wax_memstack.h __________________________________________________________
 
 	using wax::MemStack;
+
+	//____ wax_nodecompression.h ___________________________________________________
+
+	using wax::NodeCompressor_p;
+	using wax::NodeCompressor_wp;
+	using wax::NodeDecompressor_p;
+	using wax::NodeDecompressor_wp;
+	using wax::NodeCompressor;
+	using wax::NodeDecompressor;
 
 	//____ wax_object.h ____________________________________________________________
 

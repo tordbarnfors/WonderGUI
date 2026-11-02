@@ -48,16 +48,12 @@ namespace wax
 		if (!_validateBlueprint(bp) || !pNodes)
 			return nullptr;
 
-		auto p = DX12Warpmap_p(new DX12Warpmap(bp));
-
-		SizeI nodes = p->nodes();
-		p->importNodes({ 0, 0, nodes.w, nodes.h }, pNodes, pitch);
-		return p;
+		return DX12Warpmap_p(new DX12Warpmap(bp, pNodes, pitch));
 	}
 
 	//____ constructor ___________________________________________________________
 
-	DX12Warpmap::DX12Warpmap(const Blueprint& bp) : Warpmap(bp)
+	DX12Warpmap::DX12Warpmap(const Blueprint& bp, const CoordSPX * pNodes, int pitch) : Warpmap(bp, pNodes, pitch)
 	{
 		ID3D12Device * pDevice = DX12Backend::device();
 

@@ -767,7 +767,7 @@ void MetalBackend::beginSession( CanvasRef canvasRef, Surface * pCanvasSurface, 
 	+ pInfo->nLineCoords/2 * GpuShapes::c_lineEntries * 4		// Lines with caps take the most.
 	+ pInfo->nRects * 4			// This is for possible subpixel fills. We have no way of knowing exactly how much is needed.
 	+ pInfo->nEdgemapDraws * 8
-	+ pInfo->nWarpDraws * 16
+	+ pInfo->nWarpDraws * 20
 	+ GpuShapes::maxSessionEntries(*pInfo) * 4;
 
 	m_extrasBufferId = [s_metalDevice newBufferWithLength:nExtrasFloats*sizeof(float) options:MTLResourceStorageModeShared];
@@ -1624,7 +1624,7 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 
 				*pExtrasMTL++ = float(dest.x);
 				*pExtrasMTL++ = float(dest.y);
-				*pExtrasMTL++ = float(pWarpmap->cellSize());
+				*pExtrasMTL++ = float(pWarpmap->cellSize().w);
 				*pExtrasMTL++ = pEdgemap ? float(pEdgemap->m_nbRenderSegments - 1) : 0.f;
 
 				*pExtrasMTL++ = float(warpSize.w);
@@ -1657,6 +1657,11 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 					*pExtrasMTL++ = clampInset;
 					*pExtrasMTL++ = 0.f;
 				}
+
+				*pExtrasMTL++ = float(pWarpmap->cellSize().h);
+				*pExtrasMTL++ = 0.f;
+				*pExtrasMTL++ = 0.f;
+				*pExtrasMTL++ = 0.f;
 
 				// Vertices, a quad for the part of each clip rectangle covered by the Warpmap.
 

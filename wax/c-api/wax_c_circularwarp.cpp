@@ -33,7 +33,7 @@ wax_obj wax_createCircularWarp( const wax_circularWarpBP* pCBP, wax_obj warpmapF
 	CircularWarp::Blueprint bp;
 
 	bp.bottomRadius = pCBP->bottomRadius;
-	bp.cellSize = pCBP->cellSize;
+	bp.cellSize = { pCBP->cellSize.w, pCBP->cellSize.h };
 	bp.center = { pCBP->center.x, pCBP->center.y };
 	if (pCBP->precision > 0.f)
 		bp.precision = pCBP->precision;
@@ -92,4 +92,10 @@ float wax_circularWarpStartAngle( wax_obj circularWarp )
 float wax_circularWarpSweep( wax_obj circularWarp )
 {
 	return getPtr(circularWarp)->sweep();
+}
+
+wax_coordSPX wax_circularWarpRotationOffset( wax_obj circularWarp, float degrees )
+{
+	CoordSPX offset = getPtr(circularWarp)->rotationOffset(degrees);
+	return { offset.x, offset.y };
 }

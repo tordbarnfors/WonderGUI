@@ -135,6 +135,15 @@ typedef enum
 	WAX_TINT_GRADIENT_XY
 } wax_tintMode;
 
+//____ wax_axis ________________________________________________________________
+
+typedef enum
+{
+	WAX_AXIS_UNDEFINED = 0,
+	WAX_AXIS_X,
+	WAX_AXIS_Y
+} wax_axis;
+
 //____ wax_tintShape ___________________________________________________________
 
 typedef enum

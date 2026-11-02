@@ -31,21 +31,32 @@ namespace wax
 
 	//____ constructor ________________________________________________________
 
-	Warpmap::Warpmap(const Blueprint& bp) : m_size(bp.size), m_cellSize(bp.cellSize), m_uPeriod(bp.uPeriod), m_vPeriod(bp.vPeriod)
+	Warpmap::Warpmap(const Blueprint& bp, const CoordSPX* pNodes, int pitch) : m_size(bp.size), m_cellSize(bp.cellSize), m_uPeriod(bp.uPeriod), m_vPeriod(bp.vPeriod)
 	{
 		if (bp.finalizer)
 			setFinalizer(bp.finalizer);
 
-		m_nodes.w = (m_size.w + m_cellSize - 1) / m_cellSize + 1;
-		m_nodes.h = (m_size.h + m_cellSize - 1) / m_cellSize + 1;
+		m_nodes.w = (m_size.w + m_cellSize.w - 1) / m_cellSize.w + 1;
+		m_nodes.h = (m_size.h + m_cellSize.h - 1) / m_cellSize.h + 1;
 
 		m_pNodes = new CoordSPX[m_nodes.w * m_nodes.h];
 
-		// Start out mapping the rectangle straight onto the source, pixel for pixel.
+		if (pNodes)
+		{
+			if (pitch == 0)
+				pitch = m_nodes.w;
 
-		for (int row = 0; row < m_nodes.h; row++)
-			for (int col = 0; col < m_nodes.w; col++)
-				m_pNodes[row * m_nodes.w + col] = { nodeX(col) * 64, nodeY(row) * 64 };
+			for (int row = 0; row < m_nodes.h; row++)
+				std::memcpy(m_pNodes + row * m_nodes.w, pNodes + row * pitch, m_nodes.w * sizeof(CoordSPX));
+		}
+		else
+		{
+			// Start out mapping the rectangle straight onto the source, pixel for pixel.
+
+			for (int row = 0; row < m_nodes.h; row++)
+				for (int col = 0; col < m_nodes.w; col++)
+					m_pNodes[row * m_nodes.w + col] = { nodeX(col) * 64, nodeY(row) * 64 };
+		}
 
 		_normalizeNodes({ 0,0,m_nodes.w,m_nodes.h });
 	}
@@ -62,25 +73,6 @@ namespace wax
 	const TypeInfo& Warpmap::typeInfo(void) const
 	{
 		return TYPEINFO;
-	}
-
-	//____ setPeriods() _______________________________________________________
-
-	bool Warpmap::setPeriods(spx uPeriod, spx vPeriod)
-	{
-		if (uPeriod < 0 || vPeriod < 0 || uPeriod > maxNodeValue || vPeriod > maxNodeValue)
-			return false;
-
-		m_uPeriod = uPeriod;
-		m_vPeriod = vPeriod;
-
-		RectI all = { 0,0,m_nodes.w,m_nodes.h };
-
-		if (m_pNodes)
-			_normalizeNodes(all);
-
-		_nodesUpdated(all);
-		return true;
 	}
 
 	//____ importNodes() ______________________________________________________
@@ -103,6 +95,33 @@ namespace wax
 		}
 
 		_nodesUpdated(region);
+		return true;
+	}
+
+	//____ importAllNodes() ___________________________________________________
+
+	bool Warpmap::importAllNodes(const CoordSPX* pSource, spx uPeriod, spx vPeriod, int pitch)
+	{
+		if (!pSource || uPeriod < 0 || vPeriod < 0 || uPeriod > maxNodeValue || vPeriod > maxNodeValue)
+			return false;
+
+		if (pitch == 0)
+			pitch = m_nodes.w;
+
+		m_uPeriod = uPeriod;
+		m_vPeriod = vPeriod;
+
+		RectI all = { 0, 0, m_nodes.w, m_nodes.h };
+
+		if (m_pNodes)
+		{
+			for (int row = 0; row < m_nodes.h; row++)
+				std::memcpy(m_pNodes + row * m_nodes.w, pSource + row * pitch, m_nodes.w * sizeof(CoordSPX));
+
+			_normalizeNodes(all);
+		}
+
+		_nodesUpdated(all);
 		return true;
 	}
 
@@ -145,8 +164,8 @@ namespace wax
 
 	CoordF Warpmap::positionAt(double x, double y) const
 	{
-		int column = std::clamp(int(x / m_cellSize), 0, m_nodes.w - 2);
-		int row = std::clamp(int(y / m_cellSize), 0, m_nodes.h - 2);
+		int column = std::clamp(int(x / m_cellSize.w), 0, m_nodes.w - 2);
+		int row = std::clamp(int(y / m_cellSize.h), 0, m_nodes.h - 2);
 
 		CoordSPX c[4];
 		cellCorners(column, row, c);
@@ -170,7 +189,7 @@ namespace wax
 		if (bp.size.w <= 0 || bp.size.h <= 0)
 			return false;
 
-		if (bp.cellSize < 1)
+		if (bp.cellSize.w < 1 || bp.cellSize.h < 1)
 			return false;
 
 		if (bp.uPeriod < 0 || bp.vPeriod < 0 || bp.uPeriod > maxNodeValue || bp.vPeriod > maxNodeValue)

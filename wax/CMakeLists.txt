@@ -72,6 +72,8 @@ set( SOURCES
 	source/compression/wax_rlecompression.h
 	source/compression/wax_spxcompression.cpp
 	source/compression/wax_spxcompression.h
+	source/compression/wax_nodecompression.cpp
+	source/compression/wax_nodecompression.h
 	source/edgemap/wax_edgemap.cpp
 	source/edgemap/wax_edgemap.h
 	source/edgemap/wax_edgemapfactory.cpp
@@ -109,6 +111,8 @@ set( SOURCES
 	source/surface/wax_surfacewriter.h
 	source/warp/wax_circularwarp.cpp
 	source/warp/wax_circularwarp.h
+	source/warp/wax_cylinderwarp.cpp
+	source/warp/wax_cylinderwarp.h
 	source/warp/wax_roundedrectwarp.cpp
 	source/warp/wax_roundedrectwarp.h
 	source/warp/wax_warpgenerator.cpp
@@ -132,6 +136,8 @@ set( SOURCES
 	c-api/wax_c_canvaslayers.h
 	c-api/wax_c_circularwarp.cpp
 	c-api/wax_c_circularwarp.h
+	c-api/wax_c_cylinderwarp.cpp
+	c-api/wax_c_cylinderwarp.h
 	c-api/wax_c_roundedrectwarp.cpp
 	c-api/wax_c_roundedrectwarp.h
 	c-api/wax_c_color.cpp

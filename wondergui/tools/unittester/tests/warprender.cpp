@@ -15,6 +15,8 @@
 #include <wax_softkernels_default.h>
 #include <wax_circularwarp.h>
 #include <wax_roundedrectwarp.h>
+#include <wax_cylinderwarp.h>
+#include <wax_c_cylinderwarp.h>
 #include <wax_c.h>
 #include <wax_c_object.h>
 #include <wax_c_softgfx.h>
@@ -276,7 +278,7 @@ namespace
 
 	Warpmap_p makeWave(GfxDevice* pDevice, int size, SizeSPX source)
 	{
-		auto pWarpmap = pDevice->warpmapFactory()->createWarpmap(WGBP(Warpmap, _.size = { size, size }, _.cellSize = 8));
+		auto pWarpmap = pDevice->warpmapFactory()->createWarpmap(WGBP(Warpmap, _.size = { size, size }, _.cellSize = { 8, 8 }));
 
 		SizeI n = pWarpmap->nodes();
 		std::vector<CoordSPX> nodes(n.w * n.h);
@@ -326,7 +328,7 @@ namespace
 
 	Warpmap_p identity(SizeI size, int cellSize)
 	{
-		return SoftWarpmapFactory::create()->createWarpmap(WGBP(Warpmap, _.size = size, _.cellSize = cellSize));
+		return SoftWarpmapFactory::create()->createWarpmap(WGBP(Warpmap, _.size = size, _.cellSize = { cellSize, cellSize }));
 	}
 
 	// Renders a scene through StreamBackend and StreamPlayer onto a SoftBackend. Resources are
@@ -388,11 +390,15 @@ WarpRenderTest::WarpRenderTest()
 	ADD_TEST(clipTest);
 	ADD_TEST(opaqueCanvasTest);
 	ADD_TEST(streamTest);
+	ADD_TEST(streamNodesTest);
+	ADD_TEST(nonSquareCellsTest);
 	ADD_TEST(cApiTest);
 	ADD_TEST(seamColorTest);
 	ADD_TEST(sourceRectTest);
 	ADD_TEST(generateTest);
+	ADD_TEST(rotationOffsetTest);
 	ADD_TEST(roundedRectTest);
+	ADD_TEST(cylinderTest);
 }
 
 WarpRenderTest::~WarpRenderTest()
@@ -636,14 +642,238 @@ bool WarpRenderTest::streamTest(std::ostream& output)
 	{
 		warpScene(pDevice);
 
-		// Periods changed after creation, sent before the nodes they normalize.
+		// Periods changed after creation, sent with the nodes.
 
 		auto pWarpmap = makeRing(pDevice, 40, c_edgemapSource, 270.f, -135.f);
-		pWarpmap->setPeriods(c_edgemapSource.w * 2, 0);
+		std::vector<CoordSPX> nodes(pWarpmap->nodes().w * pWarpmap->nodes().h);
+		pWarpmap->exportNodes({ 0, 0, pWarpmap->nodes().w, pWarpmap->nodes().h }, nodes.data());
+		pWarpmap->importAllNodes(nodes.data(), c_edgemapSource.w * 2, 0);
 		pDevice->warpDrawEdgemap({ 64 * 110, 64 * 50 }, pWarpmap, makeEdgemap(pDevice, true), { 64 * 30, 0 });
 	};
 
 	return compare(output, "Streamed warps", renderStreamed(scene), "streamed", render(TestBackend::Soft, scene), "direct", 0);
+}
+
+//____ streamNodesTest() ______________________________________________________
+// Nodes are streamed compressed, one update at a time, and the receiver creates a Warpmap with its
+// nodes and applies each update at once, exactly.
+
+namespace
+{
+	// Receiving end: SoftWarpmaps that count their updates, from a SoftBackend that makes them.
+
+	class CountingSoftWarpmap : public SoftWarpmap
+	{
+	public:
+		CountingSoftWarpmap(const Blueprint& bp, const CoordSPX* pNodes, int pitch) : SoftWarpmap(bp, pNodes, pitch) {}
+
+		int		updates = 0;
+
+	protected:
+		void _nodesUpdated(const RectI& region) override { updates++; }
+	};
+
+	class CountingSoftWarpmapFactory : public WarpmapFactory
+	{
+	public:
+		Warpmap_p createWarpmap(const Warpmap::Blueprint& bp) override { return _created(new CountingSoftWarpmap(bp, nullptr, 0), false); }
+		Warpmap_p createWarpmap(const Warpmap::Blueprint& bp, const CoordSPX* pNodes, int pitch) override { return _created(new CountingSoftWarpmap(bp, pNodes, pitch), true); }
+
+		std::vector<CountingSoftWarpmap*>	created;		// Kept alive by the test through the stream.
+		int									createdWithNodes = 0;
+
+	private:
+		Warpmap_p _created(CountingSoftWarpmap* p, bool bWithNodes) { created.push_back(p); createdWithNodes += bWithNodes; return p; }
+	};
+
+	class CountingSoftBackend : public SoftBackend
+	{
+	public:
+		WarpmapFactory_p warpmapFactory() override { return pWarpmapFactory; }
+
+		StrongPtr<CountingSoftWarpmapFactory>	pWarpmapFactory = new CountingSoftWarpmapFactory();
+	};
+
+	// Counts chunks and their bytes by type on their way to the player.
+
+	class ChunkCounter : public Object, protected StreamSink::Holder
+	{
+	public:
+		ChunkCounter(StreamSink_p next) : input(this), m_next(next) {}
+
+		StreamSink	input;
+
+		int		chunks[256] = {};
+		int		bytes[256] = {};
+
+		int count(GfxStream::ChunkId id) const { return chunks[int(id)]; }
+		int size(GfxStream::ChunkId id) const { return bytes[int(id)]; }
+		void clear() { std::fill(std::begin(chunks), std::end(chunks), 0); std::fill(std::begin(bytes), std::end(bytes), 0); }
+
+	protected:
+		void _processStreamChunks(const uint8_t* pBegin, const uint8_t* pEnd) override
+		{
+			for (auto p = pBegin; p < pEnd; p += GfxStream::chunkSize(p))
+			{
+				chunks[p[0]]++;
+				bytes[p[0]] += GfxStream::chunkSize(p);
+			}
+			m_next->processChunks(pBegin, pEnd);
+		}
+
+		StreamSink_p	m_next;
+	};
+}
+
+bool WarpRenderTest::streamNodesTest(std::ostream& output)
+{
+	using Id = GfxStream::ChunkId;
+
+	StrongPtr<CountingSoftBackend> pReceiver = new CountingSoftBackend();
+	auto pReceived = pReceiver->pWarpmapFactory;
+
+	auto pPlayer = StreamPlayer::create(pReceiver, SoftSurfaceFactory::create(), SoftEdgemapFactory::create());
+	StrongPtr<ChunkCounter> pCounter = new ChunkCounter({ pPlayer, pPlayer->input });
+	auto pEncoder = StreamEncoder::create({ pCounter, pCounter->input });
+	auto pStreamBackend = StreamBackend::create(pEncoder);
+
+	auto pWarp = CircularWarp::create(WGBP(CircularWarp, _.size = { 200, 200 }, _.sourceSize = c_edgemapSource, _.topRadius = 98 * 64, _.bottomRadius = 40 * 64,
+										   _.cellSize = { 4, 4 }), pStreamBackend->warpmapFactory());
+
+	auto sameNodes = [&](Warpmap* pSent, CountingSoftWarpmap* pGot)
+	{
+		SizeI nodes = pSent->nodes();
+		return pGot->nodes() == nodes && pGot->uPeriod() == pSent->uPeriod() && pGot->vPeriod() == pSent->vPeriod() &&
+			std::equal(pSent->nodeData(), pSent->nodeData() + nodes.w * nodes.h, pGot->nodeData());
+	};
+
+	// Created with all its nodes, compressed.
+
+	pCounter->clear();
+	Warpmap_p pSent = pWarp->generate();
+	pEncoder->flush();
+
+	int rawBytes = pSent->nodes().w * pSent->nodes().h * int(sizeof(CoordSPX));
+
+	TEST_ASSERT(pCounter->count(Id::CreateWarpmap) == 1);
+	TEST_ASSERT(pCounter->count(Id::WarpmapUpdate) == 1);
+	TEST_ASSERT(pCounter->count(Id::WarpmapNodes) >= 1);
+	TEST_ASSERT(pCounter->size(Id::WarpmapNodes) * 3 < rawBytes);
+	TEST_ASSERT(pReceived->created.size() == 1 && pReceived->createdWithNodes == 1);
+
+	CountingSoftWarpmap* pGot = pReceived->created[0];
+	TEST_ASSERT(pGot->updates == 0);
+	TEST_ASSERT(sameNodes(pSent, pGot));
+
+	// Updated in place, applied at once.
+
+	pSent = nullptr;
+	pCounter->clear();
+	TEST_ASSERT(pWarp->setRadii(90 * 64, 50 * 64));
+	pSent = pWarp->generate();
+	pEncoder->flush();
+
+	TEST_ASSERT(pCounter->count(Id::CreateWarpmap) == 0 && pCounter->count(Id::WarpmapUpdate) == 1);
+	TEST_ASSERT(pReceived->created.size() == 1);
+	TEST_ASSERT(pGot->updates == 1);
+	TEST_ASSERT(sameNodes(pSent, pGot));
+
+	// New periods are sent with the nodes and applied together with them.
+
+	pSent = nullptr;
+	pCounter->clear();
+	spx oldPeriod = pGot->uPeriod();
+	TEST_ASSERT(pWarp->setAngles(-60.f, 210.f));
+	pSent = pWarp->generate();
+	pEncoder->flush();
+
+	TEST_ASSERT(pCounter->count(Id::WarpmapUpdate) == 1);
+	TEST_ASSERT(pReceived->created.size() == 1);
+	TEST_ASSERT(pGot->uPeriod() != oldPeriod);
+	TEST_ASSERT(pGot->updates == 2);
+	TEST_ASSERT(sameNodes(pSent, pGot));
+
+	// A region narrower than the Warpmap.
+
+	std::vector<CoordSPX> patch(7 * 3);
+	for (int i = 0; i < int(patch.size()); i++)
+		patch[i] = { i * 640, -i * 64 };
+
+	int updates = pGot->updates;
+	pCounter->clear();
+	TEST_ASSERT(pSent->importNodes({ 5, 9, 7, 3 }, patch.data()));
+	pEncoder->flush();
+
+	TEST_ASSERT(pCounter->count(Id::WarpmapUpdate) == 1);
+	TEST_ASSERT(pGot->updates == updates + 1);
+	TEST_ASSERT(sameNodes(pSent, pGot));
+
+	// Created without nodes, with the default ones.
+
+	auto pDefault = pStreamBackend->warpmapFactory()->createWarpmap({ .cellSize = { 8, 8 }, .size = { 30, 20 }, .uPeriod = 1000 });
+	pEncoder->flush();
+	TEST_ASSERT(pReceived->created.size() == 2 && pReceived->createdWithNodes == 2);
+	TEST_ASSERT(sameNodes(pDefault, pReceived->created[1]));
+
+	return true;
+}
+
+//____ nonSquareCellsTest() ___________________________________________________
+// Cells can have another width than height. A sheared and scaled mapping is linear, so any cells
+// give the same positions and draw the same, in all backends and streamed. SoftBackend steps
+// positions from the corners of each cell in fixed point, so rounding can differ by a unit and
+// colors by a level.
+
+bool WarpRenderTest::nonSquareCellsTest(std::ostream& output)
+{
+	const SizeI size = { 60, 50 };
+
+	// Linear in x and y, whole spx at every pixel, partly outside the source.
+
+	auto sheared = [&](GfxDevice* pDevice, SizeI cellSize)
+	{
+		auto pWarpmap = pDevice->warpmapFactory()->createWarpmap(WGBP(Warpmap, _.size = size, _.cellSize = cellSize));
+
+		SizeI n = pWarpmap->nodes();
+		std::vector<CoordSPX> nodes(n.w * n.h);
+		for (int r = 0; r < n.h; r++)
+			for (int c = 0; c < n.w; c++)
+			{
+				int x = pWarpmap->nodeX(c), y = pWarpmap->nodeY(r);
+				nodes[r * n.w + c] = { 59 * x + 13 * y - 320, 9 * x + 31 * y - 200 };
+			}
+
+		pWarpmap->importNodes({ 0, 0, n.w, n.h }, nodes.data());
+		return pWarpmap;
+	};
+
+	auto scene = [&](SizeI cellSize)
+	{
+		return [=](GfxDevice* pDevice)
+		{
+			// Resources made by the device drawn with, so they are streamed too.
+
+			pDevice->warpDrawEdgemap({ 4 * 64, 4 * 64 }, sheared(pDevice, cellSize), makeEdgemap(pDevice, true));
+			pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Bilinear));
+			pDevice->warpBlit({ 80 * 64, 4 * 64 }, sheared(pDevice, cellSize), { 64 * 2, 64 * 1, 64 * 24, 64 * 12 }, { 64 * 3, 0 });
+		};
+	};
+
+	const SizeI shapes[] = { { 60, 4 }, { 3, 50 }, { 17, 11 }, { 100, 100 } };
+
+	for (TestBackend backend : { TestBackend::Soft, TestBackend::Linear, TestBackend::Reference })
+	{
+		auto square = render(backend, scene({ 5, 5 }));
+
+		for (SizeI cellSize : shapes)
+		{
+			std::string what = "Cells of " + std::to_string(cellSize.w) + " x " + std::to_string(cellSize.h);
+			if (!compare(output, what.c_str(), render(backend, scene(cellSize)), "these cells", square, "5 x 5 cells", 1))
+				return false;
+		}
+	}
+
+	return compare(output, "Cells of 60 x 4, streamed", renderStreamed(scene({ 60, 4 })), "streamed", render(TestBackend::Soft, scene({ 60, 4 })), "direct", 0);
 }
 
 //____ cApiTest() _____________________________________________________________
@@ -678,7 +908,7 @@ bool WarpRenderTest::cApiTest(std::ostream& output)
 	{
 		auto pRing = CircularWarp::create(WGBP(CircularWarp, _.size = { 44, 44 }, _.sourceSize = c_edgemapSource, _.topRadius = 21 * 64, _.bottomRadius = 10 * 64,
 											   _.startAngle = 30.f, _.sweep = 300.f), SoftWarpmapFactory::create());
-		auto pBent = SoftWarpmapFactory::create()->createWarpmap(WGBP(Warpmap, _.size = warpSize, _.cellSize = cellSize, _.uPeriod = bentPeriod), nodeData.data());
+		auto pBent = SoftWarpmapFactory::create()->createWarpmap(WGBP(Warpmap, _.size = warpSize, _.cellSize = { cellSize, cellSize }, _.uPeriod = bentPeriod), nodeData.data());
 
 		pDevice->warpDrawEdgemap({ 64 * 3, 64 * 4 }, pRing->generate(), pEdgemap, { 64 * 5, 0 });
 
@@ -708,10 +938,17 @@ bool WarpRenderTest::cApiTest(std::ostream& output)
 
 		wax_warpmapBP bentBP = {};
 		bentBP.size = { warpSize.w, warpSize.h };
-		bentBP.cellSize = cellSize;
+		bentBP.cellSize = { cellSize, cellSize };
 		bentBP.uPeriod = bentPeriod;
 
 		wax_obj bent = wax_createWarpmapFromNodes(factory, &bentBP, (const wax_coordSPX*) nodeData.data(), 0);
+
+		// The same, given its nodes and periods after creation.
+
+		wax_warpmapBP plainBP = bentBP;
+		plainBP.uPeriod = 0;
+		wax_obj bentLater = wax_createWarpmap(factory, &plainBP);
+		wax_importAllWarpmapNodes(bentLater, (const wax_coordSPX*) nodeData.data(), bentPeriod, 0, 0);
 
 		wax_warpDrawEdgemap(device, { 64 * 3, 64 * 4 }, wax_generateWarpGenerator(ring), (wax_obj) static_cast<Object*>(pEdgemap.rawPtr()), { 64 * 5, 0 });
 
@@ -731,8 +968,9 @@ bool WarpRenderTest::cApiTest(std::ostream& output)
 		pDevice->setBlitSource(pSurface);
 		wax_warpBlit(device, { 64 * 60, 64 * 4 }, bent, { 64 * 2, 64 * 3 });
 		wax_rectSPX source = { 64 * 4, 64 * 2, 64 * 20, 64 * 12 };
-		wax_warpBlitRect(device, { 64 * 110, 64 * 4 }, bent, &source, { 0, 0 });
+		wax_warpBlitRect(device, { 64 * 110, 64 * 4 }, bentLater, &source, { 0, 0 });
 
+		wax_release(bentLater);
 		wax_release(bent);
 		wax_release(ring);
 		wax_release(factory);
@@ -918,6 +1156,56 @@ bool WarpRenderTest::generateTest(std::ostream& output)
 	return compare(output, "One CircularWarp drawn three times, streamed", renderStreamed(oneGenerator), "one generator", render(TestBackend::Soft, separateGenerators), "separate generators", 0);
 }
 
+//____ rotationOffsetTest() ___________________________________________________
+// A ring turned by rotationOffset() and a frame moved by shiftOffset() draw as generated with a
+// larger start, also through the C API.
+
+bool WarpRenderTest::rotationOffsetTest(std::ostream& output)
+{
+	auto pRes = resourceDevice();
+	auto pEdgemap = makeEdgemap(pRes, true);
+	auto pFactory = SoftWarpmapFactory::create();
+
+	auto ringBP = WGBP(CircularWarp, _.size = { 44, 44 }, _.sourceSize = c_edgemapSource, _.topRadius = 21 * 64, _.bottomRadius = 10 * 64,
+					   _.startAngle = 20.f, _.sweep = 300.f);
+	auto frameBP = WGBP(RoundedRectWarp, _.size = { 60, 44 }, _.sourceSize = c_edgemapSource, _.rect = { 64 * 8, 64 * 8, 64 * 44, 64 * 28 },
+						_.cornerRadius = 64 * 8, _.topDistance = 64 * 5, _.bottomDistance = -64 * 4, _.start = 0.1f, _.sweep = 0.8f);
+
+	auto pRing = CircularWarp::create(ringBP, pFactory);
+	auto pFrame = RoundedRectWarp::create(frameBP, pFactory);
+
+	ringBP.startAngle += 75.f;
+	frameBP.start += 0.3f;
+	auto pTurnedRing = CircularWarp::create(ringBP, pFactory);
+	auto pMovedFrame = RoundedRectWarp::create(frameBP, pFactory);
+
+	auto turned = [&](GfxDevice* pDevice)
+	{
+		pDevice->warpDrawEdgemap({ 2 * 64, 2 * 64 }, pRing->generate(), pEdgemap, pRing->rotationOffset(75.f));
+		pDevice->warpDrawEdgemap({ 60 * 64, 2 * 64 }, pFrame->generate(), pEdgemap, pFrame->shiftOffset(0.3f));
+	};
+
+	auto generated = [&](GfxDevice* pDevice)
+	{
+		pDevice->warpDrawEdgemap({ 2 * 64, 2 * 64 }, pTurnedRing->generate(), pEdgemap);
+		pDevice->warpDrawEdgemap({ 60 * 64, 2 * 64 }, pMovedFrame->generate(), pEdgemap);
+	};
+
+	// Nodes of the two differ by rounding to spx, so a few pixels by a level or two.
+
+	if (!compare(output, "Turned by offset", render(TestBackend::Soft, turned), "offset", render(TestBackend::Soft, generated), "generated", 2, 40, 4))
+		return false;
+
+	// C API gives the same offsets.
+
+	wax_coordSPX ringOffset = wax_circularWarpRotationOffset((wax_obj) static_cast<Object*>(pRing.rawPtr()), 75.f);
+	wax_coordSPX frameOffset = wax_roundedRectWarpShiftOffset((wax_obj) static_cast<Object*>(pFrame.rawPtr()), 0.3f);
+
+	TEST_ASSERT(ringOffset.x == pRing->rotationOffset(75.f).x && ringOffset.y == 0);
+	TEST_ASSERT(frameOffset.x == pFrame->shiftOffset(0.3f).x && frameOffset.y == 0);
+	return true;
+}
+
 //____ roundedRectTest() ______________________________________________________
 /*
 	RoundedRectWarp drawn by SoftBackend close to what ReferenceBackend measures, and by
@@ -952,4 +1240,75 @@ bool WarpRenderTest::roundedRectTest(std::ostream& output)
 
 	return compare(output, "Rounded rects", render(TestBackend::Soft, scene), "SoftBackend", render(TestBackend::Reference, scene), "ReferenceBackend", 6, 60, 48) &&
 		   compare(output, "Rounded rects", render(TestBackend::Linear, scene), "LinearBackend", render(TestBackend::Soft, scene), "SoftBackend", 0);
+}
+
+//____ cylinderTest() _________________________________________________________
+// Cylinders lying and standing, turned by offset, as SoftBackend draws them against
+// ReferenceBackend, streamed and through the C API.
+
+bool WarpRenderTest::cylinderTest(std::ostream& output)
+{
+	auto reel = WGBP(CylinderWarp, _.size = { 30, 60 }, _.sourceSize = { 24 * 64, 48 * 64 }, _.span = 110.f);
+	auto can = WGBP(CylinderWarp, _.size = { 60, 36 }, _.sourceSize = c_edgemapSource, _.axis = Axis::Y, _.span = 150.f, _.startAngle = -40.f, _.sweep = 240.f);
+
+	auto scene = [=](GfxDevice* pDevice)
+	{
+		auto pFactory = pDevice->warpmapFactory();
+		auto pReel = CylinderWarp::create(reel, pFactory);
+		auto pCan = CylinderWarp::create(can, pFactory);
+
+		pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Bilinear));
+		pDevice->warpBlit({ 2 * 64, 2 * 64 }, pReel->generate(), pReel->rotationOffset(35.f));
+		pDevice->warpBlit({ 36 * 64, 2 * 64 }, pReel->generate(), pReel->rotationOffset(-200.f));
+
+		auto pEdgemap = makeEdgemap(pDevice, true);
+		pDevice->warpDrawEdgemap({ 70 * 64, 2 * 64 }, pCan->generate(), pEdgemap);
+		pDevice->warpDrawEdgemap({ 70 * 64, 42 * 64 }, pCan->generate(), pEdgemap, pCan->rotationOffset(60.f));
+	};
+
+	if (!compare(output, "Cylinders", render(TestBackend::Soft, scene), "SoftBackend", render(TestBackend::Reference, scene), "ReferenceBackend", 6, 60, 48) ||
+		!compare(output, "Cylinders", render(TestBackend::Linear, scene), "LinearBackend", render(TestBackend::Soft, scene), "SoftBackend", 0) ||
+		!compare(output, "Cylinders, streamed", renderStreamed(scene), "streamed", render(TestBackend::Soft, scene), "direct", 0))
+		return false;
+
+	// Through the C API.
+
+	auto c = [&](GfxDevice* pDevice)
+	{
+		wax_obj factory = (wax_obj) static_cast<Object*>(pDevice->warpmapFactory().rawPtr());
+
+		wax_cylinderWarpBP reelBP = {};
+		reelBP.size = { reel.size.w, reel.size.h };
+		reelBP.sourceSize = { reel.sourceSize.w, reel.sourceSize.h };
+		reelBP.span = reel.span;
+
+		wax_cylinderWarpBP canBP = {};
+		canBP.axis = WAX_AXIS_Y;
+		canBP.size = { can.size.w, can.size.h };
+		canBP.sourceSize = { can.sourceSize.w, can.sourceSize.h };
+		canBP.span = can.span;
+		canBP.startAngle = can.startAngle;
+		canBP.sweep = can.sweep;
+
+		wax_obj cReel = wax_createCylinderWarp(&reelBP, factory);
+		wax_obj cCan = wax_createCylinderWarp(&canBP, factory);
+		wax_obj device = (wax_obj) static_cast<Object*>(pDevice);
+
+		pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Bilinear));
+		wax_warpBlit(device, { 2 * 64, 2 * 64 }, wax_generateWarpGenerator(cReel), wax_cylinderWarpRotationOffset(cReel, 35.f));
+		wax_warpBlit(device, { 36 * 64, 2 * 64 }, wax_generateWarpGenerator(cReel), wax_cylinderWarpRotationOffset(cReel, -200.f));
+
+		auto pEdgemap = makeEdgemap(pDevice, true);
+		wax_obj edgemap = (wax_obj) static_cast<Object*>(pEdgemap.rawPtr());
+		wax_warpDrawEdgemap(device, { 70 * 64, 2 * 64 }, wax_generateWarpGenerator(cCan), edgemap, { 0, 0 });
+		wax_warpDrawEdgemap(device, { 70 * 64, 42 * 64 }, wax_generateWarpGenerator(cCan), edgemap, wax_cylinderWarpRotationOffset(cCan, 60.f));
+
+		TEST_ASSERT(wax_cylinderWarpAxis(cCan) == WAX_AXIS_Y && wax_cylinderWarpSpan(cReel) == 110.f && wax_cylinderWarpSweep(cReel) == 360.f);
+
+		wax_release(cCan);
+		wax_release(cReel);
+		return true;
+	};
+
+	return compare(output, "Cylinders through the C API", render(TestBackend::Soft, [&](GfxDevice* p) { c(p); }), "C API", render(TestBackend::Soft, scene), "C++", 0);
 }

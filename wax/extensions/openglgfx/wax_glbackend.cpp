@@ -999,7 +999,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 
 			*pExtrasGL++ = GLfloat(dest.x);
 			*pExtrasGL++ = GLfloat(dest.y);
-			*pExtrasGL++ = GLfloat(pWarpmap->cellSize());
+			*pExtrasGL++ = GLfloat(pWarpmap->cellSize().w);
 			*pExtrasGL++ = pEdgemap ? GLfloat(pEdgemap->m_nbRenderSegments - 1) : 0.f;
 
 			*pExtrasGL++ = GLfloat(warpSize.w);
@@ -1026,6 +1026,11 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				*pExtrasGL++ = 0.f;
 				*pExtrasGL++ = 0.f;
 			}
+
+			*pExtrasGL++ = GLfloat(pWarpmap->cellSize().h);
+			*pExtrasGL++ = 0.f;
+			*pExtrasGL++ = 0.f;
+			*pExtrasGL++ = 0.f;
 
 			// Vertices, a quad for the part of each clip rectangle covered by the Warpmap.
 
@@ -1997,7 +2002,7 @@ void GlBackend::beginSession( CanvasRef canvasRef, Surface * pCanvasSurface, int
 		+ pInfo->nLineCoords/2 * GpuShapes::c_lineEntries * 4		// Lines with caps take the most.
 		+ pInfo->nRects * 8			// This is margin for blits (+8) and  subpixel fills (+4).
 		+ pInfo->nEdgemapDraws * 8
-		+ pInfo->nWarpDraws * 16
+		+ pInfo->nWarpDraws * 20
 		+ GpuShapes::maxSessionEntries(*pInfo) * 4;
 
 	m_pExtrasBuffer = new GLfloat[nExtrasFloats];

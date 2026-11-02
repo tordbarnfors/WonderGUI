@@ -46,16 +46,12 @@ MetalWarpmap_p MetalWarpmap::create( const Blueprint& bp, const CoordSPX * pNode
 	if( !_validateBlueprint(bp) || !pNodes )
 		return nullptr;
 
-	auto p = MetalWarpmap_p( new MetalWarpmap(bp) );
-
-	SizeI nodes = p->nodes();
-	p->importNodes({ 0, 0, nodes.w, nodes.h }, pNodes, pitch);
-	return p;
+	return MetalWarpmap_p( new MetalWarpmap(bp, pNodes, pitch) );
 }
 
 //____ constructor ___________________________________________________________
 
-MetalWarpmap::MetalWarpmap( const Blueprint& bp ) : Warpmap(bp)
+MetalWarpmap::MetalWarpmap( const Blueprint& bp, const CoordSPX * pNodes, int pitch ) : Warpmap(bp, pNodes, pitch)
 {
 	SizeI cells = _cells();
 

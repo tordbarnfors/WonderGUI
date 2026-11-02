@@ -66,7 +66,7 @@ namespace wax
 
 	protected:
 
-		DX12Warpmap(const Blueprint& bp);
+		DX12Warpmap(const Blueprint& bp, const CoordSPX * pNodes = nullptr, int pitch = 0);
 		~DX12Warpmap();
 
 		void	_nodesUpdated(const RectI& region) override;

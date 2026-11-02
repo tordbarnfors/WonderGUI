@@ -32,6 +32,7 @@
 #include <wax_qoicompression.h>
 #include <wax_lzcompression.h>
 #include <wax_spxcompression.h>
+#include <wax_nodecompression.h>
 #include <wax_rlecompression.h>
 
 #include <iostream>
@@ -350,6 +351,8 @@ namespace wax
 			pDecompressor = LZDecompressor::create();
 		else if( idToken == SPXDecompressor::ID_TOKEN )
 			pDecompressor = SPXDecompressor::create();
+		else if( idToken == NodeDecompressor::ID_TOKEN )
+			pDecompressor = NodeDecompressor::create();
 		else if (idToken == RLEDecompressor::ID_TOKEN)
 			pDecompressor = RLEDecompressor::create();
 		else if (idToken == QOIDecompressor::ID_TOKEN || idToken == QOIDecompressor::ID_TOKEN_BIG_ENDIAN)

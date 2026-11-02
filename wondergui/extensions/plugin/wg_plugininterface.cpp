@@ -420,7 +420,7 @@ static void populateBody(wg_c_calls_body * pBody)
 	pBody->warpmap.structSize				= sizeof(wg_warpmap_calls);
 	pBody->warpmap.warpmapPixelSize			= LOCKED(wax_warpmapPixelSize);
 	pBody->warpmap.warpmapCellSize			= LOCKED(wax_warpmapCellSize);
-	pBody->warpmap.setWarpmapPeriods		= LOCKED(wax_setWarpmapPeriods);
+	pBody->warpmap.importAllWarpmapNodes	= LOCKED(wax_importAllWarpmapNodes);
 	pBody->warpmap.warpmapUPeriod			= LOCKED(wax_warpmapUPeriod);
 	pBody->warpmap.warpmapVPeriod			= LOCKED(wax_warpmapVPeriod);
 	pBody->warpmap.importWarpmapNodes		= LOCKED(wax_importWarpmapNodes);

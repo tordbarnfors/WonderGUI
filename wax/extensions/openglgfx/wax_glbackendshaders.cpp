@@ -1769,13 +1769,14 @@ WAX_GL_SHAPE_FUNCS
 // Each pixel finds the cell of the Warpmap it is in and interpolates the position in the source
 // at its center, and how fast that changes along x and y of the canvas. Coverage is worked out
 // from those, taking each border of the source and each edge of an edgemap as straight over the
-// pixel. Extras of a warp, four entries:
+// pixel. Extras of a warp, five entries:
 //
-//   0: position of Warpmap on canvas, cell size, number of edges.
+//   0: position of Warpmap on canvas, cell width, number of edges.
 //   1: size of Warpmap, size of source in pixels.
 //   2: source offset in pixels of the source, periods in pixels of the source (0 if none).
 //   3: edgemaps: edges per column, offsets of flat colors, tint table and raw samples in the
 //      edgemap buffer. Blits: position of source rectangle in the surface.
+//   4: cell height.
 //
 // The cells of the Warpmap are in its buffer, see GlWarpmap.
 
@@ -1814,6 +1815,12 @@ WAX_GL_CANVAS_BLOCK
 // warpPosition() finds the cell with integers, as a division in floats can miss a whole number.
 // warpNearestCopy() moves a center in the gap between copies on a periodic axis to the nearest
 // copy, which is where colors are taken and edges evaluated.
+
+// The canvas position of the center of the pixel, exact rather than interpolated, so it doesn't
+// depend on the triangles drawn.
+
+#define WAX_GL_WARP_CANVAS_POS \
+"	canvasPos = vec2(gl_FragCoord.x, (gl_FragCoord.y - canvasYOfs) / canvasYMul);	"
 
 #define WAX_GL_WARP_FUNCS \
 "vec4 warpEntry(int i) { return texelFetch(extrasBufferId, warpOfs + i); }			" \
@@ -1865,11 +1872,11 @@ WAX_GL_CANVAS_BLOCK
 "	vec4 e1 = warpEntry(1);															" \
 "	vec4 e2 = warpEntry(2);															" \
 "	vec2 q = p - e0.xy;																" \
-"	int cellSize = int(e0.z);														" \
+"	ivec2 cellSize = ivec2(int(e0.z), int(warpEntry(4).x));							" \
 "	ivec2 cells = (ivec2(e1.xy) + cellSize - 1) / cellSize;							" \
 "	ivec2 cell = clamp(ivec2(floor(max(q, vec2(0.0)))) / cellSize, ivec2(0), cells - 1);	" \
 "	vec2 c0 = vec2(cell * cellSize);												" \
-"	vec2 c1 = min(c0 + float(cellSize), e1.xy);										" \
+"	vec2 c1 = min(c0 + vec2(cellSize), e1.xy);										" \
 "	vec2 f = (q - c0) / (c1 - c0);													" \
 "	int i = (cell.y * cells.x + cell.x) * 2;										" \
 "	vec4 top = texelFetch(warpmapId, i);											" \
@@ -1952,7 +1959,7 @@ WAX_GL_OUTPUT
 "uniform samplerBuffer warpmapId;				"
 "flat in int warpOfs;							"
 "flat in int tintOfs;							"
-"in vec2 canvasPos;								"
+"vec2 canvasPos;									"
 "flat in vec4 flatTint;							"
 WAX_GL_TINT_FUNC
 WAX_GL_SEGCOLOR_FUNC
@@ -1960,6 +1967,7 @@ WAX_GL_SEGPART_FUNC
 WAX_GL_WARP_FUNCS
 "void main()									"
 "{												"
+WAX_GL_WARP_CANVAS_POS
 "	vec4 tint = premul((tintOfs >= 0 ? evalTint(tintmapBufferId, tintOfs, canvasPos) : vec4(1.0)) * flatTint);	"
 "	vec4 acc = vec4(0.0);						"
 "	float keep = 0.0;							"
@@ -1986,13 +1994,14 @@ WAX_GL_OUTPUT_A8
 "uniform samplerBuffer warpmapId;				"
 "flat in int warpOfs;							"
 "flat in int tintOfs;							"
-"in vec2 canvasPos;								"
+"vec2 canvasPos;									"
 "flat in vec4 flatTint;							"
 WAX_GL_TINT_FUNC
 WAX_GL_SEGCOLOR_FUNC
 WAX_GL_WARP_FUNCS
 "void main()									"
 "{												"
+WAX_GL_WARP_CANVAS_POS
 "	float acc = 0.0;							"
 "	float covered = 0.0;						"
 WAX_GL_WARP_SEGMENTS("{ acc += segColor(e, flatColorsOfs, tintTableOfs, sc).a * part; covered += part; }")
@@ -2071,13 +2080,14 @@ WAX_GL_OUTPUT
 "uniform samplerBuffer warpmapId;				"
 "flat in int warpOfs;							"
 "flat in int tintOfs;							"
-"in vec2 canvasPos;								"
+"vec2 canvasPos;									"
 "flat in vec4 flatTint;							"
 WAX_GL_TINT_FUNC
 WAX_GL_WARP_FUNCS
 WAX_GL_WARP_SAMPLE
 "void main()									"
 "{												"
+WAX_GL_WARP_CANVAS_POS
 WAX_GL_WARP_BLIT_COVERAGE
 "	writeColor(c * premul(tint) * cov, cov);	"
 "}";
@@ -2091,13 +2101,14 @@ WAX_GL_OUTPUT_A8
 "uniform samplerBuffer warpmapId;				"
 "flat in int warpOfs;							"
 "flat in int tintOfs;							"
-"in vec2 canvasPos;								"
+"vec2 canvasPos;									"
 "flat in vec4 flatTint;							"
 WAX_GL_TINT_FUNC
 WAX_GL_WARP_FUNCS
 WAX_GL_WARP_SAMPLE
 "void main()									"
 "{												"
+WAX_GL_WARP_CANVAS_POS
 WAX_GL_WARP_BLIT_COVERAGE
 "	writeAlpha(c.a * tint.a * cov, cov);		"
 "}";

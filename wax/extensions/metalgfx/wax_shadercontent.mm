@@ -2645,14 +2645,15 @@ fragment FragOutput shapeTintmapFragmentShader_A8(ShapeFragInput in [[stage_in]]
 // Each pixel finds the cell of the Warpmap it is in and interpolates the position in the source
 // at its center, and how fast that changes along x and y of the canvas. Coverage is worked out
 // from those, taking each border of the source and each edge of an edgemap as straight over the
-// pixel. Extras of a warp, four entries:
+// pixel. Extras of a warp, five entries:
 //
-//   0: position of Warpmap on canvas, cell size, number of edges.
+//   0: position of Warpmap on canvas, cell width, number of edges.
 //   1: size of Warpmap, size of source in pixels.
 //   2: source offset in pixels of the source, periods in pixels of the source (0 if none).
 //   3: edgemaps: edges per column, offsets of flat colors, tint table and raw samples in the
 //      edgemap buffer. Blits: position of source rectangle in the surface, how far inside its
 //      edges positions are kept (0 for a tiling surface, see warpBlitCoverage()).
+//   4: cell height.
 //
 // The cells of the Warpmap are in its buffer, see MetalWarpmap.
 
@@ -2764,11 +2765,11 @@ inline float2 warpPosition(constant float4 * pExtras, int ofs, constant float4 *
 	float4 e2 = pExtras[ofs + 2];
 
 	float2 q = p - e0.xy;
-	int cellSize = int(e0.z);
+	int2 cellSize = int2(int(e0.z), int(pExtras[ofs + 4].x));
 	int2 cells = (int2(e1.xy) + cellSize - 1) / cellSize;
 	int2 cell = clamp(int2(floor(max(q, float2(0.f)))) / cellSize, int2(0), cells - 1);
 	float2 c0 = float2(cell * cellSize);
-	float2 c1 = min(c0 + float(cellSize), e1.xy);
+	float2 c1 = min(c0 + float2(cellSize), e1.xy);
 	float2 f = (q - c0) / (c1 - c0);
 
 	int i = (cell.y * cells.x + cell.x) * 2;

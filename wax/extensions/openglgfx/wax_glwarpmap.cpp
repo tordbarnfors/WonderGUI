@@ -43,15 +43,12 @@ namespace wax
 		if (!_validateBlueprint(bp) || !pNodes)
 			return nullptr;
 
-		auto p = GlWarpmap_p(new GlWarpmap(bp));
-		SizeI nodes = p->nodes();
-		p->importNodes({ 0,0,nodes.w,nodes.h }, pNodes, pitch);
-		return p;
+		return GlWarpmap_p(new GlWarpmap(bp, pNodes, pitch));
 	}
 
 	//____ constructor ________________________________________________________
 
-	GlWarpmap::GlWarpmap( const Blueprint& bp ) : Warpmap(bp)
+	GlWarpmap::GlWarpmap( const Blueprint& bp, const CoordSPX * pNodes, int pitch ) : Warpmap(bp, pNodes, pitch)
 	{
 		SizeI cells = _cells();
 

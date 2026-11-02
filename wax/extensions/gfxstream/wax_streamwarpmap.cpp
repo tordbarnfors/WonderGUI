@@ -20,8 +20,11 @@
 
 =========================================================================*/
 #include <wax_streamwarpmap.h>
+#include <wax_streambackend.h>
+#include <wax_core.h>
 
 #include <algorithm>
+#include <cstring>
 
 namespace wax
 {
@@ -44,32 +47,30 @@ namespace wax
 		if (!pEncoder || !_validateBlueprint(bp) || !pNodes)
 			return nullptr;
 
-		auto p = StreamWarpmap_p(new StreamWarpmap(pEncoder, bp));
-		SizeI nodes = p->nodes();
-		p->importNodes({ 0,0,nodes.w,nodes.h }, pNodes, pitch);
+		auto p = StreamWarpmap_p(new StreamWarpmap(pEncoder, bp, pNodes, pitch));
 		pEncoder->flush();
 		return p;
 	}
 
 	//____ constructor ________________________________________________________
 	/*
-		The receiving end creates its Warpmap with the same nodes, but we send them anyway, so
-		that it gets exactly ours.
+		The receiving end creates its Warpmap with default nodes. We send ours even when they are
+		the defaults, so that it gets exactly ours.
 	*/
 
-	StreamWarpmap::StreamWarpmap( StreamEncoder * pEncoder, const Blueprint& bp ) : Warpmap(bp)
+	StreamWarpmap::StreamWarpmap( StreamEncoder * pEncoder, const Blueprint& bp, const CoordSPX * pNodes, int pitch ) : Warpmap(bp, pNodes, pitch)
 	{
 		m_pEncoder = pEncoder;
 		m_inStreamId = pEncoder->allocObjectId();
+		m_pCompressor = NodeCompressor::create();
 
 		auto& encoder = * m_pEncoder;
 
-		encoder << GfxStream::Header{ GfxStream::ChunkId::CreateWarpmap, 0, 20 };
+		encoder << GfxStream::Header{ GfxStream::ChunkId::CreateWarpmap, 0, 14 };
 		encoder << m_inStreamId;
 		encoder << m_size;
-		encoder << (uint16_t) m_cellSize;
-		encoder << (int32_t) m_uPeriod;
-		encoder << (int32_t) m_vPeriod;
+		encoder << (uint16_t) m_cellSize.w;
+		encoder << (uint16_t) m_cellSize.h;
 
 		_nodesUpdated({ 0, 0, m_nodes.w, m_nodes.h });
 	}
@@ -94,59 +95,49 @@ namespace wax
 		return TYPEINFO;
 	}
 
-	//____ setPeriods() _______________________________________________________
-	/*
-		The periods are sent before the nodes that Warpmap::setPeriods() normalizes into them,
-		so that the receiving end doesn't normalize those into the old periods.
-	*/
-
-	bool StreamWarpmap::setPeriods( spx uPeriod, spx vPeriod )
-	{
-		if (uPeriod < 0 || vPeriod < 0 || uPeriod > maxNodeValue || vPeriod > maxNodeValue)
-			return false;
-
-		auto& encoder = * m_pEncoder;
-
-		encoder << GfxStream::Header{ GfxStream::ChunkId::SetWarpmapPeriods, 0, 10 };
-		encoder << m_inStreamId;
-		encoder << (int32_t) uPeriod;
-		encoder << (int32_t) vPeriod;
-
-		return Warpmap::setPeriods(uPeriod, vPeriod);
-	}
-
 	//____ _nodesUpdated() ____________________________________________________
-	// Sends the nodes of region, row by row, in chunks of at most c_maxNodesPerChunk nodes.
+	/*
+		Sends the region and periods in a WarpmapUpdate, followed by WarpmapNodes chunks with the
+		nodes compressed. Rows narrower than the Warpmap are gathered first. Periods only change
+		together with all nodes, so the receiver applies them together.
+	*/
 
 	void StreamWarpmap::_nodesUpdated( const RectI& region )
 	{
+		if (region.w <= 0 || region.h <= 0)
+			return;
+
 		auto& encoder = * m_pEncoder;
 
-		for (int row = region.y; row < region.y + region.h; row++)
+		encoder << GfxStream::Header{ GfxStream::ChunkId::WarpmapUpdate, 0, 18 };
+		encoder << m_inStreamId;
+		encoder << (uint16_t) region.x;
+		encoder << (uint16_t) region.y;
+		encoder << (uint16_t) region.w;
+		encoder << (uint16_t) region.h;
+		encoder << (int32_t) m_uPeriod;
+		encoder << (int32_t) m_vPeriod;
+
+		const CoordSPX* pBeg = m_pNodes + region.y * m_nodes.w + region.x;
+		int nNodes = region.w * region.h;
+		int bytes = 0;
+
+		if (region.w != m_nodes.w)
 		{
-			int column = region.x;
-			int end = region.x + region.w;
+			bytes = nNodes * sizeof(CoordSPX);
+			auto pGathered = (CoordSPX*) Core::memStackAlloc(bytes);
 
-			while (column < end)
-			{
-				int n = std::min(end - column, c_maxNodesPerChunk);
+			for (int row = 0; row < region.h; row++)
+				std::memcpy(pGathered + row * region.w, pBeg + row * m_nodes.w, region.w * sizeof(CoordSPX));
 
-				encoder << GfxStream::Header{ GfxStream::ChunkId::WarpmapNodes, 0, 8 + n * 8 };
-				encoder << m_inStreamId;
-				encoder << (uint16_t) column;
-				encoder << (uint16_t) row;
-				encoder << (uint16_t) n;
-
-				const CoordSPX* p = m_pNodes + row * m_nodes.w + column;
-				for (int i = 0; i < n; i++)
-				{
-					encoder << (int32_t) p[i].x;
-					encoder << (int32_t) p[i].y;
-				}
-
-				column += n;
-			}
+			pBeg = pGathered;
 		}
+
+		m_pCompressor->setRowLength(region.w);
+		StreamBackend::_compressSplitAndEncode(m_pEncoder, GfxStream::ChunkId::WarpmapNodes, m_inStreamId, m_pCompressor, pBeg, pBeg + nNodes);
+
+		if (bytes > 0)
+			Core::memStackFree(bytes);
 	}
 
 } // namespace wax

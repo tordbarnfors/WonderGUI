@@ -66,8 +66,10 @@ void convertEdgemapBlueprint(Edgemap::Blueprint* pDest, const wax_edgemapBP* pSo
 
 void convertWarpmapBlueprint(Warpmap::Blueprint* pDest, const wax_warpmapBP* pSource)
 {
-	if( pSource->cellSize > 0 )
-		pDest->cellSize	= pSource->cellSize;
+	if( pSource->cellSize.w > 0 )
+		pDest->cellSize.w	= pSource->cellSize.w;
+	if( pSource->cellSize.h > 0 )
+		pDest->cellSize.h	= pSource->cellSize.h;
 
 	pDest->size			= { pSource->size.w, pSource->size.h };
 	pDest->uPeriod		= pSource->uPeriod;

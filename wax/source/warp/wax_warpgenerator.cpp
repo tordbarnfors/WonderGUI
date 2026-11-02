@@ -34,12 +34,13 @@ namespace wax
 
 	//____ constructor ________________________________________________________
 
-	WarpGenerator::WarpGenerator(SizeI size, SizeSPX sourceSize, int cellSize, float precision, WarpmapFactory* pFactory)
+	WarpGenerator::WarpGenerator(SizeI size, SizeSPX sourceSize, SizeI cellSize, float precision, WarpmapFactory* pFactory)
 	{
 		m_size		= size;
 		m_sourceSize = sourceSize;
 		m_cellSize	= cellSize;
 		m_precision	= precision;
+		m_precisionFixed = int64_t(double(precision) * 65536.0 + 0.5);
 		m_pFactory	= pFactory;
 	}
 
@@ -88,9 +89,9 @@ namespace wax
 
 	//____ setCellSize() ______________________________________________________
 
-	bool WarpGenerator::setCellSize(int cellSize)
+	bool WarpGenerator::setCellSize(SizeI cellSize)
 	{
-		if (cellSize < 0)
+		if (cellSize.w < 0 || cellSize.h < 0)
 			return false;
 
 		if (cellSize != m_cellSize)
@@ -103,9 +104,15 @@ namespace wax
 
 	//____ cellSize() _________________________________________________________
 
-	int WarpGenerator::cellSize() const
+	SizeI WarpGenerator::cellSize() const
 	{
-		return m_cellSize > 0 ? m_cellSize : std::clamp(_calcCellSize(), c_minCellSize, c_maxCellSize);
+		if (m_cellSize.w > 0 && m_cellSize.h > 0)
+			return m_cellSize;
+
+		SizeI calculated = _calcCellSize();
+
+		return { m_cellSize.w > 0 ? m_cellSize.w : std::clamp(calculated.w, c_minCellSize, std::max(c_minCellSize, m_size.w)),
+				 m_cellSize.h > 0 ? m_cellSize.h : std::clamp(calculated.h, c_minCellSize, std::max(c_minCellSize, m_size.h)) };
 	}
 
 	//____ setPrecision() _____________________________________________________
@@ -118,6 +125,7 @@ namespace wax
 		if (precision != m_precision)
 		{
 			m_precision = precision;
+			m_precisionFixed = int64_t(double(precision) * 65536.0 + 0.5);
 			m_bDirty = true;
 		}
 		return true;
@@ -127,6 +135,9 @@ namespace wax
 	/*
 		Draws are rendered when the canvas update ends and read the Warpmap then, so a Warpmap that
 		a draw holds (or anyone else) is left as it is and a new one created in its place.
+
+		A Warpmap that only we hold has its nodes and periods written in place, then normalized and
+		sent on once.
 	*/
 
 	Warpmap_p WarpGenerator::generate()
@@ -134,7 +145,7 @@ namespace wax
 		if (!m_bDirty && m_pWarpmap)
 			return m_pWarpmap;
 
-		int cellSize = this->cellSize();
+		SizeI cellSize = this->cellSize();
 		spx uPeriod = _uPeriod();
 		spx vPeriod = _vPeriod();
 
@@ -146,7 +157,7 @@ namespace wax
 			bp.uPeriod = uPeriod;
 			bp.vPeriod = vPeriod;
 
-			SizeI nodes = { (m_size.w + cellSize - 1) / cellSize + 1, (m_size.h + cellSize - 1) / cellSize + 1 };
+			SizeI nodes = { (m_size.w + cellSize.w - 1) / cellSize.w + 1, (m_size.h + cellSize.h - 1) / cellSize.h + 1 };
 			std::vector<CoordSPX> buffer(nodes.w * nodes.h);
 			_generateNodes(buffer.data(), nodes, cellSize);
 
@@ -154,15 +165,30 @@ namespace wax
 		}
 		else
 		{
-			SizeI nodes = m_pWarpmap->nodes();
-			std::vector<CoordSPX> buffer(nodes.w * nodes.h);
-			_generateNodes(buffer.data(), nodes, cellSize);
+			Warpmap* pMap = m_pWarpmap;
+			SizeI nodes = pMap->nodes();
 
-			if (m_pWarpmap->uPeriod() != uPeriod || m_pWarpmap->vPeriod() != vPeriod)
-				m_pWarpmap->setPeriods(uPeriod, vPeriod);
+			if (pMap->m_pNodes)
+			{
+				RectI all = { 0, 0, nodes.w, nodes.h };
 
-			m_pWarpmap->importNodes({ 0,0,nodes.w,nodes.h }, buffer.data());
+				_generateNodes(pMap->m_pNodes, nodes, cellSize);
+				pMap->m_uPeriod = uPeriod;
+				pMap->m_vPeriod = vPeriod;
+				pMap->_normalizeNodes(all);
+				pMap->_nodesUpdated(all);
+			}
+			else
+			{
+				// No nodes of its own to write to, they go through importAllNodes().
+
+				std::vector<CoordSPX> buffer(nodes.w * nodes.h);
+				_generateNodes(buffer.data(), nodes, cellSize);
+				pMap->importAllNodes(buffer.data(), uPeriod, vPeriod);
+			}
 		}
+
+		_generated();
 
 		m_bDirty = false;
 		return m_pWarpmap;
@@ -170,9 +196,9 @@ namespace wax
 
 	//____ _validateSettings() ________________________________________________
 
-	bool WarpGenerator::_validateSettings(SizeI size, SizeSPX sourceSize, int cellSize, float precision)
+	bool WarpGenerator::_validateSettings(SizeI size, SizeSPX sourceSize, SizeI cellSize, float precision)
 	{
-		return size.w > 0 && size.h > 0 && sourceSize.w > 0 && sourceSize.h > 0 && cellSize >= 0 && precision > 0.f;
+		return size.w > 0 && size.h > 0 && sourceSize.w > 0 && sourceSize.h > 0 && cellSize.w >= 0 && cellSize.h >= 0 && precision > 0.f;
 	}
 
 	//____ _cellSizeForRadius() _______________________________________________
@@ -181,20 +207,287 @@ namespace wax
 		largest cell size that keeps within precision is sqrt(8 * precision * r).
 	*/
 
-	int WarpGenerator::_cellSizeForRadius(double radius) const
+	int WarpGenerator::_cellSizeForRadius(int64_t radius) const
 	{
-		return int(std::sqrt(8.0 * m_precision * radius));
+		// 8 * precision * radius in pixels^2 is precision (16 binals) * radius (spx) / 2^19. Its
+		// square root rounded down is that of the value rounded down.
+
+		if (radius <= 0)
+			return c_minCellSize;
+
+		const int64_t c_limit = int64_t(1) << 40;				// Far beyond the largest cell, and no overflow.
+		int64_t value = m_precisionFixed > 0 && radius > c_limit / m_precisionFixed ? c_limit : (m_precisionFixed * radius) >> 19;
+
+		return std::clamp(int(_sqrt(uint64_t(value))), c_minCellSize, c_maxCellSize);
+	}
+
+	//____ _factor() __________________________________________________________
+
+	WarpGenerator::Factor WarpGenerator::_factor(double factor)
+	{
+		Factor f;
+
+		if (!(factor == factor) || factor == 0.0)
+			return f;
+
+		f.bNegative = factor < 0.0;
+		factor = std::abs(factor);
+
+		if (factor > 0x1p62)
+		{
+			f.mul = 0x80000000;
+			f.shift = -31;										// 2^62, which is what results are clamped to anyway.
+			return f;
+		}
+
+		int exp;
+		double mantissa = std::frexp(factor, &exp);				// 0.5 -> 1.
+		uint64_t mul = uint64_t(std::ldexp(mantissa, 32) + 0.5);
+		if (mul >> 32)
+		{
+			mul >>= 1;
+			exp++;
+		}
+
+		if (32 - exp > 127)
+			return Factor();									// Rounds to 0 for any value.
+
+		f.mul = uint32_t(mul);
+		f.shift = 32 - exp;
+		return f;
+	}
+
+	//____ _multiply() ________________________________________________________
+
+	int64_t WarpGenerator::_multiply(int64_t value, Factor factor)
+	{
+		const uint64_t c_max = uint64_t(1) << 62;
+
+		bool bNegative = (value < 0) != factor.bNegative;
+		uint64_t a = value < 0 ? 0 - uint64_t(value) : uint64_t(value);
+		int shift = factor.shift;
+
+		while (a >> 39)											// Keeps the product within 63 bits.
+		{
+			a >>= 8;
+			shift -= 8;
+		}
+		while (a >> 31)
+		{
+			a >>= 1;
+			shift--;
+		}
+
+		uint64_t product = uint64_t(uint32_t(a)) * factor.mul;
+		uint64_t result;
+
+		if (shift > 0)
+			result = shift < 64 ? (product + (uint64_t(1) << (shift - 1))) >> shift : 0;
+		else if (product == 0 || shift == 0)
+			result = product;
+		else
+			result = (-shift >= 62 || (product >> (62 + shift)) != 0) ? c_max : product << -shift;
+
+		result = std::min(result, c_max);
+		return bNegative ? -int64_t(result) : int64_t(result);
+	}
+
+	//____ _polar() ___________________________________________________________
+	/*
+		CORDIC in vectoring mode: x,y is rotated towards the x axis by angles of atan(2^-i), adding
+		them up, which leaves the length times a fixed gain in x. Values are scaled to 29 bits first
+		so all of it fits in 32 bit integers.
+	*/
+
+	uint32_t WarpGenerator::_polar(int64_t x, int64_t y, int64_t* pLength)
+	{
+		static const int32_t c_atan[] = {	536870912, 316933406, 167458907, 85004756, 42667331, 21354465, 10679838, 5340245,
+											2670163, 1335087, 667544, 333772, 166886, 83443, 41722, 20861, 10430, 5215, 2608,
+											1304, 652, 326, 163, 81, 41, 20, 10, 5, 3, 1 };	// atan(2^-i) in 1/2^32 of a turn.
+
+		const uint64_t c_invGain = 2608131496;					// 2^32 / gain of the rotations.
+
+		uint32_t angle = 0;
+		if (x < 0)
+		{
+			x = -x;
+			y = -y;
+			angle = 0x80000000;									// Half a turn, the rest is within +-90 degrees.
+		}
+
+		uint64_t ax = uint64_t(x);
+		uint64_t ay = y < 0 ? 0 - uint64_t(y) : uint64_t(y);
+		uint64_t max = std::max(ax, ay);
+
+		if (max == 0)
+		{
+			if (pLength)
+				*pLength = 0;
+			return 0;
+		}
+
+		int shift = 0;											// Right shift that brings max to 2^28 -> 2^29.
+		while (max < (uint64_t(1) << 20))
+		{
+			max <<= 8;
+			shift -= 8;
+		}
+		while (max < (uint64_t(1) << 28))
+		{
+			max <<= 1;
+			shift--;
+		}
+		while (max >= (uint64_t(1) << 37))
+		{
+			max >>= 8;
+			shift += 8;
+		}
+		while (max >= (uint64_t(1) << 29))
+		{
+			max >>= 1;
+			shift++;
+		}
+
+		int32_t cx = int32_t(shift >= 0 ? ax >> shift : ax << -shift);
+		int32_t cy = int32_t(shift >= 0 ? ay >> shift : ay << -shift);
+		if (y < 0)
+			cy = -cy;
+
+		int32_t z = 0;
+		for (int i = 0; i < 30; i++)
+		{
+			int32_t sign = cy >> 31;							// Rotate towards the x axis: -1 below it, 0 above.
+			int32_t dx = ((cy >> i) ^ sign) - sign;				// Value negated if sign is -1.
+			int32_t dy = ((cx >> i) ^ sign) - sign;
+
+			cx += dx;
+			cy -= dy;
+			z += (c_atan[i] ^ sign) - sign;
+		}
+
+		if (pLength)
+		{
+			uint64_t length = uint64_t(cx) * c_invGain;			// Length with 32 fraction bits, scaled by shift.
+			int down = 32 - shift;
+
+			if (down > 0)
+				*pLength = int64_t((length + (uint64_t(1) << (down - 1))) >> down);
+			else if ((length >> (63 + down)) == 0)
+				*pLength = int64_t(length << -down);
+			else
+				*pLength = INT64_MAX;							// Beyond int64, only for x or y close to its limits.
+		}
+
+		return angle + uint32_t(z);
+	}
+
+	//____ _offsetFactor() ____________________________________________________
+	/*
+		A position along the axis is (position - start) / sweep * length, so moving start by shift
+		moves it by -shift / sweep * length. With shift in 1/2^32 of a turn that is shift times
+		length / (sweep * 2^32), sweep in turns.
+	*/
+
+	WarpGenerator::Factor WarpGenerator::_offsetFactor(double sweepTurns, spx length)
+	{
+		return _factor(double(length) / (sweepTurns * 0x1p32));
+	}
+
+	//____ _offsetFor() _______________________________________________________
+	/*
+		The shift is taken within half a turn either way, so the offset stays small. Whole turns
+		move positions by whole periods, which the renderer wraps away.
+	*/
+
+	spx WarpGenerator::_offsetFor(uint32_t shift, Factor factor)
+	{
+		return _toNodeValue(-_multiply(int32_t(shift), factor));
+	}
+
+	//____ _sqrt() ____________________________________________________________
+
+	uint64_t WarpGenerator::_sqrt(uint64_t value)
+	{
+		uint64_t result = 0;
+		uint64_t bit = uint64_t(1) << 62;
+
+		while (bit > value)
+			bit >>= 2;
+
+		while (bit != 0)
+		{
+			if (value >= result + bit)
+			{
+				value -= result + bit;
+				result = (result >> 1) + bit;
+			}
+			else
+				result >>= 1;
+
+			bit >>= 2;
+		}
+		return result;
+	}
+
+	//____ _toTurn() __________________________________________________________
+	/*
+		turns * 2^32 as an integer, of which the low 32 bits are the fraction of a turn, without
+		floor() and the like.
+	*/
+
+	uint32_t WarpGenerator::_toTurn(double turns)
+	{
+		if (!(turns > -0x1p30 && turns < 0x1p30))				// Also NaN.
+			return 0;
+
+		return uint32_t(uint64_t(int64_t(turns * 0x1p32)));
+	}
+
+	//____ _sinCos() __________________________________________________________
+	/*
+		CORDIC in rotation mode: a vector of length 1 (prescaled by the gain of the rotations) is
+		rotated by angles of atan(2^-i) until the angle is used up. The angle is first brought
+		within a quarter turn either way, the rest is half a turn and negates both.
+	*/
+
+	void WarpGenerator::_sinCos(uint32_t angle, int32_t& sin, int32_t& cos)
+	{
+		static const int32_t c_atan[] = {	536870912, 316933406, 167458907, 85004756, 42667331, 21354465, 10679838, 5340245,
+											2670163, 1335087, 667544, 333772, 166886, 83443, 41722, 20861, 10430, 5215, 2608,
+											1304, 652, 326, 163, 81, 41, 20, 10, 5, 3, 1 };	// atan(2^-i) in 1/2^32 of a turn.
+
+		int32_t z = int32_t(angle);
+		bool bHalfTurn = false;
+
+		if (z > 0x40000000 || z < -0x40000000)
+		{
+			z = int32_t(angle + 0x80000000u);
+			bHalfTurn = true;
+		}
+
+		int32_t x = 652032874;									// 2^30 / gain of the rotations.
+		int32_t y = 0;
+
+		for (int i = 0; i < 30; i++)
+		{
+			int32_t sign = z >> 31;								// Rotate towards the angle left: -1 if negative.
+			int32_t dx = ((y >> i) ^ sign) - sign;
+			int32_t dy = ((x >> i) ^ sign) - sign;
+
+			x -= dx;
+			y += dy;
+			z -= (c_atan[i] ^ sign) - sign;
+		}
+
+		cos = bHalfTurn ? -x : x;
+		sin = bHalfTurn ? -y : y;
 	}
 
 	//____ _toNodeValue() _____________________________________________________
 
-	spx WarpGenerator::_toNodeValue(double spxValue)
+	spx WarpGenerator::_toNodeValue(int64_t value)
 	{
-		if (!(spxValue > -Warpmap::maxNodeValue))				// Also catches NaN.
-			return -Warpmap::maxNodeValue;
-		if (spxValue > Warpmap::maxNodeValue)
-			return Warpmap::maxNodeValue;
-		return spx(std::lround(spxValue));
+		return spx(std::clamp(value, -int64_t(Warpmap::maxNodeValue), int64_t(Warpmap::maxNodeValue)));
 	}
 
 } // namespace wax

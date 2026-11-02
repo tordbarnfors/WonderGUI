@@ -40,7 +40,8 @@ namespace wax
 	 * @brief Bends a surface or an edgemap into another shape when drawn.
 	 *
 	 * A Warpmap covers a rectangle of size.w * size.h pixels with a grid of nodes, one node every
-	 * cellSize pixels in both directions plus one at the right and bottom edge. Each node holds
+	 * cellSize.w pixels horizontally and cellSize.h pixels vertically, plus one at the right and
+	 * bottom edge. Each node holds
 	 * the position in the source that is drawn at that point, in spx of the source (64 per pixel of
 	 * the surface or edgemap, relative to the source rectangle for blits), u along its width and v
 	 * along its height. Positions between nodes are interpolated bilinearly. Where a position falls
@@ -49,14 +50,16 @@ namespace wax
 	 * Node values are not limited to the source. Values outside it are what makes parts of the
 	 * Warpmap transparent, with the border antialiased where the interpolated position crosses the
 	 * border of the source. Keep values within +-maxNodeValue (16 million pixels). Values on a
-	 * periodic axis are brought into 0 -> period when imported. A new Warpmap maps its rectangle
+	 * periodic axis are brought into 0 -> period when imported, so periods are set together with
+	 * all nodes, see importAllNodes(). A new Warpmap maps its rectangle
 	 * straight onto the source, pixel for pixel: u = x * 64 and v = y * 64.
 	 *
 	 * A Warpmap is made for a source of a certain size. A source of another size is not stretched to
 	 * fit, the nodes have to be changed.
 	 *
 	 * Smaller cells follow curved shapes more closely. A circle of radius r is off by
-	 * roughly cellSize^2 / (8 * r) pixels.
+	 * roughly cellSize^2 / (8 * r) pixels. Where positions change linearly along an axis, as along
+	 * a cylinder, cells can be as long as the Warpmap that way.
 	 *
 	 * An axis can be periodic (uPeriod/vPeriod > 0, in spx of the source), as when u is the angle of
 	 * a ring. Positions are then read modulo the period and interpolation between nodes across the
@@ -104,11 +107,13 @@ namespace wax
 
 	class Warpmap : public Object
 	{
+		friend class WarpGenerator;							// Writes nodes in place when generating.
+
 	public:
 
 		struct Blueprint
 		{
-			int				cellSize	= 16;				// Pixels between nodes.
+			SizeI			cellSize	= { 16, 16 };		// Pixels between nodes, horizontally and vertically.
 			Finalizer_p		finalizer	= nullptr;
 			SizeI			size;							// Mandatory. Size in pixels.
 			spx				uPeriod		= 0;				// In spx of the source, 0 = not periodic.
@@ -125,15 +130,14 @@ namespace wax
 		//.____ Geometry ______________________________________________________
 
 		inline SizeI	pixelSize() const { return m_size; }
-		inline int		cellSize() const { return m_cellSize; }
+		inline SizeI	cellSize() const { return m_cellSize; }
 		inline SizeI	nodes() const { return m_nodes; }				// Nodes horizontally and vertically.
 
-		inline int		nodeX( int column ) const { return std::min( column * m_cellSize, m_size.w ); }	// Pixel position of a column of nodes.
-		inline int		nodeY( int row ) const { return std::min( row * m_cellSize, m_size.h ); }
+		inline int		nodeX( int column ) const { return std::min( column * m_cellSize.w, m_size.w ); }	// Pixel position of a column of nodes.
+		inline int		nodeY( int row ) const { return std::min( row * m_cellSize.h, m_size.h ); }
 
 		//.____ Content _______________________________________________________
 
-		virtual bool	setPeriods( spx uPeriod, spx vPeriod );
 		inline spx		uPeriod() const { return m_uPeriod; }
 		inline spx		vPeriod() const { return m_vPeriod; }
 
@@ -141,6 +145,11 @@ namespace wax
 		// in source/destination, 0 meaning region.w.
 
 		bool			importNodes( const RectI& region, const CoordSPX * pSource, int pitch = 0 );
+
+		// Imports all nodes and sets the periods they are for. Periods can only change together
+		// with all nodes, since nodes are stored brought into their periods.
+
+		bool			importAllNodes( const CoordSPX * pSource, spx uPeriod, spx vPeriod, int pitch = 0 );
 		bool			exportNodes( const RectI& region, CoordSPX * pDestination, int pitch = 0 ) const;
 
 		inline const CoordSPX*	nodeData() const { return m_pNodes; }
@@ -159,7 +168,12 @@ namespace wax
 
 	protected:
 		Warpmap() {};
-		Warpmap( const Blueprint& bp );
+
+		// Nodes are taken from pNodes (pitch as for importNodes()) if given, otherwise they map the
+		// rectangle straight onto the source. Subclasses send them on with _nodesUpdated() when
+		// constructed, so creating with nodes costs a single upload.
+
+		Warpmap( const Blueprint& bp, const CoordSPX * pNodes = nullptr, int pitch = 0 );
 		virtual ~Warpmap();
 
 		static bool		_validateBlueprint( const Blueprint& bp );
@@ -167,13 +181,13 @@ namespace wax
 
 		void			_normalizeNodes( const RectI& region );
 
-		// Called when nodes in region or the periods have changed (region is then all nodes).
-		// Typically all you need to override when subclassing.
+		// Called when nodes in region have changed. Periods only change together with all nodes,
+		// and region is then all nodes. Typically all you need to override when subclassing.
 
 		virtual void	_nodesUpdated( const RectI& region ) = 0;
 
 		SizeI			m_size;
-		int				m_cellSize = 16;
+		SizeI			m_cellSize = { 16, 16 };
 		SizeI			m_nodes;
 		spx				m_uPeriod = 0;
 		spx				m_vPeriod = 0;

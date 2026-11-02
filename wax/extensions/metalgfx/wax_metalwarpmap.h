@@ -62,7 +62,7 @@ namespace wax
 
 	protected:
 
-		MetalWarpmap( const Blueprint& bp );
+		MetalWarpmap( const Blueprint& bp, const CoordSPX * pNodes = nullptr, int pitch = 0 );
 		~MetalWarpmap();
 
 		void	_nodesUpdated( const RectI& region ) override;

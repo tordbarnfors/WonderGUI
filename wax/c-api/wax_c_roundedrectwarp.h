@@ -35,7 +35,7 @@ extern "C" {
 	typedef struct wax_roundedRectWarpBP_struct		// NOT BINARY EQUIVALENT!
 	{
 		wax_spx				bottomDistance;			// Distance from the outline of the bottom of the source, positive outwards.
-		int					cellSize;				// 0 = calculated from precision.
+		wax_sizeI			cellSize;				// 0 for width or height = calculated from precision.
 		wax_spx				cornerRadius;			// Radius of the corners of the outline, at most half its shorter side.
 		float				precision;				// Max position error in pixels when cellSize is calculated. 0 = default (0.25).
 		wax_rectSPX			rect;					// Mandatory. The outline, relative to the top-left corner of the Warpmap.
@@ -64,6 +64,12 @@ extern "C" {
 	WAX_EXPORT int			wax_setRoundedRectWarpSpan( wax_obj roundedRectWarp, float start, float sweep );
 	WAX_EXPORT float			wax_roundedRectWarpStart( wax_obj roundedRectWarp );
 	WAX_EXPORT float			wax_roundedRectWarpSweep( wax_obj roundedRectWarp );
+
+	//.____ Drawing _______________________________________________________
+
+	// Source offset that moves the source part of the outline along it, clockwise if positive, as if start was that much larger.
+
+	WAX_EXPORT wax_coordSPX	wax_roundedRectWarpShiftOffset( wax_obj roundedRectWarp, float part );
 
 #ifdef __cplusplus
 }

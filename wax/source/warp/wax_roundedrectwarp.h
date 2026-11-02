@@ -67,7 +67,7 @@ namespace wax
 		struct Blueprint
 		{
 			spx					bottomDistance = 0;				// Distance from the outline of the bottom of the source, positive outwards.
-			int					cellSize = 0;					// Pixels between nodes of the Warpmap. 0 = calculated, see above.
+			SizeI				cellSize;						// Pixels between nodes of the Warpmap. 0 = calculated, see above.
 			spx					cornerRadius = 0;				// Radius of the corners of the outline, at most half its shorter side.
 			Finalizer_p			finalizer = nullptr;
 			float				precision = 0.25f;				// Max position error in pixels when cellSize is calculated.
@@ -102,16 +102,26 @@ namespace wax
 		float		start() const { return m_start; }
 		float		sweep() const { return m_sweep; }
 
+		//.____ Drawing _____________________________________________________
+
+		// Source offset that moves the source part of the outline along it, clockwise if
+		// positive, as if start was that much larger. Pass it when drawing to move the source
+		// around the outline without generating again, as for marching ants. Goes by the sweep
+		// and source size of the generated Warpmap.
+
+		CoordSPX	shiftOffset( float part ) const;
+
 	protected:
 
 		RoundedRectWarp( const Blueprint& bp, WarpmapFactory * pFactory );
 		virtual ~RoundedRectWarp();
 
-		int			_calcCellSize() const override;
-		void		_generateNodes( CoordSPX * pNodes, SizeI nodes, int cellSize ) const override;
+		SizeI		_calcCellSize() const override;
+		void		_generateNodes( CoordSPX * pNodes, SizeI nodes, SizeI cellSize ) const override;
 		spx			_uPeriod() const override;
+		void		_generated() override { m_offsetFactor = _offsetFactor(m_sweep, m_sourceSize.w); }
 
-		double		_cornerRadius() const;
+		spx			_cornerRadius() const;
 
 		RectSPX		m_rect;
 		spx			m_cornerRadius;
@@ -119,6 +129,7 @@ namespace wax
 		spx			m_bottomDistance;
 		float		m_start;
 		float		m_sweep;
+		Factor		m_offsetFactor;								// For shiftOffset(), by the generated Warpmap.
 	};
 
 } // namespace wax

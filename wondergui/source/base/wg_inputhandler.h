@@ -243,7 +243,7 @@ namespace wg
 		Widget_wp		m_pWidgetUnderStillPointer;
 		RectSPX			m_widgetUnderStillPointerGeo;
 		int64_t			m_lastChangeUnderStillPointer;
-		int				m_stillPointerMarkDelay = 200;		// Millisec of stillness under widget before marking.
+		int				m_stillPointerMarkDelay = 200000;	// Microseconds of stillness under widget before marking, like the timestamps it is compared with.
 	};
 
 

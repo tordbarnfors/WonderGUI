@@ -3454,7 +3454,7 @@ namespace wax
 
 		int extrasOfs = int(m_pExtrasPtr - m_pExtrasBeg);
 
-		*m_pExtrasPtr++ = { float(dest.x), float(dest.y), float(pWarpmap->cellSize()), pEdgemap ? float(pEdgemap->m_nbRenderSegments - 1) : 0.f };
+		*m_pExtrasPtr++ = { float(dest.x), float(dest.y), float(pWarpmap->cellSize().w), pEdgemap ? float(pEdgemap->m_nbRenderSegments - 1) : 0.f };
 		*m_pExtrasPtr++ = { float(warpSize.w), float(warpSize.h), srcW, srcH };
 		*m_pExtrasPtr++ = { params.sourceOffset.x / 64.f, params.sourceOffset.y / 64.f, pWarpmap->uPeriod() / 64.f, pWarpmap->vPeriod() / 64.f };
 
@@ -3469,6 +3469,8 @@ namespace wax
 
 			*m_pExtrasPtr++ = { params.source.x / 64.f, params.source.y / 64.f, clampInset, 0.f };
 		}
+
+		*m_pExtrasPtr++ = { float(pWarpmap->cellSize().h), 0.f, 0.f, 0.f };
 
 		// A quad for the part of each clip rectangle covered by the Warpmap.
 
@@ -3800,7 +3802,7 @@ namespace wax
 
 			nColors = pInfo->nColors + pInfo->nBlit + pInfo->nBlur + pInfo->nEdgemapDraws + pInfo->nShapeDraws + pInfo->nWarpDraws + pInfo->nLines
 					+ (pInfo->nStateChanges + pInfo->nShapeTints) * c_tintBlockOverhead;
-			nExtras = pInfo->nRects * 2 + nLines * GpuShapes::c_lineEntries + pInfo->nBlur * 18 + pInfo->nEdgemapDraws * 2 + pInfo->nWarpDraws * 4 + GpuShapes::maxSessionEntries(*pInfo);
+			nExtras = pInfo->nRects * 2 + nLines * GpuShapes::c_lineEntries + pInfo->nBlur * 18 + pInfo->nEdgemapDraws * 2 + pInfo->nWarpDraws * 5 + GpuShapes::maxSessionEntries(*pInfo);
 		}
 		else
 		{

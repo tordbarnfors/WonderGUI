@@ -175,9 +175,20 @@ if(WAPPLIB STREQUAL "wappsdl2metal")
         wgdebugger
         ${FREETYPE2_LIB}
         ${SDL2_LIBS}
-        ${APPKIT_LIB}
-        ${METAL_LIB}
     )
+endif()
+
+# An installed SDL2.framework is loaded as @rpath/SDL2.framework/..., so the rpath
+# needs to be the directory holding the framework. The one CMake adds from
+# SDL2_LIBDIR is the framework itself, which is one level too deep. Set on the
+# frameworks, so the executables linking them get it.
+
+if(APPLE AND SDL2_FRAMEWORK_PARENT_PATH)
+    foreach(wapp wappsdl2sw wappsdl2gl wappsdl2metal)
+        if(TARGET ${wapp})
+            target_link_options(${wapp} INTERFACE "LINKER:-rpath,${SDL2_FRAMEWORK_PARENT_PATH}")
+        endif()
+    endforeach()
 endif()
 
 
