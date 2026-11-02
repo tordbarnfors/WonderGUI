@@ -143,8 +143,6 @@ if(WAPPLIB STREQUAL "wappsdl2metal")
         ${FREETYPE2_LIB}
         ${SDL2_LIBS}
         ${SDL2IMAGE_LIBS}
-        ${APPKIT_LIB}
-        ${METAL_LIB}
     )
 endif()
 

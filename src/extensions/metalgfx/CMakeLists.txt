@@ -35,7 +35,9 @@ add_library( wgmetalgfx STATIC ${SOURCES} )
 
 # Declared so the linker gets the libraries in the right order. GNU ld needs that,
 # MSVC and Apple's linker don't care.
-target_link_libraries( wgmetalgfx PUBLIC wondergfx )
+#
+# Public, so whatever links wgmetalgfx gets the frameworks too.
+target_link_libraries( wgmetalgfx PUBLIC wondergfx "-framework Metal" "-framework Foundation" )
 
 target_include_directories(wgmetalgfx PRIVATE 
 	${WONDERGFX_INCDIRS}

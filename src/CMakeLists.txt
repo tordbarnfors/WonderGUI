@@ -103,6 +103,14 @@ if(NOT SDL2_FOUND AND WONDERGUI_FETCH_DEPS)
     # SDL2 sets up SDL2::SDL2 / SDL2::SDL2main targets itself when built this way
 endif()
 
+# An installed SDL2.framework is loaded as @rpath/SDL2.framework/..., so the rpath
+# needs to be the directory holding the framework. The one CMake adds from
+# SDL2_LIBDIR is the framework itself, which is one level too deep.
+
+if(APPLE AND SDL2_FRAMEWORK_PARENT_PATH)
+    list(APPEND CMAKE_BUILD_RPATH ${SDL2_FRAMEWORK_PARENT_PATH})
+endif()
+
 # ---------- SDL2_image ----------
 find_package(SDL2_image CONFIG QUIET)
 
