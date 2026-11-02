@@ -23,6 +23,7 @@
 #define WG_GLSHADERS_DOT_H
 
 #include <wg_glbackend.h>  
+#include <wg_glwarpmap.h>
 
 
 // Uniform block shared by all shaders, see GlBackend::CanvasUBO. The vertex and fragment shaders
@@ -1778,6 +1779,17 @@ WG_GL_SHAPE_FUNCS
 //      edgemap buffer. Blits: position of source rectangle in the surface.
 //
 // The cells of the Warpmap are in its buffer, see GlWarpmap.
+//
+// A warp is drawn as one instance per block of cells (see GlWarpmap) in the part of a clip
+// rectangle it covers (patchPos, patchSize), the six vertices of each being the corners of that
+// patch. The vertex shader moves them to the corners of the block, within the patch, or drops
+// the block if no pixel of it can be covered: if the positions of its corners plus the offset,
+// widened by how far coverage reaches beyond the source, are all on one side of the source or
+// in the gap between copies on a periodic axis. The fragment shaders take the canvas position
+// from gl_FragCoord, so it doesn't depend on the triangles drawn.
+
+#define WG_GL_WARP_STR2(x) #x
+#define WG_GL_WARP_STR(x) WG_GL_WARP_STR2(x)
 
 const char GlBackend::warpVertexShader[] =
 
@@ -1786,25 +1798,65 @@ const char GlBackend::warpVertexShader[] =
 WG_GL_CANVAS_BLOCK
 
 "uniform samplerBuffer colorBufferId;					"
+"uniform samplerBuffer extrasBufferId;					"
+"uniform samplerBuffer warpmapId;						"
 "layout(location = 0) in ivec2 pos;                     "
+"layout(location = 1) in vec2 patchPos;					"
 "layout(location = 2) in int colorOfs;                  "
 "layout(location = 3) in int extrasOfs;                 "
 "layout(location = 4) in vec2 tintmapOfs;               "
+"layout(location = 5) in vec2 patchSize;				"
 "flat out int warpOfs;									"
 "flat out int tintOfs;									"
-"out vec2 canvasPos;									"
 "flat out vec4 flatTint;								"
+
+"bool warpAxisEmpty(float lo, float hi, float reach, float size, float period)	"
+"{																				"
+"	if (period <= 0.0)															"
+"		return hi + reach <= 0.0 || lo - reach >= size;							"
+"	if (period <= size)															"
+"		return false;															"
+"	float a = lo - period * floor(lo / period);									"
+"	return a - reach >= size && a + (hi - lo) + reach <= period;				"
+"}																				"
 
 "void main()											"
 "{                                                      "
-"   gl_Position.x = pos.x*2/canvasWidth - 1.0;              "
-"   gl_Position.y = (canvasYOfs + canvasYMul*pos.y)*2/canvasHeight - 1.0;    "
-"   gl_Position.z = 0.0;                                    "
-"   gl_Position.w = 1.0;                                    "
+"   vec4 e0 = texelFetch(extrasBufferId, extrasOfs);		"
+"   vec4 e1 = texelFetch(extrasBufferId, extrasOfs + 1);	"
+"   vec4 e2 = texelFetch(extrasBufferId, extrasOfs + 2);	"
+"   int cellSize = int(e0.z);							"
+"   int blockCells = max(1, " WG_GL_WARP_STR(WG_GL_WARP_BLOCK_PIXELS) " / cellSize);	"
+"   int blockSize = blockCells * cellSize;				"
+"   ivec2 warpPos = ivec2(e0.xy);						"
+"   ivec2 warpSize = ivec2(e1.xy);						"
+"   ivec2 cells = (warpSize + cellSize - 1) / cellSize;	"
+"   ivec2 blocks = (cells + blockCells - 1) / blockCells;	"
+"   ivec2 patchLo = ivec2(patchPos) - warpPos;			"
+"   ivec2 patchHi = patchLo + ivec2(patchSize);			"
+"   ivec2 first = patchLo / blockSize;					"
+"   int columns = (patchHi.x - 1) / blockSize - first.x + 1;	"
+"   ivec2 block = first + ivec2(gl_InstanceID % columns, gl_InstanceID / columns);	"
+"   int i = (cells.x * cells.y + block.y * blocks.x + block.x) * 2;	"
+"   vec4 bounds = texelFetch(warpmapId, i);				"
+"   vec2 reach = texelFetch(warpmapId, i + 1).xy + 1.0 / 64.0;	"
+"   vec2 lo = bounds.xy + e2.xy;							"
+"   vec2 hi = bounds.zw + e2.xy;							"
 "   warpOfs = extrasOfs;								"
 "   tintOfs = int(tintmapOfs.x);						"
-"   canvasPos = vec2(pos);								"
 "   flatTint = texelFetch(colorBufferId, colorOfs);		"
+"   if (warpAxisEmpty(lo.x, hi.x, reach.x, e1.z, e2.z) || warpAxisEmpty(lo.y, hi.y, reach.y, e1.w, e2.w))	"
+"   {													"
+"       gl_Position = vec4(-2.0, -2.0, 0.0, 1.0);		"
+"       return;											"
+"   }													"
+"   ivec2 quadLo = max(block * blockSize, patchLo) + warpPos;					"
+"   ivec2 quadHi = min(min(block * blockSize + blockSize, warpSize), patchHi) + warpPos;	"
+"   vec2 corner = vec2(pos.x == int(patchPos.x) ? quadLo.x : quadHi.x, pos.y == int(patchPos.y) ? quadLo.y : quadHi.y);	"
+"   gl_Position.x = corner.x*2/canvasWidth - 1.0;           "
+"   gl_Position.y = (canvasYOfs + canvasYMul*corner.y)*2/canvasHeight - 1.0;    "
+"   gl_Position.z = 0.0;                                    "
+"   gl_Position.w = 1.0;                                    "
 "}                                                      ";
 
 // Needs extrasBufferId, warpmapId and warpOfs. warpHalfPlane() gives the part of the pixel where

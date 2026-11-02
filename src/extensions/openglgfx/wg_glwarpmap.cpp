@@ -23,6 +23,7 @@
 #include <wg_gfxbase.h>
 
 #include <algorithm>
+#include <cfloat>
 
 namespace wg
 {
@@ -51,10 +52,11 @@ namespace wg
 	GlWarpmap::GlWarpmap( const Blueprint& bp, const CoordSPX * pNodes, int pitch ) : Warpmap(bp, pNodes, pitch)
 	{
 		SizeI cells = _cells();
+		SizeI blocks = _blocks();
 
 		glGenBuffers(1, &m_bufferId);
 		glBindBuffer(GL_TEXTURE_BUFFER, m_bufferId);
-		glBufferData(GL_TEXTURE_BUFFER, cells.w * cells.h * 2 * 4 * sizeof(GLfloat), nullptr, GL_DYNAMIC_DRAW);
+		glBufferData(GL_TEXTURE_BUFFER, (cells.w * cells.h + blocks.w * blocks.h) * 2 * 4 * sizeof(GLfloat), nullptr, GL_DYNAMIC_DRAW);
 
 		glGenTextures(1, &m_textureId);
 		glBindTexture(GL_TEXTURE_BUFFER, m_textureId);
@@ -81,7 +83,7 @@ namespace wg
 	}
 
 	//____ _nodesUpdated() ____________________________________________________
-	// Rebuilds and uploads the rows of cells touching the nodes that changed.
+	// Rebuilds and uploads the rows of cells touching the nodes that changed, and their blocks.
 
 	void GlWarpmap::_nodesUpdated( const RectI& region )
 	{
@@ -114,9 +116,85 @@ namespace wg
 
 		glBindBuffer(GL_TEXTURE_BUFFER, m_bufferId);
 		glBufferSubData(GL_TEXTURE_BUFFER, rowBeg * cells.w * 2 * 4 * sizeof(GLfloat), bytes, pBuffer);
-		glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
 		GfxBase::memStackFree(bytes);
+
+		// Blocks of the cells that changed, from the corners as uploaded.
+
+		int blockCells = _blockCells(m_cellSize);
+		SizeI blocks = _blocks();
+
+		int blockRowBeg = rowBeg / blockCells;
+		int blockRowEnd = (rowEnd - 1) / blockCells + 1;
+
+		int blockBytes = (blockRowEnd - blockRowBeg) * blocks.w * 2 * 4 * sizeof(GLfloat);
+		pBuffer = (GLfloat*) GfxBase::memStackAlloc(blockBytes);
+		pOut = pBuffer;
+
+		for (int blockRow = blockRowBeg; blockRow < blockRowEnd; blockRow++)
+		{
+			for (int blockColumn = 0; blockColumn < blocks.w; blockColumn++)
+			{
+				float lo[2] = { FLT_MAX, FLT_MAX }, hi[2] = { -FLT_MAX, -FLT_MAX }, reach[2] = { 0.f, 0.f };
+
+				int rowEndInBlock = std::min((blockRow + 1) * blockCells, cells.h);
+				int columnEndInBlock = std::min((blockColumn + 1) * blockCells, cells.w);
+
+				for (int row = blockRow * blockCells; row < rowEndInBlock; row++)
+				{
+					float h = float(nodeY(row + 1) - nodeY(row));
+
+					for (int column = blockColumn * blockCells; column < columnEndInBlock; column++)
+					{
+						float w = float(nodeX(column + 1) - nodeX(column));
+
+						CoordSPX corners[4];
+						cellCorners(column, row, corners);
+
+						float cellLo[2] = { FLT_MAX, FLT_MAX }, cellHi[2] = { -FLT_MAX, -FLT_MAX };
+						for (int i = 0; i < 4; i++)
+						{
+							float v[2] = { corners[i].x / 64.f, corners[i].y / 64.f };
+							for (int a = 0; a < 2; a++)
+							{
+								cellLo[a] = std::min(cellLo[a], v[a]);
+								cellHi[a] = std::max(cellHi[a], v[a]);
+							}
+						}
+
+						for (int a = 0; a < 2; a++)
+						{
+							lo[a] = std::min(lo[a], cellLo[a]);
+							hi[a] = std::max(hi[a], cellHi[a]);
+							reach[a] = std::max(reach[a], 0.5f * (cellHi[a] - cellLo[a]) * (1.f / w + 1.f / h));
+						}
+					}
+				}
+
+				*pOut++ = lo[0];
+				*pOut++ = lo[1];
+				*pOut++ = hi[0];
+				*pOut++ = hi[1];
+				*pOut++ = reach[0];
+				*pOut++ = reach[1];
+				*pOut++ = 0.f;
+				*pOut++ = 0.f;
+			}
+		}
+
+		glBufferSubData(GL_TEXTURE_BUFFER, (cells.w * cells.h + blockRowBeg * blocks.w) * 2 * 4 * sizeof(GLfloat), blockBytes, pBuffer);
+		glBindBuffer(GL_TEXTURE_BUFFER, 0);
+
+		GfxBase::memStackFree(blockBytes);
+	}
+
+	//____ _blocks() __________________________________________________________
+
+	SizeI GlWarpmap::_blocks() const
+	{
+		SizeI cells = _cells();
+		int blockCells = _blockCells(m_cellSize);
+		return { (cells.w + blockCells - 1) / blockCells, (cells.h + blockCells - 1) / blockCells };
 	}
 
 } // namespace wg

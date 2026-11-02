@@ -36,6 +36,12 @@
 #	endif
 #endif
 
+// Warps are drawn in blocks of cells about this many pixels wide and high, and blocks that draw
+// nothing are skipped. Smaller blocks skip more of thin shapes but cost more where everything is
+// drawn, as pixels along the edges of the triangles are shaded twice. Used by warpVertexShader.
+
+#define WG_GL_WARP_BLOCK_PIXELS 64
+
 namespace wg
 {
 	class GlWarpmap;
@@ -50,6 +56,11 @@ namespace wg
 	 * row: the top-left and top-right corners, then the bottom-left and bottom-right corners, as
 	 * given by cellCorners(), so already moved by whole periods to be close to the top-left one,
 	 * converted from spx to pixels of the source.
+	 *
+	 * After the cells come blocks of _blockCells() x _blockCells() cells, two entries each, row by
+	 * row: the lowest and highest positions of their corners, then how far beyond them coverage
+	 * can reach (half the change in position over a pixel), so GlBackend can skip blocks that
+	 * draw nothing without looking at their cells.
 	 */
 
 	class GlWarpmap : public Warpmap
@@ -74,6 +85,9 @@ namespace wg
 		void	_nodesUpdated( const RectI& region ) override;
 
 		inline SizeI	_cells() const { return { m_nodes.w - 1, m_nodes.h - 1 }; }
+
+		static int		_blockCells( int cellSize ) { return std::max(1, WG_GL_WARP_BLOCK_PIXELS / cellSize); }
+		SizeI			_blocks() const;
 
 		GLuint		m_bufferId = 0;
 		GLuint		m_textureId = 0;
