@@ -325,7 +325,7 @@ namespace wax
 								for (int i = 0; i < layer.nStops; i++)
 								{
 									const HiColor& col = layer.stopColors[i];
-									*m_pOStream << "              stop " << layer.stopPos[i] << ": " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
+									*m_pOStream << "              stop " << layer.stopPos16[i] / 65535.f << ": " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
 								}
 							}
 						}

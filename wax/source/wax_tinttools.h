@@ -59,8 +59,6 @@ namespace wax
 
 		CanvasGeometry	canvasGeometry(const Tint* pTint, const RectSPX& rect);
 
-		float			positionAt(const CanvasGeometry& geo, float x, float y);		// Position at canvas pixel coordinate, no spread applied.
-
 		//____ Spread _________________________________________________________
 
 		inline float	applySpread(float position, TintSpread spread);
@@ -68,24 +66,6 @@ namespace wax
 		//____ Colors _________________________________________________________
 
 		HiColor			mixColors(HiColor from, HiColor to, float fraction);		// Interpolates the sRGB values.
-
-		/**
-		 * Fill a lookup table with the colors of a simple Tint.
-		 *
-		 * Entry i covers position:
-		 *   bSquared == false:	begin + (end - begin) * i / (entries - 1)
-		 *   bSquared == true:	end * sqrt( i / (entries - 1) )		(begin is ignored and taken as 0.0)
-		 *
-		 * The squared form is for radial Tints, where a renderer can step the
-		 * squared distance with additions and use it as index directly.
-		 *
-		 * Spread is applied, so a table covering more than 0.0 -> 1.0 repeats
-		 * or reflects as the Tint specifies.
-		 *
-		 * Colors are sRGB, like the stops they are interpolated from.
-		 */
-
-		void			buildLUT(const Tint* pTint, int entries, HiColor* pOutput, float begin = 0.f, float end = 1.f, bool bSquared = false);
 
 		//____ Encoding _______________________________________________________
 		/**
@@ -119,8 +99,7 @@ namespace wax
 			TintSpread	spread;
 			int			nStops;
 			float		geo[4];					// See CanvasGeometry.
-			float		stopPos[Tint::c_maxStops];
-			uint16_t	stopPos16[Tint::c_maxStops];	// Same positions as encoded, 0 -> 65535 for 0.0 -> 1.0, for integer math.
+			uint16_t	stopPos16[Tint::c_maxStops];	// Same positions as encoded, 0 -> 65535 for 0.0 -> 1.0.
 			HiColor		stopColors[Tint::c_maxStops];
 		};
 
@@ -170,10 +149,8 @@ namespace wax
 
 		void			buildLUT(const TintLayer& layer, int entries, HiColor* pOutput, HiColor multiplier = HiColor::White);
 
-		HiColor			layerColorAt(const TintLayer& layer, float position, HiColor multiplier = HiColor::White);		// No spread applied (e.g. Pad).
-
-		// As layerColorAt(), but with position in the same fixed point as stopPos16 (0 -> 65535 for 0.0 -> 1.0)
-		// and integer math only.
+		// Color at a position along a decoded layer, in the same fixed point as stopPos16 (0 -> 65535 for
+		// 0.0 -> 1.0). No spread applied (e.g. Pad). Integer math only.
 
 		HiColor			layerColorAtFixed(const TintLayer& layer, int position, HiColor multiplier = HiColor::White);
 

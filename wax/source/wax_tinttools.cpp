@@ -98,18 +98,6 @@ namespace TintTools
 		return geo;
 	}
 
-	//____ positionAt() _______________________________________________________
-
-	float positionAt(const CanvasGeometry& geo, float x, float y)
-	{
-		if (geo.shape == TintShape::Linear)
-			return geo.a * x + geo.b * y + geo.c;
-
-		float dx = (x - geo.centerX) * geo.invRadiusX;
-		float dy = (y - geo.centerY) * geo.invRadiusY;
-		return std::sqrt(dx * dx + dy * dy);
-	}
-
 	//____ mixColors() ________________________________________________________
 
 	HiColor mixColors(HiColor from, HiColor to, float fraction)
@@ -122,107 +110,6 @@ namespace TintTools
 		auto lerp = [fraction](float a, float b) { return (int) std::lround(a + (b - a) * fraction); };
 
 		return HiColor(lerp(from.r, to.r), lerp(from.g, to.g), lerp(from.b, to.b), lerp(from.a, to.a));
-	}
-
-	//____ _buildLUT() ________________________________________________________
-
-	static void _buildLUT(int nStops, const float* pStopPos, const HiColor* pStopColors, TintSpread spread,
-						  int entries, HiColor* pOutput, float begin, float end, bool bSquared, HiColor multiplier)
-	{
-		if (entries <= 0)
-			return;
-
-		bool bMultiply = (multiplier != HiColor::White);
-
-		float	stopColors[Tint::c_maxStops][4];
-
-		for (int i = 0; i < nStops; i++)
-		{
-			const HiColor& c = pStopColors[i];
-
-			stopColors[i][0] = c.r;
-			stopColors[i][1] = c.g;
-			stopColors[i][2] = c.b;
-			stopColors[i][3] = c.a;
-		}
-
-		float firstPos = pStopPos[0];
-		float lastPos = pStopPos[nStops - 1];
-
-		for (int i = 0; i < entries; i++)
-		{
-			float f = entries > 1 ? i / float(entries - 1) : 0.f;
-			float position = bSquared ? end * std::sqrt(f) : begin + (end - begin) * f;
-			float t = applySpread(position, spread);
-
-			// Find stops to interpolate between (right limit at hard edges).
-
-			float col[4];
-
-			if (nStops == 1 || (t <= firstPos && !(t == firstPos && pStopPos[1] == firstPos)))
-			{
-				for (int c = 0; c < 4; c++)
-					col[c] = stopColors[0][c];
-			}
-			else if (t >= lastPos)
-			{
-				for (int c = 0; c < 4; c++)
-					col[c] = stopColors[nStops - 1][c];
-			}
-			else
-			{
-				int idx = nStops - 1;
-				while (pStopPos[idx] > t)
-					idx--;
-
-				float span = pStopPos[idx + 1] - pStopPos[idx];
-				float frac = span > 0.f ? (t - pStopPos[idx]) / span : 1.f;
-
-				for (int c = 0; c < 4; c++)
-					col[c] = stopColors[idx][c] + (stopColors[idx + 1][c] - stopColors[idx][c]) * frac;
-			}
-
-			auto toInt = [](float v) { int i = (int) std::lround(v); return i < 0 ? 0 : i > 4096 ? 4096 : i; };
-
-			HiColor& out = pOutput[i];
-
-			out.r = (int16_t) toInt(col[0]);
-			out.g = (int16_t) toInt(col[1]);
-			out.b = (int16_t) toInt(col[2]);
-			out.a = (int16_t) toInt(col[3]);
-
-			if (bMultiply)
-				out = out * multiplier;
-		}
-	}
-
-	//____ buildLUT() _________________________________________________________
-
-	void buildLUT(const Tint* pTint, int entries, HiColor* pOutput, float begin, float end, bool bSquared)
-	{
-		if (entries <= 0)
-			return;
-
-		if (pTint->isMix())
-		{
-			for (int i = 0; i < entries; i++)
-				pOutput[i] = HiColor::White;
-			return;
-		}
-
-		int nStops = pTint->nbStops();
-		const ColorStop* pStops = pTint->stops();
-
-		float	pos[Tint::c_maxStops];
-		HiColor	colors[Tint::c_maxStops];
-
-		for (int i = 0; i < nStops; i++)
-		{
-			pos[i] = pStops[i].pos;
-			colors[i] = pStops[i].color;
-		}
-
-		_buildLUT(nStops, pos, colors, pTint->spread(), entries, pOutput, begin, end, bSquared, HiColor::White);
 	}
 
 	//____ _floorDiv() ________________________________________________________
@@ -366,20 +253,11 @@ namespace TintTools
 			put(i++, colors[nStops - 1]);
 	}
 
-	//____ layerColorAt() _____________________________________________________
-
-	HiColor layerColorAt(const TintLayer& layer, float position, HiColor multiplier)
-	{
-		HiColor color;
-		_buildLUT(layer.nStops, layer.stopPos, layer.stopColors, TintSpread::Pad, 1, &color, position, position, false, multiplier);
-		return color;
-	}
-
 	//____ layerColorAtFixed() ________________________________________________
 
 	HiColor layerColorAtFixed(const TintLayer& layer, int position, HiColor multiplier)
 	{
-		// Same choice of stops as _buildLUT(): right limit at hard edges, except for a hard edge
+		// Same choice of stops as buildLUT(): right limit at hard edges, except for a hard edge
 		// at the first stop, which is left of it.
 
 		int nStops = layer.nStops;
@@ -507,7 +385,7 @@ namespace TintTools
 
 			int posEntries = (nStops + 3) / 4;
 			for (int i = 0; i < posEntries * 4; i++)
-				p[i] = i < nStops ? layer.stopPos[i] : 2.f;
+				p[i] = i < nStops ? layer.stopPos16[i] / 65535.f : 2.f;
 			p += posEntries * 4;
 
 			for (int i = 0; i < nStops; i++)
@@ -651,7 +529,6 @@ namespace TintTools
 
 				if (i < nStored)
 				{
-					layer.stopPos[i] = pos / 65535.f;
 					layer.stopPos16[i] = pos;
 					layer.stopColors[i] = color;
 				}

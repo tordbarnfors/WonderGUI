@@ -1692,7 +1692,10 @@ namespace wax
 			// Find the last stop at or before position. At a hard edge (two stops at the same position)
 			// that is the second stop, so we get the color after the edge.
 
-			const float* pStopPos = layer.stopPos;
+			float pStopPos[Tint::c_maxStops];
+			for (int i = 0; i < layer.nStops; i++)
+				pStopPos[i] = layer.stopPos16[i] / 65535.f;
+
 			const HiColor* pStopColors = layer.stopColors;
 
 			HiColor from, to;
