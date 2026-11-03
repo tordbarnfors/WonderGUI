@@ -165,6 +165,7 @@ namespace wg
 
 		EdgemapWave_p		m_pWave;
 		CoordSPX			m_wavePos;				// In chart before flip. Only x has any impact for now, y should be fixed at 0.
+		CoordSPX			m_waveOffset;			// Where wave is drawn in chart, after flip. Whole pixels.
 	};
 
 

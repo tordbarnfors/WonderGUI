@@ -53,7 +53,6 @@ namespace wax
 		m_nbSamples = m_size.w + 1;
 
 		m_pieces.resize(1);
-		m_pieces[0].pos = Util::roundToPixels(bp.pos) * 64;
 		m_pieces[0].flip = bp.flip;
 
 		m_bHasOutlines = bp.topOutlineThickness > 0 || bp.bottomOutlineThickness > 0;
@@ -115,31 +114,6 @@ namespace wax
 		m_bSizeChanged = true;
 
 		return true;
-	}
-
-	//____ setPos() _______________________________________________________________
-	/**
-	 * @brief Set the top-left corner of the wave on the canvas, after flip.
-	 *
-	 * The position is rounded to whole pixels.
-	 */
-
-	void EdgemapWave::setPos( CoordSPX pos )
-	{
-		m_pieces[0].pos = Util::roundToPixels(pos) * 64;
-	}
-
-	//____ setFlip() ______________________________________________________________
-	/**
-	 * @brief Set how the wave is flipped when drawn.
-	 *
-	 * The wave runs along x before it is flipped, so a flip that rotates it by 90 or 270
-	 * degrees makes it run along y. The position stays the top-left corner.
-	 */
-
-	void EdgemapWave::setFlip( GfxFlip flip )
-	{
-		m_pieces[0].flip = flip;
 	}
 
 	//____ _setupBuffer() _______________________________________________________

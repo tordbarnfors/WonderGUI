@@ -40,6 +40,9 @@ namespace wax
 	 * along x, and the lines can have outlines. It is drawn as one edgemap, flipped as
 	 * set, which lets it run along y instead or in any direction.
 	 *
+	 * The wave has its top-left corner, after flip, at 0,0. It is placed on the canvas by
+	 * the offset given to draw().
+	 *
 	 * Samples, size, colors and tints can be set at any time, but reach the edgemap only when
 	 * generate() is called, which draw() does first. It updates the edgemap where samples have
 	 * changed, or makes a new one if the size has changed.
@@ -61,12 +64,11 @@ namespace wax
 			HiColor				color = Color8::LightGrey;
 			EdgemapFactory_p	factory;								// Default edgemap factory of Base if not set.
 			Finalizer_p			finalizer = nullptr;
-			GfxFlip				flip = GfxFlip::None;					// Flip of the wave, which runs along x before it.
+			GfxFlip				flip = GfxFlip::None;					// Flip of the wave, which runs along x before it. Fixed once created.
 			bool				optimize = true;						// Check for re-setting of same values to minimize updated regions.
 			SampleOrigo			origo = SampleOrigo::Top;
 			HiColor				outlineColor = Color8::DarkGrey;
 			Tint_p				outlineTint;							// Overrides outlineColor when set.
-			CoordSPX			pos;									// Top-left corner on canvas, after flip. Rounded to whole pixels.
 			SizeSPX				size;									// Mandatory. Size before flip. Rounded to whole pixels.
 			Tint_p				tint;									// Overrides color when set. Placed in the rect of the wave.
 			spx					topOutlineThickness = 64;
@@ -86,10 +88,6 @@ namespace wax
 		bool		setSize( SizeSPX size );						// Destroys all samples. Will need to be set again before generate().
 		SizeSPX		size() const { return m_size * 64; }
 
-		void		setPos( CoordSPX pos );
-		CoordSPX	pos() const { return m_pieces[0].pos; }
-
-		void		setFlip( GfxFlip flip );
 		GfxFlip		flip() const { return m_pieces[0].flip; }
 
 		//.____ Appearance ____________________________________________________

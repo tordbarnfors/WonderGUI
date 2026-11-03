@@ -234,7 +234,7 @@ namespace wg
 		{
 			p--;
 			if (p->m_bVisible && p->m_pWave)
-				p->m_pWave->draw(pDevice, canvas.pos());
+				p->m_pWave->draw(pDevice, canvas.pos() + p->m_waveOffset);
 		}
 
 		Util::popClipList(pDevice, popData);
@@ -381,6 +381,8 @@ namespace wg
 						if( m_bAxisSwapped )
 							std::swap(chartSize.w, chartSize.h);
 
+						graph.m_waveOffset = Util::roundToPixels(Util::flipRect(rect, m_flip, chartSize).pos()) * 64;
+
 						graph.m_pWave = EdgemapWave::create(WGBP(EdgemapWave,
 							_.bottomOutlineThickness = graph.m_bottomOutlineThickness*m_scale,
 							_.color = graph.m_fillColor,
@@ -389,7 +391,6 @@ namespace wg
 							_.origo = SampleOrigo::Top,
 							_.outlineColor = graph.m_outlineColor,
 							_.outlineTint = graph.m_pOutlineTint,
-							_.pos = Util::flipRect(rect, m_flip, chartSize).pos(),
 							_.size = rect.size(),
 							_.tint = graph.m_pFillTint,
 							_.topOutlineThickness = graph.m_topOutlineThickness*m_scale

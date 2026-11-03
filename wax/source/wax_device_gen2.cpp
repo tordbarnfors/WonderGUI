@@ -3242,7 +3242,6 @@ void DeviceGen2::flipDrawWave(const RectSPX& dest, const WaveLine* pTopBorder, c
 		_.color = fill,
 		_.factory = m_pBackend->edgemapFactory(),
 		_.flip = flip,
-		_.pos = dest.pos(),
 		_.topOutlineThickness = pTopBorder->thickness,
 		_.bottomOutlineThickness = pBottomBorder->thickness,
 		_.outlineColor = pTopBorder->color ) );
@@ -3292,7 +3291,7 @@ void DeviceGen2::flipDrawWave(const RectSPX& dest, const WaveLine* pTopBorder, c
 	// Render
 
 	pWave->generate();
-	pWave->draw(this);
+	pWave->draw(this, dest.pos());
 }
 
 //____ drawSegments() ________________________________________________________
