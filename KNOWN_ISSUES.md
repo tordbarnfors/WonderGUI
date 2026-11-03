@@ -60,7 +60,28 @@ isn't told about the new scale.
 
 `wondergui/source/widgets/capsules/wg_scrollcapsule.h`
 
+## Documentation and scripts
+
+### The guide doesn't build with Hugo 0.169
+
+The vendored hugo-book theme calls `resources.ToCSS`, which Hugo 0.169 doesn't have, so every
+page fails to render. Updating the theme or changing the call should fix it.
+
+`wondergui/doc/guide/themes/hugo-book/layouts/partials/docs/html-head.html`
+
+### `build-wg-superheader.sh` and `build-package.sh` use paths that no longer exist
+
+They expect `src/baselibrary/` and `build/gnumake/` from older repository layouts.
+
+`scripts/`
+
 ## Not yet verified
+
+### API reference generation
+
+`make_docs.bat` was updated for the current layout. Copying the sources and running
+`predoxy.rb` has been tested, but not `doxygen` and `postdoxy.rb` (which needs the Ruby
+module nokogiri), since neither was available on the machine.
 
 ### Text system rewrite on macOS
 

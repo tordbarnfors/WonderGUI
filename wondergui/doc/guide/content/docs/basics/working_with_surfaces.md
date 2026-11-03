@@ -9,7 +9,7 @@ weight: 40
 
 
 
-**Important:** The methods discussed here all use the CPU to copy and manipulate data. This is way slower than using a hardware accelerated GfxDevice to do the copying and in many cases also slower than using SoftGfxDevice, which has been optimized for fast operations.
+**Important:** The methods discussed here all use the CPU to copy and manipulate data. This is way slower than using a hardware accelerated GfxDevice to do the copying and in many cases also slower than using a GfxDevice with SoftBackend, which has been optimized for fast operations.
 
 These methods are implemented in a generic fashion, making them small and always available independent of graphics backend in use. They are handy for converting surfaces between surface subtypes and manipulate surfaces with pixel formats not supported by the current backend, but shouldn't be used for anything time critical.
 

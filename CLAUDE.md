@@ -8,9 +8,20 @@
 - **ROADMAP.md** lists planned changes and the design decisions behind existing code.
   Add decisions made in a session there, so they don't only exist in that chat.
 
+## Documentation
+
+- The manual is in `wondergui/doc/guide/content/docs/` (Hugo): `basics/` for the object model,
+  blueprints, screen geometry and surfaces, `widgets/` for states, containers and layout,
+  `resources/` for skins, surfaces and warpmaps. Read the page for an area before working in it.
+- `basics/blending_and_transparency.md` is the definition all graphics backends must follow,
+  not just a description. Change it together with the backends.
+- Parts of the guide were written before the Wax split and may still lag behind, so trust the
+  code where they differ.
+- Read `wondergui/widgetkit-src/PIPELINE.md` before touching widget kits.
+
 ## Layout
 
-- `wax/` - graphics base library and its extensions (soft, OpenGL, DX12, Metal backends, FreeType fonts, streaming).
+- `wax/` - graphics base library and its extensions (soft, OpenGL, DX12, Metal backends, FreeType fonts, streaming). `c-api/` is compiled into the `wax` library, so changing the Wax API usually means updating it too. `wrappers/` has the C# wrapper.
 - `wondergui/` - the UI toolkit: `source/` (widgets, components, text layouts), `extensions/` (legacy GUI, debugger, plugin), `tools/`, `widgetkits/`.
 - `wonderapp/` - application frameworks (SDL2/SDL3, Win32, Cocoa) and tools built on them.
 - `thirdparty/` - vendored third-party code.
@@ -25,12 +36,24 @@
 - `unittester` runs from the repository root (it loads `resources/`). Pass part of a
   collection name to run only those tests, e.g. `unittester TextSystem`; the full suite
   includes some slow shape tests.
+- Tools and examples also load `resources/`, so run them from the repository root too.
+- `gfxdevicetester` compares the native device of the selected `WAPPLIB` against the software
+  reference. Use it when changing a graphics backend or blending. `widgetbench` is for looking at
+  widgets, skins and layouts (see its `README.md` for adding a test), `workbench` for trying things out.
+- Source files are listed explicitly in each `CMakeLists.txt`, so new files must be added there.
+  New public headers also go in `wax/source/wax.h` or `wondergui/wondergui.h`.
+- `tuxbuild/` is the usual local build directory and is git-ignored.
 
 ## Conventions
 
 - Files should use LF line endings. Make corrections as you discover.
 - Tab width is 4 and we use tabs for indentation. Make corrections as you discover.
 - Blueprint struct members are in alphabetical order.
+- Wax, WonderGUI and their extensions are C++17. WonderApp and most tools are C++20, so designated initializers only work there. Library code fills in blueprints with `WAXBP()` (Wax) or `WGBP()` (WonderGUI).
+- Files are named `wax_` or `wg_` plus the lower case class name.
+- Members are prefixed `m_`, with `m_b` for bools and `m_p` for pointers. Pointer variables are prefixed `p`. Methods starting with `_` are internal, even when public.
+- Objects are created through a static `create()`, with constructors protected. Each class has `Foo_p`/`Foo_wp` typedefs for `StrongPtr`/`WeakPtr` and a `TYPEINFO`. Never point `std::shared_ptr` or similar at an `Object`.
+- Don't edit generated files: `wondergui/widgetkits/wg_glossyblue.h` and `resources/glossyblue_skinblocks.png` come from `wondergui/widgetkit-src/`.
 
 - LegacyGUI is only there to make old code downstream still compile. No new features goes here unless specifically requested.
 
@@ -46,6 +69,11 @@
 - Avoid memory trashing.
 - Content of Bitmaps, Edgemaps and Warpmaps can be modified while being in flight for render, with consequences. This is accepted per design.
 - origin for drawing operations are top/left corner.
+- Drawing is deferred: draws are rendered when the canvas update ends and read their Edgemaps and Warpmaps then.
+- Colors given to the API are sRGB, pixels are stored with straight alpha and blending happens in linear light. `ReferenceBackend` (`wax/extensions/softgfx`) implements the rules as directly as possible and is what other backends are tested against.
+- Pixel formats only describe the channels, named in register order starting with the most significant bits. Color space and byte order are separate properties of a surface.
+- Each backend has its own Surface, Edgemap and Warpmap subtypes. Code that shouldn't depend on the backend creates them through the factories of the device.
+- Surfaces, Edgemaps and Warpmaps are semi-mutable: their properties are fixed when created, but their content can change.
 
 ## WonderGUI Design
 
@@ -53,4 +81,9 @@
 - Skins, TextLayouts, TextStyles are immutable objects once created.
 - A widget provides the functionality, but the look and interaction feedback is decided by chosen Skin, TextStyle and TextLayout.
 - Low end target is the same as WAX, so no reliance on FPU and be cautious with memory in the base system. Individual non-essential widgets and other classes are allowed to break this rule.
+- `wondergui/source/base/wg_wax.h` decides which Wax names are part of `wg`, with some renamed (`wax::Device` is `wg::GfxDevice`). Wax extensions stay in `wax`. Forward-declare Wax classes in namespace `wax`, never in `wg`.
+- Widget internals use spx, including the virtuals to override (`_render()`, `_resize()`, `_defaultSize()`, `_receive()`, `_setState()`, `_alphaTest()`). Scale is the number of spx per pt, 64 by default. It is set on the root and can be changed for a branch with a ScaleCapsule.
+- Other immutable resources, like PackLayout, Font, Caret, NumberLayout and Transition, work the same way. Resources are meant to be created once and shared, not created per widget or on the fly. There is also a hard limit of 65535 TextStyles.
+- Widgets can't have their state set directly, only disabled and flagged are controlled from outside. There are 8 state properties forming 72 valid states, and a state without its own value falls back by word order in its name (see `widgets/widget_states.md` in the guide). Pressed implies Hovered.
+- Containers expose their slots as public members (`slot`, `slots`, `mainSlot`). Slots can't be created on their own, they are added by pushing a widget, optionally with a slot Blueprint.
 

@@ -12,9 +12,9 @@ distribution/
 bin
 obj
 
-wondergui/doc/html/
+wondergui/doc/api-reference/html/
 
-wondergui/doc/temp/
+wondergui/doc/api-reference/temp/
 wondergui/doc/guide/resources/_gen
 wondergui/doc/guide/public
 .hugo_build.lock

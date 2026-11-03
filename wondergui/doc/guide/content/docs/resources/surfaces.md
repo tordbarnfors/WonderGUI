@@ -51,7 +51,7 @@ Each surface has a specific pixel format and several different pixel formats are
 
 Pixel formats only describe how the channels are organized, named in register order starting with the most significant bits. Color space and byte order are separate properties of the surface.
 
-All graphics backends have limitations and therefore only supports surfaces of certain pixel formats. Only Surface subtype to support all pixel formats is SoftSurface. This so that all formats can be loaded and converted to appropriate format for the graphics subsystem in use. SoftGfxDevice does only support a subset of pixel formats.
+All graphics backends have limitations and therefore only supports surfaces of certain pixel formats. Only Surface subtype to support all pixel formats is SoftSurface. This so that all formats can be loaded and converted to appropriate format for the graphics subsystem in use. SoftBackend does only support a subset of pixel formats.
 
 
 
@@ -72,7 +72,7 @@ Surfaces can be created either directly through their create() methods or by usi
 ```c++
 // Create a surface directly
 
-auto p1 = SoftGfxSurface::create({ 
+auto p1 = SoftSurface::create({ 
 	.format = PixelFormat::ARGB_8, 
 	.size = {640,480} 
 });

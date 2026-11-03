@@ -174,7 +174,7 @@ wax/
 wonderapp/
         The WonderApp framework, a simple application framework built on
         WonderGUI. Its sources are in source/, with one folder per
-        platform (sdl2/, win32/), next to the tools and examples
+        platform (sdl2/, sdl3/, win32/, cocoa/), next to the tools and examples
         (tools/, examples/) that are built on it.
 
 wondergui/
@@ -188,23 +188,33 @@ Build targets and their dependencies
 ====================================
 
 
-wondergui       - The WonderGUI base library, containing the framework
-                  and all widget. No dependencies.
+wax             - The Wax graphics library, containing the object model
+                  and all low-level graphics. No external dependencies.
 
-wgfreetypefont  - Addon library for vector fonts using FreeType.
+wondergui       - The WonderGUI base library, containing the framework
+                  and all widgets. Requires wax, no external dependencies.
+
+waxfreetypefont - Addon library for vector fonts using FreeType.
                   Requires FreeType to build.
 
-wgopenglgfx     - Addon library for OpenGL rendering of UI.
+waxopenglgfx    - Addon library for OpenGL rendering of UI.
                   Requires OpenGL and GLEW.
 
-wgsoftgfx       - Addon library for generic software rendering of UI.
+waxsoftgfx      - Addon library for generic software rendering of UI.
                   No external dependencies, but kept separately since
                   it is a fairly big library.
 
-wgmetalgfx      - Addon library for rendering UI using Apples Metal API.
+waxmetalgfx     - Addon library for rendering UI using Apples Metal API.
                   No external dependencies, except a Mac of course!
 
-example01       - Minimal example program.
+waxdx12gfx      - Addon library for rendering UI using DirectX 12.
+                  No external dependencies, except Windows of course!
+
+waxgfxstream    - Addon library for encoding drawing commands into a
+                  binary stream for storage or playback on another device.
+                  No external dependencies.
+
+example01      - Minimal example program.
                   Requires SDL (SimpleDirectMediaLayer, see libsdl.org)
 
 workbench       - For trying things out. Tests are picked from a list
@@ -218,5 +228,5 @@ gfxdevicetester - Compares the native graphics device of the WonderApp
                   native device.
 
 unittester      - Simple console application to run some simple unit tests
-                  on parts of WonderGUI. No requirements.
+                  on parts of WonderGUI. Requires FreeType.
 

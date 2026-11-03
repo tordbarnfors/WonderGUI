@@ -3,8 +3,8 @@
 PACKAGE="wg-doc-api-$1.zip"
 ROOT="$PWD"
 
-cd doc
+cd wondergui/doc/api-reference
 ./make_docs.bat
-rm -f "../$PACKAGE"
-zip -r "../$PACKAGE" html
+rm -f "$ROOT/$PACKAGE"
+zip -r "$ROOT/$PACKAGE" html
 

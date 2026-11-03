@@ -227,7 +227,7 @@ There are a few more things related to blueprints that is worth pointing out.
 
 * Since states are specified in a vector the same state can be specified more than once. That is allowed and in that case they are processed in order so that parameters set for the state early in the vector are overridden by parameters set for the state later. Please note that this doesn't mean that earlier entries are fully ignored, Color specifications in Blueprints typically default to Undefined, in which case a color set by an earlier state remains. The contrary is also true, just because you don't specify the value for a parameter it might still default to a value in the StateData-structure that overrides any previously set value. 
 
-* You might notice that you can set values for state Normal in the states-vector just like any other state although the values for state Normal already are defined in the blueprint (color and outlineColor in BoxSkin are for normal state). This is allowed and the two following examples yields the same result. Which one to choose is mainly a matter of taste:
+* You might notice that you can set values for state Default in the states-vector just like any other state although the values for state Default already are defined in the blueprint (color and outlineColor in BoxSkin are for the default state). This is allowed and the two following examples yields the same result. Which one to choose is mainly a matter of taste:
 
   ```c++
   TextStyle::Blueprint bp1 = WGBP(TextStyle,
@@ -236,7 +236,7 @@ There are a few more things related to blueprints that is worth pointing out.
   								);
   																
   TextStyle::Blueprint bp2 = WGBP(TextStyle,
-  								_.states = {{State::Normal, Color::White}
+  								_.states = {{State::Default, Color::White},
   											{State::Hovered, Color::Pink}}
   								);					
   ```
