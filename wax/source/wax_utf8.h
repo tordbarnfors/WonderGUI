@@ -127,27 +127,32 @@ namespace wax
 
 	inline char32_t Utf8::decodeUnchecked( const char *& _p )
 	{
-		const uint8_t *& p = (const uint8_t *&) _p;
+		// Works on a copy of the pointer. Stepping _p through a uint8_t pointer reference would
+		// break strict aliasing, and optimizing compilers can then miss that _p has moved.
+
+		const uint8_t * p = reinterpret_cast<const uint8_t *>(_p);
 
 		char32_t c = *p++;
-		if( c < 0x80 )
-			return c;
+		if( c >= 0x80 )
+		{
+			if( c < 0xE0 )
+			{
+				c = ((c & 0x1F) << 6) | (p[0] & 0x3F);
+				p += 1;
+			}
+			else if( c < 0xF0 )
+			{
+				c = ((c & 0x0F) << 12) | ((p[0] & 0x3F) << 6) | (p[1] & 0x3F);
+				p += 2;
+			}
+			else
+			{
+				c = ((c & 0x07) << 18) | ((p[0] & 0x3F) << 12) | ((p[1] & 0x3F) << 6) | (p[2] & 0x3F);
+				p += 3;
+			}
+		}
 
-		if( c < 0xE0 )
-		{
-			c = ((c & 0x1F) << 6) | (p[0] & 0x3F);
-			p += 1;
-		}
-		else if( c < 0xF0 )
-		{
-			c = ((c & 0x0F) << 12) | ((p[0] & 0x3F) << 6) | (p[1] & 0x3F);
-			p += 2;
-		}
-		else
-		{
-			c = ((c & 0x07) << 18) | ((p[0] & 0x3F) << 12) | ((p[1] & 0x3F) << 6) | (p[2] & 0x3F);
-			p += 3;
-		}
+		_p = reinterpret_cast<const char *>(p);
 		return c;
 	}
 

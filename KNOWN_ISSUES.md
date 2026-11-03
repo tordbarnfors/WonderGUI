@@ -7,15 +7,6 @@ Each entry says what happens, where in the code, and anything known about the ca
 
 ## Text system
 
-### `unittester`: `TextSystem` `numberLayoutTest` crashes
-
-The test segfaults in `NumberLayout::_segmentsSizeBaseline()`, called from
-`BasicNumberLayout::defaultSize()`, which stops the full `unittester` run since TextSystem is
-the last collection. Seen in a Release `wappsdl2sw` build on Linux. Cause not investigated;
-a null `attr.pFont` (dereferenced by `pFont->setSize()`) is a likely suspect.
-
-`wondergui/source/numberlayouts/wg_numberlayout.cpp`, `wondergui/tools/unittester/tests/textsystem.cpp`
-
 ### Markdown: code fence lines show as empty lines
 
 In `MarkdownTextLayout`'s rendered mode the ```` ``` ```` lines of a fenced code block are
