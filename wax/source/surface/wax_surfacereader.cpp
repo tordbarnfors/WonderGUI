@@ -244,7 +244,7 @@ namespace wax
 
 		// Create surface
 
-		auto pSurface = m_pFactory->createSurface(bp);
+		auto pSurface = m_pFactory ? m_pFactory->createSurface(bp) : Base::defaultSurfaceFactory()->createSurface(bp);
 		if( !pSurface )
 			return nullptr;
 
@@ -401,7 +401,7 @@ namespace wax
 
 		// Create surface
 
-		auto pSurface = m_pFactory->createSurface(bp);
+		auto pSurface = m_pFactory ? m_pFactory->createSurface(bp) : Base::defaultSurfaceFactory()->createSurface(bp);
 		if( !pSurface )
 			return nullptr;
 

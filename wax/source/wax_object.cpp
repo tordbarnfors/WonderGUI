@@ -134,10 +134,19 @@ namespace wax
 	{
 		const TypeInfo* p = &typeInfo();
 
+		int counter = 0;
 		while (p != nullptr)
 		{
 			if (p == &_typeInfo)
 				return true;
+
+			counter++;
+			if( counter >= 99 )
+			{
+				Base::throwError(ErrorLevel::Error, ErrorCode::Internal, "Timed out after 100 loops. Likely a loop in TYPEINFO hierarchy.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				return false;
+			}
+
 			p = p->pSuperClass;
 		}
 		return false;
