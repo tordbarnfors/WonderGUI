@@ -60,6 +60,48 @@ isn't told about the new scale.
 
 `wondergui/source/widgets/capsules/wg_scrollcapsule.h`
 
+### `TablePanel` reports another minimum when asked about a scale it isn't at yet
+
+`_minSize()` adds up row and column minimums at its own scale, but the minimums of the cells at
+any other scale. When a scale change reaches a `PackPanel`, it lays out its children before they
+have the new scale, and nothing corrects the result until the next resize. A table with 276
+padded rows reports 1112 pts instead of 8. `_defaultSize()` has a separate path for other scales
+too and should be checked for the same kind of mismatch.
+
+`wondergui/source/widgets/panels/wg_tablepanel.cpp`
+
+## Layout
+
+### `PackLayout`: `Factor::Ordered` expands far too much
+
+The expand step uses `std::max(itemAdd, spaceLeft)` where it should use `std::min`, so the first
+item grows to its maximum regardless of the space left. Shrinking with `Factor::Ordered` isn't
+implemented.
+
+`wondergui/source/base/wg_packlayout.cpp` (`getItemSizes()`)
+
+### `PackLayout`: hide settings and weight sources look broken
+
+Found by reading the code, not confirmed by running it. In `getItemSizes()`:
+
+- `HideSetting::Restrained` sums its minimums from a pointer that doesn't advance, and subtracts
+  a single byte instead of an `spx`.
+- `HideSetting::Aggressive` compares every item against the first item's minimum.
+- `pWeightSpx` is declared again inside the `if`, so the outer one stays `nullptr` and
+  `SizeSource::Weight` doesn't get its values.
+- `PackPanel` doesn't handle the -1 lengths that mark hidden items.
+
+`wondergui/source/base/wg_packlayout.cpp`, `wondergui/source/widgets/panels/wg_packpanel.cpp`
+
+## WonderApp
+
+### `Window::setSize()`, `setPos()` and `setGeo()` don't change the window
+
+`_updateWindowGeo()` is an unimplemented stub that returns what it's given, so the window keeps
+its geometry while `size()` reports the new one.
+
+`wonderapp/source/wappwindow.cpp`
+
 ## Documentation and scripts
 
 ### The guide doesn't build with Hugo 0.169

@@ -578,7 +578,7 @@ namespace wg
 
 		// If we scroll horizontally, we always have content of default width, thus also default height.
 
-		if (m_bScrollX && scrollbarX.isDisplayable())
+		if (m_bScrollX)
 		{
 			SizeSPX def = _defaultSize(scale);
 			spx height = def.h;
@@ -586,7 +586,7 @@ namespace wg
 			// If scrollbarX is set to auto hide and be outside view area, it is not included
 			// in defaultSize() but will be displayed if given width is less than content width.
 
-			if ((!m_bOverlayScrollbars && m_bAutoHideScrollbars) && width < def.w)
+			if ((!m_bOverlayScrollbars && m_bAutoHideScrollbars) && width < def.w && scrollbarX.isDisplayable())
 				height += scrollbarX._defaultSize(scale).h;
 
 			return height;
@@ -602,7 +602,7 @@ namespace wg
 
 		int contentHeight = slot._widget()->_matchingHeight(contentWidth, scale);
 
-		spx scrollbarYHeight = scrollbarY._defaultSize(scale).h;
+		spx scrollbarYHeight = scrollbarY.isDisplayable() ? scrollbarY._defaultSize(scale).h : 0;
 
 		return std::max(contentHeight, scrollbarYHeight) + contentBorder.h;
 	}
@@ -618,7 +618,7 @@ namespace wg
 
 		// If we scroll vertically, we always have content of default height, thus also default width.
 
-		if (m_bScrollY && scrollbarY.isDisplayable())
+		if (m_bScrollY)
 		{
 			SizeSPX def = _defaultSize(scale);
 			spx width = def.w;
@@ -626,7 +626,7 @@ namespace wg
 			// If scrollbarY is set to auto hide and be outside view area, it is not included
 			// in defaultSize() but will be displayed if given height is less than content height.
 
-			if ((!m_bOverlayScrollbars && m_bAutoHideScrollbars) && height < def.h)
+			if ((!m_bOverlayScrollbars && m_bAutoHideScrollbars) && height < def.h && scrollbarY.isDisplayable())
 				width += scrollbarY._defaultSize(scale).w;
 
 			return width;
@@ -642,7 +642,7 @@ namespace wg
 
 		int contentWidth = slot._widget()->_matchingWidth(contentHeight, scale);
 
-		spx scrollbarXWidth = scrollbarX._defaultSize(scale).w;
+		spx scrollbarXWidth = scrollbarX.isDisplayable() ? scrollbarX._defaultSize(scale).w : 0;
 
 		return std::max(contentWidth, scrollbarXWidth) + contentBorder.w;
 	}
@@ -705,13 +705,15 @@ namespace wg
 			SizeSPX scrollbarXSize = scrollbarX._defaultSize(scale);
 			SizeSPX scrollbarYSize = scrollbarY._defaultSize(scale);
 
-			if (m_bScrollX && scrollbarX.isDisplayable())
-				sz.w += std::max(childSize.w, scrollbarXSize.w);
+			// Minimum size of child only matters along axes we don't scroll.
+
+			if (m_bScrollX)
+				sz.w += scrollbarX.isDisplayable() ? scrollbarXSize.w : 0;
 			else
 				sz.w += childSize.w;
 
-			if (m_bScrollY && scrollbarY.isDisplayable())
-				sz.h += std::max(childSize.h, scrollbarYSize.h);
+			if (m_bScrollY)
+				sz.h += scrollbarY.isDisplayable() ? scrollbarYSize.h : 0;
 			else
 				sz.h += childSize.h;
 
@@ -806,12 +808,14 @@ namespace wg
 		{
 			SizeSPX canvasSize = pChild->_defaultSize(m_scale);
 
-			spx scrollbarYWidth = scrollbarY._defaultSize(m_scale).w;
-			spx scrollbarXHeight = scrollbarX._defaultSize(m_scale).h;
+			spx scrollbarYWidth = scrollbarY.isDisplayable() ? scrollbarY._defaultSize(m_scale).w : 0;
+			spx scrollbarXHeight = scrollbarX.isDisplayable() ? scrollbarX._defaultSize(m_scale).h : 0;
 
 			if( m_bOverlayScrollbars )
 			{
 				m_viewRegion = window;
+				m_childCanvas.w = std::max( canvasSize.w, window.w );
+				m_childCanvas.h = std::max( canvasSize.h, window.h );
 
 				if (m_childCanvas.w > window.w || !m_bAutoHideScrollbars)
 					m_scrollbarXRegion = { window.x, window.y + window.h - scrollbarXHeight, window.w, scrollbarXHeight };
@@ -850,7 +854,7 @@ namespace wg
 		}
 		else if (m_bScrollY)
 		{
-			spx scrollbarYWidth = scrollbarY._defaultSize(m_scale).w;
+			spx scrollbarYWidth = scrollbarY.isDisplayable() ? scrollbarY._defaultSize(m_scale).w : 0;
 
 			if (!m_bOverlayScrollbars && !m_bAutoHideScrollbars)
 			{
@@ -902,7 +906,7 @@ namespace wg
 		}
 		else if (m_bScrollX)
 		{
-			spx scrollbarXHeight = scrollbarX._defaultSize(m_scale).h;
+			spx scrollbarXHeight = scrollbarX.isDisplayable() ? scrollbarX._defaultSize(m_scale).h : 0;
 
 			if (!m_bOverlayScrollbars && !m_bAutoHideScrollbars)
 			{

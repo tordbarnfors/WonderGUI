@@ -45,3 +45,11 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   byte one to one.
 - **Legacy GUI** keeps the old `Char`, `CharBuffer`, `CharSeq`, `String` and `TextTool`
   classes, moved into `wondergui/extensions/legacygui`. It is not getting new text features.
+
+### ScrollCapsule (2026-11)
+
+- **Scrolling doesn't need scrollbars.** `scrollX` and `scrollY` alone decide if an axis scrolls.
+  Without a displayable scrollbar it still scrolls through the mouse wheel and `setViewOffset()`,
+  and the scrollbar takes no space.
+- **Minimum size along a scrolled axis** comes only from the scrollbar, not the child, and is
+  0 if the scrollbar can't be displayed.

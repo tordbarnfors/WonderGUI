@@ -244,8 +244,8 @@ namespace wg
 
 
 
-		bool		m_bScrollX = true;							// Set if view should be able to scroll horizontally.
-		bool		m_bScrollY = true;							// Set if view should be able to scroll vertically.
+		bool		m_bScrollX = true;							// Set if view should be able to scroll horizontally, with or without a displayable scrollbar.
+		bool		m_bScrollY = true;							// Set if view should be able to scroll vertically, with or without a displayable scrollbar.
 		bool		m_bOverlayScrollbars = false;				// Set if scrollbars should be rendered on top of the content instead of next to it. Overlay scrollbars will not take part in layout and will not affect the size of the child canvas.
 		bool		m_bAutoHideScrollbars = true;				// Set if scrollbars should automatically hide when view equals size of child canvas.
 																// If overlay scrollbars are used, auto hide when view not scrolling and mouse not over scroll region. 
