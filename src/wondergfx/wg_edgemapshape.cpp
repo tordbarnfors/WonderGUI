@@ -361,6 +361,9 @@ namespace wg
 			}
 		}
 
+		if (nGroups > 1)
+			_adjustSamples(layout, nEdges, out.samples.data());
+
 		return true;
 	}
 

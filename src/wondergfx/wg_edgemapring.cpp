@@ -32,6 +32,12 @@ namespace wg
 
 	static const double c_pi = 3.14159265358979323846;
 
+	// How far into a row a circle must reach at its top or bottom for its edges there to start on the
+	// line of the row, see EdgemapRing::_adjustSamples().
+
+	static const double c_apexFlatFromRow = 0.875;
+	static const double c_apexFlatMax = 0.25;			// How far from the center they start at most, relative to the width on the next line.
+
 	// Keys of regions: what part of the ring, which side of the center and for slices which slice
 	// or gap in what turn around the center.
 
@@ -249,6 +255,24 @@ namespace wg
 
 		m_bQuarters = m_bSlices && m_intervals.size() > 1;
 
+		// Without slices it is enough with a left and a right piece, needed if a sample of a circle at
+		// its top or bottom is moved outside the piece, see _adjustSamples(). The edges of the left
+		// and right side would cross in a single piece.
+
+		m_bHalves = false;
+
+		for (int i = m_bSquare ? 2 : 0; i < 4 && !m_bQuarters && !m_bHalves; i++)
+		{
+			if (m_radius[i] > 0)
+			{
+				double apexTop = m_centerY - m_radius[i];
+				double apexBottom = m_centerY + m_radius[i];
+
+				m_bHalves = (std::floor(apexTop) + 1 - apexTop) < c_apexFlatFromRow || int(std::floor(apexTop)) > top
+							|| (apexBottom - std::ceil(apexBottom) + 1) < c_apexFlatFromRow || int(std::ceil(apexBottom)) < bottom;
+			}
+		}
+
 		m_splitX = std::clamp(int(std::lround(m_centerX)), left, right);
 		m_splitY = std::clamp(int(std::lround(m_centerY)), m_middleTop, m_middleBottom);
 
@@ -263,6 +287,11 @@ namespace wg
 			m_layout.push_back({ RectI(x, m_middleTop, right - x, y - m_middleTop) });
 			m_layout.push_back({ RectI(left, y, x - left, m_middleBottom - y) });
 			m_layout.push_back({ RectI(x, y, right - x, m_middleBottom - y) });
+		}
+		else if (m_bHalves)
+		{
+			m_layout.push_back({ RectI(left, m_middleTop, m_splitX - left, m_middleBottom - m_middleTop) });
+			m_layout.push_back({ RectI(m_splitX, m_middleTop, right - m_splitX, m_middleBottom - m_middleTop) });
 		}
 		else
 			m_layout.push_back({ RectI(left, m_middleTop, right - left, m_middleBottom - m_middleTop) });
@@ -280,19 +309,22 @@ namespace wg
 
 		double center = bRow ? m_centerX : m_centerY;		// Along the line.
 
-		// A quarter only holds what is on its side of the center. Where it reaches beyond the
-		// center, up to the pixel line it is split at, what is next to the center continues.
+		// A quarter or half only holds what is on its side of the center. Where it reaches beyond
+		// the center, up to the pixel line it is split at, what is next to the center continues.
 
 		double from = begin, to = end;						// Part of the line classified.
 
-		if (m_bQuarters && piece.y >= m_middleTop && piece.y < m_middleBottom)
+		if ((m_bQuarters || m_bHalves) && piece.y >= m_middleTop && piece.y < m_middleBottom)
 		{
 			bool bLeft = piece.x < m_splitX;
 			bool bTop = piece.y < m_splitY;
 
-			double centerAcross = bRow ? m_centerY : m_centerX;
-			bool bLowAcross = bRow ? bTop : bLeft;
-			pos = bLowAcross ? std::min(pos, centerAcross - c_nudge) : std::max(pos, centerAcross + c_nudge);
+			if (m_bQuarters)
+			{
+				double centerAcross = bRow ? m_centerY : m_centerX;
+				bool bLowAcross = bRow ? bTop : bLeft;
+				pos = bLowAcross ? std::min(pos, centerAcross - c_nudge) : std::max(pos, centerAcross + c_nudge);
+			}
 
 			if (bRow ? bLeft : bTop)
 				to = std::max(std::min(to, center - c_nudge), from);
@@ -394,6 +426,97 @@ namespace wg
 
 		if (!regions.empty())
 			regions.back().end = end - begin;
+	}
+
+	//____ _adjustSamples() ______________________________________________________
+	/*
+		An edge is straight between two lines, so where a circle reaches its top or bottom within a
+		row, an edge following the circle would run from the center on the line outside to where the
+		circle crosses the line inside. That makes a point, reaching the line outside no matter how
+		far into the row the circle really starts: pixels at the center get covered far too much
+		or, for a circle starting right on the line, too little further out.
+
+		So the sample on the line outside is moved along that line, giving the edge a slope closer to
+		the coverage of the circle in the row. If the circle reaches far into the row the edge starts
+		away from the center on the line outside. Otherwise it starts outside the piece, on the other
+		side of the center, so that it passes the center within the row, at about where the circle
+		starts. That is no problem since edges are clipped against the edgemap. An edge starting away
+		from the center would reach into the row beyond the line outside, where the circle isn't,
+		so the sample on the line beyond is moved far outside the piece.
+
+		Matching the area exactly would leave the row flat too far out from the center, with a visible
+		kink where the slope starts, so the edge is made to split the difference. At the center
+		pixels are covered about 1.14 times what they should, at most fully.
+	*/
+
+	void EdgemapRing::_adjustSamples( const Layout& layout, int nEdges, spx * pSamples ) const
+	{
+		static const double c_maxOvershoot = 256.0;		// Pixels, for a circle barely entering the row.
+
+		const RectI& rect = layout.rect;
+
+		if (!layout.bRows)
+			return;
+
+		for (int i = m_bSquare ? 2 : 0; i < 4; i++)
+		{
+			double r = m_radius[i];
+
+			if (r <= 0 || (i == 1 && r == m_radius[0]) || (i == 2 && r == m_radius[3]))
+				continue;
+
+			for (int dir = -1; dir <= 1; dir += 2)		// Top, then bottom.
+			{
+				double apex = m_centerY + dir * r;
+				int outside = dir < 0 ? int(std::floor(apex)) : int(std::ceil(apex));
+				int inside = outside - dir;
+
+				if (outside < rect.y || outside > rect.y + rect.h || inside < rect.y || inside > rect.y + rect.h)
+					continue;
+
+				double across = inside - m_centerY;
+				if (std::abs(across) >= r)
+					continue;
+
+				double reach = std::abs(inside - apex);		// Of the row the circle is in.
+				double width = std::sqrt(r * r - across * across);
+
+				double start = reach >= c_apexFlatFromRow ? width * c_apexFlatMax * (reach - c_apexFlatFromRow) / (1 - c_apexFlatFromRow)
+														  : std::max(width * (1 - c_apexFlatFromRow / reach), -c_maxOvershoot);
+
+				spx* pInside = pSamples + (inside - rect.y) * nEdges;
+				spx* pOutside = pSamples + (outside - rect.y) * nEdges;
+				spx* pBeyond = start > 0.0 && outside + dir >= rect.y && outside + dir <= rect.y + rect.h ? pSamples + (outside + dir - rect.y) * nEdges : nullptr;
+
+				auto place = [nEdges](spx* pLine, int e, spx sample)
+				{
+					pLine[e] = sample;
+
+					for (int k = 0; k < e; k++)
+						pLine[k] = std::min(pLine[k], sample);
+					for (int k = e + 1; k < nEdges; k++)
+						pLine[k] = std::max(pLine[k], sample);
+				};
+
+				for (int side = -1; side <= 1; side += 2)
+				{
+					spx crossing = spx(std::lround((m_centerX + side * width - rect.x) * 64));
+					spx sample = spx(std::lround((m_centerX + side * start - rect.x) * 64));
+					spx beyond = spx(std::lround((m_centerX - side * c_maxOvershoot - rect.x) * 64));
+
+					for (int e = 0; e < nEdges; e++)
+					{
+						if (std::abs(pInside[e] - crossing) <= 1)
+						{
+							place(pOutside, e, sample);
+
+							if (pBeyond)
+								place(pBeyond, e, beyond);
+						}
+					}
+				}
+			}
+		}
 	}
 
 	//____ _classify() ___________________________________________________________

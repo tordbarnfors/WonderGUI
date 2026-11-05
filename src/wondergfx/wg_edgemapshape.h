@@ -166,6 +166,12 @@ namespace wg
 		bool		_buildPiece( const Layout& layout, const RegionFunc& regions, const HiColor * pColors, Build& out );
 		bool		_applyPieces( std::vector<Build>& builds, EdgemapFactory * pFactory );
 
+		// Called for each piece built, for a subclass to change edges that are straight between
+		// samples and need another slope to look right. Edges must stay in order along a line, but
+		// can go outside the piece. Samples are as in Build.
+
+		virtual void	_adjustSamples( const Layout& layout, int nEdges, spx * pSamples ) const {}
+
 		std::vector<Piece>	m_pieces;
 		std::vector<Stored>	m_stored;			// Content of the edgemap of each piece made by _buildPieces().
 
