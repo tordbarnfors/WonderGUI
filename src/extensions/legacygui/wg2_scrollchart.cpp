@@ -873,16 +873,19 @@ void WgScrollChart::_onCloneContent(const WgWidget * _pOrg)
 
 void WgScrollChart::_renderPatches(wg::GfxDevice * pDevice, const WgRect& _canvas, const WgRect& _window, WgPatches * _pPatches)
 {
-	// Our canvas has the color space of the canvas we are rendered onto. We can't wait
-	// until now to create it, since _onEvent() needs it, so it is created with the
-	// color space we last saw and recreated here if that was wrong.
+	// Our canvas has the color space and byte order of the canvas we are rendered onto. We
+	// can't wait until now to create it, since _onEvent() needs it, so it is created with
+	// what we last saw and recreated here if that was wrong.
 
-	wg::ColorSpace colorSpace = pDevice->canvas().colorSpace;
+	const wg::CanvasInfo& canvasInfo = pDevice->canvas();
+	wg::ColorSpace colorSpace = canvasInfo.colorSpace;
+	bool bBigEndian = m_pixelType == canvasInfo.format ? canvasInfo.bigEndian : (WG_IS_BIG_ENDIAN == 1);
 
-	if (colorSpace != m_canvasColorSpace)
+	if (colorSpace != m_canvasColorSpace || bBigEndian != m_bCanvasBigEndian)
 	{
 		m_canvasColorSpace = colorSpace;
-		if (m_pCanvas && m_pCanvas->colorSpace() != colorSpace)
+		m_bCanvasBigEndian = bBigEndian;
+		if (m_pCanvas && (m_pCanvas->colorSpace() != colorSpace || m_pCanvas->isBigEndian() != bBigEndian))
 			_regenCanvas();
 	}
 
@@ -1508,6 +1511,7 @@ void WgScrollChart::_regenCanvas()
 													_.size = sz,
 													_.format = m_pixelType,
 													_.colorSpace = colorSpace,
+													_.bigEndian = m_bCanvasBigEndian,
 													_.canvas = true ));
 //		m_pCanvas->Fill(m_chartColor);
 		m_canvasOfs = 0;
