@@ -64,6 +64,7 @@ namespace wg
 		m_bRectangular = bp.square;
 
 		m_bStartFromCenter	= bp.startFromCenter;
+		m_pEdgemapFactory	= bp.edgemapFactory;
 		
 		// Copy slices
 
@@ -279,7 +280,10 @@ namespace wg
 		if (m_hubSize > 0.f)
 			ring.thickness = std::max(spx(canvas.w / 2 * (1.f - std::min(m_hubSize, 1.f))), spx(1));
 
-		pDevice->drawRing(ring);
+		if (m_pEdgemapFactory)
+			drawRingWithEdgemaps(pDevice, ring, m_pEdgemapFactory, m_pEdgemapRing);
+		else
+			pDevice->drawRing(ring);
 	}
 
 	//____  _defaultSize() ___________________________________________________

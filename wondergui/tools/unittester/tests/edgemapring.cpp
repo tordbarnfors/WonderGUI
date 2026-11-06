@@ -100,6 +100,7 @@ namespace
 EdgemapRingTest::EdgemapRingTest()
 {
 	ADD_TEST(accuracyTest);
+	ADD_TEST(apexTest);
 	ADD_TEST(updateTest);
 	ADD_TEST(nothingDrawnTest);
 	ADD_TEST(tooManySlicesTest);
@@ -150,6 +151,68 @@ bool EdgemapRingTest::accuracyTest(std::ostream& output)
 		if (worst > 4096 * 9 / 16 || over16th > 256)
 		{
 			output << c.pName << ": largest difference " << worst << " of 4096, " << over16th << " pixels differ by more than 1/16." << std::endl;
+			bOk = false;
+		}
+	}
+
+	return bOk;
+}
+
+//____ apexTest() _____________________________________________________________
+// Where a circle reaches its top or bottom within a row, the middle of the row is covered about
+// as much as it should be. An edge following the circle from the center of the line outside the
+// row would make a visible point there, covering the middle far too much.
+
+bool EdgemapRingTest::apexTest(std::ostream& output)
+{
+	auto pSoft = createSoftDevice();
+	auto pRef = GfxDeviceGen2::create(ReferenceBackend::create());
+	auto pFactory = SoftEdgemapFactory::create();
+
+	std::vector<RingSlice> whole = { { 1.f, Color::White } };
+	std::vector<RingSlice> slices = { { 0.2f, Color::White }, { 0.3f, Color::White }, { 0.5f, Color::White } };
+
+	struct ApexCase { RectSPX rect; spx thickness; std::vector<RingSlice>* pSlices; };
+
+	std::vector<ApexCase> apexCases = {
+		{ pixels(8, 8, 144, 144), spx(9.8 * 64), &whole },			// Hole starts well into a row.
+		{ pixels(8, 8, 144, 144), spx(9.8 * 64), &slices },
+		{ pixels(8, 8, 144, 144), 12 * 64, &whole },				// Hole starts on a pixel line.
+		{ pixels(8, 8, 144, 144), 0, &whole },						// Disc starts on a pixel line.
+		{ pixels(8.3, 8.6, 143.25, 143.25), spx(9.8 * 64), &whole },	// Nothing on a pixel line.
+	};
+
+	bool bOk = true;
+
+	for (size_t c = 0; c < apexCases.size(); c++)
+	{
+		RingSpec spec;
+		spec.rect = apexCases[c].rect;
+		spec.thickness = apexCases[c].thickness;
+		spec.nSlices = int(apexCases[c].pSlices->size());
+		spec.pSlices = apexCases[c].pSlices->data();
+
+		auto pRing = EdgemapRing::create(WGBP(EdgemapRing, _.factory = pFactory), spec);
+		TEST_ASSERT(pRing != nullptr);
+
+		auto edge = render(pSoft, [&](GfxDevice* p) { pRing->draw(p); });
+		auto ref = render(pRef, [&](GfxDevice* p) { p->drawRing(spec); });
+
+		int centerX = (spec.rect.x + spec.rect.w / 2) / 64;
+		int worst = 0;
+
+		for (int y = 0; y < c_canvasSize.h; y++)
+		{
+			for (int x = centerX - 2; x <= centerX + 2; x++)
+			{
+				size_t i = (y * c_canvasSize.w + x) * 4;
+				worst = std::max(worst, std::abs(HiColor::unpackLinearTab[edge[i]] - HiColor::unpackLinearTab[ref[i]]));
+			}
+		}
+
+		if (worst > 4096 / 8)
+		{
+			output << "Case " << c << ": largest difference at the middle of the rows " << worst << " of 4096." << std::endl;
 			bOk = false;
 		}
 	}

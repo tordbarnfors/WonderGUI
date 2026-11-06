@@ -26,6 +26,7 @@
 
 #include <wg_stateskin.h>
 #include <wax_color.h>
+#include <wax_edgemapring.h>
 
 #include <vector>
 
@@ -77,6 +78,14 @@ namespace wg
 
 			HiColor			color = HiColor::White;
 
+			// If set, the circle is drawn as edgemaps made by it, kept by the skin and only changed
+			// where needed. Faster where shapes are slow to draw, such as with SoftwareBackend.
+			// A skin using edgemaps remakes its edgemap each time the render parameters change
+			// and should therefore only be used by a single widget or multiple identical
+			// widgets that renders exactly the same. Failing to do so can result in massive performance
+			// loss.
+
+			EdgemapFactory_p edgemapFactory;
 			Finalizer_p		finalizer = nullptr;
 			int				layer = -1;
 			int				markAlpha = 1;
@@ -184,6 +193,9 @@ namespace wg
 		uint8_t		m_outlineColorIndexShift;
 		uint8_t*	m_pOutlineColorIndexTab;
 		HiColor*	m_pOutlineColors;
+
+		EdgemapFactory_p		m_pEdgemapFactory;
+		mutable EdgemapRing_p	m_pEdgemapRings[2];	// Kept between renders, so only changes are remade.
 	};
 
 

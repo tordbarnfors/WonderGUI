@@ -95,8 +95,7 @@ namespace wax
 			return true;
 
 		m_bBuilt = false;
-		bool bOk = _applyPieces(m_builds, m_pBuildFactory);
-		m_builds.clear();
+		bool bOk = _applyPieces(m_builds, m_pBuildFactory);		// m_builds is left with buffers to reuse.
 
 		if (!bOk)
 			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to create edgemap.",
@@ -361,6 +360,9 @@ namespace wax
 			}
 		}
 
+		if (nGroups > 1)
+			_adjustSamples(layout, nEdges, out.samples.data());
+
 		return true;
 	}
 
@@ -457,8 +459,8 @@ namespace wax
 
 			stored.rect = build.rect;
 			stored.bRows = build.bRows;
-			stored.colors = std::move(build.colors);
-			stored.samples = std::move(build.samples);
+			std::swap(stored.colors, build.colors);
+			std::swap(stored.samples, build.samples);
 
 			piece.pos = build.rect.pos() * 64;
 			piece.flip = build.bRows ? GfxFlip::Rot90FlipX : GfxFlip::None;		// Transposed: edgemap columns along canvas rows.

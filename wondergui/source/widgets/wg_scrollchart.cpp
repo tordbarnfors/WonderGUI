@@ -125,20 +125,22 @@ namespace wg
 		if( m_bAxisSwapped )
 			std::swap(surfaceSize.w,surfaceSize.h);
 
-		// Make sure we have a canvas, in the color space of the canvas we are rendered onto
-		// and with what we have scrolled in still there. That goes with the device of a GPU
+		// Make sure we have a canvas, in the color space and byte order of the canvas we are rendered
+		// onto and with what we have scrolled in still there. That goes with the device of a GPU
 		// backend, and then we start over.
 
-		ColorSpace colorSpace = pDevice->canvas().colorSpace;
+		const CanvasInfo& canvasInfo = pDevice->canvas();
+		ColorSpace colorSpace = canvasInfo.colorSpace;
+		bool bBigEndian = m_scrollSurfaceFormat == canvasInfo.format ? canvasInfo.bigEndian : (WAX_IS_BIG_ENDIAN == 1);
 
-		if (m_pScrollSurface && (m_pScrollSurface->colorSpace() != colorSpace || m_pScrollSurface->isContentLost()))
+		if (m_pScrollSurface && (m_pScrollSurface->colorSpace() != colorSpace || m_pScrollSurface->isBigEndian() != bBigEndian || m_pScrollSurface->isContentLost()))
 			m_pScrollSurface = nullptr;
 
 		if (m_pScrollSurface == nullptr)
 		{
 			SurfaceFactory_p surfaceFactory = m_pSurfaceFactory ? m_pSurfaceFactory : pDevice->surfaceFactory();
 			m_pScrollSurface = surfaceFactory->createSurface(WGBP(Surface, _.size = surfaceSize / 64, _.format = m_scrollSurfaceFormat,
-																  _.colorSpace = colorSpace, _.canvas = true));
+																  _.colorSpace = colorSpace, _.bigEndian = bBigEndian, _.canvas = true));
 			m_rightEdgeOfs = surfaceSize.w;
 			m_dirtLen = surfaceSize.w;
 		}

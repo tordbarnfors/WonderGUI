@@ -297,6 +297,7 @@ private:
     
     WgPixelType m_pixelType = WgPixelType::XRGB_8;
 	wg::ColorSpace	m_canvasColorSpace = wg::ColorSpace::Undefined;	// Of the canvas we were last rendered onto.
+	bool			m_bCanvasBigEndian = (WAX_IS_BIG_ENDIAN == 1);	// Of the canvas we were last rendered onto, if it has our pixel type.
 	bool		m_bForegroundGrid = false;
 };
 

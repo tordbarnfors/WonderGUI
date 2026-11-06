@@ -24,10 +24,47 @@
 #pragma once
 
 #include <wax_device.h>
+#include <wax_edgemapring.h>
 #include <wg_types.h>
 
 namespace wg
 {
+
+	//____ drawRingWithEdgemaps() _______________________________________________
+	/*
+	* Draws a ring through an EdgemapRing kept in pRing, created with pFactory the first
+	* time and updated after that, which only remakes what changed. The ring is placed
+	* relative to the whole pixel its rect starts in, so moving it by whole pixels only
+	* moves where it is drawn. Colors drawing nothing in BlendMode::Blend are left
+	* undefined, so they make no segments. Falls back on drawRing() if the ring doesn't
+	* fit in edgemaps.
+	*/
+
+	inline void drawRingWithEdgemaps(GfxDevice* pDevice, const RingSpec& spec, EdgemapFactory* pFactory, EdgemapRing_p& pRing)
+	{
+		CoordSPX offset = { spec.rect.x & ~63, spec.rect.y & ~63 };
+
+		RingSpec local = spec;
+		local.rect.x -= offset.x;
+		local.rect.y -= offset.y;
+
+		if (pDevice->blendMode() == BlendMode::Blend)
+		{
+			if (local.backColor.a == 0)
+				local.backColor = HiColor::Undefined;
+			if (local.hubColor.a == 0)
+				local.hubColor = HiColor::Undefined;
+			if (local.outlineColor.a == 0)
+				local.outlineColor = HiColor::Undefined;
+		}
+
+		bool bOk = pRing ? pRing->update(local) : (pRing = EdgemapRing::create(WGBP(EdgemapRing, _.factory = pFactory), local)) != nullptr;
+
+		if (bOk)
+			pRing->draw(pDevice, offset);
+		else
+			pDevice->drawRing(spec);
+	}
 
 	//____ RenderSettings _____________________________________________________
 	/*

@@ -42,7 +42,10 @@ namespace wax
 	 * The box is made of one edgemap running along canvas rows, or up to three if it has an
 	 * outline: one for the outline above the inside, one for the rest and one for the
 	 * outline below. Since edges are straight between rows, pixels where a corner is nearly
-	 * horizontal are less exact. Horizontal edges are moved to the nearest pixel line.
+	 * horizontal are less exact. In the row where a corner meets a horizontal edge, the corner
+	 * gets a slope that looks like it instead of following it, since a straight edge from the
+	 * end of the horizontal edge would make a point. Horizontal edges are moved to the nearest
+	 * pixel line.
 	 *
 	 * Tints are not supported yet. Tints of the spec are ignored and the colors used as they
 	 * are. Colors left undefined are not drawn, but are drawn as transparent in
@@ -87,6 +90,7 @@ namespace wax
 			double	centerY(int corner) const { return (corner == 0 || corner == 1) ? top + radius[corner] : bottom - radius[corner]; }
 
 			bool	contains( double x, double y ) const;
+			bool	span( double y, double& left, double& right ) const;	// Where a row at y is inside, false if nowhere.
 		};
 
 		struct Band							// Rows of a piece and the edges they are between.
@@ -98,6 +102,11 @@ namespace wax
 		bool		_setSpec( const RoundedBoxSpec& spec );
 		void		_regions( const RectI& piece, bool bRow, double pos, double begin, double end, std::vector<Region>& regions ) const;
 		uint32_t	_classify( double x, double y, bool bRow, int& color ) const;
+		void		_adjustSamples( const Layout& layout, int nEdges, spx * pSamples ) const override;
+		bool		_isSameSpec( const RoundedBoxSpec& spec ) const;
+		bool		_isSameGeometry( const RoundedBoxSpec& spec ) const;
+		void		_cacheCrossings( const std::vector<Layout>& layout );
+		void		_buildDirectly( const std::vector<Layout>& layout );
 
 		EdgemapFactory_p	m_pFactory;
 		RoundedBoxSpec		m_spec;
@@ -112,6 +121,28 @@ namespace wax
 		bool				m_bOutlineDrawn = false;
 
 		std::vector<Band>	m_bands;
+
+		// Built directly, where the edges of the box cross each line is kept until its geometry
+		// changes, as edges in spx: outside left, outline left, fill right, outline right.
+
+		struct DirectPiece
+		{
+			std::vector<spx>	crossings;
+			uint32_t			present = 0;	// One bit per layer, if it has any width on any line.
+		};
+
+		struct EdgeSource
+		{
+			const spx*	pSamples;
+			int			stride;
+		};
+
+		std::vector<DirectPiece>	m_directPieces;
+		bool						m_bCrossingsCached = false;
+		std::vector<Build>			m_directBuilds;		// Written, then swapped with m_builds, so they all get reused.
+		std::vector<EdgeSource>		m_edgeSources;
+		std::vector<Layout>			m_layout;			// Of the pieces, as last laid out.
+		bool						m_bHasSpec = false;
 	};
 
 }
