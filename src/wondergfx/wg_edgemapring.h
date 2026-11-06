@@ -97,6 +97,9 @@ namespace wg
 
 		bool		_setSpec( const RingSpec& spec );
 		void		_prepare( const RingSpec& spec );
+		bool		_isSameSpec( const RingSpec& spec ) const;
+		void		_cacheCircles();
+		bool		_buildDirectly();
 		void		_regions( const RectI& piece, bool bRow, double pos, double begin, double end, std::vector<Region>& regions ) const;
 		uint32_t	_classify( double x, double y, bool bRow, double reference, int& color ) const;
 		void		_adjustSamples( const Layout& layout, int nEdges, spx * pSamples ) const override;
@@ -127,6 +130,42 @@ namespace wg
 		bool		m_bQuarters = false;							// The middle has a piece for each quarter, split at m_splitX, m_splitY.
 		bool		m_bHalves = false;								// The middle has a left and a right piece, split at m_splitX.
 		int			m_splitX = 0, m_splitY = 0;
+
+		// A round ring doesn't need the regions along each line worked out and lined up, its layers
+		// are known and only lines between slices move when its slices change. Where circles and
+		// the rect cross each line of a piece is kept, as edges in spx in the order of the piece.
+
+		struct DirectPiece
+		{
+			int					layout = 0;		// Index in m_layout.
+			int					side = 0;		// -1 runs from the outside in, 1 from the center out, 0 is the whole ring.
+			bool				bTop = false;
+			int					nCrossings = 0;	// Per line.
+			double				begin = 0.0;	// Where its lines begin.
+			uint32_t			present = 0;	// One bit per layer, if it has any width on any line.
+			std::vector<double>	across;			// Distance from center to each line.
+			std::vector<spx>	crossings;		// Ends of all layers but the last, line by line.
+		};
+
+		struct EdgeSource						// Samples of an edge, stride apart.
+		{
+			const spx*	pSamples;
+			int			stride;
+		};
+
+		void		_slopeApexes( DirectPiece& piece, const RectI& rect );
+
+		std::vector<DirectPiece>	m_directPieces;
+		RectSPX						m_cachedRect;
+		spx							m_cachedThickness = 0, m_cachedOutline = 0;
+		bool						m_bCachedQuarters = false, m_bCachedHalves = false, m_bCirclesCached = false;
+
+		std::vector<Build>			m_directBuilds;		// Written, then swapped with m_builds, so they all get reused.
+		std::vector<spx>			m_lineSamples;		// Lines between slices, a piece at a time.
+		std::vector<EdgeSource>		m_edgeSources;
+		std::vector<RingSlice>		m_previousSlices;
+
+		bool						m_bHasSpec = false;
 	};
 
 }
