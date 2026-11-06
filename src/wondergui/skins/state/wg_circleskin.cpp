@@ -47,6 +47,7 @@ namespace wg
 	CircleSkin::CircleSkin(const Blueprint& bp) : StateSkin(bp)
 	{
 		m_blendMode		= bp.blendMode;
+		m_pEdgemapFactory = bp.edgemapFactory;
 
 		// Generate lists of states that affects shift, color and surface.
 
@@ -289,25 +290,33 @@ namespace wg
 		ring.pSlices = &slice;
 		ring.outlineColor = _getOutlineColor(state);
 
+		auto draw = [&](int index)
+		{
+			if (m_pEdgemapFactory)
+				drawRingWithEdgemaps(pDevice, ring, m_pEdgemapFactory, m_pEdgemapRings[index]);
+			else
+				pDevice->drawRing(ring);
+		};
+
 		if (total < radius || thickness + outlineThickness >= radius)
 		{
 			ring.thickness = total < radius ? total : 0;
 			ring.outline = outlineThickness;
-			pDevice->drawRing(ring);
+			draw(0);
 		}
 		else
 		{
 			// Only the inner outline reaches the center: disc of outline color, fill on top.
 
 			slice.color = ring.outlineColor;
-			pDevice->drawRing(ring);
+			draw(0);
 
 			if (thickness > 0)
 			{
 				slice.color = _getColor(state);
 				ring.rect = canvas - BorderSPX(outlineThickness, outlineThickness);
 				ring.thickness = thickness;
-				pDevice->drawRing(ring);
+				draw(1);
 			}
 		}
 	}

@@ -25,6 +25,7 @@
 
 #include <wg_skin.h>
 #include <wg_color.h>
+#include <wg_edgemapring.h>
 
 namespace wg
 {
@@ -56,6 +57,15 @@ namespace wg
 
 			BlendMode	blendMode = BlendMode::Blend;
 			Size		defaultSize;
+
+			// If set, the pie is drawn as edgemaps made by it, kept by the skin and only changed
+			// where needed. Faster where shapes are slow to draw, such as with SoftwareBackend.
+			// A skin using edgemaps remakes its edgemap each time the render parameters change
+			// and should therefore only be used by a single widget or multiple identical
+			// widgets that renders exactly the same. Failing to do so can result in massive performance
+			// loss.
+
+			EdgemapFactory_p edgemapFactory;
 			HiColor		emptyColor = Color::DarkBlue;
 
 			Finalizer_p	finalizer = nullptr;
@@ -141,6 +151,9 @@ namespace wg
 		int			m_nSlices;
 		
 		bool		m_bOpaque;
+
+		EdgemapFactory_p		m_pEdgemapFactory;
+		mutable EdgemapRing_p	m_pEdgemapRing;		// Kept between renders, so only changes are remade.
 	};
 
 
