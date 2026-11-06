@@ -270,6 +270,106 @@ namespace wg
 		}
 	}
 
+	//____ _adjustSamples() ______________________________________________________
+	/*
+		A corner meets a horizontal edge on the line a band begins or ends at. An edge following
+		the corner through the row after that line runs straight from where the corner starts on
+		that line, which makes a point, covering pixels along the corner too little. As in
+		EdgemapRing, the sample on that line is moved along it, away from the corner's center, by a
+		quarter of the corner's width on the next line. That splits the difference between
+		covering the right area and keeping the row from looking flat with a kink.
+
+		The edges of a corner are found where it crosses the next line and where it starts on
+		this one.
+	*/
+
+	void EdgemapBox::_adjustSamples( const Layout& layout, int nEdges, spx * pSamples ) const
+	{
+		static const double c_nudge = 1.0 / 4096;			// As in _regions().
+		static const double c_flat = 0.25;					// Moved by this much of the corner's width on the next line.
+
+		const RectI& rect = layout.rect;
+
+		if (!layout.bRows)
+			return;
+
+		auto place = [nEdges](spx* pLine, int e, spx sample)
+		{
+			pLine[e] = sample;
+
+			for (int k = 0; k < e; k++)
+				pLine[k] = std::min(pLine[k], sample);
+			for (int k = e + 1; k < nEdges; k++)
+				pLine[k] = std::max(pLine[k], sample);
+		};
+
+		for (auto& band : m_bands)
+		{
+			if (band.top != rect.y || band.bottom != rect.y + rect.h)
+				continue;
+
+			for (const Box* pBox : { &m_outer, &m_inner })
+			{
+				if (pBox == &m_inner && !m_bOutline)
+					break;
+
+				for (int dir = -1; dir <= 1; dir += 2)		// Top, then bottom.
+				{
+					double boxEdge = dir < 0 ? pBox->top : pBox->bottom;
+					double bandEdge = dir < 0 ? band.topEdge : band.bottomEdge;
+
+					if (boxEdge != bandEdge)
+						continue;
+
+					int line = dir < 0 ? band.top : band.bottom;
+					int next = line - dir;
+
+					if (next < band.top || next > band.bottom || band.bottom - band.top < 2)
+						continue;
+
+					double pos = dir < 0 ? bandEdge + c_nudge : bandEdge - c_nudge;			// Where _regions() takes the line.
+
+					spx* pLine = pSamples + (line - rect.y) * nEdges;
+					spx* pNext = pSamples + (next - rect.y) * nEdges;
+
+					for (int corner = 0; corner < 4; corner++)
+					{
+						bool bTopCorner = corner == 0 || corner == 1;
+						if (bTopCorner != (dir < 0))
+							continue;
+
+						double r = pBox->radius[corner];
+						double cx = pBox->centerX(corner);
+						double cy = pBox->centerY(corner);
+						double side = (corner == 0 || corner == 3) ? -1.0 : 1.0;		// Corner is left or right of its center.
+
+						double acrossNext = next - cy;
+						double acrossLine = pos - cy;
+
+						if (r <= 0 || std::abs(acrossNext) >= r)
+							continue;
+
+						double widthNext = std::sqrt(r * r - acrossNext * acrossNext);
+						double widthLine = std::abs(acrossLine) < r ? std::sqrt(r * r - acrossLine * acrossLine) : 0.0;
+
+						spx crossingNext = spx(std::lround((cx + side * widthNext - rect.x) * 64));
+						spx crossingLine = spx(std::lround((cx + side * widthLine - rect.x) * 64));
+						spx sample = spx(std::lround((cx + side * std::max(widthLine, widthNext * c_flat) - rect.x) * 64));
+
+						for (int e = 0; e < nEdges; e++)
+						{
+							if (std::abs(pNext[e] - crossingNext) <= 1 && std::abs(pLine[e] - crossingLine) <= 1)
+							{
+								place(pLine, e, sample);
+								break;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 	//____ _classify() ___________________________________________________________
 	// Key and color of the region at x, y, as ReferenceBackend's RoundedBoxShape::segmentAt().
 

@@ -42,7 +42,10 @@ namespace wg
 	 * The box is made of one edgemap running along canvas rows, or up to three if it has an
 	 * outline: one for the outline above the inside, one for the rest and one for the
 	 * outline below. Since edges are straight between rows, pixels where a corner is nearly
-	 * horizontal are less exact. Horizontal edges are moved to the nearest pixel line.
+	 * horizontal are less exact. In the row where a corner meets a horizontal edge, the corner
+	 * gets a slope that looks like it instead of following it, since a straight edge from the
+	 * end of the horizontal edge would make a point. Horizontal edges are moved to the nearest
+	 * pixel line.
 	 *
 	 * Tints are not supported yet. Tints of the spec are ignored and the colors used as they
 	 * are. Colors left undefined are not drawn, but are drawn as transparent in
@@ -98,6 +101,7 @@ namespace wg
 		bool		_setSpec( const RoundedBoxSpec& spec );
 		void		_regions( const RectI& piece, bool bRow, double pos, double begin, double end, std::vector<Region>& regions ) const;
 		uint32_t	_classify( double x, double y, bool bRow, int& color ) const;
+		void		_adjustSamples( const Layout& layout, int nEdges, spx * pSamples ) const override;
 
 		EdgemapFactory_p	m_pFactory;
 		RoundedBoxSpec		m_spec;
