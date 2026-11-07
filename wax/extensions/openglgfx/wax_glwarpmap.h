@@ -46,17 +46,17 @@ namespace wax
 	/**
 	 * @brief Warpmap for GlBackend.
 	 *
-	 * The triangles are kept on the GPU, set up when the content changes:
+	 * The mesh is kept on the GPU as it is, in a vertex buffer of the vertices (x, y, u, v and w as
+	 * integers, the layout of Warpmap::Vertex) and an index buffer of the triangles (the corners as
+	 * unsigned ints, the layout of Warpmap::Triangle), with a vertex array for both. Content that
+	 * changes is copied to them, with nothing worked out on the CPU. Drawing only gives where to
+	 * draw, the source offset and the periods.
 	 *
-	 * - A vertex buffer, with a vertex array for it, of three vertices for each triangle: its
-	 *   position in pixels of the Warpmap (two floats) and the index of the triangle (an int), which
-	 *   the shaders take for the whole triangle.
-	 *
-	 * - A texture buffer of four RGBA32F entries for each triangle, with its mapping as functions of
-	 *   the position q of a point relative to its first corner, in pixels: W = a*q.x + b*q.y + c and
-	 *   likewise U and V, the position in the source (in pixels) being (u0, v0) + (U, V) / W. The
-	 *   entries are (corner.x, corner.y, Wa, Wb), (Wc, Ua, Ub, Uc), (Va, Vb, Vc, 0), (u0, v0, 0, 0).
-	 *   Without perspective W is 1. With it, the weights are scaled so that the largest is 1.
+	 * The vertex shader passes u * w, v * w and w on without perspective correction, which makes
+	 * them linear over the canvas, so that the fragment shaders get the position in the source as
+	 * their ratio, and its derivatives exactly from those of the three, also in the pixels around a
+	 * triangle that are shaded for it. u and v are taken relative to those of the first vertex, as
+	 * integers, to keep the precision of floats for meshes far into the source.
 	 */
 
 	class GlWarpmap : public Warpmap
@@ -80,16 +80,9 @@ namespace wax
 
 		void	_updated( int firstVertex, int nVertices, int firstTriangle, int nTriangles ) override;
 
-		struct VertexGL
-		{
-			GLfloat		x, y;
-			GLint		triangle;
-		};
-
 		GLuint		m_vertexBufferId = 0;
+		GLuint		m_indexBufferId = 0;
 		GLuint		m_vertexArrayId = 0;
-		GLuint		m_bufferId = 0;				// Mappings of the triangles.
-		GLuint		m_textureId = 0;
 	};
 
 } // namespace wax

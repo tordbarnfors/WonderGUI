@@ -33,10 +33,9 @@ in someone's memory or an old chat. Add to it when you decide something, move it
      their own mesh through `_meshSize()` and `_generateMesh()`.
   3. **Done:** SoftBackend and LinearBackend set up triangles when the content changes
      (`SoftWarpmap::Setup`) and draw them row by row, with their edges stepped exactly from row
-     to row, in spans classified outside/solid/mixed. GlBackend keeps the triangles of a
-     GlWarpmap in its own vertex buffer, with the mapping of each triangle in a texture buffer,
-     and draws them once per clip rectangle with that as scissor. The fragment shaders divide
-     for perspective at each pixel and take the derivatives from the mapping.
+     to row, in spans classified outside/solid/mixed. GlBackend keeps the mesh of a GlWarpmap on
+     the GPU as it is, in its own vertex and index buffers, and draws it once per clip rectangle
+     with that as scissor.
   4. **Done:** meshes that follow the shape. CircularWarp and RoundedRectWarp share a band along
      an outline of straight sides and corners (`WarpGenerator::_bandMesh()`): quads along the
      sides, sectors split across the band around the corners, polygons where the band reaches
@@ -90,6 +89,14 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   - **Shape and precision fix the number of triangles,** so changing the radii of a ring or the
     outline of a frame can make generate() create a new Warpmap. Angles, spans and offsets don't
     change it, since the mesh always goes all the way around.
+  - **GPU backends keep the mesh as it is** and let the GPU set up the triangles: vertices with
+    u * w, v * w and w passed on without perspective correction, so they are linear over the
+    canvas, and the position in the source as their ratio at each pixel, with derivatives from
+    theirs, which are exact. Updating copies what changed, with nothing worked out on the CPU, and
+    drawing only gives where, the source offset and the periods. u and v are relative to those of
+    the first vertex, to keep the precision of floats. Working out a mapping per triangle on the
+    CPU, which GlBackend first did, took four times the memory and a quarter of the time of an
+    update of a thick ring.
   - **Stream format:** `WarpmapUpdate` gives ranges of vertices and triangles and the periods,
     followed by `WarpmapVertices` (pairs (w, 0), (x, y), (u, v)) and `WarpmapTriangles` (pairs
     (a, b), (c, 0)), compressed by NodeCompressor. Replaces `WarpmapNodes`, without backwards

@@ -1027,10 +1027,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				*pExtrasGL++ = 0.f;
 			}
 
-			for (int i = 0; i < 4; i++)
-				*pExtrasGL++ = 0.f;
-
-			// The triangles of the Warpmap are in its own vertex buffer, see GlWarpmap, drawn once
+			// The mesh of the Warpmap is in its own vertex and index buffers, see GlWarpmap, drawn once
 			// for each part of a clip rectangle covered by the Warpmap, with that as scissor. The
 			// command is followed by offsets into the extras and colors, the tint, dest and the
 			// number of rectangles, then x, y, w, h of each.
@@ -1999,7 +1996,7 @@ void GlBackend::beginSession( CanvasRef canvasRef, Surface * pCanvasSurface, int
 		+ pInfo->nLineCoords/2 * GpuShapes::c_lineEntries * 4		// Lines with caps take the most.
 		+ pInfo->nRects * 8			// This is margin for blits (+8) and  subpixel fills (+4).
 		+ pInfo->nEdgemapDraws * 8
-		+ pInfo->nWarpDraws * 20
+		+ pInfo->nWarpDraws * 16
 		+ GpuShapes::maxSessionEntries(*pInfo) * 4;
 
 	m_pExtrasBuffer = new GLfloat[nExtrasFloats];
@@ -2374,10 +2371,8 @@ void GlBackend::endSession()
 			{
 				auto pWarpmap = static_cast<GlWarpmap*>(m_objects[objectOfs++]);
 
-				glActiveTexture(GL_TEXTURE5);
-				glBindTexture(GL_TEXTURE_BUFFER, pWarpmap->m_textureId);
-
 				GLuint prog;
+				const WarpUniforms* pUniforms;
 
 				if (cmd == CommandGL::WarpEdgemap)
 				{
@@ -2388,6 +2383,7 @@ void GlBackend::endSession()
 					glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, pEdgemap->m_bufferId);
 
 					prog = m_warpEdgemapProg[m_bActiveCanvasIsA8];
+					pUniforms = &m_warpEdgemapUniforms[m_bActiveCanvasIsA8];
 					glUseProgram(prog);
 				}
 				else
@@ -2395,6 +2391,7 @@ void GlBackend::endSession()
 					GlSurface* pSurf = m_pActiveBlitSource;
 
 					prog = m_warpBlitProg[m_bActiveCanvasIsA8];
+					pUniforms = &m_warpBlitUniforms[m_bActiveCanvasIsA8];
 					glUseProgram(prog);
 
 					int sourceKind = 0;
@@ -2406,13 +2403,13 @@ void GlBackend::endSession()
 					else if (pSurf->pixelFormat() == PixelFormat::Alpha_8)
 						sourceKind = 1;
 
-					glUniform1i(glGetUniformLocation(prog, "sourceKind"), sourceKind);
+					glUniform1i(pUniforms->sourceKind, sourceKind);
 
 					// A surface that isn't tiling is read as if the edge pixels of the source rectangle
 					// continued outside it, see WAX_GL_WARP_SAMPLE.
 
 					float clampInset = pSurf->isTiling() ? 0.f : pSurf->sampleMethod() == SampleMethod::Bilinear ? 0.5f : 1.f / 256;
-					glUniform1f(glGetUniformLocation(prog, "clampInset"), clampInset);
+					glUniform1f(pUniforms->clampInset, clampInset);
 				}
 
 				glActiveTexture(GL_TEXTURE0);
@@ -2424,10 +2421,23 @@ void GlBackend::endSession()
 				int destY = *pCmd++;
 				int nPatches = *pCmd++;
 
-				glUniform2f(glGetUniformLocation(prog, "warpDest"), GLfloat(destX), GLfloat(destY));
-				glUniform1i(glGetUniformLocation(prog, "warpExtrasOfs"), extrasOfs);
-				glUniform1i(glGetUniformLocation(prog, "warpColorsOfs"), colorsOfs);
-				glUniform1i(glGetUniformLocation(prog, "warpTintOfs"), tintOfs);
+				// u and v are taken relative to the first vertex (see GlWarpmap), which is added back
+				// brought into the periods.
+
+				CoordSPX ref;
+				if (pWarpmap->vertexCount() > 0)
+					ref = { pWarpmap->vertexData()[0].u, pWarpmap->vertexData()[0].v };
+
+				spx uPeriod = pWarpmap->uPeriod(), vPeriod = pWarpmap->vPeriod();
+				spx refU = uPeriod > 0 ? ((ref.x % uPeriod) + uPeriod) % uPeriod : ref.x;
+				spx refV = vPeriod > 0 ? ((ref.y % vPeriod) + vPeriod) % vPeriod : ref.y;
+
+				glUniform2f(pUniforms->dest, GLfloat(destX), GLfloat(destY));
+				glUniform1i(pUniforms->extrasOfs, extrasOfs);
+				glUniform1i(pUniforms->colorsOfs, colorsOfs);
+				glUniform1i(pUniforms->tintOfs, tintOfs);
+				glUniform2i(pUniforms->ref, ref.x, ref.y);
+				glUniform2f(pUniforms->refPos, refU / 64.f, refV / 64.f);
 
 				_setPartialCoverage(true);
 				glBindVertexArray(pWarpmap->m_vertexArrayId);
@@ -2445,7 +2455,7 @@ void GlBackend::endSession()
 						y = m_activeCanvasSize.h - (y + h);
 
 					glScissor(x, y, w, h);
-					glDrawArrays(GL_TRIANGLES, 0, pWarpmap->triangleCount() * 3);
+					glDrawElements(GL_TRIANGLES, pWarpmap->triangleCount() * 3, GL_UNSIGNED_INT, nullptr);
 				}
 
 				glScissor(0, 0, m_activeCanvasSize.w, m_activeCanvasSize.h);
@@ -2866,14 +2876,26 @@ void GlBackend::_loadPrograms(int uboBindingPoint)
 		LOG_INIT_GLERROR(glGetError());
 	}
 
-	// Create and init Warp shaders. Texture unit 4 is used for the edgemap buffer and 5 for the warpmap buffer.
+	// Create and init Warp shaders. Texture unit 4 is used for the edgemap buffer.
+
+	auto warpUniforms = [](GLuint progId, WarpUniforms& uniforms)
+	{
+		uniforms.clampInset = glGetUniformLocation(progId, "clampInset");
+		uniforms.colorsOfs = glGetUniformLocation(progId, "warpColorsOfs");
+		uniforms.dest = glGetUniformLocation(progId, "warpDest");
+		uniforms.extrasOfs = glGetUniformLocation(progId, "warpExtrasOfs");
+		uniforms.ref = glGetUniformLocation(progId, "warpRef");
+		uniforms.refPos = glGetUniformLocation(progId, "warpRefPos");
+		uniforms.sourceKind = glGetUniformLocation(progId, "sourceKind");
+		uniforms.tintOfs = glGetUniformLocation(progId, "warpTintOfs");
+	};
 
 	for (int i = 0; i < 2; i++)
 	{
 		GLuint progId = _loadOrCompileProgram(programNb++, warpVertexShader, i == 0 ? warpEdgemapFragmentShader : warpEdgemapFragmentShader_A8);
 		_setUniforms(progId, uboBindingPoint);
 		glUniform1i(glGetUniformLocation(progId, "edgemapId"), 4);
-		glUniform1i(glGetUniformLocation(progId, "warpmapId"), 5);
+		warpUniforms(progId, m_warpEdgemapUniforms[i]);
 		m_warpEdgemapProg[i] = progId;
 		LOG_INIT_GLERROR(glGetError());
 	}
@@ -2882,7 +2904,7 @@ void GlBackend::_loadPrograms(int uboBindingPoint)
 	{
 		GLuint progId = _loadOrCompileProgram(programNb++, warpVertexShader, i == 0 ? warpBlitFragmentShader : warpBlitFragmentShader_A8);
 		_setUniforms(progId, uboBindingPoint);
-		glUniform1i(glGetUniformLocation(progId, "warpmapId"), 5);
+		warpUniforms(progId, m_warpBlitUniforms[i]);
 		m_warpBlitProg[i] = progId;
 		LOG_INIT_GLERROR(glGetError());
 	}

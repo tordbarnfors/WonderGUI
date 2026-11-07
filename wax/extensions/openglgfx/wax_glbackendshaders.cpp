@@ -1766,22 +1766,19 @@ WAX_GL_SHAPE_FUNCS
 
 
 // Warps (Command::WarpBlit and WarpDrawEdgemap), see Warpmap for the definition they follow.
-// Each pixel finds the cell of the Warpmap it is in and interpolates the position in the source
-// at its center, and how fast that changes along x and y of the canvas. Coverage is worked out
+// The triangles of the Warpmap are drawn, and each pixel gets the position in the source at its
+// center from the triangle that draws it, and how fast that changes along x and y of the canvas. Coverage is worked out
 // from those, taking each border of the source and each edge of an edgemap as straight over the
-// pixel. Extras of a warp, five entries:
+// pixel. Extras of a warp, four entries:
 //
-//   0: position of Warpmap on canvas, cell width, number of edges.
+//   0: position of Warpmap on canvas, 0, number of edges.
 //   1: size of Warpmap, size of source in pixels.
 //   2: source offset in pixels of the source, periods in pixels of the source (0 if none).
 //   3: edgemaps: edges per column, offsets of flat colors, tint table and raw samples in the
 //      edgemap buffer. Blits: position of source rectangle in the surface.
-//   4: cell height.
 //
-// The cells of the Warpmap are in its buffer, see GlWarpmap.
-
-// The triangles of a GlWarpmap, from its own vertex buffer, with positions in pixels of the
-// Warpmap. What the vertices of other commands hold comes in uniforms, the same for all of them.
+// The mesh of the Warpmap is in its own vertex and index buffers, see GlWarpmap. warpRef is u and v
+// of its first vertex in spx, and warpRefPos the same in pixels, brought into the periods.
 
 const char GlBackend::warpVertexShader[] =
 
@@ -1794,16 +1791,18 @@ WAX_GL_CANVAS_BLOCK
 "uniform int warpExtrasOfs;								"
 "uniform int warpColorsOfs;								"
 "uniform int warpTintOfs;								"
-"layout(location = 0) in vec2 pos;                      "
-"layout(location = 1) in int triangle;                  "
+"uniform ivec2 warpRef;									"
+"layout(location = 0) in ivec2 pos;                     "
+"layout(location = 1) in ivec2 uv;                      "
+"layout(location = 2) in int weight;                    "
 "flat out int warpOfs;									"
 "flat out int tintOfs;									"
 "flat out vec4 flatTint;								"
-"flat out int warpTriangle;								"
+"noperspective out vec3 warpUVW;						"
 
 "void main()											"
 "{                                                      "
-"   vec2 p = pos + warpDest;							"
+"   vec2 p = vec2(pos) / 64.0 + warpDest;				"
 "   gl_Position.x = p.x*2/canvasWidth - 1.0;            "
 "   gl_Position.y = (canvasYOfs + canvasYMul*p.y)*2/canvasHeight - 1.0;    "
 "   gl_Position.z = 0.0;                                "
@@ -1811,15 +1810,17 @@ WAX_GL_CANVAS_BLOCK
 "   warpOfs = warpExtrasOfs;							"
 "   tintOfs = warpTintOfs;								"
 "   flatTint = texelFetch(colorBufferId, warpColorsOfs);	"
-"   warpTriangle = triangle;							"
+"   float w = float(weight) / 65536.0;					"
+"   warpUVW = vec3(vec2(uv - warpRef) * (w / 64.0), w);	"
 "}                                                      ";
 
-// Needs extrasBufferId, warpmapId, warpOfs and warpTriangle. warpHalfPlane() gives the part of the pixel where
+// Needs extrasBufferId, warpOfs, warpUVW and warpRefPos. warpHalfPlane() gives the part of the pixel where
 // f + g.x * dx + g.y * dy >= 0, dx and dy going from -0.5 to 0.5 over it, which is linear within
 // (a - b) / 2 of the center and a triangle in a corner further out. warpAxisCoverage() gives the
 // part inside the source along one axis, with the copies of the source on a periodic axis.
-// warpPosition() gives the position and its derivatives from the mapping of the triangle that
-// draws the pixel, see GlWarpmap, and discards a pixel with its center beyond the horizon.
+// warpPosition() gives the position and its derivatives, from u * w, v * w and w, which are linear
+// over the canvas so that their derivatives are exact, and discards a pixel with its center beyond
+// the horizon. It must be called before anything else that can discard, for the derivatives.
 // warpNearestCopy() moves a center in the gap between copies on a periodic axis to the nearest
 // copy, which is where colors are taken and edges evaluated.
 
@@ -1873,23 +1874,18 @@ WAX_GL_CANVAS_BLOCK
 "	}																				" \
 "	return min(c, 1.0);																" \
 "}																					" \
-"void warpPosition(vec2 p, out vec2 s, out vec2 dx, out vec2 dy)					" \
+"void warpPosition(out vec2 s, out vec2 dx, out vec2 dy)							" \
 "{																					" \
-"	vec4 e0 = warpEntry(0);															" \
-"	vec4 e2 = warpEntry(2);															" \
-"	int i = warpTriangle * 4;														" \
-"	vec4 t0 = texelFetch(warpmapId, i);												" \
-"	vec4 t1 = texelFetch(warpmapId, i + 1);											" \
-"	vec4 t2 = texelFetch(warpmapId, i + 2);											" \
-"	vec4 t3 = texelFetch(warpmapId, i + 3);											" \
-"	vec2 q = p - e0.xy - t0.xy;														" \
-"	float w = t0.z * q.x + t0.w * q.y + t1.x;										" \
+"	vec3 gx = dFdx(warpUVW);														" \
+"	vec3 gy = dFdy(warpUVW) * canvasYMul;											" \
+"	float w = warpUVW.z;															" \
 "	if (w <= 0.0)																	" \
 "		discard;																	" \
-"	vec2 uv = vec2(t1.y * q.x + t1.z * q.y + t1.w, t2.x * q.x + t2.y * q.y + t2.z) / w;	" \
-"	dx = (vec2(t1.y, t2.x) - uv * t0.z) / w;										" \
-"	dy = (vec2(t1.z, t2.y) - uv * t0.w) / w;										" \
-"	s = uv + t3.xy + e2.xy;															" \
+"	vec2 uv = warpUVW.xy / w;														" \
+"	dx = (gx.xy - uv * gx.z) / w;													" \
+"	dy = (gy.xy - uv * gy.z) / w;													" \
+"	vec4 e2 = warpEntry(2);															" \
+"	s = uv + warpRefPos + e2.xy;													" \
 "	if (e2.z > 0.0)																	" \
 "		s.x -= e2.z * floor(s.x / e2.z);											" \
 "	if (e2.w > 0.0)																	" \
@@ -1906,7 +1902,7 @@ WAX_GL_CANVAS_BLOCK
 
 #define WAX_GL_WARP_SEGMENTS(SEGMENT) \
 "	vec2 s, dx, dy;																	" \
-"	warpPosition(canvasPos, s, dx, dy);												" \
+"	warpPosition(s, dx, dy);         												" \
 "	vec4 e0 = warpEntry(0);															" \
 "	vec4 e1 = warpEntry(1);															" \
 "	vec4 e2 = warpEntry(2);															" \
@@ -1961,10 +1957,10 @@ WAX_GL_OUTPUT
 "uniform samplerBuffer extrasBufferId;			"
 "uniform samplerBuffer tintmapBufferId;			"
 "uniform samplerBuffer edgemapId;				"
-"uniform samplerBuffer warpmapId;				"
+"uniform vec2 warpRefPos;						"
 "flat in int warpOfs;							"
 "flat in int tintOfs;							"
-"flat in int warpTriangle;						"
+"noperspective in vec3 warpUVW;					"
 "vec2 canvasPos;									"
 "flat in vec4 flatTint;							"
 WAX_GL_TINT_FUNC
@@ -1997,10 +1993,10 @@ WAX_GL_OUTPUT_A8
 "uniform samplerBuffer extrasBufferId;			"
 "uniform samplerBuffer tintmapBufferId;			"
 "uniform samplerBuffer edgemapId;				"
-"uniform samplerBuffer warpmapId;				"
+"uniform vec2 warpRefPos;						"
 "flat in int warpOfs;							"
 "flat in int tintOfs;							"
-"flat in int warpTriangle;						"
+"noperspective in vec3 warpUVW;					"
 "vec2 canvasPos;									"
 "flat in vec4 flatTint;							"
 WAX_GL_TINT_FUNC
@@ -2063,7 +2059,7 @@ WAX_GL_WARP_SEGMENTS("{ acc += segColor(e, flatColorsOfs, tintTableOfs, sc).a * 
 
 #define WAX_GL_WARP_BLIT_COVERAGE \
 "	vec2 s, dx, dy;																	" \
-"	warpPosition(canvasPos, s, dx, dy);												" \
+"	warpPosition(s, dx, dy);         												" \
 "	vec4 e1 = warpEntry(1);															" \
 "	vec4 e2 = warpEntry(2);															" \
 "	vec4 e3 = warpEntry(3);															" \
@@ -2084,10 +2080,10 @@ const char GlBackend::warpBlitFragmentShader[] =
 WAX_GL_OUTPUT
 "uniform samplerBuffer extrasBufferId;			"
 "uniform samplerBuffer tintmapBufferId;			"
-"uniform samplerBuffer warpmapId;				"
+"uniform vec2 warpRefPos;						"
 "flat in int warpOfs;							"
 "flat in int tintOfs;							"
-"flat in int warpTriangle;						"
+"noperspective in vec3 warpUVW;					"
 "vec2 canvasPos;									"
 "flat in vec4 flatTint;							"
 WAX_GL_TINT_FUNC
@@ -2106,10 +2102,10 @@ const char GlBackend::warpBlitFragmentShader_A8[] =
 WAX_GL_OUTPUT_A8
 "uniform samplerBuffer extrasBufferId;			"
 "uniform samplerBuffer tintmapBufferId;			"
-"uniform samplerBuffer warpmapId;				"
+"uniform vec2 warpRefPos;						"
 "flat in int warpOfs;							"
 "flat in int tintOfs;							"
-"flat in int warpTriangle;						"
+"noperspective in vec3 warpUVW;					"
 "vec2 canvasPos;									"
 "flat in vec4 flatTint;							"
 WAX_GL_TINT_FUNC
