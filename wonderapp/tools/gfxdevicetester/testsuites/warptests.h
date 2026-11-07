@@ -4,6 +4,7 @@
 #include <wax_circularwarp.h>
 #include <wax_roundedrectwarp.h>
 #include <wax_cylinderwarp.h>
+#include <wax_perspectivewarp.h>
 
 #include <cmath>
 #include <vector>
@@ -31,6 +32,7 @@ public:
 		addTest("BlendModes", &WarpTests::blendModes);
 		addTest("Rounded rects", &WarpTests::roundedRects);
 		addTest("Cylinders", &WarpTests::cylinders);
+		addTest("Perspective", &WarpTests::perspective);
 	}
 
 	bool init(GfxDevice * pDevice, const RectSPX& canvas, wapp::API * pAppAPI)
@@ -145,6 +147,47 @@ public:
 														  (uint8_t*)label.data(), PixelFormat::ARGB_8);
 		}
 
+		// A floor of checkered tiles with grout, and a card with a border, a diamond and a red mark
+		// in its top-left corner, so that turns and mirroring show.
+
+		{
+			const int w = 128, h = 128, tile = 32;
+			std::vector<Color8> floor(w * h);
+
+			for (int y = 0; y < h; y++)
+				for (int x = 0; x < w; x++)
+				{
+					int tx = x % tile, ty = y % tile;
+					bool bGrout = tx < 2 || ty < 2;
+					bool bDark = ((x / tile) + (y / tile)) & 1;
+					floor[y * w + x] = bGrout ? Color8(70, 66, 60, 255) : bDark ? Color8(150, 60, 50, 255) : Color8(225, 215, 190, 255);
+				}
+
+			m_pFloor = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear, _.tiling = true),
+													  (uint8_t*)floor.data(), PixelFormat::ARGB_8);
+		}
+
+		{
+			const int w = 64, h = 96;
+			std::vector<Color8> card(w * h);
+
+			for (int y = 0; y < h; y++)
+				for (int x = 0; x < w; x++)
+				{
+					Color8 c = Color8(240, 236, 225, 255);
+					if (x < 3 || y < 3 || x >= w - 3 || y >= h - 3)
+						c = Color8(40, 50, 90, 255);
+					else if (x >= 7 && x < 17 && y >= 7 && y < 17)
+						c = Color8(220, 40, 40, 255);
+					else if (std::abs(x - w / 2) * 3 + std::abs(y - h / 2) * 2 < 64)
+						c = Color8(40, 120, 200, 255);
+					card[y * w + x] = c;
+				}
+
+			m_pCard = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear),
+													 (uint8_t*)card.data(), PixelFormat::ARGB_8);
+		}
+
 		// Warpmaps, a set for each size of source they are drawn with.
 
 		m_forGauge = _makeWarps(pWarpmapFactory, m_pGauge->pixelSize() * 64);
@@ -158,7 +201,7 @@ public:
 		m_pIdentity = pWarpmapFactory->createWarpmap(WGBP(Warpmap, _.size = m_pSmall->pixelSize(), _.cellSize = { 9, 9 }));
 		m_pIdentityBlit = pWarpmapFactory->createWarpmap(WGBP(Warpmap, _.size = { 64, 32 }, _.cellSize = { 7, 7 }));
 
-		return m_pGauge && m_pTintedGauge && m_pSmall && m_pTiling && m_pNearest && m_pBilinear && m_pReelStrip && m_pReelLabel &&
+		return m_pGauge && m_pTintedGauge && m_pSmall && m_pTiling && m_pNearest && m_pBilinear && m_pReelStrip && m_pReelLabel && m_pFloor && m_pCard &&
 			   m_forGauge.ring && m_forGauge.wave && m_forGauge.stripes;
 	}
 
@@ -170,6 +213,10 @@ public:
 		m_pTiling = nullptr;
 		m_pNearest = nullptr;
 		m_pBilinear = nullptr;
+		m_pReelStrip = nullptr;
+		m_pReelLabel = nullptr;
+		m_pFloor = nullptr;
+		m_pCard = nullptr;
 		m_forGauge = {};
 		m_forSmall = {};
 		m_forSurface = {};
@@ -382,6 +429,72 @@ public:
 		return true;
 	}
 
+	// Top: a tiled floor leaning into the distance, seen from above and scrolled along with a source
+	// offset, and the gauge leaning back like credits. Middle: cards in a row seen from one eye, turned towards the
+	// middle. Bottom: a card turned 0, 60 and 120 degrees around its middle (the last one mirrored,
+	// its back facing the viewer), one tilted, turned and rolled, and one pinned onto a free shape.
+
+	bool perspective(GfxDevice * pDevice, const RectSPX& canvas)
+	{
+		auto pFactory = pDevice->warpmapFactory();
+		SizeSPX cardSize = m_pCard->pixelSize() * 64;
+
+		// Floor, tilted back around its front edge and seen from above, so it goes towards a horizon
+		// at the top. The source rectangle covers many tiles of the tiling surface.
+
+		const SizeSPX floorSource = { 64 * 512, 64 * 256 };
+
+		auto pFloor = PerspectiveWarp::create(WGBP(PerspectiveWarp, _.size = { 300, 150 }, _.sourceSize = floorSource,
+			_.corners = PerspectiveWarp::rotated({ 0, 0, 64 * 300, 64 * 150 }, 70.f, 0.f, 0.f, 64 * 150, { 0.5f, 1.f }, CoordSPX(64 * 150, 0))), pFactory);
+
+		pDevice->setBlitSource(m_pFloor);
+		pDevice->warpBlit({ 64 * 10, 64 * 10 }, pFloor->generate(), { 0, 0, floorSource.w, floorSource.h }, { 0, 64 * 40 });
+
+		// Credits, likewise.
+
+		auto pCredits = PerspectiveWarp::create(WGBP(PerspectiveWarp, _.size = { 180, 150 }, _.sourceSize = m_pGauge->pixelSize() * 64,
+			_.corners = PerspectiveWarp::rotated({ 0, 64 * 60, 64 * 180, 64 * 90 }, 60.f, 0.f, 0.f, 64 * 150, { 0.5f, 1.f }, CoordSPX(64 * 90, 0))), pFactory);
+
+		pDevice->warpDrawEdgemap({ 64 * 320, 64 * 10 }, pCredits->generate(), m_pGauge);
+
+		// A row of cards seen from one eye in the middle of the row, the outer ones turned away.
+
+		pDevice->setBlitSource(m_pCard);
+
+		const SizeI row = { 490, 140 };
+		const CoordSPX eye = { 64 * row.w / 2, 64 * 70 };
+		const float turns[5] = { -25.f, -15.f, 0.f, 15.f, 25.f };
+
+		for (int i = 0; i < 5; i++)
+		{
+			RectSPX rect = { 64 * (20 + i * 95), 64 * 22, cardSize.w, cardSize.h };
+			auto pCard = PerspectiveWarp::create(WGBP(PerspectiveWarp, _.size = row, _.sourceSize = cardSize,
+				_.corners = PerspectiveWarp::rotated(rect, 0.f, turns[i], 0.f, 64 * 300, { 0.5f, 0.5f }, eye)), pFactory);
+
+			pDevice->warpBlit({ 64 * 10, 64 * 175 }, pCard->generate());
+		}
+
+		// Turned, turned and rolled, and pinned.
+
+		const SizeI cell = { 95, 160 };
+		const RectSPX cardRect = { 64 * 15, 64 * 32, cardSize.w, cardSize.h };
+
+		CornersT<CoordSPX> shapes[5] = {
+			PerspectiveWarp::rotated(cardRect, 0.f, 0.f, 0.f, 64 * 250),
+			PerspectiveWarp::rotated(cardRect, 0.f, 60.f, 0.f, 64 * 250),
+			PerspectiveWarp::rotated(cardRect, 0.f, 120.f, 0.f, 64 * 250),
+			PerspectiveWarp::rotated(cardRect, 35.f, 25.f, 20.f, 64 * 200),
+			CornersT<CoordSPX>({ 64 * 8, 64 * 40 }, { 64 * 86, 64 * 14 }, { 64 * 80, 64 * 150 }, { 64 * 22, 64 * 118 })
+		};
+
+		for (int i = 0; i < 5; i++)
+		{
+			auto pCard = PerspectiveWarp::create(WGBP(PerspectiveWarp, _.size = cell, _.sourceSize = cardSize, _.corners = shapes[i]), pFactory);
+			pDevice->warpBlit({ 64 * (10 + i * 100), 64 * 335 }, pCard->generate());
+		}
+		return true;
+	}
+
 private:
 
 	Edgemap_p	m_pGauge;
@@ -393,6 +506,8 @@ private:
 	Surface_p	m_pBilinear;
 	Surface_p	m_pReelStrip;
 	Surface_p	m_pReelLabel;
+	Surface_p	m_pFloor;
+	Surface_p	m_pCard;
 
 	// Warpmaps are made for a source of a certain size.
 

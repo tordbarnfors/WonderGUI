@@ -119,9 +119,47 @@ CylinderWarp makes and keeps a Warpmap that wraps the source around a cylinder s
 
 
 
+## PerspectiveWarp
+
+PerspectiveWarp makes and keeps a Warpmap that places the source on a flat plane seen in perspective: a floor leaning into the distance, text scrolling away like movie credits, a card or a door turning around an axis, or a picture pinned onto a sign seen at an angle. The further away a part of the plane is, the smaller it gets.
+
+The plane is given by its four *corners*: where the top-left, top-right, bottom-right and bottom-left corners of the source end up, in spx from the top-left corner of the Warpmap. Any convex shape with four corners can be given, and the source is drawn between them as a plane seen in perspective. Corners in the reverse order (counter clockwise) mirror the source, as when the back of a turning card faces the viewer. Parts outside the Warpmap are cut off, so make it large enough to hold the corners.
+
+`rotated()` gives the corners of a rectangle on screen after rotating it in 3D and seeing it from an eye in front of the screen, so that is what you usually set *corners* with:
+
+```c++
+	RectSPX cardRect = { 20*64, 30*64, 64*64, 96*64 };
+
+	auto pCard = PerspectiveWarp::create( WGBP(PerspectiveWarp,
+										_.size = { 110, 160 },
+										_.sourceSize = pCardFace->pixelSize() * 64,
+										_.corners = PerspectiveWarp::rotated( cardRect, 0.f, 30.f, 0.f, 300*64 ) ),
+										pDevice->warpmapFactory() );
+
+	turn += speed * seconds;
+	pCard->setCorners( PerspectiveWarp::rotated( cardRect, 0.f, turn, 0.f, 300*64 ) );
+
+	pDevice->setBlitSource( pCardFace );
+	pDevice->warpBlit( { 10*64, 10*64 }, pCard->generate() );
+```
+
+`rotated( rect, tilt, turn, roll, viewDistance, pivot, eye )` rotates the rectangle around its *pivot* (relative to the rectangle, its center by default): first *roll* degrees clockwise within the screen, then *turn* degrees around the vertical axis, the right side moving away, then *tilt* degrees around the horizontal axis, the top moving away. It is then seen from an eye *viewDistance* spx in front of the screen, straight in front of the pivot unless *eye* is given (in spx, in the same space as the rectangle). A shorter distance gives stronger perspective, around two to three times the size of the rectangle looks natural, and 0 gives none. Rectangles seen from the same eye share their vanishing points, as for a row of cards. An eye above a rectangle tilted around its bottom edge sees it as a floor going towards a horizon:
+
+```c++
+	// A floor 300 x 150 pixels, seen from above its middle at the top of the Warpmap.
+
+	_.corners = PerspectiveWarp::rotated( { 0, 0, 300*64, 150*64 }, 70.f, 0.f, 0.f, 150*64, { 0.5f, 1.f }, CoordSPX(150*64, 0) )
+```
+
+Changing the angles takes generating again, which is cheap: a few multiplications and two divisions per node, with integers only. Moving the source along the plane, such as scrolling credits or a moving floor, is done with a source offset when drawing instead, as for any Warpmap. A tiling surface with a source rectangle larger than the surface makes a floor of many tiles.
+
+Unless set, cells are calculated from *precision* and how close the corners get to the horizon of the plane, where it shrinks into the distance the fastest. A plane seen at a steep angle therefore takes small cells. Without perspective, when opposite sides are parallel, positions change linearly and cells span the Warpmap. Near the horizon the source is shrunk a lot, which a mipmapped surface draws better on backends that support mipmaps. Showing something else on the back side, and hiding it, is left to the caller: the corners turn counter clockwise when the back faces the viewer.
+
+
+
 ## WarpGenerators
 
-CircularWarp, RoundedRectWarp and CylinderWarp are WarpGenerators: they make a Warpmap from a few settings and keep it. Size, source size, cell size, precision and generate() are the same for all WarpGenerators.
+CircularWarp, RoundedRectWarp, CylinderWarp and PerspectiveWarp are WarpGenerators: they make a Warpmap from a few settings and keep it. Size, source size, cell size, precision and generate() are the same for all WarpGenerators.
 
 generate() updates the Warpmap after settings have changed and returns it. A Warpmap that is held elsewhere, such as by a draw that isn't rendered yet, is never changed: generate() then makes a new one, as it does when size or cell size has changed. So draw what generate() returns rather than keeping it, and one generator can be drawn several times with different settings within the same canvas update. Unless set, the cell size is calculated from *precision* and the shape: within 4 to 64 pixels along curves, and up to the size of the Warpmap along axes where positions change linearly. Width and height can be set separately, a 0 for either has it calculated.
 

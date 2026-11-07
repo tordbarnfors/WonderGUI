@@ -257,7 +257,7 @@ namespace wax
 	public:
 		//.____ Creation __________________________________________
 
-		CornersT() : topLeft(0), topRight(0), bottomRight(0), bottomLeft(0) {}
+		CornersT() : topLeft{}, topRight{}, bottomRight{}, bottomLeft{} {}
 		CornersT( Type all ) : topLeft(all), topRight(all), bottomRight(all), bottomLeft(all) {}
 		CornersT( Type topLeft, Type topRight, Type bottomRight, Type bottomLeft ) : topLeft(topLeft), topRight(topRight), bottomRight(bottomRight), bottomLeft(bottomLeft) {}
 

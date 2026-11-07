@@ -8,6 +8,7 @@
 #include <wax_circularwarp.h>
 #include <wax_roundedrectwarp.h>
 #include <wax_cylinderwarp.h>
+#include <wax_perspectivewarp.h>
 #include <wax_nodecompression.h>
 #include <cstring>
 
@@ -173,6 +174,8 @@ WarpmapTest::WarpmapTest()
 	ADD_TEST(offsetTest);
 	ADD_TEST(nonSquareCellsTest);
 	ADD_TEST(cylinderWarpTest);
+	ADD_TEST(perspectiveWarpTest);
+	ADD_TEST(perspectiveRotatedTest);
 }
 
 WarpmapTest::~WarpmapTest()
@@ -1050,5 +1053,278 @@ bool WarpmapTest::cylinderWarpTest(std::ostream& output)
 	TEST_ASSERT(CylinderWarp::create(WGBP(CylinderWarp, _.size = { 40, 40 }, _.sourceSize = source, _.axis = Axis::Undefined), pFactory) == nullptr);
 	TEST_ASSERT(CylinderWarp::create(WGBP(CylinderWarp, _.size = { 40, 40 }, _.sourceSize = source, _.sweep = 0.f), pFactory) == nullptr);
 	TEST_ASSERT(CylinderWarp::create(WGBP(CylinderWarp, _.size = { 40, 40 }), pFactory) == nullptr);			// No source size.
+	return true;
+}
+
+//____ perspectiveWarpTest() __________________________________________________
+// PerspectiveWarp against a projective transform solved from the four corners as a linear system,
+// which is how it's usually done rather than how PerspectiveWarp does it.
+
+namespace
+{
+	// x' = (h[0]*x + h[1]*y + h[2]) / (h[6]*x + h[7]*y + 1), y' likewise with h[3..5].
+
+	struct Homography
+	{
+		double h[8];
+
+		CoordF map(double x, double y, double* pW = nullptr) const
+		{
+			double w = h[6] * x + h[7] * y + 1.0;
+			if (pW)
+				*pW = w;
+			return { float((h[0] * x + h[1] * y + h[2]) / w), float((h[3] * x + h[4] * y + h[5]) / w) };
+		}
+	};
+
+	Homography solveHomography(const CoordF from[4], const CoordF to[4])
+	{
+		double m[8][9] = {};
+		for (int i = 0; i < 4; i++)
+		{
+			double x = from[i].x, y = from[i].y, u = to[i].x, v = to[i].y;
+			double r1[9] = { x, y, 1, 0, 0, 0, -x * u, -y * u, u };
+			double r2[9] = { 0, 0, 0, x, y, 1, -x * v, -y * v, v };
+			std::copy(r1, r1 + 9, m[i * 2]);
+			std::copy(r2, r2 + 9, m[i * 2 + 1]);
+		}
+
+		for (int col = 0; col < 8; col++)
+		{
+			int pivot = col;
+			for (int row = col + 1; row < 8; row++)
+				if (std::abs(m[row][col]) > std::abs(m[pivot][col]))
+					pivot = row;
+			std::swap(m[col], m[pivot]);
+
+			for (int row = 0; row < 8; row++)
+			{
+				if (row == col)
+					continue;
+				double f = m[row][col] / m[col][col];
+				for (int k = col; k < 9; k++)
+					m[row][k] -= f * m[col][k];
+			}
+		}
+
+		Homography hm;
+		for (int i = 0; i < 8; i++)
+			hm.h[i] = m[i][8] / m[i][i];
+		return hm;
+	}
+
+	// Corners of the Warpmap (pixels) to corners of the source (spx), and back.
+
+	void perspectiveHomographies(const PerspectiveWarp::Blueprint& bp, Homography& toSource, Homography& toScreen)
+	{
+		CoordF screen[4], source[4] = { { 0, 0 }, { float(bp.sourceSize.w), 0 }, { float(bp.sourceSize.w), float(bp.sourceSize.h) }, { 0, float(bp.sourceSize.h) } };
+		for (int i = 0; i < 4; i++)
+			screen[i] = { bp.corners[i].x / 64.f, bp.corners[i].y / 64.f };
+
+		toSource = solveHomography(screen, source);
+		toScreen = solveHomography(source, screen);
+	}
+}
+
+bool WarpmapTest::perspectiveWarpTest(std::ostream& output)
+{
+	auto pFactory = SoftWarpmapFactory::create();
+	const SizeSPX source = { 256 * 64, 128 * 64 };
+
+	auto corners = [](CoordI a, CoordI b, CoordI c, CoordI d) { return CornersT<CoordSPX>(a * 64, b * 64, c * 64, d * 64); };
+
+	PerspectiveWarp::Blueprint cases[] = {
+		// A floor leaning back, a card turned and rolled seen from aside, a sign pinned at an angle, the same
+		// mirrored, and very close to the horizon.
+
+		WGBP(PerspectiveWarp, _.size = { 240, 160 }, _.sourceSize = source, _.corners = PerspectiveWarp::rotated({ 20 * 64, 20 * 64, 200 * 64, 120 * 64 }, 50.f, 0.f, 0.f, 300 * 64)),
+		WGBP(PerspectiveWarp, _.size = { 200, 200 }, _.sourceSize = source, _.precision = 0.1f,
+			 _.corners = PerspectiveWarp::rotated({ 40 * 64, 50 * 64, 120 * 64, 90 * 64 }, 10.f, 35.f, 15.f, 400 * 64, { 0.3f, 0.6f }, CoordSPX(150 * 64, 30 * 64))),
+		WGBP(PerspectiveWarp, _.size = { 160, 120 }, _.sourceSize = source, _.corners = corners({ 10, 20 }, { 150, 5 }, { 130, 110 }, { 30, 90 })),
+		WGBP(PerspectiveWarp, _.size = { 160, 120 }, _.sourceSize = source, _.corners = corners({ 150, 5 }, { 10, 20 }, { 30, 90 }, { 130, 110 })),
+		WGBP(PerspectiveWarp, _.size = { 160, 120 }, _.sourceSize = source, _.corners = corners({ 70, 5 }, { 90, 5 }, { 155, 115 }, { 5, 115 }), _.precision = 0.5f)
+	};
+
+	for (auto& bp : cases)
+	{
+		auto pWarp = PerspectiveWarp::create(bp, pFactory);
+		TEST_ASSERT(pWarp != nullptr);
+
+		auto pMap = pWarp->generate();
+		TEST_ASSERT(pMap->uPeriod() == 0 && pMap->vPeriod() == 0);
+
+		Homography toSource, toScreen;
+		perspectiveHomographies(bp, toSource, toScreen);
+
+		// Cell size from the corner nearest the horizon, where w is 0.
+
+		double gradient = std::sqrt(toSource.h[6] * toSource.h[6] + toSource.h[7] * toSource.h[7]);
+		double nearest = 1e30;
+		for (int i = 0; i < 4; i++)
+		{
+			double w;
+			toSource.map(bp.corners[i].x / 64.0, bp.corners[i].y / 64.0, &w);
+			nearest = std::min(nearest, std::abs(w) / gradient);
+		}
+
+		int expected = std::clamp(int(std::sqrt(4.0 * bp.precision * nearest)), 4, 64);
+		SizeI cell = pMap->cellSize();
+		if (cell.w != cell.h || std::abs(cell.w - expected) > 1)
+			output << "Cell size " << cell.w << " x " << cell.h << ", expected " << expected << std::endl;
+		TEST_ASSERT(cell.w == cell.h && std::abs(cell.w - expected) <= 1);
+
+		// Nodes exact, except beyond the horizon and those clamped far outside, which only need to be outside.
+
+		double sign;
+		toSource.map(bp.corners[0].x / 64.0, bp.corners[0].y / 64.0, &sign);
+
+		SizeI nodes = pMap->nodes();
+		for (int row = 0; row < nodes.h; row++)
+			for (int col = 0; col < nodes.w; col++)
+			{
+				double w;
+				CoordF exact = toSource.map(pMap->nodeX(col), pMap->nodeY(row), &w);
+				CoordSPX node = pMap->nodeData()[row * nodes.w + col];
+
+				if (w * sign > 0 && std::abs(exact.x) < Warpmap::maxNodeValue && std::abs(exact.y) < Warpmap::maxNodeValue)
+				{
+					double tolerance = std::max(1.0, std::max(std::abs(exact.x), std::abs(exact.y)) * 1e-9);
+					if (std::abs(node.x - exact.x) > tolerance || std::abs(node.y - exact.y) > tolerance)
+						output << "Node " << col << "," << row << " is " << node.x << "," << node.y << ", expected " << exact.x << "," << exact.y << std::endl;
+					TEST_ASSERT(std::abs(node.x - exact.x) <= tolerance && std::abs(node.y - exact.y) <= tolerance);
+				}
+				else
+					TEST_ASSERT(node.x <= 0 || node.x >= source.w || node.y <= 0 || node.y >= source.h);
+			}
+
+		// Within precision between nodes on the plane, measured on screen: the position read is taken back
+		// to the screen and compared with where it was read.
+
+		double maxError = 0.0;
+		for (double y = 0.5; y < bp.size.h; y += 1.0)
+			for (double x = 0.5; x < bp.size.w; x += 1.0)
+			{
+				CoordF exact = toSource.map(x, y);
+				if (exact.x < 0 || exact.y < 0 || exact.x > source.w || exact.y > source.h)
+					continue;
+
+				CoordF pos = pMap->positionAt(x, y);
+				CoordF back = toScreen.map(pos.x, pos.y);
+				maxError = std::max(maxError, std::hypot(back.x - x, back.y - y));
+			}
+
+		if (maxError > bp.precision * 1.5)
+			output << "Max position error " << maxError << " px, precision " << bp.precision << std::endl;
+		TEST_ASSERT(maxError <= bp.precision * 1.5);
+	}
+
+	// Without perspective cells span the Warpmap and positions are exact everywhere.
+
+	auto pFlat = PerspectiveWarp::create(WGBP(PerspectiveWarp, _.size = { 100, 80 }, _.sourceSize = source,
+		_.corners = corners({ 10, 10 }, { 90, 20 }, { 80, 70 }, { 0, 60 })), pFactory);
+	auto pFlatMap = pFlat->generate();
+	TEST_ASSERT(pFlatMap->cellSize() == SizeI(100, 80) && pFlatMap->nodes() == SizeI(2, 2));
+
+	// Corners: refused unless convex with some area, and new ones generate anew.
+
+	TEST_ASSERT(!pFlat->setCorners(corners({ 10, 10 }, { 90, 60 }, { 90, 10 }, { 10, 60 })));		// Crossed.
+	TEST_ASSERT(!pFlat->setCorners(corners({ 10, 10 }, { 50, 10 }, { 90, 10 }, { 10, 60 })));		// Three in a line.
+	TEST_ASSERT(!pFlat->setCorners(corners({ 10, 10 }, { 90, 10 }, { 50, 20 }, { 10, 60 })));		// Not convex.
+	TEST_ASSERT(!pFlat->setCorners(CornersT<CoordSPX>()));
+	TEST_ASSERT(pFlat->corners() == corners({ 10, 10 }, { 90, 20 }, { 80, 70 }, { 0, 60 }));
+
+	TEST_ASSERT(pFlat->setCorners(cases[2].corners) && pFlat->corners() == cases[2].corners);
+	auto pChanged = pFlat->generate();
+	TEST_ASSERT(pChanged->cellSize() != SizeI(100, 80));
+
+	TEST_ASSERT(PerspectiveWarp::create(WGBP(PerspectiveWarp, _.size = { 40, 40 }, _.sourceSize = source), pFactory) == nullptr);		// No corners.
+	TEST_ASSERT(PerspectiveWarp::create(WGBP(PerspectiveWarp, _.size = { 40, 40 }, _.corners = cases[2].corners), pFactory) == nullptr);	// No source size.
+	return true;
+}
+
+//____ perspectiveRotatedTest() _______________________________________________
+// PerspectiveWarp::rotated() against rotation matrices and a projection in floating point.
+
+namespace
+{
+	CornersT<CoordF> exactRotated(const RectSPX& rect, double tilt, double turn, double roll, double distance, CoordF pivot, CoordF eye)
+	{
+		const double r = M_PI / 180;
+		double px = rect.x + pivot.x * rect.w, py = rect.y + pivot.y * rect.h;
+
+		CoordF points[4] = { { float(rect.x), float(rect.y) }, { float(rect.x + rect.w), float(rect.y) },
+							 { float(rect.x + rect.w), float(rect.y + rect.h) }, { float(rect.x), float(rect.y + rect.h) } };
+
+		CornersT<CoordF> out;
+		for (int i = 0; i < 4; i++)
+		{
+			double x = points[i].x - px, y = points[i].y - py, z = 0;
+
+			double x1 = x * std::cos(roll * r) - y * std::sin(roll * r), y1 = x * std::sin(roll * r) + y * std::cos(roll * r), z1 = z;
+			double x2 = x1 * std::cos(turn * r) - z1 * std::sin(turn * r), y2 = y1, z2 = x1 * std::sin(turn * r) + z1 * std::cos(turn * r);
+			double x3 = x2, y3 = y2 * std::cos(tilt * r) + z2 * std::sin(tilt * r), z3 = z2 * std::cos(tilt * r) - y2 * std::sin(tilt * r);
+
+			double sx = px + x3, sy = py + y3;
+			if (distance > 0)
+			{
+				sx = eye.x + (sx - eye.x) * distance / (distance + z3);
+				sy = eye.y + (sy - eye.y) * distance / (distance + z3);
+			}
+			out[i] = { float(sx), float(sy) };
+		}
+		return out;
+	}
+}
+
+bool WarpmapTest::perspectiveRotatedTest(std::ostream& output)
+{
+	const RectSPX rect = { 30 * 64, 40 * 64, 200 * 64, 120 * 64 };
+
+	struct Case { float tilt, turn, roll; spx distance; CoordF pivot; std::optional<CoordSPX> eye; };
+
+	Case cases[] = {
+		{ 0.f, 0.f, 0.f, 500 * 64, { 0.5f, 0.5f }, {} },
+		{ 50.f, 0.f, 0.f, 300 * 64, { 0.5f, 1.f }, {} },
+		{ 0.f, -70.f, 0.f, 250 * 64, { 0.f, 0.5f }, {} },
+		{ 20.f, 30.f, -25.f, 400 * 64, { 0.25f, 0.75f }, CoordSPX(300 * 64, -40 * 64) },
+		{ -35.f, 160.f, 400.f, 900 * 64, { 0.5f, 0.5f }, {} },
+		{ 60.f, 0.f, 0.f, 0, { 0.5f, 0.5f }, {} }													// No perspective.
+	};
+
+	for (auto& c : cases)
+	{
+		CornersT<CoordSPX> corners = PerspectiveWarp::rotated(rect, c.tilt, c.turn, c.roll, c.distance, c.pivot, c.eye);
+
+		CoordF eye = c.eye ? CoordF(float(c.eye->x), float(c.eye->y)) : CoordF(rect.x + c.pivot.x * rect.w, rect.y + c.pivot.y * rect.h);
+		CornersT<CoordF> exact = exactRotated(rect, c.tilt, c.turn, c.roll, c.distance, c.pivot, eye);
+
+		for (int i = 0; i < 4; i++)
+		{
+			if (std::abs(corners[i].x - exact[i].x) > 1.0 || std::abs(corners[i].y - exact[i].y) > 1.0)
+				output << "Corner " << i << " is " << corners[i].x << "," << corners[i].y << ", expected " << exact[i].x << "," << exact[i].y << std::endl;
+			TEST_ASSERT(std::abs(corners[i].x - exact[i].x) <= 1.0 && std::abs(corners[i].y - exact[i].y) <= 1.0);
+		}
+	}
+
+	// Not rotated, the rectangle itself.
+
+	TEST_ASSERT(PerspectiveWarp::rotated(rect, 0.f, 0.f, 0.f, 500 * 64) == CornersT<CoordSPX>(rect.pos(), CoordSPX(rect.x + rect.w, rect.y),
+				CoordSPX(rect.x + rect.w, rect.y + rect.h), CoordSPX(rect.x, rect.y + rect.h)));
+
+	// Seen edge on, or partly behind the eye, the corners are refused.
+
+	auto pFactory = SoftWarpmapFactory::create();
+	auto pWarp = PerspectiveWarp::create(WGBP(PerspectiveWarp, _.size = { 260, 200 }, _.sourceSize = { 64 * 64, 64 * 64 },
+		_.corners = PerspectiveWarp::rotated(rect, 0.f, 0.f, 0.f, 500 * 64)), pFactory);
+	TEST_ASSERT(pWarp != nullptr);
+
+	TEST_ASSERT(!pWarp->setCorners(PerspectiveWarp::rotated(rect, 0.f, 90.f, 0.f, 500 * 64)));
+	TEST_ASSERT(!pWarp->setCorners(PerspectiveWarp::rotated(rect, 0.f, 90.f, 0.f, 0)));
+	TEST_ASSERT(!pWarp->setCorners(PerspectiveWarp::rotated(rect, 80.f, 0.f, 0.f, 50 * 64)));
+
+	// Turned past 90 degrees, the back faces the viewer: corners in the reverse order, which mirror the source.
+
+	CornersT<CoordSPX> back = PerspectiveWarp::rotated(rect, 0.f, 150.f, 0.f, 500 * 64);
+	TEST_ASSERT(pWarp->setCorners(back) && back.topLeft.x > back.topRight.x);
 	return true;
 }

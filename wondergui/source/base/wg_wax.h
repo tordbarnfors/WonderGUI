@@ -368,6 +368,12 @@ namespace wg
 	using wax::PatchesI;
 	using wax::PatchesF;
 
+	//____ wax_perspectivewarp.h ___________________________________________________
+
+	using wax::PerspectiveWarp_p;
+	using wax::PerspectiveWarp_wp;
+	using wax::PerspectiveWarp;
+
 	//____ wax_pixeltools.h ________________________________________________________
 
 	namespace PixelTools = wax::PixelTools;

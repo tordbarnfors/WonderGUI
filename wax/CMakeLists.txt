@@ -115,6 +115,8 @@ set( SOURCES
 	source/warp/wax_circularwarp.h
 	source/warp/wax_cylinderwarp.cpp
 	source/warp/wax_cylinderwarp.h
+	source/warp/wax_perspectivewarp.cpp
+	source/warp/wax_perspectivewarp.h
 	source/warp/wax_roundedrectwarp.cpp
 	source/warp/wax_roundedrectwarp.h
 	source/warp/wax_warpgenerator.cpp
@@ -140,6 +142,8 @@ set( SOURCES
 	c-api/wax_c_circularwarp.h
 	c-api/wax_c_cylinderwarp.cpp
 	c-api/wax_c_cylinderwarp.h
+	c-api/wax_c_perspectivewarp.cpp
+	c-api/wax_c_perspectivewarp.h
 	c-api/wax_c_roundedrectwarp.cpp
 	c-api/wax_c_roundedrectwarp.h
 	c-api/wax_c_color.cpp

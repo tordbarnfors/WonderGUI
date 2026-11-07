@@ -17,6 +17,8 @@
 #include <wax_roundedrectwarp.h>
 #include <wax_cylinderwarp.h>
 #include <wax_c_cylinderwarp.h>
+#include <wax_perspectivewarp.h>
+#include <wax_c_perspectivewarp.h>
 #include <wax_c.h>
 #include <wax_c_object.h>
 #include <wax_c_softgfx.h>
@@ -399,6 +401,7 @@ WarpRenderTest::WarpRenderTest()
 	ADD_TEST(rotationOffsetTest);
 	ADD_TEST(roundedRectTest);
 	ADD_TEST(cylinderTest);
+	ADD_TEST(perspectiveTest);
 }
 
 WarpRenderTest::~WarpRenderTest()
@@ -1311,4 +1314,110 @@ bool WarpRenderTest::cylinderTest(std::ostream& output)
 	};
 
 	return compare(output, "Cylinders through the C API", render(TestBackend::Soft, [&](GfxDevice* p) { c(p); }), "C API", render(TestBackend::Soft, scene), "C++", 0);
+}
+
+//____ perspectiveTest() ______________________________________________________
+// A floor scrolling into the distance, cards turned and pinned, blitted and as edgemaps.
+
+bool WarpRenderTest::perspectiveTest(std::ostream& output)
+{
+	const RectSPX cardRect = { 6 * 64, 8 * 64, c_edgemapSource.w, c_edgemapSource.h };
+	const CoordSPX sharedEye = { 40 * 64, 20 * 64 };
+
+	auto floor = WGBP(PerspectiveWarp, _.size = { 70, 40 }, _.sourceSize = { 64 * 64, 32 * 64 },
+					  _.corners = PerspectiveWarp::rotated({ 0, 0, 70 * 64, 40 * 64 }, 55.f, 0.f, 0.f, 90 * 64, { 0.5f, 1.f }));
+	auto card = WGBP(PerspectiveWarp, _.size = { 60, 40 }, _.sourceSize = c_edgemapSource,
+					 _.corners = PerspectiveWarp::rotated(cardRect, -15.f, 40.f, 10.f, 120 * 64));
+	auto shared = WGBP(PerspectiveWarp, _.size = { 60, 40 }, _.sourceSize = c_edgemapSource,
+					   _.corners = PerspectiveWarp::rotated(cardRect, 0.f, -50.f, 0.f, 100 * 64, { 0.f, 0.5f }, sharedEye));
+	auto pinned = WGBP(PerspectiveWarp, _.size = { 70, 44 }, _.sourceSize = { 32 * 64, 16 * 64 },
+					   _.corners = CornersT<CoordSPX>({ 60 * 64, 3 * 64 }, { 4 * 64, 8 * 64 }, { 10 * 64, 40 * 64 }, { 66 * 64, 30 * 64 }));
+
+	auto scene = [=](GfxDevice* pDevice)
+	{
+		auto pFactory = pDevice->warpmapFactory();
+		auto pFloor = PerspectiveWarp::create(floor, pFactory);
+		auto pCard = PerspectiveWarp::create(card, pFactory);
+		auto pShared = PerspectiveWarp::create(shared, pFactory);
+		auto pPinned = PerspectiveWarp::create(pinned, pFactory);
+
+		pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Bilinear));
+		pDevice->warpBlit({ 2 * 64, 2 * 64 }, pFloor->generate(), { 0, 10 * 64 });
+		pDevice->warpBlit({ 2 * 64, 48 * 64 }, pPinned->generate());
+
+		auto pEdgemap = makeEdgemap(pDevice, false);
+		pDevice->warpDrawEdgemap({ 80 * 64, 2 * 64 }, pCard->generate(), pEdgemap);
+		pDevice->warpDrawEdgemap({ 80 * 64, 50 * 64 }, pShared->generate(), pEdgemap);
+	};
+
+	if (!compare(output, "Perspective", render(TestBackend::Soft, scene), "SoftBackend", render(TestBackend::Reference, scene), "ReferenceBackend", 6, 60, 48) ||
+		!compare(output, "Perspective", render(TestBackend::Linear, scene), "LinearBackend", render(TestBackend::Soft, scene), "SoftBackend", 0) ||
+		!compare(output, "Perspective, streamed", renderStreamed(scene), "streamed", render(TestBackend::Soft, scene), "direct", 0))
+		return false;
+
+	// Through the C API.
+
+	auto toC = [](const CornersT<CoordSPX>& corners, wax_coordSPX out[4])
+	{
+		for (int i = 0; i < 4; i++)
+			out[i] = { corners[i].x, corners[i].y };
+	};
+
+	auto c = [&](GfxDevice* pDevice)
+	{
+		wax_obj factory = (wax_obj) static_cast<Object*>(pDevice->warpmapFactory().rawPtr());
+		wax_obj device = (wax_obj) static_cast<Object*>(pDevice);
+
+		wax_perspectiveWarpBP floorBP = {};
+		floorBP.size = { floor.size.w, floor.size.h };
+		floorBP.sourceSize = { floor.sourceSize.w, floor.sourceSize.h };
+		wax_rectSPX floorRect = { 0, 0, 70 * 64, 40 * 64 };
+		wax_perspectiveWarpRotated(&floorRect, 55.f, 0.f, 0.f, 90 * 64, { 0.5f, 1.f }, nullptr, floorBP.corners);
+
+		wax_perspectiveWarpBP pinnedBP = {};
+		pinnedBP.size = { pinned.size.w, pinned.size.h };
+		pinnedBP.sourceSize = { pinned.sourceSize.w, pinned.sourceSize.h };
+		toC(pinned.corners, pinnedBP.corners);
+
+		// The cards start out as something else and get their corners set.
+
+		wax_perspectiveWarpBP cardBP = pinnedBP;
+		cardBP.size = { card.size.w, card.size.h };
+		cardBP.sourceSize = { card.sourceSize.w, card.sourceSize.h };
+
+		wax_obj cFloor = wax_createPerspectiveWarp(&floorBP, factory);
+		wax_obj cPinned = wax_createPerspectiveWarp(&pinnedBP, factory);
+		wax_obj cCard = wax_createPerspectiveWarp(&cardBP, factory);
+		wax_obj cShared = wax_createPerspectiveWarp(&cardBP, factory);
+
+		wax_rectSPX rect = { cardRect.x, cardRect.y, cardRect.w, cardRect.h };
+		wax_coordSPX corners[4];
+		wax_perspectiveWarpRotated(&rect, -15.f, 40.f, 10.f, 120 * 64, { 0.5f, 0.5f }, nullptr, corners);
+		TEST_ASSERT(wax_setPerspectiveWarpCorners(cCard, corners));
+
+		wax_coordSPX eye = { sharedEye.x, sharedEye.y };
+		wax_perspectiveWarpRotated(&rect, 0.f, -50.f, 0.f, 100 * 64, { 0.f, 0.5f }, &eye, corners);
+		TEST_ASSERT(wax_setPerspectiveWarpCorners(cShared, corners));
+
+		wax_coordSPX read[4];
+		wax_perspectiveWarpCorners(cShared, read);
+		TEST_ASSERT(read[2].x == shared.corners.bottomRight.x && read[2].y == shared.corners.bottomRight.y);
+
+		pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Bilinear));
+		wax_warpBlit(device, { 2 * 64, 2 * 64 }, wax_generateWarpGenerator(cFloor), { 0, 10 * 64 });
+		wax_warpBlit(device, { 2 * 64, 48 * 64 }, wax_generateWarpGenerator(cPinned), { 0, 0 });
+
+		auto pEdgemap = makeEdgemap(pDevice, false);
+		wax_obj edgemap = (wax_obj) static_cast<Object*>(pEdgemap.rawPtr());
+		wax_warpDrawEdgemap(device, { 80 * 64, 2 * 64 }, wax_generateWarpGenerator(cCard), edgemap, { 0, 0 });
+		wax_warpDrawEdgemap(device, { 80 * 64, 50 * 64 }, wax_generateWarpGenerator(cShared), edgemap, { 0, 0 });
+
+		wax_release(cShared);
+		wax_release(cCard);
+		wax_release(cPinned);
+		wax_release(cFloor);
+		return true;
+	};
+
+	return compare(output, "Perspective through the C API", render(TestBackend::Soft, [&](GfxDevice* p) { c(p); }), "C API", render(TestBackend::Soft, scene), "C++", 0);
 }
