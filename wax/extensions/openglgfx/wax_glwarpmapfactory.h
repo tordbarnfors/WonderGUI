@@ -49,7 +49,7 @@ namespace wax
 		//.____ Misc _______________________________________________________
 
 		Warpmap_p createWarpmap( const Warpmap::Blueprint& blueprint ) override;
-		Warpmap_p createWarpmap( const Warpmap::Blueprint& blueprint, const CoordSPX * pNodes, int pitch = 0 ) override;
+		Warpmap_p createWarpmap( const Warpmap::Blueprint& blueprint, const Warpmap::Vertex * pVertices, const Warpmap::Triangle * pTriangles ) override;
 
 	protected:
 		GlWarpmapFactory() {}

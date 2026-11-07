@@ -40,9 +40,9 @@ namespace wax
 		return GlWarpmap::create(blueprint);
 	}
 
-	Warpmap_p GlWarpmapFactory::createWarpmap( const Warpmap::Blueprint& blueprint, const CoordSPX * pNodes, int pitch )
+	Warpmap_p GlWarpmapFactory::createWarpmap( const Warpmap::Blueprint& blueprint, const Warpmap::Vertex * pVertices, const Warpmap::Triangle * pTriangles )
 	{
-		return GlWarpmap::create(blueprint, pNodes, pitch);
+		return GlWarpmap::create(blueprint, pVertices, pTriangles);
 	}
 
 } // namespace wax

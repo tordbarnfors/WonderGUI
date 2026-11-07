@@ -31,9 +31,12 @@ in someone's memory or an old chat. Add to it when you decide something, move it
      antialiasing and clipped just before the horizon and to the Warpmap, in a fan of at most 7
      triangles. Exact everywhere, so its cell size and precision are gone. Generators can make
      their own mesh through `_meshSize()` and `_generateMesh()`.
-  3. **Done for SoftBackend and LinearBackend:** triangles set up when the content changes
-     (`SoftWarpmap::Setup`), drawn row by row with their edges stepped exactly from row to row,
-     in spans classified outside/solid/mixed. Then OpenGL.
+  3. **Done:** SoftBackend and LinearBackend set up triangles when the content changes
+     (`SoftWarpmap::Setup`) and draw them row by row, with their edges stepped exactly from row
+     to row, in spans classified outside/solid/mixed. GlBackend keeps the triangles of a
+     GlWarpmap in its own vertex buffer, with the mapping of each triangle in a texture buffer,
+     and draws them once per clip rectangle with that as scissor. The fragment shaders divide
+     for perspective at each pixel and take the derivatives from the mapping.
   4. DX12, Metal, and meshes that follow the shape for the other generators.
 
   Decided so far:
@@ -46,8 +49,11 @@ in someone's memory or an old chat. Add to it when you decide something, move it
     distance to the horizon in pixels, so runs close to the horizon are shorter: 1, 2, 4, 8 or
     16 pixels, chosen for each run from W at its start to keep within a quarter of a pixel (not
     once per triangle, which gave short runs all over a plane near the horizon). Runs with a
-    border of the source or an edge of an edgemap in them get each pixel's position divided out,
-    since a quarter of a pixel shows as a quarter of the coverage of a pixel along a border.
+    border of the source or an edge of an edgemap in them are split into runs that keep within
+    1/64 of a pixel, since a quarter of a pixel shows as a quarter of the coverage of a pixel along
+    a border. Keeping interior runs within 1/16 of a pixel too was tried: it halves how much
+    colors swim over sharp textures, but drew a steep floor 50% slower (`c_runShift` in
+    `wax_softbackend_warp.cpp`).
   - **Perspective in the software backends is limited to u and v within 32768 pixels of the
     source from the first corner of a triangle,** so that W * (u - u0) fits in 64 bits with
     weights scaled to 2^28. Setting up triangles uses 128 bit products, `__int128` where the

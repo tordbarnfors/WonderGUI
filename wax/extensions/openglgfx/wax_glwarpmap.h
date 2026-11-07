@@ -46,10 +46,17 @@ namespace wax
 	/**
 	 * @brief Warpmap for GlBackend.
 	 *
-	 * The cells are kept in a texture buffer for the shaders, two RGBA32F entries per cell, row by
-	 * row: the top-left and top-right corners, then the bottom-left and bottom-right corners, as
-	 * given by cellCorners(), so already moved by whole periods to be close to the top-left one,
-	 * converted from spx to pixels of the source.
+	 * The triangles are kept on the GPU, set up when the content changes:
+	 *
+	 * - A vertex buffer, with a vertex array for it, of three vertices for each triangle: its
+	 *   position in pixels of the Warpmap (two floats) and the index of the triangle (an int), which
+	 *   the shaders take for the whole triangle.
+	 *
+	 * - A texture buffer of four RGBA32F entries for each triangle, with its mapping as functions of
+	 *   the position q of a point relative to its first corner, in pixels: W = a*q.x + b*q.y + c and
+	 *   likewise U and V, the position in the source (in pixels) being (u0, v0) + (U, V) / W. The
+	 *   entries are (corner.x, corner.y, Wa, Wb), (Wc, Ua, Ub, Uc), (Va, Vb, Vc, 0), (u0, v0, 0, 0).
+	 *   Without perspective W is 1. With it, the weights are scaled so that the largest is 1.
 	 */
 
 	class GlWarpmap : public Warpmap
@@ -60,7 +67,7 @@ namespace wax
 		//.____ Creation __________________________________________
 
 		static GlWarpmap_p	create( const Blueprint& blueprint );
-		static GlWarpmap_p	create( const Blueprint& blueprint, const CoordSPX * pNodes, int pitch = 0 );
+		static GlWarpmap_p	create( const Blueprint& blueprint, const Vertex * pVertices, const Triangle * pTriangles );
 
 		//.____ Identification __________________________________________
 
@@ -68,14 +75,20 @@ namespace wax
 		const static TypeInfo	TYPEINFO;
 
 	protected:
-		GlWarpmap( const Blueprint& bp, const CoordSPX * pNodes = nullptr, int pitch = 0 );
+		GlWarpmap( const Blueprint& bp, const Vertex * pVertices = nullptr, const Triangle * pTriangles = nullptr );
 		virtual ~GlWarpmap();
 
-		void	_nodesUpdated( const RectI& region ) override;
+		void	_updated( int firstVertex, int nVertices, int firstTriangle, int nTriangles ) override;
 
-		inline SizeI	_cells() const { return { m_nodes.w - 1, m_nodes.h - 1 }; }
+		struct VertexGL
+		{
+			GLfloat		x, y;
+			GLint		triangle;
+		};
 
-		GLuint		m_bufferId = 0;
+		GLuint		m_vertexBufferId = 0;
+		GLuint		m_vertexArrayId = 0;
+		GLuint		m_bufferId = 0;				// Mappings of the triangles.
 		GLuint		m_textureId = 0;
 	};
 
