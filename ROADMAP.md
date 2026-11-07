@@ -37,7 +37,13 @@ in someone's memory or an old chat. Add to it when you decide something, move it
      GlWarpmap in its own vertex buffer, with the mapping of each triangle in a texture buffer,
      and draws them once per clip rectangle with that as scissor. The fragment shaders divide
      for perspective at each pixel and take the derivatives from the mapping.
-  4. DX12, Metal, and meshes that follow the shape for the other generators.
+  4. **Done:** meshes that follow the shape. CircularWarp and RoundedRectWarp share a band along
+     an outline of straight sides and corners (`WarpGenerator::_bandMesh()`): quads along the
+     sides, sectors split across the band around the corners, polygons where the band reaches
+     past the centers of the corners, all the way around and a pixel beyond the band. CylinderWarp
+     is strips along its axis, narrower towards the rims. The grid of nodes stays for generators
+     that only implement `_generateNodes()`.
+  5. DX12 and Metal.
 
   Decided so far:
   - **Vertices in spx:** positions in spx of the Warpmap, u and v in spx of the source as the
@@ -76,6 +82,14 @@ in someone's memory or an old chat. Add to it when you decide something, move it
     the Blueprint. Vertices, triangles and periods can all be changed, periods on their own too,
     since u and v are no longer stored brought into the period: they are wrapped after
     interpolation. Unused triangles have all corners in one vertex and draw nothing.
+  - **Sizes of the pieces of a band** are chosen for the least work in a software backend, which
+    goes by the rows each triangle covers: the number of quads times their length along the
+    outline plus their size across. Fewest triangles gave thin slivers, as long as the band is
+    deep, which drew a thick ring 1.5 times slower. Precision is shared between how the outline curves
+    within a sector (r * a^2 / 8) and the diagonals of its triangles (a * h / 4).
+  - **Shape and precision fix the number of triangles,** so changing the radii of a ring or the
+    outline of a frame can make generate() create a new Warpmap. Angles, spans and offsets don't
+    change it, since the mesh always goes all the way around.
   - **Stream format:** `WarpmapUpdate` gives ranges of vertices and triangles and the periods,
     followed by `WarpmapVertices` (pairs (w, 0), (x, y), (u, v)) and `WarpmapTriangles` (pairs
     (a, b), (c, 0)), compressed by NodeCompressor. Replaces `WarpmapNodes`, without backwards

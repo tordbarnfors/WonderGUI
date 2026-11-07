@@ -994,7 +994,7 @@ bool WarpRenderTest::streamContentTest(std::ostream& output)
 
 	pSent = nullptr;
 	pCounter->clear();
-	TEST_ASSERT(pWarp->setRadii(90 * 64, 50 * 64));
+	TEST_ASSERT(pWarp->setAngles(30.f, 360.f));
 	pSent = pWarp->generate();
 	pEncoder->flush();
 

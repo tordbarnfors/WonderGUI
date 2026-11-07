@@ -131,37 +131,88 @@ namespace wax
 		return m_generatedAxis == Axis::X ? CoordSPX(0, offset) : CoordSPX(offset, 0);
 	}
 
-	//____ _calcCellSize() ____________________________________________________
+	//____ _strips() _________________________________________________________
 	/*
-		Along the axis positions change linearly, so one cell spans the cylinder. Across it, the
-		angle seen at distance y from the middle is asin(y / R), R being the radius. Interpolating
-		that over cells of c pixels is off by about c^2 / 8 times its second derivative, which in
-		pixels on screen is c^2 * sin(a) / (8 * R * cos(a)^2) at angle a. That is largest at the
-		rims, a = span / 2, so it is kept there, as for a circle of radius R * cos(a)^2 / sin(a).
+		Edges of the strips across the axis, in 1/256 spx from the start. Across it, the angle seen
+		at distance y from the middle is asin(y / R), R being the radius. Interpolating that over
+		strips of c pixels is off by about c^2 / 8 times its second derivative, which in pixels on
+		screen is c^2 * sin(a) / (8 * R * cos(a)^2) at angle a. So from the middle outwards, each strip
+		is as wide as keeps that within precision at its outer edge, at least 2 pixels and at most 64.
+		Worked out in floating point, once per generate for a few edges.
 	*/
+
+	std::vector<int64_t> CylinderWarp::_strips() const
+	{
+		const int64_t c_pixel = 64 << 8;
+		const int lengthAcross = m_axis == Axis::X ? m_size.h : m_size.w;
+		const int cellAcross = m_axis == Axis::X ? m_cellSize.h : m_cellSize.w;
+
+		std::vector<int64_t> edges;
+
+		if (cellAcross > 0)
+		{
+			for (int64_t p = 0; p < lengthAcross; p += cellAcross)
+				edges.push_back(p * c_pixel);
+			edges.push_back(lengthAcross * c_pixel);
+			return edges;
+		}
+
+		const double half = lengthAcross / 2.0;
+		const double rim = m_span / 2 * 3.14159265358979323846 / 180;
+		const double radius = half / std::max(std::sin(rim), 1e-9);
+		const double precision = std::max(double(m_precision), 0.01);
+
+		auto width = [&](double y)
+		{
+			double s = std::min(y / radius, 1.0);
+			double c2 = std::max(1.0 - s * s, 1e-12);
+			return s > 0 ? std::sqrt(8 * precision * radius * c2 / s) : 64.0;
+		};
+
+		std::vector<double> outwards = { 0.0 };
+		double y = 0.0;
+		while (y < half)
+		{
+			double c = std::clamp(width(y), 2.0, 64.0);
+			c = std::clamp(std::min(c, width(std::min(y + c, half))), 2.0, 64.0);
+			y = std::min(y + c, half);
+			if (half - y < 1.0)
+				y = half;
+			outwards.push_back(y);
+		}
+
+		for (int i = int(outwards.size()) - 1; i > 0; i--)
+			edges.push_back(int64_t((half - outwards[i]) * c_pixel + 0.5));
+		for (double o : outwards)
+			edges.push_back(int64_t((half + o) * c_pixel + 0.5));
+
+		edges.front() = 0;
+		edges.back() = lengthAcross * c_pixel;
+		return edges;
+	}
+
+	//____ _calcCellSize() ____________________________________________________
+	// The length of the cylinder along the axis and the narrowest strip across it.
 
 	SizeI CylinderWarp::_calcCellSize() const
 	{
-		int across = m_axis == Axis::X ? m_size.h : m_size.w;
+		std::vector<int64_t> edges = _strips();
 
-		// R * cos^2 / sin = half the size across * (cos / sin)^2, with (cos / sin)^2 in 24 binals.
-		// Spans so small that it is above 2^16, or sizes beyond 2^15, give cells of the largest
-		// size anyway.
+		int64_t narrowest = edges.back();
+		for (size_t i = 1; i < edges.size(); i++)
+			narrowest = std::min(narrowest, edges[i] - edges[i - 1]);
 
-		int32_t sin, cos;
-		_rim(sin, cos);
+		int across = std::max(1, int((narrowest + (32 << 8)) >> 14));
+		return m_axis == Axis::X ? SizeI(m_size.w, across) : SizeI(across, m_size.h);
+	}
 
-		uint64_t cot = (uint64_t(cos) << 24) / uint32_t(sin);
-		int cell = 64;
+	//____ _meshSize() ________________________________________________________
 
-		if (cot < (uint64_t(1) << 32) && across < (1 << 15))
-		{
-			uint64_t cot2 = (cot * cot + (uint64_t(1) << 23)) >> 24;
-			uint64_t radius = (uint64_t(across) * 32 * cot2 + (uint64_t(1) << 23)) >> 24;		// In spx.
-			cell = _cellSizeForRadius(int64_t(radius));
-		}
-
-		return m_axis == Axis::X ? SizeI(m_size.w, cell) : SizeI(cell, m_size.h);
+	void CylinderWarp::_meshSize(int& nVertices, int& nTriangles) const
+	{
+		int nStrips = int(_strips().size()) - 1;
+		nVertices = (nStrips + 1) * 2;
+		nTriangles = nStrips * 2;
 	}
 
 	//____ _rim() _____________________________________________________________
@@ -200,19 +251,17 @@ namespace wax
 		return m_axis == Axis::X ? _periodAcross() : 0;
 	}
 
-	//____ _generateNodes() ___________________________________________________
+	//____ _generateMesh() ___________________________________________________
 	/*
-		Positions along the axis depend only on the column of nodes (axis X) or row (axis Y) and
-		positions across it only on the other, so each is worked out once for its column or row.
-
-		Along the axis the source is stretched over the length of the cylinder. Across it, at
-		distance y from the middle, the angle is asin(y / R), from the side facing the viewer, and
-		the position is (angle - startAngle) / sweep * length of the source, counted from startAngle
-		in the direction of sweep within a turn, as for CircularWarp. The angle is found from y and
-		the depth sqrt(R^2 - y^2) with integers, positions in 1/256 spx.
+		Along the axis the source is stretched over the length of the cylinder, so each strip is a
+		quad across the cylinder, with the edges of its strip at both ends. Across it, at distance y
+		from the middle, the angle is asin(y / R), from the side facing the viewer, and the position
+		is (angle - startAngle) / sweep * length of the source, counted from startAngle in the
+		direction of sweep within a turn, as for CircularWarp. The angle is found from y and the depth
+		sqrt(R^2 - y^2) with integers, positions in 1/256 spx.
 	*/
 
-	void CylinderWarp::_generateNodes(CoordSPX* pNodes, SizeI nodes, SizeI cellSize) const
+	void CylinderWarp::_generateMesh(Warpmap::Vertex* pVertices, Warpmap::Triangle* pTriangles) const
 	{
 		const int c_fractionBits = 8;
 		const int64_t c_pixel = 64 << c_fractionBits;
@@ -221,24 +270,10 @@ namespace wax
 
 		const int lengthAlong = bAxisX ? m_size.w : m_size.h;
 		const int lengthAcross = bAxisX ? m_size.h : m_size.w;
-		const int cellAlong = bAxisX ? cellSize.w : cellSize.h;
-		const int cellAcross = bAxisX ? cellSize.h : cellSize.w;
-		const int nodesAlong = bAxisX ? nodes.w : nodes.h;
-		const int nodesAcross = bAxisX ? nodes.h : nodes.w;
-
 		const spx sourceAlong = bAxisX ? m_sourceSize.w : m_sourceSize.h;
 		const spx sourceAcross = bAxisX ? m_sourceSize.h : m_sourceSize.w;
 
-		// Along the axis, rounded to spx.
-
-		std::vector<spx> along(nodesAlong);
-		for (int i = 0; i < nodesAlong; i++)
-		{
-			int64_t p = std::min(i * cellAlong, lengthAlong);
-			along[i] = spx((p * sourceAlong * 2 + lengthAlong) / (2 * int64_t(lengthAlong)));
-		}
-
-		// Across the axis.
+		std::vector<int64_t> edges = _strips();
 
 		int32_t sin, cos;
 		_rim(sin, cos);
@@ -256,23 +291,49 @@ namespace wax
 		Factor factor = _factor(double(sourceAcross) * 360.0 / (std::abs(double(m_sweep)) * 0x1p32));
 		bool bForward = m_sweep > 0.f;
 
-		std::vector<spx> across(nodesAcross);
-		for (int i = 0; i < nodesAcross; i++)
+		const int64_t period = _periodAcross();
+		auto floorDivPeriod = [](int64_t a, int64_t b) { int64_t q = a / b; return (q * b > a) ? q - 1 : q; };
+		int64_t previous = 0;
+
+		int nEdges = int(edges.size());
+		for (int i = 0; i < nEdges; i++)
 		{
-			int64_t y = std::min(i * cellAcross, lengthAcross) * c_pixel - middle;
+			spx pos = spx((edges[i] + (1 << (c_fractionBits - 1))) >> c_fractionBits);		// Rounded to spx.
+
+			int64_t y = (int64_t(pos) << c_fractionBits) - middle;
 			int64_t absY = std::min((y < 0 ? -y : y) >> shift, r);
 
 			int64_t depth = int64_t(_sqrt(uint64_t(r * r - absY * absY)));
 			uint32_t angle = _polar(depth, y < 0 ? -absY : absY);
 
-			across[i] = _toNodeValue(_multiply(bForward ? angle - start : start - angle, factor));
+			// Kept close to the edge before, rather than wrapped into the period, so that a strip
+			// across the seam takes the short way.
+
+			int64_t value = _multiply(bForward ? angle - start : start - angle, factor);
+			if (i > 0)
+			{
+				int64_t step = value - previous;
+				value = previous + step - floorDivPeriod(2 * step + period, 2 * period) * period;
+			}
+			previous = value;
+
+			spx across = _toNodeValue(value);
+
+			for (int end = 0; end < 2; end++)
+			{
+				spx along = end == 0 ? 0 : lengthAlong * 64;
+				spx alongValue = end == 0 ? 0 : sourceAlong;
+
+				pVertices[i * 2 + end] = bAxisX ? Warpmap::Vertex{ along, pos, alongValue, across } : Warpmap::Vertex{ pos, along, across, alongValue };
+			}
+
+			if (i > 0)
+			{
+				int a = (i - 1) * 2;
+				*pTriangles++ = { a, a + 1, a + 3 };
+				*pTriangles++ = { a, a + 3, a + 2 };
+			}
 		}
-
-		// Nodes, row by row.
-
-		for (int row = 0; row < nodes.h; row++)
-			for (int col = 0; col < nodes.w; col++)
-				*pNodes++ = bAxisX ? CoordSPX(along[col], across[row]) : CoordSPX(across[col], along[row]);
 	}
 
 } // namespace wax

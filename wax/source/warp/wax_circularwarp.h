@@ -42,14 +42,15 @@ namespace wax
 	 *
 	 * The Warpmap is made for a source of sourceSize (see WarpGenerator).
 	 *
-	 * A radius of 0 gives a disc. The angle is undefined in the center, so only use a disc with
-	 * content that doesn't change from left to right in the cells closest to the center. Tints that
-	 * vary horizontally will look blocky there. A flat color is fine, as long as no edge comes within
-	 * two cells of the center.
+	 * A radius of 0 gives a disc. The angle is undefined in the center, where the triangles meet,
+	 * each with the angle of its middle there, so only use a disc with content that doesn't change
+	 * much from left to right close to the center.
 	 *
-	 * The cell size of the Warpmap decides how closely it follows the circle. Unless set explicitly it
-	 * is calculated from precision (max position error in pixels) at the smaller radius, where the error
-	 * is largest. For a disc, precision is kept from half the radius and outwards instead.
+	 * The Warpmap is a ring of sectors, each split in parts across the ring, which goes all the way
+	 * around and a pixel beyond both radii, whatever the sweep, so it can be turned by an offset. How
+	 * many is calculated from precision (max position error in pixels), unless cellSize is set: its
+	 * width is the length of a sector along the outer edge and its height how far across the ring a
+	 * part goes. cellSize() gives what is calculated.
 	 *
 	 * Like other WarpGenerators, CircularWarp keeps its Warpmap and updates it when generate() is called.
 	 */
@@ -61,7 +62,7 @@ namespace wax
 		struct Blueprint
 		{
 			spx					bottomRadius = 0;				// Radius the bottom of the source is placed at.
-			SizeI				cellSize;						// Pixels between nodes of the Warpmap. 0 = calculated, see above.
+			SizeI				cellSize;						// Length of sectors along the outer edge and of parts across the ring. 0 = calculated, see above.
 			CoordF				center = { 0.5f, 0.5f };		// Center of circle, relative to size.
 			Finalizer_p			finalizer = nullptr;
 			float				precision = 0.25f;				// Max position error in pixels when cellSize is calculated.
@@ -107,8 +108,11 @@ namespace wax
 		CircularWarp( const Blueprint& bp, WarpmapFactory * pFactory );
 		virtual ~CircularWarp();
 
+		OutlineBand	_band() const;
+
 		SizeI		_calcCellSize() const override;
-		void		_generateNodes( CoordSPX * pNodes, SizeI nodes, SizeI cellSize ) const override;
+		void		_meshSize( int& nVertices, int& nTriangles ) const override;
+		void		_generateMesh( Warpmap::Vertex * pVertices, Warpmap::Triangle * pTriangles ) const override;
 		spx			_uPeriod() const override;
 		void		_generated() override { m_offsetFactor = _offsetFactor(m_sweep / 360.0, m_sourceSize.w); }
 

@@ -133,15 +133,17 @@ been built with it yet.
 
 ## Graphics
 
-### SoftBackend draws Warpmaps from the grid generators slower than before
+### SoftBackend draws thick rings slower than the grid of nodes did
 
-CircularWarp, RoundedRectWarp and CylinderWarp still make their Warpmaps from a grid, now with
-two triangles per cell and cells sqrt(2) smaller, so SoftBackend draws about four times as many
-spans as with the grid of nodes. Drawing a ring or a rounded frame takes 1.2-1.7 times as long as
-before. Meshes that follow the shape, planned for these generators, should more than make up for
-it. PerspectiveWarp, a single quad, draws about as fast as before.
+Linear triangles follow a ring less closely than the bilinear cells of the grid of nodes did, so
+for the same precision a ring takes pieces about half the size, around 8 x 15 pixels for a ring
+of radius 90 to 148. SoftBackend spends about as much on each piece on each row as on drawing
+it, so such a ring takes 1.25 times as long as before, and 1.6 times as long when it is a blit,
+which reads the surface in a kernel call for each piece on each row. Thin rings, rounded frames,
+focus rings, cylinders and planes in perspective take as long as before or less, down to 0.67.
+Measured on x86-64 against commit 2614ea3.
 
-`wax/source/warp/wax_warpgenerator.cpp` (`_gridToMesh()`), `wax/extensions/softgfx/wax_softbackend_warp.cpp`
+`wax/source/warp/wax_warpgenerator.cpp` (`_bandLayout()`), `wax/extensions/softgfx/wax_softbackend_warp.cpp`
 
 ### gfxdevicetester's Perspective warp test differs on SoftBackend
 
