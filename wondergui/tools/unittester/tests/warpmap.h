@@ -10,10 +10,12 @@ public:
 
 private:
 
-	bool defaultNodesTest(std::ostream& output);
+	bool defaultMeshTest(std::ostream& output);
 	bool importExportTest(std::ostream& output);
-	bool createWithNodesTest(std::ostream& output);
+	bool createWithMeshTest(std::ostream& output);
 	bool periodTest(std::ostream& output);
+	bool fillRuleTest(std::ostream& output);
+	bool perspectivePositionTest(std::ostream& output);
 	bool circularWarpTest(std::ostream& output);
 	bool circularWarpGenerateTest(std::ostream& output);
 	bool generateUpdatesTest(std::ostream& output);

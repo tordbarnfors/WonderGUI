@@ -136,7 +136,7 @@ namespace wax
 		Draws are rendered when the canvas update ends and read the Warpmap then, so a Warpmap that
 		a draw holds (or anyone else) is left as it is and a new one created in its place.
 
-		A Warpmap that only we hold has its nodes and periods written in place, then normalized and
+		A Warpmap that only we hold has its vertices, triangles and periods written in place and
 		sent on once.
 	*/
 
@@ -146,52 +146,120 @@ namespace wax
 			return m_pWarpmap;
 
 		SizeI cellSize = this->cellSize();
-		spx uPeriod = _uPeriod();
-		spx vPeriod = _vPeriod();
+		spx uPeriod = std::clamp(_uPeriod(), 0, Warpmap::maxValue);
+		spx vPeriod = std::clamp(_vPeriod(), 0, Warpmap::maxValue);
 
-		if (!m_pWarpmap || m_pWarpmap->refcount() > 1 || m_pWarpmap->pixelSize() != m_size || m_pWarpmap->cellSize() != cellSize)
+		SizeI nodes = { (m_size.w + cellSize.w - 1) / cellSize.w + 1, (m_size.h + cellSize.h - 1) / cellSize.h + 1 };
+		int nCells = (nodes.w - 1) * (nodes.h - 1);
+
+		std::vector<CoordSPX> buffer(nodes.w * nodes.h);
+		_generateNodes(buffer.data(), nodes, cellSize);
+
+		Warpmap* pMap = m_pWarpmap;
+
+		if (!pMap || pMap->refcount() > 1 || pMap->pixelSize() != m_size || pMap->vertexCount() != nCells * 4 || pMap->triangleCount() != nCells * 2)
 		{
 			Warpmap::Blueprint bp;
 			bp.size = m_size;
-			bp.cellSize = cellSize;
+			bp.triangles = nCells * 2;
 			bp.uPeriod = uPeriod;
+			bp.vertices = nCells * 4;
 			bp.vPeriod = vPeriod;
 
-			SizeI nodes = { (m_size.w + cellSize.w - 1) / cellSize.w + 1, (m_size.h + cellSize.h - 1) / cellSize.h + 1 };
-			std::vector<CoordSPX> buffer(nodes.w * nodes.h);
-			_generateNodes(buffer.data(), nodes, cellSize);
+			std::vector<Warpmap::Vertex> vertices(nCells * 4);
+			std::vector<Warpmap::Triangle> triangles(nCells * 2);
+			_gridToMesh(buffer.data(), nodes, cellSize, uPeriod, vPeriod, vertices.data(), triangles.data());
 
-			m_pWarpmap = m_pFactory->createWarpmap(bp, buffer.data());
+			m_pWarpmap = m_pFactory->createWarpmap(bp, vertices.data(), triangles.data());
+		}
+		else if (pMap->m_pVertices && pMap->m_pTriangles)
+		{
+			_gridToMesh(buffer.data(), nodes, cellSize, uPeriod, vPeriod, pMap->m_pVertices, pMap->m_pTriangles);
+			pMap->m_uPeriod = uPeriod;
+			pMap->m_vPeriod = vPeriod;
+			pMap->_updated(0, nCells * 4, 0, nCells * 2);
 		}
 		else
 		{
-			Warpmap* pMap = m_pWarpmap;
-			SizeI nodes = pMap->nodes();
+			// No content of its own to write to, it goes through importMesh().
 
-			if (pMap->m_pNodes)
-			{
-				RectI all = { 0, 0, nodes.w, nodes.h };
+			std::vector<Warpmap::Vertex> vertices(nCells * 4);
+			std::vector<Warpmap::Triangle> triangles(nCells * 2);
+			_gridToMesh(buffer.data(), nodes, cellSize, uPeriod, vPeriod, vertices.data(), triangles.data());
 
-				_generateNodes(pMap->m_pNodes, nodes, cellSize);
-				pMap->m_uPeriod = uPeriod;
-				pMap->m_vPeriod = vPeriod;
-				pMap->_normalizeNodes(all);
-				pMap->_nodesUpdated(all);
-			}
-			else
-			{
-				// No nodes of its own to write to, they go through importAllNodes().
-
-				std::vector<CoordSPX> buffer(nodes.w * nodes.h);
-				_generateNodes(buffer.data(), nodes, cellSize);
-				pMap->importAllNodes(buffer.data(), uPeriod, vPeriod);
-			}
+			pMap->importMesh(vertices.data(), triangles.data(), uPeriod, vPeriod);
 		}
 
 		_generated();
 
 		m_bDirty = false;
 		return m_pWarpmap;
+	}
+
+	//____ _gridToMesh() ______________________________________________________
+	/*
+		Each cell gets four vertices of its own, top-left, top-right, bottom-right and bottom-left,
+		and two triangles split along the diagonal from top-left to bottom-right. Neighbouring cells
+		have vertices in the same positions along their common edges, so the mesh has no gaps. Values
+		on a periodic axis are brought into 0 -> period at the top-left corner and the other corners
+		moved by whole periods to be as close to it as possible, so that interpolation across the
+		seam takes the short way. That is why vertices aren't shared between cells.
+	*/
+
+	void WarpGenerator::_gridToMesh(const CoordSPX* pNodes, SizeI nodes, SizeI cellSize, spx uPeriod, spx vPeriod, Warpmap::Vertex* pVertices, Warpmap::Triangle* pTriangles) const
+	{
+		auto floorDiv = [](int64_t a, int64_t b)
+		{
+			int64_t q = a / b;
+			return (q * b > a) ? q - 1 : q;
+		};
+
+		auto normalize = [&](int64_t value, int64_t period)
+		{
+			return period > 0 ? value - floorDiv(value, period) * period : value;
+		};
+
+		auto unwrapTo = [&](int64_t value, int64_t reference, int64_t period)
+		{
+			return period > 0 ? value - floorDiv(2 * (value - reference) + period, 2 * period) * period : value;
+		};
+
+		int vertex = 0;
+
+		for (int row = 0; row < nodes.h - 1; row++)
+		{
+			spx y0 = std::min(row * cellSize.h, m_size.h) * 64;
+			spx y1 = std::min((row + 1) * cellSize.h, m_size.h) * 64;
+
+			for (int col = 0; col < nodes.w - 1; col++)
+			{
+				spx x0 = std::min(col * cellSize.w, m_size.w) * 64;
+				spx x1 = std::min((col + 1) * cellSize.w, m_size.w) * 64;
+
+				const CoordSPX* p = pNodes + row * nodes.w + col;
+				const CoordSPX corners[4] = { p[0], p[1], p[nodes.w + 1], p[nodes.w] };
+				const CoordSPX positions[4] = { { x0, y0 }, { x1, y0 }, { x1, y1 }, { x0, y1 } };
+
+				int64_t u0 = normalize(corners[0].x, uPeriod);
+				int64_t v0 = normalize(corners[0].y, vPeriod);
+
+				for (int i = 0; i < 4; i++)
+				{
+					Warpmap::Vertex v;
+					v.x = positions[i].x;
+					v.y = positions[i].y;
+					v.u = spx(i == 0 ? u0 : unwrapTo(corners[i].x, u0, uPeriod));
+					v.v = spx(i == 0 ? v0 : unwrapTo(corners[i].y, v0, vPeriod));
+					v.w = Warpmap::weightOne;
+
+					pVertices[vertex + i] = Warpmap::_clamped(v);
+				}
+
+				*pTriangles++ = { vertex, vertex + 1, vertex + 2 };
+				*pTriangles++ = { vertex, vertex + 2, vertex + 3 };
+				vertex += 4;
+			}
+		}
 	}
 
 	//____ _validateSettings() ________________________________________________
@@ -203,20 +271,22 @@ namespace wax
 
 	//____ _cellSizeForRadius() _______________________________________________
 	/*
-		A curve of radius r drawn through cells of size c is off by about c^2 / (8 * r), so the
-		largest cell size that keeps within precision is sqrt(8 * precision * r).
+		Cells are split into two triangles, in which positions are linear. A curve of radius r drawn
+		through them is off by about d^2 / (8 * r), d being the length of the diagonal, which is
+		c^2 / (4 * r) for cells of size c. The largest cell size that keeps within precision is
+		then sqrt(4 * precision * r).
 	*/
 
 	int WarpGenerator::_cellSizeForRadius(int64_t radius) const
 	{
-		// 8 * precision * radius in pixels^2 is precision (16 binals) * radius (spx) / 2^19. Its
+		// 4 * precision * radius in pixels^2 is precision (16 binals) * radius (spx) / 2^20. Its
 		// square root rounded down is that of the value rounded down.
 
 		if (radius <= 0)
 			return c_minCellSize;
 
 		const int64_t c_limit = int64_t(1) << 40;				// Far beyond the largest cell, and no overflow.
-		int64_t value = m_precisionFixed > 0 && radius > c_limit / m_precisionFixed ? c_limit : (m_precisionFixed * radius) >> 19;
+		int64_t value = m_precisionFixed > 0 && radius > c_limit / m_precisionFixed ? c_limit : (m_precisionFixed * radius) >> 20;
 
 		return std::clamp(int(_sqrt(uint64_t(value))), c_minCellSize, c_maxCellSize);
 	}
@@ -487,7 +557,7 @@ namespace wax
 
 	spx WarpGenerator::_toNodeValue(int64_t value)
 	{
-		return spx(std::clamp(value, -int64_t(Warpmap::maxNodeValue), int64_t(Warpmap::maxNodeValue)));
+		return spx(std::clamp(value, -int64_t(Warpmap::maxValue), int64_t(Warpmap::maxValue)));
 	}
 
 } // namespace wax

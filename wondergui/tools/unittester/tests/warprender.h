@@ -12,6 +12,8 @@ private:
 
 	bool identityEdgemapTest(std::ostream& output);
 	bool identityBlitTest(std::ostream& output);
+	bool meshSeamTest(std::ostream& output);
+	bool perspectiveWeightTest(std::ostream& output);
 	bool softVsReferenceTest(std::ostream& output);
 	bool blendModesTest(std::ostream& output);
 	bool linearBackendTest(std::ostream& output);
@@ -19,7 +21,7 @@ private:
 	bool clipTest(std::ostream& output);
 	bool opaqueCanvasTest(std::ostream& output);
 	bool streamTest(std::ostream& output);
-	bool streamNodesTest(std::ostream& output);
+	bool streamContentTest(std::ostream& output);
 	bool nonSquareCellsTest(std::ostream& output);
 	bool cApiTest(std::ostream& output);
 	bool seamColorTest(std::ostream& output);

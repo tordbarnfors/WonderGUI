@@ -42,12 +42,12 @@ wax_obj wax_createWarpmap(wax_obj factory, const wax_warpmapBP* pCBP)
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wax_obj wax_createWarpmapFromNodes(wax_obj factory, const wax_warpmapBP* pCBP, const wax_coordSPX* pNodes, int pitch)
+wax_obj wax_createWarpmapFromMesh(wax_obj factory, const wax_warpmapBP* pCBP, const wax_warpVertex* pVertices, const wax_warpTriangle* pTriangles)
 {
 	Warpmap::Blueprint	cppBP;
 	convertWarpmapBlueprint(&cppBP, pCBP);
 
-	auto p = getPtr(factory)->createWarpmap(cppBP, (const CoordSPX*) pNodes, pitch);
+	auto p = getPtr(factory)->createWarpmap(cppBP, (const Warpmap::Vertex*) pVertices, (const Warpmap::Triangle*) pTriangles);
 	if (!p)
 		return nullptr;
 

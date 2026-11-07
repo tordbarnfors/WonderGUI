@@ -503,12 +503,16 @@ typedef struct wg_warpmap_calls_struct
 	int					structSize;
 
 	wax_sizeI			(*warpmapPixelSize)(wax_obj warpmap);
-	wax_sizeI			(*warpmapCellSize)(wax_obj warpmap);
-	int					(*importAllWarpmapNodes)(wax_obj warpmap, const wax_coordSPX* pSource, wax_spx uPeriod, wax_spx vPeriod, int pitch);
+	int					(*warpmapVertexCount)(wax_obj warpmap);
+	int					(*warpmapTriangleCount)(wax_obj warpmap);
 	wax_spx				(*warpmapUPeriod)(wax_obj warpmap);
 	wax_spx				(*warpmapVPeriod)(wax_obj warpmap);
-	int					(*importWarpmapNodes)(wax_obj warpmap, const wax_rectI* region, const wax_coordSPX* pSource, int pitch);
-	int					(*exportWarpmapNodes)(wax_obj warpmap, const wax_rectI* region, wax_coordSPX* pDestination, int pitch);
+	int					(*setWarpmapPeriods)(wax_obj warpmap, wax_spx uPeriod, wax_spx vPeriod);
+	int					(*importWarpmapVertices)(wax_obj warpmap, int first, int count, const wax_warpVertex* pSource);
+	int					(*importWarpmapTriangles)(wax_obj warpmap, int first, int count, const wax_warpTriangle* pSource);
+	int					(*importWarpmapMesh)(wax_obj warpmap, const wax_warpVertex* pVertices, const wax_warpTriangle* pTriangles, wax_spx uPeriod, wax_spx vPeriod);
+	int					(*exportWarpmapVertices)(wax_obj warpmap, int first, int count, wax_warpVertex* pDestination);
+	int					(*exportWarpmapTriangles)(wax_obj warpmap, int first, int count, wax_warpTriangle* pDestination);
 
 } wg_warpmap_calls;
 
@@ -520,7 +524,7 @@ typedef struct wg_warpmapfactory_calls_struct
 	int					structSize;
 
 	wax_obj				(*createWarpmap)(wax_obj factory, const wax_warpmapBP* blueprint);
-	wax_obj				(*createWarpmapFromNodes)(wax_obj factory, const wax_warpmapBP* blueprint, const wax_coordSPX* pNodes, int pitch);
+	wax_obj				(*createWarpmapFromMesh)(wax_obj factory, const wax_warpmapBP* blueprint, const wax_warpVertex* pVertices, const wax_warpTriangle* pTriangles);
 
 } wg_warpmapfactory_calls;
 

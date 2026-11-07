@@ -23,13 +23,16 @@
 #include <wax_c_internal.h>
 #include <wax_warpmap.h>
 
+#include <cstddef>
+
 using namespace wax;
 
 inline Warpmap* getPtr(wax_obj obj) {
 	return static_cast<Warpmap*>(reinterpret_cast<Object*>(obj));
 }
 
-static_assert(sizeof(wax_coordSPX) == sizeof(CoordSPX), "wax_coordSPX differs in size from wax::CoordSPX!");
+static_assert(sizeof(wax_warpVertex) == sizeof(Warpmap::Vertex) && offsetof(wax_warpVertex, w) == offsetof(Warpmap::Vertex, w), "wax_warpVertex differs from wax::Warpmap::Vertex!");
+static_assert(sizeof(wax_warpTriangle) == sizeof(Warpmap::Triangle), "wax_warpTriangle differs in size from wax::Warpmap::Triangle!");
 
 wax_sizeI wax_warpmapPixelSize(wax_obj warpmap)
 {
@@ -37,26 +40,14 @@ wax_sizeI wax_warpmapPixelSize(wax_obj warpmap)
 	return { sz.w, sz.h };
 }
 
-wax_sizeI wax_warpmapCellSize(wax_obj warpmap)
+int wax_warpmapVertexCount(wax_obj warpmap)
 {
-	SizeI cellSize = getPtr(warpmap)->cellSize();
-	return { cellSize.w, cellSize.h };
+	return getPtr(warpmap)->vertexCount();
 }
 
-wax_sizeI wax_warpmapNodes(wax_obj warpmap)
+int wax_warpmapTriangleCount(wax_obj warpmap)
 {
-	SizeI sz = getPtr(warpmap)->nodes();
-	return { sz.w, sz.h };
-}
-
-int wax_warpmapNodeX(wax_obj warpmap, int column)
-{
-	return getPtr(warpmap)->nodeX(column);
-}
-
-int wax_warpmapNodeY(wax_obj warpmap, int row)
-{
-	return getPtr(warpmap)->nodeY(row);
+	return getPtr(warpmap)->triangleCount();
 }
 
 wax_spx wax_warpmapUPeriod(wax_obj warpmap)
@@ -69,23 +60,48 @@ wax_spx wax_warpmapVPeriod(wax_obj warpmap)
 	return getPtr(warpmap)->vPeriod();
 }
 
-int wax_importWarpmapNodes(wax_obj warpmap, const wax_rectI* region, const wax_coordSPX* pSource, int pitch)
+int wax_setWarpmapPeriods(wax_obj warpmap, wax_spx uPeriod, wax_spx vPeriod)
 {
-	return getPtr(warpmap)->importNodes(*(const RectI*)region, (const CoordSPX*)pSource, pitch);
+	return getPtr(warpmap)->setPeriods(uPeriod, vPeriod);
 }
 
-int wax_importAllWarpmapNodes(wax_obj warpmap, const wax_coordSPX* pSource, wax_spx uPeriod, wax_spx vPeriod, int pitch)
+int wax_importWarpmapVertices(wax_obj warpmap, int first, int count, const wax_warpVertex* pSource)
 {
-	return getPtr(warpmap)->importAllNodes((const CoordSPX*)pSource, uPeriod, vPeriod, pitch);
+	return getPtr(warpmap)->importVertices(first, count, (const Warpmap::Vertex*) pSource);
 }
 
-int wax_exportWarpmapNodes(wax_obj warpmap, const wax_rectI* region, wax_coordSPX* pDestination, int pitch)
+int wax_importWarpmapTriangles(wax_obj warpmap, int first, int count, const wax_warpTriangle* pSource)
 {
-	return getPtr(warpmap)->exportNodes(*(const RectI*)region, (CoordSPX*)pDestination, pitch);
+	return getPtr(warpmap)->importTriangles(first, count, (const Warpmap::Triangle*) pSource);
 }
 
-wax_coordF wax_warpmapPositionAt(wax_obj warpmap, double x, double y)
+int wax_importWarpmapMesh(wax_obj warpmap, const wax_warpVertex* pVertices, const wax_warpTriangle* pTriangles, wax_spx uPeriod, wax_spx vPeriod)
 {
-	CoordF pos = getPtr(warpmap)->positionAt(x, y);
-	return { pos.x, pos.y };
+	return getPtr(warpmap)->importMesh((const Warpmap::Vertex*) pVertices, (const Warpmap::Triangle*) pTriangles, uPeriod, vPeriod);
+}
+
+int wax_exportWarpmapVertices(wax_obj warpmap, int first, int count, wax_warpVertex* pDestination)
+{
+	return getPtr(warpmap)->exportVertices(first, count, (Warpmap::Vertex*) pDestination);
+}
+
+int wax_exportWarpmapTriangles(wax_obj warpmap, int first, int count, wax_warpTriangle* pDestination)
+{
+	return getPtr(warpmap)->exportTriangles(first, count, (Warpmap::Triangle*) pDestination);
+}
+
+int wax_warpmapTriangleAt(wax_obj warpmap, wax_coordSPX point)
+{
+	return getPtr(warpmap)->triangleAt({ point.x, point.y });
+}
+
+int wax_warpmapPositionIn(wax_obj warpmap, int triangle, double x, double y, wax_coordF* pPosition)
+{
+	CoordF pos;
+	if (!getPtr(warpmap)->positionIn(triangle, x, y, pos))
+		return 0;
+
+	if (pPosition)
+		*pPosition = { pos.x, pos.y };
+	return 1;
 }

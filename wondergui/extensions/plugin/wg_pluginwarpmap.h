@@ -38,8 +38,8 @@ namespace wg
 	/**
 	 * @brief Warpmap of the host, used by a plugin.
 	 *
-	 * Nodes are kept on both sides, the host's for drawing and ours for the API. Changes
-	 * are passed on to the host.
+	 * Vertices and triangles are kept on both sides, the host's for drawing and ours for the API.
+	 * Changes are passed on to the host.
 	 */
 
 	class PluginWarpmap : public Warpmap
@@ -63,7 +63,7 @@ namespace wg
 		PluginWarpmap( wax_obj object );
 		~PluginWarpmap();
 
-		void	_nodesUpdated( const RectI& region ) override;
+		void	_updated( int firstVertex, int nVertices, int firstTriangle, int nTriangles ) override;
 
 		wax_obj	m_cWarpmap;
 		bool	m_bConstructed = false;

@@ -130,3 +130,19 @@ module nokogiri), since neither was available on the machine.
 The UTF-8 text system was built and tested on Linux (SDL2 software and OpenGL) and has
 been run on Win32/DX12. The macOS frameworks (Cocoa software/Metal, SDL2 Metal) haven't
 been built with it yet.
+
+## Graphics
+
+### Only ReferenceBackend draws Warpmaps
+
+Warpmaps are being changed from a grid of nodes to triangle meshes (see ROADMAP.md). Until the
+backends are changed over:
+
+- SoftBackend and LinearBackend draw nothing through Warpmaps. The code for the grid is disabled
+  with `#if 0` in `wax/extensions/softgfx/wax_softbackend_warp.cpp`, to be ported.
+- The OpenGL, DX12 and Metal backends don't compile (`wax_glwarpmap*`, `wax_dx12warpmap*`,
+  `wax_metalwarpmap*` and the warp shaders still read the grid).
+- The WarpRender unit tests that compare SoftBackend or LinearBackend with ReferenceBackend are
+  skipped, and the others run on ReferenceBackend (`c_bSoftWarps` in
+  `wondergui/tools/unittester/tests/warprender.cpp`). gfxdevicetester's warp tests compare a
+  native device that draws nothing.

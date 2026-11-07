@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wax_warpmap.h>
 
-#include <cmath>
+#include <algorithm>
 #include <cstring>
 
 namespace wax
@@ -31,41 +31,62 @@ namespace wax
 
 	//____ constructor ________________________________________________________
 
-	Warpmap::Warpmap(const Blueprint& bp, const CoordSPX* pNodes, int pitch) : m_size(bp.size), m_cellSize(bp.cellSize), m_uPeriod(bp.uPeriod), m_vPeriod(bp.vPeriod)
+	Warpmap::Warpmap(const Blueprint& bp, const Vertex* pVertices, const Triangle* pTriangles)
+		: m_size(bp.size), m_nVertices(bp.vertices), m_nTriangles(bp.triangles), m_uPeriod(bp.uPeriod), m_vPeriod(bp.vPeriod)
 	{
 		if (bp.finalizer)
 			setFinalizer(bp.finalizer);
 
-		m_nodes.w = (m_size.w + m_cellSize.w - 1) / m_cellSize.w + 1;
-		m_nodes.h = (m_size.h + m_cellSize.h - 1) / m_cellSize.h + 1;
+		m_pVertices = new Vertex[m_nVertices];
+		m_pTriangles = new Triangle[m_nTriangles];
 
-		m_pNodes = new CoordSPX[m_nodes.w * m_nodes.h];
+		// Start out mapping the rectangle straight onto the source, pixel for pixel, if there is
+		// room for it. Everything else has all corners in the first vertex and draws nothing.
 
-		if (pNodes)
+		bool bStraight = m_nVertices >= 4 && m_nTriangles >= 2;
+
+		if (pVertices)
 		{
-			if (pitch == 0)
-				pitch = m_nodes.w;
-
-			for (int row = 0; row < m_nodes.h; row++)
-				std::memcpy(m_pNodes + row * m_nodes.w, pNodes + row * pitch, m_nodes.w * sizeof(CoordSPX));
+			for (int i = 0; i < m_nVertices; i++)
+				m_pVertices[i] = _clamped(pVertices[i]);
 		}
 		else
 		{
-			// Start out mapping the rectangle straight onto the source, pixel for pixel.
+			for (int i = 0; i < m_nVertices; i++)
+				m_pVertices[i] = { 0, 0, 0, 0 };
 
-			for (int row = 0; row < m_nodes.h; row++)
-				for (int col = 0; col < m_nodes.w; col++)
-					m_pNodes[row * m_nodes.w + col] = { nodeX(col) * 64, nodeY(row) * 64 };
+			if (bStraight)
+			{
+				spx w = std::min(m_size.w * 64, maxPosition);
+				spx h = std::min(m_size.h * 64, maxPosition);
+
+				m_pVertices[1] = { w, 0, w, 0 };
+				m_pVertices[2] = { w, h, w, h };
+				m_pVertices[3] = { 0, h, 0, h };
+			}
 		}
 
-		_normalizeNodes({ 0,0,m_nodes.w,m_nodes.h });
+		if (pTriangles)
+			std::memcpy(m_pTriangles, pTriangles, m_nTriangles * sizeof(Triangle));
+		else
+		{
+			for (int i = 0; i < m_nTriangles; i++)
+				m_pTriangles[i] = { 0, 0, 0 };
+
+			if (bStraight)
+			{
+				m_pTriangles[0] = { 0, 1, 2 };
+				m_pTriangles[1] = { 0, 2, 3 };
+			}
+		}
 	}
 
 	//____ destructor _________________________________________________________
 
 	Warpmap::~Warpmap()
 	{
-		delete[] m_pNodes;
+		delete[] m_pVertices;
+		delete[] m_pTriangles;
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -75,181 +96,235 @@ namespace wax
 		return TYPEINFO;
 	}
 
-	//____ importNodes() ______________________________________________________
+	//____ setPeriods() _______________________________________________________
 
-	bool Warpmap::importNodes(const RectI& region, const CoordSPX* pSource, int pitch)
+	bool Warpmap::setPeriods(spx uPeriod, spx vPeriod)
 	{
-		if (!pSource || region.x < 0 || region.y < 0 || region.w < 0 || region.h < 0 ||
-			region.x + region.w > m_nodes.w || region.y + region.h > m_nodes.h)
+		if (uPeriod < 0 || vPeriod < 0 || uPeriod > maxValue || vPeriod > maxValue)
 			return false;
-
-		if (pitch == 0)
-			pitch = region.w;
-
-		if (m_pNodes)
-		{
-			for (int row = 0; row < region.h; row++)
-				std::memcpy(m_pNodes + (region.y + row) * m_nodes.w + region.x, pSource + row * pitch, region.w * sizeof(CoordSPX));
-
-			_normalizeNodes(region);
-		}
-
-		_nodesUpdated(region);
-		return true;
-	}
-
-	//____ importAllNodes() ___________________________________________________
-
-	bool Warpmap::importAllNodes(const CoordSPX* pSource, spx uPeriod, spx vPeriod, int pitch)
-	{
-		if (!pSource || uPeriod < 0 || vPeriod < 0 || uPeriod > maxNodeValue || vPeriod > maxNodeValue)
-			return false;
-
-		if (pitch == 0)
-			pitch = m_nodes.w;
 
 		m_uPeriod = uPeriod;
 		m_vPeriod = vPeriod;
 
-		RectI all = { 0, 0, m_nodes.w, m_nodes.h };
-
-		if (m_pNodes)
-		{
-			for (int row = 0; row < m_nodes.h; row++)
-				std::memcpy(m_pNodes + row * m_nodes.w, pSource + row * pitch, m_nodes.w * sizeof(CoordSPX));
-
-			_normalizeNodes(all);
-		}
-
-		_nodesUpdated(all);
+		_updated(0, 0, 0, 0);
 		return true;
 	}
 
-	//____ exportNodes() ______________________________________________________
+	//____ importVertices() ___________________________________________________
 
-	bool Warpmap::exportNodes(const RectI& region, CoordSPX* pDestination, int pitch) const
+	bool Warpmap::importVertices(int first, int count, const Vertex* pSource)
 	{
-		if (!pDestination || !m_pNodes || region.x < 0 || region.y < 0 || region.w < 0 || region.h < 0 ||
-			region.x + region.w > m_nodes.w || region.y + region.h > m_nodes.h)
+		if (first < 0 || count < 0 || first > m_nVertices - count || (count > 0 && !pSource))
 			return false;
 
-		if (pitch == 0)
-			pitch = region.w;
+		for (int i = 0; i < count; i++)
+			m_pVertices[first + i] = _clamped(pSource[i]);
 
-		for (int row = 0; row < region.h; row++)
-			std::memcpy(pDestination + row * pitch, m_pNodes + (region.y + row) * m_nodes.w + region.x, region.w * sizeof(CoordSPX));
+		_updated(first, count, 0, 0);
+		return true;
+	}
+
+	//____ importTriangles() __________________________________________________
+
+	bool Warpmap::importTriangles(int first, int count, const Triangle* pSource)
+	{
+		if (first < 0 || count < 0 || first > m_nTriangles - count || (count > 0 && !pSource))
+			return false;
+
+		if (!_isValid(pSource, count, m_nVertices))
+			return false;
+
+		std::memcpy(m_pTriangles + first, pSource, count * sizeof(Triangle));
+
+		_updated(0, 0, first, count);
+		return true;
+	}
+
+	//____ importMesh() _______________________________________________________
+
+	bool Warpmap::importMesh(const Vertex* pVertices, const Triangle* pTriangles, spx uPeriod, spx vPeriod)
+	{
+		if (uPeriod < 0 || vPeriod < 0 || uPeriod > maxValue || vPeriod > maxValue)
+			return false;
+
+		if (pTriangles && !_isValid(pTriangles, m_nTriangles, m_nVertices))
+			return false;
+
+		if (pVertices)
+		{
+			for (int i = 0; i < m_nVertices; i++)
+				m_pVertices[i] = _clamped(pVertices[i]);
+		}
+
+		if (pTriangles)
+			std::memcpy(m_pTriangles, pTriangles, m_nTriangles * sizeof(Triangle));
+
+		m_uPeriod = uPeriod;
+		m_vPeriod = vPeriod;
+
+		_updated(0, pVertices ? m_nVertices : 0, 0, pTriangles ? m_nTriangles : 0);
+		return true;
+	}
+
+	//____ exportVertices() ___________________________________________________
+
+	bool Warpmap::exportVertices(int first, int count, Vertex* pDestination) const
+	{
+		if (first < 0 || count < 0 || first > m_nVertices - count || (count > 0 && !pDestination))
+			return false;
+
+		std::memcpy(pDestination, m_pVertices + first, count * sizeof(Vertex));
+		return true;
+	}
+
+	//____ exportTriangles() __________________________________________________
+
+	bool Warpmap::exportTriangles(int first, int count, Triangle* pDestination) const
+	{
+		if (first < 0 || count < 0 || first > m_nTriangles - count || (count > 0 && !pDestination))
+			return false;
+
+		std::memcpy(pDestination, m_pTriangles + first, count * sizeof(Triangle));
+		return true;
+	}
+
+	//____ triangleAt() _______________________________________________________
+
+	int Warpmap::triangleAt(CoordSPX point) const
+	{
+		for (int i = 0; i < m_nTriangles; i++)
+		{
+			if (isInside(i, point))
+				return i;
+		}
+
+		return -1;
+	}
+
+	//____ isInside() _________________________________________________________
+	/*
+		With the corners in the order that gives the triangle a positive area, so that the inside is
+		where each edge function e = dx * (py - y0) - dy * (px - x0) is positive (y going down), a
+		point on an edge is inside if it is a left edge (going up, dy < 0) or a horizontal top edge
+		(going right, dx > 0). Two triangles sharing an edge go along it in opposite directions, so
+		exactly one of them has it. Positions are within +-2^26 and differences within +-2^32, so
+		products fit in 64 bits.
+	*/
+
+	bool Warpmap::isInside(int triangle, CoordSPX point) const
+	{
+		if (triangle < 0 || triangle >= m_nTriangles)
+			return false;
+
+		const Triangle& t = m_pTriangles[triangle];
+		const Vertex* p[3] = { &m_pVertices[t.a], &m_pVertices[t.b], &m_pVertices[t.c] };
+
+		int64_t area = int64_t(p[1]->x - p[0]->x) * (p[2]->y - p[0]->y) - int64_t(p[1]->y - p[0]->y) * (p[2]->x - p[0]->x);
+
+		if (area == 0)
+			return false;
+
+		if (area < 0)
+			std::swap(p[1], p[2]);
+
+		for (int i = 0; i < 3; i++)
+		{
+			const Vertex* p0 = p[i];
+			const Vertex* p1 = p[(i + 1) % 3];
+
+			int64_t dx = int64_t(p1->x) - p0->x;
+			int64_t dy = int64_t(p1->y) - p0->y;
+			int64_t e = dx * (int64_t(point.y) - p0->y) - dy * (int64_t(point.x) - p0->x);
+
+			if (e < 0 || (e == 0 && !(dy < 0 || (dy == 0 && dx > 0))))
+				return false;
+		}
 
 		return true;
 	}
 
-	//____ cellCorners() ______________________________________________________
+	//____ positionIn() _______________________________________________________
 
-	void Warpmap::cellCorners(int column, int row, CoordSPX* pCorners) const
+	bool Warpmap::positionIn(int triangle, double x, double y, CoordF& position) const
 	{
-		const CoordSPX* p = m_pNodes + row * m_nodes.w + column;
+		if (triangle < 0 || triangle >= m_nTriangles)
+			return false;
 
-		pCorners[0] = p[0];
-		pCorners[1] = p[1];
-		pCorners[2] = p[m_nodes.w];
-		pCorners[3] = p[m_nodes.w + 1];
+		const Triangle& t = m_pTriangles[triangle];
+		const Vertex& v0 = m_pVertices[t.a];
+		const Vertex& v1 = m_pVertices[t.b];
+		const Vertex& v2 = m_pVertices[t.c];
 
-		for (int i = 1; i < 4; i++)
-		{
-			pCorners[i].x = _unwrapTo(pCorners[i].x, pCorners[0].x, m_uPeriod);
-			pCorners[i].y = _unwrapTo(pCorners[i].y, pCorners[0].y, m_vPeriod);
-		}
-	}
+		double e1x = double(v1.x) - v0.x, e1y = double(v1.y) - v0.y;
+		double e2x = double(v2.x) - v0.x, e2y = double(v2.y) - v0.y;
+		double area = e1x * e2y - e1y * e2x;
 
-	//____ positionAt() _______________________________________________________
+		if (area == 0.0)
+			return false;
 
-	CoordF Warpmap::positionAt(double x, double y) const
-	{
-		int column = std::clamp(int(x / m_cellSize.w), 0, m_nodes.w - 2);
-		int row = std::clamp(int(y / m_cellSize.h), 0, m_nodes.h - 2);
+		double dx = x * 64 - v0.x;
+		double dy = y * 64 - v0.y;
 
-		CoordSPX c[4];
-		cellCorners(column, row, c);
+		double b1 = (dx * e2y - dy * e2x) / area;
+		double b2 = (e1x * dy - e1y * dx) / area;
+		double b0 = 1.0 - b1 - b2;
 
-		double x0 = nodeX(column), x1 = nodeX(column + 1);
-		double y0 = nodeY(row), y1 = nodeY(row + 1);
+		double w0 = b0 * v0.w, w1 = b1 * v1.w, w2 = b2 * v2.w;
+		double w = w0 + w1 + w2;
 
-		double fx = (x - x0) / (x1 - x0);
-		double fy = (y - y0) / (y1 - y0);
+		if (w <= 0.0)
+			return false;
 
-		double u = (double(c[0].x) * (1 - fx) + double(c[1].x) * fx) * (1 - fy) + (double(c[2].x) * (1 - fx) + double(c[3].x) * fx) * fy;
-		double v = (double(c[0].y) * (1 - fx) + double(c[1].y) * fx) * (1 - fy) + (double(c[2].y) * (1 - fx) + double(c[3].y) * fx) * fy;
-
-		return { float(u), float(v) };
+		position.x = float((w0 * v0.u + w1 * v1.u + w2 * v2.u) / w);
+		position.y = float((w0 * v0.v + w1 * v1.v + w2 * v2.v) / w);
+		return true;
 	}
 
 	//____ _validateBlueprint() _______________________________________________
 
-	bool Warpmap::_validateBlueprint(const Blueprint& bp)
+	bool Warpmap::_validateBlueprint(const Blueprint& bp, const Triangle* pTriangles)
 	{
 		if (bp.size.w <= 0 || bp.size.h <= 0)
 			return false;
 
-		if (bp.cellSize.w < 1 || bp.cellSize.h < 1)
+		if (bp.vertices < 3 || bp.vertices > maxVertices || bp.triangles < 1 || bp.triangles > maxTriangles)
 			return false;
 
-		if (bp.uPeriod < 0 || bp.vPeriod < 0 || bp.uPeriod > maxNodeValue || bp.vPeriod > maxNodeValue)
+		if (bp.uPeriod < 0 || bp.vPeriod < 0 || bp.uPeriod > maxValue || bp.vPeriod > maxValue)
+			return false;
+
+		if (pTriangles && !_isValid(pTriangles, bp.triangles, bp.vertices))
 			return false;
 
 		return true;
 	}
 
-	//____ _unwrapTo() ________________________________________________________
-	/*
-		Moves value by whole periods to within reference - period/2 -> reference + period/2 (exclusive).
-		Values are normalized into 0 -> period, so they are moved by at most one period.
-	*/
+	//____ _clamped() _________________________________________________________
 
-	spx Warpmap::_unwrapTo(spx value, spx reference, spx period)
+	Warpmap::Vertex Warpmap::_clamped(const Vertex& vertex)
 	{
-		if (period <= 0)
-			return value;
-
-		int64_t diff = int64_t(value) - reference;
-
-		if (2 * diff >= period)
-			return spx(value - int64_t(period));
-		if (2 * diff < -int64_t(period))
-			return spx(value + int64_t(period));
-		return value;
+		Vertex v;
+		v.x = std::clamp(vertex.x, -maxPosition, maxPosition);
+		v.y = std::clamp(vertex.y, -maxPosition, maxPosition);
+		v.u = std::clamp(vertex.u, -maxValue, maxValue);
+		v.v = std::clamp(vertex.v, -maxValue, maxValue);
+		v.w = std::clamp(vertex.w, 1, maxWeight);
+		return v;
 	}
 
-	//____ _normalizeNodes() __________________________________________________
-	/*
-		Brings values on periodic axes into 0 -> period.
-	*/
+	//____ _isValid() _________________________________________________________
 
-	void Warpmap::_normalizeNodes(const RectI& region)
+	bool Warpmap::_isValid(const Triangle* pTriangles, int count, int nVertices)
 	{
-		if (m_uPeriod <= 0 && m_vPeriod <= 0)
-			return;
-
-		for (int row = region.y; row < region.y + region.h; row++)
+		for (int i = 0; i < count; i++)
 		{
-			CoordSPX* p = m_pNodes + row * m_nodes.w + region.x;
+			const Triangle& t = pTriangles[i];
 
-			for (int col = 0; col < region.w; col++)
-			{
-				if (m_uPeriod > 0)
-				{
-					p->x %= m_uPeriod;
-					if (p->x < 0)
-						p->x += m_uPeriod;
-				}
-
-				if (m_vPeriod > 0)
-				{
-					p->y %= m_vPeriod;
-					if (p->y < 0)
-						p->y += m_vPeriod;
-				}
-				p++;
-			}
+			if (t.a < 0 || t.b < 0 || t.c < 0 || t.a >= nVertices || t.b >= nVertices || t.c >= nVertices)
+				return false;
 		}
+
+		return true;
 	}
 
 } // namespace wax

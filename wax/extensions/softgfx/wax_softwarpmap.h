@@ -35,8 +35,8 @@ namespace wax
 	/**
 	 * @brief Warpmap for SoftBackend, LinearBackend and ReferenceBackend.
 	 *
-	 * The software backends read the nodes directly, so there is nothing more to it than
-	 * the Warpmap itself.
+	 * The software backends read the vertices and triangles directly, so there is nothing more
+	 * to it than the Warpmap itself.
 	 */
 
 	class SoftWarpmap : public Warpmap
@@ -46,7 +46,7 @@ namespace wax
 		//.____ Creation __________________________________________
 
 		static SoftWarpmap_p	create( const Blueprint& blueprint );
-		static SoftWarpmap_p	create( const Blueprint& blueprint, const CoordSPX * pNodes, int pitch = 0 );
+		static SoftWarpmap_p	create( const Blueprint& blueprint, const Vertex * pVertices, const Triangle * pTriangles );
 
 		//.____ Identification __________________________________________
 
@@ -54,10 +54,10 @@ namespace wax
 		const static TypeInfo	TYPEINFO;
 
 	protected:
-		SoftWarpmap( const Blueprint& bp, const CoordSPX * pNodes = nullptr, int pitch = 0 ) : Warpmap(bp, pNodes, pitch) {}
+		SoftWarpmap( const Blueprint& bp, const Vertex * pVertices = nullptr, const Triangle * pTriangles = nullptr ) : Warpmap(bp, pVertices, pTriangles) {}
 		virtual ~SoftWarpmap() {}
 
-		void	_nodesUpdated( const RectI& region ) override {}
+		void	_updated( int firstVertex, int nVertices, int firstTriangle, int nTriangles ) override {}
 	};
 
 } // namespace wax

@@ -148,7 +148,7 @@ namespace wax
 	spx CircularWarp::_uPeriod() const
 	{
 		double period = m_sourceSize.w * 360.0 / std::abs(double(m_sweep)) + 0.5;
-		return spx(std::clamp(period, 1.0, double(Warpmap::maxNodeValue)));
+		return spx(std::clamp(period, 1.0, double(Warpmap::maxValue)));
 	}
 
 	//____ _generateNodes() ___________________________________________________
@@ -195,7 +195,7 @@ namespace wax
 				uint32_t angle = _polar(-y, x, &r);				// Clockwise from up.
 
 				int64_t u = _multiply(bClockwise ? angle - start : start - angle, uFactor);
-				int64_t v = bFlat ? -Warpmap::maxNodeValue : _multiply(r - topRadius, vFactor);
+				int64_t v = bFlat ? -Warpmap::maxValue : _multiply(r - topRadius, vFactor);
 
 				*pNodes++ = { _toNodeValue(u), _toNodeValue(v) };
 			}

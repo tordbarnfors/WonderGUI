@@ -164,7 +164,7 @@ namespace wax
 	spx RoundedRectWarp::_uPeriod() const
 	{
 		double period = m_sourceSize.w / std::abs(double(m_sweep)) + 0.5;
-		return spx(std::clamp(period, 1.0, double(Warpmap::maxNodeValue)));
+		return spx(std::clamp(period, 1.0, double(Warpmap::maxValue)));
 	}
 
 	//____ _generateNodes() ___________________________________________________
@@ -271,7 +271,7 @@ namespace wax
 				uint32_t part = uint32_t(_multiply(pos, posFactor));
 
 				int64_t u = _multiply(bClockwise ? part - start : start - part, uFactor);
-				int64_t v = bFlat ? -Warpmap::maxNodeValue : _multiply(dist - top, vFactor);
+				int64_t v = bFlat ? -Warpmap::maxValue : _multiply(dist - top, vFactor);
 
 				*pNodes++ = { _toNodeValue(u), _toNodeValue(v) };
 			}

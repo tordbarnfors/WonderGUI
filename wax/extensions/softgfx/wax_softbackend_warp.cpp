@@ -24,6 +24,10 @@
 	Drawing through Warpmaps (Command::WarpBlit and Command::WarpDrawEdgemap) for SoftBackend
 	and LinearBackend, following the definition in Warpmap.
 
+	NOT DRAWING ANYTHING FOR NOW: Warpmaps are now triangle meshes, and this code is for the grid
+	of nodes they had before. The parts that read the grid are disabled until it is ported, which
+	is described below as it was for the grid.
+
 	The Warpmap is processed one row of cells at a time. The corners of each cell are converted
 	from spx to pixels of the source with 16 binals, and the cell is classified from the bounding
 	box of its corners:
@@ -471,6 +475,7 @@ namespace wax
 		if (area.w <= 0 || area.h <= 0)
 			return;
 
+#if 0	// Grid of nodes, being ported to triangle meshes.
 		const SizeI cellSize = pMap->cellSize();
 		const SizeI nodes = pMap->nodes();
 
@@ -525,6 +530,7 @@ namespace wax
 				}
 			}
 		}
+#endif
 	}
 
 	//____ _setupWarpCells() ____________________________________________________
@@ -535,6 +541,7 @@ namespace wax
 
 	void SoftBackend::_setupWarpCells(int row, int firstColumn, int nColumns)
 	{
+#if 0	// Grid of nodes, being ported to triangle meshes.
 		WarpSetup& w = m_warp;
 		SoftWarpmap* pMap = w.pWarpmap;
 
@@ -606,6 +613,7 @@ namespace wax
 			else
 				cell.kind = c_warpMixed;
 		}
+#endif
 	}
 
 	//____ _beginWarpCellRow() __________________________________________________

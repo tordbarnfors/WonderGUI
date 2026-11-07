@@ -277,8 +277,8 @@ namespace wax
 	//____ _calcCellSize() ____________________________________________________
 	/*
 		Along a line through the plane, the source position is (alpha*x + beta) / (gamma*x + delta).
-		Interpolating that over cells of c pixels is off by about c^2 / 8 times its second derivative,
-		which in pixels on screen is c^2 / (4 * d), d being the distance to the horizon (where the
+		Interpolating that linearly over l pixels is off by about l^2 / 8 times its second derivative,
+		which in pixels on screen is l^2 / (4 * d), d being the distance to the horizon (where the
 		divisor is 0) along the line. It is shortest straight towards the horizon, where it is
 		W / |gradient of W|, and smallest at the corner nearest the horizon. That is the same as a
 		circle of radius d / 2.
@@ -327,7 +327,7 @@ namespace wax
 			return _toNodeValue((n + (n < 0 ? -half : half)) / w);
 		};
 
-		const spx c_far = Warpmap::maxNodeValue;
+		const spx c_far = Warpmap::maxValue;
 
 		for (int row = 0; row < nodes.h; row++)
 		{

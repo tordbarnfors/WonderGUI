@@ -27,8 +27,6 @@
 #include <wax_types.h>
 #include <wax_geo.h>
 
-#include <algorithm>
-
 namespace wax
 {
 	class Warpmap;
@@ -39,34 +37,44 @@ namespace wax
 	/**
 	 * @brief Bends a surface or an edgemap into another shape when drawn.
 	 *
-	 * A Warpmap covers a rectangle of size.w * size.h pixels with a grid of nodes, one node every
-	 * cellSize.w pixels horizontally and cellSize.h pixels vertically, plus one at the right and
-	 * bottom edge. Each node holds
-	 * the position in the source that is drawn at that point, in spx of the source (64 per pixel of
-	 * the surface or edgemap, relative to the source rectangle for blits), u along its width and v
-	 * along its height. Positions between nodes are interpolated bilinearly. Where a position falls
-	 * outside the source nothing is drawn.
+	 * A Warpmap covers a rectangle of size.w * size.h pixels with a mesh of triangles. Each vertex
+	 * has a position in the Warpmap (x, y in spx from its top-left corner), the position in the
+	 * source that is drawn there (u along the width of the source and v along its height, in spx of
+	 * the source: 64 per pixel of the surface or edgemap, relative to the source rectangle for blits)
+	 * and a weight w for perspective. Positions within a triangle are interpolated from its corners.
+	 * Where a position falls outside the source nothing is drawn, and nothing is drawn outside the
+	 * triangles.
 	 *
-	 * Node values are not limited to the source. Values outside it are what makes parts of the
-	 * Warpmap transparent, with the border antialiased where the interpolated position crosses the
-	 * border of the source. Keep values within +-maxNodeValue (16 million pixels). Values on a
-	 * periodic axis are brought into 0 -> period when imported, so periods are set together with
-	 * all nodes, see importAllNodes(). A new Warpmap maps its rectangle
-	 * straight onto the source, pixel for pixel: u = x * 64 and v = y * 64.
+	 * The number of vertices and triangles is set when created, while vertices, triangles and
+	 * periods can be changed. Triangles take their corners by index in the vertices. Triangles that
+	 * aren't needed can be left with all corners the same, which draws nothing. Triangles may not
+	 * overlap: what is drawn where they do is undefined. Triangles can be given clockwise or counter
+	 * clockwise. A new Warpmap with at least 4 vertices and 2 triangles maps its rectangle straight
+	 * onto the source, pixel for pixel, with the first 4 vertices and 2 triangles.
+	 *
+	 * Vertex positions are kept within +-maxPosition, u and v within +-maxValue and w within
+	 * 1 -> maxWeight, with weightOne being 1.0. Only the ratios between the weights of the corners
+	 * of a triangle matter. They are the same (any value) for a triangle without perspective, and
+	 * proportional to 1 / distance from the eye for a triangle seen in perspective. A vertex shared
+	 * by triangles has the same weight in all of them, so a mesh is in perspective as a whole.
+	 *
+	 * Values of u and v are not limited to the source. Values outside it are what makes parts of a
+	 * triangle transparent, with the border antialiased where the interpolated position crosses the
+	 * border of the source. Since nothing is drawn outside the triangles, let the triangles reach
+	 * about a pixel beyond the parts that are drawn, with u and v going on outside the source,
+	 * otherwise borders along the edge of the mesh are cut off without antialiasing. Edges between
+	 * triangles are not antialiased and don't show, as long as neighbouring triangles share the
+	 * vertices along their common edge.
 	 *
 	 * A Warpmap is made for a source of a certain size. A source of another size is not stretched to
-	 * fit, the nodes have to be changed.
-	 *
-	 * Smaller cells follow curved shapes more closely. A circle of radius r is off by
-	 * roughly cellSize^2 / (8 * r) pixels. Where positions change linearly along an axis, as along
-	 * a cylinder, cells can be as long as the Warpmap that way.
+	 * fit, the vertices have to be changed.
 	 *
 	 * An axis can be periodic (uPeriod/vPeriod > 0, in spx of the source), as when u is the angle of
-	 * a ring. Positions are then read modulo the period and interpolation between nodes across the
-	 * seam takes the short way: the corners of a cell are taken as the values closest to its top-left
-	 * corner, give or take whole periods. With a period of the size of the source it wraps around,
-	 * which for an edgemap is seamless if it is tiling. A longer period leaves a gap, such as a
-	 * 270 degree arc of a source w spx wide having uPeriod = w * 360 / 270.
+	 * a ring. Positions are then read modulo the period, after interpolation, so vertices of a
+	 * triangle keep values that are close to each other also where they go past the period. With a
+	 * period of the size of the source it wraps around, which for an edgemap is seamless if it is
+	 * tiling. A longer period leaves a gap, such as a 270 degree arc of a source w spx wide having
+	 * uPeriod = w * 360 / 270.
 	 *
 	 * When drawn, a source offset (in spx of the source) is added to the position before reading,
 	 * so a ring can be rotated or a pattern scrolled without changing the Warpmap.
@@ -77,18 +85,31 @@ namespace wax
 	 * Warpmaps are created by a WarpmapFactory, which is specific to the backend, or by a generator
 	 * such as CircularWarp.
 	 *
-	 * Draws are rendered when the canvas update ends, and read the Warpmap then. Changing the nodes
-	 * or periods of a Warpmap changes all of its draws that aren't rendered yet, so use a Warpmap
-	 * for each shape drawn within the same canvas update. Generators take care of that.
+	 * Draws are rendered when the canvas update ends, and read the Warpmap then. Changing the content
+	 * of a Warpmap changes all of its draws that aren't rendered yet, so use a Warpmap for each shape
+	 * drawn within the same canvas update. Generators take care of that.
 	 *
 	 * How a Warpmap is drawn, which all backends follow:
 	 *
 	 * - The Warpmap is placed on whole pixels (dest is rounded to nearest pixel), like edgemaps.
 	 *   Nothing is drawn outside of its rectangle.
 	 *
-	 * - The position of a point (x,y) of the Warpmap is interpolated from the corners of the cell it
-	 *   is in, see positionAt(). Adding the source offset gives the position in the source. A periodic
-	 *   axis is then wrapped into 0 -> period.
+	 * - A pixel is drawn by the triangle that its center (32 spx into the pixel along x and y) is
+	 *   inside of, see triangleAt(). A center exactly on an edge belongs to the triangle that has it
+	 *   as a left edge (the triangle is to the right of it) or as a horizontal top edge (the triangle
+	 *   is below it), so that no pixel is drawn twice by triangles that share an edge. Pixels with
+	 *   their center outside all triangles aren't drawn.
+	 *
+	 * - The position at a point (x,y) of the Warpmap is interpolated from the corners of the triangle
+	 *   that draws the pixel, also for points of the pixel outside the triangle, see positionIn().
+	 *   With b0, b1 and b2 being the barycentric coordinates of the point in the triangle:
+	 *
+	 *		u = (b0*w0*u0 + b1*w1*u1 + b2*w2*u2) / (b0*w0 + b1*w1 + b2*w2)
+	 *
+	 *   and the same for v. Where the divisor is 0 or less, which is beyond the horizon of a triangle
+	 *   in perspective, the point is outside the source, and a pixel with its center there isn't
+	 *   drawn. Adding the source offset gives the position in the source. A periodic axis is then
+	 *   wrapped into 0 -> period.
 	 *
 	 * - The part of a pixel that is covered is the part of its area whose position is inside the
 	 *   source: 0 -> width and 0 -> height. For an edgemap, the part covered by each segment is the
@@ -100,27 +121,51 @@ namespace wax
 	 * - Colors are taken at the position of the center of the pixel: the surface is sampled there
 	 *   by its sample method, as if the edge pixels of the source rectangle continued outside it
 	 *   (like stretchBlit() reads it), or wrapping around the surface if it is tiling. The tints of
-	 *   edgemap segments are evaluated there (in pixels of the edgemap). A center in the gap between copies on a periodic axis is taken in the nearest copy,
-	 *   before its start or after its end, so colors don't jump where copies meet. The device tint is
-	 *   applied in canvas space as usual.
+	 *   edgemap segments are evaluated there (in pixels of the edgemap). A center in the gap between
+	 *   copies on a periodic axis is taken in the nearest copy, before its start or after its end, so
+	 *   colors don't jump where copies meet. The device tint is applied in canvas space as usual.
+	 *
+	 * - Backends other than ReferenceBackend may divide for perspective only once every few pixels
+	 *   along a row, up to 16, interpolating linearly in between. They take shorter runs close to the
+	 *   horizon, keeping within about a quarter of a pixel of the positions above.
 	 */
 
 	class Warpmap : public Object
 	{
-		friend class WarpGenerator;							// Writes nodes in place when generating.
+		friend class WarpGenerator;							// Writes content in place when generating.
 
 	public:
 
 		struct Blueprint
 		{
-			SizeI			cellSize	= { 16, 16 };		// Pixels between nodes, horizontally and vertically.
 			Finalizer_p		finalizer	= nullptr;
 			SizeI			size;							// Mandatory. Size in pixels.
+			int				triangles	= 2;				// Number of triangles, 1 -> maxTriangles.
 			spx				uPeriod		= 0;				// In spx of the source, 0 = not periodic.
+			int				vertices	= 4;				// Number of vertices, 3 -> maxVertices.
 			spx				vPeriod		= 0;				// In spx of the source, 0 = not periodic.
 		};
 
-		static const spx	maxNodeValue = 1 << 30;			// Node values and periods are kept within +-maxNodeValue.
+		struct Vertex
+		{
+			spx				x, y;							// Position in spx of the Warpmap, from its top-left corner.
+			spx				u, v;							// Position in spx of the source.
+			int				w = weightOne;					// Weight for perspective, 1 -> maxWeight.
+		};
+
+		struct Triangle
+		{
+			int				a, b, c;						// Indices of the corners in the vertices.
+
+			int				operator[]( int i ) const { return i == 0 ? a : (i == 1 ? b : c); }
+		};
+
+		static constexpr spx	maxPosition = 1 << 26;			// Vertex positions are kept within +-maxPosition (1 million pixels).
+		static constexpr spx	maxValue = 1 << 30;				// u, v and periods are kept within +-maxValue (16 million pixels).
+		static constexpr int	weightOne = 1 << 16;			// A weight of 1.0.
+		static constexpr int	maxWeight = 1 << 24;			// Weights are kept within 1 -> maxWeight.
+		static constexpr int	maxVertices = 1 << 20;
+		static constexpr int	maxTriangles = 1 << 21;
 
 		//.____ Identification __________________________________________
 
@@ -130,69 +175,81 @@ namespace wax
 		//.____ Geometry ______________________________________________________
 
 		inline SizeI	pixelSize() const { return m_size; }
-		inline SizeI	cellSize() const { return m_cellSize; }
-		inline SizeI	nodes() const { return m_nodes; }				// Nodes horizontally and vertically.
-
-		inline int		nodeX( int column ) const { return std::min( column * m_cellSize.w, m_size.w ); }	// Pixel position of a column of nodes.
-		inline int		nodeY( int row ) const { return std::min( row * m_cellSize.h, m_size.h ); }
 
 		//.____ Content _______________________________________________________
+
+		inline int		vertexCount() const { return m_nVertices; }
+		inline int		triangleCount() const { return m_nTriangles; }
 
 		inline spx		uPeriod() const { return m_uPeriod; }
 		inline spx		vPeriod() const { return m_vPeriod; }
 
-		// Nodes are stored row by row. Region is given in nodes, pitch is nodes between rows
-		// in source/destination, 0 meaning region.w.
+		bool			setPeriods( spx uPeriod, spx vPeriod );
 
-		bool			importNodes( const RectI& region, const CoordSPX * pSource, int pitch = 0 );
+		// Values out of range are clamped. Triangles with corners that aren't vertices of the Warpmap
+		// fail the import, which then changes nothing.
 
-		// Imports all nodes and sets the periods they are for. Periods can only change together
-		// with all nodes, since nodes are stored brought into their periods.
+		bool			importVertices( int first, int count, const Vertex * pSource );
+		bool			importTriangles( int first, int count, const Triangle * pSource );
 
-		bool			importAllNodes( const CoordSPX * pSource, spx uPeriod, spx vPeriod, int pitch = 0 );
-		bool			exportNodes( const RectI& region, CoordSPX * pDestination, int pitch = 0 ) const;
+		// All vertices and triangles, and periods, at once. Either of pVertices and pTriangles can be
+		// null to keep what is there.
 
-		inline const CoordSPX*	nodeData() const { return m_pNodes; }
+		bool			importMesh( const Vertex * pVertices, const Triangle * pTriangles, spx uPeriod, spx vPeriod );
+
+		bool			exportVertices( int first, int count, Vertex * pDestination ) const;
+		bool			exportTriangles( int first, int count, Triangle * pDestination ) const;
+
+		inline const Vertex*	vertexData() const { return m_pVertices; }
+		inline const Triangle*	triangleData() const { return m_pTriangles; }
 
 		//.____ Misc __________________________________________________________
 
-		// Corners of a cell (top-left, top-right, bottom-left, bottom-right), with values on periodic
-		// axes moved by whole periods to be as close as possible to the top-left corner.
+		// The triangle that a point (in spx of the Warpmap) is inside of, by the rule for pixel centers
+		// on edges, or -1 if none. Searches all triangles. Overlapping triangles give any of them.
 
-		void			cellCorners( int column, int row, CoordSPX * pCorners ) const;
+		int				triangleAt( CoordSPX point ) const;
 
-		// Interpolated position at point x,y (in pixels, 0 -> size) of the Warpmap, in spx of the source
-		// with fractions. Not wrapped into the period.
+		// If a point (in spx of the Warpmap) is inside a triangle, by the rule for pixel centers on edges.
 
-		CoordF			positionAt( double x, double y ) const;
+		bool			isInside( int triangle, CoordSPX point ) const;
+
+		// Interpolated position at point x,y (in pixels) of the Warpmap, as given by a triangle, also
+		// outside of it. In spx of the source with fractions, not wrapped into the period. False where
+		// the point is beyond the horizon of the triangle, or the triangle has no area.
+
+		bool			positionIn( int triangle, double x, double y, CoordF& position ) const;
 
 	protected:
 		Warpmap() {};
 
-		// Nodes are taken from pNodes (pitch as for importNodes()) if given, otherwise they map the
-		// rectangle straight onto the source. Subclasses send them on with _nodesUpdated() when
-		// constructed, so creating with nodes costs a single upload.
+		// Content is taken from pVertices and pTriangles if given, otherwise it maps the rectangle
+		// straight onto the source as described above. Subclasses send it on with _updated() when
+		// constructed, so creating with content costs a single upload.
 
-		Warpmap( const Blueprint& bp, const CoordSPX * pNodes = nullptr, int pitch = 0 );
+		Warpmap( const Blueprint& bp, const Vertex * pVertices = nullptr, const Triangle * pTriangles = nullptr );
 		virtual ~Warpmap();
 
-		static bool		_validateBlueprint( const Blueprint& bp );
-		static spx		_unwrapTo( spx value, spx reference, spx period );
+		// Checks the blueprint, and if given that the triangles have corners that are vertices.
 
-		void			_normalizeNodes( const RectI& region );
+		static bool		_validateBlueprint( const Blueprint& bp, const Triangle * pTriangles = nullptr );
 
-		// Called when nodes in region have changed. Periods only change together with all nodes,
-		// and region is then all nodes. Typically all you need to override when subclassing.
+		static Vertex	_clamped( const Vertex& vertex );
+		static bool		_isValid( const Triangle * pTriangles, int count, int nVertices );
 
-		virtual void	_nodesUpdated( const RectI& region ) = 0;
+		// Called when content has changed: the vertices and triangles given (count 0 for none), and
+		// possibly the periods. Typically all you need to override when subclassing.
+
+		virtual void	_updated( int firstVertex, int nVertices, int firstTriangle, int nTriangles ) = 0;
 
 		SizeI			m_size;
-		SizeI			m_cellSize = { 16, 16 };
-		SizeI			m_nodes;
+		int				m_nVertices = 0;
+		int				m_nTriangles = 0;
 		spx				m_uPeriod = 0;
 		spx				m_vPeriod = 0;
 
-		CoordSPX*		m_pNodes = nullptr;					// m_nodes.w * m_nodes.h, row by row.
+		Vertex*			m_pVertices = nullptr;
+		Triangle*		m_pTriangles = nullptr;
 	};
 
 } // namespace wax
