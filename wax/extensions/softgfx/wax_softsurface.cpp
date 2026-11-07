@@ -222,7 +222,6 @@ namespace wax
 	void SoftSurface::_init()
 	{
 		m_softFormat = SoftFormatInfo::softFormat(m_pixelFormat, m_colorSpace, m_bBigEndian);
-		_initTiling();
 	}
 
 	//____ _paletteOffset() _____________________________________________________
@@ -232,30 +231,6 @@ namespace wax
 		// The palette follows the pixels in our blob, aligned for Color8.
 
 		return (m_pitch * m_size.h + 3) & ~3;
-	}
-
-	//____ _initTiling() ________________________________________________________
-
-	void SoftSurface::_initTiling()
-	{
-		if (m_bTiling)
-		{
-			int xBits = Util::mostSignificantBit(m_size.w);
-			int yBits = Util::mostSignificantBit(m_size.h);
-
-			if (m_size.w != 1 << xBits || m_size.h != 1 << yBits)
-			{
-				Base::throwError(ErrorLevel::Warning, ErrorCode::FailedPrerequisite, "Surface of non-two-factor size set to tile. Tiling will happen at largest two-factor boundary.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			}
-
-			m_srcPosMaskX = (1 << xBits) -1;
-			m_srcPosMaskY = (1 << yBits) -1;
-		}
-		else
-		{
-			m_srcPosMaskX = 0;
-			m_srcPosMaskY = 0;
-		}
 	}
 
 	//____ allocPixelBuffer() _________________________________________________

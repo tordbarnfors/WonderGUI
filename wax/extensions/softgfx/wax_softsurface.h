@@ -88,8 +88,7 @@ namespace wax
 		
 		inline int			pitch() const { return m_pitch; }
 		inline uint8_t *	pixels() const { return m_pData; }
-		inline int			tileMaskX() const { return m_srcPosMaskX; }
-		inline int			tileMaskY() const { return m_srcPosMaskY; }
+		inline CoordI		wrapTilePos(CoordI pos) const { return { _wrap(pos.x, m_size.w), _wrap(pos.y, m_size.h) }; }
 		inline const HiColor * palette4096() const { return m_pPalette4096; }		// Palette in linear 0 -> 4096.
 		inline SoftFormat	softFormat() const { return m_softFormat; }			// Undefined if no kernels can be made for the pixels.
 		
@@ -109,13 +108,11 @@ namespace wax
 
 		void		_init();
 		void		_makePalette4096();
-		void		_initTiling();
 		int			_paletteOffset() const;
 
-		SoftFormat	m_softFormat = SoftFormat::Undefined;
+		static inline int _wrap(int v, int size) { v %= size; return v < 0 ? v + size : v; }
 
-		int			m_srcPosMaskX = 0;
-		int			m_srcPosMaskY = 0;
+		SoftFormat	m_softFormat = SoftFormat::Undefined;
 
 		int			m_pitch;
 

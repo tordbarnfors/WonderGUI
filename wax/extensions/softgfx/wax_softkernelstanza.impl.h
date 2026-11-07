@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <limits>
 #include <type_traits>
 
 using namespace wax;
@@ -1708,31 +1709,48 @@ void _straight_blit(const uint8_t* WAX_RESTRICT pSrc, uint8_t* WAX_RESTRICT pDst
 	// Preapare tiling and blurring
 
 	int srcX, srcY;
-	int maskX, maskY;
+	int lineX, lineY;
 	int xPitch, yPitch;
-	
-	int	srcXstart;
-	
+
+	SizeI surfSize;
+
 	if constexpr (READOP == SoftBackend::ReadOp::Tile || READOP == SoftBackend::ReadOp::Blur)
 	{
 		xPitch = pSrcSurf->pixelBits()/8;
 		yPitch = pSrcSurf->pitch();
 
-		int ofs = int(pSrc - pSrcSurf->pixels());
-		srcY = ofs / yPitch;
-		srcX = (ofs % yPitch) / xPitch;
-		pSrc = pSrcSurf->pixels();
-		maskX = pSrcSurf->tileMaskX();
-		maskY = pSrcSurf->tileMaskY();
+		// Source position is tracked as coordinates. pSrc must be inside the source.
 
-		srcXstart = srcX;
+		int ofs = int(pSrc - pSrcSurf->pixels());
+		lineY = ofs / yPitch;
+		lineX = (ofs % yPitch) / xPitch;
+		pSrc = pSrcSurf->pixels();
+
+		surfSize = pSrcSurf->pixelSize();
 	}
 
-	SizeI surfSize;
+	// Steps of a straight blit are -1, 0 or 1, so wrapping a tile position is a matter
+	// of stepping back in from just outside the source.
 
-	if constexpr (READOP == SoftBackend::ReadOp::Blur)
+	auto wrap = [](int pos, int size) { pos += pos < 0 ? size : 0; pos -= pos >= size ? size : 0; return pos; };
+
+	// Tiling reads pixels along a row or column of the source until it reaches the edge,
+	// then jumps back to the other edge.
+
+	int runLeft, runLength, runJump;
+
+	if constexpr (READOP == SoftBackend::ReadOp::Tile)
 	{
-		surfSize = pSrcSurf->pixelSize();
+		if (pMatrix->xx != 0)
+		{
+			runLength = surfSize.w;
+			runJump = -pMatrix->xx * surfSize.w * xPitch;
+		}
+		else
+		{
+			runLength = surfSize.h;
+			runJump = -pMatrix->xy * surfSize.h * yPitch;
+		}
 	}
 
 	const Color8* WAX_RESTRICT pPalette = pSrcSurf->palette();
@@ -1773,11 +1791,21 @@ void _straight_blit(const uint8_t* WAX_RESTRICT pSrc, uint8_t* WAX_RESTRICT pDst
 	
 	for (int y = 0; y < nLines; y++)
 	{
-		if constexpr(READOP == SoftBackend::ReadOp::Blur)
+		if constexpr (READOP == SoftBackend::ReadOp::Tile)
 		{
-			srcX = srcXstart;
+			pSrc = pSrcSurf->pixels() + lineY * yPitch + lineX * xPitch;
+
+			runLeft =	pMatrix->xx > 0 ? surfSize.w - lineX :
+						pMatrix->xx < 0 ? lineX + 1 :
+						pMatrix->xy > 0 ? surfSize.h - lineY : lineY + 1;
 		}
-		
+
+		if constexpr (READOP == SoftBackend::ReadOp::Blur)
+		{
+			srcX = lineX;
+			srcY = lineY;
+		}
+
 		// Step 3: Prepare tint for any vertical gradient
 
 		int16_t lineB, lineG, lineR, lineA;
@@ -1788,13 +1816,6 @@ void _straight_blit(const uint8_t* WAX_RESTRICT pSrc, uint8_t* WAX_RESTRICT pDst
 		for (int x = 0; x < lineLength; x++)
 		{
 			// Step 4: Read source pixels
-
-			if constexpr(READOP == SoftBackend::ReadOp::Tile)
-			{
-				srcX &= maskX;
-				srcY &= maskY;
-				pSrc = pSrcSurf->pixels() + srcY * yPitch + srcX * xPitch;
-			}
 
 			if constexpr(bCopyOpaque)
 			{
@@ -1964,7 +1985,17 @@ void _straight_blit(const uint8_t* WAX_RESTRICT pSrc, uint8_t* WAX_RESTRICT pDst
 
 			// Step 9: Increment source and destination pointers
 
-			if constexpr(READOP == SoftBackend::ReadOp::Tile || READOP == SoftBackend::ReadOp::Blur)
+			if constexpr(READOP == SoftBackend::ReadOp::Tile)
+			{
+				pSrc += pitches.srcX;
+
+				if (--runLeft == 0)
+				{
+					pSrc += runJump;
+					runLeft = runLength;
+				}
+			}
+			else if constexpr(READOP == SoftBackend::ReadOp::Blur)
 			{
 				srcX += pMatrix->xx;
 				srcY += pMatrix->xy;
@@ -1975,10 +2006,15 @@ void _straight_blit(const uint8_t* WAX_RESTRICT pSrc, uint8_t* WAX_RESTRICT pDst
 			pDst += pitches.dstX;
 		}
 
-		if constexpr(READOP == SoftBackend::ReadOp::Tile || READOP == SoftBackend::ReadOp::Blur)
+		if constexpr(READOP == SoftBackend::ReadOp::Tile)
 		{
-			srcX += pMatrix->yx;
-			srcY += pMatrix->yy;
+			lineX = wrap(lineX + pMatrix->yx, surfSize.w);
+			lineY = wrap(lineY + pMatrix->yy, surfSize.h);
+		}
+		else if constexpr(READOP == SoftBackend::ReadOp::Blur)
+		{
+			lineX += pMatrix->yx;
+			lineY += pMatrix->yy;
 		}
 		else
 			pSrc += pitches.srcY;
@@ -2227,11 +2263,27 @@ void _transform_blit(const SoftSurface* WAX_RESTRICT pSrcSurf, BinalCoord pos, c
 	binalInt lineIncX = matrix[1][0];
 	binalInt lineIncY = matrix[1][1];
 
-	binalInt	srcPosMaskX = pSrcSurf->tileMaskX();
-	binalInt	srcPosMaskY = pSrcSurf->tileMaskY();
+	// Tiling: Since the source repeats, steps can be reduced to less than its size without
+	// changing what is read. A position then needs at most one correction to get back inside
+	// after a step. Pixels are read in runs that don't leave the source, so positions only
+	// need to be wrapped between runs.
 
-	binalInt	srcPosMaskX_binals = (srcPosMaskX << BINAL_SHIFT) | BINAL_MASK;
-	binalInt	srcPosMaskY_binals = (srcPosMaskY << BINAL_SHIFT) | BINAL_MASK;
+	auto wrap = [](binalInt pos, binalInt size) { pos += pos < 0 ? size : 0; pos -= pos >= size ? size : 0; return pos; };
+
+	auto runLength = [](binalInt pos, binalInt inc, binalInt size) -> binalInt
+	{
+		return inc > 0 ? (size - pos + inc - 1) / inc : inc < 0 ? pos / -inc + 1 : std::numeric_limits<int>::max();
+	};
+
+	if constexpr (READOP == SoftBackend::ReadOp::Tile)
+	{
+		pos.x = wrap(pos.x % srcMax_w, srcMax_w);
+		pos.y = wrap(pos.y % srcMax_h, srcMax_h);
+		pixelIncX %= srcMax_w;
+		pixelIncY %= srcMax_h;
+		lineIncX %= srcMax_w;
+		lineIncY %= srcMax_h;
+	}
 
 	const Color8* WAX_RESTRICT pPalette = pSrcSurf->palette();
 	const HiColor* WAX_RESTRICT pPalette4096 = pSrcSurf->palette4096();
@@ -2272,16 +2324,33 @@ void _transform_blit(const SoftSurface* WAX_RESTRICT pSrcSurf, BinalCoord pos, c
 
 	for (int y = 0; y < nLines; y++)
 	{
-		binalInt ofsX = (binalInt)(pos.x + lineIncX * y);
-		binalInt ofsY = (binalInt)(pos.y + lineIncY * y);		// We use 15 binals for all calculations
+		binalInt ofsX, ofsY;		// We use 15 binals for all calculations
+		int runEnd = 0;
 
+		if constexpr (READOP == SoftBackend::ReadOp::Tile)
+		{
+			ofsX = pos.x;
+			ofsY = pos.y;
+
+			pos.x = wrap(pos.x + lineIncX, srcMax_w);
+			pos.y = wrap(pos.y + lineIncY, srcMax_h);
+		}
+		else
+		{
+			ofsX = (binalInt)(pos.x + lineIncX * y);
+			ofsY = (binalInt)(pos.y + lineIncY * y);
+		}
 
 		for (int x = 0; x < lineLength; x++)
 		{
 			if constexpr(READOP == SoftBackend::ReadOp::Tile)
 			{
-				ofsX &= srcPosMaskX_binals;
-				ofsY &= srcPosMaskY_binals;
+				if (x == runEnd)
+				{
+					ofsX = wrap(ofsX, srcMax_w);
+					ofsY = wrap(ofsY, srcMax_h);
+					runEnd = x + int(std::min({ runLength(ofsX, pixelIncX, srcMax_w), runLength(ofsY, pixelIncY, srcMax_h), binalInt(lineLength) }));
+				}
 			}
 
 			// Step 2: Read source color.
@@ -2383,9 +2452,12 @@ void _transform_blit(const SoftSurface* WAX_RESTRICT pSrcSurf, BinalCoord pos, c
 					{
 						binalInt x = (ofsX >> BINAL_SHIFT), y = (ofsY >> BINAL_SHIFT);
 
-						p2 = pSrcSurf->pixels() + y * srcPitch + ((x + 1) & srcPosMaskX) * srcPixelBytes;
-						p3 = pSrcSurf->pixels() + ((y + 1) & srcPosMaskY) * srcPitch + x * srcPixelBytes;
-						p4 = pSrcSurf->pixels() + ((y + 1) & srcPosMaskY) * srcPitch + ((x + 1) & srcPosMaskX) * srcPixelBytes;
+						binalInt nextX = (ofsX + BINAL_MUL >= srcMax_w) ? -x * srcPixelBytes : srcPixelBytes;
+						binalInt nextY = (ofsY + BINAL_MUL >= srcMax_h) ? -y * srcPitch : srcPitch;
+
+						p2 = p + nextX;
+						p3 = p + nextY;
+						p4 = p + nextX + nextY;
 					}
 					else
 					{

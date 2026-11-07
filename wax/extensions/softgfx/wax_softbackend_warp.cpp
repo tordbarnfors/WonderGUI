@@ -1472,10 +1472,13 @@ namespace wax
 			{
 				// Kernel wraps around the surface.
 
-				int64_t maskX = (int64_t(pSource->tileMaskX()) << 16) | (c_one - 1);
-				int64_t maskY = (int64_t(pSource->tileMaskY()) << 16) | (c_one - 1);
+				const int64_t periodX = int64_t(pSource->pixelSize().w) * c_one;
+				const int64_t periodY = int64_t(pSource->pixelSize().h) * c_one;
 
-				draw(0, n, sx & maskX, sy & maskY);
+				sx %= periodX;
+				sy %= periodY;
+
+				draw(0, n, sx < 0 ? sx + periodX : sx, sy < 0 ? sy + periodY : sy);
 				return;
 			}
 

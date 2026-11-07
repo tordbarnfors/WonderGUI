@@ -1045,7 +1045,7 @@ namespace wax
 
 						//
 
-						CoordI src0 = { srcX / 1024, srcY / 1024 };
+						CoordI src0 = { srcX >> 10, srcY >> 10 };		// Floor, tile positions can be negative.
 						CoordI dest = { dstX / 64, dstY / 64 };
 
 						_forTintSpans(patch, m_bBlitTintRuns, [&](const RectI& sub)
@@ -1060,10 +1060,7 @@ namespace wax
 							// reading, which must then be inside it.
 
 							if (cmd == Command::Tile)
-							{
-								src.x &= m_pBlitSource->tileMaskX();
-								src.y &= m_pBlitSource->tileMaskY();
-							}
+								src = m_pBlitSource->wrapTilePos(src);
 
 							if (cmd == Command::Blit)
 								(this->*m_pStraightBlitOp)(sub, src, mtx, sub.pos(), m_pStraightBlitFirstPassOp);
@@ -1447,9 +1444,13 @@ namespace wax
 		{
 			int thisChunkLines = std::min(dest.h - line, chunkLines);
 
+			CoordI chunkSrc = { src.x + line * int(mtx.yx), src.y + line * int(mtx.yy) };
+
+			if (pSource->m_bTiling)
+				chunkSrc = pSource->wrapTilePos(chunkSrc);		// Tile kernels must start inside the source.
+
 			uint8_t* pDst = m_pCanvasPixels + (dest.y + line) * m_canvasPitch + dest.x * dstPixelBytes;
-			uint8_t* pSrc = pSource->m_pData + src.y * pSource->m_pitch + line * int(srcPixelBytes * mtx.yx + pSource->m_pitch * mtx.yy) + src.x * srcPixelBytes;
-			//			uint8_t * pSrc = pSource->m_pData + (src.y+line) * pSource->m_pitch + src.x * srcPixelBytes;
+			uint8_t* pSrc = pSource->m_pData + chunkSrc.y * pSource->m_pitch + chunkSrc.x * srcPixelBytes;
 
 			pPassOneOp(pSrc, pChunkBuffer, pSource, pitchesPass1, thisChunkLines, dest.w, m_colTrans, { 0,0 }, &mtx);
 			m_pBlitSecondPassOp(pChunkBuffer, pDst, pSource, pitchesPass2, thisChunkLines, dest.w, m_colTrans, patchPos, nullptr);
