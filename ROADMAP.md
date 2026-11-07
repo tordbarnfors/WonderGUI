@@ -59,7 +59,7 @@ in someone's memory or an old chat. Add to it when you decide something, move it
     1/64 of a pixel, since a quarter of a pixel shows as a quarter of the coverage of a pixel along
     a border. Keeping interior runs within 1/16 of a pixel too was tried: it halves how much
     colors swim over sharp textures, but drew a steep floor 50% slower (`c_runShift` in
-    `wax_softbackend_warp.cpp`).
+    `wax_softbackend_warp.cpp`), so it stays at a quarter of a pixel for now.
   - **Perspective in the software backends is limited to u and v within 32768 pixels of the
     source from the first corner of a triangle,** so that W * (u - u0) fits in 64 bits with
     weights scaled to 2^28. Setting up triangles uses 128 bit products, `__int128` where the
