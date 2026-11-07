@@ -41,20 +41,20 @@ namespace wax
 	 * A WarpGenerator keeps its Warpmap and updates it when generate() is called, see generate().
 	 *
 	 * The Warpmap is made for a source of sourceSize: the size of the edgemap or of the source
-	 * rectangle of the blit, in spx. Generators calculate the positions in that source at the nodes
-	 * of a grid, one every cellSize.w pixels horizontally and cellSize.h pixels vertically plus one
-	 * at the right and bottom edge, and the Warpmap is made from that with two triangles per cell
-	 * of the grid.
+	 * rectangle of the blit, in spx. Generators make a mesh of triangles that follows the shape, as
+	 * CircularWarp, RoundedRectWarp, CylinderWarp and PerspectiveWarp do, or calculate positions in
+	 * the source at the nodes of a grid, one every cellSize.w pixels horizontally and cellSize.h
+	 * pixels vertically plus one at the right and bottom edge, which is made into two triangles per
+	 * cell.
 	 *
-	 * The cell size decides how closely the Warpmap follows the shape. Width and height of
-	 * cells are calculated by the generator from precision (max position error in pixels) unless
-	 * set explicitly, at least 4 and at most the size of the Warpmap. Along curves it is kept within
-	 * 4 -> 64 pixels, along straight axes cells can span the Warpmap.
+	 * Precision (max position error in pixels) decides how closely the Warpmap follows the shape,
+	 * through the size of the pieces of a mesh or the cells of a grid, unless cellSize is set.
+	 * Grid cells are kept within 4 -> 64 pixels along curves, and can span the Warpmap along
+	 * straight axes.
 	 *
-	 * When subclassing, implement _generateNodes() and _calcCellSize(), override _uPeriod() and
-	 * _vPeriod() for periodic axes and set m_bDirty when a setting changes. A generator that makes
-	 * its own mesh rather than a grid, such as PerspectiveWarp, overrides _meshSize() and
-	 * _generateMesh() instead, and has no use for cell size and precision.
+	 * When subclassing, override _meshSize() and _generateMesh() to make a mesh, or implement
+	 * _generateNodes() and _calcCellSize() for a grid. Override _uPeriod() and _vPeriod() for
+	 * periodic axes and set m_bDirty when a setting changes.
 	 */
 
 	class WarpGenerator : public Object
@@ -86,10 +86,10 @@ namespace wax
 
 		// Generates the Warpmap from current settings, if they have changed since last time, and
 		// returns it. The content of the Warpmap is updated in place, without copying and sent on to
-		// the backend once, if nothing but the WarpGenerator holds it and size and cell size are
-		// unchanged. Otherwise a new Warpmap is created, so a
-		// Warpmap held elsewhere, such as by a draw that isn't rendered yet, never changes. Draw
-		// what generate() returns rather than keeping it.
+		// the backend once, if nothing but the WarpGenerator holds it and its size and number of
+		// vertices and triangles are unchanged. Otherwise a new Warpmap is created, so a Warpmap
+		// held elsewhere, such as by a draw that isn't rendered yet, never changes. Draw what
+		// generate() returns rather than keeping it.
 
 		Warpmap_p	generate();
 
