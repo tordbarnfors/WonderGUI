@@ -28,6 +28,7 @@ public:
 		addTest("Blit nearest wave", &WarpTests::blitWave);
 		addTest("Blit source rectangle", &WarpTests::blitSourceRect);
 		addTest("Periodic V", &WarpTests::periodicV);
+		addTest("Tiling not power of two", &WarpTests::tilingNPOT);
 		addTest("Identity", &WarpTests::identity);
 		addTest("BlendModes", &WarpTests::blendModes);
 		addTest("Rounded rects", &WarpTests::roundedRects);
@@ -107,6 +108,20 @@ public:
 
 			m_pTiling = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear, _.tiling = true),
 													   (uint8_t*)pixels.data(), PixelFormat::ARGB_8);
+
+			// The same pattern cut to a size that isn't a power of two, tiling.
+
+			const int nw = 60, nh = 28;
+			std::vector<Color8> cut(nw * nh);
+
+			for (int y = 0; y < nh; y++)
+				for (int x = 0; x < nw; x++)
+					cut[y * nw + x] = pixels[y * w + x];
+
+			m_pTilingNPOT = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { nw, nh }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear, _.tiling = true),
+														   (uint8_t*)cut.data(), PixelFormat::ARGB_8);
+			m_pTilingNPOTNearest = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { nw, nh }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Nearest, _.tiling = true),
+																  (uint8_t*)cut.data(), PixelFormat::ARGB_8);
 			m_pNearest = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Nearest),
 														(uint8_t*)pixels.data(), PixelFormat::ARGB_8);
 			m_pBilinear = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear),
@@ -115,7 +130,7 @@ public:
 
 		// A reel strip of 8 slots, each a colored diamond between dark separators, and the same
 		// turned on its side as a label. Even slots that get closer towards the rims is what shows
-		// a cylinder. Sizes are powers of two, as tiling surfaces need to wrap the same everywhere.
+		// a cylinder.
 
 		{
 			const int w = 64, h = 256, slot = 32;
@@ -193,6 +208,7 @@ public:
 		m_forGauge = _makeWarps(pWarpmapFactory, m_pGauge->pixelSize() * 64);
 		m_forSmall = _makeWarps(pWarpmapFactory, m_pSmall->pixelSize() * 64);
 		m_forSurface = _makeWarps(pWarpmapFactory, m_pTiling->pixelSize() * 64);
+		m_forNPOT = _makeWarps(pWarpmapFactory, m_pTilingNPOT->pixelSize() * 64);
 		m_forRect = _makeWarps(pWarpmapFactory, { 64 * 32, 64 * 24 });
 		m_forWideRect = _makeWarps(pWarpmapFactory, { 64 * 48, 64 * 32 });
 		m_forSmallRect = _makeWarps(pWarpmapFactory, { 64 * 24, 64 * 16 });
@@ -201,7 +217,7 @@ public:
 		m_pIdentity = pWarpmapFactory->createWarpmap(WGBP(Warpmap, _.size = m_pSmall->pixelSize(), _.cellSize = { 9, 9 }));
 		m_pIdentityBlit = pWarpmapFactory->createWarpmap(WGBP(Warpmap, _.size = { 64, 32 }, _.cellSize = { 7, 7 }));
 
-		return m_pGauge && m_pTintedGauge && m_pSmall && m_pTiling && m_pNearest && m_pBilinear && m_pReelStrip && m_pReelLabel && m_pFloor && m_pCard &&
+		return m_pGauge && m_pTintedGauge && m_pSmall && m_pTiling && m_pTilingNPOT && m_pTilingNPOTNearest && m_pNearest && m_pBilinear && m_pReelStrip && m_pReelLabel && m_pFloor && m_pCard &&
 			   m_forGauge.ring && m_forGauge.wave && m_forGauge.stripes;
 	}
 
@@ -211,6 +227,8 @@ public:
 		m_pTintedGauge = nullptr;
 		m_pSmall = nullptr;
 		m_pTiling = nullptr;
+		m_pTilingNPOT = nullptr;
+		m_pTilingNPOTNearest = nullptr;
 		m_pNearest = nullptr;
 		m_pBilinear = nullptr;
 		m_pReelStrip = nullptr;
@@ -220,6 +238,7 @@ public:
 		m_forGauge = {};
 		m_forSmall = {};
 		m_forSurface = {};
+		m_forNPOT = {};
 		m_forRect = {};
 		m_forWideRect = {};
 		m_forSmallRect = {};
@@ -310,6 +329,20 @@ public:
 		pDevice->warpDrawEdgemap({ 64 * 260, 64 * 10 }, m_forGauge.stripes, m_pGauge, { 64 * 33, 64 * 17 });
 		pDevice->setBlitSource(m_pTiling);
 		pDevice->warpBlit({ 64 * 10, 64 * 260 }, m_forSurface.stripes, { 64 * 5, 64 * 3 });
+		return true;
+	}
+
+	// Tiling sources whose sizes aren't powers of two, read outside of the source by the wave
+	// and repeated by the stripes, with offsets in both directions.
+
+	bool tilingNPOT(GfxDevice * pDevice, const RectSPX& canvas)
+	{
+		pDevice->setBlitSource(m_pTilingNPOT);
+		pDevice->warpBlit({ 64 * 10, 64 * 10 }, m_forNPOT.wave);
+		pDevice->warpBlit({ 64 * 260, 64 * 10 }, m_forNPOT.stripes, { 64 * -17, 64 * 9 });
+		pDevice->setBlitSource(m_pTilingNPOTNearest);
+		pDevice->warpBlit({ 64 * 10, 64 * 260 }, m_forNPOT.wave, { 64 * 23, 64 * -5 });
+		pDevice->warpBlit({ 64 * 260, 64 * 260 }, m_forNPOT.stripes, { 64 * 7, 64 * -13 });
 		return true;
 	}
 
@@ -502,6 +535,8 @@ private:
 	Edgemap_p	m_pSmall;
 
 	Surface_p	m_pTiling;
+	Surface_p	m_pTilingNPOT;
+	Surface_p	m_pTilingNPOTNearest;
 	Surface_p	m_pNearest;
 	Surface_p	m_pBilinear;
 	Surface_p	m_pReelStrip;
@@ -578,6 +613,7 @@ private:
 	Warps		m_forGauge;
 	Warps		m_forSmall;
 	Warps		m_forSurface;
+	Warps		m_forNPOT;
 	Warps		m_forRect;
 	Warps		m_forWideRect;
 	Warps		m_forSmallRect;
