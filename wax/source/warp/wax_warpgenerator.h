@@ -39,9 +39,12 @@ namespace wax
 	 * A WarpGenerator keeps its Warpmap and updates it when generate() is called, see generate().
 	 *
 	 * The Warpmap is made for a source of sourceSize: the size of the edgemap or of the source
-	 * rectangle of the blit, in spx. The nodes are positions in that source, see Warpmap.
+	 * rectangle of the blit, in spx. Generators calculate the positions in that source at the nodes
+	 * of a grid, one every cellSize.w pixels horizontally and cellSize.h pixels vertically plus one
+	 * at the right and bottom edge, and the Warpmap is made from that with two triangles per cell
+	 * of the grid.
 	 *
-	 * The cell size of the Warpmap decides how closely it follows the shape. Width and height of
+	 * The cell size decides how closely the Warpmap follows the shape. Width and height of
 	 * cells are calculated by the generator from precision (max position error in pixels) unless
 	 * set explicitly, at least 4 and at most the size of the Warpmap. Along curves it is kept within
 	 * 4 -> 64 pixels, along straight axes cells can span the Warpmap.
@@ -78,7 +81,7 @@ namespace wax
 		//.____ Content _____________________________________________________
 
 		// Generates the Warpmap from current settings, if they have changed since last time, and
-		// returns it. The nodes of the Warpmap are updated in place, without copying and sent on to
+		// returns it. The content of the Warpmap is updated in place, without copying and sent on to
 		// the backend once, if nothing but the WarpGenerator holds it and size and cell size are
 		// unchanged. Otherwise a new Warpmap is created, so a
 		// Warpmap held elsewhere, such as by a draw that isn't rendered yet, never changes. Draw
@@ -131,7 +134,7 @@ namespace wax
 
 		static uint32_t	_toTurn( double turns );
 
-		// A value clamped to +-Warpmap::maxNodeValue.
+		// A value clamped to +-Warpmap::maxValue.
 
 		static spx		_toNodeValue( int64_t value );
 
@@ -142,9 +145,13 @@ namespace wax
 
 		// Fills pNodes with nodes.w * nodes.h positions in spx of the source, row by row, nodes being
 		// cellSize.w pixels apart horizontally and cellSize.h vertically (the last row and column at
-		// the edge). Keep them within Warpmap::maxNodeValue.
+		// the edge). Keep them within Warpmap::maxValue.
 
 		virtual void	_generateNodes( CoordSPX * pNodes, SizeI nodes, SizeI cellSize ) const = 0;
+
+		// Makes vertices and triangles from the nodes, see generate().
+
+		void			_gridToMesh( const CoordSPX * pNodes, SizeI nodes, SizeI cellSize, spx uPeriod, spx vPeriod, Warpmap::Vertex * pVertices, Warpmap::Triangle * pTriangles ) const;
 
 		virtual spx		_uPeriod() const { return 0; }			// In spx of the source, 0 = not periodic.
 		virtual spx		_vPeriod() const { return 0; }

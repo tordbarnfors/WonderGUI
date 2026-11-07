@@ -20,10 +20,19 @@ in someone's memory or an old chat. Add to it when you decide something, move it
 
 ### Warpmaps
 
-- **Warpmaps as triangle meshes (being designed),** replacing the grid of nodes so that the
-  number of triangles follows the shape: one or two for a PerspectiveWarp, single quads along
-  the straight sides of a RoundedRectWarp. Each vertex has a position in the Warpmap and u, v
-  and w (w for perspective, interpolated with u and v and divided per pixel or per short run).
+- **Warpmaps as triangle meshes,** replacing the grid of nodes so that the number of triangles
+  follows the shape: one or two for a PerspectiveWarp, single quads along the straight sides of
+  a RoundedRectWarp. Each vertex has a position in the Warpmap and u, v and w (w for
+  perspective, interpolated with u and v and divided per pixel or per short run). Done in steps:
+  1. **Done:** the Warpmap class and its definition, ReferenceBackend, the stream format, the C
+     API, the plugin interface and the tests. Generators still calculate a grid of nodes and make
+     two triangles of each cell, with cells sqrt(2) smaller than before to stay within precision.
+  2. PerspectiveWarp as a single quad with weights.
+  3. SoftBackend and LinearBackend (rows walked over the edges of the whole mesh, runs between
+     perspective divisions, outside/solid shortcuts per triangle), then OpenGL. Turn on
+     `c_bSoftWarps` in the WarpRender unit tests.
+  4. DX12, Metal, and meshes that follow the shape for the other generators.
+
   Decided so far:
   - **Vertices in spx:** positions in spx of the Warpmap, u and v in spx of the source as the
     nodes are now, not multiplied by w. w is a separate fixed point weight per vertex, 1.0 for
@@ -41,6 +50,20 @@ in someone's memory or an old chat. Add to it when you decide something, move it
     where the position leaves the source or crosses an edgemap edge, as with the grid. The mesh
     reaches about a pixel beyond the drawn shape, with u and v continued outside the source, so
     that coverage is 0 at its border.
+  - **Fill rule:** top-left, as GPUs have it. A center on an edge belongs to the triangle that has
+    it as a left edge, or as a horizontal top edge. Centers are 32 spx into the pixel and vertex
+    positions are whole spx, so the test is exact with integers.
+  - **The triangle that draws a pixel gives positions over the whole pixel,** also where the
+    pixel reaches outside it, for coverage as well as colors. Backends estimate coverage from the
+    derivatives of that triangle's mapping, and ReferenceBackend samples it.
+  - **Counts are fixed when created, content isn't.** The number of vertices and triangles is in
+    the Blueprint. Vertices, triangles and periods can all be changed, periods on their own too,
+    since u and v are no longer stored brought into the period: they are wrapped after
+    interpolation. Unused triangles have all corners in one vertex and draw nothing.
+  - **Stream format:** `WarpmapUpdate` gives ranges of vertices and triangles and the periods,
+    followed by `WarpmapVertices` (pairs (w, 0), (x, y), (u, v)) and `WarpmapTriangles` (pairs
+    (a, b), (c, 0)), compressed by NodeCompressor. Replaces `WarpmapNodes`, without backwards
+    compatibility.
 - **WaveWarp:** straight waves (amplitude vector, wavelength, angle, phase) with envelopes
   (none, pinned at the start like a flag, pinned at both ends). Animated with `setPhase()`
   and generating again, or for waves without an envelope by `travel()`: generated one
@@ -51,7 +74,7 @@ in someone's memory or an old chat. Add to it when you decide something, move it
 - **Filtering when shrinking** hard, such as near the horizon of a PerspectiveWarp or the rims
   of a CylinderWarp. Mostly backend work.
 - **Skipping empty or fully covered parts** of a Warpmap, worked out by the backends from the
-  nodes, if measuring on real hardware shows that it pays off.
+  triangles, if measuring on real hardware shows that it pays off.
 - **Perspective for CylinderWarp,** and a warp along a path.
 - **Room to extend before the backend API and stream format freeze:** a flags word in the warp
   commands and plugin functions (unknown bits ignored, so new ones may only add things whose
@@ -97,14 +120,11 @@ in someone's memory or an old chat. Add to it when you decide something, move it
 
 ### Warpmaps (2026-11)
 
-- **Nodes and periods are in spx of the source.** Periods are set only together with all nodes
-  (`importAllNodes()`), since nodes are stored brought into their periods. There is no
-  `setPeriods()`.
-- **Stream format:** `CreateWarpmap` (no periods), `WarpmapUpdate` and `WarpmapNodes` compressed
-  by NodeCompressor (UTF-8 style prefix varints of deltas). No backwards compatibility was kept,
-  since the earlier format was never used.
-- **Separate cell width and height,** so positions that change linearly along an axis (a
-  cylinder along its axis, a plane without perspective) take one cell.
+- **Positions in the source and periods are in spx of the source.**
+- **NodeCompressor** (UTF-8 style prefix varints of deltas) compresses the content in the stream.
+  No backwards compatibility was kept with the grid format, since it was never used.
+- **Separate cell width and height** for the grids of the generators, so positions that change
+  linearly along an axis (a cylinder along its axis, a plane without perspective) take one cell.
 - **WarpGenerators** calculate cell sizes from `precision` (4-64 pixels along curves) and
   generate with integers only: CORDIC angles and sines, integer square roots, fixed point
   factors. Floating point is limited to converting the float settings once per generate, for

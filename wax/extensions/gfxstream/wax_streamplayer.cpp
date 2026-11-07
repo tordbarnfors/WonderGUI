@@ -26,6 +26,7 @@
 #include <wax_pixeltools.h>
 #include <assert.h>
 #include <algorithm>
+#include <vector>
 
 namespace wax
 {
@@ -1128,12 +1129,12 @@ namespace wax
 		{
 			uint16_t	objectId;
 			SizeI		size;
-			uint16_t	cellWidth, cellHeight;
+			int			nVertices, nTriangles;
 
 			decoder >> objectId;
 			decoder >> size;
-			decoder >> cellWidth;
-			decoder >> cellHeight;
+			decoder >> nVertices;
+			decoder >> nTriangles;
 
 			if (objectId >= m_vObjects.size())
 				m_vObjects.resize(objectId + 16, nullptr);
@@ -1153,27 +1154,28 @@ namespace wax
 				break;
 			}
 
-			// Created when its nodes have arrived, with the periods that come with them.
+			// Created when its content has arrived, with the periods that come with it.
 
 			auto& pending = m_warpmapDataBuffers.emplace_back();
 			pending.objectId = objectId;
 			pending.bCreate = true;
 			pending.blueprint.size = size;
-			pending.blueprint.cellSize = { cellWidth, cellHeight };
+			pending.blueprint.vertices = nVertices;
+			pending.blueprint.triangles = nTriangles;
 			break;
 		}
 
 		case GfxStream::ChunkId::WarpmapUpdate:
 		{
 			uint16_t	objectId;
-			uint16_t	x, y, w, h;
+			int			firstVertex, nVertices, firstTriangle, nTriangles;
 			int			uPeriod, vPeriod;
 
 			decoder >> objectId;
-			decoder >> x;
-			decoder >> y;
-			decoder >> w;
-			decoder >> h;
+			decoder >> firstVertex;
+			decoder >> nVertices;
+			decoder >> firstTriangle;
+			decoder >> nTriangles;
 			decoder >> uPeriod;
 			decoder >> vPeriod;
 
@@ -1190,82 +1192,56 @@ namespace wax
 				pData = &m_warpmapDataBuffers.emplace_back();
 				pData->objectId = objectId;
 			}
-			else if (!pData->region.isEmpty())
-				Base::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "WarpmapUpdate before nodes of previous update had arrived. They are dropped.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			else if (pData->bUpdate)
+				Base::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "WarpmapUpdate before content of previous update had arrived. It is dropped.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
-			pData->region = { x, y, w, h };
+			pData->bUpdate = true;
+			pData->firstVertex = firstVertex;
+			pData->nVertices = std::max(0, nVertices);
+			pData->firstTriangle = firstTriangle;
+			pData->nTriangles = std::max(0, nTriangles);
 			pData->uPeriod = uPeriod;
 			pData->vPeriod = vPeriod;
-			pData->buffer.size = 0;
+			pData->bVerticesLoaded = false;
+			pData->bTrianglesLoaded = false;
+			pData->vertices.size = 0;
+			pData->triangles.size = 0;
+
+			if (pData->nVertices == 0 && pData->nTriangles == 0)
+				_applyWarpmapUpdate(pData);
 			break;
 		}
 
-		case GfxStream::ChunkId::WarpmapNodes:
+		case GfxStream::ChunkId::WarpmapVertices:
+		case GfxStream::ChunkId::WarpmapTriangles:
 		{
+			bool bVertices = header.type == GfxStream::ChunkId::WarpmapVertices;
+
 			GfxStream::DataInfo dataInfo;
 			decoder >> dataInfo;
 
 			uint16_t objectId = uint16_t(dataInfo.objectId);
 			auto pData = _findWarpmapDataBuffer(objectId);
 
-			if (!pData || pData->region.isEmpty())
+			if (!pData || !pData->bUpdate || (bVertices ? pData->nVertices : pData->nTriangles) == 0)
 			{
-				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapNodes without preceding WarpmapUpdate", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapVertices or WarpmapTriangles without preceding WarpmapUpdate", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				m_pDecoder->skip(header.size - dataInfo.encodedSize);
 				break;
 			}
 
-			_loadIntoDataBuffer(dataInfo, pData->buffer, header.size - dataInfo.encodedSize);
+			_loadIntoDataBuffer(dataInfo, bVertices ? pData->vertices : pData->triangles, header.size - dataInfo.encodedSize);
 
 			if (!dataInfo.bLastChunk)
 				break;
 
-			RectI region = pData->region;
-			auto pNodes = (const CoordSPX*) pData->buffer.pBuffer;
+			if (bVertices)
+				pData->bVerticesLoaded = true;
+			else
+				pData->bTrianglesLoaded = true;
 
-			if (pData->buffer.size != region.w * region.h * int(sizeof(CoordSPX)))
-				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapNodes don't match size of region", this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			else if (pData->bCreate)
-			{
-				auto pFactory = m_pBackend->warpmapFactory();
-				auto& bp = pData->blueprint;
-				bp.uPeriod = pData->uPeriod;
-				bp.vPeriod = pData->vPeriod;
-
-				SizeI cell = { std::max(1, bp.cellSize.w), std::max(1, bp.cellSize.h) };
-				SizeI nodes = { (bp.size.w + cell.w - 1) / cell.w + 1, (bp.size.h + cell.h - 1) / cell.h + 1 };
-
-				Warpmap_p pWarpmap;
-				if (region == RectI(0, 0, nodes.w, nodes.h))
-					pWarpmap = pFactory->createWarpmap(bp, pNodes);
-				else
-				{
-					pWarpmap = pFactory->createWarpmap(bp);
-					if (pWarpmap && !pWarpmap->importNodes(region, pNodes))
-						Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapUpdate with region outside the Warpmap", this, &TYPEINFO, __func__, __FILE__, __LINE__);
-				}
-
-				if (!pWarpmap)
-					Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "CreateWarpmap with invalid parameters", this, &TYPEINFO, __func__, __FILE__, __LINE__);
-
-				m_vObjects[objectId] = pWarpmap;
-			}
-			else if (objectId < m_vObjects.size() && m_vObjects[objectId] != nullptr)
-			{
-				auto pWarpmap = static_cast<Warpmap*>(m_vObjects[objectId].rawPtr());
-				SizeI nodes = pWarpmap->nodes();
-
-				bool bOk;
-				if (pData->uPeriod != pWarpmap->uPeriod() || pData->vPeriod != pWarpmap->vPeriod())
-					bOk = region == RectI(0, 0, nodes.w, nodes.h) && pWarpmap->importAllNodes(pNodes, pData->uPeriod, pData->vPeriod);
-				else
-					bOk = pWarpmap->importNodes(region, pNodes);
-
-				if (!bOk)
-					Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapUpdate with region outside the Warpmap, or new periods for only some nodes", this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			}
-
-			m_warpmapDataBuffers.erase(m_warpmapDataBuffers.begin() + (pData - m_warpmapDataBuffers.data()));
+			if ((pData->nVertices == 0 || pData->bVerticesLoaded) && (pData->nTriangles == 0 || pData->bTrianglesLoaded))
+				_applyWarpmapUpdate(pData);
 			break;
 		}
 
@@ -1314,6 +1290,88 @@ namespace wax
 				return &data;
 
 		return nullptr;
+	}
+
+	//____ _applyWarpmapUpdate() ______________________________________________
+	/*
+		Applies a WarpmapUpdate whose content has all arrived, creating the Warpmap if it is new,
+		and drops the buffer. Vertices are three pairs, (w, 0), (x, y), (u, v), and triangles two,
+		(a, b), (c, 0), see StreamWarpmap.
+	*/
+
+	void StreamPlayer::_applyWarpmapUpdate( WarpmapDataBuffer * pData )
+	{
+		uint16_t objectId = pData->objectId;
+
+		bool bOk = pData->vertices.size == pData->nVertices * 3 * int(sizeof(CoordSPX)) &&
+				   pData->triangles.size == pData->nTriangles * 2 * int(sizeof(CoordSPX));
+
+		std::vector<Warpmap::Vertex> vertices(bOk ? pData->nVertices : 0);
+		std::vector<Warpmap::Triangle> triangles(bOk ? pData->nTriangles : 0);
+
+		if (bOk)
+		{
+			auto pPairs = (const CoordSPX*) pData->vertices.pBuffer;
+			for (int i = 0; i < pData->nVertices; i++)
+				vertices[i] = { pPairs[i * 3 + 1].x, pPairs[i * 3 + 1].y, pPairs[i * 3 + 2].x, pPairs[i * 3 + 2].y, pPairs[i * 3].x };
+
+			pPairs = (const CoordSPX*) pData->triangles.pBuffer;
+			for (int i = 0; i < pData->nTriangles; i++)
+				triangles[i] = { pPairs[i * 2].x, pPairs[i * 2].y, pPairs[i * 2 + 1].x };
+		}
+		else
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapVertices or WarpmapTriangles don't match WarpmapUpdate", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+
+		if (bOk && pData->bCreate)
+		{
+			auto pFactory = m_pBackend->warpmapFactory();
+			auto& bp = pData->blueprint;
+			bp.uPeriod = pData->uPeriod;
+			bp.vPeriod = pData->vPeriod;
+
+			bool bAllVertices = pData->firstVertex == 0 && pData->nVertices == bp.vertices;
+			bool bAllTriangles = pData->firstTriangle == 0 && pData->nTriangles == bp.triangles;
+
+			Warpmap_p pWarpmap;
+			if (bAllVertices && bAllTriangles)
+				pWarpmap = pFactory->createWarpmap(bp, vertices.data(), triangles.data());
+			else
+			{
+				pWarpmap = pFactory->createWarpmap(bp);
+				if (pWarpmap && ((pData->nVertices > 0 && !pWarpmap->importVertices(pData->firstVertex, pData->nVertices, vertices.data())) ||
+								 (pData->nTriangles > 0 && !pWarpmap->importTriangles(pData->firstTriangle, pData->nTriangles, triangles.data()))))
+					Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapUpdate with vertices or triangles outside the Warpmap", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			}
+
+			if (!pWarpmap)
+				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "CreateWarpmap with invalid parameters", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+
+			m_vObjects[objectId] = pWarpmap;
+		}
+		else if (bOk && objectId < m_vObjects.size() && m_vObjects[objectId] != nullptr)
+		{
+			auto pWarpmap = static_cast<Warpmap*>(m_vObjects[objectId].rawPtr());
+
+			bool bAllVertices = pData->firstVertex == 0 && pData->nVertices == pWarpmap->vertexCount();
+			bool bAllTriangles = pData->firstTriangle == 0 && pData->nTriangles == pWarpmap->triangleCount();
+
+			bool bApplied;
+			if ((bAllVertices || pData->nVertices == 0) && (bAllTriangles || pData->nTriangles == 0))
+				bApplied = pWarpmap->importMesh(pData->nVertices > 0 ? vertices.data() : nullptr, pData->nTriangles > 0 ? triangles.data() : nullptr, pData->uPeriod, pData->vPeriod);
+			else
+			{
+				bApplied = (pData->nVertices == 0 || pWarpmap->importVertices(pData->firstVertex, pData->nVertices, vertices.data())) &&
+						   (pData->nTriangles == 0 || pWarpmap->importTriangles(pData->firstTriangle, pData->nTriangles, triangles.data()));
+
+				if (bApplied && (pData->uPeriod != pWarpmap->uPeriod() || pData->vPeriod != pWarpmap->vPeriod()))
+					bApplied = pWarpmap->setPeriods(pData->uPeriod, pData->vPeriod);
+			}
+
+			if (!bApplied)
+				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapUpdate with vertices, triangles or periods outside the Warpmap", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		}
+
+		m_warpmapDataBuffers.erase(m_warpmapDataBuffers.begin() + (pData - m_warpmapDataBuffers.data()));
 	}
 
 	//____ _loadIntoDataBuffer() ________________________________________________

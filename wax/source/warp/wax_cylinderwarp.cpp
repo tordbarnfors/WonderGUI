@@ -183,7 +183,7 @@ namespace wax
 	{
 		spx length = m_axis == Axis::X ? m_sourceSize.h : m_sourceSize.w;
 		double period = length * 360.0 / std::abs(double(m_sweep)) + 0.5;
-		return spx(std::clamp(period, 1.0, double(Warpmap::maxNodeValue)));
+		return spx(std::clamp(period, 1.0, double(Warpmap::maxValue)));
 	}
 
 	//____ _uPeriod() _________________________________________________________

@@ -34,39 +34,62 @@ extern "C" {
 
 	typedef struct wax_warpmapBP_struct			// NOT BINARY EQUIVALENT!
 	{
-		wax_sizeI			cellSize;				// Pixels between nodes, horizontally and vertically. 0 = default (16).
 		wax_sizeI			size;					// Mandatory. Size in pixels.
+		int					triangles;				// Number of triangles. 0 = default (2).
 		wax_spx				uPeriod;				// In spx of the source, 0 = not periodic.
+		int					vertices;				// Number of vertices. 0 = default (4).
 		wax_spx				vPeriod;				// In spx of the source, 0 = not periodic.
 	} wax_warpmapBP;
+
+	//____ wax_warpVertex _________________________________________________________
+
+	typedef struct wax_warpVertex_struct		// Binary equivalent of wax::Warpmap::Vertex.
+	{
+		wax_spx				x, y;					// Position in spx of the Warpmap, from its top-left corner.
+		wax_spx				u, v;					// Position in spx of the source.
+		int					w;						// Weight for perspective, 65536 is 1.0.
+	} wax_warpVertex;
+
+	//____ wax_warpTriangle _______________________________________________________
+
+	typedef struct wax_warpTriangle_struct		// Binary equivalent of wax::Warpmap::Triangle.
+	{
+		int					a, b, c;				// Indices of the corners in the vertices.
+	} wax_warpTriangle;
 
 	//.____ Geometry ______________________________________________________
 
 	WAX_EXPORT wax_sizeI		wax_warpmapPixelSize(wax_obj warpmap);
-	WAX_EXPORT wax_sizeI		wax_warpmapCellSize(wax_obj warpmap);
-	WAX_EXPORT wax_sizeI		wax_warpmapNodes(wax_obj warpmap);					// Nodes horizontally and vertically.
-	WAX_EXPORT int			wax_warpmapNodeX(wax_obj warpmap, int column);		// Pixel position of a column of nodes.
-	WAX_EXPORT int			wax_warpmapNodeY(wax_obj warpmap, int row);
 
 	//.____ Content _______________________________________________________
 
+	WAX_EXPORT int			wax_warpmapVertexCount(wax_obj warpmap);
+	WAX_EXPORT int			wax_warpmapTriangleCount(wax_obj warpmap);
+
 	WAX_EXPORT wax_spx			wax_warpmapUPeriod(wax_obj warpmap);
 	WAX_EXPORT wax_spx			wax_warpmapVPeriod(wax_obj warpmap);
+	WAX_EXPORT int			wax_setWarpmapPeriods(wax_obj warpmap, wax_spx uPeriod, wax_spx vPeriod);
 
-	// Region is given in nodes, pitch is nodes between rows in source/destination, 0 meaning region width.
+	WAX_EXPORT int			wax_importWarpmapVertices(wax_obj warpmap, int first, int count, const wax_warpVertex* pSource);
+	WAX_EXPORT int			wax_importWarpmapTriangles(wax_obj warpmap, int first, int count, const wax_warpTriangle* pSource);
 
-	WAX_EXPORT int			wax_importWarpmapNodes(wax_obj warpmap, const wax_rectI* region, const wax_coordSPX* pSource, int pitch);
+	// All vertices and triangles, and periods. Either pointer can be null to keep what is there.
 
-	// All nodes and the periods they are for. Periods can only change together with all nodes.
+	WAX_EXPORT int			wax_importWarpmapMesh(wax_obj warpmap, const wax_warpVertex* pVertices, const wax_warpTriangle* pTriangles, wax_spx uPeriod, wax_spx vPeriod);
 
-	WAX_EXPORT int			wax_importAllWarpmapNodes(wax_obj warpmap, const wax_coordSPX* pSource, wax_spx uPeriod, wax_spx vPeriod, int pitch);
-	WAX_EXPORT int			wax_exportWarpmapNodes(wax_obj warpmap, const wax_rectI* region, wax_coordSPX* pDestination, int pitch);
+	WAX_EXPORT int			wax_exportWarpmapVertices(wax_obj warpmap, int first, int count, wax_warpVertex* pDestination);
+	WAX_EXPORT int			wax_exportWarpmapTriangles(wax_obj warpmap, int first, int count, wax_warpTriangle* pDestination);
 
 	//.____ Misc __________________________________________________________
 
-	// Position at x,y in spx of the source, with fractions.
+	// Triangle that a point (spx of the Warpmap) is inside of, -1 if none.
 
-	WAX_EXPORT wax_coordF		wax_warpmapPositionAt(wax_obj warpmap, double x, double y);
+	WAX_EXPORT int			wax_warpmapTriangleAt(wax_obj warpmap, wax_coordSPX point);
+
+	// Position at x,y (pixels of the Warpmap) as given by a triangle, in spx of the source with fractions.
+	// Returns 0 beyond the horizon of the triangle or if it has no area.
+
+	WAX_EXPORT int			wax_warpmapPositionIn(wax_obj warpmap, int triangle, double x, double y, wax_coordF* pPosition);
 
 #ifdef __cplusplus
 }

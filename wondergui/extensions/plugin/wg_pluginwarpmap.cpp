@@ -39,27 +39,27 @@ namespace wg
 	}
 
 	//____ constructor ________________________________________________________
-	// Initialized with an empty Blueprint, then given the geometry and nodes of the host's Warpmap.
+	// Initialized with an empty Blueprint, then given the geometry and content of the host's Warpmap.
 
 	PluginWarpmap::PluginWarpmap( wax_obj object )
 	{
 		PluginCalls::object->retain(object);
 		m_cWarpmap = object;
 
-		wax_sizeI size	= PluginCalls::warpmap->warpmapPixelSize(object);
+		auto pCalls = PluginCalls::warpmap;
+
+		wax_sizeI size	= pCalls->warpmapPixelSize(object);
 		m_size			= { size.w, size.h };
-		wax_sizeI cellSize = PluginCalls::warpmap->warpmapCellSize(object);
-		m_cellSize		= { std::max(1, cellSize.w), std::max(1, cellSize.h) };
-		m_uPeriod		= PluginCalls::warpmap->warpmapUPeriod(object);
-		m_vPeriod		= PluginCalls::warpmap->warpmapVPeriod(object);
+		m_nVertices		= std::max(0, pCalls->warpmapVertexCount(object));
+		m_nTriangles	= std::max(0, pCalls->warpmapTriangleCount(object));
+		m_uPeriod		= pCalls->warpmapUPeriod(object);
+		m_vPeriod		= pCalls->warpmapVPeriod(object);
 
-		m_nodes.w = (m_size.w + m_cellSize.w - 1) / m_cellSize.w + 1;
-		m_nodes.h = (m_size.h + m_cellSize.h - 1) / m_cellSize.h + 1;
+		m_pVertices = new Vertex[m_nVertices];
+		m_pTriangles = new Triangle[m_nTriangles];
 
-		m_pNodes = new CoordSPX[m_nodes.w * m_nodes.h];
-
-		wax_rectI all = { 0, 0, m_nodes.w, m_nodes.h };
-		PluginCalls::warpmap->exportWarpmapNodes(object, &all, (wax_coordSPX*) m_pNodes, 0);
+		pCalls->exportWarpmapVertices(object, 0, m_nVertices, (wax_warpVertex*) m_pVertices);
+		pCalls->exportWarpmapTriangles(object, 0, m_nTriangles, (wax_warpTriangle*) m_pTriangles);
 
 		m_bConstructed = true;
 	}
@@ -78,24 +78,34 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ _nodesUpdated() ____________________________________________________
-	// New periods come with all nodes and go to the host together with them.
+	//____ _updated() _________________________________________________________
+	// Everything at once goes to the host in one call, as do periods alone.
 
-	void PluginWarpmap::_nodesUpdated( const RectI& region )
+	void PluginWarpmap::_updated( int firstVertex, int nVertices, int firstTriangle, int nTriangles )
 	{
 		if (!m_bConstructed)
 			return;
 
 		auto pCalls = PluginCalls::warpmap;
 
-		if (m_uPeriod != pCalls->warpmapUPeriod(m_cWarpmap) || m_vPeriod != pCalls->warpmapVPeriod(m_cWarpmap))
+		bool bAllVertices = firstVertex == 0 && nVertices == m_nVertices;
+		bool bAllTriangles = firstTriangle == 0 && nTriangles == m_nTriangles;
+
+		if ((bAllVertices || nVertices == 0) && (bAllTriangles || nTriangles == 0))
 		{
-			pCalls->importAllWarpmapNodes(m_cWarpmap, (const wax_coordSPX*) m_pNodes, m_uPeriod, m_vPeriod, m_nodes.w);
+			pCalls->importWarpmapMesh(m_cWarpmap, nVertices > 0 ? (const wax_warpVertex*) m_pVertices : nullptr,
+									  nTriangles > 0 ? (const wax_warpTriangle*) m_pTriangles : nullptr, m_uPeriod, m_vPeriod);
 			return;
 		}
 
-		wax_rectI cRegion = { region.x, region.y, region.w, region.h };
-		PluginCalls::warpmap->importWarpmapNodes(m_cWarpmap, &cRegion, (const wax_coordSPX*) (m_pNodes + region.y * m_nodes.w + region.x), m_nodes.w);
+		if (nVertices > 0)
+			pCalls->importWarpmapVertices(m_cWarpmap, firstVertex, nVertices, (const wax_warpVertex*) (m_pVertices + firstVertex));
+
+		if (nTriangles > 0)
+			pCalls->importWarpmapTriangles(m_cWarpmap, firstTriangle, nTriangles, (const wax_warpTriangle*) (m_pTriangles + firstTriangle));
+
+		if (m_uPeriod != pCalls->warpmapUPeriod(m_cWarpmap) || m_vPeriod != pCalls->warpmapVPeriod(m_cWarpmap))
+			pCalls->setWarpmapPeriods(m_cWarpmap, m_uPeriod, m_vPeriod);
 	}
 
 } // namespace wg

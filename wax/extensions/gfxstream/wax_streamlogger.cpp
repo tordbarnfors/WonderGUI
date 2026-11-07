@@ -630,40 +630,43 @@ namespace wax
 			{
 				uint16_t	warpmapId;
 				SizeI		size;
-				uint16_t	cellWidth, cellHeight;
+				int			nVertices, nTriangles;
 
 				decoder >> warpmapId;
 				decoder >> size;
-				decoder >> cellWidth;
-				decoder >> cellHeight;
+				decoder >> nVertices;
+				decoder >> nTriangles;
 
 				m_charStream << "    warpmapId   = " << warpmapId << std::endl;
 				m_charStream << "    size        = " << size.w << ", " << size.h << std::endl;
-				m_charStream << "    cellSize    = " << cellWidth << ", " << cellHeight << std::endl;
+				m_charStream << "    vertices    = " << nVertices << std::endl;
+				m_charStream << "    triangles   = " << nTriangles << std::endl;
 				break;
 			}
 
 			case GfxStream::ChunkId::WarpmapUpdate:
 			{
 				uint16_t	warpmapId;
-				uint16_t	x, y, w, h;
+				int			firstVertex, nVertices, firstTriangle, nTriangles;
 				int			uPeriod, vPeriod;
 
 				decoder >> warpmapId;
-				decoder >> x;
-				decoder >> y;
-				decoder >> w;
-				decoder >> h;
+				decoder >> firstVertex;
+				decoder >> nVertices;
+				decoder >> firstTriangle;
+				decoder >> nTriangles;
 				decoder >> uPeriod;
 				decoder >> vPeriod;
 
 				m_charStream << "    warpmapId   = " << warpmapId << std::endl;
-				m_charStream << "    region      = " << x << ", " << y << ", " << w << ", " << h << " (nodes)" << std::endl;
+				m_charStream << "    vertices    = " << firstVertex << " + " << nVertices << std::endl;
+				m_charStream << "    triangles   = " << firstTriangle << " + " << nTriangles << std::endl;
 				m_charStream << "    periods     = " << uPeriod << ", " << vPeriod << std::endl;
 				break;
 			}
 
-			case GfxStream::ChunkId::WarpmapNodes:
+			case GfxStream::ChunkId::WarpmapVertices:
+			case GfxStream::ChunkId::WarpmapTriangles:
 			{
 				int toSkip = _readPrintDataInfo(header.size);
 				decoder.skip(toSkip);

@@ -60,7 +60,8 @@ const char * toString(GfxStream::ChunkId i)
 		"SurfacePalette",
 		"CreateWarpmap",
 		"WarpmapUpdate",
-		"WarpmapNodes",
+		"WarpmapVertices",
+		"WarpmapTriangles",
 		"DeleteWarpmap"
 	};
 

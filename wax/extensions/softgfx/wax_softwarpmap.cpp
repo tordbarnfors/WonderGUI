@@ -35,12 +35,12 @@ namespace wax
 		return SoftWarpmap_p(new SoftWarpmap(bp));
 	}
 
-	SoftWarpmap_p SoftWarpmap::create( const Blueprint& bp, const CoordSPX * pNodes, int pitch )
+	SoftWarpmap_p SoftWarpmap::create( const Blueprint& bp, const Vertex * pVertices, const Triangle * pTriangles )
 	{
-		if (!_validateBlueprint(bp) || !pNodes)
+		if (!pVertices || !pTriangles || !_validateBlueprint(bp, pTriangles))
 			return nullptr;
 
-		return SoftWarpmap_p(new SoftWarpmap(bp, pNodes, pitch));
+		return SoftWarpmap_p(new SoftWarpmap(bp, pVertices, pTriangles));
 	}
 
 	//____ typeInfo() _________________________________________________________
