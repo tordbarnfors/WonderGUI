@@ -25,6 +25,10 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   the straight sides of a RoundedRectWarp. Each vertex has a position in the Warpmap and u, v
   and w (w for perspective, interpolated with u and v and divided per pixel or per short run).
   Decided so far:
+  - **Vertices in spx:** positions in spx of the Warpmap, u and v in spx of the source as the
+    nodes are now. A grid builder for making meshes by hand comes later.
+  - **Software backends divide for perspective every 16 pixels** along a row and interpolate
+    linearly in between.
   - **No overlapping triangles.** A Warpmap stays a map from each pixel to at most one position
     in the source, with no depth or draw order. Overlapping triangles give undefined rendering:
     nothing checks for it, and generators don't make them.
