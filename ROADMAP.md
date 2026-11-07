@@ -31,9 +31,9 @@ in someone's memory or an old chat. Add to it when you decide something, move it
      antialiasing and clipped just before the horizon and to the Warpmap, in a fan of at most 7
      triangles. Exact everywhere, so its cell size and precision are gone. Generators can make
      their own mesh through `_meshSize()` and `_generateMesh()`.
-  3. SoftBackend and LinearBackend (rows walked over the edges of the whole mesh, runs between
-     perspective divisions, outside/solid shortcuts per triangle), then OpenGL. Turn on
-     `c_bSoftWarps` in the WarpRender unit tests.
+  3. **Done for SoftBackend and LinearBackend:** triangles set up when the content changes
+     (`SoftWarpmap::Setup`), drawn row by row with their edges stepped exactly from row to row,
+     in spans classified outside/solid/mixed. Then OpenGL.
   4. DX12, Metal, and meshes that follow the shape for the other generators.
 
   Decided so far:
@@ -43,8 +43,15 @@ in someone's memory or an old chat. Add to it when you decide something, move it
     by it when setting up triangles. A grid builder for making meshes by hand comes later.
   - **Software backends divide for perspective every 16 pixels** along a row and interpolate
     linearly in between. Interpolating over L pixels is off by about L^2 / (4 * d), d being the
-    distance to the horizon in pixels, so triangles close to the horizon take shorter runs,
-    chosen once per triangle from the smallest w of its corners.
+    distance to the horizon in pixels, so runs close to the horizon are shorter: 1, 2, 4, 8 or
+    16 pixels, chosen for each run from W at its start to keep within a quarter of a pixel (not
+    once per triangle, which gave short runs all over a plane near the horizon). Runs with a
+    border of the source or an edge of an edgemap in them get each pixel's position divided out,
+    since a quarter of a pixel shows as a quarter of the coverage of a pixel along a border.
+  - **Perspective in the software backends is limited to u and v within 32768 pixels of the
+    source from the first corner of a triangle,** so that W * (u - u0) fits in 64 bits with
+    weights scaled to 2^28. Setting up triangles uses 128 bit products, `__int128` where the
+    compiler has it.
   - **No overlapping triangles.** A Warpmap stays a map from each pixel to at most one position
     in the source, with no depth or draw order. Overlapping triangles give undefined rendering:
     nothing checks for it, and generators don't make them.

@@ -1466,7 +1466,7 @@ bool WarpmapTest::perspectiveWarpTest(std::ostream& output)
 				{
 					maxError = error;
 					worst = { x, y };
-					worstErrors = { onScreen, inSource };
+					worstErrors = { float(onScreen), float(inSource) };
 				}
 			}
 
