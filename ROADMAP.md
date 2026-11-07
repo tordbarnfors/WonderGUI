@@ -20,6 +20,19 @@ in someone's memory or an old chat. Add to it when you decide something, move it
 
 ### Warpmaps
 
+- **Warpmaps as triangle meshes (being designed),** replacing the grid of nodes so that the
+  number of triangles follows the shape: one or two for a PerspectiveWarp, single quads along
+  the straight sides of a RoundedRectWarp. Each vertex has a position in the Warpmap and u, v
+  and w (w for perspective, interpolated with u and v and divided per pixel or per short run).
+  Decided so far:
+  - **No overlapping triangles.** A Warpmap stays a map from each pixel to at most one position
+    in the source, with no depth or draw order. Overlapping triangles give undefined rendering:
+    nothing checks for it, and generators don't make them.
+  - **Triangle edges are not antialiased.** Each pixel belongs to exactly one triangle (shared
+    vertices, no T-junctions, a fill rule for centers on an edge), and coverage still comes from
+    where the position leaves the source or crosses an edgemap edge, as with the grid. The mesh
+    reaches about a pixel beyond the drawn shape, with u and v continued outside the source, so
+    that coverage is 0 at its border.
 - **WaveWarp:** straight waves (amplitude vector, wavelength, angle, phase) with envelopes
   (none, pinned at the start like a flag, pinned at both ends). Animated with `setPhase()`
   and generating again, or for waves without an envelope by `travel()`: generated one
