@@ -1604,7 +1604,62 @@ bool WarpRenderTest::cylinderTest(std::ostream& output)
 }
 
 //____ perspectiveTest() ______________________________________________________
-// A floor scrolling into the distance, cards turned and pinned, blitted and as edgemaps.
+// A floor scrolling into the distance, cards turned and pinned, blitted and as edgemaps. The cards
+// draw as a fine mesh of their exact positions, also along their antialiased borders.
+
+namespace
+{
+	// Position in the source (spx) at x,y (pixels) of the Warpmap for a source of size source placed
+	// at corners, from the projective transform solved as a linear system.
+
+	std::function<CoordSPX(int x, int y)> exactPerspective(const CornersT<CoordSPX>& corners, SizeSPX source)
+	{
+		double from[4][2], to[4][2] = { { 0, 0 }, { double(source.w), 0 }, { double(source.w), double(source.h) }, { 0, double(source.h) } };
+		for (int i = 0; i < 4; i++)
+		{
+			from[i][0] = corners[i].x / 64.0;
+			from[i][1] = corners[i].y / 64.0;
+		}
+
+		double m[8][9] = {};
+		for (int i = 0; i < 4; i++)
+		{
+			double x = from[i][0], y = from[i][1], u = to[i][0], v = to[i][1];
+			double r1[9] = { x, y, 1, 0, 0, 0, -x * u, -y * u, u };
+			double r2[9] = { 0, 0, 0, x, y, 1, -x * v, -y * v, v };
+			std::copy(r1, r1 + 9, m[i * 2]);
+			std::copy(r2, r2 + 9, m[i * 2 + 1]);
+		}
+
+		for (int col = 0; col < 8; col++)
+		{
+			int pivot = col;
+			for (int row = col + 1; row < 8; row++)
+				if (std::abs(m[row][col]) > std::abs(m[pivot][col]))
+					pivot = row;
+			std::swap(m[col], m[pivot]);
+
+			for (int row = 0; row < 8; row++)
+			{
+				if (row == col)
+					continue;
+				double f = m[row][col] / m[col][col];
+				for (int k = col; k < 9; k++)
+					m[row][k] -= f * m[col][k];
+			}
+		}
+
+		std::vector<double> h(8);
+		for (int i = 0; i < 8; i++)
+			h[i] = m[i][8] / m[i][i];
+
+		return [h](int x, int y)
+		{
+			double w = h[6] * x + h[7] * y + 1.0;
+			return CoordSPX(spx(std::lround((h[0] * x + h[1] * y + h[2]) / w)), spx(std::lround((h[3] * x + h[4] * y + h[5]) / w)));
+		};
+	}
+}
 
 bool WarpRenderTest::perspectiveTest(std::ostream& output)
 {
@@ -1643,6 +1698,42 @@ bool WarpRenderTest::perspectiveTest(std::ostream& output)
 
 	if (!compare(output, "Perspective, streamed", renderStreamed(scene), "streamed", render(c_selfBackend, scene), "direct", 0))
 		return false;
+
+	// Cards against fine meshes of their exact positions. Both round u and v to spx at their
+	// vertices, so positions differ by up to about a spx, which shows by a few levels where the
+	// source has sharp edges. A border cut off or misplaced differs much more.
+
+	auto cards = [=](bool bExact)
+	{
+		return [=](GfxDevice* pDevice)
+		{
+			auto pFactory = pDevice->warpmapFactory();
+			auto pEdgemap = makeEdgemap(pDevice, false);
+			pDevice->setBlitSource(makeSurface(pDevice, false, SampleMethod::Bilinear));
+
+			int i = 0;
+			for (auto& bp : { card, shared, pinned })
+			{
+				Warpmap_p pWarpmap = bExact ? createMesh(pFactory, gridMesh(bp.size, { 1, 1 }, exactPerspective(bp.corners, bp.sourceSize)))
+											: PerspectiveWarp::create(bp, pFactory)->generate();
+
+				CoordSPX pos = { (2 + i * 50) * 64, 2 * 64 };
+				if (bp.sourceSize == c_edgemapSource)
+					pDevice->warpDrawEdgemap(pos, pWarpmap, pEdgemap);
+				else
+					pDevice->warpBlit(pos, pWarpmap);
+
+				pDevice->warpBlit({ pos.x, 50 * 64 }, pWarpmap, { 0, 0, bp.sourceSize.w, bp.sourceSize.h });
+				i++;
+			}
+		};
+	};
+
+	for (TestBackend backend : { TestBackend::Soft, TestBackend::Linear, TestBackend::Reference })
+	{
+		if (drawsWarps(backend) && !compare(output, "Perspective cards", render(backend, cards(false)), "PerspectiveWarp", render(backend, cards(true)), "fine mesh", 3, 150, 10))
+			return false;
+	}
 
 	// Through the C API.
 

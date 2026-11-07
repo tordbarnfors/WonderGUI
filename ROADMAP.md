@@ -27,7 +27,10 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   1. **Done:** the Warpmap class and its definition, ReferenceBackend, the stream format, the C
      API, the plugin interface and the tests. Generators still calculate a grid of nodes and make
      two triangles of each cell, with cells sqrt(2) smaller than before to stay within precision.
-  2. PerspectiveWarp as a single quad with weights.
+  2. **Done:** PerspectiveWarp as the quad of its corners with weights, a pixel larger for
+     antialiasing and clipped just before the horizon and to the Warpmap, in a fan of at most 7
+     triangles. Exact everywhere, so its cell size and precision are gone. Generators can make
+     their own mesh through `_meshSize()` and `_generateMesh()`.
   3. SoftBackend and LinearBackend (rows walked over the edges of the whole mesh, runs between
      perspective divisions, outside/solid shortcuts per triangle), then OpenGL. Turn on
      `c_bSoftWarps` in the WarpRender unit tests.
@@ -140,7 +143,11 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   end up (any convex quadrilateral, counter clockwise mirrors). `rotated()` makes corners from a
   rectangle rotated roll, then turn, then tilt around a pivot and seen from an eye at a distance
   in spx (not a field of view), straight in front of the pivot unless given. Drawing a different
-  back side, or hiding it, is left to the caller.
+  back side, or hiding it, is left to the caller. Its mesh has weights proportional to the divisor
+  of the projection at each vertex, scaled so that the largest is `Warpmap::maxWeight` for the
+  most precision, and is cut off where the divisor drops to half of its lowest at the corners,
+  which keeps it off the horizon. The mesh is made in floating point, a few dozen calculations
+  per generate.
 - **wax::Base,** not wax::Core, is the static base class of Wax. `wg::Base` inherits it, and code
   using both namespaces says `wg::Base` or `wax::Base`.
 

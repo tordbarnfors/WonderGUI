@@ -1292,7 +1292,8 @@ bool WarpmapTest::cylinderWarpTest(std::ostream& output)
 
 //____ perspectiveWarpTest() __________________________________________________
 // PerspectiveWarp against a projective transform solved from the four corners as a linear system,
-// which is how it's usually done rather than how PerspectiveWarp does it.
+// which is how it's usually done rather than how PerspectiveWarp does it. The Warpmap is a fan of
+// triangles with weights, exact everywhere, covering every pixel the plane reaches into.
 
 namespace
 {
@@ -1369,14 +1370,17 @@ bool WarpmapTest::perspectiveWarpTest(std::ostream& output)
 
 	PerspectiveWarp::Blueprint cases[] = {
 		// A floor leaning back, a card turned and rolled seen from aside, a sign pinned at an angle, the same
-		// mirrored, and very close to the horizon.
+		// mirrored, very close to the horizon, without perspective, and a floor reaching far outside the Warpmap.
 
 		WGBP(PerspectiveWarp, _.size = { 240, 160 }, _.sourceSize = source, _.corners = PerspectiveWarp::rotated({ 20 * 64, 20 * 64, 200 * 64, 120 * 64 }, 50.f, 0.f, 0.f, 300 * 64)),
-		WGBP(PerspectiveWarp, _.size = { 200, 200 }, _.sourceSize = source, _.precision = 0.1f,
+		WGBP(PerspectiveWarp, _.size = { 200, 200 }, _.sourceSize = source,
 			 _.corners = PerspectiveWarp::rotated({ 40 * 64, 50 * 64, 120 * 64, 90 * 64 }, 10.f, 35.f, 15.f, 400 * 64, { 0.3f, 0.6f }, CoordSPX(150 * 64, 30 * 64))),
 		WGBP(PerspectiveWarp, _.size = { 160, 120 }, _.sourceSize = source, _.corners = corners({ 10, 20 }, { 150, 5 }, { 130, 110 }, { 30, 90 })),
 		WGBP(PerspectiveWarp, _.size = { 160, 120 }, _.sourceSize = source, _.corners = corners({ 150, 5 }, { 10, 20 }, { 30, 90 }, { 130, 110 })),
-		WGBP(PerspectiveWarp, _.size = { 160, 120 }, _.sourceSize = source, _.corners = corners({ 70, 5 }, { 90, 5 }, { 155, 115 }, { 5, 115 }), _.precision = 0.5f)
+		WGBP(PerspectiveWarp, _.size = { 160, 120 }, _.sourceSize = source, _.corners = corners({ 70, 5 }, { 90, 5 }, { 155, 115 }, { 5, 115 })),
+		WGBP(PerspectiveWarp, _.size = { 100, 80 }, _.sourceSize = source, _.corners = corners({ 10, 10 }, { 90, 20 }, { 80, 70 }, { 0, 60 })),
+		WGBP(PerspectiveWarp, _.size = { 160, 120 }, _.sourceSize = source,
+			 _.corners = CornersT<CoordSPX>({ 60 * 64, 10 * 64 }, { 100 * 64, 10 * 64 }, { 1 << 29, 1 << 29 }, { -(1 << 29), 1 << 29 }))
 	};
 
 	for (auto& bp : cases)
@@ -1386,90 +1390,116 @@ bool WarpmapTest::perspectiveWarpTest(std::ostream& output)
 
 		auto pMap = pWarp->generate();
 		TEST_ASSERT(pMap->uPeriod() == 0 && pMap->vPeriod() == 0);
+		TEST_ASSERT(pMap->vertexCount() == 9 && pMap->triangleCount() == 7);
 
 		Homography toSource, toScreen;
 		perspectiveHomographies(bp, toSource, toScreen);
 
-		// Cell size from the corner nearest the horizon, where w is 0.
+		// w of the corners, with the sign it has on the plane.
 
-		double gradient = std::sqrt(toSource.h[6] * toSource.h[6] + toSource.h[7] * toSource.h[7]);
-		double nearest = 1e30;
+		double sign, lowest = 1e300;
+		toSource.map(bp.corners[0].x / 64.0, bp.corners[0].y / 64.0, &sign);
 		for (int i = 0; i < 4; i++)
 		{
 			double w;
 			toSource.map(bp.corners[i].x / 64.0, bp.corners[i].y / 64.0, &w);
-			nearest = std::min(nearest, std::abs(w) / gradient);
+			lowest = std::min(lowest, w * sign);
 		}
 
-		int expected = std::clamp(int(std::sqrt(2.0 * bp.precision * nearest)), 4, 64);
-		Grid grid(pMap);
-		SizeI cell = grid.cellSize();
-		if (cell.w != cell.h || std::abs(cell.w - expected) > 1)
-			output << "Cell size " << cell.w << " x " << cell.h << ", expected " << expected << std::endl;
-		TEST_ASSERT(cell.w == cell.h && std::abs(cell.w - expected) <= 1);
+		// Vertices within the Warpmap, at their exact positions in the source give or take rounding.
 
-		// Nodes exact, except beyond the horizon and those clamped far outside, which only need to be outside.
+		for (int i = 0; i < pMap->vertexCount(); i++)
+		{
+			const Warpmap::Vertex& v = pMap->vertexData()[i];
+			TEST_ASSERT(v.x >= 0 && v.y >= 0 && v.x <= bp.size.w * 64 && v.y <= bp.size.h * 64);
 
-		double sign;
-		toSource.map(bp.corners[0].x / 64.0, bp.corners[0].y / 64.0, &sign);
+			double w;
+			CoordF exact = toSource.map(v.x / 64.0, v.y / 64.0, &w);
+			TEST_ASSERT(w * sign > 0);
 
-		SizeI nodes = grid.nodes();
-		for (int row = 0; row < nodes.h; row++)
-			for (int col = 0; col < nodes.w; col++)
-			{
-				double w;
-				CoordF exact = toSource.map(grid.nodeX(col), grid.nodeY(row), &w);
-				CoordSPX node = grid.nodeData()[row * nodes.w + col];
+			double tolerance = std::max(1.0, std::max(std::abs(exact.x), std::abs(exact.y)) * 1e-6);
+			if (std::abs(v.u - exact.x) > tolerance || std::abs(v.v - exact.y) > tolerance)
+				output << "Vertex " << i << " is " << v.u << "," << v.v << ", expected " << exact.x << "," << exact.y << std::endl;
+			TEST_ASSERT(std::abs(v.u - exact.x) <= tolerance && std::abs(v.v - exact.y) <= tolerance);
+		}
 
-				if (w * sign > 0 && std::abs(exact.x) < Warpmap::maxValue && std::abs(exact.y) < Warpmap::maxValue)
-				{
-					double tolerance = std::max(1.0, std::max(std::abs(exact.x), std::abs(exact.y)) * 1e-9);
-					if (std::abs(node.x - exact.x) > tolerance || std::abs(node.y - exact.y) > tolerance)
-						output << "Node " << col << "," << row << " is " << node.x << "," << node.y << ", expected " << exact.x << "," << exact.y << std::endl;
-					TEST_ASSERT(std::abs(node.x - exact.x) <= tolerance && std::abs(node.y - exact.y) <= tolerance);
-				}
-				else
-					TEST_ASSERT(node.x <= 0 || node.x >= source.w || node.y <= 0 || node.y >= source.h);
-			}
+		// Each pixel with any part of it on the plane is in a triangle, except a pixel by the horizon,
+		// and positions are exact wherever there is a triangle. On screen, the position read is taken
+		// back to the screen and compared with where it was read.
 
-		// Within precision between nodes on the plane, measured on screen: the position read is taken back
-		// to the screen and compared with where it was read.
+		auto onPlane = [&](double x, double y)
+		{
+			double w;
+			CoordF pos = toSource.map(x, y, &w);
+			return w * sign >= lowest * 0.6 && pos.x >= 0 && pos.y >= 0 && pos.x <= source.w && pos.y <= source.h;
+		};
 
 		double maxError = 0.0;
-		for (double y = 0.5; y < bp.size.h; y += 1.0)
-			for (double x = 0.5; x < bp.size.w; x += 1.0)
+		CoordI worst;
+		CoordF worstErrors;
+		for (int y = 0; y < bp.size.h; y++)
+			for (int x = 0; x < bp.size.w; x++)
 			{
-				CoordF exact = toSource.map(x, y);
-				if (exact.x < 0 || exact.y < 0 || exact.x > source.w || exact.y > source.h)
+				double cx = x + 0.5, cy = y + 0.5;
+				int t = pMap->triangleAt({ x * 64 + 32, y * 64 + 32 });
+
+				bool bTouches = onPlane(cx, cy) || onPlane(cx - 0.7, cy - 0.7) || onPlane(cx + 0.7, cy - 0.7) || onPlane(cx - 0.7, cy + 0.7) || onPlane(cx + 0.7, cy + 0.7);
+				if (bTouches && t < 0)
+					output << "Pixel " << x << "," << y << " touches the plane but is in no triangle" << std::endl;
+				TEST_ASSERT(t >= 0 || !bTouches);
+
+				if (t < 0)
 					continue;
 
-				CoordF pos = grid.positionAt(x, y);
+				// Within 0.02 pixels on screen, or within the rounding of u and v to spx at the
+				// vertices, which shows on screen where the source is enlarged.
+
+				CoordF pos;
+				TEST_ASSERT(pMap->positionIn(t, cx, cy, pos));
 				CoordF back = toScreen.map(pos.x, pos.y);
-				maxError = std::max(maxError, std::hypot(back.x - x, back.y - y));
+				CoordF exact = toSource.map(cx, cy);
+
+				double onScreen = std::hypot(back.x - cx, back.y - cy);
+				double inSource = std::max(std::abs(pos.x - exact.x), std::abs(pos.y - exact.y));
+				double error = std::min(onScreen / 0.02, inSource / 1.5);
+				if (error > maxError)
+				{
+					maxError = error;
+					worst = { x, y };
+					worstErrors = { onScreen, inSource };
+				}
 			}
 
-		if (maxError > bp.precision * 1.5)
-			output << "Max position error " << maxError << " px, precision " << bp.precision << std::endl;
-		TEST_ASSERT(maxError <= bp.precision * 1.5);
+		if (maxError > 1.0)
+			output << "Case " << (&bp - cases) << ": pixel " << worst.x << "," << worst.y << " is off by " << worstErrors.x << " px on screen, "
+				   << worstErrors.y << " spx in the source" << std::endl;
+		TEST_ASSERT(maxError <= 1.0);
 	}
 
-	// Without perspective cells span the Warpmap and positions are exact everywhere.
+	// Corners: refused unless convex with some area, and new ones are generated in place.
 
-	auto pFlat = PerspectiveWarp::create(WGBP(PerspectiveWarp, _.size = { 100, 80 }, _.sourceSize = source,
-		_.corners = corners({ 10, 10 }, { 90, 20 }, { 80, 70 }, { 0, 60 })), pFactory);
-	Grid flatGrid(pFlat->generate());
-	TEST_ASSERT(flatGrid.cellSize() == SizeI(100, 80) && flatGrid.nodes() == SizeI(2, 2));
-
-	// Corners: refused unless convex with some area, and new ones generate anew.
+	auto pFlat = PerspectiveWarp::create(cases[5], pFactory);
+	Warpmap* pFirst = pFlat->generate();
 
 	TEST_ASSERT(!pFlat->setCorners(corners({ 10, 10 }, { 90, 60 }, { 90, 10 }, { 10, 60 })));		// Crossed.
 	TEST_ASSERT(!pFlat->setCorners(corners({ 10, 10 }, { 50, 10 }, { 90, 10 }, { 10, 60 })));		// Three in a line.
 	TEST_ASSERT(!pFlat->setCorners(corners({ 10, 10 }, { 90, 10 }, { 50, 20 }, { 10, 60 })));		// Not convex.
 	TEST_ASSERT(!pFlat->setCorners(CornersT<CoordSPX>()));
-	TEST_ASSERT(pFlat->corners() == corners({ 10, 10 }, { 90, 20 }, { 80, 70 }, { 0, 60 }));
+	TEST_ASSERT(pFlat->corners() == cases[5].corners);
 
 	TEST_ASSERT(pFlat->setCorners(cases[2].corners) && pFlat->corners() == cases[2].corners);
-	TEST_ASSERT(Grid(pFlat->generate()).cellSize() != SizeI(100, 80));
+	TEST_ASSERT(pFlat->generate().rawPtr() == pFirst);
+	TEST_ASSERT(pFirst->vertexData()[0].w != pFirst->vertexData()[2].w);					// Now in perspective.
+
+	// Entirely outside the Warpmap: nothing to draw.
+
+	TEST_ASSERT(pFlat->setCorners(corners({ 200, 10 }, { 300, 10 }, { 300, 60 }, { 200, 60 })));
+	pFlat->generate();
+	for (int t = 0; t < pFirst->triangleCount(); t++)
+	{
+		const Warpmap::Triangle& tri = pFirst->triangleData()[t];
+		TEST_ASSERT(tri.a == tri.b && tri.b == tri.c);
+	}
 
 	TEST_ASSERT(PerspectiveWarp::create(WGBP(PerspectiveWarp, _.size = { 40, 40 }, _.sourceSize = source), pFactory) == nullptr);		// No corners.
 	TEST_ASSERT(PerspectiveWarp::create(WGBP(PerspectiveWarp, _.size = { 40, 40 }, _.corners = cases[2].corners), pFactory) == nullptr);	// No source size.

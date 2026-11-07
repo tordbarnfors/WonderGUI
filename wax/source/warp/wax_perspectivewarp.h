@@ -49,9 +49,10 @@ namespace wax
 	 * setCorners(). Move the source along the plane, such as for text scrolling into the distance,
 	 * with a source offset when drawing rather than by generating again.
 	 *
-	 * Unless set, the cell size is calculated from precision and how close the corners get to the
-	 * horizon of the plane, where it shrinks into the distance the fastest. Without perspective
-	 * (opposite sides parallel) positions change linearly and cells span the Warpmap.
+	 * The Warpmap is the quadrilateral of the corners, made about a pixel larger for antialiased
+	 * borders and cut off by the borders of the Warpmap and just before the horizon of the plane,
+	 * in a fan of triangles with weights for perspective: at most 9 vertices and 7 triangles. That
+	 * is exact everywhere, so cell size and precision don't apply.
 	 */
 
 	class PerspectiveWarp : public WarpGenerator
@@ -62,10 +63,8 @@ namespace wax
 
 		struct Blueprint
 		{
-			SizeI				cellSize;						// Pixels between nodes of the Warpmap. 0 = calculated, see above.
 			CornersT<CoordSPX>	corners;						// Mandatory. Where the corners of the source are placed, spx from the top-left of the Warpmap.
 			Finalizer_p			finalizer = nullptr;
-			float				precision = 0.25f;				// Max position error in pixels when cellSize is calculated.
 			SizeI				size;							// Mandatory. Size of the Warpmap in pixels.
 			SizeSPX				sourceSize;						// Mandatory. Size of the source (edgemap or source rectangle) in spx.
 		};
@@ -109,22 +108,24 @@ namespace wax
 		PerspectiveWarp( const Blueprint& bp, WarpmapFactory * pFactory );
 		virtual ~PerspectiveWarp();
 
+		static const int	c_maxVertices = 9;			// The quadrilateral clipped by five lines.
+		static const int	c_maxTriangles = 7;
+
 		// Source position (spx) at x,y (pixels) of the Warpmap is (u[0]*x + u[1]*y + u[2]) / w, v
-		// likewise, w = w[0]*x + w[1]*y + w[2], positive on the plane. Each term and sum is within
-		// +-2^61 within the Warpmap.
+		// likewise, w = w[0]*x + w[1]*y + w[2], positive on the plane.
 
 		struct Projection
 		{
-			int64_t		u[3];
-			int64_t		v[3];
-			int64_t		w[3];
+			double		u[3];
+			double		v[3];
+			double		w[3];
 		};
 
 		static bool	_isValidQuad( const CornersT<CoordSPX>& corners );
 		Projection	_projection() const;
 
-		SizeI		_calcCellSize() const override;
-		void		_generateNodes( CoordSPX * pNodes, SizeI nodes, SizeI cellSize ) const override;
+		void		_meshSize( int& nVertices, int& nTriangles ) const override;
+		void		_generateMesh( Warpmap::Vertex * pVertices, Warpmap::Triangle * pTriangles ) const override;
 
 		CornersT<CoordSPX>	m_corners;
 	};

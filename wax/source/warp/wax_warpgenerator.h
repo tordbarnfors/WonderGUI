@@ -50,7 +50,9 @@ namespace wax
 	 * 4 -> 64 pixels, along straight axes cells can span the Warpmap.
 	 *
 	 * When subclassing, implement _generateNodes() and _calcCellSize(), override _uPeriod() and
-	 * _vPeriod() for periodic axes and set m_bDirty when a setting changes.
+	 * _vPeriod() for periodic axes and set m_bDirty when a setting changes. A generator that makes
+	 * its own mesh rather than a grid, such as PerspectiveWarp, overrides _meshSize() and
+	 * _generateMesh() instead, and has no use for cell size and precision.
 	 */
 
 	class WarpGenerator : public Object
@@ -138,16 +140,26 @@ namespace wax
 
 		static spx		_toNodeValue( int64_t value );
 
-		// Cell width and height from precision and the shape. Kept within 4 -> size of the Warpmap
-		// by cellSize().
+		// Number of vertices and triangles of the Warpmap, and the vertices and triangles themselves.
+		// Override both for a generator that makes its own mesh, rather than a grid of nodes as
+		// below. Vertices are clamped to the limits of Warpmap afterwards.
 
-		virtual SizeI	_calcCellSize() const = 0;
+		virtual void	_meshSize( int& nVertices, int& nTriangles ) const;
+		virtual void	_generateMesh( Warpmap::Vertex * pVertices, Warpmap::Triangle * pTriangles ) const;
+
+		// For the grid of nodes that the default _meshSize() and _generateMesh() make the Warpmap
+		// from:
+
+		// Cell width and height from precision and the shape. Kept within 4 -> size of the Warpmap
+		// by cellSize(). The size of the Warpmap unless overridden.
+
+		virtual SizeI	_calcCellSize() const;
 
 		// Fills pNodes with nodes.w * nodes.h positions in spx of the source, row by row, nodes being
 		// cellSize.w pixels apart horizontally and cellSize.h vertically (the last row and column at
 		// the edge). Keep them within Warpmap::maxValue.
 
-		virtual void	_generateNodes( CoordSPX * pNodes, SizeI nodes, SizeI cellSize ) const = 0;
+		virtual void	_generateNodes( CoordSPX * pNodes, SizeI nodes, SizeI cellSize ) const {}
 
 		// Makes vertices and triangles from the nodes, see generate().
 

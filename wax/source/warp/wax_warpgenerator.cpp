@@ -137,7 +137,8 @@ namespace wax
 		a draw holds (or anyone else) is left as it is and a new one created in its place.
 
 		A Warpmap that only we hold has its vertices, triangles and periods written in place and
-		sent on once.
+		sent on once. The counts of vertices and triangles are fixed for a Warpmap, so it is
+		created anew when they change, as with the cell size of a grid.
 	*/
 
 	Warpmap_p WarpGenerator::generate()
@@ -145,47 +146,50 @@ namespace wax
 		if (!m_bDirty && m_pWarpmap)
 			return m_pWarpmap;
 
-		SizeI cellSize = this->cellSize();
 		spx uPeriod = std::clamp(_uPeriod(), 0, Warpmap::maxValue);
 		spx vPeriod = std::clamp(_vPeriod(), 0, Warpmap::maxValue);
 
-		SizeI nodes = { (m_size.w + cellSize.w - 1) / cellSize.w + 1, (m_size.h + cellSize.h - 1) / cellSize.h + 1 };
-		int nCells = (nodes.w - 1) * (nodes.h - 1);
+		int nVertices, nTriangles;
+		_meshSize(nVertices, nTriangles);
 
-		std::vector<CoordSPX> buffer(nodes.w * nodes.h);
-		_generateNodes(buffer.data(), nodes, cellSize);
+		auto generateInto = [&](Warpmap::Vertex* pVertices, Warpmap::Triangle* pTriangles)
+		{
+			_generateMesh(pVertices, pTriangles);
+			for (int i = 0; i < nVertices; i++)
+				pVertices[i] = Warpmap::_clamped(pVertices[i]);
+		};
 
 		Warpmap* pMap = m_pWarpmap;
 
-		if (!pMap || pMap->refcount() > 1 || pMap->pixelSize() != m_size || pMap->vertexCount() != nCells * 4 || pMap->triangleCount() != nCells * 2)
+		if (!pMap || pMap->refcount() > 1 || pMap->pixelSize() != m_size || pMap->vertexCount() != nVertices || pMap->triangleCount() != nTriangles)
 		{
 			Warpmap::Blueprint bp;
 			bp.size = m_size;
-			bp.triangles = nCells * 2;
+			bp.triangles = nTriangles;
 			bp.uPeriod = uPeriod;
-			bp.vertices = nCells * 4;
+			bp.vertices = nVertices;
 			bp.vPeriod = vPeriod;
 
-			std::vector<Warpmap::Vertex> vertices(nCells * 4);
-			std::vector<Warpmap::Triangle> triangles(nCells * 2);
-			_gridToMesh(buffer.data(), nodes, cellSize, uPeriod, vPeriod, vertices.data(), triangles.data());
+			std::vector<Warpmap::Vertex> vertices(nVertices);
+			std::vector<Warpmap::Triangle> triangles(nTriangles);
+			generateInto(vertices.data(), triangles.data());
 
 			m_pWarpmap = m_pFactory->createWarpmap(bp, vertices.data(), triangles.data());
 		}
 		else if (pMap->m_pVertices && pMap->m_pTriangles)
 		{
-			_gridToMesh(buffer.data(), nodes, cellSize, uPeriod, vPeriod, pMap->m_pVertices, pMap->m_pTriangles);
+			generateInto(pMap->m_pVertices, pMap->m_pTriangles);
 			pMap->m_uPeriod = uPeriod;
 			pMap->m_vPeriod = vPeriod;
-			pMap->_updated(0, nCells * 4, 0, nCells * 2);
+			pMap->_updated(0, nVertices, 0, nTriangles);
 		}
 		else
 		{
 			// No content of its own to write to, it goes through importMesh().
 
-			std::vector<Warpmap::Vertex> vertices(nCells * 4);
-			std::vector<Warpmap::Triangle> triangles(nCells * 2);
-			_gridToMesh(buffer.data(), nodes, cellSize, uPeriod, vPeriod, vertices.data(), triangles.data());
+			std::vector<Warpmap::Vertex> vertices(nVertices);
+			std::vector<Warpmap::Triangle> triangles(nTriangles);
+			generateInto(vertices.data(), triangles.data());
 
 			pMap->importMesh(vertices.data(), triangles.data(), uPeriod, vPeriod);
 		}
@@ -194,6 +198,38 @@ namespace wax
 
 		m_bDirty = false;
 		return m_pWarpmap;
+	}
+
+	//____ _meshSize() ________________________________________________________
+	// Four vertices and two triangles for each cell of the grid.
+
+	void WarpGenerator::_meshSize(int& nVertices, int& nTriangles) const
+	{
+		SizeI cellSize = this->cellSize();
+		int nCells = ((m_size.w + cellSize.w - 1) / cellSize.w) * ((m_size.h + cellSize.h - 1) / cellSize.h);
+
+		nVertices = nCells * 4;
+		nTriangles = nCells * 2;
+	}
+
+	//____ _generateMesh() ____________________________________________________
+
+	void WarpGenerator::_generateMesh(Warpmap::Vertex* pVertices, Warpmap::Triangle* pTriangles) const
+	{
+		SizeI cellSize = this->cellSize();
+		SizeI nodes = { (m_size.w + cellSize.w - 1) / cellSize.w + 1, (m_size.h + cellSize.h - 1) / cellSize.h + 1 };
+
+		std::vector<CoordSPX> buffer(nodes.w * nodes.h);
+		_generateNodes(buffer.data(), nodes, cellSize);
+
+		_gridToMesh(buffer.data(), nodes, cellSize, std::clamp(_uPeriod(), 0, Warpmap::maxValue), std::clamp(_vPeriod(), 0, Warpmap::maxValue), pVertices, pTriangles);
+	}
+
+	//____ _calcCellSize() ____________________________________________________
+
+	SizeI WarpGenerator::_calcCellSize() const
+	{
+		return m_size;
 	}
 
 	//____ _gridToMesh() ______________________________________________________
