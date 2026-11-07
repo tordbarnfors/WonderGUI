@@ -34,15 +34,13 @@ extern "C" {
 
 	typedef struct wax_perspectiveWarpBP_struct		// NOT BINARY EQUIVALENT!
 	{
-		wax_sizeI			cellSize;				// 0 for width or height = calculated from precision.
 		wax_coordSPX		corners[4];				// Mandatory. Where the corners of the source are placed: top-left, top-right, bottom-right, bottom-left.
-		float				precision;				// Max position error in pixels when cellSize is calculated. 0 = default (0.25).
 		wax_sizeI			size;					// Mandatory. Size of the Warpmap in pixels.
 		wax_sizeSPX			sourceSize;				// Mandatory. Size of the source (edgemap or source rectangle) in spx.
 	} wax_perspectiveWarpBP;
 
 	// Factory is the WarpmapFactory to create the Warpmap with, the default one if null.
-	// Size, source size, cell size, precision and generate are set and called through the WarpGenerator functions.
+	// Size, source size and generate are set and called through the WarpGenerator functions. Cell size and precision don't apply.
 
 	WAX_EXPORT wax_obj		wax_createPerspectiveWarp( const wax_perspectiveWarpBP* blueprint, wax_obj warpmapFactory );
 

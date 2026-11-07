@@ -46,10 +46,7 @@ wax_obj wax_createPerspectiveWarp( const wax_perspectiveWarpBP* pCBP, wax_obj wa
 {
 	PerspectiveWarp::Blueprint bp;
 
-	bp.cellSize = { pCBP->cellSize.w, pCBP->cellSize.h };
 	bp.corners = toCorners(pCBP->corners);
-	if (pCBP->precision > 0.f)
-		bp.precision = pCBP->precision;
 	bp.size = { pCBP->size.w, pCBP->size.h };
 	bp.sourceSize = { pCBP->sourceSize.w, pCBP->sourceSize.h };
 

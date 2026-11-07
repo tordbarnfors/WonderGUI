@@ -33,7 +33,7 @@ namespace wax
 
 	PerspectiveWarp_p PerspectiveWarp::create(const Blueprint& bp, WarpmapFactory* pFactory)
 	{
-		if (!_validateSettings(bp.size, bp.sourceSize, bp.cellSize, bp.precision) || !_isValidQuad(bp.corners))
+		if (!_validateSettings(bp.size, bp.sourceSize, {}, 0.25f) || !_isValidQuad(bp.corners))
 			return nullptr;
 
 		if (!pFactory)
@@ -48,7 +48,7 @@ namespace wax
 	//____ constructor ________________________________________________________
 
 	PerspectiveWarp::PerspectiveWarp(const Blueprint& bp, WarpmapFactory* pFactory)
-		: WarpGenerator(bp.size, bp.sourceSize, bp.cellSize, bp.precision, pFactory)
+		: WarpGenerator(bp.size, bp.sourceSize, {}, 0.25f, pFactory)
 	{
 		if (bp.finalizer)
 			setFinalizer(bp.finalizer);
@@ -198,9 +198,8 @@ namespace wax
 
 			x = (a*s + b*t + c) / (g*s + h*t + 1),  y = (d*s + e*t + f) / (g*s + h*t + 1)
 
-		and the Warpmap needs the inverse, which is the adjugate of that matrix. It is calculated once
-		per generate, in floating point without any library calls, then scaled so that the terms use
-		the range of int64 for the nodes, which are calculated with integers.
+		and the Warpmap needs the inverse, which is the adjugate of that matrix. Calculated once per
+		generate, in floating point without any library calls. All zero for corners without area.
 	*/
 
 	PerspectiveWarp::Projection PerspectiveWarp::_projection() const
@@ -242,115 +241,216 @@ namespace wax
 		// Its inverse, the corners to the unit square, scaled to the source. W is made positive on
 		// the plane.
 
-		double rows[3][3] = {	{ (e - f * h) * m_sourceSize.w, (c * h - b) * m_sourceSize.w, (b * f - c * e) * m_sourceSize.w },
-								{ (f * g - d) * m_sourceSize.h, (a - c * g) * m_sourceSize.h, (c * d - a * f) * m_sourceSize.h },
-								{ d * h - e * g, b * g - a * h, a * e - b * d } };
+		Projection p = {	{ (e - f * h) * m_sourceSize.w, (c * h - b) * m_sourceSize.w, (b * f - c * e) * m_sourceSize.w },
+							{ (f * g - d) * m_sourceSize.h, (a - c * g) * m_sourceSize.h, (c * d - a * f) * m_sourceSize.h },
+							{ d * h - e * g, b * g - a * h, a * e - b * d } };
 
 		double cx = (x[0] + x[1] + x[2] + x[3]) / 4, cy = (y[0] + y[1] + y[2] + y[3]) / 4;
-		if (rows[2][0] * cx + rows[2][1] * cy + rows[2][2] < 0)
-			for (auto& row : rows)
-				for (double& value : row)
-					value = -value;
-
-		// Scaled so that every term and sum is within 2^61 within the Warpmap.
-
-		double largest = 0.0;
-		for (auto& row : rows)
-			largest = std::max(largest, std::abs(row[0]) * m_size.w + std::abs(row[1]) * m_size.h + std::abs(row[2]));
-
-		Projection p = {};
-		if (!(largest > 0.0 && largest < 0x1p1000))			// Not for valid corners, but also catches NaN.
-			return p;
-
-		double scale = 0x1p61 / largest;
-		auto toFixed = [scale](double value) { value *= scale; return int64_t(value + (value < 0 ? -0.5 : 0.5)); };
+		if (p.w[0] * cx + p.w[1] * cy + p.w[2] < 0)
+		{
+			for (int i = 0; i < 3; i++)
+			{
+				p.u[i] = -p.u[i];
+				p.v[i] = -p.v[i];
+				p.w[i] = -p.w[i];
+			}
+		}
 
 		for (int i = 0; i < 3; i++)
 		{
-			p.u[i] = toFixed(rows[0][i]);
-			p.v[i] = toFixed(rows[1][i]);
-			p.w[i] = toFixed(rows[2][i]);
+			if (!(std::abs(p.u[i]) < 0x1p1000 && std::abs(p.v[i]) < 0x1p1000 && std::abs(p.w[i]) < 0x1p1000))		// Also catches NaN.
+				return {};
 		}
+
 		return p;
 	}
 
-	//____ _calcCellSize() ____________________________________________________
-	/*
-		Along a line through the plane, the source position is (alpha*x + beta) / (gamma*x + delta).
-		Interpolating that linearly over l pixels is off by about l^2 / 8 times its second derivative,
-		which in pixels on screen is l^2 / (4 * d), d being the distance to the horizon (where the
-		divisor is 0) along the line. It is shortest straight towards the horizon, where it is
-		W / |gradient of W|, and smallest at the corner nearest the horizon. That is the same as a
-		circle of radius d / 2.
+	//____ _meshSize() ________________________________________________________
 
-		Without perspective W is constant and interpolation is exact, so cells span the Warpmap.
-	*/
-
-	SizeI PerspectiveWarp::_calcCellSize() const
+	void PerspectiveWarp::_meshSize(int& nVertices, int& nTriangles) const
 	{
-		Projection p = _projection();
-
-		if (p.w[0] == 0 && p.w[1] == 0)
-			return m_size;
-
-		double nearest = 0x1p1000;
-		for (int i = 0; i < 4; i++)
-		{
-			double w = (double(p.w[0]) * m_corners[i].x + double(p.w[1]) * m_corners[i].y) / 64 + double(p.w[2]);
-			nearest = std::min(nearest, w);
-		}
-
-		// Radius in spx is 32 * d, so its square is 1024 * W^2 / |gradient|^2.
-
-		double gradient2 = double(p.w[0]) * p.w[0] + double(p.w[1]) * p.w[1];
-		double radius2 = nearest > 0.0 ? 1024.0 * nearest * nearest / gradient2 : 0.0;
-
-		int64_t radius = int64_t(_sqrt(uint64_t(std::min(radius2, 0x1p62))));
-		int cell = _cellSizeForRadius(radius);
-		return { cell, cell };
+		nVertices = c_maxVertices;
+		nTriangles = c_maxTriangles;
 	}
 
-	//____ _generateNodes() ___________________________________________________
+	//____ _generateMesh() ____________________________________________________
 	/*
-		With integers only: per node a few multiplications and a division for each of u and v. At
-		the horizon and beyond, which isn't part of the plane, nodes are far outside the source in
-		the direction the plane goes off to, as they are just before the horizon.
+		The quadrilateral of the corners, with each side moved a pixel outwards so that its border
+		is antialiased within the triangles, then clipped to where W is at least half of what it
+		is at the corners, which keeps it off the horizon, and to the rectangle of the Warpmap. The
+		resulting convex polygon, of at most 9 corners, is split into a fan of triangles from its
+		first corner. Corners are rounded to spx, then given the exact position in the source and
+		W there as weight, scaled so that the largest is Warpmap::maxWeight. Unused vertices and
+		triangles are all in the first vertex.
+
+		All in floating point, once per generate and for a handful of points, without library
+		calls other than a square root for each corner.
 	*/
 
-	void PerspectiveWarp::_generateNodes(CoordSPX* pNodes, SizeI nodes, SizeI cellSize) const
+	void PerspectiveWarp::_generateMesh(Warpmap::Vertex* pVertices, Warpmap::Triangle* pTriangles) const
 	{
-		Projection p = _projection();
+		for (int i = 0; i < c_maxVertices; i++)
+			pVertices[i] = { 0, 0, 0, 0 };
+		for (int i = 0; i < c_maxTriangles; i++)
+			pTriangles[i] = { 0, 0, 0 };
 
-		auto divide = [](int64_t n, int64_t w)
+		Projection p = _projection();
+		if (p.w[0] == 0.0 && p.w[1] == 0.0 && p.w[2] == 0.0)
+			return;
+
+		auto W = [&](double x, double y) { return p.w[0] * x + p.w[1] * y + p.w[2]; };
+
+		// Corners in pixels, and which way they go round.
+
+		double cx[4], cy[4];
+		for (int i = 0; i < 4; i++)
 		{
-			int64_t half = w / 2;
-			return _toNodeValue((n + (n < 0 ? -half : half)) / w);
+			cx[i] = m_corners[i].x / 64.0;
+			cy[i] = m_corners[i].y / 64.0;
+		}
+
+		double area = 0;
+		for (int i = 0; i < 4; i++)
+			area += cx[i] * cy[(i + 1) % 4] - cx[(i + 1) % 4] * cy[i];
+		double turn = area > 0 ? 1.0 : -1.0;
+
+		// Corners moved out to where the sides, moved a pixel outwards, meet. Very sharp corners are
+		// moved at most 8 pixels.
+
+		const double c_margin = 1.0;
+		const double c_maxMiter = 8.0;
+
+		double px[c_maxVertices + 1], py[c_maxVertices + 1];
+		int n = 4;
+
+		auto outwards = [&](int from, int to, double& nx, double& ny)
+		{
+			double dx = cx[to] - cx[from], dy = cy[to] - cy[from];
+			double length = std::sqrt(dx * dx + dy * dy);
+			nx = turn * dy / length;
+			ny = -turn * dx / length;
 		};
 
-		const spx c_far = Warpmap::maxValue;
-
-		for (int row = 0; row < nodes.h; row++)
+		for (int i = 0; i < 4; i++)
 		{
-			int64_t y = std::min(row * cellSize.h, m_size.h);
+			double n1x, n1y, n2x, n2y;
+			outwards((i + 3) % 4, i, n1x, n1y);
+			outwards(i, (i + 1) % 4, n2x, n2y);
 
-			int64_t u0 = p.u[1] * y + p.u[2];
-			int64_t v0 = p.v[1] * y + p.v[2];
-			int64_t w0 = p.w[1] * y + p.w[2];
+			double den = 1.0 + n1x * n2x + n1y * n2y;
+			double ox = c_margin * (n1x + n2x) / den;
+			double oy = c_margin * (n1y + n2y) / den;
 
-			for (int col = 0; col < nodes.w; col++)
+			double length2 = ox * ox + oy * oy;
+			if (length2 > c_maxMiter * c_maxMiter)
 			{
-				int64_t x = std::min(col * cellSize.w, m_size.w);
-
-				int64_t u = p.u[0] * x + u0;
-				int64_t v = p.v[0] * x + v0;
-				int64_t w = p.w[0] * x + w0;
-
-				if (w > 0)
-					*pNodes++ = { divide(u, w), divide(v, w) };
-				else
-					*pNodes++ = { u < 0 ? -c_far : c_far, v < 0 ? -c_far : c_far };
+				double scale = c_maxMiter / std::sqrt(length2);
+				ox *= scale;
+				oy *= scale;
 			}
+
+			px[i] = cx[i] + ox;
+			py[i] = cy[i] + oy;
 		}
+
+		// Clipped to a * x + b * y + c >= 0, one line at a time.
+
+		auto clip = [&](double a, double b, double c)
+		{
+			double qx[c_maxVertices + 1], qy[c_maxVertices + 1];
+			int m = 0;
+
+			for (int i = 0; i < n; i++)
+			{
+				int j = (i + 1) % n;
+				double fi = a * px[i] + b * py[i] + c;
+				double fj = a * px[j] + b * py[j] + c;
+
+				if (fi >= 0)
+				{
+					qx[m] = px[i];
+					qy[m] = py[i];
+					m++;
+				}
+
+				if ((fi >= 0) != (fj >= 0))
+				{
+					double t = fi / (fi - fj);
+					qx[m] = px[i] + (px[j] - px[i]) * t;
+					qy[m] = py[i] + (py[j] - py[i]) * t;
+					m++;
+				}
+			}
+
+			n = m;
+			for (int i = 0; i < n; i++)
+			{
+				px[i] = qx[i];
+				py[i] = qy[i];
+			}
+		};
+
+		if (p.w[0] != 0.0 || p.w[1] != 0.0)
+		{
+			double lowest = W(cx[0], cy[0]);
+			for (int i = 1; i < 4; i++)
+				lowest = std::min(lowest, W(cx[i], cy[i]));
+
+			clip(p.w[0], p.w[1], p.w[2] - lowest / 2);
+		}
+
+		clip(1, 0, 0);
+		clip(-1, 0, m_size.w);
+		clip(0, 1, 0);
+		clip(0, -1, m_size.h);
+
+		// Rounded to spx, dropping corners that end up in the same place as the one before.
+
+		Warpmap::Vertex* pOut = pVertices;
+		double weights[c_maxVertices];
+		int nOut = 0;
+
+		for (int i = 0; i < n; i++)
+		{
+			spx x = spx(px[i] * 64 + (px[i] < 0 ? -0.5 : 0.5));
+			spx y = spx(py[i] * 64 + (py[i] < 0 ? -0.5 : 0.5));
+
+			if (nOut > 0 && ((pOut[nOut - 1].x == x && pOut[nOut - 1].y == y) || (pOut[0].x == x && pOut[0].y == y)))
+				continue;
+
+			double fx = x / 64.0, fy = y / 64.0;
+			double w = W(fx, fy);
+			if (!(w > 0.0))
+				continue;
+
+			double u = (p.u[0] * fx + p.u[1] * fy + p.u[2]) / w;
+			double v = (p.v[0] * fx + p.v[1] * fy + p.v[2]) / w;
+
+			const double c_limit = Warpmap::maxValue;
+			pOut[nOut] = { x, y, spx(std::clamp(u, -c_limit, c_limit)), spx(std::clamp(v, -c_limit, c_limit)) };
+			weights[nOut] = w;
+			nOut++;
+		}
+
+		if (nOut < 3)
+		{
+			for (int i = 0; i < c_maxVertices; i++)
+				pVertices[i] = { 0, 0, 0, 0 };
+			return;
+		}
+
+		double largest = 0;
+		for (int i = 0; i < nOut; i++)
+			largest = std::max(largest, weights[i]);
+
+		for (int i = 0; i < nOut; i++)
+			pOut[i].w = std::max(1, int(weights[i] / largest * Warpmap::maxWeight + 0.5));
+
+		for (int i = nOut; i < c_maxVertices; i++)
+			pVertices[i] = pVertices[0];
+
+		for (int i = 0; i < nOut - 2; i++)
+			pTriangles[i] = { 0, i + 1, i + 2 };
 	}
 
 } // namespace wax
