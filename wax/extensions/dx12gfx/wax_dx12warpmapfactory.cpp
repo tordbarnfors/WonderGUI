@@ -42,9 +42,9 @@ namespace wax
 		return DX12Warpmap::create(blueprint);
 	}
 
-	Warpmap_p DX12WarpmapFactory::createWarpmap(const Warpmap::Blueprint& blueprint, const CoordSPX * pNodes, int pitch)
+	Warpmap_p DX12WarpmapFactory::createWarpmap(const Warpmap::Blueprint& blueprint, const Warpmap::Vertex * pVertices, const Warpmap::Triangle * pTriangles)
 	{
-		return DX12Warpmap::create(blueprint, pNodes, pitch);
+		return DX12Warpmap::create(blueprint, pVertices, pTriangles);
 	}
 
 } // namespace wax

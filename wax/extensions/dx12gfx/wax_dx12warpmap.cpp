@@ -24,6 +24,7 @@
 #include <wax_dx12backend.h>
 #include <wax_base.h>
 
+#include <cstdint>
 #include <cstring>
 #include <cwchar>
 #include <algorithm>
@@ -43,18 +44,20 @@ namespace wax
 		return DX12Warpmap_p(new DX12Warpmap(bp));
 	}
 
-	DX12Warpmap_p DX12Warpmap::create(const Blueprint& bp, const CoordSPX * pNodes, int pitch)
+	DX12Warpmap_p DX12Warpmap::create(const Blueprint& bp, const Vertex * pVertices, const Triangle * pTriangles)
 	{
-		if (!_validateBlueprint(bp) || !pNodes)
+		if (!pVertices || !pTriangles || !_validateBlueprint(bp, pTriangles))
 			return nullptr;
 
-		return DX12Warpmap_p(new DX12Warpmap(bp, pNodes, pitch));
+		return DX12Warpmap_p(new DX12Warpmap(bp, pVertices, pTriangles));
 	}
 
 	//____ constructor ___________________________________________________________
 
-	DX12Warpmap::DX12Warpmap(const Blueprint& bp, const CoordSPX * pNodes, int pitch) : Warpmap(bp, pNodes, pitch)
+	DX12Warpmap::DX12Warpmap(const Blueprint& bp, const Vertex * pVertices, const Triangle * pTriangles) : Warpmap(bp, pVertices, pTriangles)
 	{
+		static_assert(sizeof(Vertex) == 5 * sizeof(int32_t) && sizeof(Triangle) == 3 * sizeof(uint32_t), "Vertices and triangles are uploaded as they are");
+
 		ID3D12Device * pDevice = DX12Backend::device();
 
 		if (!pDevice)
@@ -71,8 +74,10 @@ namespace wax
 		if (DX12Backend::isDeviceLost())
 			return;
 
-		SizeI cells = _cells();
-		size_t bytes = size_t(cells.w) * cells.h * 2 * 4 * sizeof(float);
+		// Triangles start at an aligned offset after the vertices. A buffer can't be empty.
+
+		m_indexOffset = (size_t(m_nVertices) * sizeof(Vertex) + 255) & ~size_t(255);
+		size_t bytes = std::max(m_indexOffset + size_t(m_nTriangles) * sizeof(Triangle), size_t(256));
 
 		D3D12_HEAP_PROPERTIES heapProps = {};
 		heapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
@@ -119,9 +124,9 @@ namespace wax
 		}
 
 		//TODO: As for DX12Edgemap, there is one buffer and two frames in flight, so
-		// updating nodes can change what the GPU is still reading for the previous frame.
+		// updating the mesh can change what the GPU is still reading for the previous frame.
 
-		_nodesUpdated({ 0, 0, m_nodes.w, m_nodes.h });
+		_updated(0, m_nVertices, 0, m_nTriangles);
 	}
 
 	//____ destructor ____________________________________________________________
@@ -139,36 +144,31 @@ namespace wax
 		return TYPEINFO;
 	}
 
-	//____ _nodesUpdated() _______________________________________________________
-	//
-	// Rebuilds the rows of cells touching the nodes that changed.
+	//____ _indexBufferView() ____________________________________________________
 
-	void DX12Warpmap::_nodesUpdated(const RectI& region)
+	D3D12_INDEX_BUFFER_VIEW DX12Warpmap::_indexBufferView() const
+	{
+		D3D12_INDEX_BUFFER_VIEW view = {};
+		view.BufferLocation = _gpuAddress() + m_indexOffset;
+		view.SizeInBytes = UINT(size_t(m_nTriangles) * sizeof(Triangle));
+		view.Format = DXGI_FORMAT_R32_UINT;
+		return view;
+	}
+
+	//____ _updated() ____________________________________________________________
+	//
+	// Copies what changed to the buffer. Periods are given when drawing.
+
+	void DX12Warpmap::_updated(int firstVertex, int nVertices, int firstTriangle, int nTriangles)
 	{
 		if (!m_pBuffer)
 			return;
 
-		SizeI cells = _cells();
+		if (nVertices > 0)
+			std::memcpy(m_pBuffer + size_t(firstVertex) * sizeof(Vertex), m_pVertices + firstVertex, size_t(nVertices) * sizeof(Vertex));
 
-		int rowBeg = std::max(0, region.y - 1);
-		int rowEnd = std::min(cells.h, region.y + region.h);
-
-		float * pOut = m_pBuffer + rowBeg * cells.w * 2 * 4;
-
-		for (int row = rowBeg; row < rowEnd; row++)
-		{
-			for (int column = 0; column < cells.w; column++)
-			{
-				CoordSPX corners[4];
-				cellCorners(column, row, corners);
-
-				for (int i = 0; i < 4; i++)
-				{
-					*pOut++ = corners[i].x / 64.f;
-					*pOut++ = corners[i].y / 64.f;
-				}
-			}
-		}
+		if (nTriangles > 0)
+			std::memcpy(m_pBuffer + m_indexOffset + size_t(firstTriangle) * sizeof(Triangle), m_pTriangles + firstTriangle, size_t(nTriangles) * sizeof(Triangle));
 	}
 
 } // namespace wax

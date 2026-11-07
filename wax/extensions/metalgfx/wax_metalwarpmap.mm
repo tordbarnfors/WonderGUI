@@ -24,6 +24,8 @@
 #include <wax_metalbackend.h>
 
 #include <algorithm>
+#include <cstdint>
+#include <cstring>
 
 namespace wax
 {
@@ -41,26 +43,29 @@ MetalWarpmap_p MetalWarpmap::create( const Blueprint& bp )
 	return MetalWarpmap_p( new MetalWarpmap(bp) );
 }
 
-MetalWarpmap_p MetalWarpmap::create( const Blueprint& bp, const CoordSPX * pNodes, int pitch )
+MetalWarpmap_p MetalWarpmap::create( const Blueprint& bp, const Vertex * pVertices, const Triangle * pTriangles )
 {
-	if( !_validateBlueprint(bp) || !pNodes )
+	if( !pVertices || !pTriangles || !_validateBlueprint(bp, pTriangles) )
 		return nullptr;
 
-	return MetalWarpmap_p( new MetalWarpmap(bp, pNodes, pitch) );
+	return MetalWarpmap_p( new MetalWarpmap(bp, pVertices, pTriangles) );
 }
 
 //____ constructor ___________________________________________________________
 
-MetalWarpmap::MetalWarpmap( const Blueprint& bp, const CoordSPX * pNodes, int pitch ) : Warpmap(bp, pNodes, pitch)
+MetalWarpmap::MetalWarpmap( const Blueprint& bp, const Vertex * pVertices, const Triangle * pTriangles ) : Warpmap(bp, pVertices, pTriangles)
 {
-	SizeI cells = _cells();
+	static_assert(sizeof(Vertex) == 5 * sizeof(int32_t) && sizeof(Triangle) == 3 * sizeof(uint32_t), "Vertices and triangles are uploaded as they are");
 
-	size_t bytes = size_t(cells.w) * cells.h * 2 * 4 * sizeof(float);
+	// Triangles start at an aligned offset after the vertices. A buffer can't be empty.
+
+	m_indexOffset = (size_t(m_nVertices) * sizeof(Vertex) + 255) & ~size_t(255);
+	size_t bytes = std::max(m_indexOffset + size_t(m_nTriangles) * sizeof(Triangle), size_t(256));
 
 	m_bufferId = [MetalBackend::metalDevice() newBufferWithLength:bytes options:MTLResourceStorageModeShared];
-	m_pBuffer = (float *)[m_bufferId contents];
+	m_pBuffer = (uint8_t *)[m_bufferId contents];
 
-	_nodesUpdated({ 0, 0, m_nodes.w, m_nodes.h });
+	_updated(0, m_nVertices, 0, m_nTriangles);
 }
 
 //____ destructor ____________________________________________________________
@@ -78,33 +83,20 @@ const TypeInfo& MetalWarpmap::typeInfo(void) const
 	return TYPEINFO;
 }
 
-//____ _nodesUpdated() _______________________________________________________
+//____ _updated() ____________________________________________________________
 //
-// Rebuilds the rows of cells touching the nodes that changed.
+// Copies what changed to the buffer. Periods are given when drawing.
 
-void MetalWarpmap::_nodesUpdated( const RectI& region )
+void MetalWarpmap::_updated( int firstVertex, int nVertices, int firstTriangle, int nTriangles )
 {
-	SizeI cells = _cells();
+	if( !m_pBuffer )
+		return;
 
-	int rowBeg = std::max(0, region.y - 1);
-	int rowEnd = std::min(cells.h, region.y + region.h);
+	if( nVertices > 0 )
+		std::memcpy(m_pBuffer + size_t(firstVertex) * sizeof(Vertex), m_pVertices + firstVertex, size_t(nVertices) * sizeof(Vertex));
 
-	float * pOut = m_pBuffer + rowBeg * cells.w * 2 * 4;
-
-	for( int row = rowBeg ; row < rowEnd ; row++ )
-	{
-		for( int column = 0 ; column < cells.w ; column++ )
-		{
-			CoordSPX corners[4];
-			cellCorners(column, row, corners);
-
-			for( int i = 0 ; i < 4 ; i++ )
-			{
-				*pOut++ = corners[i].x / 64.f;
-				*pOut++ = corners[i].y / 64.f;
-			}
-		}
-	}
+	if( nTriangles > 0 )
+		std::memcpy(m_pBuffer + m_indexOffset + size_t(firstTriangle) * sizeof(Triangle), m_pTriangles + firstTriangle, size_t(nTriangles) * sizeof(Triangle));
 }
 
 } // namespace wax

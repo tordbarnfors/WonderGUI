@@ -153,9 +153,13 @@ textures of the cards that shows in a few hundred pixels, by up to about a third
 range. Borders of the source and edges of edgemaps are within 1/64 of a pixel. See the ROADMAP
 entry on dividing for perspective for the trade-off.
 
-### DX12 and Metal backends don't draw Warpmaps yet
+### DX12 and Metal warps are untested
 
-Warpmaps are being changed from a grid of nodes to triangle meshes (see ROADMAP.md). The software
-and OpenGL backends draw them, but the DX12 and Metal backends don't compile (`wax_dx12warpmap*`,
-`wax_metalwarpmap*` and their warp shaders still read the grid). `GlWarpmap` and the warp
-shaders in `wax_glbackendshaders.cpp` show how to change them over.
+DX12Backend and MetalBackend were changed over to triangle meshes (see ROADMAP.md) in a Linux
+container, where neither can be built. Their warp shaders were checked by compiling the HLSL with
+glslang and type checking the Metal code with clang, but the C++ and Objective-C++ have not been
+compiled, and nothing has been drawn. Build them and run gfxdevicetester's WarpTests on each.
+
+`wax/extensions/dx12gfx/wax_dx12warpmap*`, `_drawWarp()` in `wax_dx12backend.cpp`,
+`shaders/vs_warp.hlsl`, `shaders/warp.hlsl`, `wax/extensions/metalgfx/wax_metalwarpmap*`, the warp
+command in `wax_metalbackend.mm`, the warp shaders in `wax_shadercontent.mm`

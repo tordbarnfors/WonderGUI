@@ -61,7 +61,7 @@ float4 segmentPart(float4 pc, float part, inout float keep)
 PS_OUTPUT main(PS_INPUT input)
 {
     float2 dx, dy;
-    float2 s = warpPosition(input.warpOfs, input.position.xy, dx, dy);
+    float2 s = warpPosition(input.warpOfs, input.uvw, dx, dy);
 
     float4 e0 = extras[input.warpOfs];
     float4 e1 = extras[input.warpOfs + 1];

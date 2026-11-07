@@ -42,7 +42,9 @@ in someone's memory or an old chat. Add to it when you decide something, move it
      past the centers of the corners, all the way around and a pixel beyond the band. CylinderWarp
      is strips along its axis, narrower towards the rims. The grid of nodes stays for generators
      that only implement `_generateNodes()`.
-  5. DX12 and Metal.
+  5. **Done, untested:** DX12Backend and MetalBackend keep the mesh as GlBackend does, with the
+     vertex shader reading the vertices from the buffer of the Warpmap, drawn with its triangles
+     as index buffer. See KNOWN_ISSUES.md.
 
   Decided so far:
   - **Vertices in spx:** positions in spx of the Warpmap, u and v in spx of the source as the

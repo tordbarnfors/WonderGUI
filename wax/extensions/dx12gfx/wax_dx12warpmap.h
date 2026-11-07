@@ -40,10 +40,12 @@ namespace wax
 	/**
 	 * @brief Warpmap for DX12Backend.
 	 *
-	 * The cells are kept in a buffer for the shaders, two float4 entries per cell, row by row:
-	 * the top-left and top-right corners, then the bottom-left and bottom-right corners, as
-	 * given by cellCorners(), so already moved by whole periods to be close to the top-left one,
-	 * converted from spx to pixels of the source.
+	 * The mesh is kept on the GPU as it is, in one permanently mapped buffer: the vertices (x, y,
+	 * u, v and w as integers, the layout of Warpmap::Vertex), read by the vertex shader as a
+	 * structured buffer, followed by the triangles (the corners as unsigned ints, the layout of
+	 * Warpmap::Triangle), which are the index buffer. Content that changes is copied there, with
+	 * nothing worked out on the CPU. Drawing only gives where to draw, the source offset and the
+	 * periods. See vs_warp.hlsl and warp.hlsl for what the shaders do with it.
 	 *
 	 * Needs the device set by DX12Backend::setDevice().
 	 */
@@ -57,7 +59,7 @@ namespace wax
 		//.____ Creation __________________________________________
 
 		static DX12Warpmap_p	create(const Blueprint& blueprint);
-		static DX12Warpmap_p	create(const Blueprint& blueprint, const CoordSPX * pNodes, int pitch = 0);
+		static DX12Warpmap_p	create(const Blueprint& blueprint, const Vertex * pVertices, const Triangle * pTriangles);
 
 		//.____ Identification __________________________________________
 
@@ -66,17 +68,17 @@ namespace wax
 
 	protected:
 
-		DX12Warpmap(const Blueprint& bp, const CoordSPX * pNodes = nullptr, int pitch = 0);
+		DX12Warpmap(const Blueprint& bp, const Vertex * pVertices = nullptr, const Triangle * pTriangles = nullptr);
 		~DX12Warpmap();
 
-		void	_nodesUpdated(const RectI& region) override;
-
-		inline SizeI	_cells() const { return { m_nodes.w - 1, m_nodes.h - 1 }; }
+		void	_updated(int firstVertex, int nVertices, int firstTriangle, int nTriangles) override;
 
 		D3D12_GPU_VIRTUAL_ADDRESS	_gpuAddress() const { return m_buffer ? m_buffer->GetGPUVirtualAddress() : 0; }
+		D3D12_INDEX_BUFFER_VIEW		_indexBufferView() const;
 
 		Microsoft::WRL::ComPtr<ID3D12Resource>	m_buffer;
-		float *	m_pBuffer = nullptr;			// Permanently mapped content of m_buffer.
+		uint8_t *	m_pBuffer = nullptr;			// Permanently mapped content of m_buffer.
+		size_t		m_indexOffset = 0;				// Where the triangles start in m_buffer, in bytes.
 	};
 
 } // namespace wax
