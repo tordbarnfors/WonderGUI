@@ -130,3 +130,13 @@ module nokogiri), since neither was available on the machine.
 The UTF-8 text system was built and tested on Linux (SDL2 software and OpenGL) and has
 been run on Win32/DX12. The macOS frameworks (Cocoa software/Metal, SDL2 Metal) haven't
 been built with it yet.
+
+## Graphics
+
+### Tiling SoftSurfaces only wrap correctly at power-of-two sizes
+
+SoftBackend wraps tiling surfaces with a bit mask, so a tiling surface whose width or height
+isn't a power of two repeats at the next power of two instead, unlike the GPU backends. Warps
+and tiled blits from such surfaces differ between backends.
+
+`wax/extensions/softgfx/wax_softbackend.cpp` (and the warp code in `wax_softbackend_warp.cpp`)
