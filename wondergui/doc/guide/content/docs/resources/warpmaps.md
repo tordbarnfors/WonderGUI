@@ -59,7 +59,7 @@ CircularWarp makes and keeps a Warpmap that bends the source around a circle: it
 	pDevice->warpDrawEdgemap( { 10*64, 10*64 }, pGauge->generate(), pEdgemap );
 ```
 
-The cell size decides how closely the Warpmap follows the circle and is calculated from *precision* (largest position error in pixels) at the smaller radius unless set, see [WarpGenerators](#warpgenerators). For a disc, precision is kept from half its radius and outwards. A radius of 0 gives a disc, which only works for content that doesn't change from left to right close to the center.
+The Warpmap is a ring of sectors, split into parts across the ring, which goes all the way around and a pixel beyond both radii whatever the sweep, so that the ring can be turned by an offset. How many sectors and parts it takes is calculated from *precision* (largest position error in pixels) unless *cellSize* is set: its width is then the length of a sector along the outer edge and its height how far across the ring a part goes. A radius of 0 gives a disc, where the sectors meet in the center, which only works for content that doesn't change much from left to right close to the center.
 
 To turn the ring, draw it with the offset from `rotationOffset()` rather than generating it again. It turns the ring by a number of degrees, clockwise if positive, as if *startAngle* was that much larger, which costs nothing but the draw:
 
@@ -87,7 +87,9 @@ RoundedRectWarp makes and keeps a Warpmap that bends the source around the outli
 	pDevice->warpDrawEdgemap( { 10*64, 10*64 }, pFocusRing->generate(), pEdgemap, pFocusRing->shiftOffset(part) );		// Marching ants.
 ```
 
-Positions along the outline are those of the nearest point on it. The source keeps its width along the straight sides and is spread or squeezed around the corners, more the further from the outline, so placing the outline in the middle of the band gives the most even result. Corners stay round on the outside. On the inside they become mitered like a picture frame where the band goes deeper than *cornerRadius*, and since a Warpmap interpolates across the miter, that takes small cells to look clean. *cornerRadius* is limited to half the shorter side of *rect*, so a square with corners of half its side is a circle.
+Positions along the outline are those of the nearest point on it. The source keeps its width along the straight sides and is spread or squeezed around the corners, more the further from the outline, so placing the outline in the middle of the band gives the most even result. Corners stay round on the outside. On the inside they become mitered like a picture frame where the band goes deeper than *cornerRadius*. *cornerRadius* is limited to half the shorter side of *rect*, so a square with corners of half its side is a circle.
+
+The Warpmap follows the outline: a quad across the band for each straight side, which is exact, and sectors split into parts across the band around the corners, as many as *precision* takes, or as set by *cellSize* as for CircularWarp. It goes all the way around and a pixel beyond the band, whatever the sweep.
 
 `shiftOffset()` gives the offset that moves the source along the outline by a part of it, clockwise if positive, as if *start* was that much larger. Both offsets go by the sweep and source size of the generated Warpmap.
 
@@ -110,7 +112,7 @@ CylinderWarp makes and keeps a Warpmap that wraps the source around a cylinder s
 	pDevice->warpBlit( { 10*64, 10*64 }, pMap, pReel->rotationOffset(angle) );
 ```
 
-`rotationOffset()` turns the cylinder by a number of degrees as if *startAngle* was that much larger, so a spinning reel is generated once. Positions change linearly along the axis, so cells span the length of the cylinder unless set, and across it the cell size is calculated from *precision* at the rims, where the cylinder curves away the most. A *span* close to 180 degrees therefore takes small cells. The view is straight from the side, without perspective, and the cylinder isn't shaded: draw it with a tint that gets darker towards the rims for that.
+`rotationOffset()` turns the cylinder by a number of degrees as if *startAngle* was that much larger, so a spinning reel is generated once. The Warpmap is a row of strips along the axis, where positions change linearly. Across it strips are as wide as *precision* allows, wide in the middle and narrower towards the rims, where the cylinder curves away the most, unless *cellSize* sets their width. A *span* close to 180 degrees therefore takes many strips. The view is straight from the side, without perspective, and the cylinder isn't shaded: draw it with a tint that gets darker towards the rims for that.
 
 
 
@@ -154,13 +156,13 @@ The Warpmap is the shape of the corners, made about a pixel larger so that its b
 
 ## WarpGenerators
 
-CircularWarp, RoundedRectWarp, CylinderWarp and PerspectiveWarp are WarpGenerators: they make a Warpmap from a few settings and keep it. Size, source size and generate() are the same for all WarpGenerators, and cell size and precision for those that make the Warpmap from a grid.
+CircularWarp, RoundedRectWarp, CylinderWarp and PerspectiveWarp are WarpGenerators: they make a Warpmap from a few settings and keep it. Size, source size, cell size, precision and generate() are the same for all WarpGenerators, though cell size and precision don't apply to PerspectiveWarp, which is exact.
 
-generate() updates the Warpmap after settings have changed and returns it. A Warpmap that is held elsewhere, such as by a draw that isn't rendered yet, is never changed: generate() then makes a new one, as it does when size, cell size or the number of triangles has changed. So draw what generate() returns rather than keeping it, and one generator can be drawn several times with different settings within the same canvas update.
+generate() updates the Warpmap after settings have changed and returns it. A Warpmap that is held elsewhere, such as by a draw that isn't rendered yet, is never changed: generate() then makes a new one, as it does when size, cell size or the number of vertices and triangles has changed. Settings that change the shape, such as the radii of a CircularWarp, can change that, while angles and offsets don't. So draw what generate() returns rather than keeping it, and one generator can be drawn several times with different settings within the same canvas update.
 
-For now, generators other than PerspectiveWarp calculate the position in the source at the nodes of a grid, one node every *cellSize.w* pixels horizontally and *cellSize.h* pixels vertically plus one at the right and bottom edge, and make the Warpmap from that with two triangles for each cell of the grid. Unless set, the cell size is calculated from *precision* and the shape: within 4 to 64 pixels along curves, and up to the size of the Warpmap along axes where positions change linearly. Width and height can be set separately, a 0 for either has it calculated. Positions are linear within each triangle, so a circle of radius r is off by roughly cellSize² / (4 * r) pixels, along the diagonals of the cells.
+To make your own, subclass WarpGenerator and override _meshSize(), which gives the number of vertices and triangles, and _generateMesh(), which fills them in. Override _uPeriod() and _vPeriod() if an axis is periodic, and set *m_bDirty* when one of your settings changes.
 
-To make your own, subclass WarpGenerator and implement _generateNodes(), which fills in the positions of all nodes, and _calcCellSize(), which picks the width and height of cells from *precision*. _cellSizeForRadius() gives the cell size for a curve of a given radius. Override _uPeriod() and _vPeriod() if an axis is periodic, and set *m_bDirty* when one of your settings changes. A generator can also make its own triangles rather than a grid, as PerspectiveWarp does, by overriding _meshSize() and _generateMesh().
+Or, simpler, let it make the Warpmap from a grid: implement _generateNodes(), which fills in the positions in the source at the nodes of a grid, one every *cellSize.w* pixels horizontally and *cellSize.h* pixels vertically plus one at the right and bottom edge, and _calcCellSize(), which picks the cell size from *precision*. _cellSizeForRadius() gives the cell size for a curve of a given radius. Each cell is then two triangles, so a circle of radius r is off by roughly cellSize² / (4 * r) pixels, along the diagonals of the cells.
 
 
 

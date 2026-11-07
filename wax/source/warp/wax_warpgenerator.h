@@ -26,6 +26,8 @@
 #include <wax_warpmap.h>
 #include <wax_warpmapfactory.h>
 
+#include <vector>
+
 namespace wax
 {
 	class WarpGenerator;
@@ -164,6 +166,30 @@ namespace wax
 		// Makes vertices and triangles from the nodes, see generate().
 
 		void			_gridToMesh( const CoordSPX * pNodes, SizeI nodes, SizeI cellSize, spx uPeriod, spx vPeriod, Warpmap::Vertex * pVertices, Warpmap::Triangle * pTriangles ) const;
+
+		// A band along the outline of a rounded rectangle, or a circle with ax and ay 0, with the
+		// width of the source along the outline and its height across, for CircularWarp and
+		// RoundedRectWarp. A position is placed by the point of the outline nearest to it: its
+		// position along the outline and the distance to it. Lengths are in 1/256 spx.
+
+		struct OutlineBand
+		{
+			int64_t		cx, cy;			// Center of the outline, from the top-left corner of the Warpmap.
+			int64_t		ax, ay;			// Half the width and height of the outline, less the radius of the corners.
+			int64_t		radius;			// Of the corners.
+			int64_t		top, bottom;	// Distances from the outline of the top and bottom of the source, positive outwards.
+			uint32_t	start;			// Where the left side of the source is, in 1/2^32 of the outline clockwise from the middle of the top side.
+			double		sweep;			// Part of the outline covered by the width of the source, negative counter clockwise.
+		};
+
+		// Corners split into nArc sectors and the band into nAcross parts across it, from cellSize
+		// if set, otherwise from precision. cellSize.w is then the length of a sector along the outer
+		// edge of the band and cellSize.h the distance across a part, which _bandCellSize() gives
+		// when calculated.
+
+		void			_bandLayout( const OutlineBand& band, int& nArc, int& nAcross ) const;
+		SizeI			_bandCellSize( const OutlineBand& band ) const;
+		void			_bandMesh( const OutlineBand& band, std::vector<Warpmap::Vertex>& vertices, std::vector<Warpmap::Triangle>& triangles ) const;
 
 		virtual spx		_uPeriod() const { return 0; }			// In spx of the source, 0 = not periodic.
 		virtual spx		_vPeriod() const { return 0; }

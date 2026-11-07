@@ -62,76 +62,35 @@ namespace
 		Warpmap_p _created(Warpmap* p) { created++; return p; }
 	};
 
-	// The grid of nodes that a WarpGenerator made a Warpmap from, read back from its vertices: four
-	// for each cell, cells row by row, corners top-left, top-right, bottom-right and bottom-left
-	// (see WarpGenerator::_gridToMesh()). Values on periodic axes are brought into 0 -> period.
-	// positionAt() reads the triangles, which split cells from top-left to bottom-right.
+	// Position at point x,y (pixels) of a Warpmap, from the triangle it is in. False outside them.
 
-	class Grid
+	bool positionAt(const Warpmap* pMap, double x, double y, CoordF& pos)
 	{
-	public:
-		Grid(const Warpmap* pMap) : m_pMap(pMap)
+		int triangle = pMap->triangleAt({ spx(std::floor(x * 64)), spx(std::floor(y * 64)) });
+		return triangle >= 0 && pMap->positionIn(triangle, x, y, pos);
+	}
+
+	CoordF positionAt(const Warpmap* pMap, double x, double y)
+	{
+		CoordF pos = { -1e30f, -1e30f };
+		positionAt(pMap, x, y, pos);
+		return pos;
+	}
+
+	// If no triangle has any area, so nothing is drawn.
+
+	bool drawsNothing(const Warpmap* pMap)
+	{
+		const Warpmap::Vertex* v = pMap->vertexData();
+		for (int t = 0; t < pMap->triangleCount(); t++)
 		{
-			const Warpmap::Vertex* p = pMap->vertexData();
-			int nCells = pMap->vertexCount() / 4;
-
-			m_cells.w = 0;
-			while (m_cells.w < nCells && p[m_cells.w * 4].y == p[0].y)
-				m_cells.w++;
-			m_cells.h = nCells / m_cells.w;
-
-			m_nodes = { m_cells.w + 1, m_cells.h + 1 };
-			m_cellSize = { (p[1].x - p[0].x) / 64, (p[3].y - p[0].y) / 64 };
-			m_data.resize(m_nodes.w * m_nodes.h);
-			m_x.resize(m_nodes.w);
-			m_y.resize(m_nodes.h);
-
-			auto wrap = [](spx value, spx period) { return period > 0 ? ((value % period) + period) % period : value; };
-
-			for (int row = 0; row < m_nodes.h; row++)
-				for (int col = 0; col < m_nodes.w; col++)
-				{
-					int cellCol = std::min(col, m_cells.w - 1);
-					int cellRow = std::min(row, m_cells.h - 1);
-					bool bRight = col > cellCol, bBottom = row > cellRow;
-					int corner = bBottom ? (bRight ? 2 : 3) : (bRight ? 1 : 0);
-
-					const Warpmap::Vertex& v = p[(cellRow * m_cells.w + cellCol) * 4 + corner];
-					m_data[row * m_nodes.w + col] = { wrap(v.u, pMap->uPeriod()), wrap(v.v, pMap->vPeriod()) };
-					m_x[col] = v.x / 64;
-					m_y[row] = v.y / 64;
-				}
+			const Warpmap::Triangle& tri = pMap->triangleData()[t];
+			int64_t area = int64_t(v[tri.b].x - v[tri.a].x) * (v[tri.c].y - v[tri.a].y) - int64_t(v[tri.b].y - v[tri.a].y) * (v[tri.c].x - v[tri.a].x);
+			if (area != 0)
+				return false;
 		}
-
-		SizeI			nodes() const { return m_nodes; }
-		SizeI			cellSize() const { return m_cellSize; }
-		int				nodeX(int col) const { return m_x[col]; }
-		int				nodeY(int row) const { return m_y[row]; }
-		const CoordSPX*	nodeData() const { return m_data.data(); }
-
-		CoordF positionAt(double x, double y) const
-		{
-			int col = 0, row = 0;
-			while (col < m_cells.w - 1 && x >= m_x[col + 1])
-				col++;
-			while (row < m_cells.h - 1 && y >= m_y[row + 1])
-				row++;
-
-			double fx = (x - m_x[col]) / (m_x[col + 1] - m_x[col]);
-			double fy = (y - m_y[row]) / (m_y[row + 1] - m_y[row]);
-			int triangle = (row * m_cells.w + col) * 2 + (fx >= fy ? 0 : 1);
-
-			CoordF pos;
-			m_pMap->positionIn(triangle, x, y, pos);
-			return pos;
-		}
-
-	private:
-		const Warpmap*			m_pMap;
-		SizeI					m_cells, m_nodes, m_cellSize;
-		std::vector<CoordSPX>	m_data;
-		std::vector<int>		m_x, m_y;
-	};
+		return true;
+	}
 
 	// Exact position (spx of the source) of CircularWarp at point x,y (pixels), u counted from
 	// startAngle in the direction of sweep and wrapped into a turn. The period of the Warpmap is
@@ -601,7 +560,8 @@ bool WarpmapTest::perspectivePositionTest(std::ostream& output)
 }
 
 //____ circularWarpTest() _____________________________________________________
-// CircularWarp against exact polar math.
+// CircularWarp against exact polar math: exact at the vertices, within precision between them, and
+// covering the ring and a pixel beyond it.
 
 bool WarpmapTest::circularWarpTest(std::ostream& output)
 {
@@ -614,7 +574,8 @@ bool WarpmapTest::circularWarpTest(std::ostream& output)
 		{ WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 300, 200 }, _.center = { 0.4f, 0.6f }, _.topRadius = 40 * 64, _.bottomRadius = 90 * 64,
 			   _.startAngle = -135.f, _.sweep = 270.f), 0.25f },																	// Arc.
 		{ WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 200, 200 }, _.topRadius = 30 * 64, _.bottomRadius = 99 * 64, _.sweep = -90.f, _.precision = 0.1f), 0.1f },	// Counter clockwise, repeats 4 times.
-		{ WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 160, 160 }, _.topRadius = 0, _.bottomRadius = 80 * 64), 0.25f }								// Disc.
+		{ WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 160, 160 }, _.topRadius = 0, _.bottomRadius = 80 * 64), 0.25f },								// Disc.
+		{ WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 400, 400 }, _.topRadius = 190 * 64, _.bottomRadius = 182 * 64), 0.25f }							// Thin and large.
 	};
 
 	for (auto& c : cases)
@@ -629,46 +590,51 @@ bool WarpmapTest::circularWarpTest(std::ostream& output)
 		double period = std::round(c_sourceSize.w * 360.0 / std::abs(c.bp.sweep));
 		TEST_ASSERT(pMap->uPeriod() == spx(period));
 
-		// Cell size from precision: sqrt(4 * precision * r) at the smaller radius, or half the radius of a disc.
-
-		double inner = std::min(c.bp.topRadius, c.bp.bottomRadius) / 64.0;
-		double detail = inner > 0 ? inner : std::max(c.bp.topRadius, c.bp.bottomRadius) / 64.0 / 2;
-		int expectedCell = std::clamp(int(std::sqrt(4.0 * c.bp.precision * detail)), 4, 64);
-		Grid grid(pMap);
-		TEST_ASSERT(grid.cellSize() == SizeI(expectedCell, expectedCell));
-		TEST_ASSERT(pWarp->cellSize() == SizeI(expectedCell, expectedCell));
-
-		// Exact at nodes.
-
-		SizeI nodes = grid.nodes();
-		for (int row = 0; row < nodes.h; row++)
-			for (int col = 0; col < nodes.w; col++)
-			{
-				if (grid.nodeX(col) == c.bp.center.x * c.bp.size.w && grid.nodeY(row) == c.bp.center.y * c.bp.size.h)
-					continue;																			// No angle at the center.
-
-				CoordF exact = exactCircular(c.bp, grid.nodeX(col), grid.nodeY(row));
-				CoordSPX node = grid.nodeData()[row * nodes.w + col];
-				TEST_ASSERT(uDiff(node.x, exact.x, period) <= 0.51 && near(node.y, exact.y, 0.51));		// Rounded to spx.
-			}
-
-		// Within precision between nodes, outside of the radius precision is kept from. Precision is
-		// in pixels, so we convert the errors in u and v (spx of the source) to pixels.
-
 		double rTop = c.bp.topRadius / 64.0, rBottom = c.bp.bottomRadius / 64.0;
+		double rInner = std::min(rTop, rBottom), rOuter = std::max(rTop, rBottom);
 		double cx = c.bp.center.x * c.bp.size.w, cy = c.bp.center.y * c.bp.size.h;
+
+		// Exact at the vertices, other than in the center of a disc, where the angle is undefined.
+
+		for (int i = 0; i < pMap->vertexCount(); i++)
+		{
+			const Warpmap::Vertex& v = pMap->vertexData()[i];
+			double x = v.x / 64.0, y = v.y / 64.0;
+			if (std::hypot(x - cx, y - cy) < 0.5)
+				continue;
+
+			// Measured on screen, since the vertex is rounded to spx.
+
+			CoordF exact = exactCircular(c.bp, x, y);
+			double r = std::hypot(x - cx, y - cy);
+			double tangential = uDiff(v.u, exact.x, period) / c_sourceSize.w * std::abs(c.bp.sweep) / 180.0 * M_PI * r;
+			double radial = std::abs(v.v - exact.y) / c_sourceSize.h * std::abs(rBottom - rTop);
+			if (tangential > 0.03 || radial > 0.03)
+				output << "Vertex at " << x << ", " << y << " is " << v.u << ", " << v.v << ", expected " << exact.x << ", " << exact.y << std::endl;
+			TEST_ASSERT(tangential <= 0.03 && radial <= 0.03);
+		}
+
+		// Within precision between them, as positions on screen, and every pixel of the ring and the
+		// pixel around it is in a triangle.
+
 		double maxError = 0;
 
 		for (double y = 0.5; y < c.bp.size.h; y += 1.0)
 			for (double x = 0.5; x < c.bp.size.w; x += 1.0)
 			{
 				double r = std::sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
-				if (r < detail || r > std::max(rTop, rBottom))
+				if (r > rOuter + 0.7 || r < rInner - 0.7)
+					continue;
+
+				CoordF pos;
+				if (!positionAt(pMap, x, y, pos))
+					output << "Pixel " << x << ", " << y << " is in no triangle" << std::endl;
+				TEST_ASSERT(positionAt(pMap, x, y, pos));
+
+				if (r < std::max(rInner, 4.0) || r > rOuter)
 					continue;
 
 				CoordF exact = exactCircular(c.bp, x, y);
-				CoordF pos = grid.positionAt(x, y);
-
 				double tangential = uDiff(pos.x, exact.x, period) / c_sourceSize.w * std::abs(c.bp.sweep) / 180.0 * M_PI * r;
 				double radial = std::abs(pos.y - exact.y) / c_sourceSize.h * std::abs(rBottom - rTop);
 				maxError = std::max(maxError, std::max(tangential, radial));
@@ -676,13 +642,15 @@ bool WarpmapTest::circularWarpTest(std::ostream& output)
 
 		if (maxError > c.tolerance * 1.5)
 			output << "Max position error " << maxError << " px, precision " << c.tolerance << std::endl;
-		TEST_ASSERT(maxError <= c.tolerance * 1.5);			// Estimate cell^2/(8r) is for the radial error, allow some slack.
+		TEST_ASSERT(maxError <= c.tolerance * 1.5);
 	}
 
-	// Explicit cell size overrides precision.
+	// Explicit cell size overrides precision: shorter sectors, more triangles.
 
-	auto pWarp = CircularWarp::create(WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 100, 100 }, _.topRadius = 10 * 64, _.bottomRadius = 50 * 64, _.cellSize = { 7, 7 }), pFactory);
-	TEST_ASSERT(Grid(pWarp->generate()).cellSize() == SizeI(7, 7));
+	auto pWarp = CircularWarp::create(WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 100, 100 }, _.topRadius = 10 * 64, _.bottomRadius = 50 * 64, _.cellSize = { 14, 14 }), pFactory);
+	int coarse = pWarp->generate()->triangleCount();
+	TEST_ASSERT(pWarp->setCellSize({ 7, 7 }) && pWarp->cellSize() == SizeI(7, 7));
+	TEST_ASSERT(pWarp->generate()->triangleCount() > coarse * 3);
 
 	// Invalid blueprints.
 
@@ -690,12 +658,10 @@ bool WarpmapTest::circularWarpTest(std::ostream& output)
 	TEST_ASSERT(CircularWarp::create(WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 0, 100 }), pFactory) == nullptr);
 	TEST_ASSERT(CircularWarp::create(WGBP(CircularWarp, _.size = { 100, 100 }), pFactory) == nullptr);		// No source size.
 
-	// Equal radii have no band to map the source onto, the nodes are clamped far outside it.
+	// Equal radii have no band to map the source onto, nothing is drawn.
 
-	auto pFlat = CircularWarp::create(WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 40, 40 }, _.cellSize = { 10, 10 }), pFactory);
-	Grid flat(pFlat->generate());
-	for (int i = 0; i < flat.nodes().w * flat.nodes().h; i++)
-		TEST_ASSERT(flat.nodeData()[i].y == -Warpmap::maxValue);
+	auto pFlat = CircularWarp::create(WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 40, 40 }), pFactory);
+	TEST_ASSERT(drawsNothing(pFlat->generate()));
 
 	return true;
 }
@@ -710,24 +676,27 @@ bool WarpmapTest::circularWarpGenerateTest(std::ostream& output)
 
 	TEST_ASSERT(pWarp->isInstanceOf(WarpGenerator::TYPEINFO));
 
-	// A Warpmap that nothing but the CircularWarp holds is updated in place.
+	// A Warpmap that nothing but the CircularWarp holds is updated in place, as long as it has as
+	// many vertices and triangles, which angles don't change.
 
 	Warpmap* pFirst = pWarp->generate().rawPtr();
 	TEST_ASSERT(pWarp->generate().rawPtr() == pFirst);						// Nothing changed.
 
 	TEST_ASSERT(pWarp->setRadii(25 * 64, 45 * 64));
+	Warpmap* pResized = pWarp->generate().rawPtr();
+
 	TEST_ASSERT(pWarp->setAngles(90.f, 180.f));
 	auto pMap1 = pWarp->generate();
-	TEST_ASSERT(pMap1.rawPtr() == pFirst);
+	TEST_ASSERT(pMap1.rawPtr() == pResized);
 	TEST_ASSERT(pMap1->uPeriod() == c_sourceSize.w * 2);
 
 	// Point straight right of center at radius 25 is u = 0 (90 degrees), v = 0.
 
-	CoordF pos = Grid(pMap1).positionAt(75, 50);
-	TEST_ASSERT(near(pos.x, 0.0, 1.0) && near(pos.y, 0.0, 1.0));
+	CoordF pos = positionAt(pMap1, 75, 50);
+	TEST_ASSERT(uDiff(pos.x, 0.0, pMap1->uPeriod()) <= 1.0 && near(pos.y, 0.0, 1.0));
 
 	// A Warpmap held elsewhere, as by a draw that isn't rendered yet, is left as it is and a new
-	// one is made. Source size scales the nodes and the period.
+	// one is made. Source size scales the content and the period.
 
 	int nVertices = pMap1->vertexCount();
 	std::vector<Warpmap::Vertex> before(nVertices), after(nVertices);
@@ -739,7 +708,7 @@ bool WarpmapTest::circularWarpGenerateTest(std::ostream& output)
 	auto pMap2 = pWarp->generate();
 	TEST_ASSERT(pMap2 != pMap1);
 	TEST_ASSERT(pMap2->uPeriod() == c_sourceSize.w);
-	TEST_ASSERT(pMap2->vertexData()[0].u != pMap1->vertexData()[0].u);
+	TEST_ASSERT(pMap2->vertexData()[1].u != pMap1->vertexData()[1].u);
 
 	pMap1->exportVertices(0, nVertices, after.data());
 	TEST_ASSERT(pMap1->uPeriod() == c_sourceSize.w * 2);
@@ -757,7 +726,7 @@ bool WarpmapTest::circularWarpGenerateTest(std::ostream& output)
 	TEST_ASSERT(pWarp->setCellSize({ 0, 0 }));
 	TEST_ASSERT(pWarp->setPrecision(1.f));
 	auto pMap4 = pWarp->generate();
-	TEST_ASSERT(pMap4 != pMap3 && Grid(pMap4).cellSize() == SizeI(int(std::sqrt(4.0 * 1.0 * 25)), int(std::sqrt(4.0 * 1.0 * 25))));		// At the smaller radius.
+	TEST_ASSERT(pMap4 != pMap3 && pMap4->triangleCount() < pMap3->triangleCount());
 
 	// Invalid values are refused.
 
@@ -784,28 +753,28 @@ bool WarpmapTest::generateUpdatesTest(std::ostream& output)
 
 	auto counts = [](Warpmap* p) { return static_cast<CountingWarpmap*>(p); };
 
-	// Created with its content, four vertices and two triangles for each cell.
+	// Created with its content.
 
 	Warpmap* pMap = pWarp->generate();
 	int vertices = pMap->vertexCount();
-	TEST_ASSERT(vertices == 10 * 8 * 4 && pMap->triangleCount() == 10 * 8 * 2);
+	int triangles = pMap->triangleCount();
 	TEST_ASSERT(pCounting->created == 1);
-	TEST_ASSERT(counts(pMap)->updates == 1 && counts(pMap)->verticesSent == vertices && counts(pMap)->trianglesSent == vertices / 2);
+	TEST_ASSERT(counts(pMap)->updates == 1 && counts(pMap)->verticesSent == vertices && counts(pMap)->trianglesSent == triangles);
 
-	// Updated in place, and with new periods.
+	// Updated in place, also with new periods.
 
 	auto sameAsNew = [&](Warpmap* pMap, const CircularWarp::Blueprint& bp)
 	{
 		auto pFresh = CircularWarp::create(bp, pSoft)->generate();
-		return pFresh->uPeriod() == pMap->uPeriod() && std::memcmp(pMap->vertexData(), pFresh->vertexData(), vertices * sizeof(Warpmap::Vertex)) == 0 &&
-			   std::memcmp(pMap->triangleData(), pFresh->triangleData(), vertices / 2 * sizeof(Warpmap::Triangle)) == 0;
+		return pFresh->uPeriod() == pMap->uPeriod() && pFresh->vertexCount() == vertices && pFresh->triangleCount() == triangles &&
+			   std::memcmp(pMap->vertexData(), pFresh->vertexData(), vertices * sizeof(Warpmap::Vertex)) == 0 &&
+			   std::memcmp(pMap->triangleData(), pFresh->triangleData(), triangles * sizeof(Warpmap::Triangle)) == 0;
 	};
 
-	TEST_ASSERT(pWarp->setRadii(25 * 64, 40 * 64));
+	TEST_ASSERT(pWarp->setAngles(10.f, 360.f));
 	TEST_ASSERT(pWarp->generate() == pMap);
 	TEST_ASSERT(counts(pMap)->updates == 2 && counts(pMap)->verticesSent == 2 * vertices);
-	bp.topRadius = 25 * 64;
-	bp.bottomRadius = 40 * 64;
+	bp.startAngle = 10.f;
 	TEST_ASSERT(sameAsNew(pMap, bp));
 
 	spx oldPeriod = pMap->uPeriod();
@@ -840,93 +809,125 @@ bool WarpmapTest::roundedRectWarpTest(std::ostream& output)
 {
 	auto pFactory = SoftWarpmapFactory::create();
 
-	// Outline of 100 x 60 pixels with corners of 12, in a band from 6 pixels inside it to 8 outside.
+	// Outline of 100 x 60 pixels with corners of 12, in a band from 6 pixels inside it to 8 outside,
+	// and the same with a band reaching 20 pixels inside, where corners are mitered.
 
-	const double cx = 70, cy = 50, hx = 50, hy = 30, r = 12, top = -6, bottom = 8;
-
-	auto pWarp = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 140, 100 }, _.sourceSize = c_sourceSize, _.rect = { 20 * 64, 20 * 64, 100 * 64, 60 * 64 },
-											  _.cornerRadius = 12 * 64, _.topDistance = -6 * 64, _.bottomDistance = 8 * 64, _.cellSize = { 5, 5 }), pFactory);
-	TEST_ASSERT(pWarp != nullptr);
-	TEST_ASSERT(pWarp->isInstanceOf(WarpGenerator::TYPEINFO));
-
-	auto pMap = pWarp->generate();
-	TEST_ASSERT(pMap->uPeriod() == c_sourceSize.w);
-
-	// Nodes are where the nearest point of the outline is. Nodes deeper inside than the corners,
-	// where they are mitered and the nearest point can be either side, are skipped.
-
+	const double cx = 70, cy = 50, hx = 50, hy = 30, r = 12, bottom = 8;
 	const double perimeter = 4 * (hx - r) + 4 * (hy - r) + 2 * M_PI * r;
 	auto outline = sampleOutline(hx, hy, r, 0.01);
 
-	Grid grid(pMap);
-	SizeI nodes = grid.nodes();
-	for (int row = 0; row < nodes.h; row++)
-		for (int col = 0; col < nodes.w; col++)
+	for (double top : { -6.0, -20.0 })
+	{
+		auto pWarp = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 140, 100 }, _.sourceSize = c_sourceSize, _.rect = { 20 * 64, 20 * 64, 100 * 64, 60 * 64 },
+												  _.cornerRadius = 12 * 64, _.topDistance = spx(top * 64), _.bottomDistance = spx(bottom * 64)), pFactory);
+		TEST_ASSERT(pWarp != nullptr);
+		TEST_ASSERT(pWarp->isInstanceOf(WarpGenerator::TYPEINFO));
+
+		auto pMap = pWarp->generate();
+		TEST_ASSERT(pMap->uPeriod() == c_sourceSize.w);
+
+		// Vertices are where the nearest point of the outline is. Those on the diagonals of mitered
+		// corners, where the nearest point can be either side, and in the centers of corners, where
+		// the position along the outline is that of the middle of their sector, are skipped.
+
+		for (int i = 0; i < pMap->vertexCount(); i++)
 		{
-			double x = grid.nodeX(col) - cx, y = grid.nodeY(row) - cy;
-			if (std::abs(x) < hx - r && std::abs(y) < hy - r)
+			const Warpmap::Vertex& v = pMap->vertexData()[i];
+			double x = v.x / 64.0 - cx, y = v.y / 64.0 - cy;
+
+			double qx = std::abs(x) - (hx - r), qy = std::abs(y) - (hy - r);
+			if (std::abs(qx - qy) < 0.1 && qx <= 0.05 && qy <= 0.05)
+				continue;
+			if (std::hypot(qx, qy) < 0.1)
 				continue;
 
 			double pos, dist;
 			nearestOnOutline(outline, hx, hy, r, x, y, pos, dist);
 
-			CoordSPX node = grid.nodeData()[row * nodes.w + col];
-			double nodePos = node.x / double(c_sourceSize.w) * perimeter;
-			double nodeDist = node.y / double(c_sourceSize.h) * (bottom - top) + top;
+			double vertexPos = v.u / double(c_sourceSize.w) * perimeter;
+			double vertexDist = v.v / double(c_sourceSize.h) * (bottom - top) + top;
 
-			if (uDiff(nodePos, pos, perimeter) > 0.05 || !near(nodeDist, dist, 0.05))
-				output << "Node at " << x << ", " << y << " is " << nodePos << ", " << nodeDist << ", nearest point " << pos << ", " << dist << std::endl;
-			TEST_ASSERT(uDiff(nodePos, pos, perimeter) <= 0.05 && near(nodeDist, dist, 0.05));
+			if (uDiff(vertexPos, pos, perimeter) > 0.05 || !near(vertexDist, dist, 0.05))
+				output << "Vertex at " << x << ", " << y << " is " << vertexPos << ", " << vertexDist << ", nearest point " << pos << ", " << dist << std::endl;
+			TEST_ASSERT(uDiff(vertexPos, pos, perimeter) <= 0.05 && near(vertexDist, dist, 0.05));
 		}
+
+		// Within precision between them, away from the mitered diagonals, and every pixel of the band
+		// and around it is in a triangle.
+
+		double maxError = 0;
+		for (double y = 0.5; y < 100; y += 1.0)
+			for (double x = 0.5; x < 140; x += 1.0)
+			{
+				double pos, dist;
+				nearestOnOutline(outline, hx, hy, r, x - cx, y - cy, pos, dist);
+				if (dist < top - 0.7 || dist > bottom + 0.7)
+					continue;
+
+				CoordF p;
+				if (!positionAt(pMap, x, y, p))
+					output << "Pixel " << x << ", " << y << " is in no triangle" << std::endl;
+				TEST_ASSERT(positionAt(pMap, x, y, p));
+
+				double qx = std::abs(x - cx) - (hx - r), qy = std::abs(y - cy) - (hy - r);
+				if (dist < top || dist > bottom || (qx < 1 && qy < 1 && std::abs(qx - qy) < 1.5))
+					continue;
+
+				double along = uDiff(p.x / double(c_sourceSize.w) * perimeter, pos, perimeter);
+				double across = std::abs(p.y / double(c_sourceSize.h) * (bottom - top) + top - dist);
+				maxError = std::max(maxError, std::max(along, across));
+			}
+
+		if (maxError > 0.25 * 1.5)
+			output << "Max position error " << maxError << " px" << std::endl;
+		TEST_ASSERT(maxError <= 0.25 * 1.5);
+	}
 
 	// Start and sweep. The middle of the right side is a quarter of the way round, where the source
 	// starts with a start of 0.25. A sweep of 0.5 makes the period twice the width of the source.
 
+	const double top = -6;
+	auto pWarp = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 140, 100 }, _.sourceSize = c_sourceSize, _.rect = { 20 * 64, 20 * 64, 100 * 64, 60 * 64 },
+											  _.cornerRadius = 12 * 64, _.topDistance = -6 * 64, _.bottomDistance = 8 * 64), pFactory);
+
 	TEST_ASSERT(pWarp->setSpan(0.25f, 0.5f));
-	pMap = pWarp->generate();
+	auto pMap = pWarp->generate();
 	TEST_ASSERT(pMap->uPeriod() == c_sourceSize.w * 2);
 
-	CoordF right = Grid(pMap).positionAt(cx + hx, cy);
-	TEST_ASSERT(near(right.x, 0, 1) && near(right.y, -top / (bottom - top) * c_sourceSize.h, 1));
+	CoordF right = positionAt(pMap, cx + hx - 0.5, cy);
+	TEST_ASSERT(uDiff(right.x, 0, pMap->uPeriod()) <= 1 && near(right.y, -(top + 0.5) / (bottom - top) * c_sourceSize.h, 1));
 
-	CoordF below = Grid(pMap).positionAt(cx, cy + hy + 4);							// Middle of the bottom side, half way round.
-	TEST_ASSERT(near(below.x, c_sourceSize.w * 0.5, 1) && near(below.y, (4 - top) / (bottom - top) * c_sourceSize.h, 1));
+	CoordF below = positionAt(pMap, cx, cy + hy + 4);							// Middle of the bottom side, half way round.
+	TEST_ASSERT(uDiff(below.x, c_sourceSize.w * 0.5, pMap->uPeriod()) <= 1 && near(below.y, (4 - top) / (bottom - top) * c_sourceSize.h, 1));
 
 	// A square with corners of half its side is a circle, the same as a CircularWarp.
 
 	auto pCircle = CircularWarp::create(WGBP(CircularWarp, _.size = { 100, 100 }, _.sourceSize = c_sourceSize, _.topRadius = 45 * 64, _.bottomRadius = 20 * 64,
-											 _.cellSize = { 6, 6 }, _.startAngle = 30.f, _.sweep = -270.f), pFactory)->generate();
+											 _.startAngle = 30.f, _.sweep = -270.f), pFactory)->generate();
 	auto pRounded = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 100, 100 }, _.sourceSize = c_sourceSize, _.rect = { 20 * 64, 20 * 64, 60 * 64, 60 * 64 },
-												 _.cornerRadius = 30 * 64, _.topDistance = 15 * 64, _.bottomDistance = -10 * 64, _.cellSize = { 6, 6 },
+												 _.cornerRadius = 30 * 64, _.topDistance = 15 * 64, _.bottomDistance = -10 * 64,
 												 _.start = 30.f / 360, _.sweep = -0.75f), pFactory)->generate();
 
 	TEST_ASSERT(pRounded->uPeriod() == pCircle->uPeriod());
-	Grid circle(pCircle), rounded(pRounded);
-	TEST_ASSERT(rounded.nodes() == circle.nodes());
+	TEST_ASSERT(pRounded->vertexCount() == pCircle->vertexCount() && pRounded->triangleCount() == pCircle->triangleCount());
 
-	nodes = circle.nodes();
-	for (int i = 0; i < nodes.w * nodes.h; i++)
+	for (int i = 0; i < pCircle->vertexCount(); i++)
 	{
-		CoordSPX a = circle.nodeData()[i], b = rounded.nodeData()[i];
-		TEST_ASSERT(uDiff(a.x, b.x, pCircle->uPeriod()) <= 1 && std::abs(a.y - b.y) <= 1);
+		const Warpmap::Vertex& a = pCircle->vertexData()[i];
+		const Warpmap::Vertex& b = pRounded->vertexData()[i];
+		TEST_ASSERT(std::abs(a.x - b.x) <= 1 && std::abs(a.y - b.y) <= 1 && uDiff(a.u, b.u, pCircle->uPeriod()) <= 1 && std::abs(a.v - b.v) <= 1);
 	}
 
-	// Cell size from precision at the tightest corner of the band: the corner radius less the
-	// distance inwards. Sharp corners take half the radius of the outer edge, as a disc.
+	// Less precision, fewer triangles. The straight sides take the same anyway.
 
 	auto pAuto = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 140, 100 }, _.sourceSize = c_sourceSize, _.rect = { 20 * 64, 20 * 64, 100 * 64, 60 * 64 },
 											  _.cornerRadius = 12 * 64, _.topDistance = -6 * 64, _.bottomDistance = 8 * 64, _.precision = 2.f), pFactory);
-	TEST_ASSERT(pAuto->cellSize() == SizeI(int(std::sqrt(4.0 * 2 * 6)), int(std::sqrt(4.0 * 2 * 6))));
-	TEST_ASSERT(pAuto->setOutline({ 20 * 64, 20 * 64, 100 * 64, 60 * 64 }, 0));
-	TEST_ASSERT(pAuto->setDistances(0, 8 * 64));
-	TEST_ASSERT(pAuto->cellSize() == SizeI(int(std::sqrt(4.0 * 2 * 4)), int(std::sqrt(4.0 * 2 * 4))));
+	TEST_ASSERT(pAuto->generate()->triangleCount() < pWarp->generate()->triangleCount());
 
-	// Equal distances have no band to map the source onto, the nodes are clamped far outside it.
+	// Equal distances have no band to map the source onto, nothing is drawn.
 
-	auto pFlat = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 40, 40 }, _.sourceSize = c_sourceSize, _.rect = { 640, 640, 1280, 1280 }, _.cellSize = { 10, 10 }), pFactory);
-	Grid flat(pFlat->generate());
-	for (int i = 0; i < flat.nodes().w * flat.nodes().h; i++)
-		TEST_ASSERT(flat.nodeData()[i].y == -Warpmap::maxValue);
+	auto pFlat = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 40, 40 }, _.sourceSize = c_sourceSize, _.rect = { 640, 640, 1280, 1280 }), pFactory);
+	TEST_ASSERT(drawsNothing(pFlat->generate()));
 
 	// Invalid values are refused.
 
@@ -983,14 +984,18 @@ bool WarpmapTest::nodeCompressionTest(std::ostream& output)
 		return size;
 	};
 
-	// Nodes of a ring, less than a third of their raw size (about 2.3 of 8 bytes per node).
+	// Nodes of a ring on a grid, less than a third of their raw size (about 2.3 of 8 bytes per node).
 
-	auto pMap = CircularWarp::create(WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 200, 160 }, _.topRadius = 78 * 64, _.bottomRadius = 30 * 64,
-		_.startAngle = 20.f, _.sweep = 300.f, _.cellSize = { 6, 6 }), SoftWarpmapFactory::create())->generate();
-
-	Grid grid(pMap);
-	SizeI nodes = grid.nodes();
-	std::vector<int32_t> ring((const int32_t*) grid.nodeData(), (const int32_t*) (grid.nodeData() + nodes.w * nodes.h));
+	const SizeI nodes = { 35, 28 };
+	std::vector<int32_t> ring;
+	for (int row = 0; row < nodes.h; row++)
+		for (int col = 0; col < nodes.w; col++)
+		{
+			double x = col * 6 - 100.0, y = row * 6 - 80.0;
+			double angle = std::atan2(x, -y) / (2 * M_PI);
+			ring.push_back(int32_t(std::lround((angle - std::floor(angle)) * c_sourceSize.w * 1.2)));
+			ring.push_back(int32_t(std::lround((std::hypot(x, y) - 78) / -48 * c_sourceSize.h)));
+		}
 
 	int size = roundTrip(ring, nodes.w);
 	TEST_ASSERT(size > 0);
@@ -1061,21 +1066,18 @@ bool WarpmapTest::offsetTest(std::ostream& output)
 
 	// Turning by offset gives the nodes of a larger start, give or take rounding.
 
-	auto sameButOffset = [](Warpmap* pMovedMap, Warpmap* pBaseMap, spx offset, CoordF skip)
+	auto sameButOffset = [](Warpmap* pMoved, Warpmap* pBase, spx offset)
 	{
-		Grid base(pBaseMap), moved(pMovedMap);
-		SizeI nodes = base.nodes();
-		for (int row = 0; row < nodes.h; row++)
-			for (int col = 0; col < nodes.w; col++)
-			{
-				if (base.nodeX(col) == skip.x && base.nodeY(row) == skip.y)
-					continue;
+		if (pMoved->vertexCount() != pBase->vertexCount())
+			return false;
 
-				CoordSPX a = base.nodeData()[row * nodes.w + col];
-				CoordSPX b = moved.nodeData()[row * nodes.w + col];
-				if (uDiff(b.x, a.x + offset, pBaseMap->uPeriod()) > 1 || std::abs(b.y - a.y) > 1)
-					return false;
-			}
+		for (int i = 0; i < pBase->vertexCount(); i++)
+		{
+			const Warpmap::Vertex& a = pBase->vertexData()[i];
+			const Warpmap::Vertex& b = pMoved->vertexData()[i];
+			if (a.x != b.x || a.y != b.y || uDiff(b.u, a.u + offset, pBase->uPeriod()) > 1 || std::abs(b.v - a.v) > 1)
+				return false;
+		}
 		return true;
 	};
 
@@ -1085,7 +1087,7 @@ bool WarpmapTest::offsetTest(std::ostream& output)
 	spx offset = pBase->rotationOffset(45.f).x;
 	TEST_ASSERT(offset == -width * 45 / 300);
 	ringBP.startAngle += 45.f;
-	TEST_ASSERT(sameButOffset(CircularWarp::create(ringBP, pFactory)->generate(), pBase->generate(), offset, { 50, 50 }));
+	TEST_ASSERT(sameButOffset(CircularWarp::create(ringBP, pFactory)->generate(), pBase->generate(), offset));
 
 	// The same along a rounded rectangle, in parts of the outline.
 
@@ -1098,7 +1100,7 @@ bool WarpmapTest::offsetTest(std::ostream& output)
 	offset = pFrame->shiftOffset(0.125f).x;
 	TEST_ASSERT(offset == -width / 4);
 	frameBP.start += 0.125f;
-	TEST_ASSERT(sameButOffset(RoundedRectWarp::create(frameBP, pFactory)->generate(), pFrame->generate(), offset, { -1, -1 }));
+	TEST_ASSERT(sameButOffset(RoundedRectWarp::create(frameBP, pFactory)->generate(), pFrame->generate(), offset));
 
 	frameBP.sweep = -0.5f;
 	TEST_ASSERT(RoundedRectWarp::create(frameBP, pFactory)->shiftOffset(0.25f) == CoordSPX(width / 2, 0));
@@ -1106,37 +1108,31 @@ bool WarpmapTest::offsetTest(std::ostream& output)
 }
 
 //____ nonSquareCellsTest() ___________________________________________________
-// Cells of generators can have another width than height, and generators can calculate one and
-// have the other set.
+// The cell size of generators can be set with another width than height, or one of them set and
+// the other calculated.
 
 bool WarpmapTest::nonSquareCellsTest(std::ostream& output)
 {
-	// One set, the other calculated, and nodes at the same places whatever the cells.
-
 	auto pFactory = SoftWarpmapFactory::create();
-	auto bp = WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 96, 96 }, _.topRadius = 46 * 64, _.bottomRadius = 20 * 64, _.cellSize = { 6, 6 });
-	auto pSquare = CircularWarp::create(bp, pFactory)->generate();
+	auto bp = WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 96, 96 }, _.topRadius = 46 * 64, _.bottomRadius = 20 * 64, _.cellSize = { 12, 6 });
 
-	bp.cellSize = { 12, 0 };
 	auto pWarp = CircularWarp::create(bp, pFactory);
-	int calculated = int(std::sqrt(4.0 * 0.25 * 20));
-	TEST_ASSERT(pWarp->cellSize() == SizeI(12, calculated));
+	TEST_ASSERT(pWarp->cellSize() == SizeI(12, 6));
+	int wide = pWarp->generate()->triangleCount();
 
-	TEST_ASSERT(pWarp->setCellSize({ 12, 6 }));
-	Grid wide(pWarp->generate()), square(pSquare);
-	TEST_ASSERT(wide.cellSize() == SizeI(12, 6));
-	TEST_ASSERT(wide.nodes() == SizeI(9, 17));
+	TEST_ASSERT(pWarp->setCellSize({ 6, 12 }));
+	TEST_ASSERT(pWarp->cellSize() == SizeI(6, 12));
+	TEST_ASSERT(pWarp->generate()->triangleCount() != wide);
 
-	for (int row = 0; row < wide.nodes().h; row++)
-		for (int col = 0; col < wide.nodes().w; col++)
-			TEST_ASSERT(wide.nodeData()[row * wide.nodes().w + col] == square.nodeData()[row * square.nodes().w + col * 2]);
+	TEST_ASSERT(pWarp->setCellSize({ 12, 0 }));
+	TEST_ASSERT(pWarp->cellSize().w == 12 && pWarp->cellSize().h > 0);
 
 	TEST_ASSERT(!pWarp->setCellSize({ 4, -1 }));
 
 	// A calculated size is at most the size of the Warpmap.
 
 	auto pSmall = CircularWarp::create(WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 30, 10 }, _.topRadius = 5000 * 64, _.bottomRadius = 4000 * 64), pFactory);
-	TEST_ASSERT(pSmall->cellSize() == SizeI(30, 10));
+	TEST_ASSERT(pSmall->cellSize().w <= 30 && pSmall->cellSize().h <= 10);
 	return true;
 }
 
@@ -1208,26 +1204,31 @@ bool WarpmapTest::cylinderWarpTest(std::ostream& output)
 		spx period = spx(std::round(g.period));
 		TEST_ASSERT(pMap->uPeriod() == (bX ? 0 : period) && pMap->vPeriod() == (bX ? period : 0));
 
-		// One cell along the axis, across it from precision at the rims.
+		// Strips along the axis, from one end to the other, narrower towards the rims.
 
-		double rim = bp.span / 2 * M_PI / 180;
-		int across = std::clamp(int(std::sqrt(4.0 * bp.precision * g.radius * std::cos(rim) * std::cos(rim) / std::sin(rim))), 4, 64);
-		Grid grid(pMap);
-		TEST_ASSERT(grid.cellSize() == (bX ? SizeI(bp.size.w, across) : SizeI(across, bp.size.h)));
-		TEST_ASSERT(grid.nodes() == (bX ? SizeI(2, grid.nodes().h) : SizeI(grid.nodes().w, 2)));
+		int nStrips = pMap->vertexCount() / 2 - 1;
+		TEST_ASSERT(pMap->vertexCount() == (nStrips + 1) * 2 && pMap->triangleCount() == nStrips * 2);
 
-		// Exact at nodes.
+		auto acrossAt = [&](int i) { const Warpmap::Vertex& v = pMap->vertexData()[i * 2]; return (bX ? v.y : v.x) / 64.0; };
+		double middleStrip = 0, rimStrip = acrossAt(1) - acrossAt(0);
+		for (int i = 0; i < nStrips; i++)
+		{
+			double a0 = acrossAt(i), a1 = acrossAt(i + 1);
+			if (a0 <= g.lengthAcross / 2 && a1 >= g.lengthAcross / 2)
+				middleStrip = a1 - a0;
+		}
+		TEST_ASSERT(middleStrip > rimStrip);
 
-		SizeI nodes = grid.nodes();
-		for (int row = 0; row < nodes.h; row++)
-			for (int col = 0; col < nodes.w; col++)
-			{
-				CoordF exact = exactCylinder(bp, grid.nodeX(col), grid.nodeY(row));
-				CoordSPX node = grid.nodeData()[row * nodes.w + col];
-				TEST_ASSERT(uDiff(node.x, exact.x, pMap->uPeriod()) <= 0.51 && uDiff(node.y, exact.y, pMap->vPeriod()) <= 0.51);
-			}
+		// Exact at the vertices.
 
-		// Within precision between nodes, as positions on screen: an error in angle of da (radians)
+		for (int i = 0; i < pMap->vertexCount(); i++)
+		{
+			const Warpmap::Vertex& v = pMap->vertexData()[i];
+			CoordF exact = exactCylinder(bp, v.x / 64.0, v.y / 64.0);
+			TEST_ASSERT(uDiff(v.u, exact.x, pMap->uPeriod()) <= 0.51 && uDiff(v.v, exact.y, pMap->vPeriod()) <= 0.51);
+		}
+
+		// Within precision between them, as positions on screen: an error in angle of da (radians)
 		// is R * cos(angle) * da pixels across.
 
 		double maxError = 0.0;
@@ -1235,7 +1236,7 @@ bool WarpmapTest::cylinderWarpTest(std::ostream& output)
 			for (double l : { 0.5, g.lengthAlong / 2 })
 			{
 				double x = bX ? l : a, y = bX ? a : l;
-				CoordF pos = grid.positionAt(x, y);
+				CoordF pos = positionAt(pMap, x, y);
 				CoordF exact = exactCylinder(bp, x, y);
 				double diff = bX ? uDiff(pos.y, exact.y, pMap->vPeriod()) : uDiff(pos.x, exact.x, pMap->uPeriod());
 				double angle = cylinderAngle(g, a) * M_PI / 180;
@@ -1258,11 +1259,13 @@ bool WarpmapTest::cylinderWarpTest(std::ostream& output)
 
 		auto turnedBP = bp;
 		turnedBP.startAngle += 20.f;
-		Grid turned(CylinderWarp::create(turnedBP, pFactory)->generate());
-		for (int i = 0; i < nodes.w * nodes.h; i++)
+		auto pTurned = CylinderWarp::create(turnedBP, pFactory)->generate();
+		TEST_ASSERT(pTurned->vertexCount() == pMap->vertexCount());
+		for (int i = 0; i < pMap->vertexCount(); i++)
 		{
-			CoordSPX a = grid.nodeData()[i], b = turned.nodeData()[i];
-			TEST_ASSERT(uDiff(b.x, a.x + offset.x, pMap->uPeriod()) <= 1 && uDiff(b.y, a.y + offset.y, pMap->vPeriod()) <= 1);
+			const Warpmap::Vertex& a = pMap->vertexData()[i];
+			const Warpmap::Vertex& b = pTurned->vertexData()[i];
+			TEST_ASSERT(uDiff(b.u, a.u + offset.x, pMap->uPeriod()) <= 1 && uDiff(b.v, a.v + offset.y, pMap->vPeriod()) <= 1);
 		}
 	}
 

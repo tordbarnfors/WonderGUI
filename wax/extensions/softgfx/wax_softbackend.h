@@ -404,7 +404,8 @@ namespace wax
 		{
 			const SoftWarpmap::Setup*	pSetup;
 			int			kind;			// Of all of it, c_warpMixed if it varies or with perspective.
-			WarpEdge	edges[3];
+			WarpEdge	edges[3];		// Lower bounds first, then upper bounds, then horizontal edges.
+			int			nLower, nUpper;
 			int			xBeg, xEnd;		// Pixels inside on the current row, relative to the Warpmap.
 		};
 
@@ -543,7 +544,7 @@ namespace wax
 
 		WarpSetup					m_warp;
 		std::vector<WarpTriangle>	m_warpTriangles;					// Triangles on the rows being drawn.
-		std::vector<int>			m_warpRowOrder;						// Triangles with pixels on the current row, by first pixel.
+		std::vector<int>			m_warpRowOrder;						// Triangles on the current row, by first pixel.
 		std::vector<WarpSpan>		m_warpSpans;						// Spans of the current row.
 		std::vector<SoftShapes::Run>	m_warpRuns;
 		std::vector<CoveragePixel>	m_warpPixels;

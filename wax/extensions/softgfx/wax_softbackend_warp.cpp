@@ -499,6 +499,7 @@ namespace wax
 		const std::vector<int>& order = pMap->m_order;
 
 		m_warpTriangles.clear();
+		m_warpRowOrder.clear();
 		size_t next = 0;
 
 		for (int y = y0; y < y1; y++)
@@ -533,53 +534,55 @@ namespace wax
 				triangle.pSetup = &setup;
 				triangle.kind = kind;
 				_beginWarpTriangle(triangle, y);
+				m_warpRowOrder.push_back(int(m_warpTriangles.size()));
 				m_warpTriangles.push_back(triangle);
 			}
 
-			// Pixels of each triangle on this row, dropping those that have ended.
+			// Pixels of each triangle on this row, dropping those that have ended, then sorted along
+			// the row. They are kept in the order of the row above, which mostly stays, so the
+			// insertion sort is fast.
 
-			m_warpRowOrder.clear();
 			int nTriangles = 0;
 
-			for (int i = 0; i < (int)m_warpTriangles.size(); i++)
+			for (int index : m_warpRowOrder)
 			{
-				if (m_warpTriangles[i].pSetup->rowEnd <= y)
+				WarpTriangle& triangle = m_warpTriangles[index];
+
+				if (triangle.pSetup->rowEnd <= y)
 					continue;
 
-				if (nTriangles != i)
-					m_warpTriangles[nTriangles] = m_warpTriangles[i];
-
-				WarpTriangle& triangle = m_warpTriangles[nTriangles];
 				_warpTriangleRow(triangle);
-
 				triangle.xBeg = std::max(triangle.xBeg, x0);
 				triangle.xEnd = std::min(triangle.xEnd, x1);
 
-				if (triangle.xBeg < triangle.xEnd)
-				{
-					// Insertion sort, which is fast for the order of the row above.
-
-					int k = (int)m_warpRowOrder.size();
-					m_warpRowOrder.push_back(nTriangles);
-					while (k > 0 && m_warpTriangles[m_warpRowOrder[k - 1]].xBeg > triangle.xBeg)
-					{
-						std::swap(m_warpRowOrder[k - 1], m_warpRowOrder[k]);
-						k--;
-					}
-				}
-
-				nTriangles++;
+				m_warpRowOrder[nTriangles++] = index;
 			}
 
-			m_warpTriangles.resize(nTriangles);
+			m_warpRowOrder.resize(nTriangles);
 
-			if (m_warpRowOrder.empty())
+			for (int k = 1; k < nTriangles; k++)
+			{
+				int index = m_warpRowOrder[k];
+				int xBeg = m_warpTriangles[index].xBeg;
+				int j = k;
+				while (j > 0 && m_warpTriangles[m_warpRowOrder[j - 1]].xBeg > xBeg)
+				{
+					m_warpRowOrder[j] = m_warpRowOrder[j - 1];
+					j--;
+				}
+				m_warpRowOrder[j] = index;
+			}
+
+			if (nTriangles == 0)
 				continue;
 
 			m_warpSpans.clear();
 
 			for (int index : m_warpRowOrder)
-				_addWarpSpans(m_warpTriangles[index], y);
+			{
+				if (m_warpTriangles[index].xBeg < m_warpTriangles[index].xEnd)
+					_addWarpSpans(m_warpTriangles[index], y);
+			}
 
 			if (m_warpSpans.empty())
 				continue;
@@ -604,9 +607,12 @@ namespace wax
 	{
 		const SoftWarpmap::Setup& s = *triangle.pSetup;
 
+		WarpEdge edges[3];
+		int kinds[3];
+
 		for (int i = 0; i < 3; i++)
 		{
-			WarpEdge& e = triangle.edges[i];
+			WarpEdge& e = edges[i];
 
 			int64_t value = s.edge[i] + s.edgeY[i] * row;
 			int64_t numerator, step;
@@ -631,6 +637,7 @@ namespace wax
 				e.value = value;
 				e.valueStep = s.edgeY[i];
 				e.bTie = s.tie[i];
+				kinds[i] = 2;
 				continue;
 			}
 
@@ -638,11 +645,30 @@ namespace wax
 			e.rem = e.col * e.divisor - numerator;
 			e.stepCol = floorDiv(step, e.divisor);
 			e.stepRem = step - e.stepCol * e.divisor;
+			kinds[i] = e.kind;
+		}
+
+		// In order of kind, so that rows go through them without looking at it.
+
+		int n = 0;
+		for (int kind = 0; kind < 3; kind++)
+		{
+			for (int i = 0; i < 3; i++)
+			{
+				if (kinds[i] == kind)
+					triangle.edges[n++] = edges[i];
+			}
+
+			if (kind == 0)
+				triangle.nLower = n;
+			else if (kind == 1)
+				triangle.nUpper = n - triangle.nLower;
 		}
 	}
 
 	//____ _warpTriangleRow() ___________________________________________________
-	// Pixels of the triangle on the current row, then steps its edges to the next.
+	// Pixels of the triangle on the current row, then steps its edges to the next, without
+	// branches that depend on the row.
 
 	void SoftBackend::_warpTriangleRow(WarpTriangle& triangle)
 	{
@@ -650,31 +676,32 @@ namespace wax
 
 		int64_t beg = -c_limit, end = c_limit;
 
-		for (int i = 0; i < 3; i++)
+		const int nLower = triangle.nLower;
+		const int nBounds = nLower + triangle.nUpper;
+
+		for (int i = 0; i < nBounds; i++)
 		{
 			WarpEdge& e = triangle.edges[i];
 
-			if (e.kind == 2)
-			{
-				if (!(e.value > 0 || (e.value == 0 && e.bTie)))
-					end = beg;
-
-				e.value += e.valueStep;
-				continue;
-			}
-
-			if (e.kind == 0)
+			if (i < nLower)
 				beg = std::max(beg, e.col);
 			else
 				end = std::min(end, e.col);
 
 			e.col += e.stepCol;
 			e.rem -= e.stepRem;
-			if (e.rem < 0)
-			{
-				e.rem += e.divisor;
-				e.col++;
-			}
+
+			int64_t negative = e.rem >> 63;					// -1 if the remainder went below 0.
+			e.rem += e.divisor & negative;
+			e.col -= negative;
+		}
+
+		for (int i = nBounds; i < 3; i++)
+		{
+			WarpEdge& e = triangle.edges[i];
+			if (!(e.value > 0 || (e.value == 0 && e.bTie)))
+				end = beg;
+			e.value += e.valueStep;
 		}
 
 		triangle.xBeg = int(std::clamp(beg, -c_limit, c_limit));
@@ -889,8 +916,18 @@ namespace wax
 		for (int a = 0; a < 2; a++)
 		{
 			int64_t p = std::clamp(pos[a], -c_maxPos, c_maxPos);
-			if (w.period[a] > 0)
-				p -= floorDiv(p, w.period[a]) * w.period[a];
+			int64_t period = w.period[a];
+			if (period > 0 && (p < 0 || p >= period))
+			{
+				// Usually within a period or two, without a division.
+
+				if (p >= period && p < 2 * period)
+					p -= period;
+				else if (p < 0 && p >= -period)
+					p += period;
+				else
+					p -= floorDiv(p, period) * period;
+			}
 
 			span.pos[a] = p;
 			span.step[a] = std::clamp(step[a], -c_maxGradient, c_maxGradient);
@@ -945,7 +982,9 @@ namespace wax
 			// Along the axis: 0 = outside, 1 = mixed, 2 = inside.
 
 			int64_t period = w.period[a];
-			int64_t base = period > 0 ? floorDiv(lo[a], period) * period : 0;
+			int64_t base = 0;
+			if (period > 0 && (lo[a] < 0 || lo[a] >= period))
+				base = (lo[a] < 0 && lo[a] >= -period) ? -period : (lo[a] < 2 * period && lo[a] >= period) ? period : floorDiv(lo[a], period) * period;
 			copy[a] = base;
 
 			if (w.bAlwaysInside[a] || (lo[a] >= base && hi[a] <= base + w.inside[a]))
