@@ -44,15 +44,10 @@ using namespace wax;
 	- LinearBackend draws exactly as SoftBackend.
 
 	Canvases are ARGB_8 in linear color space.
-
-	SoftBackend and LinearBackend draw nothing through Warpmaps until they draw triangle meshes, see
-	ROADMAP.md. Until then c_bSoftWarps is false: tests comparing them with ReferenceBackend are
-	skipped, and tests comparing a backend with itself use ReferenceBackend.
 */
 
 namespace
 {
-	const bool c_bSoftWarps = false;
 
 	const SizeI c_canvasSize = { 160, 96 };
 
@@ -64,10 +59,6 @@ namespace
 		Linear,
 		Reference
 	};
-
-	const TestBackend c_selfBackend = c_bSoftWarps ? TestBackend::Soft : TestBackend::Reference;
-
-	bool drawsWarps(TestBackend backend) { return c_bSoftWarps || backend == TestBackend::Reference; }
 
 	using Scene = std::function<void(GfxDevice* pDevice)>;
 	using Pixels = std::vector<uint8_t>;
@@ -402,21 +393,9 @@ namespace
 
 		auto pCanvas = SoftSurface::create(WGBP(Surface, _.size = c_canvasSize, _.format = PixelFormat::ARGB_8, _.colorSpace = ColorSpace::Linear, _.canvas = true));
 
-		GfxBackend_p pBackend;
-
-		if (c_bSoftWarps)
-		{
-			auto pSoft = SoftBackend::create();
-			addDefaultSoftKernels(pSoft);
-			pSoft->defineCanvas(CanvasRef::Default, pCanvas);
-			pBackend = pSoft;
-		}
-		else
-		{
-			auto pReference = ReferenceBackend::create();
-			pReference->defineCanvas(CanvasRef::Default, pCanvas);
-			pBackend = pReference;
-		}
+		auto pBackend = SoftBackend::create();
+		addDefaultSoftKernels(pBackend);
+		pBackend->defineCanvas(CanvasRef::Default, pCanvas);
 
 		auto pStreamPlayer = StreamPlayer::create(pBackend, SoftSurfaceFactory::create(), SoftEdgemapFactory::create());
 		auto pStreamEncoder = StreamEncoder::create({ pStreamPlayer, pStreamPlayer->input });
@@ -459,29 +438,21 @@ WarpRenderTest::WarpRenderTest()
 	ADD_TEST(identityBlitTest);
 	ADD_TEST(meshSeamTest);
 	ADD_TEST(perspectiveWeightTest);
-	if (c_bSoftWarps)
-	{
-		ADD_TEST(softVsReferenceTest);
-		ADD_TEST(blendModesTest);
-		ADD_TEST(linearBackendTest);
-	}
+	ADD_TEST(softVsReferenceTest);
+	ADD_TEST(blendModesTest);
+	ADD_TEST(linearBackendTest);
 	ADD_TEST(offsetPeriodTest);
-	if (c_bSoftWarps)
-	{
-		ADD_TEST(clipTest);
-		ADD_TEST(opaqueCanvasTest);
-	}
+	ADD_TEST(clipTest);
+	ADD_TEST(opaqueCanvasTest);
 	ADD_TEST(streamTest);
 	ADD_TEST(streamContentTest);
 	ADD_TEST(nonSquareCellsTest);
 	ADD_TEST(cApiTest);
-	if (c_bSoftWarps)
-		ADD_TEST(seamColorTest);
+	ADD_TEST(seamColorTest);
 	ADD_TEST(sourceRectTest);
 	ADD_TEST(generateTest);
 	ADD_TEST(rotationOffsetTest);
-	if (c_bSoftWarps)
-		ADD_TEST(roundedRectTest);
+	ADD_TEST(roundedRectTest);
 	ADD_TEST(cylinderTest);
 	ADD_TEST(perspectiveTest);
 }
@@ -514,7 +485,7 @@ bool WarpRenderTest::identityEdgemapTest(std::ostream& output)
 		pDevice->warpDrawEdgemap({ 70 * 64 + 20, 40 * 64 - 10 }, pWarpmap, pEdgemap);
 	};
 
-	bool bOk = !c_bSoftWarps || compare(output, "SoftBackend", render(TestBackend::Soft, warped), "warp", render(TestBackend::Soft, direct), "drawEdgemap", 2);
+	bool bOk = compare(output, "SoftBackend", render(TestBackend::Soft, warped), "warp", render(TestBackend::Soft, direct), "drawEdgemap", 2);
 	bOk = bOk && compare(output, "ReferenceBackend", render(TestBackend::Reference, warped), "warp", render(TestBackend::Reference, direct), "drawEdgemap", 2);
 
 	return bOk;
@@ -552,7 +523,7 @@ bool WarpRenderTest::identityBlitTest(std::ostream& output)
 
 		const char* pWhat = sampleMethod == SampleMethod::Nearest ? "Nearest" : "Bilinear";
 
-		bOk = bOk && (!c_bSoftWarps || compare(output, pWhat, render(TestBackend::Soft, warped), "SoftBackend warp", render(TestBackend::Soft, direct), "SoftBackend blit", 1));
+		bOk = bOk && compare(output, pWhat, render(TestBackend::Soft, warped), "SoftBackend warp", render(TestBackend::Soft, direct), "SoftBackend blit", 1);
 		bOk = bOk && compare(output, pWhat, render(TestBackend::Reference, warped), "ReferenceBackend warp", render(TestBackend::Reference, direct), "ReferenceBackend blit", 1);
 	}
 
@@ -652,7 +623,7 @@ bool WarpRenderTest::meshSeamTest(std::ostream& output)
 
 	for (TestBackend backend : { TestBackend::Soft, TestBackend::Linear, TestBackend::Reference })
 	{
-		if (drawsWarps(backend) && !compare(output, "Mesh of many triangles", render(backend, scene(pGrid)), "many triangles", render(backend, scene(pQuad)), "two triangles", 1))
+		if (!compare(output, "Mesh of many triangles", render(backend, scene(pGrid)), "many triangles", render(backend, scene(pQuad)), "two triangles", 1))
 			return false;
 	}
 
@@ -709,9 +680,14 @@ bool WarpRenderTest::perspectiveWeightTest(std::ostream& output)
 		};
 	};
 
+	// SoftBackend and LinearBackend divide for perspective every few pixels, keeping within a
+	// quarter of a pixel, which shows by more along the edges of the checkers of the surface.
+
 	for (TestBackend backend : { TestBackend::Soft, TestBackend::Linear, TestBackend::Reference })
 	{
-		if (drawsWarps(backend) && !compare(output, "Perspective by weights", render(backend, scene(pQuad)), "weights", render(backend, scene(pFine)), "fine mesh", 3, 20, 12))
+		bool bExact = backend == TestBackend::Reference;
+		if (!compare(output, "Perspective by weights", render(backend, scene(pQuad)), "weights", render(backend, scene(pFine)), "fine mesh",
+											3, bExact ? 20 : 500, bExact ? 12 : 32))
 			return false;
 	}
 
@@ -806,10 +782,10 @@ bool WarpRenderTest::offsetPeriodTest(std::ostream& output)
 		};
 	};
 
-	auto base = render(c_selfBackend, scene(0, 0));
+	auto base = render(TestBackend::Soft, scene(0, 0));
 
-	return compare(output, "Offset one period", render(c_selfBackend, scene(64 * 64, 32 * 64)), "offset", base, "no offset", 0) &&
-		   compare(output, "Offset minus two periods", render(c_selfBackend, scene(-128 * 64, -64 * 64)), "offset", base, "no offset", 0);
+	return compare(output, "Offset one period", render(TestBackend::Soft, scene(64 * 64, 32 * 64)), "offset", base, "no offset", 0) &&
+		   compare(output, "Offset minus two periods", render(TestBackend::Soft, scene(-128 * 64, -64 * 64)), "offset", base, "no offset", 0);
 }
 
 //____ clipTest() _____________________________________________________________
@@ -893,7 +869,7 @@ bool WarpRenderTest::streamTest(std::ostream& output)
 		pDevice->warpDrawEdgemap({ 64 * 110, 64 * 50 }, pWarpmap, makeEdgemap(pDevice, true), { 64 * 30, 0 });
 	};
 
-	return compare(output, "Streamed warps", renderStreamed(scene), "streamed", render(c_selfBackend, scene), "direct", 0);
+	return compare(output, "Streamed warps", renderStreamed(scene), "streamed", render(TestBackend::Soft, scene), "direct", 0);
 }
 
 //____ streamContentTest() ____________________________________________________
@@ -1105,9 +1081,6 @@ bool WarpRenderTest::nonSquareCellsTest(std::ostream& output)
 
 	for (TestBackend backend : { TestBackend::Soft, TestBackend::Linear, TestBackend::Reference })
 	{
-		if (!drawsWarps(backend))
-			continue;
-
 		auto square = render(backend, scene({ 5, 5 }));
 
 		for (SizeI cellSize : shapes)
@@ -1118,7 +1091,7 @@ bool WarpRenderTest::nonSquareCellsTest(std::ostream& output)
 		}
 	}
 
-	return compare(output, "Cells of 60 x 4, streamed", renderStreamed(scene({ 60, 4 })), "streamed", render(c_selfBackend, scene({ 60, 4 })), "direct", 0);
+	return compare(output, "Cells of 60 x 4, streamed", renderStreamed(scene({ 60, 4 })), "streamed", render(TestBackend::Soft, scene({ 60, 4 })), "direct", 0);
 }
 
 //____ cApiTest() _____________________________________________________________
@@ -1223,7 +1196,7 @@ bool WarpRenderTest::cApiTest(std::ostream& output)
 		wax_release(factory);
 	};
 
-	if (!compare(output, "C API", render(c_selfBackend, c), "C API", render(c_selfBackend, cpp), "C++", 0))
+	if (!compare(output, "C API", render(TestBackend::Soft, c), "C API", render(TestBackend::Soft, cpp), "C++", 0))
 		return false;
 
 	// Content and positions through the C API.
@@ -1385,7 +1358,7 @@ bool WarpRenderTest::sourceRectTest(std::ostream& output)
 
 		for (TestBackend backend : { TestBackend::Soft, TestBackend::Linear, TestBackend::Reference })
 		{
-			if (drawsWarps(backend) && !compare(output, pWhat, render(backend, scene(true)), "rectangle", render(backend, scene(false)), "cropped surface", 0))
+			if (!compare(output, pWhat, render(backend, scene(true)), "rectangle", render(backend, scene(false)), "cropped surface", 0))
 				return false;
 		}
 	}
@@ -1437,11 +1410,11 @@ bool WarpRenderTest::generateTest(std::ostream& output)
 
 	for (TestBackend backend : { TestBackend::Soft, TestBackend::Linear, TestBackend::Reference })
 	{
-		if (drawsWarps(backend) && !compare(output, "One CircularWarp drawn three times", render(backend, oneGenerator), "one generator", render(backend, separateGenerators), "separate generators", 0))
+		if (!compare(output, "One CircularWarp drawn three times", render(backend, oneGenerator), "one generator", render(backend, separateGenerators), "separate generators", 0))
 			return false;
 	}
 
-	return compare(output, "One CircularWarp drawn three times, streamed", renderStreamed(oneGenerator), "one generator", render(c_selfBackend, separateGenerators), "separate generators", 0);
+	return compare(output, "One CircularWarp drawn three times, streamed", renderStreamed(oneGenerator), "one generator", render(TestBackend::Soft, separateGenerators), "separate generators", 0);
 }
 
 //____ rotationOffsetTest() ___________________________________________________
@@ -1481,7 +1454,7 @@ bool WarpRenderTest::rotationOffsetTest(std::ostream& output)
 
 	// Vertices of the two differ by rounding to spx, so a few pixels by a level or two.
 
-	if (!compare(output, "Turned by offset", render(c_selfBackend, turned), "offset", render(c_selfBackend, generated), "generated", 2, 40, 4))
+	if (!compare(output, "Turned by offset", render(TestBackend::Soft, turned), "offset", render(TestBackend::Soft, generated), "generated", 2, 40, 4))
 		return false;
 
 	// C API gives the same offsets.
@@ -1554,11 +1527,9 @@ bool WarpRenderTest::cylinderTest(std::ostream& output)
 		pDevice->warpDrawEdgemap({ 70 * 64, 42 * 64 }, pCan->generate(), pEdgemap, pCan->rotationOffset(60.f));
 	};
 
-	if (c_bSoftWarps && (!compare(output, "Cylinders", render(TestBackend::Soft, scene), "SoftBackend", render(TestBackend::Reference, scene), "ReferenceBackend", 6, 60, 48) ||
-						 !compare(output, "Cylinders", render(TestBackend::Linear, scene), "LinearBackend", render(TestBackend::Soft, scene), "SoftBackend", 0)))
-		return false;
-
-	if (!compare(output, "Cylinders, streamed", renderStreamed(scene), "streamed", render(c_selfBackend, scene), "direct", 0))
+	if (!compare(output, "Cylinders", render(TestBackend::Soft, scene), "SoftBackend", render(TestBackend::Reference, scene), "ReferenceBackend", 6, 60, 48) ||
+		!compare(output, "Cylinders", render(TestBackend::Linear, scene), "LinearBackend", render(TestBackend::Soft, scene), "SoftBackend", 0) ||
+		!compare(output, "Cylinders, streamed", renderStreamed(scene), "streamed", render(TestBackend::Soft, scene), "direct", 0))
 		return false;
 
 	// Through the C API.
@@ -1600,7 +1571,7 @@ bool WarpRenderTest::cylinderTest(std::ostream& output)
 		return true;
 	};
 
-	return compare(output, "Cylinders through the C API", render(c_selfBackend, [&](GfxDevice* p) { c(p); }), "C API", render(c_selfBackend, scene), "C++", 0);
+	return compare(output, "Cylinders through the C API", render(TestBackend::Soft, [&](GfxDevice* p) { c(p); }), "C API", render(TestBackend::Soft, scene), "C++", 0);
 }
 
 //____ perspectiveTest() ______________________________________________________
@@ -1692,16 +1663,15 @@ bool WarpRenderTest::perspectiveTest(std::ostream& output)
 		pDevice->warpDrawEdgemap({ 80 * 64, 50 * 64 }, pShared->generate(), pEdgemap);
 	};
 
-	if (c_bSoftWarps && (!compare(output, "Perspective", render(TestBackend::Soft, scene), "SoftBackend", render(TestBackend::Reference, scene), "ReferenceBackend", 6, 60, 48) ||
-						 !compare(output, "Perspective", render(TestBackend::Linear, scene), "LinearBackend", render(TestBackend::Soft, scene), "SoftBackend", 0)))
-		return false;
-
-	if (!compare(output, "Perspective, streamed", renderStreamed(scene), "streamed", render(c_selfBackend, scene), "direct", 0))
+	if (!compare(output, "Perspective", render(TestBackend::Soft, scene), "SoftBackend", render(TestBackend::Reference, scene), "ReferenceBackend", 6, 60, 48) ||
+		!compare(output, "Perspective", render(TestBackend::Linear, scene), "LinearBackend", render(TestBackend::Soft, scene), "SoftBackend", 0) ||
+		!compare(output, "Perspective, streamed", renderStreamed(scene), "streamed", render(TestBackend::Soft, scene), "direct", 0))
 		return false;
 
 	// Cards against fine meshes of their exact positions. Both round u and v to spx at their
 	// vertices, so positions differ by up to about a spx, which shows by a few levels where the
-	// source has sharp edges. A border cut off or misplaced differs much more.
+	// source has sharp edges. SoftBackend and LinearBackend also divide for perspective every few
+	// pixels, see perspectiveWeightTest(). A border cut off or misplaced differs much more.
 
 	auto cards = [=](bool bExact)
 	{
@@ -1731,7 +1701,9 @@ bool WarpRenderTest::perspectiveTest(std::ostream& output)
 
 	for (TestBackend backend : { TestBackend::Soft, TestBackend::Linear, TestBackend::Reference })
 	{
-		if (drawsWarps(backend) && !compare(output, "Perspective cards", render(backend, cards(false)), "PerspectiveWarp", render(backend, cards(true)), "fine mesh", 3, 150, 10))
+		bool bExact = backend == TestBackend::Reference;
+		if (!compare(output, "Perspective cards", render(backend, cards(false)), "PerspectiveWarp", render(backend, cards(true)), "fine mesh",
+											3, bExact ? 150 : 600, bExact ? 10 : 32))
 			return false;
 	}
 
@@ -1799,5 +1771,5 @@ bool WarpRenderTest::perspectiveTest(std::ostream& output)
 		return true;
 	};
 
-	return compare(output, "Perspective through the C API", render(c_selfBackend, [&](GfxDevice* p) { c(p); }), "C API", render(c_selfBackend, scene), "C++", 0);
+	return compare(output, "Perspective through the C API", render(TestBackend::Soft, [&](GfxDevice* p) { c(p); }), "C API", render(TestBackend::Soft, scene), "C++", 0);
 }

@@ -24,34 +24,33 @@
 	Drawing through Warpmaps (Command::WarpBlit and Command::WarpDrawEdgemap) for SoftBackend
 	and LinearBackend, following the definition in Warpmap.
 
-	NOT DRAWING ANYTHING FOR NOW: Warpmaps are now triangle meshes, and this code is for the grid
-	of nodes they had before. The parts that read the grid are disabled until it is ported, which
-	is described below as it was for the grid.
+	Triangles are set up when the content of the Warpmap changes, see SoftWarpmap::Setup, and
+	drawn row by row: for each row of pixels, the pixels of each triangle on it are found by
+	stepping the edges of the triangle from the row above, exactly and without divisions, by the
+	rule for pixel centers on edges in Warpmap. They make spans of pixels along the row, with
+	positions that are linear along the span, classified from the bounds of their positions:
 
-	The Warpmap is processed one row of cells at a time. The corners of each cell are converted
-	from spx to pixels of the source with 16 binals, and the cell is classified from the bounding
-	box of its corners:
+	- Outside: no part of the span reaches into the source. Nothing is drawn.
 
-	- Outside: no part of the cell reaches into the source. Nothing is drawn.
-
-	- Solid: the whole cell is inside the source and, for an edgemap, inside one segment. Flat
+	- Solid: the whole span is inside the source and, for an edgemap, inside one segment. Flat
 	  colored segments are drawn as runs with the fill kernels, like shapes. Tinted segments and
 	  blits get colors for each pixel, from the position of its center.
 
 	- Mixed: coverage is estimated for each pixel from the position of its center and how fast the
-	  position changes over the pixel (the derivatives of the bilinear mapping). Each border (of the
-	  source and of each edge) is taken as straight over the pixel, which gives the exact area on
-	  each side of it without supersampling, see halfPlaneCoverage(). Coverage of the segments
-	  between edges is the difference between the areas below them.
+	  position changes over the pixel (the derivatives of the mapping of the triangle). Each border
+	  (of the source and of each edge) is taken as straight over the pixel, which gives the exact
+	  area on each side of it without supersampling, see halfPlaneCoverage(). Coverage of the
+	  segments between edges is the difference between the areas below them.
 
 	Partly covered pixels and pixels with colors of their own are drawn with the coverage kernels,
 	which blend by the rules in "Blending and transparency".
 
-	Positions within a cell are stepped along each row of pixels, since the bilinear mapping is
-	linear along a row of a cell, and the start of each row is stepped from the row above, since it
-	is linear down a column too. Positions are int64 to cope with any Warpmap, but only added and
-	compared per pixel, except where coverage is estimated. Divisions are made once per row of
-	cells, not per row of pixels, which matters on CPUs without 64-bit division.
+	Without perspective, positions are linear over a triangle, so a span takes them from the setup
+	of the triangle and steps them along the row, and triangles all outside the source or all in
+	one segment are classified once. With perspective, positions and their derivatives are divided
+	out at most every 16 pixels and are linear in between, see _addWarpSpans(). Positions are int64
+	to cope with any Warpmap, but only added and compared per pixel, except where coverage is
+	estimated.
 */
 
 #include <wax_softbackend.h>
@@ -72,9 +71,7 @@ namespace wax
 		const int64_t	c_one = 65536;					// 1.0 with 16 binals.
 		const int64_t	c_maxPos = int64_t(1) << 40;	// Positions are kept within +-2^24 pixels.
 		const int64_t	c_maxGradient = int64_t(1) << 31;	// Derivatives limited to 2^15 source pixels per pixel for coverage.
-		const int		c_maxSolidColumns = 64;			// Cells spanning more edgemap columns are drawn as mixed.
-		const int		c_warpExtraBits = 16;			// Extra binals of values stepped from row to row.
-		const int64_t	c_warpExtraScale = int64_t(1) << c_warpExtraBits;
+		const int		c_maxSolidColumns = 64;			// Spans reaching over more edgemap columns are drawn as mixed.
 
 		inline int64_t abs64(int64_t v) { return v < 0 ? -v : v; }
 
@@ -428,7 +425,7 @@ namespace wax
 
 			w.pReadOp = m_pTransformMoveToHiColorKernels[(int)srcFormat][(int)sampleMethod][(int)readOp];
 
-			// Cells all inside the source are drawn straight onto the canvas by the one-pass kernel of
+			// Spans all inside the source are drawn straight onto the canvas by the one-pass kernel of
 			// a transform blit or tile, when it has one, as fast as such a blit and without reading into
 			// a buffer and blending by coverage, which costs about as much again. Not when tinted other
 			// than flat, which blits do in spans of their own, nor for paint modes on a canvas without
@@ -465,6 +462,14 @@ namespace wax
 	}
 
 	//____ _drawWarp() __________________________________________________________
+	/*
+		Row by row, with the triangles that cover the row. A triangle starts being drawn on its first
+		row, or the first row of the clip rectangle, and is dropped after its last. Triangles that are
+		all outside the source, or all in a segment that is skipped, aren't drawn at all.
+
+		The pixels of each triangle on a row are then sorted along the row, which they mostly are
+		already, from the row above, and made into spans by _addWarpSpans().
+	*/
 
 	void SoftBackend::_drawWarp(const RectI& clip, uint8_t* pOrigin, int pitch)
 	{
@@ -475,10 +480,6 @@ namespace wax
 		if (area.w <= 0 || area.h <= 0)
 			return;
 
-#if 0	// Grid of nodes, being ported to triangle meshes.
-		const SizeI cellSize = pMap->cellSize();
-		const SizeI nodes = pMap->nodes();
-
 		// Area in pixels of the Warpmap.
 
 		int x0 = area.x - w.dest.x;
@@ -486,200 +487,467 @@ namespace wax
 		int y0 = area.y - w.dest.y;
 		int y1 = y0 + area.h;
 
-		int firstColumn = std::min(x0 / cellSize.w, nodes.w - 2);
-		int lastColumn = std::min((x1 - 1) / cellSize.w, nodes.w - 2);
-		int firstRow = std::min(y0 / cellSize.h, nodes.h - 2);
-		int lastRow = std::min((y1 - 1) / cellSize.h, nodes.h - 2);
-
-		int nColumns = lastColumn - firstColumn + 1;
-
-		m_warpCells.resize(nColumns);
-
 		if ((int)m_warpRuns.size() < area.w)
 			m_warpRuns.resize(area.w);
 
 		if ((int)m_warpPixels.size() < area.w)
 			m_warpPixels.resize(area.w);
 
-		for (int row = firstRow; row <= lastRow; row++)
+		const std::vector<SoftWarpmap::Setup>& setups = pMap->m_setups;
+		const std::vector<int>& order = pMap->m_order;
+
+		m_warpTriangles.clear();
+		size_t next = 0;
+
+		for (int y = y0; y < y1; y++)
 		{
-			_setupWarpCells(row, firstColumn, nColumns);
+			// Triangles starting on this row, or above it on the first row.
 
-			int cellY = pMap->nodeY(row);
-			int cellH = pMap->nodeY(row + 1) - cellY;
-
-			int rowBeg = std::max(cellY, y0);
-			int rowEnd = std::min(cellY + cellH, y1);
-
-			_beginWarpCellRow(rowBeg, area.x, cellY, cellH);
-
-			for (int y = rowBeg; y < rowEnd; y++)
+			while (next < order.size() && setups[order[next]].rowBeg <= y)
 			{
-				int canvasY = y + w.dest.y;
-				int prefetchRow = (canvasY + 1 < area.y + area.h) ? canvasY + 1 : -1;
+				const SoftWarpmap::Setup& setup = setups[order[next++]];
 
-				_drawWarpRow(canvasY, area.x, area.x + area.w, pOrigin, pitch, prefetchRow);
+				if (setup.rowEnd <= y || setup.colEnd <= x0 || setup.colBeg >= x1)
+					continue;
 
-				for (WarpCell& cell : m_warpCells)
+				int kind = c_warpMixed;
+
+				if (!setup.bPerspective)
 				{
+					int64_t lo[2], hi[2];
 					for (int a = 0; a < 2; a++)
 					{
-						cell.pos[a] += cell.posStep[a];
-						cell.step[a] += cell.stepStep[a];
+						lo[a] = setup.lo[a] + w.offset[a];
+						hi[a] = setup.hi[a] + w.offset[a];
+					}
+
+					kind = _warpClassify(lo, hi);
+
+					if (kind == c_warpOutside || (kind >= 0 && w.pEdgemap && w.bSkip[kind]))
+						continue;
+				}
+
+				WarpTriangle triangle;
+				triangle.pSetup = &setup;
+				triangle.kind = kind;
+				_beginWarpTriangle(triangle, y);
+				m_warpTriangles.push_back(triangle);
+			}
+
+			// Pixels of each triangle on this row, dropping those that have ended.
+
+			m_warpRowOrder.clear();
+			int nTriangles = 0;
+
+			for (int i = 0; i < (int)m_warpTriangles.size(); i++)
+			{
+				if (m_warpTriangles[i].pSetup->rowEnd <= y)
+					continue;
+
+				if (nTriangles != i)
+					m_warpTriangles[nTriangles] = m_warpTriangles[i];
+
+				WarpTriangle& triangle = m_warpTriangles[nTriangles];
+				_warpTriangleRow(triangle);
+
+				triangle.xBeg = std::max(triangle.xBeg, x0);
+				triangle.xEnd = std::min(triangle.xEnd, x1);
+
+				if (triangle.xBeg < triangle.xEnd)
+				{
+					// Insertion sort, which is fast for the order of the row above.
+
+					int k = (int)m_warpRowOrder.size();
+					m_warpRowOrder.push_back(nTriangles);
+					while (k > 0 && m_warpTriangles[m_warpRowOrder[k - 1]].xBeg > triangle.xBeg)
+					{
+						std::swap(m_warpRowOrder[k - 1], m_warpRowOrder[k]);
+						k--;
 					}
 				}
+
+				nTriangles++;
 			}
+
+			m_warpTriangles.resize(nTriangles);
+
+			if (m_warpRowOrder.empty())
+				continue;
+
+			m_warpSpans.clear();
+
+			for (int index : m_warpRowOrder)
+				_addWarpSpans(m_warpTriangles[index], y);
+
+			if (m_warpSpans.empty())
+				continue;
+
+			int canvasY = y + w.dest.y;
+			int prefetchRow = (canvasY + 1 < area.y + area.h) ? canvasY + 1 : -1;
+
+			_drawWarpRow(canvasY, area.x, area.x + area.w, pOrigin, pitch, prefetchRow);
 		}
-#endif
 	}
 
-	//____ _setupWarpCells() ____________________________________________________
+	//____ _beginWarpTriangle() _________________________________________________
 	/*
-		Converts the corners of cells firstColumn -> firstColumn + nColumns of a row of cells to
-		16 binals and classifies the cells, see top of file.
+		Sets up the edges of a triangle for drawing from a row on. Along a row, the edge function is
+		value + edgeX * x. Where edgeX > 0 the edge is a lower bound, inside (with ties, which a left
+		edge has) from ceil(-value / edgeX), where edgeX < 0 an upper bound, inside (without ties)
+		up to ceil(value / -edgeX). Each row adds edgeY to value, so the bound is stepped by the
+		quotient and remainder of that by the divisor, exactly, as SoftWarpmap::Setup describes.
 	*/
 
-	void SoftBackend::_setupWarpCells(int row, int firstColumn, int nColumns)
+	void SoftBackend::_beginWarpTriangle(WarpTriangle& triangle, int row)
 	{
-#if 0	// Grid of nodes, being ported to triangle meshes.
-		WarpSetup& w = m_warp;
-		SoftWarpmap* pMap = w.pWarpmap;
+		const SoftWarpmap::Setup& s = *triangle.pSetup;
 
-		const int cellH = pMap->nodeY(row + 1) - pMap->nodeY(row);
-
-		for (int i = 0; i < nColumns; i++)
+		for (int i = 0; i < 3; i++)
 		{
-			WarpCell& cell = m_warpCells[i];
-			int column = firstColumn + i;
+			WarpEdge& e = triangle.edges[i];
 
-			cell.x = pMap->nodeX(column);
-			cell.w = pMap->nodeX(column + 1) - cell.x;
+			int64_t value = s.edge[i] + s.edgeY[i] * row;
+			int64_t numerator, step;
 
-			CoordSPX corners[4];
-			pMap->cellCorners(column, row, corners);
-
-			int64_t lo[2], hi[2], copy[2];
-			int classes[2];
-
-			for (int a = 0; a < 2; a++)
+			if (s.edgeX[i] > 0)
 			{
-				int64_t v[4];
-
-				for (int k = 0; k < 4; k++)
-				{
-					int64_t pos = int64_t(a == 0 ? corners[k].x : corners[k].y) << 10;
-					v[k] = std::clamp(pos, -c_maxPos, c_maxPos) + w.offset[a];
-				}
-
-				// Top-left corner into the period, the others follow.
-
-				if (w.period[a] > 0)
-				{
-					int64_t shift = floorDiv(v[0], w.period[a]) * w.period[a];
-					for (int k = 0; k < 4; k++)
-						v[k] -= shift;
-				}
-
-				cell.tl[a] = v[0];
-				cell.right[a] = v[1] - v[0];
-				cell.down[a] = v[2] - v[0];
-				cell.twist[a] = v[3] - v[2] - v[1] + v[0];
-
-				// Bounding box of the cell, with a margin for linearizing the pixels.
-
-				int64_t margin = 64 + abs64(cell.twist[a]) / (4 * int64_t(cell.w) * cellH);
-
-				lo[a] = std::min(std::min(v[0], v[1]), std::min(v[2], v[3])) - margin;
-				hi[a] = std::max(std::max(v[0], v[1]), std::max(v[2], v[3])) + margin;
-
-				// Classify along the axis: 0 = outside, 1 = mixed, 2 = inside.
-
-				int64_t period = w.period[a];
-				int64_t base = period > 0 ? floorDiv(lo[a], period) * period : 0;
-				copy[a] = base;
-
-				if (w.bAlwaysInside[a] || (lo[a] >= base && hi[a] <= base + w.inside[a]))
-					classes[a] = 2;
-				else if (period > 0 ? (lo[a] >= base + w.inside[a] && hi[a] <= base + period) : (hi[a] <= 0 || lo[a] >= w.inside[a]))
-					classes[a] = 0;
-				else
-					classes[a] = 1;
+				e.kind = 0;
+				e.divisor = s.edgeX[i];
+				numerator = -value;
+				step = -s.edgeY[i];
 			}
-
-			if (classes[0] == 0 || classes[1] == 0)
-				cell.kind = c_warpOutside;
-			else if (classes[0] == 2 && classes[1] == 2)
-				cell.kind = w.pEdgemap ? _warpSolidSegment(lo, hi, copy) : 0;
+			else if (s.edgeX[i] < 0)
+			{
+				e.kind = 1;
+				e.divisor = -s.edgeX[i];
+				numerator = value;
+				step = s.edgeY[i];
+			}
 			else
-				cell.kind = c_warpMixed;
-		}
-#endif
-	}
-
-	//____ _beginWarpCellRow() __________________________________________________
-	/*
-		Sets up the cells of a row of cells (cellRowH pixels high, from row cellRowY of the Warpmap)
-		for drawing from pixel column xBeg of canvas rows, starting at row firstRow of the Warpmap:
-		positions and derivatives at the center of the first pixel of the cell in the row, and how
-		they change from one row to the next. All of it is linear down the cell, so _drawWarp() steps
-		pos and step after each row instead of working them out again. They have c_warpExtraBits
-		more binals so that the steps add up to within a fraction of a unit over the cell.
-	*/
-
-	void SoftBackend::_beginWarpCellRow(int firstRow, int xBeg, int cellRowY, int cellRowH)
-	{
-		const WarpSetup& w = m_warp;
-
-		const int64_t fyNum = 2 * int64_t(firstRow - cellRowY) + 1;		// Center of first row within cell, over fyDen.
-		const int64_t fyDen = 2 * int64_t(cellRowH);
-
-		for (WarpCell& cell : m_warpCells)
-		{
-			// Only cells drawn pixel by pixel need it, see _drawWarpRow().
-
-			const int kind = cell.kind;
-
-			if (kind == c_warpOutside || (kind >= 0 && w.pEdgemap && (w.bSkip[kind] || !w.bTinted[kind])))
 			{
-				for (int a = 0; a < 2; a++)
-				{
-					cell.posStep[a] = 0;
-					cell.stepStep[a] = 0;
-				}
+				e.kind = 2;
+				e.value = value;
+				e.valueStep = s.edgeY[i];
+				e.bTie = s.tie[i];
 				continue;
 			}
 
-			int beg = std::max(cell.x + w.dest.x, xBeg);
+			e.col = ceilDiv(numerator, e.divisor);
+			e.rem = e.col * e.divisor - numerator;
+			e.stepCol = floorDiv(step, e.divisor);
+			e.stepRem = step - e.stepCol * e.divisor;
+		}
+	}
 
-			const int64_t fxNum = 2 * int64_t(beg - w.dest.x - cell.x) + 1;		// Center of first pixel within cell, over fxDen.
-			const int64_t fxDen = 2 * int64_t(cell.w);
+	//____ _warpTriangleRow() ___________________________________________________
+	// Pixels of the triangle on the current row, then steps its edges to the next.
+
+	void SoftBackend::_warpTriangleRow(WarpTriangle& triangle)
+	{
+		const int64_t c_limit = int64_t(1) << 30;
+
+		int64_t beg = -c_limit, end = c_limit;
+
+		for (int i = 0; i < 3; i++)
+		{
+			WarpEdge& e = triangle.edges[i];
+
+			if (e.kind == 2)
+			{
+				if (!(e.value > 0 || (e.value == 0 && e.bTie)))
+					end = beg;
+
+				e.value += e.valueStep;
+				continue;
+			}
+
+			if (e.kind == 0)
+				beg = std::max(beg, e.col);
+			else
+				end = std::min(end, e.col);
+
+			e.col += e.stepCol;
+			e.rem -= e.stepRem;
+			if (e.rem < 0)
+			{
+				e.rem += e.divisor;
+				e.col++;
+			}
+		}
+
+		triangle.xBeg = int(std::clamp(beg, -c_limit, c_limit));
+		triangle.xEnd = int(std::clamp(end, -c_limit, c_limit));
+	}
+
+	//____ _addWarpSpans() ______________________________________________________
+	/*
+		Spans of a triangle on a row of the Warpmap. Without perspective, positions are linear over
+		the triangle and taken from SoftWarpmap::Setup at the start of each span. A triangle that
+		isn't all inside or outside the source is split into spans of up to 32 pixels, so that most of
+		them can be drawn as inside, or skipped, as a whole.
+
+		With perspective, positions and their derivatives are divided out at the start of each run of
+		1, 2, 4, 8 or 16 pixels and are linear in between. Interpolating over L pixels is off by about
+		L^2 / (4 * d) pixels, d being the distance to the horizon, so a run is as long as keeps that
+		within a quarter of a pixel at its start and end: W at its start at least (L^2 + L) times the
+		change of W per pixel. Runs that aren't all inside or outside the source, or in one segment,
+		have the position of each pixel divided out, with derivatives still interpolated, since their
+		coverage depends on where borders and edges are. A pixel next to the horizon, where W at the
+		start or end of its run isn't positive, is drawn on its own, or not at all if its center is
+		beyond the horizon.
+	*/
+
+	void SoftBackend::_addWarpSpans(const WarpTriangle& triangle, int row)
+	{
+		const WarpSetup& w = m_warp;
+		const SoftWarpmap::Setup& s = *triangle.pSetup;
+
+		const int xBeg = triangle.xBeg;
+		const int xEnd = triangle.xEnd;
+		const int64_t zero[2] = { 0, 0 };
+
+		if (!s.bPerspective)
+		{
+			int64_t step[2], dy[2];
+			for (int a = 0; a < 2; a++)
+			{
+				step[a] = (s.f[a][1] + (int64_t(1) << 15)) >> 16;
+				dy[a] = (s.f[a][2] + (int64_t(1) << 15)) >> 16;
+			}
+
+			const int chunk = triangle.kind == c_warpMixed ? 32 : xEnd - xBeg;
+
+			for (int x = xBeg; x < xEnd; x += chunk)
+			{
+				int64_t pos[2];
+				for (int a = 0; a < 2; a++)
+					pos[a] = ((s.f[a][0] + s.f[a][1] * (x - s.ox) + s.f[a][2] * (row - s.oy)) >> 16) + w.offset[a];
+
+				_addWarpSpan(triangle.kind, x + w.dest.x, std::min(chunk, xEnd - x), pos, step, step, dy, zero, zero, 4);
+			}
+			return;
+		}
+
+		auto divide = [](int64_t a, int64_t b)
+		{
+			return floorDiv(a + b / 2, b);
+		};
+
+		const int64_t Y = row - s.oy;
+		const int64_t rowW = s.f[2][0] + s.f[2][2] * Y;
+		const int64_t rowU[2] = { s.f[0][0] + s.f[0][2] * Y, s.f[1][0] + s.f[1][2] * Y };
+
+		// Position at the center of pixel x of the row, and optionally its derivatives along x and
+		// y. False beyond the horizon.
+
+		auto position = [&](int x, int64_t* pPos, int64_t& W)
+		{
+			int64_t X = x - s.ox;
+			W = rowW + s.f[2][1] * X;
+			if (W <= 0)
+				return false;
+
+			for (int a = 0; a < 2; a++)
+				pPos[a] = s.ref[a] + divide(rowU[a] + s.f[a][1] * X, W) + w.offset[a];
+			return true;
+		};
+
+		auto evaluate = [&](int x, int64_t* pPos, int64_t* pDx, int64_t* pDy, int64_t& W)
+		{
+			if (!position(x, pPos, W))
+				return false;
 
 			for (int a = 0; a < 2; a++)
 			{
-				// down * fyNum / fyDen and the step of it from row to row (fyNum + 2), from one
-				// division of down, likewise for twist.
+				int64_t relative = pPos[a] - s.ref[a] - w.offset[a];
+				pDx[a] = divide(s.f[a][1] - relative * s.f[2][1], W);
+				pDy[a] = divide(s.f[a][2] - relative * s.f[2][2], W);
+			}
+			return true;
+		};
 
-				int64_t downQ = floorDiv(cell.down[a] * c_warpExtraScale, fyDen);
-				int64_t downR = cell.down[a] * c_warpExtraScale - downQ * fyDen;
-				int64_t twistQ = floorDiv(cell.twist[a] * c_warpExtraScale, fyDen);
-				int64_t twistR = cell.twist[a] * c_warpExtraScale - twistQ * fyDen;
+		const int64_t gradient = s.gradientW;
 
-				int64_t left = cell.tl[a] * c_warpExtraScale + downQ * fyNum + (downR * fyNum) / fyDen;
-				int64_t across = cell.right[a] * c_warpExtraScale + twistQ * fyNum + (twistR * fyNum) / fyDen;
+		int64_t pos[2], dx[2], dy[2], W;
+		bool bValid = evaluate(xBeg, pos, dx, dy, W);
 
-				int64_t leftStep = downQ * 2 + (downR * 2) / fyDen;
-				int64_t acrossStep = twistQ * 2 + (twistR * 2) / fyDen;
+		for (int x = xBeg; x < xEnd; )
+		{
+			int n = 1;
+			if (bValid)
+			{
+				for (int length : { 16, 8, 4, 2 })
+				{
+					if (W >= int64_t(length * length + length) * gradient)
+					{
+						n = length;
+						break;
+					}
+				}
+			}
+			n = std::min(n, xEnd - x);
 
-				cell.pos[a] = left + mulDiv(across, fxNum, fxDen);
-				cell.posStep[a] = leftStep + mulDiv(acrossStep, fxNum, fxDen);
-				cell.step[a] = floorDiv(across, cell.w);
-				cell.stepStep[a] = floorDiv(acrossStep, cell.w);
+			int64_t nextPos[2], nextDx[2], nextDy[2], nextW;
+			bool bNextValid = evaluate(x + n, nextPos, nextDx, nextDy, nextW);
 
-				cell.dy[a] = (cell.down[a] * fxDen + cell.twist[a] * fxNum) / (fxDen * cellRowH);
-				cell.dyStep[a] = cell.twist[a] / (int64_t(cell.w) * cellRowH);
+			if (bValid && bNextValid)
+			{
+				int64_t step[2], dxStep[2], dyStep[2];
+				for (int a = 0; a < 2; a++)
+				{
+					step[a] = n > 1 ? divide(nextPos[a] - pos[a], n) : dx[a];
+					dxStep[a] = divide(nextDx[a] - dx[a], n);
+					dyStep[a] = divide(nextDy[a] - dy[a], n);
+				}
+
+				if (n == 1 || _addWarpSpan(c_warpMixed, x + w.dest.x, n, pos, step, dx, dy, dxStep, dyStep, 6, false) != c_warpMixed)
+				{
+					if (n == 1)
+						_addWarpSpan(c_warpMixed, x + w.dest.x, 1, pos, dx, dx, dy, zero, zero, 4);
+				}
+				else
+				{
+					// Borders or edges in the run, each pixel with its own position.
+
+					for (int k = 0; k < n; k++)
+					{
+						int64_t p[2], d[2], e[2], pixelW;
+						if (!position(x + k, p, pixelW))
+							continue;
+
+						for (int a = 0; a < 2; a++)
+						{
+							d[a] = dx[a] + dxStep[a] * k;
+							e[a] = dy[a] + dyStep[a] * k;
+						}
+
+						_addWarpSpan(c_warpMixed, x + k + w.dest.x, 1, p, d, d, e, zero, zero, 5);
+					}
+				}
+			}
+			else
+			{
+				for (int k = 0; k < n; k++)
+				{
+					int64_t p[2], d[2], e[2], pixelW;
+					if (evaluate(x + k, p, d, e, pixelW))
+						_addWarpSpan(c_warpMixed, x + k + w.dest.x, 1, p, d, d, e, zero, zero, 4);
+				}
 			}
 
+			x += n;
+			bValid = bNextValid;
+			W = nextW;
+			for (int a = 0; a < 2; a++)
+			{
+				pos[a] = nextPos[a];
+				dx[a] = nextDx[a];
+				dy[a] = nextDy[a];
+			}
 		}
+	}
+
+	//____ _addWarpSpan() _______________________________________________________
+	/*
+		Adds a span to the row, positions brought into the period on periodic axes. Spans of
+		c_warpMixed are classified from the bounds of their positions, with a margin for the area of
+		the pixels: half of how much the position changes over a pixel (marginEighths 4), or more
+		for positions that are only close to linear. Returns the kind of the span. A span that is
+		mixed isn't added unless bAddMixed is set.
+	*/
+
+	int SoftBackend::_addWarpSpan(int kind, int x, int length, const int64_t pos[2], const int64_t step[2], const int64_t dx[2], const int64_t dy[2],
+								  const int64_t dxStep[2], const int64_t dyStep[2], int64_t marginEighths, bool bAddMixed)
+	{
+		const WarpSetup& w = m_warp;
+
+		WarpSpan span;
+		span.x = x;
+		span.w = length;
+
+		for (int a = 0; a < 2; a++)
+		{
+			int64_t p = std::clamp(pos[a], -c_maxPos, c_maxPos);
+			if (w.period[a] > 0)
+				p -= floorDiv(p, w.period[a]) * w.period[a];
+
+			span.pos[a] = p;
+			span.step[a] = std::clamp(step[a], -c_maxGradient, c_maxGradient);
+			span.dx[a] = std::clamp(dx[a], -c_maxGradient, c_maxGradient);
+			span.dy[a] = std::clamp(dy[a], -c_maxGradient, c_maxGradient);
+			span.dxStep[a] = std::clamp(dxStep[a], -c_maxGradient, c_maxGradient);
+			span.dyStep[a] = std::clamp(dyStep[a], -c_maxGradient, c_maxGradient);
+		}
+
+		if (kind == c_warpMixed)
+		{
+			int64_t lo[2], hi[2];
+
+			for (int a = 0; a < 2; a++)
+			{
+				int64_t last = span.pos[a] + span.step[a] * (length - 1);
+				int64_t dxLast = span.dx[a] + span.dxStep[a] * (length - 1);
+				int64_t dyLast = span.dy[a] + span.dyStep[a] * (length - 1);
+				int64_t margin = ((std::max(abs64(span.dx[a]), abs64(dxLast)) + std::max(abs64(span.dy[a]), abs64(dyLast))) * marginEighths) / 8 + 64;
+
+				lo[a] = std::min(span.pos[a], last) - margin;
+				hi[a] = std::max(span.pos[a], last) + margin;
+			}
+
+			kind = _warpClassify(lo, hi);
+		}
+
+		if (kind == c_warpOutside || (kind >= 0 && w.pEdgemap && w.bSkip[kind]) || (kind == c_warpMixed && !bAddMixed))
+			return kind;
+
+		span.kind = kind;
+		m_warpSpans.push_back(span);
+		return kind;
+	}
+
+	//____ _warpClassify() ______________________________________________________
+	/*
+		Kind of a span or triangle with positions within lo -> hi: c_warpOutside if none are inside
+		the source, the segment (0 for a blit) that covers all of it if it is all inside, otherwise
+		c_warpMixed. On a periodic axis, against the copy of the source in the period lo is in.
+	*/
+
+	int SoftBackend::_warpClassify(const int64_t lo[2], const int64_t hi[2]) const
+	{
+		const WarpSetup& w = m_warp;
+
+		int64_t copy[2];
+		int classes[2];
+
+		for (int a = 0; a < 2; a++)
+		{
+			// Along the axis: 0 = outside, 1 = mixed, 2 = inside.
+
+			int64_t period = w.period[a];
+			int64_t base = period > 0 ? floorDiv(lo[a], period) * period : 0;
+			copy[a] = base;
+
+			if (w.bAlwaysInside[a] || (lo[a] >= base && hi[a] <= base + w.inside[a]))
+				classes[a] = 2;
+			else if (period > 0 ? (lo[a] >= base + w.inside[a] && hi[a] <= base + period) : (hi[a] <= 0 || lo[a] >= w.inside[a]))
+				classes[a] = 0;
+			else
+				classes[a] = 1;
+		}
+
+		if (classes[0] == 0 || classes[1] == 0)
+			return c_warpOutside;
+
+		if (classes[0] == 2 && classes[1] == 2)
+		{
+			if (!w.pEdgemap)
+				return 0;
+
+			int64_t loCopy[2] = { lo[0], lo[1] }, hiCopy[2] = { hi[0], hi[1] };
+			return _warpSolidSegment(loCopy, hiCopy, copy);
+		}
+
+		return c_warpMixed;
 	}
 
 	//____ _warpSolidSegment() __________________________________________________
@@ -793,8 +1061,8 @@ namespace wax
 
 	//____ _drawWarpRow() _______________________________________________________
 	/*
-		Draws pixels xBeg -> xEnd of canvas row y. Cells are set up by _setupWarpCells() and
-		_beginWarpCellRow() and stepped to the row by _drawWarp().
+		Draws pixels xBeg -> xEnd of canvas row y, from the spans of the row in m_warpSpans, which are
+		in order along the row and don't overlap.
 	*/
 
 	void SoftBackend::_drawWarpRow(int y, int xBeg, int xEnd, uint8_t* pOrigin, int pitch, int prefetchRow)
@@ -851,24 +1119,20 @@ namespace wax
 		};
 
 
-		const int nCells = int(m_warpCells.size());
+		const int nSpans = int(m_warpSpans.size());
 
-		for (int i = 0; i < nCells; i++)
+		for (int i = 0; i < nSpans; i++)
 		{
-			const WarpCell& cell = m_warpCells[i];
+			const WarpSpan& span = m_warpSpans[i];
 
-			int beg = std::max(cell.x + w.dest.x, xBeg);
-			int end = std::min(cell.x + cell.w + w.dest.x, xEnd);
+			int beg = std::max(span.x, xBeg);
+			int end = std::min(span.x + span.w, xEnd);
 			int length = end - beg;
 
 			if (length <= 0)
-			{
-				if (cell.x + w.dest.x >= xEnd)
-					break;
 				continue;
-			}
 
-			const int kind = cell.kind;
+			const int kind = span.kind;
 
 			if (kind == c_warpOutside)
 				continue;
@@ -885,16 +1149,18 @@ namespace wax
 				}
 			}
 
-			// Positions and derivatives at the first pixel and steps along the row, see _beginWarpCellRow().
+			// Positions and derivatives at the first pixel and steps along the row.
 
-			int64_t pos[2], step[2];
-			const int64_t* dy = cell.dy;
-			const int64_t* dyStep = cell.dyStep;
+			int64_t pos[2], step[2], dx[2], dy[2];
+			const int64_t* dxStep = span.dxStep;
+			const int64_t* dyStep = span.dyStep;
 
 			for (int a = 0; a < 2; a++)
 			{
-				pos[a] = cell.pos[a] >> c_warpExtraBits;
-				step[a] = (cell.step[a] + (int64_t(1) << (c_warpExtraBits - 1))) >> c_warpExtraBits;
+				pos[a] = span.pos[a] + span.step[a] * (beg - span.x);
+				step[a] = span.step[a];
+				dx[a] = span.dx[a] + span.dxStep[a] * (beg - span.x);
+				dy[a] = span.dy[a] + span.dyStep[a] * (beg - span.x);
 			}
 
 			if (kind >= 0)
@@ -934,10 +1200,7 @@ namespace wax
 				continue;
 			}
 
-			// Mixed cell, coverage for each pixel.
-
-			const int64_t ax = std::clamp(step[0], -c_maxGradient, c_maxGradient);
-			const int64_t ay = std::clamp(step[1], -c_maxGradient, c_maxGradient);
+			// Mixed span, coverage for each pixel.
 
 			if (!w.pEdgemap)
 			{
@@ -952,37 +1215,29 @@ namespace wax
 				// Pixels known to be fully covered, worked out for the row rather than pixel by pixel.
 
 				int insideBeg, insideEnd;
-				_warpInsideRange(pos, step, dy, dyStep, length, insideBeg, insideEnd);
+				_warpInsideRange(span, pos, length, insideBeg, insideEnd);
 
-				int64_t sx = pos[0], sy = pos[1], bx = dy[0], by = dy[1];
+				int64_t sx = pos[0], sy = pos[1], ax = dx[0], ay = dx[1], bx = dy[0], by = dy[1];
 
-				for (int k = 0; k < length; k++)
+				for (int k = 0; k < length; k++, sx += step[0], sy += step[1], ax += dxStep[0], ay += dxStep[1], bx += dyStep[0], by += dyStep[1])
 				{
 					if (k >= insideBeg && k < insideEnd)
 					{
 						pCoverage[k] = 4096;
 						bAny = true;
-
-						sx += step[0];
-						sy += step[1];
-						bx += dyStep[0];
-						by += dyStep[1];
 						continue;
 					}
 
+					int64_t gax = std::clamp(ax, -c_maxGradient, c_maxGradient);
+					int64_t gay = std::clamp(ay, -c_maxGradient, c_maxGradient);
 					int64_t gbx = std::clamp(bx, -c_maxGradient, c_maxGradient);
 					int64_t gby = std::clamp(by, -c_maxGradient, c_maxGradient);
 
-					int covX = _warpAxisCoverage(0, wrap(sx, w.period[0]), ax, gbx);
-					int cov = covX > 0 ? (covX * _warpAxisCoverage(1, wrap(sy, w.period[1]), ay, gby)) >> 12 : 0;
+					int covX = _warpAxisCoverage(0, wrap(sx, w.period[0]), gax, gbx);
+					int cov = covX > 0 ? (covX * _warpAxisCoverage(1, wrap(sy, w.period[1]), gay, gby)) >> 12 : 0;
 
 					pCoverage[k] = cov;
 					bAny |= (cov > 0);
-
-					sx += step[0];
-					sy += step[1];
-					bx += dyStep[0];
-					by += dyStep[1];
 				}
 
 				if (!bAny)
@@ -990,8 +1245,8 @@ namespace wax
 
 				HiColor* pColors = _warpBuffer(c_maxSegments, length);
 
-				// Runs of fully covered pixels go straight onto the canvas as for solid cells, when the
-				// blit allows it, which long cells with the border of the source in them need to be fast.
+				// Runs of fully covered pixels go straight onto the canvas as for solid spans, when the
+				// blit allows it, which long spans with the border of the source in them need to be fast.
 				// Pixels drawn are left out of the rest.
 
 				if (w.pDirectOp)
@@ -1058,22 +1313,24 @@ namespace wax
 				continue;
 			}
 
-			// Mixed cell of an edgemap. Colors of tinted segments are generated for the span when first needed.
+			// Mixed span of an edgemap. Colors of tinted segments are generated for the span when first needed.
 
 			bool bGenerated[c_maxSegments] = {};
 			const int nSegments = w.nSegments;
 
-			int64_t sx = pos[0], sy = pos[1], bx = dy[0], by = dy[1];
+			int64_t sx = pos[0], sy = pos[1], ax = dx[0], ay = dx[1], bx = dy[0], by = dy[1];
 
-			for (int k = 0; k < length; k++, sx += step[0], sy += step[1], bx += dyStep[0], by += dyStep[1])
+			for (int k = 0; k < length; k++, sx += step[0], sy += step[1], ax += dxStep[0], ay += dxStep[1], bx += dyStep[0], by += dyStep[1])
 			{
 				int coverage[c_maxSegments];
 
+				int64_t gax = std::clamp(ax, -c_maxGradient, c_maxGradient);
+				int64_t gay = std::clamp(ay, -c_maxGradient, c_maxGradient);
 				int64_t gbx = std::clamp(bx, -c_maxGradient, c_maxGradient);
 				int64_t gby = std::clamp(by, -c_maxGradient, c_maxGradient);
 
 				int solidSegment;
-				int total = _warpEdgemapCoverage(wrap(sx, w.period[0]), wrap(sy, w.period[1]), ax, gbx, ay, gby, coverage, solidSegment);
+				int total = _warpEdgemapCoverage(wrap(sx, w.period[0]), wrap(sy, w.period[1]), gax, gbx, gay, gby, coverage, solidSegment);
 				if (total == 0)
 					continue;
 
@@ -1226,14 +1483,14 @@ namespace wax
 
 	//____ _warpInsideRange() ___________________________________________________
 	/*
-		Range of pixels insideBeg -> insideEnd of a span along a row of a cell that are fully inside
-		the source, which _warpAxisCoverage() would give 4096 for. Positions are pos + step * k and
-		derivatives along y dy + dyStep * k for pixel k, so per axis that is a range of k, found with
-		the largest extent of a pixel over the span, which makes it at most as large as pixel by
+		Range of pixels insideBeg -> insideEnd of a span along a row, starting at position pos and
+		length pixels long, that are fully inside the source, which _warpAxisCoverage() would give
+		4096 for. Positions are pos + step * k for pixel k, so per axis that is a range of k, found
+		with the largest extent of a pixel over the span, which makes it at most as large as pixel by
 		pixel. A periodic axis with a gap between copies isn't worked out, its range is empty.
 	*/
 
-	void SoftBackend::_warpInsideRange(const int64_t* pos, const int64_t* step, const int64_t* dy, const int64_t* dyStep, int length, int& insideBeg, int& insideEnd) const
+	void SoftBackend::_warpInsideRange(const WarpSpan& span, const int64_t* pos, int length, int& insideBeg, int& insideEnd) const
 	{
 		const WarpSetup& w = m_warp;
 
@@ -1251,23 +1508,27 @@ namespace wax
 				return;
 			}
 
-			int64_t dyEnd = dy[a] + dyStep[a] * (length - 1);
-			int64_t extent = (abs64(step[a]) + std::max(abs64(dy[a]), abs64(dyEnd))) / 2 + 1;
+			// Largest derivatives over the whole span, which covers the part of it drawn.
 
+			int64_t dxEnd = span.dx[a] + span.dxStep[a] * (span.w - 1);
+			int64_t dyEnd = span.dy[a] + span.dyStep[a] * (span.w - 1);
+			int64_t extent = (std::max(abs64(span.dx[a]), abs64(dxEnd)) + std::max(abs64(span.dy[a]), abs64(dyEnd))) / 2 + 1;
+
+			int64_t step = span.step[a];
 			int64_t lo = extent - pos[a];							// step * k >= lo
 			int64_t hi = w.inside[a] - extent - pos[a];				// step * k <= hi
 
 			int64_t beg, end;
 
-			if (step[a] > 0)
+			if (step > 0)
 			{
-				beg = ceilDiv(lo, step[a]);
-				end = floorDiv(hi, step[a]) + 1;
+				beg = ceilDiv(lo, step);
+				end = floorDiv(hi, step) + 1;
 			}
-			else if (step[a] < 0)
+			else if (step < 0)
 			{
-				beg = ceilDiv(-hi, -step[a]);
-				end = floorDiv(-lo, -step[a]) + 1;
+				beg = ceilDiv(-hi, -step);
+				end = floorDiv(-lo, -step) + 1;
 			}
 			else
 			{

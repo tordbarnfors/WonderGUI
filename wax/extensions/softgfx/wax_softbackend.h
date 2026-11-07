@@ -29,6 +29,7 @@
 #include <wax_softsurface.h>
 #include <wax_softformat.h>
 #include <wax_softshapes.h>
+#include <wax_softwarpmap.h>
 
 namespace wax
 {
@@ -45,7 +46,6 @@ namespace wax
 
 	class SoftBackend;
 	class SoftEdgemap;
-	class SoftWarpmap;
 	typedef	StrongPtr<SoftBackend>	SoftBackend_p;
 	typedef	WeakPtr<SoftBackend>	SoftBackend_wp;
 
@@ -364,33 +364,49 @@ namespace wax
 		// prepares a command, _drawWarp() draws it within one clip rectangle onto pixels where
 		// pixel (x,y) is at pOrigin + y * pitch + x * m_canvasPixelBytes. See wax_softbackend_warp.cpp.
 
-		static const int c_warpOutside = -2;	// WarpCell::kind: Nothing of the source in the cell.
-		static const int c_warpMixed = -1;		// WarpCell::kind: Coverage or segment varies over the cell.
+		static const int c_warpOutside = -2;	// WarpSpan::kind: Nothing of the source in the span.
+		static const int c_warpMixed = -1;		// WarpSpan::kind: Coverage or segment varies over the span.
 
-		struct WarpCell
+		// Pixels of a row of the canvas drawn by one triangle, with linear positions, see _drawWarpRow().
+		// Positions in the source are in pixels with 16 binals, source offset applied.
+
+		struct WarpSpan
 		{
-			int			x;				// First pixel column of the cell, relative to the Warpmap.
-			int			w;				// Width of cell in pixels.
-			int			kind;			// c_warpOutside, c_warpMixed or segment (0 for WarpBlit) fully covering the cell.
-
-			// Positions in the source in pixels with 16 binals, source offset applied. Top-left
-			// corner is wrapped into the period on periodic axes, the others follow it.
-
-			int64_t		tl[2];			// Top-left corner.
-			int64_t		right[2];		// Top-right corner - top-left corner.
-			int64_t		down[2];		// Bottom-left corner - top-left corner.
-			int64_t		twist[2];		// Bottom-right - bottom-left - top-right + top-left.
-
-			// At the first pixel drawn of the current row of pixels, stepped from row to row so that
-			// rows need no divisions, see _beginWarpCellRow(). pos and step have c_warpExtraBits more
-			// binals than positions.
+			int			x;				// First pixel column of the span on the canvas.
+			int			w;				// Width of span in pixels.
+			int			kind;			// c_warpOutside, c_warpMixed or segment (0 for WarpBlit) fully covering the span.
 
 			int64_t		pos[2];			// Position at the center of the first pixel.
-			int64_t		posStep[2];		// Change of pos from one row to the next.
 			int64_t		step[2];		// Change of position from one pixel to the next along the row.
-			int64_t		stepStep[2];	// Change of step from one row to the next.
-			int64_t		dy[2];			// Change of position from one pixel to the one below, at the first pixel.
-			int64_t		dyStep[2];		// Change of dy along the row.
+			int64_t		dx[2];			// Derivatives of the position along x and y, at the first pixel, for coverage.
+			int64_t		dy[2];			// The same as step and 0 below without perspective.
+			int64_t		dxStep[2];		// Change of dx and dy along the row.
+			int64_t		dyStep[2];
+		};
+
+		// A triangle being drawn, on the rows it covers. For each edge, the first (lower bound) or
+		// first past the last (upper bound) column inside on the current row, stepped from row to row
+		// without divisions: col * divisor - rem is the numerator, 0 <= rem < divisor.
+
+		struct WarpEdge
+		{
+			int			kind;			// 0 = lower bound, 1 = upper bound, 2 = horizontal.
+			int64_t		col;
+			int64_t		rem;
+			int64_t		divisor;
+			int64_t		stepCol;		// Change of col and rem from one row to the next.
+			int64_t		stepRem;
+			int64_t		value;			// Horizontal: edge function along the row, inside if > 0 or 0 and bTie.
+			int64_t		valueStep;
+			bool		bTie;
+		};
+
+		struct WarpTriangle
+		{
+			const SoftWarpmap::Setup*	pSetup;
+			int			kind;			// Of all of it, c_warpMixed if it varies or with perspective.
+			WarpEdge	edges[3];
+			int			xBeg, xEnd;		// Pixels inside on the current row, relative to the Warpmap.
 		};
 
 		struct WarpSetup
@@ -433,12 +449,16 @@ namespace wax
 
 		bool	_beginWarp(const WarpParams& params, SoftWarpmap* pWarpmap, SoftEdgemap* pEdgemap);
 		void	_drawWarp(const RectI& clip, uint8_t* pOrigin, int pitch);
-		void	_setupWarpCells(int row, int firstColumn, int nColumns);
-		void	_beginWarpCellRow(int firstRow, int xBeg, int cellRowY, int cellRowH);
+		void	_beginWarpTriangle(WarpTriangle& triangle, int row);
+		void	_warpTriangleRow(WarpTriangle& triangle);
+		void	_addWarpSpans(const WarpTriangle& triangle, int row);
+		int		_addWarpSpan(int kind, int x, int length, const int64_t pos[2], const int64_t step[2], const int64_t dx[2], const int64_t dy[2],
+							 const int64_t dxStep[2], const int64_t dyStep[2], int64_t marginEighths, bool bAddMixed = true);
+		int		_warpClassify(const int64_t lo[2], const int64_t hi[2]) const;
 		int		_warpSolidSegment(const int64_t lo[2], const int64_t hi[2], const int64_t copy[2]) const;
 		void	_drawWarpRow(int y, int xBeg, int xEnd, uint8_t* pOrigin, int pitch, int prefetchRow);
 		int		_warpAxisCoverage(int axis, int64_t s, int64_t gx, int64_t gy) const;
-		void			_warpInsideRange( const int64_t * pos, const int64_t * step, const int64_t * dy, const int64_t * dyStep, int length, int& insideBeg, int& insideEnd ) const;
+		void			_warpInsideRange( const WarpSpan& span, const int64_t * pos, int length, int& insideBeg, int& insideEnd ) const;
 		int		_warpEdgemapCoverage(int64_t sx, int64_t sy, int64_t ax, int64_t bx, int64_t ay, int64_t by, int* pCoverage, int& solidSegment) const;
 		void	_warpTintSpan(const SoftTint& tint, int64_t x, int64_t y, int64_t dx, int64_t dy, int length, HiColor* pOutput);
 		void	_warpReadSpan(int64_t x, int64_t y, int64_t dx, int64_t dy, int length, HiColor* pOutput, const int* pCoverage,
@@ -523,7 +543,9 @@ namespace wax
 		// Warps
 
 		WarpSetup					m_warp;
-		std::vector<WarpCell>		m_warpCells;
+		std::vector<WarpTriangle>	m_warpTriangles;					// Triangles on the rows being drawn.
+		std::vector<int>			m_warpRowOrder;						// Triangles with pixels on the current row, by first pixel.
+		std::vector<WarpSpan>		m_warpSpans;						// Spans of the current row.
 		std::vector<SoftShapes::Run>	m_warpRuns;
 		std::vector<CoveragePixel>	m_warpPixels;
 		std::vector<int>			m_warpCoverage;

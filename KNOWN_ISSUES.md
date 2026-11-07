@@ -133,16 +133,8 @@ been built with it yet.
 
 ## Graphics
 
-### Only ReferenceBackend draws Warpmaps
+### GPU backends don't draw Warpmaps yet
 
-Warpmaps are being changed from a grid of nodes to triangle meshes (see ROADMAP.md). Until the
-backends are changed over:
-
-- SoftBackend and LinearBackend draw nothing through Warpmaps. The code for the grid is disabled
-  with `#if 0` in `wax/extensions/softgfx/wax_softbackend_warp.cpp`, to be ported.
-- The OpenGL, DX12 and Metal backends don't compile (`wax_glwarpmap*`, `wax_dx12warpmap*`,
-  `wax_metalwarpmap*` and the warp shaders still read the grid).
-- The WarpRender unit tests that compare SoftBackend or LinearBackend with ReferenceBackend are
-  skipped, and the others run on ReferenceBackend (`c_bSoftWarps` in
-  `wondergui/tools/unittester/tests/warprender.cpp`). gfxdevicetester's warp tests compare a
-  native device that draws nothing.
+Warpmaps are being changed from a grid of nodes to triangle meshes (see ROADMAP.md). The software
+backends draw them, but the OpenGL, DX12 and Metal backends don't compile (`wax_glwarpmap*`,
+`wax_dx12warpmap*`, `wax_metalwarpmap*` and the warp shaders still read the grid).
