@@ -19,6 +19,7 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
+#include <cfloat>
 #include <cmath>
 #include <wax_softbackend.h>
 #include <wax_softsurfacefactory.h>
@@ -1076,13 +1077,10 @@ namespace wax
 
 						const Transform* pTransform = &m_pTransformsBeg[transform - customTransformStart];
 
-						// Rounded up, so that stepping n pixels with a step of 1/n reaches the next source
-						// pixel instead of stopping just short of it (e.g. a 3x nearest stretch).
-
-						mtx[0][0] = binalInt(std::ceil(pTransform->xx * double(BINAL_MUL)));
-						mtx[0][1] = binalInt(std::ceil(pTransform->xy * double(BINAL_MUL)));
-						mtx[1][0] = binalInt(std::ceil(pTransform->yx * double(BINAL_MUL)));
-						mtx[1][1] = binalInt(std::ceil(pTransform->yy * double(BINAL_MUL)));
+						mtx[0][0] = _transformStep(pTransform->xx);
+						mtx[0][1] = _transformStep(pTransform->xy);
+						mtx[1][0] = _transformStep(pTransform->yx);
+						mtx[1][1] = _transformStep(pTransform->yy);
 
 						//
 
@@ -1121,6 +1119,26 @@ namespace wax
 		m_pRectsPtr = pRects;
 		m_pColorsPtr = pColors;
 
+	}
+
+	//____ _transformStep() ___________________________________________________
+	/*
+		Converts a step of a custom transform to binals.
+
+		Steps are floats, which can't describe steps like 1/3 exactly, so stepping n pixels with a step
+		of 1/n might end up a tiny bit before the next source pixel instead of on it. Like the reference,
+		we want positions within the rounding error of the float from a pixel boundary to be on it.
+
+		We do that by rounding every step up, past the rounding error of the float. A step forward then
+		reaches the boundary (e.g. a 3x nearest stretch), while a step backwards (flipped or rotated)
+		doesn't pass it, which it otherwise would whenever the float is a tiny bit too long.
+	*/
+
+	binalInt SoftBackend::_transformStep(float step)
+	{
+		double binals = step * double(BINAL_MUL);
+
+		return binalInt(std::ceil(binals + std::abs(binals) * FLT_EPSILON));
 	}
 
 	//____ defineCanvas() _____________________________________________

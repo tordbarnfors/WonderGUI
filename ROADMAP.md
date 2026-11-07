@@ -102,3 +102,16 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   back side, or hiding it, is left to the caller.
 - **wax::Base,** not wax::Core, is the static base class of Wax. `wg::Base` inherits it, and code
   using both namespaces says `wg::Base` or `wax::Base`.
+
+### Software tiling (2026-11)
+
+- **Tiling surfaces of any size.** SoftBackend and LinearBackend wrap tile positions by the size
+  of the surface, not a power-of-two bit mask, like the GPU backends and ReferenceBackend.
+- **No per-pixel wrapping.** Straight tiles step a pointer and jump back at the edge of the
+  source. Transform tiles reduce their steps to less than the source and read in runs that stay
+  inside it, wrapping between runs. Cheap enough that keeping a separate power-of-two path wasn't
+  worth it: only nearest sampling without blending or tinting, scaled down, measured slower
+  (about 15-20%).
+- **Custom transform steps are rounded up past the float's rounding error** (see
+  `SoftBackend::_transformStep()`), so positions that should land exactly on a pixel boundary do,
+  whether stepping forwards or backwards. This matches ReferenceBackend's snapping to boundaries.

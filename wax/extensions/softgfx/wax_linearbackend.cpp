@@ -1112,13 +1112,10 @@ namespace wax
 
 						const Transform* pTransform = &m_pTransformsBeg[transform - customTransformStart];
 
-						// Rounded up, so that stepping n pixels with a step of 1/n reaches the next source
-						// pixel instead of stopping just short of it (e.g. a 3x nearest stretch).
-
-						mtx[0][0] = binalInt(std::ceil(pTransform->xx * double(BINAL_MUL)));
-						mtx[0][1] = binalInt(std::ceil(pTransform->xy * double(BINAL_MUL)));
-						mtx[1][0] = binalInt(std::ceil(pTransform->yx * double(BINAL_MUL)));
-						mtx[1][1] = binalInt(std::ceil(pTransform->yy * double(BINAL_MUL)));
+						mtx[0][0] = _transformStep(pTransform->xx);
+						mtx[0][1] = _transformStep(pTransform->xy);
+						mtx[1][0] = _transformStep(pTransform->yx);
+						mtx[1][1] = _transformStep(pTransform->yy);
 
 						//
 

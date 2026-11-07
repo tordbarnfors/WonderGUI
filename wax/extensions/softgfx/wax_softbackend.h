@@ -345,6 +345,7 @@ namespace wax
 
 		bool	_fadeByCoverage(BlendMode mode, bool bOpaqueSource) const;
 		static CoveragePixel _coveragePixel(const HiColor& color, int coverage);
+		static binalInt	_transformStep(float step);
 		void	_drawCoverageEdge(CoverageOp_p pOp, const RectI& rect, int coverage, HiColor color, uint8_t* pOrigin, int pitch);
 		void	_drawTintedLine(CoverageOp_p pOp, bool bHorizontal, int majorBeg, int length, int width, int pos, int slope,
 								int clipStart, int clipEnd, HiColor color, uint8_t* pOrigin, int pitch);
