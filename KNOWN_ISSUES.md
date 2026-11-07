@@ -133,11 +133,30 @@ been built with it yet.
 
 ## Graphics
 
-### GPU backends don't draw Warpmaps yet
+### SoftBackend draws Warpmaps from the grid generators slower than before
+
+CircularWarp, RoundedRectWarp and CylinderWarp still make their Warpmaps from a grid, now with
+two triangles per cell and cells sqrt(2) smaller, so SoftBackend draws about four times as many
+spans as with the grid of nodes. Drawing a ring or a rounded frame takes 1.2-1.7 times as long as
+before. Meshes that follow the shape, planned for these generators, should more than make up for
+it. PerspectiveWarp, a single quad, draws about as fast as before.
+
+`wax/source/warp/wax_warpgenerator.cpp` (`_gridToMesh()`), `wax/extensions/softgfx/wax_softbackend_warp.cpp`
+
+### gfxdevicetester's Perspective warp test differs on SoftBackend
+
+SoftBackend divides for perspective every few pixels and keeps within a quarter of a pixel in
+between, as Warpmap allows, while ReferenceBackend is exact. Along sharp edges inside the
+textures of the cards that shows in a few hundred pixels, by up to about a third of the color
+range. Borders of the source and edges of edgemaps are within 1/64 of a pixel. See the ROADMAP
+entry on dividing for perspective for the trade-off.
+
+### DX12 and Metal backends don't draw Warpmaps yet
 
 Warpmaps are being changed from a grid of nodes to triangle meshes (see ROADMAP.md). The software
-backends draw them, but the OpenGL, DX12 and Metal backends don't compile (`wax_glwarpmap*`,
-`wax_dx12warpmap*`, `wax_metalwarpmap*` and the warp shaders still read the grid).
+and OpenGL backends draw them, but the DX12 and Metal backends don't compile (`wax_dx12warpmap*`,
+`wax_metalwarpmap*` and their warp shaders still read the grid). `GlWarpmap` and the warp
+shaders in `wax_glbackendshaders.cpp` show how to change them over.
 
 ### Tiling SoftSurfaces only wrap correctly at power-of-two sizes
 

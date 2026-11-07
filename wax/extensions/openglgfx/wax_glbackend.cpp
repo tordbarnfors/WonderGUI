@@ -999,7 +999,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 
 			*pExtrasGL++ = GLfloat(dest.x);
 			*pExtrasGL++ = GLfloat(dest.y);
-			*pExtrasGL++ = GLfloat(pWarpmap->cellSize().w);
+			*pExtrasGL++ = 0.f;
 			*pExtrasGL++ = pEdgemap ? GLfloat(pEdgemap->m_nbRenderSegments - 1) : 0.f;
 
 			*pExtrasGL++ = GLfloat(warpSize.w);
@@ -1027,15 +1027,29 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				*pExtrasGL++ = 0.f;
 			}
 
-			*pExtrasGL++ = GLfloat(pWarpmap->cellSize().h);
-			*pExtrasGL++ = 0.f;
-			*pExtrasGL++ = 0.f;
-			*pExtrasGL++ = 0.f;
+			for (int i = 0; i < 4; i++)
+				*pExtrasGL++ = 0.f;
 
-			// Vertices, a quad for the part of each clip rectangle covered by the Warpmap.
+			// The triangles of the Warpmap are in its own vertex buffer, see GlWarpmap, drawn once
+			// for each part of a clip rectangle covered by the Warpmap, with that as scissor. The
+			// command is followed by offsets into the extras and colors, the tint, dest and the
+			// number of rectangles, then x, y, w, h of each.
 
 			int flatTintOfs = m_tintColorOfs >= 0 ? m_tintColorOfs : 0;		// Entry 0 is white.
-			int nVertices = 0;
+
+			m_objects.push_back(pWarpmap);
+			if (pEdgemap)
+				m_objects.push_back(pEdgemap);
+
+			*pCommandGL++ = pEdgemap ? CommandGL::WarpEdgemap : CommandGL::WarpBlit;
+			*pCommandGL++ = extrasOfs;
+			*pCommandGL++ = flatTintOfs;
+			*pCommandGL++ = m_tintOfs;
+			*pCommandGL++ = dest.x;
+			*pCommandGL++ = dest.y;
+
+			int* pNbPatches = pCommandGL++;
+			*pNbPatches = 0;
 
 			for (int i = 0; i < params.nRects; i++)
 			{
@@ -1044,29 +1058,12 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				if (patch.w <= 0 || patch.h <= 0)
 					continue;
 
-				CoordI corners[6] = {	{ patch.x, patch.y }, { patch.x + patch.w, patch.y }, { patch.x + patch.w, patch.y + patch.h },
-										{ patch.x, patch.y }, { patch.x + patch.w, patch.y + patch.h }, { patch.x, patch.y + patch.h } };
-
-				for (auto& corner : corners)
-				{
-					pVertexGL->coord = corner;
-					pVertexGL->uv = { 0.f, 0.f };
-					pVertexGL->colorsOfs = flatTintOfs;
-					pVertexGL->extrasOfs = extrasOfs;
-					pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
-					pVertexGL->colorstripOfs = { 0.f, 0.f };
-					pVertexGL++;
-				}
-
-				nVertices += 6;
+				*pCommandGL++ = patch.x;
+				*pCommandGL++ = patch.y;
+				*pCommandGL++ = patch.w;
+				*pCommandGL++ = patch.h;
+				(*pNbPatches)++;
 			}
-
-			m_objects.push_back(pWarpmap);
-			if (pEdgemap)
-				m_objects.push_back(pEdgemap);
-
-			*pCommandGL++ = pEdgemap ? CommandGL::WarpEdgemap : CommandGL::WarpBlit;
-			*pCommandGL++ = nVertices;
 			break;
 		}
 
@@ -2018,7 +2015,7 @@ void GlBackend::beginSession( CanvasRef canvasRef, Surface * pCanvasSurface, int
 		+ (pInfo->nLines * 3 + pInfo->nLineClipRects * 4) * 2		// Lines with and without caps in separate commands.
 		+ pInfo->nEdgemapDraws * 3
 		+ pInfo->nShapeDraws * 2
-		+ pInfo->nWarpDraws * 2
+		+ pInfo->nWarpDraws * 8 + pInfo->nRects * 4		// Warps with their clip rectangles.
 		+ pInfo->nSetCanvas];
 
 	m_commandQueueSize = 0;
@@ -2420,11 +2417,39 @@ void GlBackend::endSession()
 
 				glActiveTexture(GL_TEXTURE0);
 
-				int nVertices = *pCmd++;
-				_setPartialCoverage(true);
+				int extrasOfs = *pCmd++;
+				int colorsOfs = *pCmd++;
+				int tintOfs = *pCmd++;
+				int destX = *pCmd++;
+				int destY = *pCmd++;
+				int nPatches = *pCmd++;
 
-				glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
-				vertexOfs += nVertices;
+				glUniform2f(glGetUniformLocation(prog, "warpDest"), GLfloat(destX), GLfloat(destY));
+				glUniform1i(glGetUniformLocation(prog, "warpExtrasOfs"), extrasOfs);
+				glUniform1i(glGetUniformLocation(prog, "warpColorsOfs"), colorsOfs);
+				glUniform1i(glGetUniformLocation(prog, "warpTintOfs"), tintOfs);
+
+				_setPartialCoverage(true);
+				glBindVertexArray(pWarpmap->m_vertexArrayId);
+
+				for (int i = 0; i < nPatches; i++)
+				{
+					int x = *pCmd++;
+					int y = *pCmd++;
+					int w = *pCmd++;
+					int h = *pCmd++;
+
+					// Scissor is in rows from the bottom, which the default canvas is drawn upside down to.
+
+					if (m_canvasUBO.yMul < 0)
+						y = m_activeCanvasSize.h - (y + h);
+
+					glScissor(x, y, w, h);
+					glDrawArrays(GL_TRIANGLES, 0, pWarpmap->triangleCount() * 3);
+				}
+
+				glScissor(0, 0, m_activeCanvasSize.w, m_activeCanvasSize.h);
+				glBindVertexArray(m_vertexArrayId);
 				break;
 			}
 

@@ -71,6 +71,8 @@ namespace wax
 		const int64_t	c_one = 65536;					// 1.0 with 16 binals.
 		const int64_t	c_maxPos = int64_t(1) << 40;	// Positions are kept within +-2^24 pixels.
 		const int64_t	c_maxGradient = int64_t(1) << 31;	// Derivatives limited to 2^15 source pixels per pixel for coverage.
+		const int		c_runShift = 0;					// Perspective runs keep within 1/4 >> c_runShift of a pixel,
+		const int		c_mixedRunShift = 4;			// and those with borders or edges in them within 1/4 >> c_mixedRunShift.
 		const int		c_maxSolidColumns = 64;			// Spans reaching over more edgemap columns are drawn as mixed.
 
 		inline int64_t abs64(int64_t v) { return v < 0 ? -v : v; }
@@ -689,12 +691,13 @@ namespace wax
 		With perspective, positions and their derivatives are divided out at the start of each run of
 		1, 2, 4, 8 or 16 pixels and are linear in between. Interpolating over L pixels is off by about
 		L^2 / (4 * d) pixels, d being the distance to the horizon, so a run is as long as keeps that
-		within a quarter of a pixel at its start and end: W at its start at least (L^2 + L) times the
-		change of W per pixel. Runs that aren't all inside or outside the source, or in one segment,
-		have the position of each pixel divided out, with derivatives still interpolated, since their
-		coverage depends on where borders and edges are. A pixel next to the horizon, where W at the
-		start or end of its run isn't positive, is drawn on its own, or not at all if its center is
-		beyond the horizon.
+		within a quarter of a pixel (c_runShift) at its start and end: W at its start at least
+		(L^2 + L) times the change of W per pixel. Runs that aren't all inside or outside the
+		source, or in one segment, are split into shorter runs that keep within 1/64 of a pixel
+		(c_mixedRunShift), since their coverage depends on where borders and edges are, but keep the
+		derivatives interpolated over the whole run. A pixel next to the horizon, where W at the start
+		or end of its run isn't positive, is drawn on its own, or not at all if its center is beyond
+		the horizon.
 	*/
 
 	void SoftBackend::_addWarpSpans(const WarpTriangle& triangle, int row)
@@ -721,7 +724,7 @@ namespace wax
 			{
 				int64_t pos[2];
 				for (int a = 0; a < 2; a++)
-					pos[a] = ((s.f[a][0] + s.f[a][1] * (x - s.ox) + s.f[a][2] * (row - s.oy)) >> 16) + w.offset[a];
+					pos[a] = ((s.f[a][0] + s.f[a][1] * (x - s.ox) + s.f[a][2] * (row - s.oy) + (int64_t(1) << 15)) >> 16) + w.offset[a];
 
 				_addWarpSpan(triangle.kind, x + w.dest.x, std::min(chunk, xEnd - x), pos, step, step, dy, zero, zero, 4);
 			}
@@ -768,24 +771,24 @@ namespace wax
 
 		const int64_t gradient = s.gradientW;
 
+		// Pixels from a run start with W that keep the error within 1/4 >> shift of a pixel.
+
+		auto runLength = [gradient](int64_t W, int shift)
+		{
+			for (int length : { 16, 8, 4, 2 })
+			{
+				if (W >= (int64_t(length * length + length) * gradient) << shift)
+					return length;
+			}
+			return 1;
+		};
+
 		int64_t pos[2], dx[2], dy[2], W;
 		bool bValid = evaluate(xBeg, pos, dx, dy, W);
 
 		for (int x = xBeg; x < xEnd; )
 		{
-			int n = 1;
-			if (bValid)
-			{
-				for (int length : { 16, 8, 4, 2 })
-				{
-					if (W >= int64_t(length * length + length) * gradient)
-					{
-						n = length;
-						break;
-					}
-				}
-			}
-			n = std::min(n, xEnd - x);
+			int n = bValid ? std::min(runLength(W, c_runShift), xEnd - x) : 1;
 
 			int64_t nextPos[2], nextDx[2], nextDy[2], nextW;
 			bool bNextValid = evaluate(x + n, nextPos, nextDx, nextDy, nextW);
@@ -807,21 +810,39 @@ namespace wax
 				}
 				else
 				{
-					// Borders or edges in the run, each pixel with its own position.
+					// Borders or edges in the run: shorter runs, with positions divided out at their
+					// ends and derivatives still interpolated over the whole run. W is positive all
+					// along the run, since it is at both ends.
 
-					for (int k = 0; k < n; k++)
+					int64_t subPos[2] = { pos[0], pos[1] };
+
+					for (int k = 0; k < n; )
 					{
-						int64_t p[2], d[2], e[2], pixelW;
-						if (!position(x + k, p, pixelW))
-							continue;
+						int64_t subW = rowW + s.f[2][1] * (x + k - s.ox);
+						int m = std::min(runLength(subW, c_mixedRunShift), n - k);
 
+						int64_t endPos[2], endW;
+						if (k + m == n)
+						{
+							endPos[0] = nextPos[0];
+							endPos[1] = nextPos[1];
+						}
+						else
+							position(x + k + m, endPos, endW);
+
+						int64_t subStep[2], d[2], e[2];
 						for (int a = 0; a < 2; a++)
 						{
+							subStep[a] = divide(endPos[a] - subPos[a], m);
 							d[a] = dx[a] + dxStep[a] * k;
 							e[a] = dy[a] + dyStep[a] * k;
 						}
 
-						_addWarpSpan(c_warpMixed, x + k + w.dest.x, 1, p, d, d, e, zero, zero, 5);
+						_addWarpSpan(c_warpMixed, x + k + w.dest.x, m, subPos, subStep, d, e, dxStep, dyStep, 5);
+
+						subPos[0] = endPos[0];
+						subPos[1] = endPos[1];
+						k += m;
 					}
 				}
 			}

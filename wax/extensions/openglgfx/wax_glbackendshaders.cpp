@@ -1780,6 +1780,9 @@ WAX_GL_SHAPE_FUNCS
 //
 // The cells of the Warpmap are in its buffer, see GlWarpmap.
 
+// The triangles of a GlWarpmap, from its own vertex buffer, with positions in pixels of the
+// Warpmap. What the vertices of other commands hold comes in uniforms, the same for all of them.
+
 const char GlBackend::warpVertexShader[] =
 
 "#version 330 core\n"
@@ -1787,32 +1790,36 @@ const char GlBackend::warpVertexShader[] =
 WAX_GL_CANVAS_BLOCK
 
 "uniform samplerBuffer colorBufferId;					"
-"layout(location = 0) in ivec2 pos;                     "
-"layout(location = 2) in int colorOfs;                  "
-"layout(location = 3) in int extrasOfs;                 "
-"layout(location = 4) in vec2 tintmapOfs;               "
+"uniform vec2 warpDest;									"
+"uniform int warpExtrasOfs;								"
+"uniform int warpColorsOfs;								"
+"uniform int warpTintOfs;								"
+"layout(location = 0) in vec2 pos;                      "
+"layout(location = 1) in int triangle;                  "
 "flat out int warpOfs;									"
 "flat out int tintOfs;									"
-"out vec2 canvasPos;									"
 "flat out vec4 flatTint;								"
+"flat out int warpTriangle;								"
 
 "void main()											"
 "{                                                      "
-"   gl_Position.x = pos.x*2/canvasWidth - 1.0;              "
-"   gl_Position.y = (canvasYOfs + canvasYMul*pos.y)*2/canvasHeight - 1.0;    "
-"   gl_Position.z = 0.0;                                    "
-"   gl_Position.w = 1.0;                                    "
-"   warpOfs = extrasOfs;								"
-"   tintOfs = int(tintmapOfs.x);						"
-"   canvasPos = vec2(pos);								"
-"   flatTint = texelFetch(colorBufferId, colorOfs);		"
+"   vec2 p = pos + warpDest;							"
+"   gl_Position.x = p.x*2/canvasWidth - 1.0;            "
+"   gl_Position.y = (canvasYOfs + canvasYMul*p.y)*2/canvasHeight - 1.0;    "
+"   gl_Position.z = 0.0;                                "
+"   gl_Position.w = 1.0;                                "
+"   warpOfs = warpExtrasOfs;							"
+"   tintOfs = warpTintOfs;								"
+"   flatTint = texelFetch(colorBufferId, warpColorsOfs);	"
+"   warpTriangle = triangle;							"
 "}                                                      ";
 
-// Needs extrasBufferId, warpmapId and warpOfs. warpHalfPlane() gives the part of the pixel where
+// Needs extrasBufferId, warpmapId, warpOfs and warpTriangle. warpHalfPlane() gives the part of the pixel where
 // f + g.x * dx + g.y * dy >= 0, dx and dy going from -0.5 to 0.5 over it, which is linear within
 // (a - b) / 2 of the center and a triangle in a corner further out. warpAxisCoverage() gives the
 // part inside the source along one axis, with the copies of the source on a periodic axis.
-// warpPosition() finds the cell with integers, as a division in floats can miss a whole number.
+// warpPosition() gives the position and its derivatives from the mapping of the triangle that
+// draws the pixel, see GlWarpmap, and discards a pixel with its center beyond the horizon.
 // warpNearestCopy() moves a center in the gap between copies on a periodic axis to the nearest
 // copy, which is where colors are taken and edges evaluated.
 
@@ -1869,22 +1876,20 @@ WAX_GL_CANVAS_BLOCK
 "void warpPosition(vec2 p, out vec2 s, out vec2 dx, out vec2 dy)					" \
 "{																					" \
 "	vec4 e0 = warpEntry(0);															" \
-"	vec4 e1 = warpEntry(1);															" \
 "	vec4 e2 = warpEntry(2);															" \
-"	vec2 q = p - e0.xy;																" \
-"	ivec2 cellSize = ivec2(int(e0.z), int(warpEntry(4).x));							" \
-"	ivec2 cells = (ivec2(e1.xy) + cellSize - 1) / cellSize;							" \
-"	ivec2 cell = clamp(ivec2(floor(max(q, vec2(0.0)))) / cellSize, ivec2(0), cells - 1);	" \
-"	vec2 c0 = vec2(cell * cellSize);												" \
-"	vec2 c1 = min(c0 + vec2(cellSize), e1.xy);										" \
-"	vec2 f = (q - c0) / (c1 - c0);													" \
-"	int i = (cell.y * cells.x + cell.x) * 2;										" \
-"	vec4 top = texelFetch(warpmapId, i);											" \
-"	vec4 bottom = texelFetch(warpmapId, i + 1);										" \
-"	vec2 u = mix(mix(top.xy, top.zw, f.x), mix(bottom.xy, bottom.zw, f.x), f.y);	" \
-"	s = u + e2.xy;        															" \
-"	dx = mix(top.zw - top.xy, bottom.zw - bottom.xy, f.y) / (c1.x - c0.x);        	" \
-"	dy = mix(bottom.xy - top.xy, bottom.zw - top.zw, f.x) / (c1.y - c0.y);        	" \
+"	int i = warpTriangle * 4;														" \
+"	vec4 t0 = texelFetch(warpmapId, i);												" \
+"	vec4 t1 = texelFetch(warpmapId, i + 1);											" \
+"	vec4 t2 = texelFetch(warpmapId, i + 2);											" \
+"	vec4 t3 = texelFetch(warpmapId, i + 3);											" \
+"	vec2 q = p - e0.xy - t0.xy;														" \
+"	float w = t0.z * q.x + t0.w * q.y + t1.x;										" \
+"	if (w <= 0.0)																	" \
+"		discard;																	" \
+"	vec2 uv = vec2(t1.y * q.x + t1.z * q.y + t1.w, t2.x * q.x + t2.y * q.y + t2.z) / w;	" \
+"	dx = (vec2(t1.y, t2.x) - uv * t0.z) / w;										" \
+"	dy = (vec2(t1.z, t2.y) - uv * t0.w) / w;										" \
+"	s = uv + t3.xy + e2.xy;															" \
 "	if (e2.z > 0.0)																	" \
 "		s.x -= e2.z * floor(s.x / e2.z);											" \
 "	if (e2.w > 0.0)																	" \
@@ -1959,6 +1964,7 @@ WAX_GL_OUTPUT
 "uniform samplerBuffer warpmapId;				"
 "flat in int warpOfs;							"
 "flat in int tintOfs;							"
+"flat in int warpTriangle;						"
 "vec2 canvasPos;									"
 "flat in vec4 flatTint;							"
 WAX_GL_TINT_FUNC
@@ -1994,6 +2000,7 @@ WAX_GL_OUTPUT_A8
 "uniform samplerBuffer warpmapId;				"
 "flat in int warpOfs;							"
 "flat in int tintOfs;							"
+"flat in int warpTriangle;						"
 "vec2 canvasPos;									"
 "flat in vec4 flatTint;							"
 WAX_GL_TINT_FUNC
@@ -2080,6 +2087,7 @@ WAX_GL_OUTPUT
 "uniform samplerBuffer warpmapId;				"
 "flat in int warpOfs;							"
 "flat in int tintOfs;							"
+"flat in int warpTriangle;						"
 "vec2 canvasPos;									"
 "flat in vec4 flatTint;							"
 WAX_GL_TINT_FUNC
@@ -2101,6 +2109,7 @@ WAX_GL_OUTPUT_A8
 "uniform samplerBuffer warpmapId;				"
 "flat in int warpOfs;							"
 "flat in int tintOfs;							"
+"flat in int warpTriangle;						"
 "vec2 canvasPos;									"
 "flat in vec4 flatTint;							"
 WAX_GL_TINT_FUNC
