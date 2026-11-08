@@ -28,4 +28,5 @@ private:
 	bool limitsTest(std::ostream& output);
 	bool ballWarpTest(std::ostream& output);
 	bool lensWarpTest(std::ostream& output);
+	bool precisionTrianglesTest(std::ostream& output);
 };

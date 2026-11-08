@@ -226,6 +226,20 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   is written straight into the Warpmap in one pass, after counting it without the maths, with
   values that are the same across the band worked out once rather than for each vertex: 13 us
   rather than 45 us for a thick ring on x86.
+- **Precision is the same for all generators:** the largest distance on screen between where a
+  pixel shows the source and where it would exactly, measured as the error in the source through
+  the inverse of the exact mapping. An audit with that one measure (a scratch tool, comparing
+  each generator against its exact geometry at precisions 1 to 0.05) found CircularWarp and
+  RoundedRectWarp at 0.7-0.9 of precision, LensWarp at 0.3-0.7 (rings given half of it), BallWarp
+  over it (1.05-1.4) and CylinderWarp over it at fine precision, its strips being at least 2
+  pixels wide and the last one at each rim taking up to a pixel more. Now all keep within
+  precision with 10-40% to spare: pieces are sized for precision less 1/64 pixel
+  (`_piecePrecision()`), for rounding the vertices to spx; ball pieces span
+  sqrt(3.4 * precision / r) rather than sqrt(4 * ...); lens rings get 0.7 of precision; strips
+  and rings are at least 1/32 pixel. The tests check within precision itself, measured on screen
+  (the 1.5 times allowed before came from the grid), and that finer precision never gives fewer
+  triangles. Positions in the source are whole spx, so a magnified source limits precision to
+  about magnification / 128 pixels, which is left as it is.
 - **Animation without generating again** through source offsets: `CircularWarp::rotationOffset()`,
   `RoundedRectWarp::shiftOffset()` (in parts of the outline, not degrees),
   `CylinderWarp::rotationOffset()`, `BallWarp::rotationOffset()`. A LensWarp is moved by its
@@ -266,9 +280,10 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   strip from top to bottom (linear there, and few triangles per row), rings through the falloff
   and a coverage ring around the outline. Rings keep both the bend along a radius
   (|s''| d^2 / 8 / s') and the turn along the diagonals of the pieces, where s changes fast,
-  within half of precision, and are at least 1/32 pixel apart: closer rings got worse, as vertex
-  positions are rounded to spx. Giving rings more of the precision saved 25% of the triangles but
-  went over it. Pieces along the rim keep the outline within the other half. The layout is in
+  within 0.7 of precision, and are at least 1/32 pixel apart: closer rings got worse, as vertex
+  positions are rounded to spx. Pieces along the rim keep the outline within half of it. The two
+  seldom add up at the same place: lenses measure 0.6-0.8 of precision, as the other generators.
+  0.85 went over it. The layout is in
   floating point, a few hundred operations when settings change, the vertices in integers.
   A LensCapsule widget, drawing a lens over a CanvasCapsule where the pointer is, comes later.
 - **wax::Base,** not wax::Core, is the static base class of Wax. `wg::Base` inherits it, and code

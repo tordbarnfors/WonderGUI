@@ -140,9 +140,11 @@ namespace wax
 
 		Positions are linear between rings, which is off by up to |s''| * d^2 / 8 pixels of the source
 		over d pixels, seen magnified by 1 / s', and turned along the diagonals of the pieces where s
-		changes fast, so rings are as close as keeps both within half of precision. Pieces along the
-		rim are off by up to r * a^2 / 8 for an angle a, kept within the other half. Worked out in floating point when the settings change, a few hundred
-		operations, after which the vertices take only integers.
+		changes fast, so rings are as close as keeps both within 0.7 of precision. Pieces along the
+		rim are off by up to r * a^2 / 8 for an angle a, kept within half of it. The two seldom add up
+		at the same place, which keeps lenses within precision, as measured, with about as much to
+		spare as the other generators. Worked out in floating point when the settings change, a few
+		hundred operations, after which the vertices take only integers.
 	*/
 
 	void LensWarp::_calcLayout(Layout& layout) const
@@ -158,7 +160,7 @@ namespace wax
 		const double r0 = R - w;
 		const bool bFalloff = w > 1e-9;
 		const double p0 = r0 / m, m0 = 1 / m;
-		const double precision = std::max(double(m_precision), 0.01);
+		const double precision = _piecePrecision();
 		const double c_minStep = 1.0 / 32;								// Closest rings. Positions are in spx, which shows where the source is squeezed hard.
 
 		// s(r), s'(r) and s''(r).
@@ -216,7 +218,7 @@ namespace wax
 
 		auto step = [&](double a, double limit, double angle, double relax)
 		{
-			const double allowed = precision * 0.5 * relax;
+			const double allowed = precision * 0.7 * relax;
 			double curve = std::abs(dds(std::max(a, r0)));
 			double b = curve > 0 ? std::min(a + std::sqrt(8 * allowed * ds(a) / curve), limit) : limit;
 

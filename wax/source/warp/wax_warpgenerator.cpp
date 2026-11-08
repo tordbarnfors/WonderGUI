@@ -245,7 +245,7 @@ namespace wax
 			return;
 
 		const double quarter = c_pi / 2;
-		const double precision = std::max(double(m_precision), 0.01);
+		const double precision = _piecePrecision();
 
 		// Kept within Warpmap::maxVertices: columns at the start of the top side and around the
 		// four corners, nAcross + 1 vertices each, the vertices at the centers of fans and up to six
@@ -616,6 +616,14 @@ namespace wax
 
 		if (nTriangles == 0)
 			empty();
+	}
+
+	//____ _piecePrecision() __________________________________________________
+
+	double WarpGenerator::_piecePrecision() const
+	{
+		double precision = std::max(double(m_precision), 0.01);
+		return std::max(precision - 1.0 / 64, precision / 2);
 	}
 
 	//____ _validateSettings() ________________________________________________

@@ -117,8 +117,8 @@ namespace wax
 		const double c_pi = 3.14159265358979323846;
 
 		double r = std::max(radius() / 64.0, 1.0);
-		double precision = std::max(double(m_precision), 0.01);
-		double angle = std::sqrt(4 * precision / r);
+		double precision = _piecePrecision();
+		double angle = std::sqrt(3.4 * precision / r);
 
 
 		nLon = int(std::clamp(std::ceil(2 * c_pi / std::max(angle, 1e-6)), 8.0, 4096.0));

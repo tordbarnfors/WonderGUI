@@ -215,6 +215,7 @@ WarpmapTest::WarpmapTest()
 	ADD_TEST(limitsTest);
 	ADD_TEST(ballWarpTest);
 	ADD_TEST(lensWarpTest);
+	ADD_TEST(precisionTrianglesTest);
 }
 
 WarpmapTest::~WarpmapTest()
@@ -613,9 +614,11 @@ bool WarpmapTest::circularWarpTest(std::ostream& output)
 			double r = std::hypot(x - cx, y - cy);
 			double tangential = uDiff(v.u, exact.x, period) / c_sourceSize.w * std::abs(c.bp.sweep) / 180.0 * M_PI * r;
 			double radial = std::abs(v.v - exact.y) / c_sourceSize.h * std::abs(rBottom - rTop);
-			if (tangential > 0.03 || radial > 0.03)
+			// u and v are rounded to spx of the source, which on a large ring is up to 0.03 pixels.
+
+			if (tangential > 0.05 || radial > 0.05)
 				output << "Vertex at " << x << ", " << y << " is " << v.u << ", " << v.v << ", expected " << exact.x << ", " << exact.y << std::endl;
-			TEST_ASSERT(tangential <= 0.03 && radial <= 0.03);
+			TEST_ASSERT(tangential <= 0.05 && radial <= 0.05);
 		}
 
 		// Within precision between them, as positions on screen, and every pixel of the ring and the
@@ -644,9 +647,9 @@ bool WarpmapTest::circularWarpTest(std::ostream& output)
 				maxError = std::max(maxError, std::max(tangential, radial));
 			}
 
-		if (maxError > c.tolerance * 1.5)
+		if (maxError > c.tolerance)
 			output << "Max position error " << maxError << " px, precision " << c.tolerance << std::endl;
-		TEST_ASSERT(maxError <= c.tolerance * 1.5);
+		TEST_ASSERT(maxError <= c.tolerance);
 	}
 
 	// Finer precision, more triangles.
@@ -875,14 +878,19 @@ bool WarpmapTest::roundedRectWarpTest(std::ostream& output)
 				if (dist < top || dist > bottom || (qx < 1 && qy < 1 && std::abs(qx - qy) < 1.5))
 					continue;
 
+				// Along the outline as on screen: around a corner a position along the outline moves
+				// on screen by the distance to the center of the corner over its radius.
+
 				double along = uDiff(p.x / double(c_sourceSize.w) * perimeter, pos, perimeter);
+				if (qx > 0 && qy > 0)
+					along *= std::hypot(qx, qy) / r;
 				double across = std::abs(p.y / double(c_sourceSize.h) * (bottom - top) + top - dist);
 				maxError = std::max(maxError, std::max(along, across));
 			}
 
-		if (maxError > 0.25 * 1.5)
+		if (maxError > 0.25)
 			output << "Max position error " << maxError << " px" << std::endl;
-		TEST_ASSERT(maxError <= 0.25 * 1.5);
+		TEST_ASSERT(maxError <= 0.25);
 	}
 
 	// Start and sweep. The middle of the right side is a quarter of the way round, where the source
@@ -1285,9 +1293,9 @@ bool WarpmapTest::cylinderWarpTest(std::ostream& output)
 				TEST_ASSERT(alongDiff <= 0.51);
 			}
 
-		if (maxError > bp.precision * 1.5)
+		if (maxError > bp.precision)
 			output << "Max position error " << maxError << " px, precision " << bp.precision << std::endl;
-		TEST_ASSERT(maxError <= bp.precision * 1.5);
+		TEST_ASSERT(maxError <= bp.precision);
 
 		// Turning by offset gives the nodes of a larger start, within rounding.
 
@@ -1799,7 +1807,7 @@ bool WarpmapTest::ballWarpTest(std::ostream& output)
 				worst = std::max(worst, std::hypot(px - sx, py - sy));
 			}
 
-			if (worst > 0.25 * 1.5 + 0.05)
+			if (worst > 0.25)
 			{
 				output << "Position off by " << worst << " pixels (tilt " << tilt << ", roll " << roll << ")" << std::endl;
 				return false;
@@ -1970,7 +1978,7 @@ bool WarpmapTest::lensWarpTest(std::ostream& output)
 			// Where the falloff squeezes the source many times over, as 12 times magnification
 			// falling off over 2.4 pixels does, rounding to whole spx shows a bit more.
 
-			double tolerance = (falloff < 0.05f && m > 10.f) ? 0.32 : 0.25 + 0.03;
+			double tolerance = (falloff < 0.05f && m > 10.f) ? 0.35 : 0.25;
 			if (worst > tolerance)
 			{
 				output << "Position off by " << worst << " pixels (magnification " << m << ", falloff " << falloff << ")" << std::endl;
@@ -2043,5 +2051,55 @@ bool WarpmapTest::lensWarpTest(std::ostream& output)
 		TEST_ASSERT(pTiny && pTiny->generate());
 	}
 
+	return true;
+}
+
+//____ precisionTrianglesTest() _______________________________________________
+// Precision decides the number of triangles the same way for all generators that use it: never
+// fewer for finer precision, and clearly more from 1 pixel to 0.1. How close each keeps to its
+// precision is tested with the generator.
+
+bool WarpmapTest::precisionTrianglesTest(std::ostream& output)
+{
+	auto pFactory = SoftWarpmapFactory::create();
+
+	struct Generator { const char* pName; WarpGenerator_p pGenerator; };
+
+	Generator generators[] = {
+		{ "ring", CircularWarp::create(WGBP(CircularWarp, _.size = { 200, 200 }, _.sourceSize = c_sourceSize, _.topRadius = 98 * 64, _.bottomRadius = 60 * 64), pFactory) },
+		{ "disc", CircularWarp::create(WGBP(CircularWarp, _.size = { 160, 160 }, _.sourceSize = c_sourceSize, _.bottomRadius = 80 * 64), pFactory) },
+		{ "frame", RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 140, 100 }, _.sourceSize = c_sourceSize, _.rect = { 20 * 64, 20 * 64, 100 * 64, 60 * 64 },
+												 _.cornerRadius = 12 * 64, _.topDistance = -6 * 64, _.bottomDistance = 8 * 64), pFactory) },
+		{ "reel", CylinderWarp::create(WGBP(CylinderWarp, _.size = { 120, 200 }, _.sourceSize = { 1024 * 64, 1024 * 64 }, _.span = 170.f), pFactory) },
+		{ "ball", BallWarp::create(WGBP(BallWarp, _.size = { 100, 100 }, _.sourceSize = { 512 * 64, 256 * 64 }, _.tilt = 23.5f), pFactory) },
+		{ "glass", LensWarp::create(WGBP(LensWarp, _.size = { 120, 120 }, _.sourceSize = { 120 * 64, 120 * 64 }), pFactory) },
+		{ "thick glass", LensWarp::create(WGBP(LensWarp, _.size = { 120, 120 }, _.sourceSize = { 120 * 64, 120 * 64 }, _.magnification = 3.f, _.falloff = 0.3f), pFactory) }
+	};
+
+	for (auto& g : generators)
+	{
+		TEST_ASSERT(g.pGenerator);
+
+		int previous = 0, coarse = 0;
+		for (float precision : { 1.f, 0.5f, 0.25f, 0.1f })
+		{
+			TEST_ASSERT(g.pGenerator->setPrecision(precision));
+			int triangles = g.pGenerator->generate()->triangleCount();
+			if (triangles < previous)
+			{
+				output << g.pName << ": " << triangles << " triangles at precision " << precision << ", fewer than " << previous << " at a coarser one" << std::endl;
+				return false;
+			}
+			if (precision == 1.f)
+				coarse = triangles;
+			previous = triangles;
+		}
+
+		if (previous < coarse * 3 / 2)
+		{
+			output << g.pName << ": " << previous << " triangles at precision 0.1, " << coarse << " at 1" << std::endl;
+			return false;
+		}
+	}
 	return true;
 }

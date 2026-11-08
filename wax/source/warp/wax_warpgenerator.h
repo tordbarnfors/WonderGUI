@@ -91,6 +91,11 @@ namespace wax
 
 		static bool		_validateSettings( SizeI size, SizeSPX sourceSize, float precision );
 
+		// Precision to size the pieces of the mesh by, in pixels: what is set, less what rounding the
+		// vertices to spx can add (1/64 pixel), but at least half of it.
+
+		double			_piecePrecision() const;
+
 		// Integer maths for _generateMesh(), which runs once per vertex and so should avoid floating
 		// point on hardware without an FPU. Set up factors with _factor() once per generate.
 
