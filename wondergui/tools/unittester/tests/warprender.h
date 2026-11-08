@@ -33,4 +33,5 @@ private:
 	bool cylinderTest(std::ostream& output);
 	bool perspectiveTest(std::ostream& output);
 	bool ballTest(std::ostream& output);
+	bool lensTest(std::ostream& output);
 };

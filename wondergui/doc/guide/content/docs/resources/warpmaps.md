@@ -175,9 +175,40 @@ The Warpmap is a grid of meridians and parallels, between which positions are li
 
 
 
+## LensWarp
+
+LensWarp makes and keeps a Warpmap of a round lens that magnifies what is under it, such as a magnifying glass held over some graphics. The lens is centered in the Warpmap, as large as fits with its antialiased outline. Its source is what is under the lens: normally a source rectangle of the same size as the Warpmap, at the same place in the surface that holds the graphics, so the source is as large as the Warpmap where nothing is magnified.
+
+```c++
+	auto pLens = LensWarp::create( WGBP(LensWarp,
+										_.size = { 120, 120 },
+										_.sourceSize = { 120*64, 120*64 },
+										_.magnification = 2.f,
+										_.falloff = 0.3f ), pDevice->warpmapFactory() );
+
+	// pScene holds the graphics, drawn 1:1 at the top-left corner of the canvas.
+
+	pDevice->setBlitSource( pScene );
+	pDevice->warpBlit( pos, pLens->generate(), { pos.x, pos.y, 120*64, 120*64 } );
+```
+
+In the middle of the lens the source is magnified by *magnification*, 1 or more. Over the outer part of its radius given by *falloff*, 0 to 1, the magnification falls off to none at the rim, where the source meets what is around the lens without a seam, squeezed more the shorter the falloff is:
+
+* *falloff* 0 magnifies all of the lens evenly, like a magnifying glass, with a sharp edge.
+* *falloff* 0.2 to 0.4 magnifies the middle evenly and squeezes the source towards the rim, like thick glass.
+* *falloff* 1 magnifies the most in the middle and less and less out to the rim, like a bubble.
+
+Move the lens by drawing it somewhere else with the source rectangle moved along, which doesn't take generating again. A source offset moves the source within the lens in steps finer than a pixel. Changing magnification or falloff does take generating again. Without falloff the Warpmap is then only updated, as only positions in the source change; with falloff it can get more or fewer rings.
+
+A lens is drawn over what is already there, so graphics with transparency in them are blended twice where the lens is. Draw the lens from a surface with the finished graphics on it, such as the one a CanvasCapsule renders its children into. An edgemap seen through a lens stays sharp however much it is magnified, and a surface with *SampleMethod::Nearest* makes a loupe that shows its pixels. A frame, a highlight or a shadow are drawn separately.
+
+The Warpmap is the middle of the lens as one polygon, split into a strip from top to bottom, where positions are linear, rings through the falloff as close as keeps them within *precision*, or *cellSize.h* apart if set, and a ring of triangles around the outline from full coverage of the vertices half a pixel inside it to none half a pixel outside, which antialiases it. Pieces along the rim are as long as keeps the outline within *precision*, or *cellSize.w* if set. Without falloff the Warpmap is a couple of hundred triangles and draws about as fast as stretching the same area. A falloff that squeezes the source a lot takes many close rings, a few thousand triangles for a lens 240 pixels across, which a software backend draws 3 to 7 times slower than without falloff; a GPU doesn't notice. Where the source is squeezed by dozens of times, such as 12 times magnification falling off over a couple of pixels, rounding to whole spx can leave positions off by a bit more than *precision*.
+
+
+
 ## WarpGenerators
 
-CircularWarp, RoundedRectWarp, CylinderWarp, PerspectiveWarp and BallWarp are WarpGenerators: they make a Warpmap from a few settings and keep it. Size, source size, cell size, precision and generate() are the same for all WarpGenerators, though cell size and precision don't apply to PerspectiveWarp, which is exact.
+CircularWarp, RoundedRectWarp, CylinderWarp, PerspectiveWarp, BallWarp and LensWarp are WarpGenerators: they make a Warpmap from a few settings and keep it. Size, source size, cell size, precision and generate() are the same for all WarpGenerators, though cell size and precision don't apply to PerspectiveWarp, which is exact.
 
 generate() updates the Warpmap after settings have changed and returns it. A Warpmap that is held elsewhere, such as by a draw that isn't rendered yet, is never changed: generate() then makes a new one, as it does when size, cell size or the number of vertices and triangles has changed. Settings that change the shape, such as the radii of a CircularWarp, can change that, while angles and offsets don't. So draw what generate() returns rather than keeping it, and one generator can be drawn several times with different settings within the same canvas update.
 

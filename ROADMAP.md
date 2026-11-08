@@ -224,7 +224,8 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   rather than 45 us for a thick ring on x86.
 - **Animation without generating again** through source offsets: `CircularWarp::rotationOffset()`,
   `RoundedRectWarp::shiftOffset()` (in parts of the outline, not degrees),
-  `CylinderWarp::rotationOffset()`, `BallWarp::rotationOffset()`.
+  `CylinderWarp::rotationOffset()`, `BallWarp::rotationOffset()`. A LensWarp is moved by its
+  source rectangle.
 - **No culling of empty cells in the GPU backends.** Tried for OpenGL and reverted: the gain was
   questionable for the complexity. Metadata about skippable parts is the planned alternative.
 - **No edge mode** (clamping positions outside the source). Generators that need solid borders
@@ -252,6 +253,20 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   precision also at the outline, where pieces are seen most from the side. The counts are the most the grid can have for
   its size and precision, unused vertices and triangles left empty, so tilting and rolling never
   makes a new Warpmap. Integer maths per vertex, as for the other generators.
+- **LensWarp:** a round lens magnifying what is under it, drawn with a source rectangle of the
+  same size at the same place, so that moving it takes no generating. One profile for all looks:
+  magnification m within R * (1 - falloff), then a cubic Hermite curve to no magnification and
+  slope 1 at the rim, which can't fold for m >= 1 (Fritsch-Carlson) and meets the surroundings
+  without a seam. falloff 0 is a magnifying glass with a hard edge, 1 a bubble. Round only, and
+  magnification only (no concave lenses), for now. The mesh is the middle as one polygon in a
+  strip from top to bottom (linear there, and few triangles per row), rings through the falloff
+  and a coverage ring around the outline. Rings keep both the bend along a radius
+  (|s''| d^2 / 8 / s') and the turn along the diagonals of the pieces, where s changes fast,
+  within half of precision, and are at least 1/32 pixel apart: closer rings got worse, as vertex
+  positions are rounded to spx. Giving rings more of the precision saved 25% of the triangles but
+  went over it. Pieces along the rim keep the outline within the other half. The layout is in
+  floating point, a few hundred operations when settings change, the vertices in integers.
+  A LensCapsule widget, drawing a lens over a CanvasCapsule where the pointer is, comes later.
 - **wax::Base,** not wax::Core, is the static base class of Wax. `wg::Base` inherits it, and code
   using both namespaces says `wg::Base` or `wax::Base`.
 

@@ -6,6 +6,7 @@
 #include <wax_cylinderwarp.h>
 #include <wax_perspectivewarp.h>
 #include <wax_ballwarp.h>
+#include <wax_lenswarp.h>
 
 #include <cmath>
 #include <functional>
@@ -38,6 +39,7 @@ public:
 		addTest("Perspective", &WarpTests::perspective);
 		addTest("Vertex coverage", &WarpTests::vertexCoverage);
 		addTest("Balls", &WarpTests::balls);
+		addTest("Lenses", &WarpTests::lenses);
 	}
 
 	bool init(GfxDevice * pDevice, const RectSPX& canvas, wapp::API * pAppAPI)
@@ -233,6 +235,8 @@ public:
 
 			m_pMap = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear, _.tiling = true),
 													(uint8_t*)map.data(), PixelFormat::ARGB_8);
+			m_pMapNearest = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Nearest, _.tiling = true),
+														   (uint8_t*)map.data(), PixelFormat::ARGB_8);
 		}
 
 		// Warpmaps, a set for each size of source they are drawn with.
@@ -654,6 +658,65 @@ public:
 		return true;
 	}
 
+	// Top: floor tiles under, from the left, a magnifying glass, thick glass, a bubble and a strong
+	// bubble, and smaller lenses below them. Bottom: the world map under a pixel loupe, a glass, a
+	// bubble and a large thick glass, and the gauge with part of it magnified beside it. The
+	// tiles and the map are drawn straight from their surfaces, so what is under a lens is the same
+	// rectangle of the surface.
+
+	bool lenses(GfxDevice * pDevice, const RectSPX& canvas)
+	{
+		auto pFactory = pDevice->warpmapFactory();
+
+		auto lens = [&](int size, float magnification, float falloff)
+		{
+			return LensWarp::create(WGBP(LensWarp, _.size = { size, size }, _.sourceSize = SizeSPX(64 * size, 64 * size),
+										 _.magnification = magnification, _.falloff = falloff), pFactory);
+		};
+
+		auto over = [&](CoordI pos, CoordI origin, LensWarp * pLens)
+		{
+			SizeI size = pLens->size();
+			pDevice->warpBlit(pos * 64, pLens->generate(), { 64 * (pos.x - origin.x), 64 * (pos.y - origin.y), 64 * size.w, 64 * size.h });
+		};
+
+		pDevice->setBlitSource(m_pFloor);
+		pDevice->tile({ 0, 0, 64 * 512, 64 * 250 });
+
+		over({ 15, 15 }, { 0, 0 }, lens(110, 2.f, 0.f));
+		over({ 135, 15 }, { 0, 0 }, lens(110, 3.f, 0.3f));
+		over({ 255, 15 }, { 0, 0 }, lens(110, 2.5f, 1.f));
+		over({ 375, 15 }, { 0, 0 }, lens(110, 6.f, 0.6f));
+
+		int x = 30;
+		for (int size : { 80, 50, 30, 16 })
+		{
+			over({ x, 140 }, { 0, 0 }, lens(size, 2.f, 0.3f));
+			x += size + 40;
+		}
+
+		const CoordI mapOrigin = { 0, 256 };
+
+		pDevice->setBlitSource(m_pMap);
+		pDevice->tile({ 0, 64 * 256, 64 * 512, 64 * 176 });
+
+		pDevice->setBlitSource(m_pMapNearest);
+		over({ 15, 290 }, mapOrigin, lens(100, 6.f, 0.f));
+
+		pDevice->setBlitSource(m_pMap);
+		over({ 135, 290 }, mapOrigin, lens(100, 2.f, 0.2f));
+		over({ 255, 290 }, mapOrigin, lens(100, 3.f, 1.f));
+		over({ 375, 280 }, mapOrigin, lens(120, 1.5f, 0.5f));
+
+		// The gauge flat, and a part of it magnified beside it, still sharp. Its blue is translucent,
+		// so a lens over it would blend it twice.
+
+		pDevice->drawEdgemap({ 64 * 10, 64 * 444 }, m_pGauge);
+		auto pGaugeLens = LensWarp::create(WGBP(LensWarp, _.size = { 60, 60 }, _.sourceSize = SizeSPX(64 * 60, 64 * 60), _.magnification = 3.f, _.falloff = 0.4f), pFactory);
+		pDevice->warpDrawEdgemap({ 64 * 400, 64 * 444 }, pGaugeLens->generate(), m_pGauge, { 64 * 150, 0 });
+		return true;
+	}
+
 private:
 
 	Edgemap_p	m_pGauge;
@@ -670,6 +733,7 @@ private:
 	Surface_p	m_pFloor;
 	Surface_p	m_pCard;
 	Surface_p	m_pMap;
+	Surface_p	m_pMapNearest;
 
 	// Warpmaps are made for a source of a certain size.
 

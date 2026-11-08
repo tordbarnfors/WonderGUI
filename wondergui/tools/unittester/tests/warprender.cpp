@@ -21,6 +21,8 @@
 #include <wax_c_perspectivewarp.h>
 #include <wax_ballwarp.h>
 #include <wax_c_ballwarp.h>
+#include <wax_lenswarp.h>
+#include <wax_c_lenswarp.h>
 #include <wax_c.h>
 #include <wax_c_object.h>
 #include <wax_c_softgfx.h>
@@ -459,6 +461,7 @@ WarpRenderTest::WarpRenderTest()
 	ADD_TEST(cylinderTest);
 	ADD_TEST(perspectiveTest);
 	ADD_TEST(ballTest);
+	ADD_TEST(lensTest);
 }
 
 WarpRenderTest::~WarpRenderTest()
@@ -2020,4 +2023,114 @@ bool WarpRenderTest::ballTest(std::ostream& output)
 	};
 
 	return compare(output, "Balls through the C API", render(TestBackend::Soft, [&](GfxDevice* p) { c(p); }), "C API", render(TestBackend::Soft, normal), "C++", 0);
+}
+
+//____ lensTest() _____________________________________________________________
+// Lenses over a tiling surface: a magnifying glass, thick glass and a bubble, one moved along
+// by its source rectangle, a pixel loupe and an edgemap seen through a lens, as SoftBackend
+// draws them against ReferenceBackend, streamed, against much finer meshes and through the C API.
+
+bool WarpRenderTest::lensTest(std::ostream& output)
+{
+	auto glass = WGBP(LensWarp, _.size = { 44, 44 }, _.sourceSize = { 44 * 64, 44 * 64 });
+	auto thick = WGBP(LensWarp, _.size = { 40, 40 }, _.sourceSize = { 40 * 64, 40 * 64 }, _.magnification = 3.f, _.falloff = 0.3f);
+	auto bubble = WGBP(LensWarp, _.size = { 46, 46 }, _.sourceSize = { 46 * 64, 46 * 64 }, _.magnification = 2.5f, _.falloff = 1.f);
+	auto loupe = WGBP(LensWarp, _.size = { 40, 40 }, _.sourceSize = { 40 * 64, 40 * 64 }, _.magnification = 4.f);
+	auto gauge = WGBP(LensWarp, _.size = { 48, 44 }, _.sourceSize = c_edgemapSource, _.magnification = 1.6f, _.falloff = 0.5f);
+
+	auto scene = [=](GfxDevice* pDevice, float precision)
+	{
+		auto pFactory = pDevice->warpmapFactory();
+		auto make = [&](LensWarp::Blueprint bp) { bp.precision = precision; return LensWarp::create(bp, pFactory); };
+
+		auto pGlass = make(glass), pThick = make(thick), pBubble = make(bubble), pLoupe = make(loupe), pGauge = make(gauge);
+
+		pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Bilinear));
+		pDevice->warpBlit({ 2 * 64, 2 * 64 }, pGlass->generate(), { 2 * 64, 2 * 64, 44 * 64, 44 * 64 });
+		pDevice->warpBlit({ 50 * 64, 2 * 64 }, pThick->generate(), { 50 * 64, 2 * 64, 40 * 64, 40 * 64 });
+		pDevice->warpBlit({ 94 * 64, 2 * 64 }, pBubble->generate(), { 94 * 64, 2 * 64, 46 * 64, 46 * 64 });
+
+		// Moved by its source rectangle, and a little further within it by an offset.
+
+		pDevice->warpBlit({ 2 * 64, 50 * 64 }, pBubble->generate(), { 2 * 64, 50 * 64, 46 * 64, 46 * 64 }, { 20, -12 });
+
+		pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Nearest));
+		pDevice->warpBlit({ 52 * 64, 52 * 64 }, pLoupe->generate(), { 52 * 64, 52 * 64, 40 * 64, 40 * 64 });
+
+		pDevice->warpDrawEdgemap({ 100 * 64, 50 * 64 }, pGauge->generate(), makeEdgemap(pDevice, true));
+	};
+
+	auto normal = [=](GfxDevice* pDevice) { scene(pDevice, 0.25f); };
+
+	if (!compare(output, "Lenses", render(TestBackend::Soft, normal), "SoftBackend", render(TestBackend::Reference, normal), "ReferenceBackend", 6, 60, 48) ||
+		!compare(output, "Lenses", render(TestBackend::Linear, normal), "LinearBackend", render(TestBackend::Soft, normal), "SoftBackend", 0) ||
+		!compare(output, "Lenses, streamed", renderStreamed(normal), "streamed", render(TestBackend::Soft, normal), "direct", 0))
+		return false;
+
+	// Against meshes many times finer. Positions differ by up to a quarter of a pixel, which shows
+	// where the source has sharp edges, the more the more it is magnified. A lens misplaced or with
+	// a gap differs much more.
+
+	auto fine = [=](GfxDevice* pDevice) { scene(pDevice, 0.02f); };
+
+	if (!compare(output, "Lenses", render(TestBackend::Reference, normal), "precision 0.25", render(TestBackend::Reference, fine), "precision 0.02", 20, 200, 96))
+		return false;
+
+	// Through the C API.
+
+	auto c = [&](GfxDevice* pDevice)
+	{
+		wax_obj factory = (wax_obj) static_cast<Object*>(pDevice->warpmapFactory().rawPtr());
+		wax_obj device = (wax_obj) static_cast<Object*>(pDevice);
+
+		auto toC = [](const LensWarp::Blueprint& bp)
+		{
+			wax_lensWarpBP c = {};
+			c.falloff = bp.falloff;
+			c.magnification = bp.magnification == 2.f ? 0.f : bp.magnification;			// 0 for the default.
+			c.size = { bp.size.w, bp.size.h };
+			c.sourceSize = { bp.sourceSize.w, bp.sourceSize.h };
+			return c;
+		};
+
+		auto glassBP = toC(glass), thickBP = toC(thick), bubbleBP = toC(bubble), loupeBP = toC(loupe);
+		auto gaugeBP = toC(glass);						// Starts out as the glass and gets changed.
+		gaugeBP.size = { gauge.size.w, gauge.size.h };
+		gaugeBP.sourceSize = { gauge.sourceSize.w, gauge.sourceSize.h };
+
+		wax_obj cGlass = wax_createLensWarp(&glassBP, factory);
+		wax_obj cThick = wax_createLensWarp(&thickBP, factory);
+		wax_obj cBubble = wax_createLensWarp(&bubbleBP, factory);
+		wax_obj cLoupe = wax_createLensWarp(&loupeBP, factory);
+		wax_obj cGauge = wax_createLensWarp(&gaugeBP, factory);
+
+		TEST_ASSERT(!wax_setLensWarpMagnification(cGauge, 0.5f) && !wax_setLensWarpFalloff(cGauge, 1.5f));
+		TEST_ASSERT(wax_setLensWarpMagnification(cGauge, gauge.magnification) && wax_setLensWarpFalloff(cGauge, gauge.falloff));
+		TEST_ASSERT(wax_lensWarpMagnification(cGauge) == gauge.magnification && wax_lensWarpFalloff(cGauge) == gauge.falloff);
+		TEST_ASSERT(wax_lensWarpMagnification(cGlass) == 2.f && wax_lensWarpRadius(cGlass) == 44 * 32 - 32);
+
+		auto blitRect = [&](wax_coordSPX dest, wax_obj warpmap, wax_rectSPX source, wax_coordSPX offset)
+		{
+			wax_warpBlitRect(device, dest, warpmap, &source, offset);
+		};
+
+		pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Bilinear));
+		blitRect({ 2 * 64, 2 * 64 }, wax_generateWarpGenerator(cGlass), { 2 * 64, 2 * 64, 44 * 64, 44 * 64 }, { 0, 0 });
+		blitRect({ 50 * 64, 2 * 64 }, wax_generateWarpGenerator(cThick), { 50 * 64, 2 * 64, 40 * 64, 40 * 64 }, { 0, 0 });
+		blitRect({ 94 * 64, 2 * 64 }, wax_generateWarpGenerator(cBubble), { 94 * 64, 2 * 64, 46 * 64, 46 * 64 }, { 0, 0 });
+		blitRect({ 2 * 64, 50 * 64 }, wax_generateWarpGenerator(cBubble), { 2 * 64, 50 * 64, 46 * 64, 46 * 64 }, { 20, -12 });
+
+		pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Nearest));
+		blitRect({ 52 * 64, 52 * 64 }, wax_generateWarpGenerator(cLoupe), { 52 * 64, 52 * 64, 40 * 64, 40 * 64 }, { 0, 0 });
+
+		auto pEdgemap = makeEdgemap(pDevice, true);
+		wax_obj edgemap = (wax_obj) static_cast<Object*>(pEdgemap.rawPtr());
+		wax_warpDrawEdgemap(device, { 100 * 64, 50 * 64 }, wax_generateWarpGenerator(cGauge), edgemap, { 0, 0 });
+
+		for (wax_obj o : { cGauge, cLoupe, cBubble, cThick, cGlass })
+			wax_release(o);
+		return true;
+	};
+
+	return compare(output, "Lenses through the C API", render(TestBackend::Soft, [&](GfxDevice* p) { c(p); }), "C API", render(TestBackend::Soft, normal), "C++", 0);
 }

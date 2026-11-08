@@ -331,6 +331,12 @@ namespace wg
 
 	using wax::GridWalker;
 
+	//____ wax_lenswarp.h __________________________________________________________
+
+	using wax::LensWarp_p;
+	using wax::LensWarp_wp;
+	using wax::LensWarp;
+
 	//____ wax_lzcompression.h _____________________________________________________
 
 	using wax::LZCompressor_p;

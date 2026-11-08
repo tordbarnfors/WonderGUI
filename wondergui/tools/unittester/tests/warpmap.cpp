@@ -10,6 +10,7 @@
 #include <wax_cylinderwarp.h>
 #include <wax_perspectivewarp.h>
 #include <wax_ballwarp.h>
+#include <wax_lenswarp.h>
 #include <wax_meshcompression.h>
 #include <cstring>
 
@@ -214,6 +215,7 @@ WarpmapTest::WarpmapTest()
 	ADD_TEST(perspectiveRotatedTest);
 	ADD_TEST(limitsTest);
 	ADD_TEST(ballWarpTest);
+	ADD_TEST(lensWarpTest);
 }
 
 WarpmapTest::~WarpmapTest()
@@ -1897,6 +1899,187 @@ bool WarpmapTest::ballWarpTest(std::ostream& output)
 	auto pHuge = BallWarp::create(WGBP(BallWarp, _.size = { 4000, 4000 }, _.sourceSize = source, _.precision = 0.01f), pFactory);
 	Warpmap_p pHugeMap = pHuge->generate();
 	TEST_ASSERT(pHugeMap && pHugeMap->vertexCount() <= Warpmap::maxVertices && pHugeMap->triangleCount() <= Warpmap::maxTriangles);
+
+	return true;
+}
+
+//____ lensWarpTest() _________________________________________________________
+// A lens magnifying what is under it: positions within precision of the exact ones for any
+// magnification and falloff, no holes, an outline fading as a straight edge would, meeting what
+// is around it at the rim with falloff, and updated in place without.
+
+bool WarpmapTest::lensWarpTest(std::ostream& output)
+{
+	auto pFactory = SoftWarpmapFactory::create();
+	const SizeI size = { 241, 260 };
+	const SizeSPX source = { 241 * 64 * 2, 260 * 64 };					// Stretched sideways, which the lens follows.
+
+	TEST_ASSERT(LensWarp::create(WGBP(LensWarp, _.size = size, _.sourceSize = source, _.magnification = 0.9f), pFactory) == nullptr);
+	TEST_ASSERT(LensWarp::create(WGBP(LensWarp, _.size = size, _.sourceSize = source, _.falloff = 1.5f), pFactory) == nullptr);
+	TEST_ASSERT(LensWarp::create(WGBP(LensWarp, _.size = size, _.sourceSize = source, _.falloff = -0.1f), pFactory) == nullptr);
+	TEST_ASSERT(LensWarp::create(WGBP(LensWarp, _.size = size, _.sourceSize = {}), pFactory) == nullptr);
+
+	auto pLens = LensWarp::create(WGBP(LensWarp, _.size = size, _.sourceSize = source), pFactory);
+	TEST_ASSERT(pLens);
+	TEST_ASSERT(pLens->radius() == 241 * 32 - 32);
+	TEST_ASSERT(!pLens->setMagnification(0.5f) && !pLens->setFalloff(2.f));
+	TEST_ASSERT(pLens->magnification() == 2.f && pLens->falloff() == 0.f);
+
+	const double R = pLens->radius() / 64.0;
+	const double cx = size.w / 2.0, cy = size.h / 2.0;
+	const double toDestX = double(size.w) * 64 / source.w, toDestY = double(size.h) * 64 / source.h;
+
+	// How far from the middle of the source a point r pixels from the middle of the lens shows,
+	// in pixels of the Warpmap, and the reverse.
+
+	auto profile = [&](double r, double m, double falloff)
+	{
+		double w = R * falloff, r0 = R - w;
+		if (r <= r0 || w == 0)
+			return r / m;
+		if (r >= R)
+			return r;
+		double t = (r - r0) / w;
+		return (2 * t * t * t - 3 * t * t + 1) * r0 / m + (t * t * t - 2 * t * t + t) * w / m + (-2 * t * t * t + 3 * t * t) * R + (t * t * t - t * t) * w;
+	};
+
+	auto inverse = [&](double s, double m, double falloff)
+	{
+		double lo = 0, hi = R + 1;
+		for (int i = 0; i < 60; i++)
+		{
+			double mid = (lo + hi) / 2;
+			(profile(mid, m, falloff) < s ? lo : hi) = mid;
+		}
+		return (lo + hi) / 2;
+	};
+
+	for (float falloff : { 0.f, 0.02f, 0.1f, 0.3f, 1.f })
+	{
+		int nVertices = -1, nTriangles = -1;
+		const Warpmap* pFirst = nullptr;
+
+		for (float m : { 1.f, 2.f, 4.5f, 12.f })
+		{
+			TEST_ASSERT(pLens->setFalloff(falloff) && pLens->setMagnification(m));
+			Warpmap_p pMap = pLens->generate();
+
+			TEST_ASSERT(pMap->uPeriod() == 0 && pMap->vPeriod() == 0);
+
+			// Without falloff, magnification only changes positions in the source.
+
+			if (falloff == 0.f)
+			{
+				if (!pFirst)
+				{
+					pFirst = pMap;
+					nVertices = pMap->vertexCount();
+					nTriangles = pMap->triangleCount();
+				}
+				TEST_ASSERT(pMap == pFirst && pMap->vertexCount() == nVertices && pMap->triangleCount() == nTriangles);
+			}
+
+			double worst = 0;
+
+			for (int k = 0; k < 4000; k++)
+			{
+				// Points within the lens, more of them towards the rim.
+
+				double a = k * 2.399963, d = std::max(R * (1 - std::pow((k % 97) / 97.0, 3)) - 0.6, 0.0);
+				double sx = cx + std::cos(a) * d, sy = cy + std::sin(a) * d;
+
+				int triangle = pMap->triangleAt({ spx(std::floor(sx * 64)), spx(std::floor(sy * 64)) });
+				if (triangle < 0)
+				{
+					output << "No triangle at " << sx << ", " << sy << " (magnification " << m << ", falloff " << falloff << ")" << std::endl;
+					return false;
+				}
+
+				CoordF pos;
+				TEST_ASSERT(pMap->positionIn(triangle, sx, sy, pos));
+
+				// Where the position from the Warpmap is shown by the exact lens, against the point.
+
+				double ux = (pos.x - source.w / 2.0) * toDestX / 64, uy = (pos.y - source.h / 2.0) * toDestY / 64;
+				double r = inverse(std::hypot(ux, uy), m, falloff), angle = std::atan2(uy, ux);
+				worst = std::max(worst, std::hypot(cx + std::cos(angle) * r - sx, cy + std::sin(angle) * r - sy));
+			}
+
+			// Where the falloff squeezes the source many times over, as 12 times magnification
+			// falling off over 2.4 pixels does, rounding to whole spx shows a bit more.
+
+			double tolerance = (falloff < 0.05f && m > 10.f) ? 0.32 : 0.25 + 0.03;
+			if (worst > tolerance)
+			{
+				output << "Position off by " << worst << " pixels (magnification " << m << ", falloff " << falloff << ")" << std::endl;
+				return false;
+			}
+
+			// With falloff, the rim shows what is around it.
+
+			if (falloff > 0.f)
+			{
+				for (int i = 0; i < pMap->vertexCount(); i++)
+				{
+					const Warpmap::Vertex& v = pMap->vertexData()[i];
+					if (v.coverage == Warpmap::coverageOne / 2)
+						TEST_ASSERT(std::abs(v.u - v.x / toDestX) <= 2 && std::abs(v.v - v.y / toDestY) <= 2);
+				}
+			}
+
+			// Coverage across the outline as for a straight edge, off by as much as the outline is.
+
+			for (int k = 0; k < 720; k++)
+			{
+				double a = k * M_PI / 360;
+				for (double d : { -0.45, -0.3, -0.1, 0.0, 0.15, 0.3, 0.45 })
+				{
+					double sx = cx + std::cos(a) * (R + d), sy = cy + std::sin(a) * (R + d);
+					const double tolerance = 0.25 + 0.03;
+					double expected = std::clamp(0.5 - d, 0.0, 1.0);
+
+					int triangle = pMap->triangleAt({ spx(std::lround(sx * 64)), spx(std::lround(sy * 64)) });
+					if (triangle < 0)
+					{
+						if (expected <= tolerance)
+							continue;
+
+						output << "No triangle at the outline, " << d << " pixels out" << std::endl;
+						return false;
+					}
+
+					const Warpmap::Triangle& tri = pMap->triangleData()[triangle];
+					const Warpmap::Vertex* c[3] = { &pMap->vertexData()[tri.a], &pMap->vertexData()[tri.b], &pMap->vertexData()[tri.c] };
+					double e1x = c[1]->x - c[0]->x, e1y = c[1]->y - c[0]->y, e2x = c[2]->x - c[0]->x, e2y = c[2]->y - c[0]->y;
+					double area = e1x * e2y - e1y * e2x;
+					double dx = sx * 64 - c[0]->x, dy = sy * 64 - c[0]->y;
+					double b1 = (dx * e2y - dy * e2x) / area, b2 = (e1x * dy - e1y * dx) / area;
+					double coverage = ((1 - b1 - b2) * c[0]->coverage + b1 * c[1]->coverage + b2 * c[2]->coverage) / Warpmap::coverageOne;
+
+					if (std::abs(std::clamp(coverage, 0.0, 1.0) - expected) > tolerance)
+					{
+						output << "Coverage " << coverage << " at " << d << " pixels out (magnification " << m << ", falloff " << falloff << ")" << std::endl;
+						return false;
+					}
+				}
+
+				double sx = cx + std::cos(a) * (R + 0.75), sy = cy + std::sin(a) * (R + 0.75);
+				TEST_ASSERT(pMap->triangleAt({ spx(std::lround(sx * 64)), spx(std::lround(sy * 64)) }) < 0);
+			}
+		}
+	}
+
+	// Within the limits of Warpmap however large and fine, and with tiny lenses.
+
+	auto pHuge = LensWarp::create(WGBP(LensWarp, _.size = { 4000, 4000 }, _.sourceSize = { 4000 * 64, 4000 * 64 }, _.falloff = 0.2f, _.magnification = 30.f, _.precision = 0.01f), pFactory);
+	Warpmap_p pHugeMap = pHuge->generate();
+	TEST_ASSERT(pHugeMap && pHugeMap->vertexCount() <= Warpmap::maxVertices && pHugeMap->triangleCount() <= Warpmap::maxTriangles);
+
+	for (int tiny : { 1, 2, 3 })
+	{
+		auto pTiny = LensWarp::create(WGBP(LensWarp, _.size = { tiny, tiny }, _.sourceSize = { tiny * 64, tiny * 64 }, _.falloff = 0.5f), pFactory);
+		TEST_ASSERT(pTiny && pTiny->generate());
+	}
 
 	return true;
 }

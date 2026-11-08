@@ -45,6 +45,7 @@
 #include <wax_roundedrectwarp.h>
 #include <wax_cylinderwarp.h>
 #include <wax_perspectivewarp.h>
+#include <wax_lenswarp.h>
 #include <wax_color.h>
 #include <wax_compression.h>
 #include <wax_dummyfont.h>
