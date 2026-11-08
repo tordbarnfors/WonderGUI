@@ -63,6 +63,15 @@ in someone's memory or an old chat. Add to it when you decide something, move it
     a border. Keeping interior runs within 1/16 of a pixel too was tried: it halves how much
     colors swim over sharp textures, but drew a steep floor 50% slower (`c_runShift` in
     `wax_softbackend_warp.cpp`), so it stays at a quarter of a pixel for now.
+  - **Software backends work out triangles when the content changes,** including where each edge
+    starts and how it steps from row to row, so that drawing steps them without divisions, in 32
+    bits but for the column. Edges along a row only limit the rows of a triangle. Only triangles
+    with pixels are kept, perspective data only for those in perspective, and only the triangles
+    on the rows being drawn while drawing: 190 KB for a thick ring of 992 triangles rather than
+    480 KB. Without `__int128`, values are worked out in 64 bits where they fit, with the same
+    rounding, which makes setting up the ring 9 times faster on a CPU without it.
+  - **Vertex positions are within +-2^23 spx** (131072 pixels), so that the steps of edges fit in
+    32 bits in software backends and positions are exact as floats in GPU backends.
   - **Perspective in the software backends is limited to u and v within 32768 pixels of the
     source from the first corner of a triangle,** so that W * (u - u0) fits in 64 bits with
     weights scaled to 2^28. Setting up triangles uses 128 bit products, `__int128` where the

@@ -388,26 +388,17 @@ namespace wax
 		// first past the last (upper bound) column inside on the current row, stepped from row to row
 		// without divisions: col * divisor - rem is the numerator, 0 <= rem < divisor.
 
-		struct WarpEdge
-		{
-			int			kind;			// 0 = lower bound, 1 = upper bound, 2 = horizontal.
-			int64_t		col;
-			int64_t		rem;
-			int64_t		divisor;
-			int64_t		stepCol;		// Change of col and rem from one row to the next.
-			int64_t		stepRem;
-			int64_t		value;			// Horizontal: edge function along the row, inside if > 0 or 0 and bTie.
-			int64_t		valueStep;
-			bool		bTie;
-		};
+		// A triangle on the rows being drawn, its edges stepped from row to row as the Edges of its
+		// Setup describe.
 
 		struct WarpTriangle
 		{
-			const SoftWarpmap::Setup*	pSetup;
+			const SoftWarpmap::Setup*		pSetup;
+			const SoftWarpmap::Perspective*	pPerspective;		// nullptr without perspective.
 			int			kind;			// Of all of it, c_warpMixed if it varies or with perspective.
-			WarpEdge	edges[3];		// Lower bounds first, then upper bounds, then horizontal edges.
-			int			nLower, nUpper;
 			int			xBeg, xEnd;		// Pixels inside on the current row, relative to the Warpmap.
+			int64_t		col[3];			// Of the edges of the Setup, on the current row.
+			int32_t		rem[3];
 		};
 
 		struct WarpSetup
@@ -544,7 +535,8 @@ namespace wax
 		// Warps
 
 		WarpSetup					m_warp;
-		std::vector<WarpTriangle>	m_warpTriangles;					// Triangles on the rows being drawn.
+		std::vector<WarpTriangle>	m_warpTriangles;					// Triangles on the rows being drawn, and free entries.
+		std::vector<int>			m_warpFree;							// Entries of m_warpTriangles of triangles that have ended.
 		std::vector<int>			m_warpRowOrder;						// Triangles on the current row, by first pixel.
 		std::vector<WarpSpan>		m_warpSpans;						// Spans of the current row.
 		std::vector<SoftShapes::Run>	m_warpRuns;

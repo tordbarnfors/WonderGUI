@@ -24,10 +24,12 @@
 	Drawing through Warpmaps (Command::WarpBlit and Command::WarpDrawEdgemap) for SoftBackend
 	and LinearBackend, following the definition in Warpmap.
 
-	Triangles are set up when the content of the Warpmap changes, see SoftWarpmap::Setup, and
-	drawn row by row: for each row of pixels, the pixels of each triangle on it are found by
-	stepping the edges of the triangle from the row above, exactly and without divisions, by the
-	rule for pixel centers on edges in Warpmap. They make spans of pixels along the row, with
+	Triangles are set up when the content of the Warpmap changes, see SoftWarpmap::Setup, with
+	where their edges start and how they step from row to row worked out then, and drawn row by
+	row: for each row of pixels, the pixels of each triangle on it are found by stepping the edges
+	of the triangle from the row above, exactly and without divisions, in 32 bits but for the
+	column, by the rule for pixel centers on edges in Warpmap. Only the triangles on the rows being
+	drawn are kept while drawing. They make spans of pixels along the row, with
 	positions that are linear along the span, classified from the bounds of their positions:
 
 	- Outside: no part of the span reaches into the source. Nothing is drawn.
@@ -466,8 +468,9 @@ namespace wax
 	//____ _drawWarp() __________________________________________________________
 	/*
 		Row by row, with the triangles that cover the row. A triangle starts being drawn on its first
-		row, or the first row of the clip rectangle, and is dropped after its last. Triangles that are
-		all outside the source, or all in a segment that is skipped, aren't drawn at all.
+		row, or the first row of the clip rectangle, and is dropped after its last, leaving its entry
+		for the next one to start. Triangles that are all outside the source, or all in a segment
+		that is skipped, aren't drawn at all.
 
 		The pixels of each triangle on a row are then sorted along the row, which they mostly are
 		already, from the row above, and made into spans by _addWarpSpans().
@@ -499,6 +502,7 @@ namespace wax
 		const std::vector<int>& order = pMap->m_order;
 
 		m_warpTriangles.clear();
+		m_warpFree.clear();
 		m_warpRowOrder.clear();
 		size_t next = 0;
 
@@ -515,7 +519,7 @@ namespace wax
 
 				int kind = c_warpMixed;
 
-				if (!setup.bPerspective)
+				if (setup.perspective < 0)
 				{
 					int64_t lo[2], hi[2];
 					for (int a = 0; a < 2; a++)
@@ -530,12 +534,24 @@ namespace wax
 						continue;
 				}
 
-				WarpTriangle triangle;
+				int index;
+				if (m_warpFree.empty())
+				{
+					index = int(m_warpTriangles.size());
+					m_warpTriangles.emplace_back();
+				}
+				else
+				{
+					index = m_warpFree.back();
+					m_warpFree.pop_back();
+				}
+
+				WarpTriangle& triangle = m_warpTriangles[index];
 				triangle.pSetup = &setup;
+				triangle.pPerspective = setup.perspective < 0 ? nullptr : &pMap->m_perspective[setup.perspective];
 				triangle.kind = kind;
 				_beginWarpTriangle(triangle, y);
-				m_warpRowOrder.push_back(int(m_warpTriangles.size()));
-				m_warpTriangles.push_back(triangle);
+				m_warpRowOrder.push_back(index);
 			}
 
 			// Pixels of each triangle on this row, dropping those that have ended, then sorted along
@@ -549,7 +565,10 @@ namespace wax
 				WarpTriangle& triangle = m_warpTriangles[index];
 
 				if (triangle.pSetup->rowEnd <= y)
+				{
+					m_warpFree.push_back(index);
 					continue;
+				}
 
 				_warpTriangleRow(triangle);
 				triangle.xBeg = std::max(triangle.xBeg, x0);
@@ -596,73 +615,38 @@ namespace wax
 
 	//____ _beginWarpTriangle() _________________________________________________
 	/*
-		Sets up the edges of a triangle for drawing from a row on. Along a row, the edge function is
-		value + edgeX * x. Where edgeX > 0 the edge is a lower bound, inside (with ties, which a left
-		edge has) from ceil(-value / edgeX), where edgeX < 0 an upper bound, inside (without ties)
-		up to ceil(value / -edgeX). Each row adds edgeY to value, so the bound is stepped by the
-		quotient and remainder of that by the divisor, exactly, as SoftWarpmap::Setup describes.
+		Sets up the edges of a triangle for drawing from a row on, from where they are at its first
+		row, see SoftWarpmap::Setup. A triangle that starts above the first row drawn has its edges
+		stepped by all the rows above at once, with a division only for the remainder.
 	*/
 
 	void SoftBackend::_beginWarpTriangle(WarpTriangle& triangle, int row)
 	{
 		const SoftWarpmap::Setup& s = *triangle.pSetup;
+		const int64_t rows = row - s.rowBeg;
 
-		WarpEdge edges[3];
-		int kinds[3];
-
-		for (int i = 0; i < 3; i++)
+		for (int i = 0; i < s.nLower + s.nUpper; i++)
 		{
-			WarpEdge& e = edges[i];
+			const SoftWarpmap::Edge& e = s.edges[i];
 
-			int64_t value = s.edge[i] + s.edgeY[i] * row;
-			int64_t numerator, step;
+			int64_t col = e.col;
+			int64_t rem = e.rem;
 
-			if (s.edgeX[i] > 0)
+			if (rows > 0)
 			{
-				e.kind = 0;
-				e.divisor = s.edgeX[i];
-				numerator = -value;
-				step = -s.edgeY[i];
-			}
-			else if (s.edgeX[i] < 0)
-			{
-				e.kind = 1;
-				e.divisor = -s.edgeX[i];
-				numerator = value;
-				step = s.edgeY[i];
-			}
-			else
-			{
-				e.kind = 2;
-				e.value = value;
-				e.valueStep = s.edgeY[i];
-				e.bTie = s.tie[i];
-				kinds[i] = 2;
-				continue;
+				col += int64_t(e.stepCol) * rows;
+				rem -= int64_t(e.stepRem) * rows;
+
+				if (rem < 0)
+				{
+					int64_t wraps = (e.divisor - 1 - rem) / e.divisor;
+					rem += wraps * e.divisor;
+					col += wraps;
+				}
 			}
 
-			e.col = ceilDiv(numerator, e.divisor);
-			e.rem = e.col * e.divisor - numerator;
-			e.stepCol = floorDiv(step, e.divisor);
-			e.stepRem = step - e.stepCol * e.divisor;
-			kinds[i] = e.kind;
-		}
-
-		// In order of kind, so that rows go through them without looking at it.
-
-		int n = 0;
-		for (int kind = 0; kind < 3; kind++)
-		{
-			for (int i = 0; i < 3; i++)
-			{
-				if (kinds[i] == kind)
-					triangle.edges[n++] = edges[i];
-			}
-
-			if (kind == 0)
-				triangle.nLower = n;
-			else if (kind == 1)
-				triangle.nUpper = n - triangle.nLower;
+			triangle.col[i] = col;
+			triangle.rem[i] = int32_t(rem);
 		}
 	}
 
@@ -673,35 +657,27 @@ namespace wax
 	void SoftBackend::_warpTriangleRow(WarpTriangle& triangle)
 	{
 		const int64_t c_limit = int64_t(1) << 30;
+		const SoftWarpmap::Setup& s = *triangle.pSetup;
 
 		int64_t beg = -c_limit, end = c_limit;
 
-		const int nLower = triangle.nLower;
-		const int nBounds = nLower + triangle.nUpper;
+		const int nLower = s.nLower;
+		const int nBounds = nLower + s.nUpper;
 
 		for (int i = 0; i < nBounds; i++)
 		{
-			WarpEdge& e = triangle.edges[i];
+			const SoftWarpmap::Edge& e = s.edges[i];
+			int64_t col = triangle.col[i];
 
 			if (i < nLower)
-				beg = std::max(beg, e.col);
+				beg = std::max(beg, col);
 			else
-				end = std::min(end, e.col);
+				end = std::min(end, col);
 
-			e.col += e.stepCol;
-			e.rem -= e.stepRem;
-
-			int64_t negative = e.rem >> 63;					// -1 if the remainder went below 0.
-			e.rem += e.divisor & negative;
-			e.col -= negative;
-		}
-
-		for (int i = nBounds; i < 3; i++)
-		{
-			WarpEdge& e = triangle.edges[i];
-			if (!(e.value > 0 || (e.value == 0 && e.bTie)))
-				end = beg;
-			e.value += e.valueStep;
+			int32_t rem = triangle.rem[i] - e.stepRem;
+			int32_t negative = rem >> 31;					// -1 if the remainder went below 0.
+			triangle.rem[i] = rem + (e.divisor & negative);
+			triangle.col[i] = col + e.stepCol - negative;
 		}
 
 		triangle.xBeg = int(std::clamp(beg, -c_limit, c_limit));
@@ -736,7 +712,7 @@ namespace wax
 		const int xEnd = triangle.xEnd;
 		const int64_t zero[2] = { 0, 0 };
 
-		if (!s.bPerspective)
+		if (!triangle.pPerspective)
 		{
 			int64_t step[2], dy[2];
 			for (int a = 0; a < 2; a++)
@@ -758,14 +734,16 @@ namespace wax
 			return;
 		}
 
+		const SoftWarpmap::Perspective& p = *triangle.pPerspective;
+
 		auto divide = [](int64_t a, int64_t b)
 		{
 			return floorDiv(a + b / 2, b);
 		};
 
 		const int64_t Y = row - s.oy;
-		const int64_t rowW = s.f[2][0] + s.f[2][2] * Y;
-		const int64_t rowU[2] = { s.f[0][0] + s.f[0][2] * Y, s.f[1][0] + s.f[1][2] * Y };
+		const int64_t rowW = p.f[2][0] + p.f[2][2] * Y;
+		const int64_t rowU[2] = { p.f[0][0] + p.f[0][2] * Y, p.f[1][0] + p.f[1][2] * Y };
 
 		// Position at the center of pixel x of the row, and optionally its derivatives along x and
 		// y. False beyond the horizon.
@@ -773,12 +751,12 @@ namespace wax
 		auto position = [&](int x, int64_t* pPos, int64_t& W)
 		{
 			int64_t X = x - s.ox;
-			W = rowW + s.f[2][1] * X;
+			W = rowW + p.f[2][1] * X;
 			if (W <= 0)
 				return false;
 
 			for (int a = 0; a < 2; a++)
-				pPos[a] = s.ref[a] + divide(rowU[a] + s.f[a][1] * X, W) + w.offset[a];
+				pPos[a] = p.ref[a] + divide(rowU[a] + p.f[a][1] * X, W) + w.offset[a];
 			return true;
 		};
 
@@ -789,14 +767,14 @@ namespace wax
 
 			for (int a = 0; a < 2; a++)
 			{
-				int64_t relative = pPos[a] - s.ref[a] - w.offset[a];
-				pDx[a] = divide(s.f[a][1] - relative * s.f[2][1], W);
-				pDy[a] = divide(s.f[a][2] - relative * s.f[2][2], W);
+				int64_t relative = pPos[a] - p.ref[a] - w.offset[a];
+				pDx[a] = divide(p.f[a][1] - relative * p.f[2][1], W);
+				pDy[a] = divide(p.f[a][2] - relative * p.f[2][2], W);
 			}
 			return true;
 		};
 
-		const int64_t gradient = s.gradientW;
+		const int64_t gradient = p.gradientW;
 
 		// Pixels from a run start with W that keep the error within 1/4 >> shift of a pixel.
 
@@ -845,7 +823,7 @@ namespace wax
 
 					for (int k = 0; k < n; )
 					{
-						int64_t subW = rowW + s.f[2][1] * (x + k - s.ox);
+						int64_t subW = rowW + p.f[2][1] * (x + k - s.ox);
 						int m = std::min(runLength(subW, c_mixedRunShift), n - k);
 
 						int64_t endPos[2], endW;

@@ -207,7 +207,7 @@ namespace wax
 		where each edge function e = dx * (py - y0) - dy * (px - x0) is positive (y going down), a
 		point on an edge is inside if it is a left edge (going up, dy < 0) or a horizontal top edge
 		(going right, dx > 0). Two triangles sharing an edge go along it in opposite directions, so
-		exactly one of them has it. Positions are within +-2^26 and differences within +-2^32, so
+		exactly one of them has it. Positions are within +-2^23 and differences within +-2^30, so
 		products fit in 64 bits.
 	*/
 

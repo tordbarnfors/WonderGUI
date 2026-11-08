@@ -53,8 +53,10 @@ namespace wax
 	 * clockwise. A new Warpmap with at least 4 vertices and 2 triangles maps its rectangle straight
 	 * onto the source, pixel for pixel, with the first 4 vertices and 2 triangles.
 	 *
-	 * Vertex positions are kept within +-maxPosition, u and v within +-maxValue and w within
-	 * 1 -> maxWeight, with weightOne being 1.0. Only the ratios between the weights of the corners
+	 * Vertex positions are kept within +-maxPosition, which keeps them exact as floats in GPU
+	 * backends and the steps along the edges of triangles within 32 bits in software backends. u and
+	 * v are kept within +-maxValue and w within 1 -> maxWeight, with weightOne being 1.0. Only the
+	 * ratios between the weights of the corners
 	 * of a triangle matter. They are the same (any value) for a triangle without perspective, and
 	 * proportional to 1 / distance from the eye for a triangle seen in perspective. A vertex shared
 	 * by triangles has the same weight in all of them, so a mesh is in perspective as a whole.
@@ -164,7 +166,7 @@ namespace wax
 			int				operator[]( int i ) const { return i == 0 ? a : (i == 1 ? b : c); }
 		};
 
-		static constexpr spx	maxPosition = 1 << 26;			// Vertex positions are kept within +-maxPosition (1 million pixels).
+		static constexpr spx	maxPosition = 1 << 23;			// Vertex positions are kept within +-maxPosition (131072 pixels), see below.
 		static constexpr spx	maxValue = 1 << 30;				// u, v and periods are kept within +-maxValue (16 million pixels).
 		static constexpr int	weightOne = 1 << 16;			// A weight of 1.0.
 		static constexpr int	maxWeight = 1 << 24;			// Weights are kept within 1 -> maxWeight.

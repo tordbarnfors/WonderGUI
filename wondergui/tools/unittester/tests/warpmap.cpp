@@ -1731,7 +1731,7 @@ bool WarpmapTest::limitsTest(std::ostream& output)
 	auto pCylinder = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 100, 70000 }, _.sourceSize = { 64 * 64, 64 * 64 }, _.cellSize = { 0, 1 }), pFactory);
 	TEST_ASSERT(fits(pCylinder->generate(), "Long cylinder with strips of a pixel"));
 
-	auto pTallCylinder = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 100, 200000 }, _.sourceSize = { 64 * 64, 64 * 64 }, _.precision = 0.01f), pFactory);
+	auto pTallCylinder = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 100, 120000 }, _.sourceSize = { 64 * 64, 64 * 64 }, _.precision = 0.01f), pFactory);
 	TEST_ASSERT(fits(pTallCylinder->generate(), "Very long cylinder"));
 
 	return true;
