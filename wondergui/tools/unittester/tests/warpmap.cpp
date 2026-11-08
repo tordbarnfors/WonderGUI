@@ -1610,22 +1610,6 @@ namespace
 	public:
 		static bool valid(const Blueprint& bp) { return _validateBlueprint(bp); }
 	};
-
-	// A generator that only implements a grid: the source straight onto the Warpmap.
-
-	class GridTestWarp : public WarpGenerator
-	{
-	public:
-		GridTestWarp(SizeI size, SizeI cellSize, WarpmapFactory* pFactory) : WarpGenerator(size, size * 64, cellSize, 1.f, pFactory) {}
-
-	protected:
-		void _generateNodes(CoordSPX* pNodes, SizeI nodes, SizeI cellSize) const override
-		{
-			for (int y = 0; y < nodes.h; y++)
-				for (int x = 0; x < nodes.w; x++)
-					pNodes[y * nodes.w + x] = { std::min(x * cellSize.w, m_size.w) * 64, std::min(y * cellSize.h, m_size.h) * 64 };
-		}
-	};
 }
 
 bool WarpmapTest::limitsTest(std::ostream& output)
@@ -1684,20 +1668,6 @@ bool WarpmapTest::limitsTest(std::ostream& output)
 
 	auto pTallCylinder = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 100, 200000 }, _.sourceSize = { 64 * 64, 64 * 64 }, _.precision = 0.01f), pFactory);
 	TEST_ASSERT(fits(pTallCylinder->generate(), "Very long cylinder"));
-
-	// A grid takes four vertices for each cell, so cells are made larger, and still map the same.
-
-	StrongPtr<GridTestWarp> pGrid = new GridTestWarp({ 1000, 700 }, { 4, 4 }, pFactory);
-	Warpmap_p pGridMap = pGrid->generate();
-	TEST_ASSERT(fits(pGridMap, "Grid of small cells"));
-	TEST_ASSERT(pGridMap->vertexCount() > Warpmap::maxVertices / 2);
-
-	for (double y : { 0.5, 123.25, 699.5 })
-		for (double x : { 0.5, 517.75, 999.5 })
-		{
-			CoordF pos = positionAt(pGridMap, x, y);
-			TEST_ASSERT(std::abs(pos.x - x * 64) < 0.01 && std::abs(pos.y - y * 64) < 0.01);
-		}
 
 	return true;
 }

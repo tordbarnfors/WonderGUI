@@ -30,7 +30,6 @@ namespace wax
 	const TypeInfo WarpGenerator::TYPEINFO = { "WarpGenerator", &Object::TYPEINFO };
 
 	static const int c_minCellSize = 4;
-	static const int c_maxCellSize = 64;
 
 	//____ constructor ________________________________________________________
 
@@ -40,7 +39,6 @@ namespace wax
 		m_sourceSize = sourceSize;
 		m_cellSize	= cellSize;
 		m_precision	= precision;
-		m_precisionFixed = int64_t(double(precision) * 65536.0 + 0.5);
 		m_pFactory	= pFactory;
 	}
 
@@ -125,7 +123,6 @@ namespace wax
 		if (precision != m_precision)
 		{
 			m_precision = precision;
-			m_precisionFixed = int64_t(double(precision) * 65536.0 + 0.5);
 			m_bDirty = true;
 		}
 		return true;
@@ -138,7 +135,7 @@ namespace wax
 
 		A Warpmap that only we hold has its vertices, triangles and periods written in place and
 		sent on once. The counts of vertices and triangles are fixed for a Warpmap, so it is
-		created anew when they change, as with the cell size of a grid.
+		created anew when they change.
 	*/
 
 	Warpmap_p WarpGenerator::generate()
@@ -200,123 +197,11 @@ namespace wax
 		return m_pWarpmap;
 	}
 
-	//____ _gridCellSize() ____________________________________________________
-	// Cell size of the grid, made larger where needed to keep four vertices for each cell within
-	// Warpmap::maxVertices, along the axis with the most cells.
-
-	SizeI WarpGenerator::_gridCellSize() const
-	{
-		SizeI cellSize = this->cellSize();
-
-		auto cells = [&](int length, int cell) { return (length + cell - 1) / cell; };
-
-		while (int64_t(cells(m_size.w, cellSize.w)) * cells(m_size.h, cellSize.h) * 4 > Warpmap::maxVertices)
-		{
-			if (cells(m_size.w, cellSize.w) >= cells(m_size.h, cellSize.h))
-				cellSize.w += std::max(1, cellSize.w / 8);
-			else
-				cellSize.h += std::max(1, cellSize.h / 8);
-		}
-
-		return cellSize;
-	}
-
-	//____ _meshSize() ________________________________________________________
-	// Four vertices and two triangles for each cell of the grid.
-
-	void WarpGenerator::_meshSize(int& nVertices, int& nTriangles) const
-	{
-		SizeI cellSize = _gridCellSize();
-		int nCells = ((m_size.w + cellSize.w - 1) / cellSize.w) * ((m_size.h + cellSize.h - 1) / cellSize.h);
-
-		nVertices = nCells * 4;
-		nTriangles = nCells * 2;
-	}
-
-	//____ _generateMesh() ____________________________________________________
-
-	void WarpGenerator::_generateMesh(Warpmap::Vertex* pVertices, Warpmap::Triangle* pTriangles) const
-	{
-		SizeI cellSize = _gridCellSize();
-		SizeI nodes = { (m_size.w + cellSize.w - 1) / cellSize.w + 1, (m_size.h + cellSize.h - 1) / cellSize.h + 1 };
-
-		std::vector<CoordSPX> buffer(nodes.w * nodes.h);
-		_generateNodes(buffer.data(), nodes, cellSize);
-
-		_gridToMesh(buffer.data(), nodes, cellSize, std::clamp(_uPeriod(), 0, Warpmap::maxValue), std::clamp(_vPeriod(), 0, Warpmap::maxValue), pVertices, pTriangles);
-	}
-
 	//____ _calcCellSize() ____________________________________________________
 
 	SizeI WarpGenerator::_calcCellSize() const
 	{
 		return m_size;
-	}
-
-	//____ _gridToMesh() ______________________________________________________
-	/*
-		Each cell gets four vertices of its own, top-left, top-right, bottom-right and bottom-left,
-		and two triangles split along the diagonal from top-left to bottom-right. Neighbouring cells
-		have vertices in the same positions along their common edges, so the mesh has no gaps. Values
-		on a periodic axis are brought into 0 -> period at the top-left corner and the other corners
-		moved by whole periods to be as close to it as possible, so that interpolation across the
-		seam takes the short way. That is why vertices aren't shared between cells.
-	*/
-
-	void WarpGenerator::_gridToMesh(const CoordSPX* pNodes, SizeI nodes, SizeI cellSize, spx uPeriod, spx vPeriod, Warpmap::Vertex* pVertices, Warpmap::Triangle* pTriangles) const
-	{
-		auto floorDiv = [](int64_t a, int64_t b)
-		{
-			int64_t q = a / b;
-			return (q * b > a) ? q - 1 : q;
-		};
-
-		auto normalize = [&](int64_t value, int64_t period)
-		{
-			return period > 0 ? value - floorDiv(value, period) * period : value;
-		};
-
-		auto unwrapTo = [&](int64_t value, int64_t reference, int64_t period)
-		{
-			return period > 0 ? value - floorDiv(2 * (value - reference) + period, 2 * period) * period : value;
-		};
-
-		int vertex = 0;
-
-		for (int row = 0; row < nodes.h - 1; row++)
-		{
-			spx y0 = std::min(row * cellSize.h, m_size.h) * 64;
-			spx y1 = std::min((row + 1) * cellSize.h, m_size.h) * 64;
-
-			for (int col = 0; col < nodes.w - 1; col++)
-			{
-				spx x0 = std::min(col * cellSize.w, m_size.w) * 64;
-				spx x1 = std::min((col + 1) * cellSize.w, m_size.w) * 64;
-
-				const CoordSPX* p = pNodes + row * nodes.w + col;
-				const CoordSPX corners[4] = { p[0], p[1], p[nodes.w + 1], p[nodes.w] };
-				const CoordSPX positions[4] = { { x0, y0 }, { x1, y0 }, { x1, y1 }, { x0, y1 } };
-
-				int64_t u0 = normalize(corners[0].x, uPeriod);
-				int64_t v0 = normalize(corners[0].y, vPeriod);
-
-				for (int i = 0; i < 4; i++)
-				{
-					Warpmap::Vertex v;
-					v.x = positions[i].x;
-					v.y = positions[i].y;
-					v.u = spx(i == 0 ? u0 : unwrapTo(corners[i].x, u0, uPeriod));
-					v.v = spx(i == 0 ? v0 : unwrapTo(corners[i].y, v0, vPeriod));
-					v.w = Warpmap::weightOne;
-
-					pVertices[vertex + i] = Warpmap::_clamped(v);
-				}
-
-				*pTriangles++ = { vertex, vertex + 1, vertex + 2 };
-				*pTriangles++ = { vertex, vertex + 2, vertex + 3 };
-				vertex += 4;
-			}
-		}
 	}
 
 	//____ Outline bands ______________________________________________________
@@ -508,7 +393,7 @@ namespace wax
 
 		auto addVertex = [&](int64_t x, int64_t y, int64_t u, int64_t v)
 		{
-			vertices.push_back({ toSpx(band.cx + x), toSpx(band.cy + y), _toNodeValue(u), _toNodeValue(v) });
+			vertices.push_back({ toSpx(band.cx + x), toSpx(band.cy + y), _toSourceValue(u), _toSourceValue(v) });
 			return int(vertices.size()) - 1;
 		};
 
@@ -590,7 +475,7 @@ namespace wax
 					{
 						const Warpmap::Vertex& center = vertices[a];
 						Warpmap::Vertex apex = center;
-						apex.u = _toNodeValue((int64_t(vertices[a].u) + vertices[b].u) / 2);
+						apex.u = _toSourceValue((int64_t(vertices[a].u) + vertices[b].u) / 2);
 						vertices.push_back(apex);
 
 						triangles.push_back({ int(vertices.size()) - 1, b + 1, a + 1 });
@@ -729,28 +614,6 @@ namespace wax
 	bool WarpGenerator::_validateSettings(SizeI size, SizeSPX sourceSize, SizeI cellSize, float precision)
 	{
 		return size.w > 0 && size.h > 0 && sourceSize.w > 0 && sourceSize.h > 0 && cellSize.w >= 0 && cellSize.h >= 0 && precision > 0.f;
-	}
-
-	//____ _cellSizeForRadius() _______________________________________________
-	/*
-		Cells are split into two triangles, in which positions are linear. A curve of radius r drawn
-		through them is off by about d^2 / (8 * r), d being the length of the diagonal, which is
-		c^2 / (4 * r) for cells of size c. The largest cell size that keeps within precision is
-		then sqrt(4 * precision * r).
-	*/
-
-	int WarpGenerator::_cellSizeForRadius(int64_t radius) const
-	{
-		// 4 * precision * radius in pixels^2 is precision (16 binals) * radius (spx) / 2^20. Its
-		// square root rounded down is that of the value rounded down.
-
-		if (radius <= 0)
-			return c_minCellSize;
-
-		const int64_t c_limit = int64_t(1) << 40;				// Far beyond the largest cell, and no overflow.
-		int64_t value = m_precisionFixed > 0 && radius > c_limit / m_precisionFixed ? c_limit : (m_precisionFixed * radius) >> 20;
-
-		return std::clamp(int(_sqrt(uint64_t(value))), c_minCellSize, c_maxCellSize);
 	}
 
 	//____ _factor() __________________________________________________________
@@ -933,7 +796,7 @@ namespace wax
 
 	spx WarpGenerator::_offsetFor(uint32_t shift, Factor factor)
 	{
-		return _toNodeValue(-_multiply(int32_t(shift), factor));
+		return _toSourceValue(-_multiply(int32_t(shift), factor));
 	}
 
 	//____ _sqrt() ____________________________________________________________
@@ -1015,9 +878,9 @@ namespace wax
 		sin = bHalfTurn ? -y : y;
 	}
 
-	//____ _toNodeValue() _____________________________________________________
+	//____ _toSourceValue() ___________________________________________________
 
-	spx WarpGenerator::_toNodeValue(int64_t value)
+	spx WarpGenerator::_toSourceValue(int64_t value)
 	{
 		return spx(std::clamp(value, -int64_t(Warpmap::maxValue), int64_t(Warpmap::maxValue)));
 	}

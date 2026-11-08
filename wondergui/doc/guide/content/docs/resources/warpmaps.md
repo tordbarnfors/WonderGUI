@@ -160,9 +160,7 @@ CircularWarp, RoundedRectWarp, CylinderWarp and PerspectiveWarp are WarpGenerato
 
 generate() updates the Warpmap after settings have changed and returns it. A Warpmap that is held elsewhere, such as by a draw that isn't rendered yet, is never changed: generate() then makes a new one, as it does when size, cell size or the number of vertices and triangles has changed. Settings that change the shape, such as the radii of a CircularWarp, can change that, while angles and offsets don't. So draw what generate() returns rather than keeping it, and one generator can be drawn several times with different settings within the same canvas update.
 
-To make your own, subclass WarpGenerator and override _meshSize(), which gives the number of vertices and triangles, and _generateMesh(), which fills them in. Override _uPeriod() and _vPeriod() if an axis is periodic, and set *m_bDirty* when one of your settings changes.
-
-Or, simpler, let it make the Warpmap from a grid: implement _generateNodes(), which fills in the positions in the source at the nodes of a grid, one every *cellSize.w* pixels horizontally and *cellSize.h* pixels vertically plus one at the right and bottom edge, and _calcCellSize(), which picks the cell size from *precision*. _cellSizeForRadius() gives the cell size for a curve of a given radius. Each cell is then two triangles, so a circle of radius r is off by roughly cellSize² / (4 * r) pixels, along the diagonals of the cells.
+To make your own, subclass WarpGenerator and implement _meshSize(), which gives the number of vertices and triangles, and _generateMesh(), which fills them in, sizing the pieces from *precision* or *cellSize*. Override _calcCellSize() to report the size of the pieces chosen from *precision*, _uPeriod() and _vPeriod() if an axis is periodic, and set *m_bDirty* when one of your settings changes. WarpGenerator has integer maths for that, for CPUs without an FPU: fixed point factors, CORDIC angles and sines, and integer square roots.
 
 
 
@@ -225,4 +223,4 @@ b0, b1 and b2 being the barycentric coordinates of the point in the triangle, an
 
 ReferenceBackend measures coverage by sampling each pixel at many points and divides for perspective at each point. The other backends estimate coverage from the position at the center of the pixel and how fast it changes, taking each border and edge as straight over the pixel. That is off by a few percent where an edge bends sharply within a pixel. They may also divide for perspective only once every few pixels, up to 16, and interpolate linearly in between, keeping within about a quarter of a pixel.
 
-**For now, the DX12 and Metal backends don't draw Warpmaps.** They are still to be changed over from the grid of nodes that Warpmaps had before.
+**The DX12 and Metal backends draw Warpmaps as the OpenGL backend does, but haven't been built or tested yet.**

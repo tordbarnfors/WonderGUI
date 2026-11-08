@@ -40,8 +40,10 @@ in someone's memory or an old chat. Add to it when you decide something, move it
      an outline of straight sides and corners (`WarpGenerator::_bandMesh()`): quads along the
      sides, sectors split across the band around the corners, polygons where the band reaches
      past the centers of the corners, all the way around and a pixel beyond the band. CylinderWarp
-     is strips along its axis, narrower towards the rims. The grid of nodes stays for generators
-     that only implement `_generateNodes()`.
+     is strips along its axis, narrower towards the rims. The grid of nodes that generators could
+     implement instead was removed once none did: `_meshSize()` and `_generateMesh()` are what a
+     generator implements. A grid builder for making meshes by hand would share vertices between
+     cells and is a helper of its own, not part of WarpGenerator.
   5. **Done, untested:** DX12Backend and MetalBackend keep the mesh as GlBackend does, with the
      vertex shader reading the vertices from the buffer of the Warpmap, drawn with its triangles
      as index buffer. See KNOWN_ISSUES.md.
@@ -175,12 +177,11 @@ in someone's memory or an old chat. Add to it when you decide something, move it
 - **Positions in the source and periods are in spx of the source.**
 - **NodeCompressor** (UTF-8 style prefix varints of deltas) compresses the content in the stream.
   No backwards compatibility was kept with the grid format, since it was never used.
-- **Separate cell width and height** for the grids of the generators, so positions that change
-  linearly along an axis (a cylinder along its axis, a plane without perspective) take one cell.
-- **WarpGenerators** calculate cell sizes from `precision` (4-64 pixels along curves) and
-  generate with integers only: CORDIC angles and sines, integer square roots, fixed point
-  factors. Floating point is limited to converting the float settings once per generate, for
-  CPUs without an FPU.
+- **Separate cell width and height** for the pieces of the generators, so positions that change
+  linearly along an axis (a cylinder along its axis) take one piece.
+- **WarpGenerators** size their pieces from `precision` and generate with integers per vertex:
+  CORDIC angles and sines, integer square roots, fixed point factors. Floating point is limited to
+  converting the settings and choosing the layout once per generate, for CPUs without an FPU.
 - **Animation without generating again** through source offsets: `CircularWarp::rotationOffset()`,
   `RoundedRectWarp::shiftOffset()` (in parts of the outline, not degrees),
   `CylinderWarp::rotationOffset()`.

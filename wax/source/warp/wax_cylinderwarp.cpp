@@ -322,7 +322,7 @@ namespace wax
 			}
 			previous = value;
 
-			spx across = _toNodeValue(value);
+			spx across = _toSourceValue(value);
 
 			for (int end = 0; end < 2; end++)
 			{

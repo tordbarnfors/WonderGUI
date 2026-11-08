@@ -41,19 +41,14 @@ namespace wax
 	 * A WarpGenerator keeps its Warpmap and updates it when generate() is called, see generate().
 	 *
 	 * The Warpmap is made for a source of sourceSize: the size of the edgemap or of the source
-	 * rectangle of the blit, in spx. Generators make a mesh of triangles that follows the shape, as
-	 * CircularWarp, RoundedRectWarp, CylinderWarp and PerspectiveWarp do, or calculate positions in
-	 * the source at the nodes of a grid, one every cellSize.w pixels horizontally and cellSize.h
-	 * pixels vertically plus one at the right and bottom edge, which is made into two triangles per
-	 * cell.
+	 * rectangle of the blit, in spx. Generators make a mesh of triangles that follows the shape.
 	 *
 	 * Precision (max position error in pixels) decides how closely the Warpmap follows the shape,
-	 * through the size of the pieces of a mesh or the cells of a grid, unless cellSize is set.
-	 * Grid cells are kept within 4 -> 64 pixels along curves, and can span the Warpmap along
-	 * straight axes.
+	 * through the size of the pieces of the mesh, unless cellSize is set. What cellSize means
+	 * depends on the generator, such as the length of the pieces along a ring and across it.
 	 *
-	 * When subclassing, override _meshSize() and _generateMesh() to make a mesh, or implement
-	 * _generateNodes() and _calcCellSize() for a grid. Override _uPeriod() and _vPeriod() for
+	 * When subclassing, implement _meshSize() and _generateMesh(), and _calcCellSize() to report
+	 * the size of the pieces chosen from precision. Override _uPeriod() and _vPeriod() for
 	 * periodic axes and set m_bDirty when a setting changes.
 	 */
 
@@ -100,12 +95,7 @@ namespace wax
 
 		static bool		_validateSettings( SizeI size, SizeSPX sourceSize, SizeI cellSize, float precision );
 
-		// Largest cell size that keeps a curve of the given radius (in spx) within precision,
-		// within 4 -> 64 pixels. Integers only.
-
-		int				_cellSizeForRadius( int64_t radius ) const;
-
-		// Integer maths for _generateNodes(), which runs once per node and so should avoid floating
+		// Integer maths for _generateMesh(), which runs once per vertex and so should avoid floating
 		// point on hardware without an FPU. Set up factors with _factor() once per generate.
 
 		struct Factor
@@ -138,39 +128,21 @@ namespace wax
 
 		static uint32_t	_toTurn( double turns );
 
-		// A value clamped to +-Warpmap::maxValue.
+		// A value of u or v clamped to +-Warpmap::maxValue.
 
-		static spx		_toNodeValue( int64_t value );
+		static spx		_toSourceValue( int64_t value );
 
-		// Number of vertices and triangles of the Warpmap, and the vertices and triangles themselves.
-		// Override both for a generator that makes its own mesh, rather than a grid of nodes as
-		// below. Vertices are clamped to the limits of Warpmap afterwards.
+		// Number of vertices and triangles of the Warpmap, at most Warpmap::maxVertices and
+		// Warpmap::maxTriangles, and the vertices and triangles themselves. Vertices are clamped to
+		// the limits of Warpmap afterwards.
 
-		virtual void	_meshSize( int& nVertices, int& nTriangles ) const;
-		virtual void	_generateMesh( Warpmap::Vertex * pVertices, Warpmap::Triangle * pTriangles ) const;
+		virtual void	_meshSize( int& nVertices, int& nTriangles ) const = 0;
+		virtual void	_generateMesh( Warpmap::Vertex * pVertices, Warpmap::Triangle * pTriangles ) const = 0;
 
-		// For the grid of nodes that the default _meshSize() and _generateMesh() make the Warpmap
-		// from:
-
-		// Cell width and height from precision and the shape. Kept within 4 -> size of the Warpmap
-		// by cellSize(). The size of the Warpmap unless overridden.
+		// Size of the pieces of the mesh chosen from precision, as cellSize() reports it, kept
+		// within 4 -> size of the Warpmap. The size of the Warpmap unless overridden.
 
 		virtual SizeI	_calcCellSize() const;
-
-		// Fills pNodes with nodes.w * nodes.h positions in spx of the source, row by row, nodes being
-		// cellSize.w pixels apart horizontally and cellSize.h vertically (the last row and column at
-		// the edge). Keep them within Warpmap::maxValue.
-
-		virtual void	_generateNodes( CoordSPX * pNodes, SizeI nodes, SizeI cellSize ) const {}
-
-		// Cell size used for the grid: cellSize(), made larger where four vertices for each cell
-		// wouldn't fit in Warpmap::maxVertices.
-
-		SizeI			_gridCellSize() const;
-
-		// Makes vertices and triangles from the nodes, see generate().
-
-		void			_gridToMesh( const CoordSPX * pNodes, SizeI nodes, SizeI cellSize, spx uPeriod, spx vPeriod, Warpmap::Vertex * pVertices, Warpmap::Triangle * pTriangles ) const;
 
 		// A band along the outline of a rounded rectangle, or a circle with ax and ay 0, with the
 		// width of the source along the outline and its height across, for CircularWarp and
@@ -215,7 +187,6 @@ namespace wax
 		SizeSPX		m_sourceSize;
 		SizeI		m_cellSize;										// As set, 0 = calculated.
 		float		m_precision;
-		int64_t		m_precisionFixed;								// Precision with 16 binals, for _cellSizeForRadius().
 
 		bool		m_bDirty = true;
 
