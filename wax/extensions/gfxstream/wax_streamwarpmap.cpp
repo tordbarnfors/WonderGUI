@@ -62,7 +62,7 @@ namespace wax
 	{
 		m_pEncoder = pEncoder;
 		m_inStreamId = pEncoder->allocObjectId();
-		m_pCompressor = NodeCompressor::create();
+		m_pCompressor = MeshCompressor::create();
 
 		auto& encoder = * m_pEncoder;
 
@@ -98,10 +98,10 @@ namespace wax
 	//____ _updated() _________________________________________________________
 	/*
 		Sends the ranges and periods in a WarpmapUpdate, followed by WarpmapVertices and
-		WarpmapTriangles chunks with the content compressed. Each vertex is two pairs, (x, y) and
-		(u, v), so that NodeCompressor predicts each value from the vertex before and the values to
-		the left, and a third, (w, 0), if any of them has a weight other than weightOne. Triangles
-		are packed two in three pairs, (a, b), (c, a), (b, c), without padding.
+		WarpmapTriangles chunks with the content compressed. Vertices are sent as sequences of all
+		x, then all y, u and v, and w if any of them has a weight other than weightOne, so that
+		MeshCompressor predicts each from earlier values of its own. Triangles likewise as all a,
+		then all b and c.
 	*/
 
 	void StreamWarpmap::_updated( int firstVertex, int nVertices, int firstTriangle, int nTriangles )
@@ -130,43 +130,42 @@ namespace wax
 
 		if (nVertices > 0)
 		{
-			const int perVertex = bWeights ? 3 : 2;
-			int bytes = nVertices * perVertex * sizeof(CoordSPX);
-			auto pPairs = (CoordSPX*) Base::memStackAlloc(bytes);
+			const int sequences = bWeights ? 5 : 4;
+			int bytes = nVertices * sequences * sizeof(int32_t);
+			auto pValues = (int32_t*) Base::memStackAlloc(bytes);
 
 			for (int i = 0; i < nVertices; i++)
 			{
 				const Vertex& v = m_pVertices[firstVertex + i];
-				CoordSPX* pOut = pPairs + i * perVertex;
-				pOut[0] = { v.x, v.y };
-				pOut[1] = { v.u, v.v };
+				pValues[i] = v.x;
+				pValues[nVertices + i] = v.y;
+				pValues[nVertices * 2 + i] = v.u;
+				pValues[nVertices * 3 + i] = v.v;
 				if (bWeights)
-					pOut[2] = { v.w, 0 };
+					pValues[nVertices * 4 + i] = v.w;
 			}
 
-			m_pCompressor->setRowLength(perVertex);
-			StreamBackend::_compressSplitAndEncode(m_pEncoder, GfxStream::ChunkId::WarpmapVertices, m_inStreamId, m_pCompressor, pPairs, pPairs + nVertices * perVertex);
+			m_pCompressor->setSequences(sequences);
+			StreamBackend::_compressSplitAndEncode(m_pEncoder, GfxStream::ChunkId::WarpmapVertices, m_inStreamId, m_pCompressor, pValues, pValues + nVertices * sequences);
 
 			Base::memStackFree(bytes);
 		}
 
 		if (nTriangles > 0)
 		{
-			const int nRows = (nTriangles + 1) / 2;
-			int bytes = nRows * 3 * sizeof(CoordSPX);
-			auto pPairs = (CoordSPX*) Base::memStackAlloc(bytes);
+			int bytes = nTriangles * 3 * sizeof(int32_t);
+			auto pValues = (int32_t*) Base::memStackAlloc(bytes);
 
-			for (int i = 0; i < nRows; i++)
+			for (int i = 0; i < nTriangles; i++)
 			{
-				const Triangle& t0 = m_pTriangles[firstTriangle + i * 2];
-				const Triangle& t1 = m_pTriangles[firstTriangle + std::min(i * 2 + 1, nTriangles - 1)];
-				pPairs[i * 3] = { t0.a, t0.b };
-				pPairs[i * 3 + 1] = { t0.c, t1.a };
-				pPairs[i * 3 + 2] = { t1.b, t1.c };
+				const Triangle& t = m_pTriangles[firstTriangle + i];
+				pValues[i] = t.a;
+				pValues[nTriangles + i] = t.b;
+				pValues[nTriangles * 2 + i] = t.c;
 			}
 
-			m_pCompressor->setRowLength(3);
-			StreamBackend::_compressSplitAndEncode(m_pEncoder, GfxStream::ChunkId::WarpmapTriangles, m_inStreamId, m_pCompressor, pPairs, pPairs + nRows * 3);
+			m_pCompressor->setSequences(3);
+			StreamBackend::_compressSplitAndEncode(m_pEncoder, GfxStream::ChunkId::WarpmapTriangles, m_inStreamId, m_pCompressor, pValues, pValues + nTriangles * 3);
 
 			Base::memStackFree(bytes);
 		}

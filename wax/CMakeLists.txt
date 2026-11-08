@@ -66,6 +66,8 @@ set( SOURCES
 	source/compression/wax_compression.h
 	source/compression/wax_lzcompression.cpp
 	source/compression/wax_lzcompression.h
+	source/compression/wax_meshcompression.cpp
+	source/compression/wax_meshcompression.h
 	source/compression/wax_q565compression.cpp
 	source/compression/wax_q565compression.h
 	source/compression/wax_qoicompression.cpp
@@ -74,8 +76,6 @@ set( SOURCES
 	source/compression/wax_rlecompression.h
 	source/compression/wax_spxcompression.cpp
 	source/compression/wax_spxcompression.h
-	source/compression/wax_nodecompression.cpp
-	source/compression/wax_nodecompression.h
 	source/edgemap/wax_edgemap.cpp
 	source/edgemap/wax_edgemap.h
 	source/edgemap/wax_edgemapfactory.cpp

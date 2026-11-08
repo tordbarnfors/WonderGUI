@@ -346,14 +346,14 @@ namespace wg
 
 	using wax::MemStack;
 
-	//____ wax_nodecompression.h ___________________________________________________
+	//____ wax_meshcompression.h ___________________________________________________
 
-	using wax::NodeCompressor_p;
-	using wax::NodeCompressor_wp;
-	using wax::NodeDecompressor_p;
-	using wax::NodeDecompressor_wp;
-	using wax::NodeCompressor;
-	using wax::NodeDecompressor;
+	using wax::MeshCompressor_p;
+	using wax::MeshCompressor_wp;
+	using wax::MeshDecompressor_p;
+	using wax::MeshDecompressor_wp;
+	using wax::MeshCompressor;
+	using wax::MeshDecompressor;
 
 	//____ wax_object.h ____________________________________________________________
 

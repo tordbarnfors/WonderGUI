@@ -105,13 +105,19 @@ in someone's memory or an old chat. Add to it when you decide something, move it
     triangles, which is more than any shape needs. Halves the memory of triangles everywhere and
     is the index format of the GPU buffers. Generators make their pieces larger to keep within it.
   - **Stream format:** `WarpmapUpdate` gives flags, ranges of vertices and triangles and the
-    periods, followed by `WarpmapVertices` (pairs (x, y), (u, v), and (w, 0) only if the flag
-    `WarpmapFlags::Weights` is set) and `WarpmapTriangles` (two triangles in three pairs, (a, b),
-    (c, a), (b, c)), compressed by NodeCompressor. The sender leaves the weights out when all of
-    an update are 1.0, which saves about 20% of the vertices of shapes without perspective, and
-    packing triangles without padding saves 25% of them: a thick ring streams in 7.9 KB rather
-    than 10.1 KB. Replaces `WarpmapNodes`, without backwards compatibility. Unknown flags are
-    ignored.
+    periods, followed by `WarpmapVertices` (sequences of all x, y, u and v, and w only if the flag
+    `WarpmapFlags::Weights` is set) and `WarpmapTriangles` (sequences of all a, b and c), compressed
+    by MeshCompressor. The sender leaves the weights out when all of an update are 1.0. Replaces
+    `WarpmapNodes`, without backwards compatibility. Unknown flags are ignored.
+  - **MeshCompressor** replaced NodeCompressor, whose prediction (left + above - above left in
+    rows of pairs) was made for the grid of nodes: in a row of a vertex, left is another of its
+    values. Each sequence is predicted from its own values a lag back (1 to 32, a column of the
+    mesh for most generators), as they are or continuing their change, chosen per sequence by
+    trying them on its first 128 values, with runs of zeros in two bytes. The corners of
+    triangles are then almost all zeros. A thick ring streams in 1.7 KB rather than 7.9 KB
+    (10.1 KB with weights and NodeCompressor), better than zlib or lzma on the same data.
+    Encoding takes about 90 us for it on x86, mostly trying lags; trying lags 1 to 64 on 256
+    values would save 8% more for eight times that.
   - **Weights stay in Warpmap::Vertex** also for meshes without perspective, rather than a
     Blueprint flag that leaves them out. Software backends find out which triangles have
     perspective from the weights of their corners when setting them up, which a flag for the
@@ -175,8 +181,7 @@ in someone's memory or an old chat. Add to it when you decide something, move it
 ### Warpmaps (2026-11)
 
 - **Positions in the source and periods are in spx of the source.**
-- **NodeCompressor** (UTF-8 style prefix varints of deltas) compresses the content in the stream.
-  No backwards compatibility was kept with the grid format, since it was never used.
+- **No backwards compatibility in the stream** with the grid format, since it was never used.
 - **Separate cell width and height** for the pieces of the generators, so positions that change
   linearly along an axis (a cylinder along its axis) take one piece.
 - **WarpGenerators** size their pieces from `precision` and generate with integers per vertex:

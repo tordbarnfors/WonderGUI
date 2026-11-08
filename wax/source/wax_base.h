@@ -119,7 +119,7 @@ namespace wax
 		static Context_p			context() { return s_pContext; }
 
 		static void					setErrorHandler(std::function<void(Error&)> handler);
-		std::function<void(Error&)>	errorHandler();
+		static std::function<void(Error&)>	errorHandler();
 
 		static BitmapCache_p		defaultBitmapCache();
 

@@ -9,7 +9,7 @@
 #include <wax_roundedrectwarp.h>
 #include <wax_cylinderwarp.h>
 #include <wax_perspectivewarp.h>
-#include <wax_nodecompression.h>
+#include <wax_meshcompression.h>
 #include <cstring>
 
 #include <algorithm>
@@ -205,7 +205,7 @@ WarpmapTest::WarpmapTest()
 	ADD_TEST(circularWarpGenerateTest);
 	ADD_TEST(generateUpdatesTest);
 	ADD_TEST(roundedRectWarpTest);
-	ADD_TEST(nodeCompressionTest);
+	ADD_TEST(meshCompressionTest);
 	ADD_TEST(offsetTest);
 	ADD_TEST(nonSquareCellsTest);
 	ADD_TEST(cylinderWarpTest);
@@ -944,24 +944,27 @@ bool WarpmapTest::roundedRectWarpTest(std::ostream& output)
 	return true;
 }
 
-//____ nodeCompressionTest() __________________________________________________
-// NodeCompressor restores nodes exactly, also when decompressed in place from the end of a buffer
-// of maxCompressedSize() as GfxStream does, compresses smooth nodes well and stores what it can't
-// compress as it is.
+//____ meshCompressionTest() __________________________________________________
+// MeshCompressor restores sequences exactly, also when decompressed in place from the end of a
+// buffer of maxCompressedSize() as GfxStream does, without writing past it. Meshes of generators
+// compress to a fraction, data that doesn't to its raw size plus a byte, and broken data is
+// refused without writing outside the buffer.
 
-bool WarpmapTest::nodeCompressionTest(std::ostream& output)
+bool WarpmapTest::meshCompressionTest(std::ostream& output)
 {
-	auto pCompressor = NodeCompressor::create();
-	auto pDecompressor = NodeDecompressor::create();
+	auto pCompressor = MeshCompressor::create();
+	auto pDecompressor = MeshDecompressor::create();
 
-	TEST_ASSERT(wax::Base::getDecompressor(NodeCompressor::ID_TOKEN) != nullptr);
-	TEST_ASSERT(!pCompressor->setRowLength(0));
+	TEST_ASSERT(wax::Base::getDecompressor(MeshCompressor::ID_TOKEN) != nullptr);
+	TEST_ASSERT(!pCompressor->setSequences(0));
+
+	const int guard = 16;
 
 	// Compresses and decompresses in place, returns compressed size or -1 if not restored.
 
-	auto roundTrip = [&](const std::vector<int32_t>& values, int rowLength) -> int
+	auto roundTrip = [&](const std::vector<int32_t>& values, int sequences) -> int
 	{
-		pCompressor->setRowLength(rowLength);
+		pCompressor->setSequences(sequences);
 
 		int raw = int(values.size() * 4);
 		int bufferSize = pCompressor->maxCompressedSize(raw);
@@ -970,7 +973,6 @@ bool WarpmapTest::nodeCompressionTest(std::ostream& output)
 		if (size > bufferSize)
 			return -1;
 
-		const int guard = 16;
 		std::vector<uint8_t> buffer(bufferSize + guard, 0xCD);
 		std::memcpy(buffer.data() + bufferSize - size, compressed.data(), size);
 
@@ -985,54 +987,117 @@ bool WarpmapTest::nodeCompressionTest(std::ostream& output)
 		return size;
 	};
 
-	// Nodes of a ring on a grid, less than a third of their raw size (about 2.3 of 8 bytes per node).
+	// The mesh of a thick ring as GfxStream sends it: vertices as sequences of all x, y, u and v,
+	// triangles of all a, b and c.
 
-	const SizeI nodes = { 35, 28 };
-	std::vector<int32_t> ring;
-	for (int row = 0; row < nodes.h; row++)
-		for (int col = 0; col < nodes.w; col++)
-		{
-			double x = col * 6 - 100.0, y = row * 6 - 80.0;
-			double angle = std::atan2(x, -y) / (2 * M_PI);
-			ring.push_back(int32_t(std::lround((angle - std::floor(angle)) * c_sourceSize.w * 1.2)));
-			ring.push_back(int32_t(std::lround((std::hypot(x, y) - 78) / -48 * c_sourceSize.h)));
-		}
+	auto pFactory = StrongPtr<CountingWarpmapFactory>(new CountingWarpmapFactory());
+	auto pRing = CircularWarp::create(WGBP(CircularWarp, _.size = { 300, 300 }, _.sourceSize = c_sourceSize, _.topRadius = 64 * 148, _.bottomRadius = 64 * 90), pFactory);
+	Warpmap_p pMap = pRing->generate();
 
-	int size = roundTrip(ring, nodes.w);
-	TEST_ASSERT(size > 0);
-	TEST_ASSERT(size * 3 < int(ring.size() * 4));
-	TEST_ASSERT(roundTrip(ring, nodes.w * nodes.h) > 0);						// As one row.
+	const int nV = pMap->vertexCount(), nT = pMap->triangleCount();
+	std::vector<int32_t> vertices(nV * 4), triangles(nT * 3);
+	for (int i = 0; i < nV; i++)
+	{
+		const Warpmap::Vertex& v = pMap->vertexData()[i];
+		vertices[i] = v.x;
+		vertices[nV + i] = v.y;
+		vertices[nV * 2 + i] = v.u;
+		vertices[nV * 3 + i] = v.v;
+	}
+	for (int i = 0; i < nT; i++)
+	{
+		const Warpmap::Triangle& t = pMap->triangleData()[i];
+		triangles[i] = t.a;
+		triangles[nT + i] = t.b;
+		triangles[nT * 2 + i] = t.c;
+	}
 
-	// Random and extreme values, which are stored as they are, and constant ones.
+	int vertexBytes = roundTrip(vertices, 4);
+	int triangleBytes = roundTrip(triangles, 3);
+	if (vertexBytes * 4 >= nV * 16 || triangleBytes * 20 >= nT * 6)
+		output << "Thick ring of " << nV << " vertices and " << nT << " triangles compressed to " << vertexBytes << " and " << triangleBytes << " bytes" << std::endl;
+	TEST_ASSERT(vertexBytes > 0 && vertexBytes * 4 < nV * 16);				// Under a quarter of 16 bytes a vertex.
+	TEST_ASSERT(triangleBytes > 0 && triangleBytes * 20 < nT * 6);			// Under a twentieth of 6 bytes a triangle.
+
+	// As one sequence, and with the sequences cut in other places, still exact.
+
+	TEST_ASSERT(roundTrip(vertices, 1) > 0);
+	TEST_ASSERT(roundTrip(vertices, 2) > 0);
+
+	// Random and extreme values, which are stored as they are, constant ones and long runs.
 
 	uint32_t seed = 77;
 	auto random = [&seed]() { seed = seed * 1664525 + 1013904223; return seed; };
 
-	for (int i = 0; i < 200; i++)
+	for (int i = 0; i < 300; i++)
 	{
-		int w = 1 + random() % 23, h = 1 + random() % 17;
-		std::vector<int32_t> values(w * h * 2);
+		int sequences = 1 + random() % 5, length = 1 + random() % 300;
+		std::vector<int32_t> values(sequences * length);
 
-		for (auto& v : values)
+		for (int k = 0; k < int(values.size()); k++)
 		{
-			switch (i % 4)
+			int32_t& v = values[k];
+			switch (i % 5)
 			{
 				case 0: v = int32_t(random()); break;
 				case 1: v = (random() & 1) ? INT32_MIN : INT32_MAX; break;
 				case 2: v = int32_t(random() % 256) - 128; break;
-				default: v = 12345; break;
+				case 3: v = (random() % 7 == 0) ? int32_t(random() % 9) : 0; break;				// Runs of zeros and short breaks.
+				default: v = 12345 + (k % length) * int32_t(random() % 3); break;
 			}
 		}
 
-		size = roundTrip(values, w);
+		int size = roundTrip(values, sequences);
 		TEST_ASSERT(size > 0 && size <= 1 + int(values.size() * 4));
 	}
 
-	// Not whole rows or pairs, stored as they are.
+	int constant = roundTrip(std::vector<int32_t>(100000, -7), 4);
+	TEST_ASSERT(constant > 0 && constant < 50);
 
-	TEST_ASSERT(roundTrip(std::vector<int32_t>(12, 5), 4) == 1 + 48);
-	TEST_ASSERT(roundTrip(std::vector<int32_t>{ 1, 2, 3 }, 1) == 1 + 12);
+	// Not whole sequences or 32-bit values, stored as they are.
 
+	TEST_ASSERT(roundTrip(std::vector<int32_t>(14, 5), 4) == 1 + 56);
+	pCompressor->setSequences(1);
+	std::vector<uint8_t> odd(7, 3), oddOut(pCompressor->maxCompressedSize(7));
+	TEST_ASSERT(pCompressor->compress(oddOut.data(), odd.data(), odd.data() + 7) == 1 + 7);
+
+	// Broken data: cut short, or claiming more than fits in the buffer. Refused with an error, and
+	// nothing is written past the end of the buffer.
+
+	int errors = 0;
+	auto previousHandler = wax::Base::errorHandler();
+	wax::Base::setErrorHandler([&](wax::Error&) { errors++; });
+
+	pCompressor->setSequences(4);
+	int bufferSize = pCompressor->maxCompressedSize(int(vertices.size() * 4));
+	std::vector<uint8_t> compressed(bufferSize);
+	int size = pCompressor->compress(compressed.data(), vertices.data(), vertices.data() + vertices.size());
+
+	for (int cut : { 1, 2, 5, size / 2, size - 1 })
+	{
+		std::vector<uint8_t> buffer(bufferSize + guard, 0xCD);
+		std::memcpy(buffer.data() + bufferSize - cut, compressed.data(), cut);
+		int before = errors;
+		int restored = pDecompressor->decompress(buffer.data(), buffer.data() + bufferSize - cut, buffer.data() + bufferSize);
+		TEST_ASSERT(errors > before && restored < int(vertices.size() * 4));
+		for (int i = 0; i < guard; i++)
+			TEST_ASSERT(buffer[bufferSize + i] == 0xCD);
+	}
+
+	{
+		// One sequence of 10000 zeros, a run longer than the buffer of 64 bytes holds.
+
+		const uint8_t huge[] = { 1, 1, 0x80 | (10000 >> 8), 10000 & 0xFF, 0, 0, 0x80 | (9999 >> 8), 9999 & 0xFF };
+		std::vector<uint8_t> buffer(64 + guard, 0xCD);
+		std::memcpy(buffer.data() + 64 - sizeof(huge), huge, sizeof(huge));
+		int before = errors;
+		TEST_ASSERT(pDecompressor->decompress(buffer.data(), buffer.data() + 64 - sizeof(huge), buffer.data() + 64) == 0);
+		TEST_ASSERT(errors > before);
+		for (int i = 0; i < guard; i++)
+			TEST_ASSERT(buffer[64 + i] == 0xCD);
+	}
+
+	wax::Base::setErrorHandler(previousHandler);
 	return true;
 }
 

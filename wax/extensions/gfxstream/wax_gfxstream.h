@@ -93,8 +93,8 @@ namespace wax
 
 			CreateWarpmap = 31,			// Since 3.4. Followed by WarpmapUpdate, WarpmapVertices and WarpmapTriangles with all its content.
 			WarpmapUpdate = 32,			// Flags (see WarpmapFlags), vertices and triangles that following WarpmapVertices and WarpmapTriangles chunks hold, and periods.
-			WarpmapVertices = 33,		// Vertices as pairs (x, y), (u, v), then (w, 0) with WarpmapFlags::Weights, split over chunks like EdgemapSamples. Compressed by NodeCompressor.
-			WarpmapTriangles = 34,		// Triangles two at a time as pairs (a, b), (c, a), (b, c), the last repeated for an odd count, split over chunks like EdgemapSamples. Compressed by NodeCompressor.
+			WarpmapVertices = 33,		// Vertices as sequences of all x, y, u, v, then w with WarpmapFlags::Weights, int32 each, split over chunks like EdgemapSamples. Compressed by MeshCompressor.
+			WarpmapTriangles = 34,		// Triangles as sequences of all a, b and c, int32 each, split over chunks like EdgemapSamples. Compressed by MeshCompressor.
 			DeleteWarpmap = 35
 		};
 

@@ -1297,9 +1297,8 @@ namespace wax
 	//____ _applyWarpmapUpdate() ______________________________________________
 	/*
 		Applies a WarpmapUpdate whose content has all arrived, creating the Warpmap if it is new,
-		and drops the buffer. Vertices are two pairs, (x, y), (u, v), and a third, (w, 0), with
-		WarpmapFlags::Weights. Triangles are two in three pairs, (a, b), (c, a), (b, c). See
-		StreamWarpmap.
+		and drops the buffer. Vertices are sequences of all x, y, u and v, and w with
+		WarpmapFlags::Weights, triangles of all a, b and c. See StreamWarpmap.
 	*/
 
 	void StreamPlayer::_applyWarpmapUpdate( WarpmapDataBuffer * pData )
@@ -1307,37 +1306,30 @@ namespace wax
 		uint16_t objectId = pData->objectId;
 
 		const bool bWeights = (pData->flags & GfxStream::WarpmapFlags::Weights) != 0;
-		const int perVertex = bWeights ? 3 : 2;
-		const int nTriangleRows = (pData->nTriangles + 1) / 2;
+		const int nV = pData->nVertices, nT = pData->nTriangles;
+		const int sequences = bWeights ? 5 : 4;
 
-		bool bOk = pData->vertices.size == pData->nVertices * perVertex * int(sizeof(CoordSPX)) &&
-				   pData->triangles.size == nTriangleRows * 3 * int(sizeof(CoordSPX));
+		bool bOk = pData->vertices.size == nV * sequences * int(sizeof(int32_t)) &&
+				   pData->triangles.size == nT * 3 * int(sizeof(int32_t));
 
-		std::vector<Warpmap::Vertex> vertices(bOk ? pData->nVertices : 0);
-		std::vector<Warpmap::Triangle> triangles(bOk ? nTriangleRows * 2 : 0);
+		std::vector<Warpmap::Vertex> vertices(bOk ? nV : 0);
+		std::vector<Warpmap::Triangle> triangles(bOk ? nT : 0);
 
 		if (bOk)
 		{
-			auto pPairs = (const CoordSPX*) pData->vertices.pBuffer;
-			for (int i = 0; i < pData->nVertices; i++)
-			{
-				const CoordSPX* p = pPairs + i * perVertex;
-				vertices[i] = { p[0].x, p[0].y, p[1].x, p[1].y, bWeights ? p[2].x : Warpmap::weightOne };
-			}
+			auto pValues = (const int32_t*) pData->vertices.pBuffer;
+			for (int i = 0; i < nV; i++)
+				vertices[i] = { pValues[i], pValues[nV + i], pValues[nV * 2 + i], pValues[nV * 3 + i], bWeights ? pValues[nV * 4 + i] : Warpmap::weightOne };
 
-			pPairs = (const CoordSPX*) pData->triangles.pBuffer;
-			for (int i = 0; i < nTriangleRows * 3; i++)
+			pValues = (const int32_t*) pData->triangles.pBuffer;
+			for (int i = 0; i < nT * 3; i++)
 			{
-				if (uint32_t(pPairs[i].x) >= uint32_t(Warpmap::maxVertices) || uint32_t(pPairs[i].y) >= uint32_t(Warpmap::maxVertices))
+				if (uint32_t(pValues[i]) >= uint32_t(Warpmap::maxVertices))
 					bOk = false;
 			}
 
-			for (int i = 0; i < nTriangleRows; i++)
-			{
-				const CoordSPX* p = pPairs + i * 3;
-				triangles[i * 2] = { p[0].x, p[0].y, p[1].x };
-				triangles[i * 2 + 1] = { p[1].y, p[2].x, p[2].y };
-			}
+			for (int i = 0; i < nT; i++)
+				triangles[i] = { pValues[i], pValues[nT + i], pValues[nT * 2 + i] };
 		}
 
 		if (!bOk)

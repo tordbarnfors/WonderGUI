@@ -25,7 +25,7 @@
 
 #include <wax_warpmap.h>
 #include <wax_streamencoder.h>
-#include <wax_nodecompression.h>
+#include <wax_meshcompression.h>
 
 namespace wax
 {
@@ -39,7 +39,7 @@ namespace wax
 	 *
 	 * Creation, content and deletion are sent in CreateWarpmap, WarpmapUpdate, WarpmapVertices,
 	 * WarpmapTriangles and DeleteWarpmap chunks. Content that changes together is sent together,
-	 * compressed by NodeCompressor, with the periods, and is applied at once by the receiver.
+	 * compressed by MeshCompressor, with the periods, and is applied at once by the receiver.
 	 */
 
 	class StreamWarpmap : public Warpmap
@@ -66,7 +66,7 @@ namespace wax
 
 		StreamEncoder_p		m_pEncoder;
 		uint16_t			m_inStreamId;		// Id of this warpmap in the stream.
-		NodeCompressor_p	m_pCompressor;
+		MeshCompressor_p	m_pCompressor;
 	};
 
 } // namespace wax

@@ -19,8 +19,8 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WAX_NODECOMPRESSION_DOT_H
-#define	WAX_NODECOMPRESSION_DOT_H
+#ifndef	WAX_MESHCOMPRESSION_DOT_H
+#define	WAX_MESHCOMPRESSION_DOT_H
 #pragma once
 
 #include <wax_compression.h>
@@ -28,21 +28,29 @@
 
 namespace wax
 {
-	class NodeCompressor;
-	typedef StrongPtr<NodeCompressor>	NodeCompressor_p;
-	typedef WeakPtr<NodeCompressor>		NodeCompressor_wp;
+	class MeshCompressor;
+	typedef StrongPtr<MeshCompressor>	MeshCompressor_p;
+	typedef WeakPtr<MeshCompressor>		MeshCompressor_wp;
 
-	class NodeDecompressor;
-	typedef StrongPtr<NodeDecompressor>	NodeDecompressor_p;
-	typedef WeakPtr<NodeDecompressor>	NodeDecompressor_wp;
+	class MeshDecompressor;
+	typedef StrongPtr<MeshDecompressor>	MeshDecompressor_p;
+	typedef WeakPtr<MeshDecompressor>	MeshDecompressor_wp;
 
-	//____ NodeCompressor ________________________________________________________
+	//____ MeshCompressor ________________________________________________________
 	/**
-	 * @brief Compresses the vertices and triangles of a Warpmap, or any rows of pairs of 32-bit values that change smoothly.
+	 * @brief Compresses the vertices and triangles of a Warpmap, or any sequences of 32-bit values that change smoothly.
 	 *
-	 * Each value is predicted from its neighbours already compressed, left + above - above left
-	 * (only left on the first row, only above in the first column), and only the difference is
-	 * stored. Differences are zigzag coded (0, -1, 1, -2... as 0, 1, 2, 3...) and stored in 1 to 5
+	 * The data is a number of sequences of the same length, one after the other, such as all x of
+	 * the vertices of a mesh, then all y and so on, or all first corners of its triangles, then
+	 * all second and third. Each sequence is predicted from its own values lag steps back, either
+	 * as they are (order 1) or continuing the change from the ones before (order 2), with lag and
+	 * order chosen for each sequence by trying lags 1 to 32 on its start, and only the difference
+	 * is stored. A mesh that follows a shape column by column has values that change the same way
+	 * from one column to the next, or one vertex to the next, so most differences are small, and
+	 * those of the corners of triangles mostly 0.
+	 *
+	 * Differences are zigzag coded (0, -1, 1, -2... as 0, 1, 2, 3...) and a run of zeros is a 0 code
+	 * followed by its length - 1, other differences their zigzag code. Codes are stored in 1 to 5
 	 * bytes, with the length in the leading bits of the first byte as in UTF-8, but with all 8 bits
 	 * used in the bytes that follow:
 	 *
@@ -52,22 +60,24 @@ namespace wax
 	 *		1110xxxx xxxxxxxx xxxxxxxx xxxxxxxx		28 bits
 	 *		11110000 xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx	32 bits
 	 *
-	 * Arithmetic wraps around at 32 bits, so any values are restored exactly. Data that doesn't
-	 * compress, or isn't whole rows of pairs, is stored as it is.
+	 * The data starts with its mode, then the number of sequences and their length as codes, and
+	 * each sequence with a code of (lag - 1) * 2 + order - 1. Arithmetic wraps around at 32 bits,
+	 * so any values are restored exactly. Data that doesn't compress, or isn't whole sequences of
+	 * 32-bit values, is stored as it is.
 	 *
-	 * Set the row length (in pairs) before compressing. It's stored with the data.
+	 * Set the number of sequences before compressing. It's stored with the data.
 	 *
 	 * The compressed data can be decompressed in place, from the end of a buffer of
 	 * maxCompressedSize() bytes to its start, as GfxStream does.
 	 */
 
-	class NodeCompressor : public Compressor
+	class MeshCompressor : public Compressor
 	{
 	public:
 
 		//.____ Creation __________________________________________________________
 
-		static NodeCompressor_p		create();
+		static MeshCompressor_p		create();
 
 		//.____ Identification __________________________________________
 
@@ -75,34 +85,32 @@ namespace wax
 		const static TypeInfo	TYPEINFO;
 
 		uint32_t idToken() const override;
-
 		const static uint32_t	ID_TOKEN;
 
 		//.____ Misc ____________________________________________________
 
-		bool	setRowLength( int pairs );
-		int		rowLength() const { return m_rowLength; }
+		bool	setSequences( int sequences );
+		int		sequences() const { return m_sequences; }
 
 		int		maxCompressedSize( int uncompressedSize ) override;
-
 		int		compress( void * pDest, const void * pSrcBegin, const void * pSrcEnd ) override;
 
 	protected:
-		NodeCompressor() {};
-		virtual ~NodeCompressor() {};
+		MeshCompressor() {};
+		virtual ~MeshCompressor() {};
 
-		int		m_rowLength = 1;
+		int		m_sequences = 1;
 	};
 
-	//____ NodeDecompressor ______________________________________________________
+	//____ MeshDecompressor ______________________________________________________
 
-	class NodeDecompressor : public Decompressor
+	class MeshDecompressor : public Decompressor
 	{
 	public:
 
 		//.____ Creation __________________________________________________________
 
-		static NodeDecompressor_p		create();
+		static MeshDecompressor_p		create();
 
 		//.____ Identification __________________________________________
 
@@ -110,7 +118,6 @@ namespace wax
 		const static TypeInfo	TYPEINFO;
 
 		uint32_t idToken() const override;
-
 		const static uint32_t	ID_TOKEN;
 
 		//.____ Misc ____________________________________________________
@@ -118,10 +125,9 @@ namespace wax
 		int		decompress( void * pDest, const void * pSrcBegin, const void * pSrcEnd ) override;
 
 	protected:
-		NodeDecompressor() {};
-		virtual ~NodeDecompressor() {};
+		MeshDecompressor() {};
+		virtual ~MeshDecompressor() {};
 	};
-
 }
 
-#endif //WAX_NODECOMPRESSION_DOT_H
+#endif //WAX_MESHCOMPRESSION_DOT_H
