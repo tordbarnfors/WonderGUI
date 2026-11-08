@@ -170,12 +170,17 @@ namespace wax
 			return v;
 		}
 
+		// Shift counts kept within range for both branches, as MSVC warns about the one not taken.
+
 		inline int64_t toBinal(int64_t v)
 		{
+			constexpr int c_up = BINAL_SHIFT >= 16 ? BINAL_SHIFT - 16 : 0;
+			constexpr int c_down = BINAL_SHIFT >= 16 ? 0 : 16 - BINAL_SHIFT;
+
 			if constexpr (BINAL_SHIFT >= 16)
-				return v << (BINAL_SHIFT - 16);
+				return v << c_up;
 			else
-				return v >> (16 - BINAL_SHIFT);
+				return v >> c_down;
 		}
 
 		//____ halfPlaneCoverage() ____________________________________________

@@ -96,7 +96,7 @@ namespace wax
 	{
 		// Positions have 6 binals more than spx while rotating and projecting, so rounding is done once.
 
-		const int c_extra = 6;
+		static constexpr int c_extra = 6;
 
 		auto round = [](double value) { return int64_t(value + (value < 0 ? -0.5 : 0.5)); };
 		auto unscale = [](int64_t value) { return (value + (int64_t(1) << 29)) >> 30; };
