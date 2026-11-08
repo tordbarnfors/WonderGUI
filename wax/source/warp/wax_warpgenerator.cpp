@@ -20,6 +20,7 @@
 
 =========================================================================*/
 #include <wax_warpgenerator.h>
+#include <wax_base.h>
 
 #include <algorithm>
 #include <cmath>
@@ -245,6 +246,28 @@ namespace wax
 
 	void WarpGenerator::_bandLayout(const OutlineBand& band, int& nArc, int& nAcross) const
 	{
+		// The same as last time unless the shape, precision or cell size has changed, as when only
+		// angles or offsets do.
+
+		LayoutCache& cache = m_layoutCache;
+
+		if (cache.bValid && cache.ax == band.ax && cache.ay == band.ay && cache.radius == band.radius && cache.top == band.top &&
+			cache.bottom == band.bottom && cache.precision == m_precision && cache.cellSize == m_cellSize)
+		{
+			nArc = cache.nArc;
+			nAcross = cache.nAcross;
+			return;
+		}
+
+		_calcBandLayout(band, nArc, nAcross);
+
+		cache = { true, band.ax, band.ay, band.radius, band.top, band.bottom, m_precision, m_cellSize, nArc, nAcross };
+	}
+
+	//____ _calcBandLayout() __________________________________________________
+
+	void WarpGenerator::_calcBandLayout(const OutlineBand& band, int& nArc, int& nAcross) const
+	{
 		int64_t dIn, dColumns, dOut;
 		bandDistances(band.top, band.bottom, band.ax, band.ay, band.radius, dIn, dColumns, dOut);
 
@@ -343,24 +366,42 @@ namespace wax
 	}
 
 	//____ _bandMesh() ________________________________________________________
+	/*
+		Writes the mesh to pVertices and pTriangles, which have room for the counts it gives, or
+		only counts them if pVertices is null. Columns go along the outline: one at the start of the
+		top side if it has a length, then those of each corner, the first of a corner left out where
+		the side before it has no length, nAcross + 1 vertices each. Triangles between two columns
+		are written once the second has its vertices, and the vertex at the center of a fan, after
+		all those of the columns, as its triangle is.
+	*/
 
-	void WarpGenerator::_bandMesh(const OutlineBand& band, std::vector<Warpmap::Vertex>& vertices, std::vector<Warpmap::Triangle>& triangles) const
+	void WarpGenerator::_bandMesh(const OutlineBand& band, Warpmap::Vertex* pVertices, Warpmap::Triangle* pTriangles, int& nVertices, int& nTriangles) const
 	{
-		vertices.clear();
-		triangles.clear();
+		const bool bWrite = pVertices != nullptr;
+
+		nVertices = 0;
+		nTriangles = 0;
+
+		auto empty = [&]()
+		{
+			// No band to map the source onto, nothing to draw.
+
+			if (bWrite)
+			{
+				for (int i = 0; i < 3; i++)
+					pVertices[i] = { 0, 0, 0, 0 };
+				pTriangles[0] = { 0, 0, 0 };
+			}
+			nVertices = 3;
+			nTriangles = 1;
+		};
 
 		const int64_t ax = std::max(band.ax, int64_t(0));
 		const int64_t ay = std::max(band.ay, int64_t(0));
 		const int64_t r = std::max(band.radius, int64_t(0));
 
 		if (band.top == band.bottom)
-		{
-			// No band to map the source onto, nothing to draw.
-
-			vertices.assign(3, { 0, 0, 0, 0 });
-			triangles.push_back({ 0, 0, 0 });
-			return;
-		}
+			return empty();
 
 		int64_t dIn, dColumns, dOut;
 		bandDistances(band.top, band.bottom, ax, ay, r, dIn, dColumns, dOut);
@@ -379,110 +420,141 @@ namespace wax
 		const double sweep = std::abs(band.sweep);
 		const int64_t pos0 = -ax;
 
-		uint32_t part0 = uint32_t(_multiply(pos0, _factor(0x1p32 / double(perimeter))));
-		const int64_t u0 = _multiply(bClockwise ? part0 - band.start : band.start - part0, _factor(double(m_sourceSize.w) / (sweep * 0x1p32)));
-		const Factor uFactor = _factor(double(m_sourceSize.w) / (sweep * double(perimeter)));
-		const Factor vFactor = _factor(double(m_sourceSize.h) / double(band.bottom - band.top));
+		Factor uFactor, vFactor;
+		int64_t u0 = 0;
+
+		if (bWrite)
+		{
+			uint32_t part0 = uint32_t(_multiply(pos0, _factor(0x1p32 / double(perimeter))));
+			u0 = _multiply(bClockwise ? part0 - band.start : band.start - part0, _factor(double(m_sourceSize.w) / (sweep * 0x1p32)));
+			uFactor = _factor(double(m_sourceSize.w) / (sweep * double(perimeter)));
+			vFactor = _factor(double(m_sourceSize.h) / double(band.bottom - band.top));
+		}
 
 		auto uAt = [&](int64_t pos) { int64_t du = _multiply(pos - pos0, uFactor); return u0 + (bClockwise ? du : -du); };
 		auto vAt = [&](int64_t distance) { return _multiply(distance - band.top, vFactor); };
 
 		auto toSpx = [](int64_t value) { return spx(std::clamp((value + 128) >> 8, -int64_t(Warpmap::maxPosition), int64_t(Warpmap::maxPosition))); };
 
-		auto addVertex = [&](int64_t x, int64_t y, int64_t u, int64_t v)
+		auto writeVertex = [&](int index, int64_t x, int64_t y, int64_t u, int64_t v)
 		{
-			vertices.push_back({ toSpx(band.cx + x), toSpx(band.cy + y), _toSourceValue(u), _toSourceValue(v) });
-			return int(vertices.size()) - 1;
+			pVertices[index] = { toSpx(band.cx + x), toSpx(band.cy + y), _toSourceValue(u), _toSourceValue(v) };
 		};
 
 		// Columns across the band.
 
 		if (dOut > dColumns)
 		{
-			struct Column
-			{
-				int64_t		x, y;			// Point of the outline.
-				int32_t		nx, ny;			// Normal, outwards, with 20 binals.
-				int64_t		pos;
-				int			corner;			// Corner it is on, -1 for the start of the top side.
-			};
-
-			std::vector<Column> columns;
-
-			if (ax > 0)
-				columns.push_back({ -ax, -ay - r, 0, -(1 << 20), pos0, -1 });
-
 			const int64_t cornerX[4] = { ax, ax, -ax, -ax };
 			const int64_t cornerY[4] = { -ay, ay, ay, -ay };
 			const int64_t cornerPos[4] = { ax, ax + arc + 2 * ay, 3 * ax + 2 * arc + 2 * ay, 3 * ax + 3 * arc + 4 * ay };
 
+			const bool bStart = ax > 0;
+			const bool bSkipFirst[4] = { false, ay == 0, ax == 0, ay == 0 };		// The side before has no length.
+
+			int nColumns = bStart ? 1 : 0;
 			for (int k = 0; k < 4; k++)
-			{
-				for (int i = 0; i <= nArc; i++)
-				{
-					int64_t pos = cornerPos[k] + arc * i / nArc;
+				nColumns += nArc + (bSkipFirst[k] ? 0 : 1);
 
-					if (i == 0 && !columns.empty() && columns.back().pos == pos)
-						continue;					// The side before has no length.
-
-					int32_t sin, cos;
-					_sinCos((uint32_t(k) << 30) + uint32_t((uint64_t(1) << 30) * i / nArc), sin, cos);
-
-					Column c;
-					c.nx = sin >> 10;
-					c.ny = -(cos >> 10);
-					c.x = cornerX[k] + ((r * c.nx) >> 20);
-					c.y = cornerY[k] + ((r * c.ny) >> 20);
-					c.pos = pos;
-					c.corner = k;
-					columns.push_back(c);
-				}
-			}
-
-			// Vertices, nAcross + 1 for each column.
-
-			const int nColumns = int(columns.size());
-			const int64_t span = dOut - dColumns;
+			const int perColumn = nAcross + 1;
 			const bool bApex = dColumns == -r;
-
-			for (int j = 0; j < nColumns; j++)
-			{
-				const Column& c = columns[j];
-				int64_t u = uAt(c.pos);
-
-				for (int i = 0; i <= nAcross; i++)
-				{
-					int64_t d = dColumns + span * i / nAcross;
-					addVertex(c.x + ((d * c.nx) >> 20), c.y + ((d * c.ny) >> 20), u, vAt(d));
-				}
-			}
 
 			// Sectors of corners that start in their center are fans with a vertex of their own
 			// there, which takes the position along the outline of the middle of the sector.
 
-			for (int j = 0; j + 1 < nColumns; j++)
+			int nFans = 0;
+			if (bApex)
 			{
-				bool bFan = bApex && columns[j].corner >= 0 && columns[j].corner == columns[j + 1].corner;
+				for (int k = 0; k < 4; k++)
+					nFans += nArc - (bSkipFirst[k] ? 1 : 0);				// Pairs of columns of the corner.
+			}
 
-				for (int i = 0; i < nAcross; i++)
+			if (!bWrite)
+			{
+				nVertices = nColumns * perColumn + nFans;
+				nTriangles = (nColumns - 1) * nAcross * 2 - nFans;
+			}
+			else
+			{
+				// Distances across the band, and v at them, the same for all columns.
+
+				int across = perColumn * int(sizeof(int64_t) * 2);
+				auto pAcross = (int64_t*) Base::memStackAlloc(across);
+				int64_t* pV = pAcross + perColumn;
+
+				const int64_t span = dOut - dColumns;
+				for (int i = 0; i <= nAcross; i++)
 				{
-					int a = j * (nAcross + 1) + i;
-					int b = a + nAcross + 1;
+					pAcross[i] = dColumns + span * i / nAcross;
+					pV[i] = vAt(pAcross[i]);
+				}
 
-					if (bFan && i == 0)
+				int column = 0;
+				int fan = nColumns * perColumn;
+				int previousCorner = -2;
+
+				auto addColumn = [&](int64_t x, int64_t y, int32_t nx, int32_t ny, int64_t pos, int corner)
+				{
+					int64_t u = uAt(pos);
+					int base = column * perColumn;
+
+					for (int i = 0; i <= nAcross; i++)
 					{
-						const Warpmap::Vertex& center = vertices[a];
-						Warpmap::Vertex apex = center;
-						apex.u = _toSourceValue((int64_t(vertices[a].u) + vertices[b].u) / 2);
-						vertices.push_back(apex);
-
-						triangles.push_back({ int(vertices.size()) - 1, b + 1, a + 1 });
-						continue;
+						int64_t d = pAcross[i];
+						writeVertex(base + i, x + ((d * nx) >> 20), y + ((d * ny) >> 20), u, pV[i]);
 					}
 
-					triangles.push_back({ a, b, b + 1 });
-					triangles.push_back({ a, b + 1, a + 1 });
+					if (column > 0)
+					{
+						bool bFan = bApex && corner >= 0 && corner == previousCorner;
+
+						for (int i = 0; i < nAcross; i++)
+						{
+							int a = base - perColumn + i;
+							int b = a + perColumn;
+
+							if (bFan && i == 0)
+							{
+								Warpmap::Vertex apex = pVertices[a];
+								apex.u = _toSourceValue((int64_t(pVertices[a].u) + pVertices[b].u) / 2);
+								pVertices[fan] = apex;
+
+								*pTriangles++ = { fan, b + 1, a + 1 };
+								fan++;
+								nTriangles++;
+								continue;
+							}
+
+							*pTriangles++ = { a, b, b + 1 };
+							*pTriangles++ = { a, b + 1, a + 1 };
+							nTriangles += 2;
+						}
+					}
+
+					previousCorner = corner;
+					column++;
+				};
+
+				if (bStart)
+					addColumn(-ax, -ay - r, 0, -(1 << 20), pos0, -1);
+
+				for (int k = 0; k < 4; k++)
+				{
+					for (int i = bSkipFirst[k] ? 1 : 0; i <= nArc; i++)
+					{
+						int64_t pos = cornerPos[k] + arc * i / nArc;
+
+						int32_t sin, cos;
+						_sinCos((uint32_t(k) << 30) + uint32_t((uint64_t(1) << 30) * i / nArc), sin, cos);
+
+						int32_t nx = sin >> 10;
+						int32_t ny = -(cos >> 10);
+						addColumn(cornerX[k] + ((r * nx) >> 20), cornerY[k] + ((r * ny) >> 20), nx, ny, pos, k);
+					}
 				}
+
+				Base::memStackFree(across);
+				nVertices = fan;
 			}
 		}
 
@@ -531,24 +603,28 @@ namespace wax
 					}
 				};
 
-				// Clipped to depth >= dIn and <= hi, which are lines across the axis.
+				// Clipped to depth >= dIn and <= hi, which are lines across the axis. Each clip adds at
+				// most one corner to the four.
 
-				std::vector<Point> poly(part.corners, part.corners + 4);
+				Point poly[6];
+				int nPoly = 4;
+				for (int i = 0; i < 4; i++)
+					poly[i] = part.corners[i];
 
 				auto clip = [&](int64_t limit, bool bKeepDeeper)
 				{
-					std::vector<Point> out;
-					int n = int(poly.size());
-					for (int i = 0; i < n; i++)
+					Point out[6];
+					int nOut = 0;
+					for (int i = 0; i < nPoly; i++)
 					{
 						const Point& a = poly[i];
-						const Point& b = poly[(i + 1) % n];
+						const Point& b = poly[(i + 1) % nPoly];
 						int64_t da = depth(a) - limit, db = depth(b) - limit;
 						bool bInA = bKeepDeeper ? da <= 0 : da >= 0;
 						bool bInB = bKeepDeeper ? db <= 0 : db >= 0;
 
 						if (bInA)
-							out.push_back(a);
+							out[nOut++] = a;
 
 						if (bInA != bInB)
 						{
@@ -568,10 +644,13 @@ namespace wax
 								q.x = at;
 								q.y = dx != 0 ? a.y + (at - a.x) * (dy / dx) : a.y;
 							}
-							out.push_back(q);
+							out[nOut++] = q;
 						}
 					}
-					poly = out;
+
+					nPoly = nOut;
+					for (int i = 0; i < nOut; i++)
+						poly[i] = out[i];
 				};
 
 				clip(dIn, false);
@@ -579,32 +658,35 @@ namespace wax
 
 				// Without corners in the same place, a fan from the first.
 
-				std::vector<Point> unique;
-				for (const Point& p : poly)
+				Point unique[6];
+				int nUnique = 0;
+				for (int i = 0; i < nPoly; i++)
 				{
-					if (unique.empty() || unique.back().x != p.x || unique.back().y != p.y)
-						unique.push_back(p);
+					if (nUnique == 0 || unique[nUnique - 1].x != poly[i].x || unique[nUnique - 1].y != poly[i].y)
+						unique[nUnique++] = poly[i];
 				}
-				while (unique.size() > 1 && unique.front().x == unique.back().x && unique.front().y == unique.back().y)
-					unique.pop_back();
+				while (nUnique > 1 && unique[0].x == unique[nUnique - 1].x && unique[0].y == unique[nUnique - 1].y)
+					nUnique--;
 
-				if (unique.size() < 3)
+				if (nUnique < 3)
 					continue;
 
-				int first = int(vertices.size());
-				for (const Point& p : unique)
-					addVertex(p.x, p.y, uAt(pos(p)), vAt(depth(p)));
+				if (bWrite)
+				{
+					for (int i = 0; i < nUnique; i++)
+						writeVertex(nVertices + i, unique[i].x, unique[i].y, uAt(pos(unique[i])), vAt(depth(unique[i])));
 
-				for (int i = 1; i + 1 < int(unique.size()); i++)
-					triangles.push_back({ first, first + i, first + i + 1 });
+					for (int i = 1; i + 1 < nUnique; i++)
+						*pTriangles++ = { nVertices, nVertices + i, nVertices + i + 1 };
+				}
+
+				nVertices += nUnique;
+				nTriangles += nUnique - 2;
 			}
 		}
 
-		if (triangles.empty())
-		{
-			vertices.assign(3, { 0, 0, 0, 0 });
-			triangles.push_back({ 0, 0, 0 });
-		}
+		if (nTriangles == 0)
+			empty();
 	}
 
 	//____ _validateSettings() ________________________________________________

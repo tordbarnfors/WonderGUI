@@ -117,7 +117,23 @@ namespace wax
 		void		_meshSize( int& nVertices, int& nTriangles ) const override;
 		void		_generateMesh( Warpmap::Vertex * pVertices, Warpmap::Triangle * pTriangles ) const override;
 
-		std::vector<int64_t>	_strips() const;
+		const std::vector<int64_t>&	_strips() const;
+		void		_calcStrips( std::vector<int64_t>& edges ) const;
+
+		// Strips last worked out, kept as long as what they depend on is the same.
+
+		struct StripCache
+		{
+			bool		bValid = false;
+			Axis		axis;
+			SizeI		size;
+			SizeI		cellSize;
+			float		span;
+			float		precision;
+		};
+
+		mutable StripCache				m_stripCache;
+		mutable std::vector<int64_t>	m_strips;
 		spx			_uPeriod() const override;
 		spx			_vPeriod() const override;
 		void		_generated() override { m_generatedAxis = m_axis; m_offsetFactor = _offsetFactor(m_sweep / 360.0, _lengthAcross(m_axis, m_sourceSize)); }

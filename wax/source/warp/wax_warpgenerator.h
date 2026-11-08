@@ -165,8 +165,26 @@ namespace wax
 		// when calculated.
 
 		void			_bandLayout( const OutlineBand& band, int& nArc, int& nAcross ) const;
+		void			_calcBandLayout( const OutlineBand& band, int& nArc, int& nAcross ) const;
 		SizeI			_bandCellSize( const OutlineBand& band ) const;
-		void			_bandMesh( const OutlineBand& band, std::vector<Warpmap::Vertex>& vertices, std::vector<Warpmap::Triangle>& triangles ) const;
+
+		// The mesh of a band, written to pVertices and pTriangles, or only counted if pVertices is
+		// null, as for _meshSize().
+
+		void			_bandMesh( const OutlineBand& band, Warpmap::Vertex * pVertices, Warpmap::Triangle * pTriangles, int& nVertices, int& nTriangles ) const;
+
+		// The layout of the band last worked out, kept as long as what it depends on is the same.
+
+		struct LayoutCache
+		{
+			bool		bValid = false;
+			int64_t		ax, ay, radius, top, bottom;
+			float		precision;
+			SizeI		cellSize;
+			int			nArc, nAcross;
+		};
+
+		mutable LayoutCache	m_layoutCache;
 
 		virtual spx		_uPeriod() const { return 0; }			// In spx of the source, 0 = not periodic.
 		virtual spx		_vPeriod() const { return 0; }

@@ -142,13 +142,28 @@ namespace wax
 		needed to keep two vertices for each edge within Warpmap::maxVertices.
 	*/
 
-	std::vector<int64_t> CylinderWarp::_strips() const
+	const std::vector<int64_t>& CylinderWarp::_strips() const
+	{
+		StripCache& cache = m_stripCache;
+
+		if (!cache.bValid || cache.axis != m_axis || cache.size != m_size || cache.cellSize != m_cellSize || cache.span != m_span || cache.precision != m_precision)
+		{
+			_calcStrips(m_strips);
+			cache = { true, m_axis, m_size, m_cellSize, m_span, m_precision };
+		}
+
+		return m_strips;
+	}
+
+	//____ _calcStrips() ______________________________________________________
+
+	void CylinderWarp::_calcStrips(std::vector<int64_t>& edges) const
 	{
 		const int64_t c_pixel = 64 << 8;
 		const int lengthAcross = m_axis == Axis::X ? m_size.h : m_size.w;
 		const int cellAcross = m_axis == Axis::X ? m_cellSize.h : m_cellSize.w;
 
-		std::vector<int64_t> edges;
+		edges.clear();
 
 		const int maxStrips = Warpmap::maxVertices / 2 - 4;
 		const int minWidth = (lengthAcross + maxStrips - 1) / maxStrips;				// Up to two more strips from the middle out.
@@ -158,7 +173,7 @@ namespace wax
 			for (int64_t p = 0; p < lengthAcross; p += std::max(cellAcross, minWidth))
 				edges.push_back(p * c_pixel);
 			edges.push_back(lengthAcross * c_pixel);
-			return edges;
+			return;
 		}
 
 		const double half = lengthAcross / 2.0;
@@ -193,7 +208,6 @@ namespace wax
 
 		edges.front() = 0;
 		edges.back() = lengthAcross * c_pixel;
-		return edges;
 	}
 
 	//____ _calcCellSize() ____________________________________________________
@@ -201,7 +215,7 @@ namespace wax
 
 	SizeI CylinderWarp::_calcCellSize() const
 	{
-		std::vector<int64_t> edges = _strips();
+		const std::vector<int64_t>& edges = _strips();
 
 		int64_t narrowest = edges.back();
 		for (size_t i = 1; i < edges.size(); i++)
@@ -278,7 +292,7 @@ namespace wax
 		const spx sourceAlong = bAxisX ? m_sourceSize.w : m_sourceSize.h;
 		const spx sourceAcross = bAxisX ? m_sourceSize.h : m_sourceSize.w;
 
-		std::vector<int64_t> edges = _strips();
+		const std::vector<int64_t>& edges = _strips();
 
 		int32_t sin, cos;
 		_rim(sin, cos);

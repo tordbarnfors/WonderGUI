@@ -167,12 +167,7 @@ namespace wax
 
 	void RoundedRectWarp::_meshSize(int& nVertices, int& nTriangles) const
 	{
-		std::vector<Warpmap::Vertex> vertices;
-		std::vector<Warpmap::Triangle> triangles;
-		_bandMesh(_band(), vertices, triangles);
-
-		nVertices = int(vertices.size());
-		nTriangles = int(triangles.size());
+		_bandMesh(_band(), nullptr, nullptr, nVertices, nTriangles);
 	}
 
 	//____ _generateMesh() ____________________________________________________
@@ -186,12 +181,8 @@ namespace wax
 
 	void RoundedRectWarp::_generateMesh(Warpmap::Vertex* pVertices, Warpmap::Triangle* pTriangles) const
 	{
-		std::vector<Warpmap::Vertex> vertices;
-		std::vector<Warpmap::Triangle> triangles;
-		_bandMesh(_band(), vertices, triangles);
-
-		std::copy(vertices.begin(), vertices.end(), pVertices);
-		std::copy(triangles.begin(), triangles.end(), pTriangles);
+		int nVertices, nTriangles;
+		_bandMesh(_band(), pVertices, pTriangles, nVertices, nTriangles);
 	}
 
 	//____ _uPeriod() _________________________________________________________

@@ -195,7 +195,12 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   linearly along an axis (a cylinder along its axis) take one piece.
 - **WarpGenerators** size their pieces from `precision` and generate with integers per vertex:
   CORDIC angles and sines, integer square roots, fixed point factors. Floating point is limited to
-  converting the settings and choosing the layout once per generate, for CPUs without an FPU.
+  converting the settings once per generate and choosing the layout when the shape changes, for
+  CPUs without an FPU. The layout of a band and the strips of a cylinder are kept until what they
+  depend on changes, so animating angles, spans or offsets doesn't work them out again. The mesh
+  is written straight into the Warpmap in one pass, after counting it without the maths, with
+  values that are the same across the band worked out once rather than for each vertex: 13 us
+  rather than 45 us for a thick ring on x86.
 - **Animation without generating again** through source offsets: `CircularWarp::rotationOffset()`,
   `RoundedRectWarp::shiftOffset()` (in parts of the outline, not degrees),
   `CylinderWarp::rotationOffset()`.
