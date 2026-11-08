@@ -39,6 +39,7 @@
 #include <wax_c_warpmap.h>
 #include <wax_c_warpmapfactory.h>
 #include <wax_c_warpgenerator.h>
+#include <wax_c_ballwarp.h>
 #include <wax_c_circularwarp.h>
 #include <wax_c_roundedrectwarp.h>
 #include <wax_c_cylinderwarp.h>

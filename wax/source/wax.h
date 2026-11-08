@@ -40,6 +40,7 @@
 #include <wax_bitmapfont.h>
 #include <wax_blurbrush.h>
 #include <wax_canvaslayers.h>
+#include <wax_ballwarp.h>
 #include <wax_circularwarp.h>
 #include <wax_roundedrectwarp.h>
 #include <wax_cylinderwarp.h>

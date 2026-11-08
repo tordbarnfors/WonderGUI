@@ -32,4 +32,5 @@ private:
 	bool roundedRectTest(std::ostream& output);
 	bool cylinderTest(std::ostream& output);
 	bool perspectiveTest(std::ostream& output);
+	bool ballTest(std::ostream& output);
 };

@@ -88,6 +88,12 @@ namespace wg
 	using wax::Chain;
 	using wax::Link;
 
+	//____ wax_ballwarp.h __________________________________________________________
+
+	using wax::BallWarp_p;
+	using wax::BallWarp_wp;
+	using wax::BallWarp;
+
 	//____ wax_circularwarp.h ______________________________________________________
 
 	using wax::CircularWarp_p;

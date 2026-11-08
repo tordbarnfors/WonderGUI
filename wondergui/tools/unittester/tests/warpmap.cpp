@@ -9,6 +9,7 @@
 #include <wax_roundedrectwarp.h>
 #include <wax_cylinderwarp.h>
 #include <wax_perspectivewarp.h>
+#include <wax_ballwarp.h>
 #include <wax_meshcompression.h>
 #include <cstring>
 
@@ -212,6 +213,7 @@ WarpmapTest::WarpmapTest()
 	ADD_TEST(perspectiveWarpTest);
 	ADD_TEST(perspectiveRotatedTest);
 	ADD_TEST(limitsTest);
+	ADD_TEST(ballWarpTest);
 }
 
 WarpmapTest::~WarpmapTest()
@@ -1733,6 +1735,168 @@ bool WarpmapTest::limitsTest(std::ostream& output)
 
 	auto pTallCylinder = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 100, 120000 }, _.sourceSize = { 64 * 64, 64 * 64 }, _.precision = 0.01f), pFactory);
 	TEST_ASSERT(fits(pTallCylinder->generate(), "Very long cylinder"));
+
+	return true;
+}
+
+//____ ballWarpTest() _________________________________________________________
+// A ball covered by a map: positions within precision of the exact ones, seen from any side,
+// no holes, an outline fading as a straight edge would, updated in place when tilted and rolled,
+// and spun by an offset.
+
+bool WarpmapTest::ballWarpTest(std::ostream& output)
+{
+	auto pFactory = SoftWarpmapFactory::create();
+	const SizeSPX source = { 512 * 64, 256 * 64 };
+
+	TEST_ASSERT(BallWarp::create(WGBP(BallWarp, _.size = { 100, 100 }, _.sourceSize = source, _.tilt = 91.f), pFactory) == nullptr);
+	TEST_ASSERT(BallWarp::create(WGBP(BallWarp, _.size = { 100, 100 }, _.sourceSize = {} ), pFactory) == nullptr);
+
+	auto pBall = BallWarp::create(WGBP(BallWarp, _.size = { 241, 260 }, _.sourceSize = source, _.precision = 0.25f), pFactory);
+	TEST_ASSERT(pBall);
+	TEST_ASSERT(pBall->radius() == 241 * 32 - 32);
+	TEST_ASSERT(!pBall->setOrientation(-90.5f, 0.f));
+
+	const double radius = pBall->radius() / 64.0;
+	const double cx = 241 / 2.0, cy = 260 / 2.0;
+
+	// Where a point of the ball (longitude and latitude in radians) is seen, and the reverse.
+
+	auto toScreen = [&](double lon, double lat, double tilt, double roll, double& sx, double& sy)
+	{
+		double x = std::cos(lat) * std::sin(lon), y = -std::sin(lat), z = std::cos(lat) * std::cos(lon);
+		double y1 = y * std::cos(tilt) + z * std::sin(tilt);
+		double zt = z * std::cos(tilt) - y * std::sin(tilt);
+		sx = cx + radius * (x * std::cos(roll) - y1 * std::sin(roll));
+		sy = cy + radius * (x * std::sin(roll) + y1 * std::cos(roll));
+		return zt;
+	};
+
+	auto toBall = [&](double sx, double sy, double tilt, double roll, double& lon, double& lat)
+	{
+		double px = (sx - cx) / radius, py = (sy - cy) / radius;
+		double x = px * std::cos(roll) + py * std::sin(roll);
+		double y1 = -px * std::sin(roll) + py * std::cos(roll);
+		double zt = std::sqrt(std::max(0.0, 1 - x * x - y1 * y1));
+		double y = y1 * std::cos(tilt) - zt * std::sin(tilt);
+		double z = y1 * std::sin(tilt) + zt * std::cos(tilt);
+		lon = std::atan2(x, z);
+		lat = std::asin(std::clamp(-y, -1.0, 1.0));
+	};
+
+	int nVertices = -1, nTriangles = -1;
+	const Warpmap* pFirst = nullptr;
+
+	for (float tilt : { 0.f, 23.5f, -50.f, 90.f, -90.f, 75.f })
+	{
+		for (float roll : { 0.f, 30.f, -135.f })
+		{
+			TEST_ASSERT(pBall->setOrientation(tilt, roll));
+			Warpmap_p pMap = pBall->generate();
+
+			// The same Warpmap and counts whatever the orientation.
+
+			if (!pFirst)
+			{
+				pFirst = pMap;
+				nVertices = pMap->vertexCount();
+				nTriangles = pMap->triangleCount();
+			}
+			TEST_ASSERT(pMap == pFirst && pMap->vertexCount() == nVertices && pMap->triangleCount() == nTriangles);
+
+			double t = tilt * M_PI / 180, r = roll * M_PI / 180;
+			double worst = 0;
+
+			for (int k = 0; k < 4000; k++)
+			{
+				// Points within the ball, more of them close to the outline.
+
+				double a = k * 2.399963, d = radius * (1 - std::pow((k % 97) / 97.0, 3)) - 1.0;
+				double sx = cx + std::cos(a) * std::max(d, 0.0), sy = cy + std::sin(a) * std::max(d, 0.0);
+
+				int triangle = pMap->triangleAt({ spx(std::floor(sx * 64)), spx(std::floor(sy * 64)) });
+				if (triangle < 0)
+				{
+					output << "No triangle at " << sx << ", " << sy << " (tilt " << tilt << ", roll " << roll << ")" << std::endl;
+					return false;
+				}
+
+				CoordF pos;
+				TEST_ASSERT(pMap->positionIn(triangle, sx, sy, pos));
+
+				// Where the position from the Warpmap is on the ball, against the point.
+
+				double u = std::fmod(pos.x / double(source.w), 1.0);
+				if (u < 0)
+					u += 1;
+				double lon = (u - 0.5) * 2 * M_PI, lat = (0.5 - pos.y / double(source.h)) * M_PI;
+				double px, py;
+				toScreen(lon, lat, t, r, px, py);
+				worst = std::max(worst, std::hypot(px - sx, py - sy));
+			}
+
+			if (worst > 0.25 * 1.5 + 0.05)
+			{
+				output << "Position off by " << worst << " pixels (tilt " << tilt << ", roll " << roll << ")" << std::endl;
+				return false;
+			}
+
+			// Coverage across the outline as for a straight edge: 0.5 - distance outside it, off by as
+			// much as the outline is, straight between crossings of the grid, within precision.
+
+			for (int k = 0; k < 720; k++)
+			{
+				double a = k * M_PI / 360;
+				for (double d : { -0.45, -0.3, -0.1, 0.0, 0.15, 0.3, 0.45 })
+				{
+					double sx = cx + std::cos(a) * (radius + d), sy = cy + std::sin(a) * (radius + d);
+					const double tolerance = 0.25 + 0.03;
+					double expected = std::clamp(0.5 - d, 0.0, 1.0);
+
+					int triangle = pMap->triangleAt({ spx(std::lround(sx * 64)), spx(std::lround(sy * 64)) });
+					if (triangle < 0)
+					{
+						if (expected <= tolerance)
+							continue;							// Just outside the outline, which is within precision.
+
+						output << "No triangle at the outline, " << d << " pixels out" << std::endl;
+						return false;
+					}
+
+					const Warpmap::Triangle& tri = pMap->triangleData()[triangle];
+					const Warpmap::Vertex* c[3] = { &pMap->vertexData()[tri.a], &pMap->vertexData()[tri.b], &pMap->vertexData()[tri.c] };
+					double e1x = c[1]->x - c[0]->x, e1y = c[1]->y - c[0]->y, e2x = c[2]->x - c[0]->x, e2y = c[2]->y - c[0]->y;
+					double area = e1x * e2y - e1y * e2x;
+					double dx = sx * 64 - c[0]->x, dy = sy * 64 - c[0]->y;
+					double b1 = (dx * e2y - dy * e2x) / area, b2 = (e1x * dy - e1y * dx) / area;
+					double coverage = ((1 - b1 - b2) * c[0]->coverage + b1 * c[1]->coverage + b2 * c[2]->coverage) / Warpmap::coverageOne;
+
+					if (std::abs(std::clamp(coverage, 0.0, 1.0) - expected) > tolerance)
+					{
+						output << "Coverage " << coverage << " at " << d << " pixels out (tilt " << tilt << ", roll " << roll << ")" << std::endl;
+						return false;
+					}
+				}
+
+				// Nothing beyond the outline.
+
+				double sx = cx + std::cos(a) * (radius + 0.75), sy = cy + std::sin(a) * (radius + 0.75);
+				TEST_ASSERT(pMap->triangleAt({ spx(std::lround(sx * 64)), spx(std::lround(sy * 64)) }) < 0);
+			}
+		}
+	}
+
+	// Spun by an offset, the way the Earth turns: what faces the viewer moves west.
+
+	CoordSPX offset = pBall->rotationOffset(90.f);
+	TEST_ASSERT(offset.y == 0 && std::abs(offset.x + source.w / 4) <= 1);
+	TEST_ASSERT(pBall->generate()->uPeriod() == source.w && pBall->generate()->vPeriod() == 0);
+
+	// Within the limits of Warpmap however large and fine.
+
+	auto pHuge = BallWarp::create(WGBP(BallWarp, _.size = { 4000, 4000 }, _.sourceSize = source, _.precision = 0.01f), pFactory);
+	Warpmap_p pHugeMap = pHuge->generate();
+	TEST_ASSERT(pHugeMap && pHugeMap->vertexCount() <= Warpmap::maxVertices && pHugeMap->triangleCount() <= Warpmap::maxTriangles);
 
 	return true;
 }

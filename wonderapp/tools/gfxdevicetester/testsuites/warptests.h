@@ -5,6 +5,7 @@
 #include <wax_roundedrectwarp.h>
 #include <wax_cylinderwarp.h>
 #include <wax_perspectivewarp.h>
+#include <wax_ballwarp.h>
 
 #include <cmath>
 #include <functional>
@@ -36,6 +37,7 @@ public:
 		addTest("Cylinders", &WarpTests::cylinders);
 		addTest("Perspective", &WarpTests::perspective);
 		addTest("Vertex coverage", &WarpTests::vertexCoverage);
+		addTest("Balls", &WarpTests::balls);
 	}
 
 	bool init(GfxDevice * pDevice, const RectSPX& canvas, wapp::API * pAppAPI)
@@ -203,6 +205,34 @@ public:
 
 			m_pCard = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear),
 													 (uint8_t*)card.data(), PixelFormat::ARGB_8);
+		}
+
+		// A world map of made up continents in equirectangular projection, seamless around, with ice
+		// towards the poles, a grid every 30 degrees and a red prime meridian, so that turns show.
+
+		{
+			const int w = 256, h = 128;
+			const double pi = 3.14159265358979323846;
+			std::vector<Color8> map(w * h);
+
+			for (int y = 0; y < h; y++)
+				for (int x = 0; x < w; x++)
+				{
+					double lon = 2 * pi * (x + 0.5) / w, lat = pi * (0.5 - (y + 0.5) / h);
+					double land = std::sin(lon * 2 + 1.0) * std::cos(lat * 3) + 0.6 * std::sin(lon * 3 - lat * 4) + 0.4 * std::cos(lon * 5 + lat * 7) - 0.35;
+
+					Color8 c = land > 0.2 ? Color8(150, 130, 80, 255) : land > 0 ? Color8(60, 140, 60, 255) : Color8(30, 70, 160, 255);
+					if (std::abs(lat) > pi * 7 / 18)
+						c = Color8(235, 240, 245, 255);
+					if (x % (w / 12) == 0 || y % (h / 6) == 0)
+						c = Color8(220, 220, 220, 255);
+					if (x == 0 || x == 1)
+						c = Color8(220, 40, 40, 255);
+					map[y * w + x] = c;
+				}
+
+			m_pMap = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear, _.tiling = true),
+													(uint8_t*)map.data(), PixelFormat::ARGB_8);
 		}
 
 		// Warpmaps, a set for each size of source they are drawn with.
@@ -464,11 +494,6 @@ public:
 		return true;
 	}
 
-	// Top: a tiled floor leaning into the distance, seen from above and scrolled along with a source
-	// offset, and the gauge leaning back like credits. Middle: cards in a row seen from one eye, turned towards the
-	// middle. Bottom: a card turned 0, 60 and 120 degrees around its middle (the last one mirrored,
-	// its back facing the viewer), one tilted, turned and rolled, and one pinned onto a free shape.
-
 	// Discs with their outline going from full coverage half a pixel inside to none half a pixel
 	// outside, which antialiases it, and with half coverage everywhere.
 
@@ -519,6 +544,11 @@ public:
 		pDevice->warpBlit({ 64 * 260 + 30, 64 * 260 }, disc(surface, 13, Warpmap::coverageOne, 0));
 		return true;
 	}
+
+	// Top: a tiled floor leaning into the distance, seen from above and scrolled along with a source
+	// offset, and the gauge leaning back like credits. Middle: cards in a row seen from one eye, turned towards the
+	// middle. Bottom: a card turned 0, 60 and 120 degrees around its middle (the last one mirrored,
+	// its back facing the viewer), one tilted, turned and rolled, and one pinned onto a free shape.
 
 	bool perspective(GfxDevice * pDevice, const RectSPX& canvas)
 	{
@@ -581,6 +611,49 @@ public:
 		return true;
 	}
 
+	// Top: the map flat, a globe with the north pole leaning towards the viewer and lit from the
+	// top left, and one leaning away, rolled and turned. Bottom: the gauge around a ball, globes seen
+	// from straight above and below the poles, and globes getting smaller, turned by offset.
+
+	bool balls(GfxDevice * pDevice, const RectSPX& canvas)
+	{
+		auto pFactory = pDevice->warpmapFactory();
+		SizeSPX map = m_pMap->pixelSize() * 64;
+
+		auto globe = [&](int size, float tilt, float roll = 0.f)
+		{
+			return BallWarp::create(WGBP(BallWarp, _.size = { size, size }, _.sourceSize = map, _.tilt = tilt, _.roll = roll), pFactory);
+		};
+
+		pDevice->setBlitSource(m_pMap);
+		pDevice->blit({ 64 * 10, 64 * 10 }, { 0, 0, map.w, map.h });
+
+		auto pEarth = globe(200, 23.5f);
+		pDevice->setTint({ { 64 * 270, 64 * 10 }, SizeSPX(64 * 200, 64 * 200) },
+						 Tint::create({ { 0.f, HiColor::White }, { 1.f, HiColor(900, 900, 1100, 4096) } }, { 0.f, 0.f }, { 1.f, 1.f }));
+		pDevice->warpBlit({ 64 * 270, 64 * 10 }, pEarth->generate(), pEarth->rotationOffset(30.f));
+		pDevice->clearTint();
+
+		auto pRolled = globe(110, -40.f, 30.f);
+		pDevice->warpBlit({ 64 * 140, 64 * 150 }, pRolled->generate(), pRolled->rotationOffset(120.f));
+
+		auto pMarble = BallWarp::create(WGBP(BallWarp, _.size = { 200, 200 }, _.sourceSize = m_pGauge->pixelSize() * 64, _.tilt = 60.f, _.roll = -20.f), pFactory);
+		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 270 }, pMarble->generate(), m_pGauge);
+
+		auto pNorth = globe(110, 90.f), pSouth = globe(110, -90.f);
+		pDevice->warpBlit({ 64 * 230, 64 * 270 }, pNorth->generate());
+		pDevice->warpBlit({ 64 * 350, 64 * 270 }, pSouth->generate(), pSouth->rotationOffset(45.f));
+
+		int x = 230;
+		for (int size : { 80, 50, 30, 16, 8 })
+		{
+			auto pSmall = globe(size, 23.5f);
+			pDevice->warpBlit({ 64 * x, 64 * 400 }, pSmall->generate(), pSmall->rotationOffset(float(size) * 3));
+			x += size + 10;
+		}
+		return true;
+	}
+
 private:
 
 	Edgemap_p	m_pGauge;
@@ -596,6 +669,7 @@ private:
 	Surface_p	m_pReelLabel;
 	Surface_p	m_pFloor;
 	Surface_p	m_pCard;
+	Surface_p	m_pMap;
 
 	// Warpmaps are made for a source of a certain size.
 

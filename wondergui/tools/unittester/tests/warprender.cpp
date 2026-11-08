@@ -19,6 +19,8 @@
 #include <wax_c_cylinderwarp.h>
 #include <wax_perspectivewarp.h>
 #include <wax_c_perspectivewarp.h>
+#include <wax_ballwarp.h>
+#include <wax_c_ballwarp.h>
 #include <wax_c.h>
 #include <wax_c_object.h>
 #include <wax_c_softgfx.h>
@@ -456,6 +458,7 @@ WarpRenderTest::WarpRenderTest()
 	ADD_TEST(roundedRectTest);
 	ADD_TEST(cylinderTest);
 	ADD_TEST(perspectiveTest);
+	ADD_TEST(ballTest);
 }
 
 WarpRenderTest::~WarpRenderTest()
@@ -1914,4 +1917,107 @@ bool WarpRenderTest::perspectiveTest(std::ostream& output)
 	};
 
 	return compare(output, "Perspective through the C API", render(TestBackend::Soft, [&](GfxDevice* p) { c(p); }), "C API", render(TestBackend::Soft, scene), "C++", 0);
+}
+
+//____ ballTest() _____________________________________________________________
+// Globes tilted, rolled and spun by offset, blitted and as edgemaps, as SoftBackend draws them
+// against ReferenceBackend, streamed, against much finer meshes and through the C API.
+
+bool WarpRenderTest::ballTest(std::ostream& output)
+{
+	auto globe = WGBP(BallWarp, _.size = { 44, 44 }, _.sourceSize = { 32 * 64, 16 * 64 }, _.tilt = 23.5f);
+	auto rolled = WGBP(BallWarp, _.size = { 40, 46 }, _.sourceSize = { 32 * 64, 16 * 64 }, _.tilt = -60.f, _.roll = 30.f);
+	auto marble = WGBP(BallWarp, _.size = { 48, 40 }, _.sourceSize = c_edgemapSource, _.tilt = 80.f, _.roll = -135.f);
+
+	auto scene = [=](GfxDevice* pDevice, float precision)
+	{
+		auto pFactory = pDevice->warpmapFactory();
+
+		auto bp = globe;
+		bp.precision = precision;
+		auto pGlobe = BallWarp::create(bp, pFactory);
+
+		bp = rolled;
+		bp.precision = precision;
+		auto pRolled = BallWarp::create(bp, pFactory);
+
+		bp = marble;
+		bp.precision = precision;
+		auto pMarble = BallWarp::create(bp, pFactory);
+
+		pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Bilinear));
+		pDevice->warpBlit({ 2 * 64, 2 * 64 }, pGlobe->generate(), pGlobe->rotationOffset(40.f));
+		pDevice->warpBlit({ 2 * 64, 48 * 64 }, pGlobe->generate(), pGlobe->rotationOffset(-150.f));
+		pDevice->warpBlit({ 50 * 64, 2 * 64 }, pRolled->generate());
+
+		auto pEdgemap = makeEdgemap(pDevice, true);
+		pDevice->warpDrawEdgemap({ 100 * 64, 2 * 64 }, pMarble->generate(), pEdgemap);
+		pDevice->warpDrawEdgemap({ 100 * 64, 50 * 64 }, pMarble->generate(), pEdgemap, pMarble->rotationOffset(100.f));
+	};
+
+	auto normal = [=](GfxDevice* pDevice) { scene(pDevice, 0.25f); };
+
+	if (!compare(output, "Balls", render(TestBackend::Soft, normal), "SoftBackend", render(TestBackend::Reference, normal), "ReferenceBackend", 6, 60, 48) ||
+		!compare(output, "Balls", render(TestBackend::Linear, normal), "LinearBackend", render(TestBackend::Soft, normal), "SoftBackend", 0) ||
+		!compare(output, "Balls, streamed", renderStreamed(normal), "streamed", render(TestBackend::Soft, normal), "direct", 0))
+		return false;
+
+	// Against meshes many times finer. Positions differ by up to a quarter of a pixel, which
+	// shows by tens of levels where the source has sharp edges, most around the poles where the
+	// map is squeezed the most. A ball misplaced, cut or with a gap differs much more.
+
+	auto fine = [=](GfxDevice* pDevice) { scene(pDevice, 0.02f); };
+
+	if (!compare(output, "Balls", render(TestBackend::Reference, normal), "precision 0.25", render(TestBackend::Reference, fine), "precision 0.02", 20, 200, 96))
+		return false;
+
+	// Through the C API.
+
+	auto c = [&](GfxDevice* pDevice)
+	{
+		wax_obj factory = (wax_obj) static_cast<Object*>(pDevice->warpmapFactory().rawPtr());
+		wax_obj device = (wax_obj) static_cast<Object*>(pDevice);
+
+		auto toC = [](const BallWarp::Blueprint& bp)
+		{
+			wax_ballWarpBP c = {};
+			c.size = { bp.size.w, bp.size.h };
+			c.sourceSize = { bp.sourceSize.w, bp.sourceSize.h };
+			c.tilt = bp.tilt;
+			c.roll = bp.roll;
+			return c;
+		};
+
+		auto globeBP = toC(globe);
+		auto rolledBP = toC(rolled);
+		auto marbleBP = toC(globe);					// Starts out as the globe and gets turned.
+		marbleBP.sourceSize = { marble.sourceSize.w, marble.sourceSize.h };
+		marbleBP.size = { marble.size.w, marble.size.h };
+
+		wax_obj cGlobe = wax_createBallWarp(&globeBP, factory);
+		wax_obj cRolled = wax_createBallWarp(&rolledBP, factory);
+		wax_obj cMarble = wax_createBallWarp(&marbleBP, factory);
+
+		TEST_ASSERT(!wax_setBallWarpOrientation(cMarble, 91.f, 0.f));
+		TEST_ASSERT(wax_setBallWarpOrientation(cMarble, marble.tilt, marble.roll));
+		TEST_ASSERT(wax_ballWarpTilt(cMarble) == marble.tilt && wax_ballWarpRoll(cMarble) == marble.roll);
+		TEST_ASSERT(wax_ballWarpRadius(cGlobe) == 44 * 32 - 32);
+
+		pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Bilinear));
+		wax_warpBlit(device, { 2 * 64, 2 * 64 }, wax_generateWarpGenerator(cGlobe), wax_ballWarpRotationOffset(cGlobe, 40.f));
+		wax_warpBlit(device, { 2 * 64, 48 * 64 }, wax_generateWarpGenerator(cGlobe), wax_ballWarpRotationOffset(cGlobe, -150.f));
+		wax_warpBlit(device, { 50 * 64, 2 * 64 }, wax_generateWarpGenerator(cRolled), { 0, 0 });
+
+		auto pEdgemap = makeEdgemap(pDevice, true);
+		wax_obj edgemap = (wax_obj) static_cast<Object*>(pEdgemap.rawPtr());
+		wax_warpDrawEdgemap(device, { 100 * 64, 2 * 64 }, wax_generateWarpGenerator(cMarble), edgemap, { 0, 0 });
+		wax_warpDrawEdgemap(device, { 100 * 64, 50 * 64 }, wax_generateWarpGenerator(cMarble), edgemap, wax_ballWarpRotationOffset(cMarble, 100.f));
+
+		wax_release(cMarble);
+		wax_release(cRolled);
+		wax_release(cGlobe);
+		return true;
+	};
+
+	return compare(output, "Balls through the C API", render(TestBackend::Soft, [&](GfxDevice* p) { c(p); }), "C API", render(TestBackend::Soft, normal), "C++", 0);
 }

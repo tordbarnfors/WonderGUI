@@ -27,4 +27,5 @@ private:
 	bool perspectiveWarpTest(std::ostream& output);
 	bool perspectiveRotatedTest(std::ostream& output);
 	bool limitsTest(std::ostream& output);
+	bool ballWarpTest(std::ostream& output);
 };

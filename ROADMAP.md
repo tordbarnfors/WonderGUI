@@ -147,7 +147,7 @@ in someone's memory or an old chat. Add to it when you decide something, move it
     Blueprint flag that leaves them out. Software backends find out which triangles have
     perspective from the weights of their corners when setting them up, which a flag for the
     whole mesh wouldn't improve on, while GPU backends would need a second vertex layout and
-    shaders for it. Leaving them out would save 4 of the 20 bytes of a vertex, so it is only done
+    shaders for it. Leaving them out would save 4 of the 24 bytes of a vertex, so it is only done
     in the stream.
 - **WaveWarp:** straight waves (amplitude vector, wavelength, angle, phase) with envelopes
   (none, pinned at the start like a flag, pinned at both ends). Animated with `setPhase()`
@@ -219,7 +219,7 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   rather than 45 us for a thick ring on x86.
 - **Animation without generating again** through source offsets: `CircularWarp::rotationOffset()`,
   `RoundedRectWarp::shiftOffset()` (in parts of the outline, not degrees),
-  `CylinderWarp::rotationOffset()`.
+  `CylinderWarp::rotationOffset()`, `BallWarp::rotationOffset()`.
 - **No culling of empty cells in the GPU backends.** Tried for OpenGL and reverted: the gain was
   questionable for the complexity. Metadata about skippable parts is the planned alternative.
 - **No edge mode** (clamping positions outside the source). Generators that need solid borders
@@ -233,6 +233,20 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   most precision, and is cut off where the divisor drops to half of its lowest at the corners,
   which keeps it off the horizon. The mesh is made in floating point, a few dozen calculations
   per generate.
+- **BallWarp:** a ball seen from far away (orthographic, no perspective), with an
+  equirectangular map of the whole ball as source, periodic in its width, its middle facing the
+  viewer. Turned by tilt (the north pole towards the viewer) and roll (clockwise on screen), spun
+  around its axis by a source offset. The mesh is the grid of meridians and parallels cut by the
+  outline: a cell is the polygon of its corners in front of the outline and where its sides cross
+  it, fanned, with a ring of quads from those crossings out to coverage 0, on a circle half a
+  pixel beyond the outline. Crossings are on a circle half a pixel inside the outline, so the ring
+  antialiases it as a straight edge does; crossings are worked out on the sphere (where the
+  meridian or parallel crosses it), not by interpolating between grid points. Each pole has a
+  vertex for each cell around it, with the u of the middle of the cell. Pieces are the same angle
+  all over the ball, sqrt(4 * precision / radius) radians, which keeps positions within
+  precision also at the outline, where pieces are seen most from the side. The counts are the most the grid can have for
+  its size and precision, unused vertices and triangles left empty, so tilting and rolling never
+  makes a new Warpmap. Integer maths per vertex, as for the other generators.
 - **wax::Base,** not wax::Core, is the static base class of Wax. `wg::Base` inherits it, and code
   using both namespaces says `wg::Base` or `wax::Base`.
 

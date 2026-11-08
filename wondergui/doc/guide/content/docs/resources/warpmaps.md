@@ -154,9 +154,30 @@ The Warpmap is the shape of the corners, made about a pixel larger so that its b
 
 
 
+## BallWarp
+
+BallWarp makes and keeps a Warpmap that wraps the source around a ball, such as a globe from a map of the world. The ball is centered in the Warpmap, as large as fits with its antialiased outline, and is seen from far away, straight on and without perspective, so half of it shows. The source is a map of the whole ball in equirectangular projection: its width goes all the way around, from 180 degrees west at the left edge to 180 degrees east at the right, and its height from the north pole at the top to the south pole at the bottom. The middle of the map faces the viewer. The width is periodic, so the map wraps around seamlessly.
+
+```c++
+	auto pGlobe = BallWarp::create( WGBP(BallWarp,
+										_.size = { 200, 200 },
+										_.sourceSize = pWorldMap->pixelSize() * 64,
+										_.tilt = 23.5f ), pDevice->warpmapFactory() );
+
+	degrees += speed * seconds;
+	pDevice->setBlitSource( pWorldMap );
+	pDevice->warpBlit( { 10*64, 10*64 }, pGlobe->generate(), pGlobe->rotationOffset(degrees) );
+```
+
+*tilt* leans the north pole towards the viewer (-90 to 90 degrees, 90 looking straight down on it) and *roll* turns the axis of the ball clockwise on screen, both set with `setOrientation()`. `rotationOffset()` spins the ball around its axis, from west to east for positive degrees as the Earth turns, so a spinning globe is generated once. `radius()` gives the radius of the ball in spx.
+
+The Warpmap is a grid of meridians and parallels, between which positions are linear, cut where the ball turns away from the viewer and with a vertex of its own at the poles for each piece. Pieces are as large as keeps them within *precision*, the same all over the ball, unless *cellSize* sets their length along the equator (width) and along a meridian (height). The outline isn't a border of the source, so it is antialiased by the coverage of the vertices: a row of triangles from full coverage half a pixel inside it to none half a pixel outside. The number of vertices and triangles only depends on size and precision, so changing tilt and roll updates the Warpmap in place. The ball isn't shaded: draw it with a tint for that, such as one getting darker away from where the light comes from.
+
+
+
 ## WarpGenerators
 
-CircularWarp, RoundedRectWarp, CylinderWarp and PerspectiveWarp are WarpGenerators: they make a Warpmap from a few settings and keep it. Size, source size, cell size, precision and generate() are the same for all WarpGenerators, though cell size and precision don't apply to PerspectiveWarp, which is exact.
+CircularWarp, RoundedRectWarp, CylinderWarp, PerspectiveWarp and BallWarp are WarpGenerators: they make a Warpmap from a few settings and keep it. Size, source size, cell size, precision and generate() are the same for all WarpGenerators, though cell size and precision don't apply to PerspectiveWarp, which is exact.
 
 generate() updates the Warpmap after settings have changed and returns it. A Warpmap that is held elsewhere, such as by a draw that isn't rendered yet, is never changed: generate() then makes a new one, as it does when size, cell size or the number of vertices and triangles has changed. Settings that change the shape, such as the radii of a CircularWarp, can change that, while angles and offsets don't. So draw what generate() returns rather than keeping it, and one generator can be drawn several times with different settings within the same canvas update.
 

@@ -111,6 +111,8 @@ set( SOURCES
 	source/surface/wax_surfacereader.h
 	source/surface/wax_surfacewriter.cpp
 	source/surface/wax_surfacewriter.h
+	source/warp/wax_ballwarp.cpp
+	source/warp/wax_ballwarp.h
 	source/warp/wax_circularwarp.cpp
 	source/warp/wax_circularwarp.h
 	source/warp/wax_cylinderwarp.cpp
@@ -126,6 +128,8 @@ set( SOURCES
 	source/warp/wax_warpmapfactory.cpp
 	source/warp/wax_warpmapfactory.h
 	c-api/wax_c.h
+	c-api/wax_c_ballwarp.cpp
+	c-api/wax_c_ballwarp.h
 	c-api/wax_c_base.cpp
 	c-api/wax_c_base.h
 	c-api/wax_c_bitmapcache.cpp
