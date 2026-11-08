@@ -137,9 +137,9 @@ namespace wax
 		at distance y from the middle is asin(y / R), R being the radius. Interpolating that over
 		strips of c pixels is off by about c^2 / 8 times its second derivative, which in pixels on
 		screen is c^2 * sin(a) / (8 * R * cos(a)^2) at angle a, the most at its outer edge. So from
-		each rim inwards, each strip is as wide as keeps that within precision, at least a pixel and at
-		most 64. A strip narrower than a pixel would only be needed where the source is squeezed many
-		times into each pixel, which more strips don't improve, as it is still sampled once per pixel.
+		each rim inwards, each strip is as wide as keeps that within precision, at least two pixels and
+		at most 64. Narrower strips would only be needed where the source is squeezed into each pixel,
+		which more strips don't improve on screen, as it is still sampled once per pixel.
 		What is left in the middle, where strips can be the widest, goes to the middle strip, so finer
 		precision never gives fewer strips. Worked out in floating point, once per generate for a few
 		edges. Strips are made wider where needed to keep two vertices for each edge within
@@ -168,11 +168,11 @@ namespace wax
 
 		edges.clear();
 
-		// Strips at least a pixel wide, and wide enough to keep within the limits of Warpmap, with up
-		// to two more strips from the middle out.
+		// Strips at least two pixels wide, and wide enough to keep within the limits of Warpmap, with
+		// up to two more strips from the middle out.
 
 		const int maxStrips = Warpmap::maxVertices / 2 - 4;
-		const double lo = std::max(1.0, double(lengthAcross) / maxStrips);
+		const double lo = std::max(2.0, double(lengthAcross) / maxStrips);
 
 		const double half = lengthAcross / 2.0;
 		const double rim = m_span / 2 * 3.14159265358979323846 / 180;

@@ -141,9 +141,9 @@ namespace wax
 		Positions are linear between rings, which is off by up to |s''| * d^2 / 8 pixels of the source
 		over d pixels, seen magnified by 1 / s', and turned along the diagonals of the pieces where s
 		changes fast, so rings are as close as keeps both within 0.7 of precision. Pieces along the
-		rim are off by up to r * a^2 / 8 for an angle a, kept within half of it. The two seldom add up
-		at the same place, which keeps lenses within precision, as measured, with about as much to
-		spare as the other generators. Worked out in floating point when the settings change, a few
+		rim are off by up to r * a^2 / 8 for an angle a, kept within precision. Between the vertices
+		of a ring, positions are off by less, as the source follows the same circle, and the two
+		seldom add up at the same place, which keeps lenses within precision, as measured. Worked out in floating point when the settings change, a few
 		hundred operations, after which the vertices take only integers.
 	*/
 
@@ -161,11 +161,12 @@ namespace wax
 		const bool bFalloff = w > 1e-9;
 		const double p0 = r0 / m, m0 = 1 / m;
 		const double precision = _piecePrecision();
-		// Rings at least a pixel apart. Closer ones are only needed where the falloff squeezes the
-		// source into each pixel, which they don't improve on screen, as it is still sampled once
-		// per pixel, but which they make slower to draw.
 
-		const double c_minStep = 1.0;
+		// Rings at least two pixels apart. Closer ones are only needed where the falloff squeezes
+		// the source into each pixel, which they don't improve on screen, as it is still sampled
+		// once per pixel, but which they make slower to draw.
+
+		const double c_minStep = 2.0;
 
 		// s(r), s'(r) and s''(r).
 
@@ -201,10 +202,11 @@ namespace wax
 
 		// Whether positions linear between rings at a and b keep within the precision, with pieces
 		// of the given angle. Along a radius: s'' is linear over the falloff and 0 elsewhere, so it
-		// is largest at an end or where the falloff starts, and s' is smallest at an end. Across
-		// the diagonals of the pieces: halfway along one, the source is at s(a) and s(b) weighted
-		// equally, which turns it towards the end at b by a * (s(b) / (s(a) + s(b)) - 1/2), while
-		// the point is turned by a * (b / (a + b) - 1/2), which is off by r times the difference.
+		// is largest at an end or where the falloff starts, and s' is smallest at an end. Across:
+		// every other ring is turned by half a piece, so the sides of the triangles between rings
+		// span half a piece. Halfway along one, the source is at s(a) and s(b) weighted equally,
+		// which turns it towards the end at b by a / 2 * (s(b) / (s(a) + s(b)) - 1/2), while the
+		// point is turned by a / 2 * (b / (a + b) - 1/2), which is off by r times the difference.
 
 		auto fits = [&](double a, double b, double angle, double allowed)
 		{
@@ -215,7 +217,7 @@ namespace wax
 			double along = curve * (b - a) * (b - a) / (8 * slope);
 
 			double sa = s(a), sb = s(b);
-			double across = sa + sb > 0 ? b * angle * std::abs(sb / (sa + sb) - b / (a + b)) : 0.0;
+			double across = sa + sb > 0 ? b * angle / 2 * std::abs(sb / (sa + sb) - b / (a + b)) : 0.0;
 
 			return along + across <= allowed;
 		};
@@ -262,7 +264,7 @@ namespace wax
 			radii.push_back(outer);
 		};
 
-		double pieceAngle = std::sqrt(4 * precision / std::max(outer, 1.0));
+		double pieceAngle = std::sqrt(8 * precision / std::max(outer, 1.0));
 		int pieces = int(std::clamp(std::ceil(2 * c_pi / std::max(pieceAngle, 1e-6)), 8.0, 4096.0));
 
 		// Coarser where needed to keep within the limits of Warpmap.
@@ -322,9 +324,10 @@ namespace wax
 
 	//____ _generateMesh() ____________________________________________________
 	/*
-		Vertex j of each ring is at an angle of j / pieces of a turn clockwise from straight up, so
-		the middle polygon goes down both sides from its top vertex, and is split into a strip of
-		triangles from top to bottom, which gives a backend few triangles on each row. Positions in
+		Vertex j of each ring is at an angle of j / pieces of a turn clockwise from straight up, and
+		every other ring is turned by half a piece more. The middle polygon, the first ring, goes
+		down both sides from its top vertex and is split into a strip of triangles from top to
+		bottom, which gives a backend few triangles on each row. Positions in
 		1/256 spx, sines and cosines with 30 binals.
 	*/
 
@@ -339,19 +342,20 @@ namespace wax
 
 		auto round = [](int64_t value) { return spx((value + 128) >> 8); };
 
-		for (int j = 0; j < pieces; j++)
-		{
-			uint32_t angle = uint32_t(0xC0000000u + uint32_t((uint64_t(j) << 32) / uint64_t(pieces)));
-			int32_t sin, cos;
-			_sinCos(angle, sin, cos);
-
-			for (int k = 0; k < rings; k++)
+		for (int turned = 0; turned < 2; turned++)
+			for (int j = 0; j < pieces; j++)
 			{
-				const Ring& ring = l.rings[k];
-				pVertices[k * pieces + j] = { round(cx + ((ring.radius * cos) >> 30)), round(cy + ((ring.radius * sin) >> 30)),
-											  round(cu + ((ring.u * cos) >> 30)), round(cv + ((ring.v * sin) >> 30)), Warpmap::weightOne, ring.coverage };
+				uint32_t angle = uint32_t(0xC0000000u + uint32_t((uint64_t(2 * j + turned) << 31) / uint64_t(pieces)));
+				int32_t sin, cos;
+				_sinCos(angle, sin, cos);
+
+				for (int k = turned; k < rings; k += 2)
+				{
+					const Ring& ring = l.rings[k];
+					pVertices[k * pieces + j] = { round(cx + ((ring.radius * cos) >> 30)), round(cy + ((ring.radius * sin) >> 30)),
+												  round(cu + ((ring.u * cos) >> 30)), round(cv + ((ring.v * sin) >> 30)), Warpmap::weightOne, ring.coverage };
+				}
 			}
-		}
 
 		// The middle polygon, from its top vertex down both sides.
 
@@ -373,7 +377,8 @@ namespace wax
 			bRight = !bRight;
 		}
 
-		// Two triangles for each piece between two rings.
+		// Two triangles for each piece between two rings, one with a side along each ring. Vertex j
+		// of a ring turned by half a piece is between vertices j and j + 1 of the rings next to it.
 
 		for (int k = 0; k + 1 < rings; k++)
 		{
@@ -381,8 +386,16 @@ namespace wax
 			for (int j = 0; j < pieces; j++)
 			{
 				int j1 = j + 1 == pieces ? 0 : j + 1;
-				*pTriangles++ = { a + j, a + j1, b + j1 };
-				*pTriangles++ = { a + j, b + j1, b + j };
+				if ((k & 1) == 0)
+				{
+					*pTriangles++ = { a + j, a + j1, b + j };
+					*pTriangles++ = { b + j, a + j1, b + j1 };
+				}
+				else
+				{
+					*pTriangles++ = { b + j, b + j1, a + j };
+					*pTriangles++ = { a + j, b + j1, a + j1 };
+				}
 			}
 		}
 	}

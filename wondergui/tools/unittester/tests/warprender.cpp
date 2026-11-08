@@ -2068,12 +2068,13 @@ bool WarpRenderTest::lensTest(std::ostream& output)
 		return false;
 
 	// Against meshes many times finer. Positions differ by up to a quarter of a pixel, which shows
-	// where the source has sharp edges, the more the more it is magnified. A lens misplaced or with
-	// a gap differs much more.
+	// where the source has sharp edges, the more the more it is magnified, and by more where a
+	// falloff squeezes the source into each pixel, as rings are at least two pixels apart. A lens
+	// misplaced or with a gap differs much more.
 
 	auto fine = [=](GfxDevice* pDevice) { scene(pDevice, 0.02f); };
 
-	if (!compare(output, "Lenses", render(TestBackend::Reference, normal), "precision 0.25", render(TestBackend::Reference, fine), "precision 0.02", 20, 200, 96))
+	if (!compare(output, "Lenses", render(TestBackend::Reference, normal), "precision 0.25", render(TestBackend::Reference, fine), "precision 0.02", 20, 240, 96))
 		return false;
 
 	// Through the C API.

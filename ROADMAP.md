@@ -241,11 +241,13 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   itself, measured on screen (the 1.5 times allowed before came from the grid), and that finer
   precision never gives fewer triangles. Positions in the source are whole spx, so a magnified
   source limits precision to about magnification / 128 pixels, which is left as it is.
-- **Pieces are at least a pixel across.** Narrower ones are only needed where the source is
+- **Pieces are at least two pixels across.** Narrower ones are only needed where the source is
   squeezed into each pixel (the rims of a cylinder seen almost to its sides at fine precision, a
   steep falloff of a lens), where they don't show, as the source is still sampled once per
   pixel, but cost a backend for each row they cross. Positions there can be off by more than
-  precision: up to 1.5 times it where the source is squeezed up to 4 times, more beyond.
+  precision: up to 1.5 times it where the source is squeezed up to 4 times, more beyond. Compared
+  by drawing over a sharp test image against meshes many times finer: one pixel and two differ
+  as little where the source is magnified, while two take fewer rings for steep falloffs.
 - **Animation without generating again** through source offsets: `CircularWarp::rotationOffset()`,
   `RoundedRectWarp::shiftOffset()` (in parts of the outline, not degrees),
   `CylinderWarp::rotationOffset()`, `BallWarp::rotationOffset()`. A LensWarp is moved by its
@@ -284,14 +286,20 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   without a seam. falloff 0 is a magnifying glass with a hard edge, 1 a bubble. Round only, and
   magnification only (no concave lenses), for now. The mesh is the middle as one polygon in a
   strip from top to bottom (linear there, and few triangles per row), rings through the falloff
-  and a coverage ring around the outline. Rings keep both the bend along a radius
-  (|s''| d^2 / 8 / s') and the turn along the diagonals of the pieces, where s changes fast,
-  within 0.7 of precision, and are at least a pixel apart. Pieces along the rim keep the outline
-  within half of it. The two seldom add up at the same place: lenses measure 0.6-0.8 of
-  precision, as the other generators. 0.85 went over it. Rings 1/32 pixel apart kept steep
-  falloffs within precision too, but only where the source is squeezed many times into each
-  pixel, which doesn't show, and took up to 4 times the triangles and twice the time to draw. The layout is in
-  floating point, a few hundred operations when settings change, the vertices in integers.
+  and a coverage ring around the outline. Every other ring is turned by half a piece, so the
+  sides of the triangles between rings span half a piece, which halves how far positions turn
+  where s changes fast between rings, and the rings can be further apart: 20-30% fewer
+  triangles than rings in line, looking the same. Rings keep both the bend along a radius
+  (|s''| d^2 / 8 / s') and that turn within 0.7 of precision, and are at least two pixels apart.
+  Pieces along the rim keep the outline within precision; positions between the vertices of a
+  ring are off by less, as the source follows the same circle. Lenses measure 0.6-0.8 of
+  precision where the source isn't squeezed. Altogether 30-55% fewer triangles than with rings in
+  line, a pixel apart and pieces within half of precision, and 12-27% less time to draw on
+  SoftBackend, with a largest difference against a fine mesh of 41-62 rather than 30-52 levels
+  where the source is magnified. Rings 1/32 pixel apart kept steep falloffs within precision
+  everywhere, but only where the source is squeezed many times into each pixel, which doesn't
+  show, and took up to 4 times the triangles. The layout is in floating point, a few hundred
+  operations when settings change, the vertices in integers.
   A LensCapsule widget, drawing a lens over a CanvasCapsule where the pointer is, comes later.
 - **wax::Base,** not wax::Core, is the static base class of Wax. `wg::Base` inherits it, and code
   using both namespaces says `wg::Base` or `wax::Base`.

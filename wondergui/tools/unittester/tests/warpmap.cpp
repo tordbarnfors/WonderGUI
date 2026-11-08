@@ -1969,7 +1969,7 @@ bool WarpmapTest::lensWarpTest(std::ostream& output)
 				TEST_ASSERT(pMap->positionIn(triangle, sx, sy, pos));
 
 				// Where the position from the Warpmap is shown by the exact lens, against the point.
-				// Rings are at least a pixel apart, so over the first pixel of the falloff and where
+				// Rings are at least two pixels apart, so over the first pixel of the falloff and where
 				// it squeezes the source into each pixel, positions follow the falloff less closely:
 				// within 1.5 times precision where it is squeezed up to 4 times, not measured where
 				// it is squeezed more. They are still continuous, so it doesn't show.

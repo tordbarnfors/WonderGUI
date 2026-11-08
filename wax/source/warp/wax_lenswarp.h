@@ -54,11 +54,12 @@ namespace wax
 	 * - falloff 1 magnifies the most in the middle and less and less out to the rim, like a bubble.
 	 *
 	 * The Warpmap is the middle of the lens as one polygon, where positions are linear, rings
-	 * through the falloff as close as keeps them within precision, and a ring of triangles around
-	 * the outline that goes from full coverage of the vertices to none, which antialiases it.
-	 * Pieces along the rim are as long as keeps the outline within precision. Without falloff, magnification only changes positions in
-	 * the source, so the Warpmap is updated in place. A frame, a highlight or a shadow are drawn
-	 * separately.
+	 * through the falloff as close as keeps them within precision, at least two pixels apart and
+	 * every other one turned by half a piece, and a ring of triangles around the outline that goes
+	 * from full coverage of the vertices to none, which antialiases it. Pieces along the rim are as
+	 * long as keeps the outline within precision. Without falloff, magnification only changes
+	 * positions in the source, so the Warpmap is updated in place. A frame, a highlight or a shadow
+	 * are drawn separately.
 	 *
 	 * The lens is drawn over what is already there, so graphics with transparency in them are
 	 * blended twice where it is. Draw it from a surface with the finished graphics on it.
