@@ -92,6 +92,68 @@ namespace wax
 			return -floorDiv(-a, b);
 		}
 
+		// floorDiv(a + n / 2, n), a shift where n is a power of two, as runs mostly are.
+
+		inline int64_t divideRounded(int64_t a, int n)
+		{
+			if ((n & (n - 1)) == 0)
+			{
+				int shift = 0;
+				while ((1 << shift) < n)
+					shift++;
+				return (a + (n >> 1)) >> shift;			// Arithmetic shift, rounding down as floorDiv().
+			}
+			return floorDiv(a + n / 2, int64_t(n));
+		}
+
+		//____ Reciprocal _____________________________________________________
+		/*
+			Divides by the same d > 0 several times, with one division to set it up and a multiplication
+			for each, exactly as floorDiv(a + d / 2, d). The quotient from r = floor(2^62 / d) is at most
+			3 below the true one, for values within 2^63, which steps of the remainder correct.
+		*/
+
+		inline uint64_t mulHigh62(uint64_t a, uint64_t b)			// floor(a * b / 2^62).
+		{
+#if defined(__SIZEOF_INT128__)
+			return uint64_t(((unsigned __int128) a * b) >> 62);
+#else
+			uint64_t a0 = a & 0xFFFFFFFF, a1 = a >> 32, b0 = b & 0xFFFFFFFF, b1 = b >> 32;
+			uint64_t p00 = a0 * b0, p01 = a0 * b1, p10 = a1 * b0, p11 = a1 * b1;
+			uint64_t mid = (p00 >> 32) + (p01 & 0xFFFFFFFF) + (p10 & 0xFFFFFFFF);
+			uint64_t lo = (p00 & 0xFFFFFFFF) | (mid << 32);
+			uint64_t hi = p11 + (p01 >> 32) + (p10 >> 32) + (mid >> 32);
+			return (hi << 2) | (lo >> 62);
+#endif
+		}
+
+		struct Reciprocal
+		{
+			Reciprocal(int64_t divisor) : d(divisor), half(divisor / 2), r((uint64_t(1) << 62) / uint64_t(divisor)) {}
+
+			int64_t divideRounded(int64_t a) const
+			{
+				int64_t n = a + half;
+
+				// floor(n / d) = -1 - floor((-n - 1) / d) for n < 0.
+
+				bool bNegative = n < 0;
+				uint64_t m = bNegative ? uint64_t(-(n + 1)) : uint64_t(n);
+				uint64_t q = mulHigh62(m, r);
+				uint64_t rem = m - q * uint64_t(d);
+				while (rem >= uint64_t(d))
+				{
+					q++;
+					rem -= uint64_t(d);
+				}
+				return bNegative ? -1 - int64_t(q) : int64_t(q);
+			}
+
+			int64_t		d;
+			int64_t		half;
+			uint64_t	r;
+		};
+
 		// a * num / den rounded down, without the overflow of a * num, 0 <= num <= den.
 
 		inline int64_t mulDiv(int64_t a, int64_t num, int64_t den)
@@ -760,16 +822,23 @@ namespace wax
 			return true;
 		};
 
+		// The same with derivatives, all divided by W, set up once for the six of them.
+
 		auto evaluate = [&](int x, int64_t* pPos, int64_t* pDx, int64_t* pDy, int64_t& W)
 		{
-			if (!position(x, pPos, W))
+			int64_t X = x - s.ox;
+			W = rowW + p.f[2][1] * X;
+			if (W <= 0)
 				return false;
+
+			Reciprocal byW(W);
 
 			for (int a = 0; a < 2; a++)
 			{
-				int64_t relative = pPos[a] - p.ref[a] - w.offset[a];
-				pDx[a] = divide(p.f[a][1] - relative * p.f[2][1], W);
-				pDy[a] = divide(p.f[a][2] - relative * p.f[2][2], W);
+				int64_t relative = byW.divideRounded(rowU[a] + p.f[a][1] * X);
+				pPos[a] = p.ref[a] + relative + w.offset[a];
+				pDx[a] = byW.divideRounded(p.f[a][1] - relative * p.f[2][1]);
+				pDy[a] = byW.divideRounded(p.f[a][2] - relative * p.f[2][2]);
 			}
 			return true;
 		};
@@ -803,9 +872,9 @@ namespace wax
 				int64_t step[2], dxStep[2], dyStep[2];
 				for (int a = 0; a < 2; a++)
 				{
-					step[a] = n > 1 ? divide(nextPos[a] - pos[a], n) : dx[a];
-					dxStep[a] = divide(nextDx[a] - dx[a], n);
-					dyStep[a] = divide(nextDy[a] - dy[a], n);
+					step[a] = n > 1 ? divideRounded(nextPos[a] - pos[a], n) : dx[a];
+					dxStep[a] = divideRounded(nextDx[a] - dx[a], n);
+					dyStep[a] = divideRounded(nextDy[a] - dy[a], n);
 				}
 
 				if (n == 1 || _addWarpSpan(c_warpMixed, x + w.dest.x, n, pos, step, dx, dy, dxStep, dyStep, 6, false) != c_warpMixed)
@@ -838,7 +907,7 @@ namespace wax
 						int64_t subStep[2], d[2], e[2];
 						for (int a = 0; a < 2; a++)
 						{
-							subStep[a] = divide(endPos[a] - subPos[a], m);
+							subStep[a] = divideRounded(endPos[a] - subPos[a], m);
 							d[a] = dx[a] + dxStep[a] * k;
 							e[a] = dy[a] + dyStep[a] * k;
 						}

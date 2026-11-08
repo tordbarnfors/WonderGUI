@@ -70,6 +70,15 @@ in someone's memory or an old chat. Add to it when you decide something, move it
     on the rows being drawn while drawing: 190 KB for a thick ring of 992 triangles rather than
     480 KB. Without `__int128`, values are worked out in 64 bits where they fit, with the same
     rounding, which makes setting up the ring 9 times faster on a CPU without it.
+  - **Perspective runs divide once per point:** positions and derivatives at the start of a run
+    share one W, which a reciprocal (one division) divides by exactly, with a few steps of the
+    remainder, and steps along a run are divided by its length with a shift where it is a power of
+    two, as runs mostly are. Results are the same as with divisions. Coverage of a pixel
+    (`halfPlaneCoverage()`) keeps its 32 bit divisions, which CPUs from the 68020 on do in
+    hardware, as a reciprocal would cost about as much and give other results.
+  - **PerspectiveWarp stays in floating point,** a few dozen operations per generate for a mesh of
+    at most 9 vertices, a couple of milliseconds per generate without an FPU. Turning the corners
+    (`rotated()`) is in integers.
   - **Vertex positions are within +-2^23 spx** (131072 pixels), so that the steps of edges fit in
     32 bits in software backends and positions are exact as floats in GPU backends.
   - **Perspective in the software backends is limited to u and v within 32768 pixels of the
