@@ -161,7 +161,11 @@ namespace wax
 		const bool bFalloff = w > 1e-9;
 		const double p0 = r0 / m, m0 = 1 / m;
 		const double precision = _piecePrecision();
-		const double c_minStep = 1.0 / 32;								// Closest rings. Positions are in spx, which shows where the source is squeezed hard.
+		// Rings at least a pixel apart. Closer ones are only needed where the falloff squeezes the
+		// source into each pixel, which they don't improve on screen, as it is still sampled once
+		// per pixel, but which they make slower to draw.
+
+		const double c_minStep = 1.0;
 
 		// s(r), s'(r) and s''(r).
 

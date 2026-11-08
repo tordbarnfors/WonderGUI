@@ -235,11 +235,17 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   pixels wide and the last one at each rim taking up to a pixel more. Now all keep within
   precision with 10-40% to spare: pieces are sized for precision less 1/64 pixel
   (`_piecePrecision()`), for rounding the vertices to spx; ball pieces span
-  sqrt(3.4 * precision / r) rather than sqrt(4 * ...); lens rings get 0.7 of precision; strips
-  and rings are at least 1/32 pixel. The tests check within precision itself, measured on screen
-  (the 1.5 times allowed before came from the grid), and that finer precision never gives fewer
-  triangles. Positions in the source are whole spx, so a magnified source limits precision to
-  about magnification / 128 pixels, which is left as it is.
+  sqrt(3.4 * precision / r) rather than sqrt(4 * ...); lens rings get 0.7 of precision.
+  Cylinder strips are laid out from the rims inwards, so what is left goes to the widest strip in
+  the middle and finer precision never gives fewer strips. The tests check within precision
+  itself, measured on screen (the 1.5 times allowed before came from the grid), and that finer
+  precision never gives fewer triangles. Positions in the source are whole spx, so a magnified
+  source limits precision to about magnification / 128 pixels, which is left as it is.
+- **Pieces are at least a pixel across.** Narrower ones are only needed where the source is
+  squeezed into each pixel (the rims of a cylinder seen almost to its sides at fine precision, a
+  steep falloff of a lens), where they don't show, as the source is still sampled once per
+  pixel, but cost a backend for each row they cross. Positions there can be off by more than
+  precision: up to 1.5 times it where the source is squeezed up to 4 times, more beyond.
 - **Animation without generating again** through source offsets: `CircularWarp::rotationOffset()`,
   `RoundedRectWarp::shiftOffset()` (in parts of the outline, not degrees),
   `CylinderWarp::rotationOffset()`, `BallWarp::rotationOffset()`. A LensWarp is moved by its
@@ -280,10 +286,11 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   strip from top to bottom (linear there, and few triangles per row), rings through the falloff
   and a coverage ring around the outline. Rings keep both the bend along a radius
   (|s''| d^2 / 8 / s') and the turn along the diagonals of the pieces, where s changes fast,
-  within 0.7 of precision, and are at least 1/32 pixel apart: closer rings got worse, as vertex
-  positions are rounded to spx. Pieces along the rim keep the outline within half of it. The two
-  seldom add up at the same place: lenses measure 0.6-0.8 of precision, as the other generators.
-  0.85 went over it. The layout is in
+  within 0.7 of precision, and are at least a pixel apart. Pieces along the rim keep the outline
+  within half of it. The two seldom add up at the same place: lenses measure 0.6-0.8 of
+  precision, as the other generators. 0.85 went over it. Rings 1/32 pixel apart kept steep
+  falloffs within precision too, but only where the source is squeezed many times into each
+  pixel, which doesn't show, and took up to 4 times the triangles and twice the time to draw. The layout is in
   floating point, a few hundred operations when settings change, the vertices in integers.
   A LensCapsule widget, drawing a lens over a CanvasCapsule where the pointer is, comes later.
 - **wax::Base,** not wax::Core, is the static base class of Wax. `wg::Base` inherits it, and code

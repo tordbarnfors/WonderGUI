@@ -136,10 +136,14 @@ namespace wax
 		Edges of the strips across the axis, in 1/256 spx from the start. Across it, the angle seen
 		at distance y from the middle is asin(y / R), R being the radius. Interpolating that over
 		strips of c pixels is off by about c^2 / 8 times its second derivative, which in pixels on
-		screen is c^2 * sin(a) / (8 * R * cos(a)^2) at angle a. So from the middle outwards, each strip
-		is as wide as keeps that within precision at its outer edge, at least 1/32 pixel and at most 64.
-		Worked out in floating point, once per generate for a few edges. Strips are made wider where
-		needed to keep two vertices for each edge within Warpmap::maxVertices.
+		screen is c^2 * sin(a) / (8 * R * cos(a)^2) at angle a, the most at its outer edge. So from
+		each rim inwards, each strip is as wide as keeps that within precision, at least a pixel and at
+		most 64. A strip narrower than a pixel would only be needed where the source is squeezed many
+		times into each pixel, which more strips don't improve, as it is still sampled once per pixel.
+		What is left in the middle, where strips can be the widest, goes to the middle strip, so finer
+		precision never gives fewer strips. Worked out in floating point, once per generate for a few
+		edges. Strips are made wider where needed to keep two vertices for each edge within
+		Warpmap::maxVertices.
 	*/
 
 	const std::vector<int64_t>& CylinderWarp::_strips() const
@@ -164,11 +168,11 @@ namespace wax
 
 		edges.clear();
 
-		// Strips at least 1/32 pixel wide, as vertices are rounded to spx, and wide enough to keep
-		// within the limits of Warpmap, with up to two more strips from the middle out.
+		// Strips at least a pixel wide, and wide enough to keep within the limits of Warpmap, with up
+		// to two more strips from the middle out.
 
 		const int maxStrips = Warpmap::maxVertices / 2 - 4;
-		const double lo = std::max(1.0 / 32, double(lengthAcross) / maxStrips);
+		const double lo = std::max(1.0, double(lengthAcross) / maxStrips);
 
 		const double half = lengthAcross / 2.0;
 		const double rim = m_span / 2 * 3.14159265358979323846 / 180;
@@ -182,17 +186,15 @@ namespace wax
 			return s > 0 ? std::sqrt(8 * precision * radius * c2 / s) : 64.0;
 		};
 
-		std::vector<double> outwards = { 0.0 };
-		double y = 0.0;
-		while (y < half)
+		std::vector<double> outwards = { half };
+		double y = half;
+		while (y > 0.0)
 		{
 			double c = std::clamp(width(y), lo, std::max(64.0, lo));
-			c = std::clamp(std::min(c, width(std::min(y + c, half))), lo, std::max(64.0, lo));
-			y = std::min(y + c, half);
-			if (half - y < lo)
-				y = half;
+			y = y - c < lo ? 0.0 : y - c;
 			outwards.push_back(y);
 		}
+		std::reverse(outwards.begin(), outwards.end());
 
 		for (int i = int(outwards.size()) - 1; i > 0; i--)
 			edges.push_back(int64_t((half - outwards[i]) * c_pixel + 0.5));

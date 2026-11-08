@@ -1949,7 +1949,7 @@ bool WarpmapTest::lensWarpTest(std::ostream& output)
 				TEST_ASSERT(pMap == pFirst && pMap->vertexCount() == nVertices && pMap->triangleCount() == nTriangles);
 			}
 
-			double worst = 0;
+			double worst = 0, worstSqueezed = 0;
 
 			for (int k = 0; k < 4000; k++)
 			{
@@ -1969,18 +1969,28 @@ bool WarpmapTest::lensWarpTest(std::ostream& output)
 				TEST_ASSERT(pMap->positionIn(triangle, sx, sy, pos));
 
 				// Where the position from the Warpmap is shown by the exact lens, against the point.
+				// Rings are at least a pixel apart, so over the first pixel of the falloff and where
+				// it squeezes the source into each pixel, positions follow the falloff less closely:
+				// within 1.5 times precision where it is squeezed up to 4 times, not measured where
+				// it is squeezed more. They are still continuous, so it doesn't show.
+
+				double r0 = R * (1 - falloff);
+				double squeeze = (profile(d + 0.05, m, falloff) - profile(std::max(d - 0.05, 0.0), m, falloff)) / (d + 0.05 - std::max(d - 0.05, 0.0));
+				if (squeeze > 4.0 || (falloff > 0.f && d > r0 - 0.5 && d < r0 + 1.0))
+					continue;
 
 				double ux = (pos.x - source.w / 2.0) * toDestX / 64, uy = (pos.y - source.h / 2.0) * toDestY / 64;
 				double r = inverse(std::hypot(ux, uy), m, falloff), angle = std::atan2(uy, ux);
-				worst = std::max(worst, std::hypot(cx + std::cos(angle) * r - sx, cy + std::sin(angle) * r - sy));
+				double error = std::hypot(cx + std::cos(angle) * r - sx, cy + std::sin(angle) * r - sy);
+				if (squeeze > 1.0)
+					worstSqueezed = std::max(worstSqueezed, error);
+				else
+					worst = std::max(worst, error);
 			}
 
-			// Where the falloff squeezes the source many times over, as 12 times magnification
-			// falling off over 2.4 pixels does, rounding to whole spx shows a bit more.
-
-			double tolerance = (falloff < 0.05f && m > 10.f) ? 0.35 : 0.25;
-			if (worst > tolerance)
+			if (worst > 0.25 || worstSqueezed > 0.25 * 1.5)
 			{
+				worst = std::max(worst, worstSqueezed);
 				output << "Position off by " << worst << " pixels (magnification " << m << ", falloff " << falloff << ")" << std::endl;
 				return false;
 			}
