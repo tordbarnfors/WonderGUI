@@ -50,12 +50,11 @@ namespace wax
 	 *
 	 * The Warpmap is a grid of meridians and parallels, which positions are linear between, cut where
 	 * the ball turns away and with a vertex of its own at the poles for each piece. Pieces are as
-	 * large as keeps them within precision, the same all over the ball, unless cellSize sets their
-	 * length along the equator (width) and along a meridian (height) at the middle of the ball. A row
-	 * of triangles around the outline goes from full coverage of the vertices to none, which
-	 * antialiases it, as it isn't a border of the source. The number of vertices and triangles only
-	 * depends on size and precision, so tilting and rolling updates the Warpmap. Shading, such as the
-	 * ball getting darker towards its outline, is done with a tint when drawing.
+	 * large as keeps them within precision, the same all over the ball. A row of triangles around
+	 * the outline goes from full coverage of the vertices to none, which antialiases it, as it isn't
+	 * a border of the source. The number of vertices and triangles only depends on size and
+	 * precision, so tilting and rolling updates the Warpmap. Shading, such as the ball getting
+	 * darker towards its outline, is done with a tint when drawing.
 	 */
 
 	class BallWarp : public WarpGenerator
@@ -66,9 +65,8 @@ namespace wax
 
 		struct Blueprint
 		{
-			SizeI				cellSize;						// Length of pieces along the equator and a meridian. 0 = calculated, see above.
 			Finalizer_p			finalizer = nullptr;
-			float				precision = 0.25f;				// Max position error in pixels when cellSize is calculated.
+			float				precision = 0.25f;				// Max position error in pixels.
 			float				roll = 0.f;						// Degrees the axis of the ball is turned clockwise on screen.
 			SizeI				size;							// Mandatory. Size of the Warpmap in pixels, which the ball is centered in.
 			SizeSPX				sourceSize;						// Mandatory. Size of the map (edgemap or source rectangle) in spx.
@@ -107,7 +105,6 @@ namespace wax
 
 		static bool	_isValidTilt( float tilt ) { return tilt >= -90.f && tilt <= 90.f; }
 
-		SizeI		_calcCellSize() const override;
 		void		_meshSize( int& nVertices, int& nTriangles ) const override;
 		void		_generateMesh( Warpmap::Vertex * pVertices, Warpmap::Triangle * pTriangles ) const override;
 		spx			_uPeriod() const override { return m_sourceSize.w; }

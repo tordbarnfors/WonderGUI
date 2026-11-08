@@ -35,9 +35,8 @@ extern "C" {
 	typedef struct wax_roundedRectWarpBP_struct		// NOT BINARY EQUIVALENT!
 	{
 		wax_spx				bottomDistance;			// Distance from the outline of the bottom of the source, positive outwards.
-		wax_sizeI			cellSize;				// 0 for width or height = calculated from precision.
 		wax_spx				cornerRadius;			// Radius of the corners of the outline, at most half its shorter side.
-		float				precision;				// Max position error in pixels when cellSize is calculated. 0 = default (0.25).
+		float				precision;				// Max position error in pixels. 0 = default (0.25).
 		wax_rectSPX			rect;					// Mandatory. The outline, relative to the top-left corner of the Warpmap.
 		wax_sizeI			size;					// Mandatory. Size of the Warpmap in pixels.
 		wax_sizeSPX			sourceSize;				// Mandatory. Size of the source (edgemap or source rectangle) in spx.
@@ -47,7 +46,7 @@ extern "C" {
 	} wax_roundedRectWarpBP;
 
 	// Factory is the WarpmapFactory to create the Warpmap with, the default one if null.
-	// Size, source size, cell size, precision and generate are set and called through the WarpGenerator functions.
+	// Size, source size, precision and generate are set and called through the WarpGenerator functions.
 
 	WAX_EXPORT wax_obj		wax_createRoundedRectWarp( const wax_roundedRectWarpBP* blueprint, wax_obj warpmapFactory );
 

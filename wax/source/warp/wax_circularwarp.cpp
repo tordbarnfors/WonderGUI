@@ -33,7 +33,7 @@ namespace wax
 
 	CircularWarp_p CircularWarp::create(const Blueprint& bp, WarpmapFactory* pFactory)
 	{
-		if (!_validateSettings(bp.size, bp.sourceSize, bp.cellSize, bp.precision) || bp.sweep == 0.f)
+		if (!_validateSettings(bp.size, bp.sourceSize, bp.precision) || bp.sweep == 0.f)
 			return nullptr;
 
 		if (!pFactory)
@@ -48,7 +48,7 @@ namespace wax
 	//____ constructor ________________________________________________________
 
 	CircularWarp::CircularWarp(const Blueprint& bp, WarpmapFactory* pFactory)
-		: WarpGenerator(bp.size, bp.sourceSize, bp.cellSize, bp.precision, pFactory)
+		: WarpGenerator(bp.size, bp.sourceSize, bp.precision, pFactory)
 	{
 		if (bp.finalizer)
 			setFinalizer(bp.finalizer);
@@ -147,13 +147,6 @@ namespace wax
 		band.start = _toTurn(m_startAngle / 360.0);
 		band.sweep = m_sweep / 360.0;
 		return band;
-	}
-
-	//____ _calcCellSize() ____________________________________________________
-
-	SizeI CircularWarp::_calcCellSize() const
-	{
-		return _bandCellSize(_band());
 	}
 
 	//____ _meshSize() ________________________________________________________

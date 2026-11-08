@@ -33,7 +33,6 @@ wax_obj wax_createRoundedRectWarp( const wax_roundedRectWarpBP* pCBP, wax_obj wa
 	RoundedRectWarp::Blueprint bp;
 
 	bp.bottomDistance = pCBP->bottomDistance;
-	bp.cellSize = { pCBP->cellSize.w, pCBP->cellSize.h };
 	bp.cornerRadius = pCBP->cornerRadius;
 	if (pCBP->precision > 0.f)
 		bp.precision = pCBP->precision;

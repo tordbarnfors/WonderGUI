@@ -35,8 +35,7 @@ extern "C" {
 	typedef struct wax_cylinderWarpBP_struct		// NOT BINARY EQUIVALENT!
 	{
 		wax_axis				axis;					// Axis of the cylinder. WAX_AXIS_X lies down, like a slot machine reel. 0 = default (WAX_AXIS_X).
-		wax_sizeI			cellSize;				// 0 for width or height = calculated from precision.
-		float				precision;				// Max position error in pixels when cellSize is calculated. 0 = default (0.25).
+		float				precision;				// Max position error in pixels. 0 = default (0.25).
 		wax_sizeI			size;					// Mandatory. Size of the Warpmap in pixels, which the cylinder fills.
 		wax_sizeSPX			sourceSize;				// Mandatory. Size of the source (edgemap or source rectangle) in spx.
 		float				span;					// Degrees of the cylinder seen, above 0 and below 180. 0 = default (120).
@@ -45,7 +44,7 @@ extern "C" {
 	} wax_cylinderWarpBP;
 
 	// Factory is the WarpmapFactory to create the Warpmap with, the default one if null.
-	// Size, source size, cell size, precision and generate are set and called through the WarpGenerator functions.
+	// Size, source size, precision and generate are set and called through the WarpGenerator functions.
 
 	WAX_EXPORT wax_obj		wax_createCylinderWarp( const wax_cylinderWarpBP* blueprint, wax_obj warpmapFactory );
 

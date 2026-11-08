@@ -22,7 +22,6 @@ private:
 	bool roundedRectWarpTest(std::ostream& output);
 	bool meshCompressionTest(std::ostream& output);
 	bool offsetTest(std::ostream& output);
-	bool nonSquareCellsTest(std::ostream& output);
 	bool cylinderWarpTest(std::ostream& output);
 	bool perspectiveWarpTest(std::ostream& output);
 	bool perspectiveRotatedTest(std::ostream& output);

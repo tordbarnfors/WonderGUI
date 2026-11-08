@@ -42,9 +42,6 @@ extern "C" {
 
 	//.____ Precision _____________________________________________________
 
-	WAX_EXPORT int			wax_setWarpGeneratorCellSize( wax_obj warpGenerator, wax_sizeI cellSize );	// 0 for width or height = calculated from precision.
-	WAX_EXPORT wax_sizeI		wax_warpGeneratorCellSize( wax_obj warpGenerator );						// Cell size in use, calculated or set.
-
 	WAX_EXPORT int			wax_setWarpGeneratorPrecision( wax_obj warpGenerator, float precision );
 	WAX_EXPORT float			wax_warpGeneratorPrecision( wax_obj warpGenerator );
 

@@ -34,7 +34,7 @@ namespace wax
 
 	BallWarp_p BallWarp::create(const Blueprint& bp, WarpmapFactory* pFactory)
 	{
-		if (!_validateSettings(bp.size, bp.sourceSize, bp.cellSize, bp.precision) || !_isValidTilt(bp.tilt) || !(bp.roll == bp.roll))
+		if (!_validateSettings(bp.size, bp.sourceSize, bp.precision) || !_isValidTilt(bp.tilt) || !(bp.roll == bp.roll))
 			return nullptr;
 
 		if (!pFactory)
@@ -49,7 +49,7 @@ namespace wax
 	//____ constructor ________________________________________________________
 
 	BallWarp::BallWarp(const Blueprint& bp, WarpmapFactory* pFactory)
-		: WarpGenerator(bp.size, bp.sourceSize, bp.cellSize, bp.precision, pFactory)
+		: WarpGenerator(bp.size, bp.sourceSize, bp.precision, pFactory)
 	{
 		if (bp.finalizer)
 			setFinalizer(bp.finalizer);
@@ -109,8 +109,7 @@ namespace wax
 		Positions are linear over pieces of the grid seen on screen. A piece of a ball of radius r
 		spanning an angle a is off by up to about r * a^2 / 4, twice as much as for a circle, as the
 		pieces are sheared where the ball turns away, so pieces span sqrt(4 * precision / r) along
-		both, or cellSize / r. Worked out in floating point when
-		generating, a few operations. Made coarser where needed to keep within the limits of Warpmap.
+		both. Worked out in floating point when generating, a few operations. Made coarser where needed to keep within the limits of Warpmap.
 	*/
 
 	void BallWarp::_layout(int& nLon, int& nLat) const
@@ -121,11 +120,9 @@ namespace wax
 		double precision = std::max(double(m_precision), 0.01);
 		double angle = std::sqrt(4 * precision / r);
 
-		double alongEquator = m_cellSize.w > 0 ? m_cellSize.w / r : angle;
-		double alongMeridian = m_cellSize.h > 0 ? m_cellSize.h / r : angle;
 
-		nLon = int(std::clamp(std::ceil(2 * c_pi / std::max(alongEquator, 1e-6)), 8.0, 4096.0));
-		nLat = int(std::clamp(std::ceil(c_pi / std::max(alongMeridian, 1e-6)), 4.0, 2048.0));
+		nLon = int(std::clamp(std::ceil(2 * c_pi / std::max(angle, 1e-6)), 8.0, 4096.0));
+		nLat = int(std::clamp(std::ceil(c_pi / std::max(angle, 1e-6)), 4.0, 2048.0));
 
 		int nVertices, nTriangles;
 		_counts(nLon, nLat, nVertices, nTriangles);
@@ -155,18 +152,6 @@ namespace wax
 		int crossings = _maxCrossings(nLon, nLat);
 		nVertices = (nLon + 1) * (nLat + 1) + 2 * crossings;
 		nTriangles = 2 * nLon * nLat + 4 * crossings;
-	}
-
-	//____ _calcCellSize() ____________________________________________________
-	// Length of the pieces along the equator and a meridian, at the middle of the ball.
-
-	SizeI BallWarp::_calcCellSize() const
-	{
-		int nLon, nLat;
-		_layout(nLon, nLat);
-
-		int64_t r = radius();
-		return { std::max(1, int((r * 2 * 314159 / 100000 / nLon + 32) >> 6)), std::max(1, int((r * 314159 / 100000 / nLat + 32) >> 6)) };
 	}
 
 	//____ _meshSize() ________________________________________________________

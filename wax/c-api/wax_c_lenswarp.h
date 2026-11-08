@@ -34,16 +34,15 @@ extern "C" {
 
 	typedef struct wax_lensWarpBP_struct			// NOT BINARY EQUIVALENT!
 	{
-		wax_sizeI			cellSize;				// Length of pieces along the rim and between rings of the falloff. 0 = calculated from precision.
 		float				falloff;				// Part of the radius, 0 to 1, over which magnification falls off to none at the rim.
 		float				magnification;			// In the middle of the lens, 1 or more. 0 = default (2).
-		float				precision;				// Max position error in pixels when cellSize is calculated. 0 = default (0.25).
+		float				precision;				// Max position error in pixels. 0 = default (0.25).
 		wax_sizeI			size;					// Mandatory. Size of the Warpmap in pixels, which the lens is centered in.
 		wax_sizeSPX			sourceSize;				// Mandatory. Size of the source under the lens in spx, normally size * 64.
 	} wax_lensWarpBP;
 
 	// Factory is the WarpmapFactory to create the Warpmap with, the default one if null.
-	// Size, source size, cell size, precision and generate are set and called through the WarpGenerator functions.
+	// Size, source size, precision and generate are set and called through the WarpGenerator functions.
 
 	WAX_EXPORT wax_obj		wax_createLensWarp( const wax_lensWarpBP* blueprint, wax_obj warpmapFactory );
 

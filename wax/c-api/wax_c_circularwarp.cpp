@@ -33,7 +33,6 @@ wax_obj wax_createCircularWarp( const wax_circularWarpBP* pCBP, wax_obj warpmapF
 	CircularWarp::Blueprint bp;
 
 	bp.bottomRadius = pCBP->bottomRadius;
-	bp.cellSize = { pCBP->cellSize.w, pCBP->cellSize.h };
 	bp.center = { pCBP->center.x, pCBP->center.y };
 	if (pCBP->precision > 0.f)
 		bp.precision = pCBP->precision;

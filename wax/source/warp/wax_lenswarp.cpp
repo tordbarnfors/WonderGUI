@@ -34,7 +34,7 @@ namespace wax
 
 	LensWarp_p LensWarp::create(const Blueprint& bp, WarpmapFactory* pFactory)
 	{
-		if (!_validateSettings(bp.size, bp.sourceSize, bp.cellSize, bp.precision) || !_isValidMagnification(bp.magnification) || !_isValidFalloff(bp.falloff))
+		if (!_validateSettings(bp.size, bp.sourceSize, bp.precision) || !_isValidMagnification(bp.magnification) || !_isValidFalloff(bp.falloff))
 			return nullptr;
 
 		if (!pFactory)
@@ -49,7 +49,7 @@ namespace wax
 	//____ constructor ________________________________________________________
 
 	LensWarp::LensWarp(const Blueprint& bp, WarpmapFactory* pFactory)
-		: WarpGenerator(bp.size, bp.sourceSize, bp.cellSize, bp.precision, pFactory)
+		: WarpGenerator(bp.size, bp.sourceSize, bp.precision, pFactory)
 	{
 		if (bp.finalizer)
 			setFinalizer(bp.finalizer);
@@ -115,12 +115,11 @@ namespace wax
 	{
 		Layout& l = m_layout;
 
-		if (!l.bValid || l.size != m_size || l.sourceSize != m_sourceSize || l.cellSize != m_cellSize || l.precision != m_precision ||
+		if (!l.bValid || l.size != m_size || l.sourceSize != m_sourceSize || l.precision != m_precision ||
 			l.magnification != m_magnification || l.falloff != m_falloff)
 		{
 			l.size = m_size;
 			l.sourceSize = m_sourceSize;
-			l.cellSize = m_cellSize;
 			l.precision = m_precision;
 			l.magnification = m_magnification;
 			l.falloff = m_falloff;
@@ -217,9 +216,6 @@ namespace wax
 
 		auto step = [&](double a, double limit, double angle, double relax)
 		{
-			if (m_cellSize.h > 0)
-				return std::min(a + m_cellSize.h * relax, limit);
-
 			const double allowed = precision * 0.5 * relax;
 			double curve = std::abs(dds(std::max(a, r0)));
 			double b = curve > 0 ? std::min(a + std::sqrt(8 * allowed * ds(a) / curve), limit) : limit;
@@ -260,7 +256,7 @@ namespace wax
 			radii.push_back(outer);
 		};
 
-		double pieceAngle = m_cellSize.w > 0 ? m_cellSize.w / std::max(R, 1.0) : std::sqrt(4 * precision / std::max(outer, 1.0));
+		double pieceAngle = std::sqrt(4 * precision / std::max(outer, 1.0));
 		int pieces = int(std::clamp(std::ceil(2 * c_pi / std::max(pieceAngle, 1e-6)), 8.0, 4096.0));
 
 		// Coarser where needed to keep within the limits of Warpmap.
@@ -308,24 +304,6 @@ namespace wax
 	{
 		nVertices = pieces * rings;
 		nTriangles = (pieces - 2) + 2 * pieces * (rings - 1);
-	}
-
-	//____ _calcCellSize() ____________________________________________________
-	// Length of the pieces along the rim, and the shortest distance between rings of the falloff,
-	// or the radius without one.
-
-	SizeI LensWarp::_calcCellSize() const
-	{
-		const Layout& l = _layout();
-
-		int64_t R = int64_t(radius()) << 8;
-		int64_t along = R * 2 * 314159 / 100000 / l.pieces;
-
-		int64_t between = R;
-		for (size_t i = 1; i + 1 < l.rings.size() && l.rings[i].coverage == Warpmap::coverageOne; i++)
-			between = std::min(between, l.rings[i].radius - l.rings[i - 1].radius);
-
-		return { std::max(1, int((along + (32 << 8)) >> 14)), std::max(1, int((between + (32 << 8)) >> 14)) };
 	}
 
 	//____ _meshSize() ________________________________________________________

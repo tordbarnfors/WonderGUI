@@ -32,11 +32,10 @@ namespace wax
 
 	//____ constructor ________________________________________________________
 
-	WarpGenerator::WarpGenerator(SizeI size, SizeSPX sourceSize, SizeI cellSize, float precision, WarpmapFactory* pFactory)
+	WarpGenerator::WarpGenerator(SizeI size, SizeSPX sourceSize, float precision, WarpmapFactory* pFactory)
 	{
 		m_size		= size;
 		m_sourceSize = sourceSize;
-		m_cellSize	= cellSize;
 		m_precision	= precision;
 		m_pFactory	= pFactory;
 	}
@@ -82,34 +81,6 @@ namespace wax
 			m_bDirty = true;
 		}
 		return true;
-	}
-
-	//____ setCellSize() ______________________________________________________
-
-	bool WarpGenerator::setCellSize(SizeI cellSize)
-	{
-		if (cellSize.w < 0 || cellSize.h < 0)
-			return false;
-
-		if (cellSize != m_cellSize)
-		{
-			m_cellSize = cellSize;
-			m_bDirty = true;
-		}
-		return true;
-	}
-
-	//____ cellSize() _________________________________________________________
-
-	SizeI WarpGenerator::cellSize() const
-	{
-		if (m_cellSize.w > 0 && m_cellSize.h > 0)
-			return m_cellSize;
-
-		SizeI calculated = _calcCellSize();
-
-		return { m_cellSize.w > 0 ? m_cellSize.w : std::clamp(calculated.w, 1, m_size.w),
-				 m_cellSize.h > 0 ? m_cellSize.h : std::clamp(calculated.h, 1, m_size.h) };
 	}
 
 	//____ setPrecision() _____________________________________________________
@@ -196,13 +167,6 @@ namespace wax
 		return m_pWarpmap;
 	}
 
-	//____ _calcCellSize() ____________________________________________________
-
-	SizeI WarpGenerator::_calcCellSize() const
-	{
-		return m_size;
-	}
-
 	//____ Outline bands ______________________________________________________
 	/*
 		The band covers the whole outline, whatever the sweep, since offsets can move the source
@@ -246,13 +210,13 @@ namespace wax
 
 	void WarpGenerator::_bandLayout(const OutlineBand& band, int& nArc, int& nAcross) const
 	{
-		// The same as last time unless the shape, precision or cell size has changed, as when only
-		// angles or offsets do.
+		// The same as last time unless the shape or precision has changed, as when only angles or
+		// offsets do.
 
 		LayoutCache& cache = m_layoutCache;
 
 		if (cache.bValid && cache.ax == band.ax && cache.ay == band.ay && cache.radius == band.radius && cache.top == band.top &&
-			cache.bottom == band.bottom && cache.precision == m_precision && cache.cellSize == m_cellSize)
+			cache.bottom == band.bottom && cache.precision == m_precision)
 		{
 			nArc = cache.nArc;
 			nAcross = cache.nAcross;
@@ -261,7 +225,7 @@ namespace wax
 
 		_calcBandLayout(band, nArc, nAcross);
 
-		cache = { true, band.ax, band.ay, band.radius, band.top, band.bottom, m_precision, m_cellSize, nArc, nAcross };
+		cache = { true, band.ax, band.ay, band.radius, band.top, band.bottom, m_precision, nArc, nAcross };
 	}
 
 	//____ _calcBandLayout() __________________________________________________
@@ -304,21 +268,6 @@ namespace wax
 		auto arcs = [&](double angle) { return int(std::clamp(std::ceil(quarter / std::max(angle, 1e-6)), 2.0, 1024.0)); };
 		auto parts = [&](double angle, double budget) { return int(std::clamp(std::ceil(across * angle / (4 * budget)), 1.0, 256.0)); };
 
-		if (m_cellSize.w > 0 && m_cellSize.h > 0)
-		{
-			nArc = arcs(m_cellSize.w / outer);
-			nAcross = int(std::clamp(std::ceil(across / m_cellSize.h), 1.0, 256.0));
-			return cap();
-		}
-
-		if (m_cellSize.w > 0)
-		{
-			nArc = arcs(m_cellSize.w / outer);
-			double angle = quarter / nArc;
-			nAcross = parts(angle, std::max(precision - outer * angle * angle / 8, precision / 4));
-			return cap();
-		}
-
 		// Least work drawing for a share of precision kept along the outline. A software backend
 		// spends about as much on each row a triangle covers, so that goes by the number of quads
 		// times their length plus how far across they go, which favours quads about as long as
@@ -331,8 +280,7 @@ namespace wax
 			int n = arcs(std::sqrt(8 * share * precision / outer));
 			double angle = quarter / n;
 
-			int m = m_cellSize.h > 0 ? int(std::clamp(std::ceil(across / m_cellSize.h), 1.0, 256.0))
-									 : parts(angle, std::max(precision - outer * angle * angle / 8, precision / 20));
+			int m = parts(angle, std::max(precision - outer * angle * angle / 8, precision / 20));
 
 			double cost = double(n + 1) * m * (outer * angle + across / m);
 			if (best < 0.0 || cost < best)
@@ -344,25 +292,6 @@ namespace wax
 		}
 
 		cap();
-	}
-
-	//____ _bandCellSize() ____________________________________________________
-
-	SizeI WarpGenerator::_bandCellSize(const OutlineBand& band) const
-	{
-		int nArc, nAcross;
-		_bandLayout(band, nArc, nAcross);
-
-		int64_t dIn, dColumns, dOut;
-		bandDistances(band.top, band.bottom, band.ax, band.ay, band.radius, dIn, dColumns, dOut);
-
-		if (nArc == 0)
-			return m_size;
-
-		double outer = double(band.radius + dOut) / c_bandPixel;
-		double across = double(dOut - dColumns) / c_bandPixel;
-
-		return { std::max(1, int(outer * c_pi / 2 / nArc + 0.5)), std::max(1, int(across / nAcross + 0.5)) };
 	}
 
 	//____ _bandMesh() ________________________________________________________
@@ -691,9 +620,9 @@ namespace wax
 
 	//____ _validateSettings() ________________________________________________
 
-	bool WarpGenerator::_validateSettings(SizeI size, SizeSPX sourceSize, SizeI cellSize, float precision)
+	bool WarpGenerator::_validateSettings(SizeI size, SizeSPX sourceSize, float precision)
 	{
-		return size.w > 0 && size.h > 0 && sourceSize.w > 0 && sourceSize.h > 0 && cellSize.w >= 0 && cellSize.h >= 0 && precision > 0.f;
+		return size.w > 0 && size.h > 0 && sourceSize.w > 0 && sourceSize.h > 0 && precision > 0.f;
 	}
 
 	//____ _factor() __________________________________________________________

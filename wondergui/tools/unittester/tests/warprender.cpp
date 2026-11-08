@@ -1062,7 +1062,7 @@ bool WarpRenderTest::streamContentTest(std::ostream& output)
 	auto pStreamBackend = StreamBackend::create(pEncoder);
 
 	auto pWarp = CircularWarp::create(WGBP(CircularWarp, _.size = { 200, 200 }, _.sourceSize = c_edgemapSource, _.topRadius = 98 * 64, _.bottomRadius = 40 * 64,
-										   _.cellSize = { 4, 4 }), pStreamBackend->warpmapFactory());
+										   _.precision = 0.1f), pStreamBackend->warpmapFactory());
 
 	auto sameContent = [&](Warpmap* pSent, CountingSoftWarpmap* pGot)
 	{

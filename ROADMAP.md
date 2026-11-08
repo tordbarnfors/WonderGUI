@@ -212,8 +212,12 @@ in someone's memory or an old chat. Add to it when you decide something, move it
 
 - **Positions in the source and periods are in spx of the source.**
 - **No backwards compatibility in the stream** with the grid format, since it was never used.
-- **Separate cell width and height** for the pieces of the generators, so positions that change
-  linearly along an axis (a cylinder along its axis) take one piece.
+- **No cell size for the generators,** only `precision`. Cell size was the size of the cells of
+  the grid of nodes. With meshes that follow the shape it meant something different for each
+  generator (sectors and parts of a band, strips of a cylinder, pieces of a ball, rings and pieces
+  of a lens), as a size in two dimensions for pieces that are seldom rectangles, and nothing for
+  PerspectiveWarp. Generators choose their pieces from precision for their shape, such as a single
+  piece along a cylinder's axis where positions are linear.
 - **WarpGenerators** size their pieces from `precision` and generate with integers per vertex:
   CORDIC angles and sines, integer square roots, fixed point factors. Floating point is limited to
   converting the settings once per generate and choosing the layout when the shape changes, for

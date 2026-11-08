@@ -34,7 +34,6 @@ wax_obj wax_createCylinderWarp( const wax_cylinderWarpBP* pCBP, wax_obj warpmapF
 
 	if (pCBP->axis != WAX_AXIS_UNDEFINED)
 		bp.axis = (Axis) pCBP->axis;
-	bp.cellSize = { pCBP->cellSize.w, pCBP->cellSize.h };
 	if (pCBP->precision > 0.f)
 		bp.precision = pCBP->precision;
 	bp.size = { pCBP->size.w, pCBP->size.h };

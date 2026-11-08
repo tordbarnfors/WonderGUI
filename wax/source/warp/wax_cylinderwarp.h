@@ -53,7 +53,7 @@ namespace wax
 	 * The Warpmap is a row of strips along the axis, where positions change linearly. Across it,
 	 * strips are as wide as keeps them within precision, wide in the middle and narrower towards
 	 * the rims, where the cylinder curves away the most, so a span close to 180 degrees takes many.
-	 * If cellSize is set across the axis, strips are that wide instead. Shading, such as the
+	 * Shading, such as the
 	 * cylinder getting darker towards the rims, is done with a tint when drawing.
 	 */
 
@@ -66,9 +66,8 @@ namespace wax
 		struct Blueprint
 		{
 			Axis				axis = Axis::X;					// Axis of the cylinder. X lies down, like a slot machine reel.
-			SizeI				cellSize;						// Width of strips across the axis, the other ignored. 0 = calculated, see above.
 			Finalizer_p			finalizer = nullptr;
-			float				precision = 0.25f;				// Max position error in pixels when cellSize is calculated.
+			float				precision = 0.25f;				// Max position error in pixels.
 			SizeI				size;							// Mandatory. Size of the Warpmap in pixels, which the cylinder fills.
 			SizeSPX				sourceSize;						// Mandatory. Size of the source (edgemap or source rectangle) in spx.
 			float				span = 120.f;					// Degrees of the cylinder seen, centered on the side facing the viewer. Above 0, below 180.
@@ -113,7 +112,6 @@ namespace wax
 
 		static bool	_isValidSpan( float span ) { return span > 0.f && span < 180.f; }
 
-		SizeI		_calcCellSize() const override;
 		void		_meshSize( int& nVertices, int& nTriangles ) const override;
 		void		_generateMesh( Warpmap::Vertex * pVertices, Warpmap::Triangle * pTriangles ) const override;
 
@@ -127,7 +125,6 @@ namespace wax
 			bool		bValid = false;
 			Axis		axis;
 			SizeI		size;
-			SizeI		cellSize;
 			float		span;
 			float		precision;
 		};

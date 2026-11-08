@@ -32,7 +32,6 @@ wax_obj wax_createBallWarp( const wax_ballWarpBP* pCBP, wax_obj warpmapFactory )
 {
 	BallWarp::Blueprint bp;
 
-	bp.cellSize = { pCBP->cellSize.w, pCBP->cellSize.h };
 	if (pCBP->precision > 0.f)
 		bp.precision = pCBP->precision;
 	bp.roll = pCBP->roll;

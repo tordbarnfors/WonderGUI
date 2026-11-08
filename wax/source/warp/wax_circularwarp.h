@@ -48,9 +48,7 @@ namespace wax
 	 *
 	 * The Warpmap is a ring of sectors, each split in parts across the ring, which goes all the way
 	 * around and a pixel beyond both radii, whatever the sweep, so it can be turned by an offset. How
-	 * many is calculated from precision (max position error in pixels), unless cellSize is set: its
-	 * width is the length of a sector along the outer edge and its height how far across the ring a
-	 * part goes. cellSize() gives what is calculated.
+	 * many is calculated from precision (max position error in pixels).
 	 *
 	 * Like other WarpGenerators, CircularWarp keeps its Warpmap and updates it when generate() is called.
 	 */
@@ -62,10 +60,9 @@ namespace wax
 		struct Blueprint
 		{
 			spx					bottomRadius = 0;				// Radius the bottom of the source is placed at.
-			SizeI				cellSize;						// Length of sectors along the outer edge and of parts across the ring. 0 = calculated, see above.
 			CoordF				center = { 0.5f, 0.5f };		// Center of circle, relative to size.
 			Finalizer_p			finalizer = nullptr;
-			float				precision = 0.25f;				// Max position error in pixels when cellSize is calculated.
+			float				precision = 0.25f;				// Max position error in pixels.
 			SizeI				size;							// Mandatory. Size of the Warpmap in pixels.
 			SizeSPX				sourceSize;						// Mandatory. Size of the source (edgemap or source rectangle) in spx.
 			float				startAngle = 0.f;				// Degrees. Where the left side of the source is placed. 0 = up, increasing clockwise.
@@ -110,7 +107,6 @@ namespace wax
 
 		OutlineBand	_band() const;
 
-		SizeI		_calcCellSize() const override;
 		void		_meshSize( int& nVertices, int& nTriangles ) const override;
 		void		_generateMesh( Warpmap::Vertex * pVertices, Warpmap::Triangle * pTriangles ) const override;
 		spx			_uPeriod() const override;

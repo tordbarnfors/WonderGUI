@@ -54,10 +54,9 @@ namespace wax
 	 * - falloff 1 magnifies the most in the middle and less and less out to the rim, like a bubble.
 	 *
 	 * The Warpmap is the middle of the lens as one polygon, where positions are linear, rings
-	 * through the falloff as close as keeps them within precision, or cellSize.h apart if set, and a
-	 * ring of triangles around the outline that goes from full coverage of the vertices to none,
-	 * which antialiases it. Pieces along the rim are as long as keeps the outline within
-	 * precision, or cellSize.w if set. Without falloff, magnification only changes positions in
+	 * through the falloff as close as keeps them within precision, and a ring of triangles around
+	 * the outline that goes from full coverage of the vertices to none, which antialiases it.
+	 * Pieces along the rim are as long as keeps the outline within precision. Without falloff, magnification only changes positions in
 	 * the source, so the Warpmap is updated in place. A frame, a highlight or a shadow are drawn
 	 * separately.
 	 *
@@ -73,11 +72,10 @@ namespace wax
 
 		struct Blueprint
 		{
-			SizeI				cellSize;						// Length of pieces along the rim and between rings of the falloff. 0 = calculated, see above.
 			float				falloff = 0.f;					// Part of the radius, 0 to 1, over which magnification falls off to none at the rim.
 			Finalizer_p			finalizer = nullptr;
 			float				magnification = 2.f;			// In the middle of the lens, 1 or more.
-			float				precision = 0.25f;				// Max position error in pixels when cellSize is calculated.
+			float				precision = 0.25f;				// Max position error in pixels.
 			SizeI				size;							// Mandatory. Size of the Warpmap in pixels, which the lens is centered in.
 			SizeSPX				sourceSize;						// Mandatory. Size of the source under the lens in spx, normally size * 64.
 		};
@@ -109,7 +107,6 @@ namespace wax
 		static bool	_isValidMagnification( float magnification ) { return magnification >= 1.f && magnification <= 65536.f; }
 		static bool	_isValidFalloff( float falloff ) { return falloff >= 0.f && falloff <= 1.f; }
 
-		SizeI		_calcCellSize() const override;
 		void		_meshSize( int& nVertices, int& nTriangles ) const override;
 		void		_generateMesh( Warpmap::Vertex * pVertices, Warpmap::Triangle * pTriangles ) const override;
 
@@ -129,7 +126,6 @@ namespace wax
 			bool		bValid = false;
 			SizeI		size;
 			SizeSPX		sourceSize;
-			SizeI		cellSize;
 			float		precision;
 			float		magnification;
 			float		falloff;

@@ -32,7 +32,6 @@ wax_obj wax_createLensWarp( const wax_lensWarpBP* pCBP, wax_obj warpmapFactory )
 {
 	LensWarp::Blueprint bp;
 
-	bp.cellSize = { pCBP->cellSize.w, pCBP->cellSize.h };
 	bp.falloff = pCBP->falloff;
 	if (pCBP->magnification != 0.f)
 		bp.magnification = pCBP->magnification;

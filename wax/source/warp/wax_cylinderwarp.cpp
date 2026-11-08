@@ -34,7 +34,7 @@ namespace wax
 
 	CylinderWarp_p CylinderWarp::create(const Blueprint& bp, WarpmapFactory* pFactory)
 	{
-		if (!_validateSettings(bp.size, bp.sourceSize, bp.cellSize, bp.precision) || (bp.axis != Axis::X && bp.axis != Axis::Y) ||
+		if (!_validateSettings(bp.size, bp.sourceSize, bp.precision) || (bp.axis != Axis::X && bp.axis != Axis::Y) ||
 			!_isValidSpan(bp.span) || bp.sweep == 0.f)
 			return nullptr;
 
@@ -50,7 +50,7 @@ namespace wax
 	//____ constructor ________________________________________________________
 
 	CylinderWarp::CylinderWarp(const Blueprint& bp, WarpmapFactory* pFactory)
-		: WarpGenerator(bp.size, bp.sourceSize, bp.cellSize, bp.precision, pFactory)
+		: WarpGenerator(bp.size, bp.sourceSize, bp.precision, pFactory)
 	{
 		if (bp.finalizer)
 			setFinalizer(bp.finalizer);
@@ -146,10 +146,10 @@ namespace wax
 	{
 		StripCache& cache = m_stripCache;
 
-		if (!cache.bValid || cache.axis != m_axis || cache.size != m_size || cache.cellSize != m_cellSize || cache.span != m_span || cache.precision != m_precision)
+		if (!cache.bValid || cache.axis != m_axis || cache.size != m_size || cache.span != m_span || cache.precision != m_precision)
 		{
 			_calcStrips(m_strips);
-			cache = { true, m_axis, m_size, m_cellSize, m_span, m_precision };
+			cache = { true, m_axis, m_size, m_span, m_precision };
 		}
 
 		return m_strips;
@@ -161,20 +161,11 @@ namespace wax
 	{
 		const int64_t c_pixel = 64 << 8;
 		const int lengthAcross = m_axis == Axis::X ? m_size.h : m_size.w;
-		const int cellAcross = m_axis == Axis::X ? m_cellSize.h : m_cellSize.w;
 
 		edges.clear();
 
 		const int maxStrips = Warpmap::maxVertices / 2 - 4;
 		const int minWidth = (lengthAcross + maxStrips - 1) / maxStrips;				// Up to two more strips from the middle out.
-
-		if (cellAcross > 0)
-		{
-			for (int64_t p = 0; p < lengthAcross; p += std::max(cellAcross, minWidth))
-				edges.push_back(p * c_pixel);
-			edges.push_back(lengthAcross * c_pixel);
-			return;
-		}
 
 		const double half = lengthAcross / 2.0;
 		const double rim = m_span / 2 * 3.14159265358979323846 / 180;
@@ -208,21 +199,6 @@ namespace wax
 
 		edges.front() = 0;
 		edges.back() = lengthAcross * c_pixel;
-	}
-
-	//____ _calcCellSize() ____________________________________________________
-	// The length of the cylinder along the axis and the narrowest strip across it.
-
-	SizeI CylinderWarp::_calcCellSize() const
-	{
-		const std::vector<int64_t>& edges = _strips();
-
-		int64_t narrowest = edges.back();
-		for (size_t i = 1; i < edges.size(); i++)
-			narrowest = std::min(narrowest, edges[i] - edges[i - 1]);
-
-		int across = std::max(1, int((narrowest + (32 << 8)) >> 14));
-		return m_axis == Axis::X ? SizeI(m_size.w, across) : SizeI(across, m_size.h);
 	}
 
 	//____ _meshSize() ________________________________________________________

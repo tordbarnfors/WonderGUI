@@ -209,7 +209,6 @@ WarpmapTest::WarpmapTest()
 	ADD_TEST(roundedRectWarpTest);
 	ADD_TEST(meshCompressionTest);
 	ADD_TEST(offsetTest);
-	ADD_TEST(nonSquareCellsTest);
 	ADD_TEST(cylinderWarpTest);
 	ADD_TEST(perspectiveWarpTest);
 	ADD_TEST(perspectiveRotatedTest);
@@ -650,11 +649,11 @@ bool WarpmapTest::circularWarpTest(std::ostream& output)
 		TEST_ASSERT(maxError <= c.tolerance * 1.5);
 	}
 
-	// Explicit cell size overrides precision: shorter sectors, more triangles.
+	// Finer precision, more triangles.
 
-	auto pWarp = CircularWarp::create(WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 100, 100 }, _.topRadius = 10 * 64, _.bottomRadius = 50 * 64, _.cellSize = { 14, 14 }), pFactory);
+	auto pWarp = CircularWarp::create(WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 100, 100 }, _.topRadius = 10 * 64, _.bottomRadius = 50 * 64, _.precision = 1.f), pFactory);
 	int coarse = pWarp->generate()->triangleCount();
-	TEST_ASSERT(pWarp->setCellSize({ 7, 7 }) && pWarp->cellSize() == SizeI(7, 7));
+	TEST_ASSERT(pWarp->setPrecision(0.1f));
 	TEST_ASSERT(pWarp->generate()->triangleCount() > coarse * 3);
 
 	// Invalid blueprints.
@@ -677,7 +676,7 @@ bool WarpmapTest::circularWarpGenerateTest(std::ostream& output)
 {
 	auto pFactory = SoftWarpmapFactory::create();
 
-	auto pWarp = CircularWarp::create(WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 100, 100 }, _.topRadius = 20 * 64, _.bottomRadius = 50 * 64, _.cellSize = { 10, 10 }), pFactory);
+	auto pWarp = CircularWarp::create(WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 100, 100 }, _.topRadius = 20 * 64, _.bottomRadius = 50 * 64), pFactory);
 
 	TEST_ASSERT(pWarp->isInstanceOf(WarpGenerator::TYPEINFO));
 
@@ -722,13 +721,12 @@ bool WarpmapTest::circularWarpGenerateTest(std::ostream& output)
 
 	TEST_ASSERT(pWarp->setSourceSize(c_sourceSize));
 
-	// Size and cell size give a new Warpmap.
+	// Size and precision give a new Warpmap.
 
 	TEST_ASSERT(pWarp->setSize({ 120, 100 }));
 	auto pMap3 = pWarp->generate();
 	TEST_ASSERT(pMap3 != pMap2 && pMap3->pixelSize() == SizeI(120, 100));
 
-	TEST_ASSERT(pWarp->setCellSize({ 0, 0 }));
 	TEST_ASSERT(pWarp->setPrecision(1.f));
 	auto pMap4 = pWarp->generate();
 	TEST_ASSERT(pMap4 != pMap3 && pMap4->triangleCount() < pMap3->triangleCount());
@@ -738,7 +736,6 @@ bool WarpmapTest::circularWarpGenerateTest(std::ostream& output)
 	TEST_ASSERT(!pWarp->setRadii(10 * 64, 10 * 64));
 	TEST_ASSERT(!pWarp->setAngles(0.f, 0.f));
 	TEST_ASSERT(!pWarp->setSize({ 0, 10 }));
-	TEST_ASSERT(!pWarp->setCellSize({ -1, 0 }));
 	TEST_ASSERT(!pWarp->setPrecision(0.f));
 	TEST_ASSERT(!pWarp->setSourceSize({ 0, 10 }));
 	return true;
@@ -753,7 +750,7 @@ bool WarpmapTest::generateUpdatesTest(std::ostream& output)
 	auto pCounting = StrongPtr<CountingWarpmapFactory>(new CountingWarpmapFactory());
 	auto pSoft = SoftWarpmapFactory::create();
 
-	auto bp = WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 100, 80 }, _.topRadius = 20 * 64, _.bottomRadius = 45 * 64, _.cellSize = { 10, 10 });
+	auto bp = WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 100, 80 }, _.topRadius = 20 * 64, _.bottomRadius = 45 * 64);
 	auto pWarp = CircularWarp::create(bp, pCounting);
 
 	auto counts = [](Warpmap* p) { return static_cast<CountingWarpmap*>(p); };
@@ -1152,7 +1149,7 @@ bool WarpmapTest::offsetTest(std::ostream& output)
 	};
 
 	auto ringBP = WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 100, 100 }, _.topRadius = 45 * 64, _.bottomRadius = 20 * 64,
-					   _.startAngle = 10.f, _.sweep = 300.f, _.cellSize = { 5, 5 });
+					   _.startAngle = 10.f, _.sweep = 300.f);
 	auto pBase = CircularWarp::create(ringBP, pFactory);
 	spx offset = pBase->rotationOffset(45.f).x;
 	TEST_ASSERT(offset == -width * 45 / 300);
@@ -1162,7 +1159,7 @@ bool WarpmapTest::offsetTest(std::ostream& output)
 	// The same along a rounded rectangle, in parts of the outline.
 
 	auto frameBP = WGBP(RoundedRectWarp, _.size = { 140, 100 }, _.sourceSize = c_sourceSize, _.rect = { 20 * 64, 20 * 64, 100 * 64, 60 * 64 },
-						_.cornerRadius = 15 * 64, _.topDistance = -10 * 64, _.bottomDistance = 10 * 64, _.start = 0.1f, _.sweep = 0.5f, _.cellSize = { 5, 5 });
+						_.cornerRadius = 15 * 64, _.topDistance = -10 * 64, _.bottomDistance = 10 * 64, _.start = 0.1f, _.sweep = 0.5f);
 	auto pFrame = RoundedRectWarp::create(frameBP, pFactory);
 	TEST_ASSERT(pFrame->shiftOffset(0.25f) == CoordSPX(-width / 2, 0));
 	TEST_ASSERT(pFrame->shiftOffset(3.25f) == CoordSPX(-width / 2, 0));
@@ -1174,35 +1171,6 @@ bool WarpmapTest::offsetTest(std::ostream& output)
 
 	frameBP.sweep = -0.5f;
 	TEST_ASSERT(RoundedRectWarp::create(frameBP, pFactory)->shiftOffset(0.25f) == CoordSPX(width / 2, 0));
-	return true;
-}
-
-//____ nonSquareCellsTest() ___________________________________________________
-// The cell size of generators can be set with another width than height, or one of them set and
-// the other calculated.
-
-bool WarpmapTest::nonSquareCellsTest(std::ostream& output)
-{
-	auto pFactory = SoftWarpmapFactory::create();
-	auto bp = WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 96, 96 }, _.topRadius = 46 * 64, _.bottomRadius = 20 * 64, _.cellSize = { 12, 6 });
-
-	auto pWarp = CircularWarp::create(bp, pFactory);
-	TEST_ASSERT(pWarp->cellSize() == SizeI(12, 6));
-	int wide = pWarp->generate()->triangleCount();
-
-	TEST_ASSERT(pWarp->setCellSize({ 6, 12 }));
-	TEST_ASSERT(pWarp->cellSize() == SizeI(6, 12));
-	TEST_ASSERT(pWarp->generate()->triangleCount() != wide);
-
-	TEST_ASSERT(pWarp->setCellSize({ 12, 0 }));
-	TEST_ASSERT(pWarp->cellSize().w == 12 && pWarp->cellSize().h > 0);
-
-	TEST_ASSERT(!pWarp->setCellSize({ 4, -1 }));
-
-	// A calculated size is at most the size of the Warpmap.
-
-	auto pSmall = CircularWarp::create(WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 30, 10 }, _.topRadius = 5000 * 64, _.bottomRadius = 4000 * 64), pFactory);
-	TEST_ASSERT(pSmall->cellSize().w <= 30 && pSmall->cellSize().h <= 10);
 	return true;
 }
 
@@ -1724,16 +1692,10 @@ bool WarpmapTest::limitsTest(std::ostream& output)
 	TEST_ASSERT(fits(pRingMap, "Fine ring"));
 	TEST_ASSERT(pRingMap->vertexCount() > Warpmap::maxVertices / 2);		// Close to the limit, not much coarser.
 
-	TEST_ASSERT(pRing->setCellSize({ 1, 1 }));
-	TEST_ASSERT(fits(pRing->generate(), "Ring with cells of a pixel"));
-
 	auto pFrame = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 4000, 3000 }, _.sourceSize = { 64 * 64, 64 * 64 },
 											   _.rect = { 64 * 100, 64 * 100, 64 * 3800, 64 * 2800 }, _.cornerRadius = 64 * 900,
 											   _.topDistance = 64 * 50, _.bottomDistance = -64 * 1300, _.precision = 0.01f), pFactory);
 	TEST_ASSERT(fits(pFrame->generate(), "Fine frame"));
-
-	auto pCylinder = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 100, 70000 }, _.sourceSize = { 64 * 64, 64 * 64 }, _.cellSize = { 0, 1 }), pFactory);
-	TEST_ASSERT(fits(pCylinder->generate(), "Long cylinder with strips of a pixel"));
 
 	auto pTallCylinder = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 100, 120000 }, _.sourceSize = { 64 * 64, 64 * 64 }, _.precision = 0.01f), pFactory);
 	TEST_ASSERT(fits(pTallCylinder->generate(), "Very long cylinder"));

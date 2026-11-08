@@ -44,12 +44,11 @@ namespace wax
 	 * rectangle of the blit, in spx. Generators make a mesh of triangles that follows the shape.
 	 *
 	 * Precision (max position error in pixels) decides how closely the Warpmap follows the shape,
-	 * through the size of the pieces of the mesh, unless cellSize is set. What cellSize means
-	 * depends on the generator, such as the length of the pieces along a ring and across it.
+	 * through the size of the pieces of the mesh, which each generator chooses for its shape.
 	 *
-	 * When subclassing, implement _meshSize() and _generateMesh(), and _calcCellSize() to report
-	 * the size of the pieces chosen from precision. Override _uPeriod() and _vPeriod() for
-	 * periodic axes and set m_bDirty when a setting changes.
+	 * When subclassing, implement _meshSize() and _generateMesh(), sizing the pieces from
+	 * precision. Override _uPeriod() and _vPeriod() for periodic axes and set m_bDirty when a
+	 * setting changes.
 	 */
 
 	class WarpGenerator : public Object
@@ -71,9 +70,6 @@ namespace wax
 
 		//.____ Precision ___________________________________________________
 
-		bool		setCellSize( SizeI cellSize );					// 0 for width or height = calculated from precision.
-		SizeI		cellSize() const;								// Cell size in use, calculated or set.
-
 		bool		setPrecision( float precision );
 		float		precision() const { return m_precision; }
 
@@ -90,10 +86,10 @@ namespace wax
 
 	protected:
 
-		WarpGenerator( SizeI size, SizeSPX sourceSize, SizeI cellSize, float precision, WarpmapFactory * pFactory );
+		WarpGenerator( SizeI size, SizeSPX sourceSize, float precision, WarpmapFactory * pFactory );
 		virtual ~WarpGenerator();
 
-		static bool		_validateSettings( SizeI size, SizeSPX sourceSize, SizeI cellSize, float precision );
+		static bool		_validateSettings( SizeI size, SizeSPX sourceSize, float precision );
 
 		// Integer maths for _generateMesh(), which runs once per vertex and so should avoid floating
 		// point on hardware without an FPU. Set up factors with _factor() once per generate.
@@ -139,11 +135,6 @@ namespace wax
 		virtual void	_meshSize( int& nVertices, int& nTriangles ) const = 0;
 		virtual void	_generateMesh( Warpmap::Vertex * pVertices, Warpmap::Triangle * pTriangles ) const = 0;
 
-		// Size of the pieces of the mesh chosen from precision, as cellSize() reports it, kept
-		// within 1 -> size of the Warpmap. The size of the Warpmap unless overridden.
-
-		virtual SizeI	_calcCellSize() const;
-
 		// A band along the outline of a rounded rectangle, or a circle with ax and ay 0, with the
 		// width of the source along the outline and its height across, for CircularWarp and
 		// RoundedRectWarp. A position is placed by the point of the outline nearest to it: its
@@ -159,14 +150,10 @@ namespace wax
 			double		sweep;			// Part of the outline covered by the width of the source, negative counter clockwise.
 		};
 
-		// Corners split into nArc sectors and the band into nAcross parts across it, from cellSize
-		// if set, otherwise from precision. cellSize.w is then the length of a sector along the outer
-		// edge of the band and cellSize.h the distance across a part, which _bandCellSize() gives
-		// when calculated.
+		// Corners split into nArc sectors and the band into nAcross parts across it, from precision.
 
 		void			_bandLayout( const OutlineBand& band, int& nArc, int& nAcross ) const;
 		void			_calcBandLayout( const OutlineBand& band, int& nArc, int& nAcross ) const;
-		SizeI			_bandCellSize( const OutlineBand& band ) const;
 
 		// The mesh of a band, written to pVertices and pTriangles, or only counted if pVertices is
 		// null, as for _meshSize().
@@ -180,7 +167,6 @@ namespace wax
 			bool		bValid = false;
 			int64_t		ax, ay, radius, top, bottom;
 			float		precision;
-			SizeI		cellSize;
 			int			nArc, nAcross;
 		};
 
@@ -203,7 +189,6 @@ namespace wax
 
 		SizeI		m_size;
 		SizeSPX		m_sourceSize;
-		SizeI		m_cellSize;										// As set, 0 = calculated.
 		float		m_precision;
 
 		bool		m_bDirty = true;

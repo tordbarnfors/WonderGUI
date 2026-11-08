@@ -33,7 +33,7 @@ namespace wax
 
 	RoundedRectWarp_p RoundedRectWarp::create(const Blueprint& bp, WarpmapFactory* pFactory)
 	{
-		if (!_validateSettings(bp.size, bp.sourceSize, bp.cellSize, bp.precision) || bp.rect.w < 0 || bp.rect.h < 0
+		if (!_validateSettings(bp.size, bp.sourceSize, bp.precision) || bp.rect.w < 0 || bp.rect.h < 0
 			|| bp.cornerRadius < 0 || bp.sweep == 0.f)
 			return nullptr;
 
@@ -49,7 +49,7 @@ namespace wax
 	//____ constructor ________________________________________________________
 
 	RoundedRectWarp::RoundedRectWarp(const Blueprint& bp, WarpmapFactory* pFactory)
-		: WarpGenerator(bp.size, bp.sourceSize, bp.cellSize, bp.precision, pFactory)
+		: WarpGenerator(bp.size, bp.sourceSize, bp.precision, pFactory)
 	{
 		if (bp.finalizer)
 			setFinalizer(bp.finalizer);
@@ -154,13 +154,6 @@ namespace wax
 		band.start = _toTurn(m_start);
 		band.sweep = m_sweep;
 		return band;
-	}
-
-	//____ _calcCellSize() ____________________________________________________
-
-	SizeI RoundedRectWarp::_calcCellSize() const
-	{
-		return _bandCellSize(_band());
 	}
 
 	//____ _meshSize() ________________________________________________________
