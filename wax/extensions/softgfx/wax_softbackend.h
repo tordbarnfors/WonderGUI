@@ -382,11 +382,14 @@ namespace wax
 			int64_t		dy[2];			// The same as step and 0 below without perspective.
 			int64_t		dxStep[2];		// Change of dx and dy along the row.
 			int64_t		dyStep[2];
-		};
 
-		// A triangle being drawn, on the rows it covers. For each edge, the first (lower bound) or
-		// first past the last (upper bound) column inside on the current row, stepped from row to row
-		// without divisions: col * divisor - rem is the numerator, 0 <= rem < divisor.
+			// Coverage of the vertices at the center of the first pixel and its change along the row,
+			// with 28 binals of full coverage, when it isn't full all along the span.
+
+			bool		bFade;
+			int64_t		fade;
+			int64_t		fadeStep;
+		};
 
 		// A triangle on the rows being drawn, its edges stepped from row to row as the Edges of its
 		// Setup describe.
@@ -395,6 +398,7 @@ namespace wax
 		{
 			const SoftWarpmap::Setup*		pSetup;
 			const SoftWarpmap::Perspective*	pPerspective;		// nullptr without perspective.
+			const SoftWarpmap::Fade*		pFade;				// nullptr for all corners at full coverage.
 			int			kind;			// Of all of it, c_warpMixed if it varies or with perspective.
 			int			xBeg, xEnd;		// Pixels inside on the current row, relative to the Warpmap.
 			int64_t		col[3];			// Of the edges of the Setup, on the current row.
@@ -535,6 +539,14 @@ namespace wax
 		// Warps
 
 		WarpSetup					m_warp;
+		struct WarpRowFade				// Coverage of the vertices of the triangle being made into spans, see _addWarpSpans().
+		{
+			bool		bActive = false;
+			int64_t		row;			// At canvas column 0 of the row.
+			int64_t		step;			// From one column to the next.
+		};
+
+		WarpRowFade					m_warpRowFade;
 		std::vector<WarpTriangle>	m_warpTriangles;					// Triangles on the rows being drawn, and free entries.
 		std::vector<int>			m_warpFree;							// Entries of m_warpTriangles of triangles that have ended.
 		std::vector<int>			m_warpRowOrder;						// Triangles on the current row, by first pixel.

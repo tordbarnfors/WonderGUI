@@ -29,6 +29,7 @@ struct WarpVertex
     int2 pos;               // Position in spx of the Warpmap.
     int2 uv;                // Position in spx of the source.
     int w;                  // Weight, 65536 for 1.0.
+    int coverage;           // Coverage, 65536 for full.
 };
 
 StructuredBuffer<WarpVertex> vertices : register(t4);
@@ -40,6 +41,7 @@ struct VS_OUTPUT
     float4 color : COLOR;
     nointerpolation uint warpOfs : TEXCOORD1;
     noperspective float3 uvw : TEXCOORD2;
+    noperspective float coverage : TEXCOORD3;
 };
 
 
@@ -63,6 +65,7 @@ VS_OUTPUT main(uint id : SV_VertexID)
 
     float w = float(v.w) / 65536.0f;
     output.uvw = float3(float2(v.uv - warpRef) * (w / 64.0f), w);
+    output.coverage = float(v.coverage) / 65536.0f;
 
     return output;
 }

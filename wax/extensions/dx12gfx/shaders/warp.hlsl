@@ -29,6 +29,7 @@ struct PS_INPUT
     float4 color : COLOR;
     nointerpolation uint warpOfs : TEXCOORD1;
     noperspective float3 uvw : TEXCOORD2;
+    noperspective float coverage : TEXCOORD3;       // Of the vertices, multiplies the coverage of the pixel.
 };
 
 
@@ -157,7 +158,7 @@ float2 warpPosition(uint ofs, float3 uvw, out float2 dx, out float2 dy)
 // the edge pixels of the source rectangle continued outside it, by keeping positions half
 // a texel (bilinear) or a hair (nearest) inside its edges.
 
-float warpBlitCoverage(uint ofs, float3 uvw, out float2 s, out float2 dx, out float2 dy)
+float warpBlitCoverage(uint ofs, float3 uvw, float fade, out float2 s, out float2 dx, out float2 dy)
 {
     float2 pos = warpPosition(ofs, uvw, dx, dy);
 
@@ -165,7 +166,7 @@ float warpBlitCoverage(uint ofs, float3 uvw, out float2 s, out float2 dx, out fl
     float4 e1 = extras[ofs + 1];
     float4 e2 = extras[ofs + 2];
 
-    float cov = warpAxisCoverage(pos.x, float2(dx.x, dy.x), e0.x, e1.z);
+    float cov = warpAxisCoverage(pos.x, float2(dx.x, dy.x), e0.x, e1.z) * saturate(fade);
 
     if (cov > 0.0f)
         cov *= warpAxisCoverage(pos.y, float2(dx.y, dy.y), e0.y, e1.w);

@@ -1297,8 +1297,9 @@ namespace wax
 	//____ _applyWarpmapUpdate() ______________________________________________
 	/*
 		Applies a WarpmapUpdate whose content has all arrived, creating the Warpmap if it is new,
-		and drops the buffer. Vertices are sequences of all x, y, u and v, and w with
-		WarpmapFlags::Weights, triangles of all a, b and c. See StreamWarpmap.
+		and drops the buffer. Vertices are sequences of all x, y, u and v, w with
+		WarpmapFlags::Weights and coverage with WarpmapFlags::Coverage, triangles of all a, b and c.
+		See StreamWarpmap.
 	*/
 
 	void StreamPlayer::_applyWarpmapUpdate( WarpmapDataBuffer * pData )
@@ -1307,7 +1308,9 @@ namespace wax
 
 		const bool bWeights = (pData->flags & GfxStream::WarpmapFlags::Weights) != 0;
 		const int nV = pData->nVertices, nT = pData->nTriangles;
-		const int sequences = bWeights ? 5 : 4;
+		const bool bCoverage = (pData->flags & GfxStream::WarpmapFlags::Coverage) != 0;
+		const int sequences = 4 + (bWeights ? 1 : 0) + (bCoverage ? 1 : 0);
+		const int coverageSequence = bWeights ? 5 : 4;
 
 		bool bOk = pData->vertices.size == nV * sequences * int(sizeof(int32_t)) &&
 				   pData->triangles.size == nT * 3 * int(sizeof(int32_t));
@@ -1319,7 +1322,8 @@ namespace wax
 		{
 			auto pValues = (const int32_t*) pData->vertices.pBuffer;
 			for (int i = 0; i < nV; i++)
-				vertices[i] = { pValues[i], pValues[nV + i], pValues[nV * 2 + i], pValues[nV * 3 + i], bWeights ? pValues[nV * 4 + i] : Warpmap::weightOne };
+				vertices[i] = { pValues[i], pValues[nV + i], pValues[nV * 2 + i], pValues[nV * 3 + i], bWeights ? pValues[nV * 4 + i] : Warpmap::weightOne,
+								bCoverage ? pValues[nV * coverageSequence + i] : Warpmap::coverageOne };
 
 			pValues = (const int32_t*) pData->triangles.pBuffer;
 			for (int i = 0; i < nT * 3; i++)

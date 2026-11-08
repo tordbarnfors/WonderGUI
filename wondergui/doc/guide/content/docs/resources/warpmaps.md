@@ -211,6 +211,8 @@ Some things to keep in mind:
 
 * **Perspective** is given by the weights. A plane seen in perspective, such as a card turned in 3D, is exact with a single quad of two triangles when the weight of each corner is proportional to 1 / its distance from the eye, and positions are the ones at the corners. Only the ratios between the weights of a triangle matter. *Warpmap::weightOne* is 1.0, and is the weight of vertices that don't set one.
 
+* **Outlines that aren't borders of the source** are antialiased by the coverage of the vertices, *Warpmap::coverageOne* unless set. It is interpolated linearly over a triangle and multiplies the coverage of each pixel, so a row of triangles from coverageOne half a pixel inside an outline to 0 half a pixel outside it antialiases the outline, as BallWarp does around a ball covered by a map. Triangles with all corners at coverageOne cost nothing extra.
+
 
 
 ## How it is drawn

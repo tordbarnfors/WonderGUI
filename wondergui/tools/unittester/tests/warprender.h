@@ -14,6 +14,7 @@ private:
 	bool identityBlitTest(std::ostream& output);
 	bool meshSeamTest(std::ostream& output);
 	bool perspectiveWeightTest(std::ostream& output);
+	bool vertexCoverageTest(std::ostream& output);
 	bool softVsReferenceTest(std::ostream& output);
 	bool blendModesTest(std::ostream& output);
 	bool linearBackendTest(std::ostream& output);

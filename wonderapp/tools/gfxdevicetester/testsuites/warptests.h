@@ -35,6 +35,7 @@ public:
 		addTest("Rounded rects", &WarpTests::roundedRects);
 		addTest("Cylinders", &WarpTests::cylinders);
 		addTest("Perspective", &WarpTests::perspective);
+		addTest("Vertex coverage", &WarpTests::vertexCoverage);
 	}
 
 	bool init(GfxDevice * pDevice, const RectSPX& canvas, wapp::API * pAppAPI)
@@ -467,6 +468,57 @@ public:
 	// offset, and the gauge leaning back like credits. Middle: cards in a row seen from one eye, turned towards the
 	// middle. Bottom: a card turned 0, 60 and 120 degrees around its middle (the last one mirrored,
 	// its back facing the viewer), one tilted, turned and rolled, and one pinned onto a free shape.
+
+	// Discs with their outline going from full coverage half a pixel inside to none half a pixel
+	// outside, which antialiases it, and with half coverage everywhere.
+
+	bool vertexCoverage(GfxDevice * pDevice, const RectSPX& canvas)
+	{
+		auto disc = [&](SizeSPX source, int radius, int innerCoverage, int outerCoverage)
+		{
+			const int nSides = 72;
+			const double c = radius + 1.3;
+
+			std::vector<Warpmap::Vertex> vertices;
+			std::vector<Warpmap::Triangle> triangles;
+
+			auto add = [&](double x, double y, int coverage)
+			{
+				spx sx = spx(std::lround(x * 64)), sy = spx(std::lround(y * 64));
+				vertices.push_back({ sx, sy, spx(int64_t(sx) * source.w / (64 * 2 * (radius + 2))), spx(int64_t(sy) * source.h / (64 * 2 * (radius + 2))), Warpmap::weightOne, coverage });
+				return int(vertices.size()) - 1;
+			};
+
+			int center = add(c, c, innerCoverage);
+			for (int i = 0; i < nSides; i++)
+			{
+				double a = 2 * 3.14159265358979323846 * i / nSides;
+				add(c + std::cos(a) * (radius - 0.5), c + std::sin(a) * (radius - 0.5), innerCoverage);
+				add(c + std::cos(a) * (radius + 0.5), c + std::sin(a) * (radius + 0.5), outerCoverage);
+			}
+
+			for (int i = 0; i < nSides; i++)
+			{
+				int in0 = 1 + i * 2, out0 = in0 + 1, in1 = 1 + ((i + 1) % nSides) * 2, out1 = in1 + 1;
+				triangles.push_back({ center, in0, in1 });
+				triangles.push_back({ in0, out0, out1 });
+				triangles.push_back({ in0, out1, in1 });
+			}
+
+			int size = 2 * (radius + 2);
+			return pDevice->warpmapFactory()->createWarpmap(WGBP(Warpmap, _.size = { size, size }, _.triangles = int(triangles.size()), _.vertices = int(vertices.size())),
+															 vertices.data(), triangles.data());
+		};
+
+		SizeSPX gauge = m_pGauge->pixelSize() * 64, surface = m_pBilinear->pixelSize() * 64;
+
+		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 10 }, disc(gauge, 110, Warpmap::coverageOne, 0), m_pGauge);
+		pDevice->setBlitSource(m_pBilinear);
+		pDevice->warpBlit({ 64 * 260, 64 * 10 }, disc(surface, 110, Warpmap::coverageOne, 0));
+		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 260 + 20 }, disc(gauge, 57, Warpmap::coverageOne / 2, Warpmap::coverageOne / 2), m_pGauge);
+		pDevice->warpBlit({ 64 * 260 + 30, 64 * 260 }, disc(surface, 13, Warpmap::coverageOne, 0));
+		return true;
+	}
 
 	bool perspective(GfxDevice * pDevice, const RectSPX& canvas)
 	{

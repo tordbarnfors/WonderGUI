@@ -1795,10 +1795,12 @@ WAX_GL_CANVAS_BLOCK
 "layout(location = 0) in ivec2 pos;                     "
 "layout(location = 1) in ivec2 uv;                      "
 "layout(location = 2) in int weight;                    "
+"layout(location = 3) in int coverage;                  "
 "flat out int warpOfs;									"
 "flat out int tintOfs;									"
 "flat out vec4 flatTint;								"
 "noperspective out vec3 warpUVW;						"
+"noperspective out float warpCoverage;					"
 
 "void main()											"
 "{                                                      "
@@ -1812,6 +1814,7 @@ WAX_GL_CANVAS_BLOCK
 "   flatTint = texelFetch(colorBufferId, warpColorsOfs);	"
 "   float w = float(weight) / 65536.0;					"
 "   warpUVW = vec3(vec2(uv - warpRef) * (w / 64.0), w);	"
+"   warpCoverage = float(coverage) / 65536.0;			"
 "}                                                      ";
 
 // Needs extrasBufferId, warpOfs and warpUVW. warpHalfPlane() gives the part of the pixel where
@@ -1910,7 +1913,7 @@ WAX_GL_CANVAS_BLOCK
 "	vec2 period = e1.zw;															" \
 "	vec2 gx = vec2(dx.x, dy.x);														" \
 "	vec2 gy = vec2(dx.y, dy.y);														" \
-"	float covX = warpAxisCoverage(s.x, gx, size.x, period.x);						" \
+"	float covX = warpAxisCoverage(s.x, gx, size.x, period.x) * clamp(warpCoverage, 0.0, 1.0);	" \
 "	if (covX <= 0.0)																" \
 "		discard;																	" \
 "	int nEdges = int(e0.z);															" \
@@ -1959,6 +1962,7 @@ WAX_GL_OUTPUT
 "flat in int warpOfs;							"
 "flat in int tintOfs;							"
 "noperspective in vec3 warpUVW;					"
+"noperspective in float warpCoverage;			"
 "vec2 canvasPos;									"
 "flat in vec4 flatTint;							"
 WAX_GL_TINT_FUNC
@@ -1994,6 +1998,7 @@ WAX_GL_OUTPUT_A8
 "flat in int warpOfs;							"
 "flat in int tintOfs;							"
 "noperspective in vec3 warpUVW;					"
+"noperspective in float warpCoverage;			"
 "vec2 canvasPos;									"
 "flat in vec4 flatTint;							"
 WAX_GL_TINT_FUNC
@@ -2060,7 +2065,7 @@ WAX_GL_WARP_SEGMENTS("{ acc += segColor(e, flatColorsOfs, tintTableOfs, sc).a * 
 "	vec4 e0 = warpEntry(0);															" \
 "	vec4 e1 = warpEntry(1);															" \
 "	vec4 e2 = warpEntry(2);															" \
-"	float cov = warpAxisCoverage(s.x, vec2(dx.x, dy.x), e0.x, e1.z);				" \
+"	float cov = warpAxisCoverage(s.x, vec2(dx.x, dy.x), e0.x, e1.z) * clamp(warpCoverage, 0.0, 1.0);	" \
 "	if (cov > 0.0)																	" \
 "		cov *= warpAxisCoverage(s.y, vec2(dx.y, dy.y), e0.y, e1.w);					" \
 "	if (cov < 1.0 / 256.0)															" \
@@ -2080,6 +2085,7 @@ WAX_GL_OUTPUT
 "flat in int warpOfs;							"
 "flat in int tintOfs;							"
 "noperspective in vec3 warpUVW;					"
+"noperspective in float warpCoverage;			"
 "vec2 canvasPos;									"
 "flat in vec4 flatTint;							"
 WAX_GL_TINT_FUNC
@@ -2101,6 +2107,7 @@ WAX_GL_OUTPUT_A8
 "flat in int warpOfs;							"
 "flat in int tintOfs;							"
 "noperspective in vec3 warpUVW;					"
+"noperspective in float warpCoverage;			"
 "vec2 canvasPos;									"
 "flat in vec4 flatTint;							"
 WAX_GL_TINT_FUNC

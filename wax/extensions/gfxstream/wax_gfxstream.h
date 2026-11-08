@@ -93,7 +93,7 @@ namespace wax
 
 			CreateWarpmap = 31,			// Since 3.4. Followed by WarpmapUpdate, WarpmapVertices and WarpmapTriangles with all its content.
 			WarpmapUpdate = 32,			// Flags (see WarpmapFlags), vertices and triangles that following WarpmapVertices and WarpmapTriangles chunks hold, and periods.
-			WarpmapVertices = 33,		// Vertices as sequences of all x, y, u, v, then w with WarpmapFlags::Weights, int32 each, split over chunks like EdgemapSamples. Compressed by MeshCompressor.
+			WarpmapVertices = 33,		// Vertices as sequences of all x, y, u, v, then w with WarpmapFlags::Weights and coverage with WarpmapFlags::Coverage, int32 each, split over chunks like EdgemapSamples. Compressed by MeshCompressor.
 			WarpmapTriangles = 34,		// Triangles as sequences of all a, b and c, int32 each, split over chunks like EdgemapSamples. Compressed by MeshCompressor.
 			DeleteWarpmap = 35
 		};
@@ -117,6 +117,7 @@ namespace wax
 		struct WarpmapFlags
 		{
 			static constexpr uint16_t	Weights = 1;		// Vertices have weights, otherwise they are all Warpmap::weightOne.
+			static constexpr uint16_t	Coverage = 2;		// Vertices have coverage, otherwise they are all Warpmap::coverageOne.
 		};
 
 		enum class SpxFormat : uint8_t

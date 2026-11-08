@@ -660,7 +660,7 @@ namespace wax
 				decoder >> vPeriod;
 
 				m_charStream << "    warpmapId   = " << warpmapId << std::endl;
-				m_charStream << "    flags       = " << flags << ((flags & GfxStream::WarpmapFlags::Weights) ? " (weights)" : "") << std::endl;
+				m_charStream << "    flags       = " << flags << ((flags & GfxStream::WarpmapFlags::Weights) ? " (weights)" : "") << ((flags & GfxStream::WarpmapFlags::Coverage) ? " (coverage)" : "") << std::endl;
 				m_charStream << "    vertices    = " << firstVertex << " + " << nVertices << std::endl;
 				m_charStream << "    triangles   = " << firstTriangle << " + " << nTriangles << std::endl;
 				m_charStream << "    periods     = " << uPeriod << ", " << vPeriod << std::endl;

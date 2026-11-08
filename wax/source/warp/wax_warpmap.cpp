@@ -309,6 +309,7 @@ namespace wax
 		v.u = std::clamp(vertex.u, -maxValue, maxValue);
 		v.v = std::clamp(vertex.v, -maxValue, maxValue);
 		v.w = std::clamp(vertex.w, 1, maxWeight);
+		v.coverage = std::clamp(vertex.coverage, 0, coverageOne);
 		return v;
 	}
 

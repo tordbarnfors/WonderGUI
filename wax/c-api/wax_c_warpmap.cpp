@@ -31,7 +31,8 @@ inline Warpmap* getPtr(wax_obj obj) {
 	return static_cast<Warpmap*>(reinterpret_cast<Object*>(obj));
 }
 
-static_assert(sizeof(wax_warpVertex) == sizeof(Warpmap::Vertex) && offsetof(wax_warpVertex, w) == offsetof(Warpmap::Vertex, w), "wax_warpVertex differs from wax::Warpmap::Vertex!");
+static_assert(sizeof(wax_warpVertex) == sizeof(Warpmap::Vertex) && offsetof(wax_warpVertex, w) == offsetof(Warpmap::Vertex, w) &&
+			  offsetof(wax_warpVertex, coverage) == offsetof(Warpmap::Vertex, coverage), "wax_warpVertex differs from wax::Warpmap::Vertex!");
 static_assert(sizeof(wax_warpTriangle) == sizeof(Warpmap::Triangle), "wax_warpTriangle differs in size from wax::Warpmap::Triangle!");
 
 wax_sizeI wax_warpmapPixelSize(wax_obj warpmap)

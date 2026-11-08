@@ -93,6 +93,7 @@ namespace wax
 
 			int			ox, oy;
 			int			perspective;	// -1 without perspective.
+			int			fade;			// Index in m_fades, -1 for a triangle with all corners at coverageOne.
 
 			// The other edges, lower bounds first.
 
@@ -118,12 +119,20 @@ namespace wax
 			int64_t		gradientW;
 		};
 
+		// Coverage of the vertices of a triangle, as f of Setup, with 28 binals of full coverage.
+
+		struct Fade
+		{
+			int64_t		f[3];
+		};
+
 		void	_setupTriangles();
 
 		std::vector<Setup>			m_setups;			// Triangles with pixels.
 		std::vector<int>			m_order;			// Of m_setups, by first row.
 		std::vector<int>			m_rowStart;			// For sorting m_order.
 		std::vector<Perspective>	m_perspective;
+		std::vector<Fade>			m_fades;
 	};
 
 } // namespace wax

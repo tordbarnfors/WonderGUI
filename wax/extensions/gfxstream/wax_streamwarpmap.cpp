@@ -99,8 +99,9 @@ namespace wax
 	/*
 		Sends the ranges and periods in a WarpmapUpdate, followed by WarpmapVertices and
 		WarpmapTriangles chunks with the content compressed. Vertices are sent as sequences of all
-		x, then all y, u and v, and w if any of them has a weight other than weightOne, so that
-		MeshCompressor predicts each from earlier values of its own. Triangles likewise as all a,
+		x, then all y, u and v, w if any of them has a weight other than weightOne and coverage if any
+		has a coverage other than coverageOne, so that MeshCompressor predicts each from earlier
+		values of its own. Triangles likewise as all a,
 		then all b and c.
 	*/
 
@@ -108,19 +109,16 @@ namespace wax
 	{
 		auto& encoder = * m_pEncoder;
 
-		bool bWeights = false;
+		bool bWeights = false, bCoverage = false;
 		for (int i = 0; i < nVertices; i++)
 		{
-			if (m_pVertices[firstVertex + i].w != weightOne)
-			{
-				bWeights = true;
-				break;
-			}
+			bWeights |= m_pVertices[firstVertex + i].w != weightOne;
+			bCoverage |= m_pVertices[firstVertex + i].coverage != coverageOne;
 		}
 
 		encoder << GfxStream::Header{ GfxStream::ChunkId::WarpmapUpdate, 0, 28 };
 		encoder << m_inStreamId;
-		encoder << (uint16_t) (bWeights ? GfxStream::WarpmapFlags::Weights : 0);
+		encoder << (uint16_t) ((bWeights ? GfxStream::WarpmapFlags::Weights : 0) | (bCoverage ? GfxStream::WarpmapFlags::Coverage : 0));
 		encoder << (int32_t) firstVertex;
 		encoder << (int32_t) nVertices;
 		encoder << (int32_t) firstTriangle;
@@ -130,7 +128,7 @@ namespace wax
 
 		if (nVertices > 0)
 		{
-			const int sequences = bWeights ? 5 : 4;
+			const int sequences = 4 + (bWeights ? 1 : 0) + (bCoverage ? 1 : 0);
 			int bytes = nVertices * sequences * sizeof(int32_t);
 			auto pValues = (int32_t*) Base::memStackAlloc(bytes);
 
@@ -143,6 +141,8 @@ namespace wax
 				pValues[nVertices * 3 + i] = v.v;
 				if (bWeights)
 					pValues[nVertices * 4 + i] = v.w;
+				if (bCoverage)
+					pValues[nVertices * (bWeights ? 5 : 4) + i] = v.coverage;
 			}
 
 			m_pCompressor->setSequences(sequences);

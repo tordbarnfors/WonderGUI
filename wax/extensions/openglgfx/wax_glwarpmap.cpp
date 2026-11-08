@@ -50,7 +50,7 @@ namespace wax
 
 	GlWarpmap::GlWarpmap( const Blueprint& bp, const Vertex * pVertices, const Triangle * pTriangles ) : Warpmap(bp, pVertices, pTriangles)
 	{
-		static_assert(sizeof(Vertex) == 5 * sizeof(GLint) && sizeof(Triangle) == 3 * sizeof(GLushort), "Vertices and triangles are uploaded as they are");
+		static_assert(sizeof(Vertex) == 6 * sizeof(GLint) && sizeof(Triangle) == 3 * sizeof(GLushort), "Vertices and triangles are uploaded as they are");
 
 		GLint previousArray = 0, previousBuffer = 0;
 		glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &previousArray);
@@ -68,9 +68,11 @@ namespace wax
 		glVertexAttribIPointer(0, 2, GL_INT, sizeof(Vertex), (void*)offsetof(Vertex, x));
 		glVertexAttribIPointer(1, 2, GL_INT, sizeof(Vertex), (void*)offsetof(Vertex, u));
 		glVertexAttribIPointer(2, 1, GL_INT, sizeof(Vertex), (void*)offsetof(Vertex, w));
+		glVertexAttribIPointer(3, 1, GL_INT, sizeof(Vertex), (void*)offsetof(Vertex, coverage));
 		glEnableVertexAttribArray(0);
 		glEnableVertexAttribArray(1);
 		glEnableVertexAttribArray(2);
+		glEnableVertexAttribArray(3);
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBufferId);		// Kept by the vertex array.
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_nTriangles * sizeof(Triangle), nullptr, GL_DYNAMIC_DRAW);

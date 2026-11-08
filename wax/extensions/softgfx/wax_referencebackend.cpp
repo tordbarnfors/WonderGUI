@@ -934,6 +934,7 @@ namespace wax
 		{
 			double	x0, y0, e1x, e1y, e2x, e2y, area;
 			double	w[3], u[3], v[3];
+			double	coverage[3];			// Of the corners, 0 -> 1.
 			spx		minX, maxX, minY, maxY;
 		};
 
@@ -961,6 +962,7 @@ namespace wax
 				s.w[k] = c[k]->w;
 				s.u[k] = c[k]->u;
 				s.v[k] = c[k]->v;
+				s.coverage[k] = double(c[k]->coverage) / Warpmap::coverageOne;
 			}
 
 			s.minX = std::min({ c[0]->x, c[1]->x, c[2]->x });
@@ -1095,6 +1097,21 @@ namespace wax
 
 				if (!measure(c_warpQuickSamples, c_warpQuickStep))
 					measure(c_warpSamples, c_warpStep);
+
+				// Coverage of the vertices, interpolated without perspective at the center.
+
+				{
+					const Setup& s = *pSetup;
+					double dx = (x - dest.x + 0.5) * 64 - s.x0;
+					double dy = (y - dest.y + 0.5) * 64 - s.y0;
+					double b1 = (dx * s.e2y - dy * s.e2x) / s.area;
+					double b2 = (s.e1x * dy - s.e1y * dx) / s.area;
+					double fade = std::clamp((1.0 - b1 - b2) * s.coverage[0] + b1 * s.coverage[1] + b2 * s.coverage[2], 0.0, 1.0);
+
+					covered *= fade;
+					for (int seg = 0; seg < nSegments; seg++)
+						coverage[seg] *= fade;
+				}
 
 				if (covered <= 0.0)
 					continue;

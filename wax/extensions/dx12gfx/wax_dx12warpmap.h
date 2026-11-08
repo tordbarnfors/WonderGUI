@@ -41,9 +41,9 @@ namespace wax
 	 * @brief Warpmap for DX12Backend.
 	 *
 	 * The mesh is kept on the GPU as it is, in one permanently mapped buffer: the vertices (x, y,
-	 * u, v and w as integers, the layout of Warpmap::Vertex), read by the vertex shader as a
-	 * structured buffer, followed by the triangles (the corners as 16-bit unsigned ints, the layout of
-	 * Warpmap::Triangle), which are the index buffer. Content that changes is copied there, with
+	 * u, v, w and coverage as integers, the layout of Warpmap::Vertex), read by the vertex shader as
+	 * a structured buffer, followed by the triangles (the corners as 16-bit unsigned ints, the layout
+	 * of Warpmap::Triangle), which are the index buffer. Content that changes is copied there, with
 	 * nothing worked out on the CPU. Drawing only gives where to draw, the source offset and the
 	 * periods. See vs_warp.hlsl and warp.hlsl for what the shaders do with it.
 	 *

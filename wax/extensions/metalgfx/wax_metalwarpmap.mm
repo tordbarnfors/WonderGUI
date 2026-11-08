@@ -55,7 +55,7 @@ MetalWarpmap_p MetalWarpmap::create( const Blueprint& bp, const Vertex * pVertic
 
 MetalWarpmap::MetalWarpmap( const Blueprint& bp, const Vertex * pVertices, const Triangle * pTriangles ) : Warpmap(bp, pVertices, pTriangles)
 {
-	static_assert(sizeof(Vertex) == 5 * sizeof(int32_t) && sizeof(Triangle) == 3 * sizeof(uint16_t), "Vertices and triangles are uploaded as they are");
+	static_assert(sizeof(Vertex) == 6 * sizeof(int32_t) && sizeof(Triangle) == 3 * sizeof(uint16_t), "Vertices and triangles are uploaded as they are");
 
 	// Triangles start at an aligned offset after the vertices. A buffer can't be empty.
 

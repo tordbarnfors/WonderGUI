@@ -438,6 +438,7 @@ WarpRenderTest::WarpRenderTest()
 	ADD_TEST(identityBlitTest);
 	ADD_TEST(meshSeamTest);
 	ADD_TEST(perspectiveWeightTest);
+	ADD_TEST(vertexCoverageTest);
 	ADD_TEST(softVsReferenceTest);
 	ADD_TEST(blendModesTest);
 	ADD_TEST(linearBackendTest);
@@ -688,6 +689,105 @@ bool WarpRenderTest::perspectiveWeightTest(std::ostream& output)
 		bool bExact = backend == TestBackend::Reference;
 		if (!compare(output, "Perspective by weights", render(backend, scene(pQuad)), "weights", render(backend, scene(pFine)), "fine mesh",
 											3, bExact ? 20 : 500, bExact ? 12 : 32))
+			return false;
+	}
+
+	return true;
+}
+
+//____ vertexCoverageTest() ___________________________________________________
+// Coverage of the vertices multiplies the coverage of pixels: a disc with its outline going from
+// full coverage half a pixel inside to none half a pixel outside is antialiased the same by all
+// backends, half coverage everywhere draws as a tint of half alpha, and none draws nothing.
+
+bool WarpRenderTest::vertexCoverageTest(std::ostream& output)
+{
+	auto pRes = resourceDevice();
+	auto pEdgemap = makeEdgemap(pRes, false, true);
+	auto pSurface = makeSurface(pRes, true, SampleMethod::Bilinear);
+
+	// A disc of radius 23 pixels over a Warpmap of 60 x 50, mapped straight onto the source.
+
+	const SizeI size = { 60, 50 };
+	const double cx = 30.3, cy = 24.6, radius = 23;
+	const int nSides = 64;
+
+	auto disc = [&](int innerCoverage, int outerCoverage)
+	{
+		Mesh mesh;
+		auto add = [&](double x, double y, int coverage)
+		{
+			mesh.vertices.push_back({ spx(std::lround(x * 64)), spx(std::lround(y * 64)), spx(std::lround(x * 64)), spx(std::lround(y * 64)), Warpmap::weightOne, coverage });
+			return int(mesh.vertices.size()) - 1;
+		};
+
+		int center = add(cx, cy, innerCoverage);
+		for (int i = 0; i < nSides; i++)
+		{
+			double a = 2 * M_PI * i / nSides;
+			add(cx + std::cos(a) * (radius - 0.5), cy + std::sin(a) * (radius - 0.5), innerCoverage);
+			add(cx + std::cos(a) * (radius + 0.5), cy + std::sin(a) * (radius + 0.5), outerCoverage);
+		}
+
+		for (int i = 0; i < nSides; i++)
+		{
+			int in0 = 1 + i * 2, out0 = in0 + 1;
+			int in1 = 1 + ((i + 1) % nSides) * 2, out1 = in1 + 1;
+			mesh.triangles.push_back({ center, in0, in1 });
+			mesh.triangles.push_back({ in0, out0, out1 });
+			mesh.triangles.push_back({ in0, out1, in1 });
+		}
+
+		mesh.bp.size = size;
+		mesh.bp.triangles = int(mesh.triangles.size());
+		mesh.bp.vertices = int(mesh.vertices.size());
+		return createMesh(SoftWarpmapFactory::create(), mesh);
+	};
+
+	auto pFaded = disc(Warpmap::coverageOne, 0);
+	auto pHalf = disc(Warpmap::coverageOne / 2, Warpmap::coverageOne / 2);
+	auto pFull = disc(Warpmap::coverageOne, Warpmap::coverageOne);
+	auto pNone = disc(0, 0);
+	TEST_ASSERT(pFaded && pHalf && pFull && pNone);
+
+	auto scene = [&](Warpmap* pWarpmap, HiColor tint = HiColor::White)
+	{
+		return [=](GfxDevice* pDevice)
+		{
+			pDevice->setTintColor(tint);
+			pDevice->warpDrawEdgemap({ 4 * 64, 4 * 64 }, pWarpmap, pEdgemap);
+			pDevice->setBlitSource(pSurface);
+			pDevice->warpBlit({ 84 * 64, 4 * 64 }, pWarpmap);
+		};
+	};
+
+	// Faded outline: the backends that estimate coverage against the one that measures it. Along
+	// the outline coverage is linear across a pixel, as for any straight edge.
+
+	Pixels reference = render(TestBackend::Reference, scene(pFaded));
+
+	for (TestBackend backend : { TestBackend::Soft, TestBackend::Linear })
+	{
+		if (!compare(output, "Faded outline", render(backend, scene(pFaded)), backend == TestBackend::Soft ? "soft" : "linear", reference, "reference", 6, 40, 16))
+			return false;
+	}
+
+	// The faded outline differs from the full one only along the outline.
+
+	if (compare(output, "Faded outline", reference, "faded", render(TestBackend::Reference, scene(pFull)), "full", 3, 0, 0))
+	{
+		output << "Coverage of the vertices made no difference" << std::endl;
+		return false;
+	}
+
+	// Half coverage everywhere as half alpha, and none as nothing.
+
+	for (TestBackend backend : { TestBackend::Soft, TestBackend::Linear, TestBackend::Reference })
+	{
+		if (!compare(output, "Half coverage", render(backend, scene(pHalf)), "half coverage", render(backend, scene(pFull, HiColor(4096, 4096, 4096, 2048))), "half alpha", 2, 0, 2))
+			return false;
+
+		if (!compare(output, "No coverage", render(backend, scene(pNone)), "no coverage", render(backend, [](GfxDevice*) {}), "nothing drawn", 0))
 			return false;
 	}
 
@@ -1024,7 +1124,7 @@ bool WarpRenderTest::streamContentTest(std::ostream& output)
 
 	std::vector<Warpmap::Vertex> patch(21);
 	for (int i = 0; i < int(patch.size()); i++)
-		patch[i] = { i * 640, -i * 64, i * 7, i * 3, 1000 + i };
+		patch[i] = { i * 640, -i * 64, i * 7, i * 3, 1000 + i, i * 3000 };				// Weights and coverage.
 
 	std::vector<Warpmap::Triangle> triangles = { { 1, 2, 3 }, { 7, 8, 9 } };
 

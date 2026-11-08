@@ -48,6 +48,7 @@ extern "C" {
 		wax_spx				x, y;					// Position in spx of the Warpmap, from its top-left corner.
 		wax_spx				u, v;					// Position in spx of the source.
 		int					w;						// Weight for perspective, 65536 is 1.0.
+		int					coverage;				// Coverage, 65536 is full, see wax::Warpmap.
 	} wax_warpVertex;
 
 	//____ wax_warpTriangle _______________________________________________________

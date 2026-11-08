@@ -69,6 +69,13 @@ namespace wax
 	 * triangles are not antialiased and don't show, as long as neighbouring triangles share the
 	 * vertices along their common edge.
 	 *
+	 * Where the outline of what is drawn isn't a border of the source, such as the outline of a ball
+	 * covered by a map, the coverage of the vertices gives it instead. Coverage is interpolated
+	 * linearly over a triangle and multiplies the coverage of each pixel, so an outline is
+	 * antialiased by a row of triangles going from coverageOne half a pixel inside it to 0 half a
+	 * pixel outside it. It is coverageOne unless set, and backends draw triangles with all corners
+	 * at coverageOne as if there was none.
+	 *
 	 * A Warpmap is made for a source of a certain size. A source of another size is not stretched to
 	 * fit, the vertices have to be changed.
 	 *
@@ -121,6 +128,10 @@ namespace wax
 	 *   the pixel at many points, other backends estimate it from the distance to the border or edge
 	 *   and how fast the position changes over the pixel.
 	 *
+	 * - The coverage of the vertices of the triangle that draws a pixel is interpolated linearly in
+	 *   the Warpmap, without perspective, at the center of the pixel, kept within 0 -> coverageOne,
+	 *   and multiplies the part of the pixel that is covered.
+	 *
 	 * - Colors are taken at the position of the center of the pixel: the surface is sampled there
 	 *   by its sample method, as if the edge pixels of the source rectangle continued outside it
 	 *   (like stretchBlit() reads it), or wrapping around the surface if it is tiling. The tints of
@@ -154,6 +165,7 @@ namespace wax
 			spx				x, y;							// Position in spx of the Warpmap, from its top-left corner.
 			spx				u, v;							// Position in spx of the source.
 			int				w = weightOne;					// Weight for perspective, 1 -> maxWeight.
+			int				coverage = coverageOne;			// Coverage, 0 -> coverageOne, see below.
 		};
 
 		struct Triangle
@@ -169,6 +181,7 @@ namespace wax
 		static constexpr spx	maxPosition = 1 << 23;			// Vertex positions are kept within +-maxPosition (131072 pixels), see below.
 		static constexpr spx	maxValue = 1 << 30;				// u, v and periods are kept within +-maxValue (16 million pixels).
 		static constexpr int	weightOne = 1 << 16;			// A weight of 1.0.
+		static constexpr int	coverageOne = 1 << 16;			// Full coverage, the most a vertex has.
 		static constexpr int	maxWeight = 1 << 24;			// Weights are kept within 1 -> maxWeight.
 		static constexpr int	maxVertices = 1 << 16;			// So that corners of triangles fit in 16 bits.
 		static constexpr int	maxTriangles = 1 << 17;			// Twice the vertices, as many as a mesh without overlaps can have.

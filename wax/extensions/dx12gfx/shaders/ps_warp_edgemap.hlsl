@@ -85,7 +85,7 @@ PS_OUTPUT main(PS_INPUT input)
     float fx = sc.x - float(column);
     uint base = uint(e2.w) + column * pitch;
 
-    float covX = warpAxisCoverage(s.x, gx, size.x, period.x);
+    float covX = warpAxisCoverage(s.x, gx, size.x, period.x) * saturate(input.coverage);
 
     float insideY = warpInside(size.y, period.y);
     float ext = 0.5f * (abs(gy.x) + abs(gy.y));

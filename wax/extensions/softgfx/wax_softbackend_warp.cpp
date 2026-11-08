@@ -594,6 +594,9 @@ namespace wax
 
 					if (kind == c_warpOutside || (kind >= 0 && w.pEdgemap && w.bSkip[kind]))
 						continue;
+
+					if (setup.fade >= 0)
+						kind = c_warpMixed;
 				}
 
 				int index;
@@ -611,6 +614,7 @@ namespace wax
 				WarpTriangle& triangle = m_warpTriangles[index];
 				triangle.pSetup = &setup;
 				triangle.pPerspective = setup.perspective < 0 ? nullptr : &pMap->m_perspective[setup.perspective];
+				triangle.pFade = setup.fade < 0 ? nullptr : &pMap->m_fades[setup.fade];
 				triangle.kind = kind;
 				_beginWarpTriangle(triangle, y);
 				m_warpRowOrder.push_back(index);
@@ -773,6 +777,16 @@ namespace wax
 		const int xBeg = triangle.xBeg;
 		const int xEnd = triangle.xEnd;
 		const int64_t zero[2] = { 0, 0 };
+
+		// Coverage of the vertices along the row, for _addWarpSpan(), at canvas columns.
+
+		m_warpRowFade.bActive = triangle.pFade != nullptr;
+		if (triangle.pFade)
+		{
+			const int64_t* f = triangle.pFade->f;
+			m_warpRowFade.row = f[0] - f[1] * (int64_t(s.ox) + w.dest.x) + f[2] * (int64_t(row) - s.oy);
+			m_warpRowFade.step = f[1];
+		}
 
 		if (!triangle.pPerspective)
 		{
@@ -1002,7 +1016,32 @@ namespace wax
 			kind = _warpClassify(lo, hi);
 		}
 
-		if (kind == c_warpOutside || (kind >= 0 && w.pEdgemap && w.bSkip[kind]) || (kind == c_warpMixed && !bAddMixed))
+		if (kind == c_warpOutside || (kind >= 0 && w.pEdgemap && w.bSkip[kind]))
+			return kind;
+
+		// Coverage of the vertices: none at all leaves the span out, less than full makes it mixed.
+
+		span.bFade = false;
+
+		if (m_warpRowFade.bActive)
+		{
+			const int64_t c_full = int64_t(4096) << 16;
+			int64_t first = m_warpRowFade.row + m_warpRowFade.step * x;
+			int64_t last = first + m_warpRowFade.step * (length - 1);
+
+			if (std::max(first, last) < (int64_t(1) << 16))
+				return c_warpOutside;
+
+			if (std::min(first, last) < c_full)
+			{
+				span.bFade = true;
+				span.fade = first;
+				span.fadeStep = m_warpRowFade.step;
+				kind = c_warpMixed;
+			}
+		}
+
+		if (kind == c_warpMixed && !bAddMixed)
 			return kind;
 
 		span.kind = kind;
@@ -1347,6 +1386,18 @@ namespace wax
 					bAny |= (cov > 0);
 				}
 
+				if (span.bFade)
+				{
+					bAny = false;
+					int64_t fade = span.fade + span.fadeStep * (beg - span.x);
+					for (int k = 0; k < length; k++, fade += span.fadeStep)
+					{
+						int f = int(std::clamp(fade >> 16, int64_t(0), int64_t(4096)));
+						pCoverage[k] = (pCoverage[k] * f) >> 12;
+						bAny |= (pCoverage[k] > 0);
+					}
+				}
+
 				if (!bAny)
 					continue;
 
@@ -1440,6 +1491,32 @@ namespace wax
 				int total = _warpEdgemapCoverage(wrap(sx, w.period[0]), wrap(sy, w.period[1]), gax, gbx, gay, gby, coverage, solidSegment);
 				if (total == 0)
 					continue;
+
+				if (span.bFade)
+				{
+					// Coverage of the vertices scales the parts of the segments.
+
+					int f = int(std::clamp((span.fade + span.fadeStep * (beg - span.x + k)) >> 16, int64_t(0), int64_t(4096)));
+					if (f == 0)
+						continue;
+
+					if (f < 4096)
+					{
+						if (solidSegment >= 0)
+						{
+							for (int seg = 0; seg < nSegments; seg++)
+								coverage[seg] = 0;
+							coverage[solidSegment] = 4096;
+							solidSegment = -1;
+						}
+
+						for (int seg = 0; seg < nSegments; seg++)
+							coverage[seg] = (coverage[seg] * f) >> 12;
+						total = (total * f) >> 12;
+						if (total == 0)
+							continue;
+					}
+				}
 
 				if (solidSegment >= 0)
 				{

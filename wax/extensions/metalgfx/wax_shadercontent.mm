@@ -2667,6 +2667,7 @@ typedef struct
 	int		warpOfs [[flat]];			// Entry of warp in extras buffer.
 	int		tintOfs [[flat]];			// Device tint block in color buffer, -1 for none.
 	float3	uvw [[center_no_perspective]];
+	float	coverage [[center_no_perspective]];		// Of the vertices, multiplies the coverage of the pixel.
 } WarpFragInput;
 
 typedef struct					// The vertices of a Warpmap as they are, see MetalWarpmap.
@@ -2674,6 +2675,7 @@ typedef struct					// The vertices of a Warpmap as they are, see MetalWarpmap.
 	int		x, y;				// Position in spx of the Warpmap.
 	int		u, v;				// Position in spx of the source.
 	int		w;					// Weight, 65536 for 1.0.
+	int		coverage;			// Coverage, 65536 for full.
 } WarpVertex;
 
 typedef struct					// Set for each warp, see MetalBackend::WarpInfo.
@@ -2707,6 +2709,7 @@ warpVertexShader(uint vertexID [[vertex_id]],
 
 	float w = float(v.w) / 65536.f;
 	out.uvw = float3(float2(float(v.u - info.refU), float(v.v - info.refV)) * (w / 64.f), w);
+	out.coverage = float(v.coverage) / 65536.f;
 	return out;
 }
 
@@ -2814,7 +2817,7 @@ inline float2 warpPosition(constant float4 * pExtras, int ofs, float3 uvw, threa
 // source are measured, kept decreasing as an edge is pushed down to the edges above it, and
 // their differences are the parts of the segments.
 
-inline float warpSegmentParts(constant float4 * pExtras, int ofs, constant float4 * pEdgemap, float2 s, float2 dx, float2 dy, thread float * parts)
+inline float warpSegmentParts(constant float4 * pExtras, int ofs, constant float4 * pEdgemap, float2 s, float2 dx, float2 dy, float fade, thread float * parts)
 {
 	float4 e0 = pExtras[ofs];
 	float4 e1 = pExtras[ofs + 1];
@@ -2830,7 +2833,7 @@ inline float warpSegmentParts(constant float4 * pExtras, int ofs, constant float
 	float2 gx = float2(dx.x, dy.x);
 	float2 gy = float2(dx.y, dy.y);
 
-	float covX = warpAxisCoverage(s.x, gx, size.x, period.x);
+	float covX = warpAxisCoverage(s.x, gx, size.x, period.x) * saturate(fade);
 	if( covX <= 0.f )
 		return 0.f;
 
@@ -2900,7 +2903,7 @@ fragment FragOutput warpEdgemapFragmentShader(WarpFragInput in [[stage_in]],
 	float2 s = warpPosition(pExtras, in.warpOfs, in.uvw, dx, dy);
 
 	float parts[16];						// MetalBackend::c_maxSegments.
-	float covered = warpSegmentParts(pExtras, in.warpOfs, pEdgemap, s, dx, dy, parts);
+	float covered = warpSegmentParts(pExtras, in.warpOfs, pEdgemap, s, dx, dy, in.coverage, parts);
 	if( covered < 1.f / 256.f )
 		discard_fragment();
 
@@ -2942,7 +2945,7 @@ fragment FragOutput warpEdgemapFragmentShader_A8(WarpFragInput in [[stage_in]],
 	float2 s = warpPosition(pExtras, in.warpOfs, in.uvw, dx, dy);
 
 	float parts[16];						// MetalBackend::c_maxSegments.
-	float covered = warpSegmentParts(pExtras, in.warpOfs, pEdgemap, s, dx, dy, parts);
+	float covered = warpSegmentParts(pExtras, in.warpOfs, pEdgemap, s, dx, dy, in.coverage, parts);
 	if( covered < 1.f / 256.f )
 		discard_fragment();
 
@@ -2975,7 +2978,7 @@ fragment FragOutput warpEdgemapFragmentShader_A8(WarpFragInput in [[stage_in]],
 
 // Part of the pixel covered by the source, the position in the surface to read in s.
 
-inline float warpBlitCoverage(constant float4 * pExtras, int ofs, float3 uvw, thread float2& s, thread float2& dx, thread float2& dy)
+inline float warpBlitCoverage(constant float4 * pExtras, int ofs, float3 uvw, float fade, thread float2& s, thread float2& dx, thread float2& dy)
 {
 	s = warpPosition(pExtras, ofs, uvw, dx, dy);
 
@@ -2983,7 +2986,7 @@ inline float warpBlitCoverage(constant float4 * pExtras, int ofs, float3 uvw, th
 	float4 e1 = pExtras[ofs + 1];
 	float4 e2 = pExtras[ofs + 2];
 
-	float cov = warpAxisCoverage(s.x, float2(dx.x, dy.x), e0.x, e1.z);
+	float cov = warpAxisCoverage(s.x, float2(dx.x, dy.x), e0.x, e1.z) * saturate(fade);
 	if( cov > 0.f )
 		cov *= warpAxisCoverage(s.y, float2(dx.y, dy.y), e0.y, e1.w);
 
@@ -3047,7 +3050,7 @@ fragment FragOutput warpBlitFragmentShader(WarpFragInput in [[stage_in]],
 										   constant float & morphFactor [[buffer(5)]])
 {
 	float2 s, dx, dy;
-	float cov = warpBlitCoverage(pExtras, in.warpOfs, in.uvw, s, dx, dy);
+	float cov = warpBlitCoverage(pExtras, in.warpOfs, in.uvw, in.coverage, s, dx, dy);
 	if( cov < 1.f / 256.f )
 		discard_fragment();
 
@@ -3065,7 +3068,7 @@ fragment FragOutput warpBlitFragmentShader_A8(WarpFragInput in [[stage_in]],
 											  constant float & morphFactor [[buffer(5)]])
 {
 	float2 s, dx, dy;
-	float cov = warpBlitCoverage(pExtras, in.warpOfs, in.uvw, s, dx, dy);
+	float cov = warpBlitCoverage(pExtras, in.warpOfs, in.uvw, in.coverage, s, dx, dy);
 	if( cov < 1.f / 256.f )
 		discard_fragment();
 
@@ -3084,7 +3087,7 @@ fragment FragOutput warpPaletteBlitFragmentShader(WarpFragInput in [[stage_in]],
 												  constant float & morphFactor [[buffer(5)]])
 {
 	float2 s, dx, dy;
-	float cov = warpBlitCoverage(pExtras, in.warpOfs, in.uvw, s, dx, dy);
+	float cov = warpBlitCoverage(pExtras, in.warpOfs, in.uvw, in.coverage, s, dx, dy);
 	if( cov < 1.f / 256.f )
 		discard_fragment();
 
@@ -3103,7 +3106,7 @@ fragment FragOutput warpPaletteBlitFragmentShader_A8(WarpFragInput in [[stage_in
 													 constant float & morphFactor [[buffer(5)]])
 {
 	float2 s, dx, dy;
-	float cov = warpBlitCoverage(pExtras, in.warpOfs, in.uvw, s, dx, dy);
+	float cov = warpBlitCoverage(pExtras, in.warpOfs, in.uvw, in.coverage, s, dx, dy);
 	if( cov < 1.f / 256.f )
 		discard_fragment();
 

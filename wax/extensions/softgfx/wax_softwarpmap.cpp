@@ -264,6 +264,7 @@ namespace wax
 		m_setups.clear();
 		m_setups.reserve(m_nTriangles);
 		m_perspective.clear();
+		m_fades.clear();
 
 		const int64_t c_maxRelative = int64_t(1) << 31;
 
@@ -384,6 +385,22 @@ namespace wax
 				pF[1] = mulMulDiv(d1, edgeX[1], d2, edgeX[2], area);
 				pF[2] = mulMulDiv(d1, edgeY[1], d2, edgeY[2], area);
 			};
+
+			// Coverage, interpolated without perspective.
+
+			if (c[0]->coverage == coverageOne && c[1]->coverage == coverageOne && c[2]->coverage == coverageOne)
+				s.fade = -1;
+			else
+			{
+				s.fade = int(m_fades.size());
+				Fade& fade = m_fades.emplace_back();
+
+				int64_t values[3];
+				for (int i = 0; i < 3; i++)
+					values[i] = int64_t(c[i]->coverage) << 12;
+
+				setup(fade.f, values);
+			}
 
 			if (c[0]->w == c[1]->w && c[1]->w == c[2]->w)
 			{

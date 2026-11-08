@@ -136,6 +136,13 @@ in someone's memory or an old chat. Add to it when you decide something, move it
     (10.1 KB with weights and NodeCompressor), better than zlib or lzma on the same data.
     Encoding takes about 90 us for it on x86, mostly trying lags; trying lags 1 to 64 on 256
     values would save 8% more for eight times that.
+  - **Vertices have coverage** (0 -> `coverageOne`), interpolated linearly over a triangle without
+    perspective and multiplying the coverage of each pixel, for outlines that aren't borders of
+    the source, such as of a ball covered by a map. A row of triangles from full coverage half a
+    pixel inside an outline to none half a pixel outside it gives the coverage of a straight edge.
+    Software backends only fade triangles that have a corner below full coverage, in spans drawn
+    as mixed, so the rest costs nothing; GPU backends multiply by it. A vertex is 24 bytes, and the
+    stream only sends coverage (`WarpmapFlags::Coverage`) when an update has any below full.
   - **Weights stay in Warpmap::Vertex** also for meshes without perspective, rather than a
     Blueprint flag that leaves them out. Software backends find out which triangles have
     perspective from the weights of their corners when setting them up, which a flag for the
