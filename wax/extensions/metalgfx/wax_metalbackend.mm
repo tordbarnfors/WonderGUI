@@ -1732,7 +1732,7 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 					MTLScissorRect metalClip = { (NSUInteger) patch.x, (NSUInteger) patch.y, (NSUInteger) patch.w, (NSUInteger) patch.h };
 					[m_renderEncoder setScissorRect:metalClip];
 					[m_renderEncoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle indexCount:NSUInteger(pWarpmap->triangleCount()) * 3
-												 indexType:MTLIndexTypeUInt32 indexBuffer:pWarpmap->m_bufferId indexBufferOffset:pWarpmap->m_indexOffset];
+												 indexType:MTLIndexTypeUInt16 indexBuffer:pWarpmap->m_bufferId indexBufferOffset:pWarpmap->m_indexOffset];
 					bDrawn = true;
 				}
 

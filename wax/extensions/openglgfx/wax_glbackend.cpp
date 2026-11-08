@@ -2455,7 +2455,7 @@ void GlBackend::endSession()
 						y = m_activeCanvasSize.h - (y + h);
 
 					glScissor(x, y, w, h);
-					glDrawElements(GL_TRIANGLES, pWarpmap->triangleCount() * 3, GL_UNSIGNED_INT, nullptr);
+					glDrawElements(GL_TRIANGLES, pWarpmap->triangleCount() * 3, GL_UNSIGNED_SHORT, nullptr);
 				}
 
 				glScissor(0, 0, m_activeCanvasSize.w, m_activeCanvasSize.h);

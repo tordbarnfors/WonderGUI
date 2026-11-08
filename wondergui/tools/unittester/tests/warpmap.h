@@ -26,4 +26,5 @@ private:
 	bool cylinderWarpTest(std::ostream& output);
 	bool perspectiveWarpTest(std::ostream& output);
 	bool perspectiveRotatedTest(std::ostream& output);
+	bool limitsTest(std::ostream& output);
 };

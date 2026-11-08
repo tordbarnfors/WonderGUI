@@ -979,11 +979,13 @@ bool WarpRenderTest::streamContentTest(std::ostream& output)
 	TEST_ASSERT(pCounter->count(Id::WarpmapUpdate) == 1);
 	TEST_ASSERT(pCounter->count(Id::WarpmapVertices) >= 1 && pCounter->count(Id::WarpmapTriangles) >= 1);
 
-	if (pCounter->size(Id::WarpmapVertices) * 2 >= rawVertexBytes || pCounter->size(Id::WarpmapTriangles) * 2 >= rawTriangleBytes)
+	// Vertices to less than half, triangles of 6 bytes to less than 4.
+
+	if (pCounter->size(Id::WarpmapVertices) * 2 >= rawVertexBytes || pCounter->size(Id::WarpmapTriangles) * 3 >= rawTriangleBytes * 2)
 		output << "Compressed to " << pCounter->size(Id::WarpmapVertices) << " of " << rawVertexBytes << " bytes of vertices and "
 			   << pCounter->size(Id::WarpmapTriangles) << " of " << rawTriangleBytes << " bytes of triangles" << std::endl;
 	TEST_ASSERT(pCounter->size(Id::WarpmapVertices) * 2 < rawVertexBytes);
-	TEST_ASSERT(pCounter->size(Id::WarpmapTriangles) * 2 < rawTriangleBytes);
+	TEST_ASSERT(pCounter->size(Id::WarpmapTriangles) * 3 < rawTriangleBytes * 2);
 	TEST_ASSERT(pReceived->created.size() == 1 && pReceived->createdWithContent == 1);
 
 	CountingSoftWarpmap* pGot = pReceived->created[0];
@@ -1038,12 +1040,52 @@ bool WarpRenderTest::streamContentTest(std::ostream& output)
 	TEST_ASSERT(pGot->updates == updates + 3);
 	TEST_ASSERT(sameContent(pSent, pGot));
 
+	// An odd number of triangles, which go two at a time.
+
+	std::vector<Warpmap::Triangle> odd = { { 4, 5, 6 }, { 10, 11, 12 }, { 20, 21, 22 } };
+
+	updates = pGot->updates;
+	TEST_ASSERT(pSent->importTriangles(41, int(odd.size()), odd.data()));
+	TEST_ASSERT(pSent->importTriangles(pSent->triangleCount() - 1, 1, odd.data()));
+	pEncoder->flush();
+	TEST_ASSERT(pGot->updates == updates + 2);
+	TEST_ASSERT(sameContent(pSent, pGot));
+
+	// Weights are only sent when there are any other than 1.0. Back to all 1.0, a ring takes less.
+
+	pSent = nullptr;
+	pCounter->clear();
+	TEST_ASSERT(pWarp->setAngles(10.f, 360.f));
+	pSent = pWarp->generate();
+	pEncoder->flush();
+	TEST_ASSERT(sameContent(pSent, pGot));
+	int unweighted = pCounter->size(Id::WarpmapVertices);
+
+	std::vector<Warpmap::Vertex> weighted(pSent->vertexData(), pSent->vertexData() + pSent->vertexCount());
+	for (auto& v : weighted)
+		v.w = Warpmap::weightOne * 2;
+
+	pCounter->clear();
+	TEST_ASSERT(pSent->importVertices(0, int(weighted.size()), weighted.data()));
+	pEncoder->flush();
+	TEST_ASSERT(sameContent(pSent, pGot));
+	TEST_ASSERT(pCounter->size(Id::WarpmapVertices) > unweighted);
+
+	// A mesh in perspective, created with its weights.
+
+	auto pCard = PerspectiveWarp::create(WGBP(PerspectiveWarp, _.size = { 120, 100 }, _.sourceSize = c_edgemapSource,
+											  _.corners = PerspectiveWarp::rotated({ 64 * 10, 64 * 10, 64 * 100, 64 * 80 }, 30.f, 40.f, 0.f, 64 * 200)),
+										  pStreamBackend->warpmapFactory());
+	Warpmap_p pCardMap = pCard->generate();
+	pEncoder->flush();
+	TEST_ASSERT(sameContent(pCardMap, pReceived->created.back()));
+
 	// Created without content, with the default one.
 
 	auto pDefault = pStreamBackend->warpmapFactory()->createWarpmap({ .size = { 30, 20 }, .triangles = 5, .uPeriod = 1000, .vertices = 9 });
 	pEncoder->flush();
-	TEST_ASSERT(pReceived->created.size() == 2 && pReceived->createdWithContent == 2);
-	TEST_ASSERT(sameContent(pDefault, pReceived->created[1]));
+	TEST_ASSERT(pReceived->created.size() == 3 && pReceived->createdWithContent == 3);
+	TEST_ASSERT(sameContent(pDefault, pReceived->created[2]));
 
 	return true;
 }

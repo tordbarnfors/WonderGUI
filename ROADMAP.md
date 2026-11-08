@@ -99,10 +99,23 @@ in someone's memory or an old chat. Add to it when you decide something, move it
     the first vertex, to keep the precision of floats. Working out a mapping per triangle on the
     CPU, which GlBackend first did, took four times the memory and a quarter of the time of an
     update of a thick ring.
-  - **Stream format:** `WarpmapUpdate` gives ranges of vertices and triangles and the periods,
-    followed by `WarpmapVertices` (pairs (w, 0), (x, y), (u, v)) and `WarpmapTriangles` (pairs
-    (a, b), (c, 0)), compressed by NodeCompressor. Replaces `WarpmapNodes`, without backwards
-    compatibility.
+  - **Corners of triangles are 16 bits,** a hard limit of 65536 vertices and twice as many
+    triangles, which is more than any shape needs. Halves the memory of triangles everywhere and
+    is the index format of the GPU buffers. Generators make their pieces larger to keep within it.
+  - **Stream format:** `WarpmapUpdate` gives flags, ranges of vertices and triangles and the
+    periods, followed by `WarpmapVertices` (pairs (x, y), (u, v), and (w, 0) only if the flag
+    `WarpmapFlags::Weights` is set) and `WarpmapTriangles` (two triangles in three pairs, (a, b),
+    (c, a), (b, c)), compressed by NodeCompressor. The sender leaves the weights out when all of
+    an update are 1.0, which saves about 20% of the vertices of shapes without perspective, and
+    packing triangles without padding saves 25% of them: a thick ring streams in 7.9 KB rather
+    than 10.1 KB. Replaces `WarpmapNodes`, without backwards compatibility. Unknown flags are
+    ignored.
+  - **Weights stay in Warpmap::Vertex** also for meshes without perspective, rather than a
+    Blueprint flag that leaves them out. Software backends find out which triangles have
+    perspective from the weights of their corners when setting them up, which a flag for the
+    whole mesh wouldn't improve on, while GPU backends would need a second vertex layout and
+    shaders for it. Leaving them out would save 4 of the 20 bytes of a vertex, so it is only done
+    in the stream.
 - **WaveWarp:** straight waves (amplitude vector, wavelength, angle, phase) with envelopes
   (none, pinned at the start like a flag, pinned at both ends). Animated with `setPhase()`
   and generating again, or for waves without an envelope by `travel()`: generated one
@@ -118,8 +131,8 @@ in someone's memory or an old chat. Add to it when you decide something, move it
 - **Room to extend before the backend API and stream format freeze:** a flags word in the warp
   commands and plugin functions (unknown bits ignored, so new ones may only add things whose
   absence looks acceptable, such as sub-pixel placement, filtering hints or shading), and
-  Warpmap chunks that skip trailing bytes they don't know, with a flags field in
-  `CreateWarpmap`. Not done yet; to be settled before the freeze.
+  Warpmap chunks that skip trailing bytes they don't know. `WarpmapUpdate` has a flags field,
+  the rest is not done yet; to be settled before the freeze.
 
 ## Decided
 

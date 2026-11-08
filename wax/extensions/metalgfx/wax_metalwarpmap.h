@@ -41,7 +41,7 @@ namespace wax
 	 *
 	 * The mesh is kept on the GPU as it is, in one shared buffer: the vertices (x, y, u, v and w as
 	 * integers, the layout of Warpmap::Vertex), read by the vertex shader, followed by the
-	 * triangles (the corners as unsigned ints, the layout of Warpmap::Triangle), which are the index
+	 * triangles (the corners as 16-bit unsigned ints, the layout of Warpmap::Triangle), which are the index
 	 * buffer. Content that changes is copied there, with nothing worked out on the CPU. Drawing only
 	 * gives where to draw, the source offset and the periods. See the warp shaders for what they do
 	 * with it.

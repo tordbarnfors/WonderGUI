@@ -1167,11 +1167,12 @@ namespace wax
 
 		case GfxStream::ChunkId::WarpmapUpdate:
 		{
-			uint16_t	objectId;
+			uint16_t	objectId, flags;
 			int			firstVertex, nVertices, firstTriangle, nTriangles;
 			int			uPeriod, vPeriod;
 
 			decoder >> objectId;
+			decoder >> flags;
 			decoder >> firstVertex;
 			decoder >> nVertices;
 			decoder >> firstTriangle;
@@ -1196,6 +1197,7 @@ namespace wax
 				Base::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "WarpmapUpdate before content of previous update had arrived. It is dropped.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 			pData->bUpdate = true;
+			pData->flags = flags;
 			pData->firstVertex = firstVertex;
 			pData->nVertices = std::max(0, nVertices);
 			pData->firstTriangle = firstTriangle;
@@ -1295,31 +1297,50 @@ namespace wax
 	//____ _applyWarpmapUpdate() ______________________________________________
 	/*
 		Applies a WarpmapUpdate whose content has all arrived, creating the Warpmap if it is new,
-		and drops the buffer. Vertices are three pairs, (w, 0), (x, y), (u, v), and triangles two,
-		(a, b), (c, 0), see StreamWarpmap.
+		and drops the buffer. Vertices are two pairs, (x, y), (u, v), and a third, (w, 0), with
+		WarpmapFlags::Weights. Triangles are two in three pairs, (a, b), (c, a), (b, c). See
+		StreamWarpmap.
 	*/
 
 	void StreamPlayer::_applyWarpmapUpdate( WarpmapDataBuffer * pData )
 	{
 		uint16_t objectId = pData->objectId;
 
-		bool bOk = pData->vertices.size == pData->nVertices * 3 * int(sizeof(CoordSPX)) &&
-				   pData->triangles.size == pData->nTriangles * 2 * int(sizeof(CoordSPX));
+		const bool bWeights = (pData->flags & GfxStream::WarpmapFlags::Weights) != 0;
+		const int perVertex = bWeights ? 3 : 2;
+		const int nTriangleRows = (pData->nTriangles + 1) / 2;
+
+		bool bOk = pData->vertices.size == pData->nVertices * perVertex * int(sizeof(CoordSPX)) &&
+				   pData->triangles.size == nTriangleRows * 3 * int(sizeof(CoordSPX));
 
 		std::vector<Warpmap::Vertex> vertices(bOk ? pData->nVertices : 0);
-		std::vector<Warpmap::Triangle> triangles(bOk ? pData->nTriangles : 0);
+		std::vector<Warpmap::Triangle> triangles(bOk ? nTriangleRows * 2 : 0);
 
 		if (bOk)
 		{
 			auto pPairs = (const CoordSPX*) pData->vertices.pBuffer;
 			for (int i = 0; i < pData->nVertices; i++)
-				vertices[i] = { pPairs[i * 3 + 1].x, pPairs[i * 3 + 1].y, pPairs[i * 3 + 2].x, pPairs[i * 3 + 2].y, pPairs[i * 3].x };
+			{
+				const CoordSPX* p = pPairs + i * perVertex;
+				vertices[i] = { p[0].x, p[0].y, p[1].x, p[1].y, bWeights ? p[2].x : Warpmap::weightOne };
+			}
 
 			pPairs = (const CoordSPX*) pData->triangles.pBuffer;
-			for (int i = 0; i < pData->nTriangles; i++)
-				triangles[i] = { pPairs[i * 2].x, pPairs[i * 2].y, pPairs[i * 2 + 1].x };
+			for (int i = 0; i < nTriangleRows * 3; i++)
+			{
+				if (uint32_t(pPairs[i].x) >= uint32_t(Warpmap::maxVertices) || uint32_t(pPairs[i].y) >= uint32_t(Warpmap::maxVertices))
+					bOk = false;
+			}
+
+			for (int i = 0; i < nTriangleRows; i++)
+			{
+				const CoordSPX* p = pPairs + i * 3;
+				triangles[i * 2] = { p[0].x, p[0].y, p[1].x };
+				triangles[i * 2 + 1] = { p[1].y, p[2].x, p[2].y };
+			}
 		}
-		else
+
+		if (!bOk)
 			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapVertices or WarpmapTriangles don't match WarpmapUpdate", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		if (bOk && pData->bCreate)

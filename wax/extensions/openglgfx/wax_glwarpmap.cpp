@@ -50,7 +50,7 @@ namespace wax
 
 	GlWarpmap::GlWarpmap( const Blueprint& bp, const Vertex * pVertices, const Triangle * pTriangles ) : Warpmap(bp, pVertices, pTriangles)
 	{
-		static_assert(sizeof(Vertex) == 5 * sizeof(GLint) && sizeof(Triangle) == 3 * sizeof(GLuint), "Vertices and triangles are uploaded as they are");
+		static_assert(sizeof(Vertex) == 5 * sizeof(GLint) && sizeof(Triangle) == 3 * sizeof(GLushort), "Vertices and triangles are uploaded as they are");
 
 		GLint previousArray = 0, previousBuffer = 0;
 		glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &previousArray);

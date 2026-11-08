@@ -320,7 +320,7 @@ namespace wax
 		{
 			const Triangle& t = pTriangles[i];
 
-			if (t.a < 0 || t.b < 0 || t.c < 0 || t.a >= nVertices || t.b >= nVertices || t.c >= nVertices)
+			if (t.a >= nVertices || t.b >= nVertices || t.c >= nVertices)
 				return false;
 		}
 

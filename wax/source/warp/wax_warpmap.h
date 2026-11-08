@@ -46,7 +46,8 @@ namespace wax
 	 * triangles.
 	 *
 	 * The number of vertices and triangles is set when created, while vertices, triangles and
-	 * periods can be changed. Triangles take their corners by index in the vertices. Triangles that
+	 * periods can be changed. Triangles take their corners by index in the vertices, 16 bits each,
+	 * which limits a Warpmap to maxVertices vertices. Triangles that
 	 * aren't needed can be left with all corners the same, which draws nothing. Triangles may not
 	 * overlap: what is drawn where they do is undefined. Triangles can be given clockwise or counter
 	 * clockwise. A new Warpmap with at least 4 vertices and 2 triangles maps its rectangle straight
@@ -155,7 +156,10 @@ namespace wax
 
 		struct Triangle
 		{
-			int				a, b, c;						// Indices of the corners in the vertices.
+			uint16_t		a = 0, b = 0, c = 0;			// Indices of the corners in the vertices.
+
+			constexpr Triangle() = default;
+			constexpr Triangle( int a, int b, int c ) : a(uint16_t(a)), b(uint16_t(b)), c(uint16_t(c)) {}
 
 			int				operator[]( int i ) const { return i == 0 ? a : (i == 1 ? b : c); }
 		};
@@ -164,8 +168,8 @@ namespace wax
 		static constexpr spx	maxValue = 1 << 30;				// u, v and periods are kept within +-maxValue (16 million pixels).
 		static constexpr int	weightOne = 1 << 16;			// A weight of 1.0.
 		static constexpr int	maxWeight = 1 << 24;			// Weights are kept within 1 -> maxWeight.
-		static constexpr int	maxVertices = 1 << 20;
-		static constexpr int	maxTriangles = 1 << 21;
+		static constexpr int	maxVertices = 1 << 16;			// So that corners of triangles fit in 16 bits.
+		static constexpr int	maxTriangles = 1 << 17;			// Twice the vertices, as many as a mesh without overlaps can have.
 
 		//.____ Identification __________________________________________
 

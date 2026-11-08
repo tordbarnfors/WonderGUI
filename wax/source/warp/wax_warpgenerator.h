@@ -163,6 +163,11 @@ namespace wax
 
 		virtual void	_generateNodes( CoordSPX * pNodes, SizeI nodes, SizeI cellSize ) const {}
 
+		// Cell size used for the grid: cellSize(), made larger where four vertices for each cell
+		// wouldn't fit in Warpmap::maxVertices.
+
+		SizeI			_gridCellSize() const;
+
 		// Makes vertices and triangles from the nodes, see generate().
 
 		void			_gridToMesh( const CoordSPX * pNodes, SizeI nodes, SizeI cellSize, spx uPeriod, spx vPeriod, Warpmap::Vertex * pVertices, Warpmap::Triangle * pTriangles ) const;

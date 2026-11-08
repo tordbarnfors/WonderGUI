@@ -48,7 +48,7 @@ namespace wax
 	 *
 	 * The mesh is kept on the GPU as it is, in a vertex buffer of the vertices (x, y, u, v and w as
 	 * integers, the layout of Warpmap::Vertex) and an index buffer of the triangles (the corners as
-	 * unsigned ints, the layout of Warpmap::Triangle), with a vertex array for both. Content that
+	 * unsigned shorts, the layout of Warpmap::Triangle), with a vertex array for both. Content that
 	 * changes is copied to them, with nothing worked out on the CPU. Drawing only gives where to
 	 * draw, the source offset and the periods.
 	 *

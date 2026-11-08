@@ -92,9 +92,9 @@ namespace wax
 			SurfacePalette = 30,		// Palette of surface just created, split over chunks like SurfacePixels.
 
 			CreateWarpmap = 31,			// Since 3.4. Followed by WarpmapUpdate, WarpmapVertices and WarpmapTriangles with all its content.
-			WarpmapUpdate = 32,			// Vertices and triangles that following WarpmapVertices and WarpmapTriangles chunks hold, and periods.
-			WarpmapVertices = 33,		// Vertices as pairs (w, 0), (x, y), (u, v), split over chunks like EdgemapSamples. Compressed by NodeCompressor.
-			WarpmapTriangles = 34,		// Triangles as pairs (a, b), (c, 0), split over chunks like EdgemapSamples. Compressed by NodeCompressor.
+			WarpmapUpdate = 32,			// Flags (see WarpmapFlags), vertices and triangles that following WarpmapVertices and WarpmapTriangles chunks hold, and periods.
+			WarpmapVertices = 33,		// Vertices as pairs (x, y), (u, v), then (w, 0) with WarpmapFlags::Weights, split over chunks like EdgemapSamples. Compressed by NodeCompressor.
+			WarpmapTriangles = 34,		// Triangles two at a time as pairs (a, b), (c, a), (b, c), the last repeated for an odd count, split over chunks like EdgemapSamples. Compressed by NodeCompressor.
 			DeleteWarpmap = 35
 		};
 
@@ -110,6 +110,13 @@ namespace wax
 			operator spx() const {return value;}
 			
 			spx value;
+		};
+
+		// Flags of a WarpmapUpdate. Bits that aren't known are ignored.
+
+		struct WarpmapFlags
+		{
+			static constexpr uint16_t	Weights = 1;		// Vertices have weights, otherwise they are all Warpmap::weightOne.
 		};
 
 		enum class SpxFormat : uint8_t

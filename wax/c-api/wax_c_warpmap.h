@@ -54,7 +54,7 @@ extern "C" {
 
 	typedef struct wax_warpTriangle_struct		// Binary equivalent of wax::Warpmap::Triangle.
 	{
-		int					a, b, c;				// Indices of the corners in the vertices.
+		uint16_t			a, b, c;				// Indices of the corners in the vertices.
 	} wax_warpTriangle;
 
 	//.____ Geometry ______________________________________________________

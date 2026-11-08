@@ -646,11 +646,12 @@ namespace wax
 
 			case GfxStream::ChunkId::WarpmapUpdate:
 			{
-				uint16_t	warpmapId;
+				uint16_t	warpmapId, flags;
 				int			firstVertex, nVertices, firstTriangle, nTriangles;
 				int			uPeriod, vPeriod;
 
 				decoder >> warpmapId;
+				decoder >> flags;
 				decoder >> firstVertex;
 				decoder >> nVertices;
 				decoder >> firstTriangle;
@@ -659,6 +660,7 @@ namespace wax
 				decoder >> vPeriod;
 
 				m_charStream << "    warpmapId   = " << warpmapId << std::endl;
+				m_charStream << "    flags       = " << flags << ((flags & GfxStream::WarpmapFlags::Weights) ? " (weights)" : "") << std::endl;
 				m_charStream << "    vertices    = " << firstVertex << " + " << nVertices << std::endl;
 				m_charStream << "    triangles   = " << firstTriangle << " + " << nTriangles << std::endl;
 				m_charStream << "    periods     = " << uPeriod << ", " << vPeriod << std::endl;

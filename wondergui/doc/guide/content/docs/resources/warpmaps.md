@@ -197,6 +197,8 @@ Or, simpler, let it make the Warpmap from a grid: implement _generateNodes(), wh
 															  vertices.data(), triangles.data() );
 ```
 
+Triangles take their corners by index in the vertices, 16 bits each, so a Warpmap has at most *Warpmap::maxVertices* (65536) vertices and *Warpmap::maxTriangles* (twice that) triangles. Generators keep within that by making their pieces larger where a shape is very large or *precision* very fine.
+
 A new Warpmap created without vertices and triangles maps its rectangle straight onto the source, pixel for pixel, with its first four vertices and two triangles, and leaves the rest of its triangles with all corners in the first vertex, which draws nothing. Unused triangles can be left like that, so a Warpmap can be made with room for the most triangles a shape needs. `importVertices()`, `importTriangles()` and `importMesh()` change the content later.
 
 Some things to keep in mind:

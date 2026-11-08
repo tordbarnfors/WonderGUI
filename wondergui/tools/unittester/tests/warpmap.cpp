@@ -211,6 +211,7 @@ WarpmapTest::WarpmapTest()
 	ADD_TEST(cylinderWarpTest);
 	ADD_TEST(perspectiveWarpTest);
 	ADD_TEST(perspectiveRotatedTest);
+	ADD_TEST(limitsTest);
 }
 
 WarpmapTest::~WarpmapTest()
@@ -1593,5 +1594,110 @@ bool WarpmapTest::perspectiveRotatedTest(std::ostream& output)
 
 	CornersT<CoordSPX> back = PerspectiveWarp::rotated(rect, 0.f, 150.f, 0.f, 500 * 64);
 	TEST_ASSERT(pWarp->setCorners(back) && back.topLeft.x > back.topRight.x);
+	return true;
+}
+
+//____ limitsTest() ___________________________________________________________
+// Corners of triangles are 16 bits, which limits vertices to maxVertices. Generators keep within
+// it however large the shape and fine the precision, by making the pieces larger.
+
+namespace
+{
+	// Checks blueprints as the factories of the backends do.
+
+	class BlueprintCheck : public Warpmap
+	{
+	public:
+		static bool valid(const Blueprint& bp) { return _validateBlueprint(bp); }
+	};
+
+	// A generator that only implements a grid: the source straight onto the Warpmap.
+
+	class GridTestWarp : public WarpGenerator
+	{
+	public:
+		GridTestWarp(SizeI size, SizeI cellSize, WarpmapFactory* pFactory) : WarpGenerator(size, size * 64, cellSize, 1.f, pFactory) {}
+
+	protected:
+		void _generateNodes(CoordSPX* pNodes, SizeI nodes, SizeI cellSize) const override
+		{
+			for (int y = 0; y < nodes.h; y++)
+				for (int x = 0; x < nodes.w; x++)
+					pNodes[y * nodes.w + x] = { std::min(x * cellSize.w, m_size.w) * 64, std::min(y * cellSize.h, m_size.h) * 64 };
+		}
+	};
+}
+
+bool WarpmapTest::limitsTest(std::ostream& output)
+{
+	auto pFactory = StrongPtr<CountingWarpmapFactory>(new CountingWarpmapFactory());
+
+	TEST_ASSERT(sizeof(Warpmap::Triangle) == 3 * sizeof(uint16_t));
+
+	TEST_ASSERT(BlueprintCheck::valid(WGBP(Warpmap, _.size = { 10, 10 }, _.triangles = Warpmap::maxTriangles, _.vertices = Warpmap::maxVertices)));
+	TEST_ASSERT(!BlueprintCheck::valid(WGBP(Warpmap, _.size = { 10, 10 }, _.vertices = Warpmap::maxVertices + 1)));
+	TEST_ASSERT(!BlueprintCheck::valid(WGBP(Warpmap, _.size = { 10, 10 }, _.triangles = Warpmap::maxTriangles + 1)));
+	TEST_ASSERT(SoftWarpmapFactory::create()->createWarpmap(WGBP(Warpmap, _.size = { 10, 10 }, _.vertices = Warpmap::maxVertices + 1)) == nullptr);
+
+	// The last vertex can be a corner, and corners beyond the vertices are refused.
+
+	auto pMap = pFactory->createWarpmap(WGBP(Warpmap, _.size = { 10, 10 }, _.vertices = Warpmap::maxVertices));
+	Warpmap::Triangle last = { 0, 1, Warpmap::maxVertices - 1 };
+	TEST_ASSERT(pMap->importTriangles(1, 1, &last));
+
+	Warpmap::Triangle back;
+	TEST_ASSERT(pMap->exportTriangles(1, 1, &back));
+	TEST_ASSERT(back.a == 0 && back.b == 1 && back[2] == Warpmap::maxVertices - 1);
+
+	auto pSmall = pFactory->createWarpmap(WGBP(Warpmap, _.size = { 10, 10 }, _.vertices = 100));
+	Warpmap::Triangle outside = { 0, 1, 100 };
+	TEST_ASSERT(!pSmall->importTriangles(0, 1, &outside));
+
+	// Generators with more pieces than fit.
+
+	auto fits = [&](Warpmap* p, const char* pWhat)
+	{
+		if (!p || p->vertexCount() > Warpmap::maxVertices || p->triangleCount() > Warpmap::maxTriangles)
+		{
+			output << pWhat << ": " << (p ? p->vertexCount() : -1) << " vertices, " << (p ? p->triangleCount() : -1) << " triangles" << std::endl;
+			return false;
+		}
+		return true;
+	};
+
+	auto pRing = CircularWarp::create(WGBP(CircularWarp, _.size = { 4000, 4000 }, _.sourceSize = { 64 * 64, 64 * 64 }, _.topRadius = 64 * 1995,
+										   _.bottomRadius = 64 * 5, _.precision = 0.01f), pFactory);
+	Warpmap_p pRingMap = pRing->generate();
+	TEST_ASSERT(fits(pRingMap, "Fine ring"));
+	TEST_ASSERT(pRingMap->vertexCount() > Warpmap::maxVertices / 2);		// Close to the limit, not much coarser.
+
+	TEST_ASSERT(pRing->setCellSize({ 1, 1 }));
+	TEST_ASSERT(fits(pRing->generate(), "Ring with cells of a pixel"));
+
+	auto pFrame = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 4000, 3000 }, _.sourceSize = { 64 * 64, 64 * 64 },
+											   _.rect = { 64 * 100, 64 * 100, 64 * 3800, 64 * 2800 }, _.cornerRadius = 64 * 900,
+											   _.topDistance = 64 * 50, _.bottomDistance = -64 * 1300, _.precision = 0.01f), pFactory);
+	TEST_ASSERT(fits(pFrame->generate(), "Fine frame"));
+
+	auto pCylinder = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 100, 70000 }, _.sourceSize = { 64 * 64, 64 * 64 }, _.cellSize = { 0, 1 }), pFactory);
+	TEST_ASSERT(fits(pCylinder->generate(), "Long cylinder with strips of a pixel"));
+
+	auto pTallCylinder = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 100, 200000 }, _.sourceSize = { 64 * 64, 64 * 64 }, _.precision = 0.01f), pFactory);
+	TEST_ASSERT(fits(pTallCylinder->generate(), "Very long cylinder"));
+
+	// A grid takes four vertices for each cell, so cells are made larger, and still map the same.
+
+	StrongPtr<GridTestWarp> pGrid = new GridTestWarp({ 1000, 700 }, { 4, 4 }, pFactory);
+	Warpmap_p pGridMap = pGrid->generate();
+	TEST_ASSERT(fits(pGridMap, "Grid of small cells"));
+	TEST_ASSERT(pGridMap->vertexCount() > Warpmap::maxVertices / 2);
+
+	for (double y : { 0.5, 123.25, 699.5 })
+		for (double x : { 0.5, 517.75, 999.5 })
+		{
+			CoordF pos = positionAt(pGridMap, x, y);
+			TEST_ASSERT(std::abs(pos.x - x * 64) < 0.01 && std::abs(pos.y - y * 64) < 0.01);
+		}
+
 	return true;
 }

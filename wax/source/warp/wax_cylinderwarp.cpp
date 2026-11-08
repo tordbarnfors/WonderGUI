@@ -138,7 +138,8 @@ namespace wax
 		strips of c pixels is off by about c^2 / 8 times its second derivative, which in pixels on
 		screen is c^2 * sin(a) / (8 * R * cos(a)^2) at angle a. So from the middle outwards, each strip
 		is as wide as keeps that within precision at its outer edge, at least 2 pixels and at most 64.
-		Worked out in floating point, once per generate for a few edges.
+		Worked out in floating point, once per generate for a few edges. Strips are made wider where
+		needed to keep two vertices for each edge within Warpmap::maxVertices.
 	*/
 
 	std::vector<int64_t> CylinderWarp::_strips() const
@@ -149,9 +150,12 @@ namespace wax
 
 		std::vector<int64_t> edges;
 
+		const int maxStrips = Warpmap::maxVertices / 2 - 4;
+		const int minWidth = (lengthAcross + maxStrips - 1) / maxStrips;				// Up to two more strips from the middle out.
+
 		if (cellAcross > 0)
 		{
-			for (int64_t p = 0; p < lengthAcross; p += cellAcross)
+			for (int64_t p = 0; p < lengthAcross; p += std::max(cellAcross, minWidth))
 				edges.push_back(p * c_pixel);
 			edges.push_back(lengthAcross * c_pixel);
 			return edges;
@@ -173,8 +177,9 @@ namespace wax
 		double y = 0.0;
 		while (y < half)
 		{
-			double c = std::clamp(width(y), 2.0, 64.0);
-			c = std::clamp(std::min(c, width(std::min(y + c, half))), 2.0, 64.0);
+			const double lo = std::max(2.0, double(minWidth));
+			double c = std::clamp(width(y), lo, std::max(64.0, lo));
+			c = std::clamp(std::min(c, width(std::min(y + c, half))), lo, std::max(64.0, lo));
 			y = std::min(y + c, half);
 			if (half - y < 1.0)
 				y = half;

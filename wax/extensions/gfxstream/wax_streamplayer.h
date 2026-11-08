@@ -219,6 +219,7 @@ namespace wax
 			bool				bCreate = false;
 			Warpmap::Blueprint	blueprint;					// For bCreate.
 			bool				bUpdate = false;			// WarpmapUpdate has arrived.
+			uint16_t			flags = 0;					// GfxStream::WarpmapFlags.
 			int					firstVertex = 0;
 			int					nVertices = 0;
 			int					firstTriangle = 0;

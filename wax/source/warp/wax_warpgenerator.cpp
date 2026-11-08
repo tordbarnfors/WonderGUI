@@ -200,12 +200,33 @@ namespace wax
 		return m_pWarpmap;
 	}
 
+	//____ _gridCellSize() ____________________________________________________
+	// Cell size of the grid, made larger where needed to keep four vertices for each cell within
+	// Warpmap::maxVertices, along the axis with the most cells.
+
+	SizeI WarpGenerator::_gridCellSize() const
+	{
+		SizeI cellSize = this->cellSize();
+
+		auto cells = [&](int length, int cell) { return (length + cell - 1) / cell; };
+
+		while (int64_t(cells(m_size.w, cellSize.w)) * cells(m_size.h, cellSize.h) * 4 > Warpmap::maxVertices)
+		{
+			if (cells(m_size.w, cellSize.w) >= cells(m_size.h, cellSize.h))
+				cellSize.w += std::max(1, cellSize.w / 8);
+			else
+				cellSize.h += std::max(1, cellSize.h / 8);
+		}
+
+		return cellSize;
+	}
+
 	//____ _meshSize() ________________________________________________________
 	// Four vertices and two triangles for each cell of the grid.
 
 	void WarpGenerator::_meshSize(int& nVertices, int& nTriangles) const
 	{
-		SizeI cellSize = this->cellSize();
+		SizeI cellSize = _gridCellSize();
 		int nCells = ((m_size.w + cellSize.w - 1) / cellSize.w) * ((m_size.h + cellSize.h - 1) / cellSize.h);
 
 		nVertices = nCells * 4;
@@ -216,7 +237,7 @@ namespace wax
 
 	void WarpGenerator::_generateMesh(Warpmap::Vertex* pVertices, Warpmap::Triangle* pTriangles) const
 	{
-		SizeI cellSize = this->cellSize();
+		SizeI cellSize = _gridCellSize();
 		SizeI nodes = { (m_size.w + cellSize.w - 1) / cellSize.w + 1, (m_size.h + cellSize.h - 1) / cellSize.h + 1 };
 
 		std::vector<CoordSPX> buffer(nodes.w * nodes.h);
@@ -356,6 +377,24 @@ namespace wax
 		const double quarter = c_pi / 2;
 		const double precision = std::max(double(m_precision), 0.01);
 
+		// Kept within Warpmap::maxVertices: columns at the start of the top side and around the
+		// four corners, nAcross + 1 vertices each, the vertices at the centers of fans and up to six
+		// for each of the four parts inside the centers of the corners. Coarser across first, as long
+		// as pieces stay longer across than along.
+
+		auto cap = [&]()
+		{
+			auto vertices = [](int n, int m) { return int64_t(4 * n + 5) * (m + 1) + 4 * n + 24; };
+
+			while (vertices(nArc, nAcross) > Warpmap::maxVertices && (nArc > 2 || nAcross > 1))
+			{
+				if (nAcross > 1 && (nArc <= 2 || across / nAcross < outer * quarter / nArc))
+					nAcross = std::max(1, int(nAcross * 7 / 8));
+				else
+					nArc = std::max(2, int(nArc * 7 / 8));
+			}
+		};
+
 		auto arcs = [&](double angle) { return int(std::clamp(std::ceil(quarter / std::max(angle, 1e-6)), 2.0, 1024.0)); };
 		auto parts = [&](double angle, double budget) { return int(std::clamp(std::ceil(across * angle / (4 * budget)), 1.0, 256.0)); };
 
@@ -363,7 +402,7 @@ namespace wax
 		{
 			nArc = arcs(m_cellSize.w / outer);
 			nAcross = int(std::clamp(std::ceil(across / m_cellSize.h), 1.0, 256.0));
-			return;
+			return cap();
 		}
 
 		if (m_cellSize.w > 0)
@@ -371,7 +410,7 @@ namespace wax
 			nArc = arcs(m_cellSize.w / outer);
 			double angle = quarter / nArc;
 			nAcross = parts(angle, std::max(precision - outer * angle * angle / 8, precision / 4));
-			return;
+			return cap();
 		}
 
 		// Least work drawing for a share of precision kept along the outline. A software backend
@@ -397,6 +436,8 @@ namespace wax
 				nAcross = m;
 			}
 		}
+
+		cap();
 	}
 
 	//____ _bandCellSize() ____________________________________________________

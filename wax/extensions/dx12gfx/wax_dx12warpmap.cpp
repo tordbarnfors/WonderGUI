@@ -56,7 +56,7 @@ namespace wax
 
 	DX12Warpmap::DX12Warpmap(const Blueprint& bp, const Vertex * pVertices, const Triangle * pTriangles) : Warpmap(bp, pVertices, pTriangles)
 	{
-		static_assert(sizeof(Vertex) == 5 * sizeof(int32_t) && sizeof(Triangle) == 3 * sizeof(uint32_t), "Vertices and triangles are uploaded as they are");
+		static_assert(sizeof(Vertex) == 5 * sizeof(int32_t) && sizeof(Triangle) == 3 * sizeof(uint16_t), "Vertices and triangles are uploaded as they are");
 
 		ID3D12Device * pDevice = DX12Backend::device();
 
@@ -151,7 +151,7 @@ namespace wax
 		D3D12_INDEX_BUFFER_VIEW view = {};
 		view.BufferLocation = _gpuAddress() + m_indexOffset;
 		view.SizeInBytes = UINT(size_t(m_nTriangles) * sizeof(Triangle));
-		view.Format = DXGI_FORMAT_R32_UINT;
+		view.Format = DXGI_FORMAT_R16_UINT;
 		return view;
 	}
 
