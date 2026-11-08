@@ -153,6 +153,17 @@ textures of the cards that shows in a few hundred pixels, by up to about a third
 range. Borders of the source and edges of edgemaps are within 1/64 of a pixel. See the ROADMAP
 entry on dividing for perspective for the trade-off.
 
+### MeshCompressor can miss a short stretch of a sequence
+
+MeshCompressor chooses the lag of each sequence by trying lags on 8 windows of 16 values spread
+over it. A stretch unlike the rest that is shorter than the space between the windows can fall
+between them, and is then coded with a lag that suits the rest. The coverage of a BallWarp of
+300 pixels is such a case: all full over the grid, then alternating full and none over a few
+hundred vertices along the outline. It takes 818 bytes rather than 19, 5% of the update. Smaller
+balls are caught by the windows. Only sent when tilt or roll changes, not when spinning.
+
+`MeshCompressor::compress()` in `wax/source/compression/wax_meshcompression.cpp`
+
 ### DX12 and Metal warps are untested
 
 DX12Backend and MetalBackend were changed over to triangle meshes (see ROADMAP.md) in a Linux

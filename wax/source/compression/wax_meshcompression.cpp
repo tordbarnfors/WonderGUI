@@ -45,7 +45,8 @@ namespace
 
 	const int c_maxCodeBytes = 5;
 	const int c_maxLag = 32;					// Lags tried by the compressor. The decompressor takes any.
-	const int c_trialValues = 128;				// Values at the start of a sequence that lags are tried on.
+	const int c_trialValues = 128;				// Values of a sequence that lags are tried on, all of a shorter one.
+	const int c_trialWindows = 8;				// Spread over a longer sequence, so that its start alone doesn't decide.
 
 	// Prediction of value i of a sequence from the values lag steps back. Wraps around at 32 bits.
 
@@ -146,13 +147,13 @@ namespace
 	inline uint32_t unzigzag(uint32_t code) { return (code >> 1) ^ (0 - (code & 1)); }
 
 	// Calls code(value) for each difference that isn't 0 and run(length) for each run of zeros, of
-	// the first n values of a sequence.
+	// values beg to end of a sequence.
 
 	template<typename Code, typename Run>
-	inline void differences(const uint32_t* pValues, int n, int lag, int order, Code code, Run run)
+	inline void differences(const uint32_t* pValues, int beg, int end, int lag, int order, Code code, Run run)
 	{
 		int zeros = 0;
-		for (int i = 0; i < n; i++)
+		for (int i = beg; i < end; i++)
 		{
 			uint32_t difference = pValues[i] - predict(pValues, i, lag, order);
 			if (difference == 0)
@@ -245,17 +246,25 @@ int MeshCompressor::compress( void * _pDest, const void * _pBegin, const void * 
 		{
 			auto pValues = (const uint32_t*) pBegin + s * length;
 
-			// Lag and order that take the fewest bytes for the start of the sequence.
+			// Lag and order that take the fewest bytes for windows spread evenly over the sequence,
+			// from its start to its end, or for all of a short one. A mesh often starts with a part
+			// unlike the rest, such as a grid followed by vertices along an outline.
 
 			int bestLag = 1, bestOrder = 1, bestSize = -1;
 			const int trial = std::min(length, c_trialValues);
+			const int windows = length > c_trialValues ? c_trialWindows : 1;
+			const int window = trial / windows;
 
 			for (int lag = 1; lag <= std::min(c_maxLag, std::max(1, trial - 1)); lag++)
 			{
 				for (int order = 1; order <= 2; order++)
 				{
 					int size = 0;
-					differences(pValues, trial, lag, order, [&](uint32_t code) { size += codeSize(code); }, [&](int zeros) { size += 1 + codeSize(uint32_t(zeros - 1)); });
+					for (int w = 0; w < windows; w++)
+					{
+						int beg = windows == 1 ? 0 : int(int64_t(length - window) * w / (windows - 1));
+						differences(pValues, beg, beg + window, lag, order, [&](uint32_t code) { size += codeSize(code); }, [&](int zeros) { size += 1 + codeSize(uint32_t(zeros - 1)); });
+					}
 
 					if (bestSize < 0 || size < bestSize)
 					{
@@ -267,7 +276,7 @@ int MeshCompressor::compress( void * _pDest, const void * _pBegin, const void * 
 			}
 
 			wp = writeCode(wp, uint32_t((bestLag - 1) * 2 + bestOrder - 1));
-			differences(pValues, length, bestLag, bestOrder, [&](uint32_t code) { wp = writeCode(wp, code); }, [&](int zeros) { *wp++ = 0; wp = writeCode(wp, uint32_t(zeros - 1)); });
+			differences(pValues, 0, length, bestLag, bestOrder, [&](uint32_t code) { wp = writeCode(wp, code); }, [&](int zeros) { *wp++ = 0; wp = writeCode(wp, uint32_t(zeros - 1)); });
 		}
 
 		int size = int(wp - pDest);

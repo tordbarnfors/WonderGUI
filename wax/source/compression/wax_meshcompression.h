@@ -44,8 +44,8 @@ namespace wax
 	 * the vertices of a mesh, then all y and so on, or all first corners of its triangles, then
 	 * all second and third. Each sequence is predicted from its own values lag steps back, either
 	 * as they are (order 1) or continuing the change from the ones before (order 2), with lag and
-	 * order chosen for each sequence by trying lags 1 to 32 on its start, and only the difference
-	 * is stored. A mesh that follows a shape column by column has values that change the same way
+	 * order chosen for each sequence by trying lags 1 to 32 on 8 short windows spread over it, and
+	 * only the difference is stored. A mesh that follows a shape column by column has values that change the same way
 	 * from one column to the next, or one vertex to the next, so most differences are small, and
 	 * those of the corners of triangles mostly 0.
 	 *
