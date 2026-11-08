@@ -2645,13 +2645,12 @@ fragment FragOutput shapeTintmapFragmentShader_A8(ShapeFragInput in [[stage_in]]
 // The triangles of the Warpmap are drawn, and each pixel gets the position in the source at its
 // center from the triangle that draws it, and how fast that changes along x and y of the canvas.
 // Coverage is worked out from those, taking each border of the source and each edge of an
-// edgemap as straight over the pixel. Extras of a warp, four entries:
+// edgemap as straight over the pixel. Extras of a warp, three entries:
 //
-//   0: position of Warpmap on canvas, 0, number of edges.
-//   1: size of Warpmap, size of source in pixels.
-//   2: source offset plus u and v of the first vertex (brought into the periods) in pixels of
+//   0: size of source in pixels, number of edges, 0.
+//   1: source offset plus u and v of the first vertex (brought into the periods) in pixels of
 //      the source, periods in pixels of the source (0 if none).
-//   3: edgemaps: edges per column, offsets of flat colors, tint table and raw samples in the
+//   2: edgemaps: edges per column, offsets of flat colors, tint table and raw samples in the
 //      edgemap buffer. Blits: position of source rectangle in the surface, how far inside its
 //      edges positions are kept (0 for a tiling surface, see warpBlitCoverage()).
 //
@@ -2795,13 +2794,13 @@ inline float2 warpPosition(constant float4 * pExtras, int ofs, float3 uvw, threa
 	dx = (gx.xy - uv * gx.z) / w;
 	dy = (gy.xy - uv * gy.z) / w;
 
-	float4 e2 = pExtras[ofs + 2];
-	float2 s = uv + e2.xy;
+	float4 e1 = pExtras[ofs + 1];
+	float2 s = uv + e1.xy;
 
-	if( e2.z > 0.f )
-		s.x -= e2.z * floor(s.x / e2.z);
-	if( e2.w > 0.f )
-		s.y -= e2.w * floor(s.y / e2.w);
+	if( e1.z > 0.f )
+		s.x -= e1.z * floor(s.x / e1.z);
+	if( e1.w > 0.f )
+		s.y -= e1.w * floor(s.y / e1.w);
 
 	return s;
 }
@@ -2820,15 +2819,14 @@ inline float warpSegmentParts(constant float4 * pExtras, int ofs, constant float
 	float4 e0 = pExtras[ofs];
 	float4 e1 = pExtras[ofs + 1];
 	float4 e2 = pExtras[ofs + 2];
-	float4 e3 = pExtras[ofs + 3];
 
-	int nEdges = int(e0.w);
+	int nEdges = int(e0.z);
 
 	for( int e = 0 ; e <= nEdges ; e++ )
 		parts[e] = 0.f;
 
-	float2 size = e1.zw;
-	float2 period = e2.zw;
+	float2 size = e0.xy;
+	float2 period = e1.zw;
 	float2 gx = float2(dx.x, dy.x);
 	float2 gy = float2(dx.y, dy.y);
 
@@ -2836,13 +2834,13 @@ inline float warpSegmentParts(constant float4 * pExtras, int ofs, constant float
 	if( covX <= 0.f )
 		return 0.f;
 
-	int pitch = int(e3.x);
+	int pitch = int(e2.x);
 
 	float ex = warpNearestCopy(s, size, period).x;
 
 	int column = clamp(int(floor(ex)), 0, int(size.x) - 1);
 	float frac = ex - float(column);
-	int base = int(e3.w) + column * pitch;
+	int base = int(e2.w) + column * pitch;
 
 	float insideY = warpInside(size.y, period.y);
 	float ext = 0.5f * (abs(gy.x) + abs(gy.y));
@@ -2906,11 +2904,11 @@ fragment FragOutput warpEdgemapFragmentShader(WarpFragInput in [[stage_in]],
 	if( covered < 1.f / 256.f )
 		discard_fragment();
 
-	int nEdges = int(pExtras[in.warpOfs].w);
-	float4 e3 = pExtras[in.warpOfs + 3];
-	int flatColorsOfs = int(e3.y);
-	int tintTableOfs = int(e3.z);
-	float2 sc = warpNearestCopy(s, pExtras[in.warpOfs + 1].zw, pExtras[in.warpOfs + 2].zw);
+	int nEdges = int(pExtras[in.warpOfs].z);
+	float4 e2 = pExtras[in.warpOfs + 2];
+	int flatColorsOfs = int(e2.y);
+	int tintTableOfs = int(e2.z);
+	float2 sc = warpNearestCopy(s, pExtras[in.warpOfs].xy, pExtras[in.warpOfs + 1].zw);
 
 	float4 tint = premul((in.tintOfs >= 0 ? evalTint(pColor, in.tintOfs, in.position.xy) : float4(1.f)) * in.color);
 
@@ -2948,11 +2946,11 @@ fragment FragOutput warpEdgemapFragmentShader_A8(WarpFragInput in [[stage_in]],
 	if( covered < 1.f / 256.f )
 		discard_fragment();
 
-	int nEdges = int(pExtras[in.warpOfs].w);
-	float4 e3 = pExtras[in.warpOfs + 3];
-	int flatColorsOfs = int(e3.y);
-	int tintTableOfs = int(e3.z);
-	float2 sc = warpNearestCopy(s, pExtras[in.warpOfs + 1].zw, pExtras[in.warpOfs + 2].zw);
+	int nEdges = int(pExtras[in.warpOfs].z);
+	float4 e2 = pExtras[in.warpOfs + 2];
+	int flatColorsOfs = int(e2.y);
+	int tintTableOfs = int(e2.z);
+	float2 sc = warpNearestCopy(s, pExtras[in.warpOfs].xy, pExtras[in.warpOfs + 1].zw);
 
 	float acc = 0.f;
 
@@ -2981,20 +2979,20 @@ inline float warpBlitCoverage(constant float4 * pExtras, int ofs, float3 uvw, th
 {
 	s = warpPosition(pExtras, ofs, uvw, dx, dy);
 
+	float4 e0 = pExtras[ofs];
 	float4 e1 = pExtras[ofs + 1];
 	float4 e2 = pExtras[ofs + 2];
-	float4 e3 = pExtras[ofs + 3];
 
-	float cov = warpAxisCoverage(s.x, float2(dx.x, dy.x), e1.z, e2.z);
+	float cov = warpAxisCoverage(s.x, float2(dx.x, dy.x), e0.x, e1.z);
 	if( cov > 0.f )
-		cov *= warpAxisCoverage(s.y, float2(dx.y, dy.y), e1.w, e2.w);
+		cov *= warpAxisCoverage(s.y, float2(dx.y, dy.y), e0.y, e1.w);
 
-	s = e3.xy + warpNearestCopy(s, e1.zw, e2.zw);
+	s = e2.xy + warpNearestCopy(s, e0.xy, e1.zw);
 
-	if( e3.z > 0.f )
+	if( e2.z > 0.f )
 	{
-		float2 center = e3.xy + 0.5f * e1.zw;
-		s = clamp(s, min(e3.xy + e3.z, center), max(e3.xy + e1.zw - e3.z, center));
+		float2 center = e2.xy + 0.5f * e0.xy;
+		s = clamp(s, min(e2.xy + e2.z, center), max(e2.xy + e0.xy - e2.z, center));
 	}
 
 	return cov;

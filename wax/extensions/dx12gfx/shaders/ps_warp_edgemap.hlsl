@@ -66,17 +66,16 @@ PS_OUTPUT main(PS_INPUT input)
     float4 e0 = extras[input.warpOfs];
     float4 e1 = extras[input.warpOfs + 1];
     float4 e2 = extras[input.warpOfs + 2];
-    float4 e3 = extras[input.warpOfs + 3];
 
-    float2 size = e1.zw;
-    float2 period = e2.zw;
+    float2 size = e0.xy;
+    float2 period = e1.zw;
     float2 gx = float2(dx.x, dy.x);
     float2 gy = float2(dx.y, dy.y);
 
-    uint nEdges = uint(e0.w);
-    uint pitch = uint(e3.x);
-    uint flatColorsOfs = uint(e3.y);
-    uint tintTableOfs = uint(e3.z);
+    uint nEdges = uint(e0.z);
+    uint pitch = uint(e2.x);
+    uint flatColorsOfs = uint(e2.y);
+    uint tintTableOfs = uint(e2.z);
 
     // Colors are taken, and edges evaluated, at the position in the nearest copy.
 
@@ -84,7 +83,7 @@ PS_OUTPUT main(PS_INPUT input)
 
     uint column = uint(clamp(floor(sc.x), 0.0f, size.x - 1.0f));
     float fx = sc.x - float(column);
-    uint base = uint(e3.w) + column * pitch;
+    uint base = uint(e2.w) + column * pitch;
 
     float covX = warpAxisCoverage(s.x, gx, size.x, period.x);
 

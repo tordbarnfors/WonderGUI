@@ -995,22 +995,28 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				srcH = params.source.h / 64.f;
 			}
 
+			// u and v are taken relative to the first vertex by the vertex shader, which is added
+			// back to the source offset, brought into the periods.
+
+			CoordSPX ref;
+			if (pWarpmap->vertexCount() > 0)
+				ref = { pWarpmap->vertexData()[0].u, pWarpmap->vertexData()[0].v };
+
+			spx uPeriod = pWarpmap->uPeriod(), vPeriod = pWarpmap->vPeriod();
+			spx refU = uPeriod > 0 ? ((ref.x % uPeriod) + uPeriod) % uPeriod : ref.x;
+			spx refV = vPeriod > 0 ? ((ref.y % vPeriod) + vPeriod) % vPeriod : ref.y;
+
 			int extrasOfs = int(pExtrasGL - m_pExtrasBuffer) / 4;
 
-			*pExtrasGL++ = GLfloat(dest.x);
-			*pExtrasGL++ = GLfloat(dest.y);
-			*pExtrasGL++ = 0.f;
-			*pExtrasGL++ = pEdgemap ? GLfloat(pEdgemap->m_nbRenderSegments - 1) : 0.f;
-
-			*pExtrasGL++ = GLfloat(warpSize.w);
-			*pExtrasGL++ = GLfloat(warpSize.h);
 			*pExtrasGL++ = srcW;
 			*pExtrasGL++ = srcH;
+			*pExtrasGL++ = pEdgemap ? GLfloat(pEdgemap->m_nbRenderSegments - 1) : 0.f;
+			*pExtrasGL++ = 0.f;
 
-			*pExtrasGL++ = params.sourceOffset.x / 64.f;
-			*pExtrasGL++ = params.sourceOffset.y / 64.f;
-			*pExtrasGL++ = pWarpmap->uPeriod() / 64.f;
-			*pExtrasGL++ = pWarpmap->vPeriod() / 64.f;
+			*pExtrasGL++ = (params.sourceOffset.x + refU) / 64.f;
+			*pExtrasGL++ = (params.sourceOffset.y + refV) / 64.f;
+			*pExtrasGL++ = uPeriod / 64.f;
+			*pExtrasGL++ = vPeriod / 64.f;
 
 			if (pEdgemap)
 			{
@@ -1029,8 +1035,8 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 
 			// The mesh of the Warpmap is in its own vertex and index buffers, see GlWarpmap, drawn once
 			// for each part of a clip rectangle covered by the Warpmap, with that as scissor. The
-			// command is followed by offsets into the extras and colors, the tint, dest and the
-			// number of rectangles, then x, y, w, h of each.
+			// command is followed by offsets into the extras and colors, the tint, dest, u and v of
+			// the first vertex and the number of rectangles, then x, y, w, h of each.
 
 			int flatTintOfs = m_tintColorOfs >= 0 ? m_tintColorOfs : 0;		// Entry 0 is white.
 
@@ -1044,6 +1050,8 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 			*pCommandGL++ = m_tintOfs;
 			*pCommandGL++ = dest.x;
 			*pCommandGL++ = dest.y;
+			*pCommandGL++ = ref.x;
+			*pCommandGL++ = ref.y;
 
 			int* pNbPatches = pCommandGL++;
 			*pNbPatches = 0;
@@ -1996,7 +2004,7 @@ void GlBackend::beginSession( CanvasRef canvasRef, Surface * pCanvasSurface, int
 		+ pInfo->nLineCoords/2 * GpuShapes::c_lineEntries * 4		// Lines with caps take the most.
 		+ pInfo->nRects * 8			// This is margin for blits (+8) and  subpixel fills (+4).
 		+ pInfo->nEdgemapDraws * 8
-		+ pInfo->nWarpDraws * 16
+		+ pInfo->nWarpDraws * 12
 		+ GpuShapes::maxSessionEntries(*pInfo) * 4;
 
 	m_pExtrasBuffer = new GLfloat[nExtrasFloats];
@@ -2012,7 +2020,7 @@ void GlBackend::beginSession( CanvasRef canvasRef, Surface * pCanvasSurface, int
 		+ (pInfo->nLines * 3 + pInfo->nLineClipRects * 4) * 2		// Lines with and without caps in separate commands.
 		+ pInfo->nEdgemapDraws * 3
 		+ pInfo->nShapeDraws * 2
-		+ pInfo->nWarpDraws * 8 + pInfo->nRects * 4		// Warps with their clip rectangles.
+		+ pInfo->nWarpDraws * 10 + pInfo->nRects * 4		// Warps with their clip rectangles.
 		+ pInfo->nSetCanvas];
 
 	m_commandQueueSize = 0;
@@ -2419,25 +2427,15 @@ void GlBackend::endSession()
 				int tintOfs = *pCmd++;
 				int destX = *pCmd++;
 				int destY = *pCmd++;
+				int refU = *pCmd++;
+				int refV = *pCmd++;
 				int nPatches = *pCmd++;
-
-				// u and v are taken relative to the first vertex (see GlWarpmap), which is added back
-				// brought into the periods.
-
-				CoordSPX ref;
-				if (pWarpmap->vertexCount() > 0)
-					ref = { pWarpmap->vertexData()[0].u, pWarpmap->vertexData()[0].v };
-
-				spx uPeriod = pWarpmap->uPeriod(), vPeriod = pWarpmap->vPeriod();
-				spx refU = uPeriod > 0 ? ((ref.x % uPeriod) + uPeriod) % uPeriod : ref.x;
-				spx refV = vPeriod > 0 ? ((ref.y % vPeriod) + vPeriod) % vPeriod : ref.y;
 
 				glUniform2f(pUniforms->dest, GLfloat(destX), GLfloat(destY));
 				glUniform1i(pUniforms->extrasOfs, extrasOfs);
 				glUniform1i(pUniforms->colorsOfs, colorsOfs);
 				glUniform1i(pUniforms->tintOfs, tintOfs);
-				glUniform2i(pUniforms->ref, ref.x, ref.y);
-				glUniform2f(pUniforms->refPos, refU / 64.f, refV / 64.f);
+				glUniform2i(pUniforms->ref, refU, refV);
 
 				_setPartialCoverage(true);
 				glBindVertexArray(pWarpmap->m_vertexArrayId);
@@ -2885,7 +2883,6 @@ void GlBackend::_loadPrograms(int uboBindingPoint)
 		uniforms.dest = glGetUniformLocation(progId, "warpDest");
 		uniforms.extrasOfs = glGetUniformLocation(progId, "warpExtrasOfs");
 		uniforms.ref = glGetUniformLocation(progId, "warpRef");
-		uniforms.refPos = glGetUniformLocation(progId, "warpRefPos");
 		uniforms.sourceKind = glGetUniformLocation(progId, "sourceKind");
 		uniforms.tintOfs = glGetUniformLocation(progId, "warpTintOfs");
 	};

@@ -140,7 +140,7 @@ namespace wax
 		virtual void	_generateMesh( Warpmap::Vertex * pVertices, Warpmap::Triangle * pTriangles ) const = 0;
 
 		// Size of the pieces of the mesh chosen from precision, as cellSize() reports it, kept
-		// within 4 -> size of the Warpmap. The size of the Warpmap unless overridden.
+		// within 1 -> size of the Warpmap. The size of the Warpmap unless overridden.
 
 		virtual SizeI	_calcCellSize() const;
 

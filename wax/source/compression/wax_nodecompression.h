@@ -38,7 +38,7 @@ namespace wax
 
 	//____ NodeCompressor ________________________________________________________
 	/**
-	 * @brief Compresses the nodes of a Warpmap, or any grid of pairs of 32-bit values that change smoothly.
+	 * @brief Compresses the vertices and triangles of a Warpmap, or any rows of pairs of 32-bit values that change smoothly.
 	 *
 	 * Each value is predicted from its neighbours already compressed, left + above - above left
 	 * (only left on the first row, only above in the first column), and only the difference is

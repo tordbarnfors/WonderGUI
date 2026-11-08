@@ -767,7 +767,7 @@ void MetalBackend::beginSession( CanvasRef canvasRef, Surface * pCanvasSurface, 
 	+ pInfo->nLineCoords/2 * GpuShapes::c_lineEntries * 4		// Lines with caps take the most.
 	+ pInfo->nRects * 4			// This is for possible subpixel fills. We have no way of knowing exactly how much is needed.
 	+ pInfo->nEdgemapDraws * 8
-	+ pInfo->nWarpDraws * 16
+	+ pInfo->nWarpDraws * 12
 	+ GpuShapes::maxSessionEntries(*pInfo) * 4;
 
 	m_extrasBufferId = [s_metalDevice newBufferWithLength:nExtrasFloats*sizeof(float) options:MTLResourceStorageModeShared];
@@ -1633,15 +1633,10 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 
 				int extrasOfs = int(pExtrasMTL - m_pExtrasBuffer) / 4;
 
-				*pExtrasMTL++ = float(dest.x);
-				*pExtrasMTL++ = float(dest.y);
-				*pExtrasMTL++ = 0.f;
-				*pExtrasMTL++ = pEdgemap ? float(pEdgemap->m_nbRenderSegments - 1) : 0.f;
-
-				*pExtrasMTL++ = float(warpSize.w);
-				*pExtrasMTL++ = float(warpSize.h);
 				*pExtrasMTL++ = srcW;
 				*pExtrasMTL++ = srcH;
+				*pExtrasMTL++ = pEdgemap ? float(pEdgemap->m_nbRenderSegments - 1) : 0.f;
+				*pExtrasMTL++ = 0.f;
 
 				*pExtrasMTL++ = (params.sourceOffset.x + refU) / 64.f;
 				*pExtrasMTL++ = (params.sourceOffset.y + refV) / 64.f;

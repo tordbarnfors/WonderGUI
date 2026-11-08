@@ -3359,7 +3359,7 @@ namespace wax
 	//
 	// A WarpBlit or WarpDrawEdgemap. The triangles of the Warpmap are drawn from its own
 	// buffer once for each clip rectangle, with the part of it covered by the Warpmap as
-	// scissor, see DX12Warpmap and warp.hlsl. Four extras entries tell the pixel shaders
+	// scissor, see DX12Warpmap and warp.hlsl. Three extras entries tell the pixel shaders
 	// what the Warpmap maps onto, root constants tell the vertex shader where to draw it.
 	// pRects are the clip rectangles, which the caller steps past.
 
@@ -3432,7 +3432,7 @@ namespace wax
 			}
 		};
 
-		if (m_pExtrasEnd - m_pExtrasPtr < 4)
+		if (m_pExtrasEnd - m_pExtrasPtr < 3)
 			return bufferFull("Extras");
 
 		// _addColor() multiplies by the tint color, so white is what gets it applied
@@ -3463,8 +3463,7 @@ namespace wax
 
 		int extrasOfs = int(m_pExtrasPtr - m_pExtrasBeg);
 
-		*m_pExtrasPtr++ = { float(dest.x), float(dest.y), 0.f, pEdgemap ? float(pEdgemap->m_nbRenderSegments - 1) : 0.f };
-		*m_pExtrasPtr++ = { float(warpSize.w), float(warpSize.h), srcW, srcH };
+		*m_pExtrasPtr++ = { srcW, srcH, pEdgemap ? float(pEdgemap->m_nbRenderSegments - 1) : 0.f, 0.f };
 		*m_pExtrasPtr++ = { (params.sourceOffset.x + refU) / 64.f, (params.sourceOffset.y + refV) / 64.f, uPeriod / 64.f, vPeriod / 64.f };
 
 		if (pEdgemap)
@@ -3817,7 +3816,7 @@ namespace wax
 
 			nColors = pInfo->nColors + pInfo->nBlit + pInfo->nBlur + pInfo->nEdgemapDraws + pInfo->nShapeDraws + pInfo->nWarpDraws + pInfo->nLines
 					+ (pInfo->nStateChanges + pInfo->nShapeTints) * c_tintBlockOverhead;
-			nExtras = pInfo->nRects * 2 + nLines * GpuShapes::c_lineEntries + pInfo->nBlur * 18 + pInfo->nEdgemapDraws * 2 + pInfo->nWarpDraws * 4 + GpuShapes::maxSessionEntries(*pInfo);
+			nExtras = pInfo->nRects * 2 + nLines * GpuShapes::c_lineEntries + pInfo->nBlur * 18 + pInfo->nEdgemapDraws * 2 + pInfo->nWarpDraws * 3 + GpuShapes::maxSessionEntries(*pInfo);
 		}
 		else
 		{

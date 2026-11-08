@@ -5,13 +5,12 @@
 // The triangles of the Warpmap are drawn, and each pixel gets the position in the source
 // at its center from the triangle that draws it, and how fast that changes along x and y
 // of the canvas. Coverage is worked out from those, taking each border of the source and
-// each edge of an edgemap as straight over the pixel. Extras of a warp, four entries:
+// each edge of an edgemap as straight over the pixel. Extras of a warp, three entries:
 //
-//   0: position of Warpmap on canvas, 0, number of edges.
-//   1: size of Warpmap, size of source in pixels.
-//   2: source offset plus u and v of the first vertex (brought into the periods) in pixels
+//   0: size of source in pixels, number of edges, 0.
+//   1: source offset plus u and v of the first vertex (brought into the periods) in pixels
 //      of the source, periods in pixels of the source (0 if none).
-//   3: edgemaps: edges per column, offsets of flat colors, tint table and raw samples in
+//   2: edgemaps: edges per column, offsets of flat colors, tint table and raw samples in
 //      the edgemap buffer. Blits: position of source rectangle in the surface, how far inside
 //      its edges positions are kept (0 for a tiling surface, see warpBlitCoverage()).
 //
@@ -140,14 +139,14 @@ float2 warpPosition(uint ofs, float3 uvw, out float2 dx, out float2 dy)
     dx = (gx.xy - uv * gx.z) / w;
     dy = (gy.xy - uv * gy.z) / w;
 
-    float4 e2 = extras[ofs + 2];
-    float2 s = uv + e2.xy;
+    float4 e1 = extras[ofs + 1];
+    float2 s = uv + e1.xy;
 
-    if (e2.z > 0.0f)
-        s.x -= e2.z * floor(s.x / e2.z);
+    if (e1.z > 0.0f)
+        s.x -= e1.z * floor(s.x / e1.z);
 
-    if (e2.w > 0.0f)
-        s.y -= e2.w * floor(s.y / e2.w);
+    if (e1.w > 0.0f)
+        s.y -= e1.w * floor(s.y / e1.w);
 
     return s;
 }
@@ -162,21 +161,21 @@ float warpBlitCoverage(uint ofs, float3 uvw, out float2 s, out float2 dx, out fl
 {
     float2 pos = warpPosition(ofs, uvw, dx, dy);
 
+    float4 e0 = extras[ofs];
     float4 e1 = extras[ofs + 1];
     float4 e2 = extras[ofs + 2];
-    float4 e3 = extras[ofs + 3];
 
-    float cov = warpAxisCoverage(pos.x, float2(dx.x, dy.x), e1.z, e2.z);
+    float cov = warpAxisCoverage(pos.x, float2(dx.x, dy.x), e0.x, e1.z);
 
     if (cov > 0.0f)
-        cov *= warpAxisCoverage(pos.y, float2(dx.y, dy.y), e1.w, e2.w);
+        cov *= warpAxisCoverage(pos.y, float2(dx.y, dy.y), e0.y, e1.w);
 
-    s = e3.xy + warpNearestCopy(pos, e1.zw, e2.zw);
+    s = e2.xy + warpNearestCopy(pos, e0.xy, e1.zw);
 
-    if (e3.z > 0.0f)
+    if (e2.z > 0.0f)
     {
-        float2 center = e3.xy + 0.5f * e1.zw;
-        s = clamp(s, min(e3.xy + e3.z, center), max(e3.xy + e1.zw - e3.z, center));
+        float2 center = e2.xy + 0.5f * e0.xy;
+        s = clamp(s, min(e2.xy + e2.z, center), max(e2.xy + e0.xy - e2.z, center));
     }
 
     return cov;

@@ -29,8 +29,6 @@ namespace wax
 {
 	const TypeInfo WarpGenerator::TYPEINFO = { "WarpGenerator", &Object::TYPEINFO };
 
-	static const int c_minCellSize = 4;
-
 	//____ constructor ________________________________________________________
 
 	WarpGenerator::WarpGenerator(SizeI size, SizeSPX sourceSize, SizeI cellSize, float precision, WarpmapFactory* pFactory)
@@ -109,8 +107,8 @@ namespace wax
 
 		SizeI calculated = _calcCellSize();
 
-		return { m_cellSize.w > 0 ? m_cellSize.w : std::clamp(calculated.w, c_minCellSize, std::max(c_minCellSize, m_size.w)),
-				 m_cellSize.h > 0 ? m_cellSize.h : std::clamp(calculated.h, c_minCellSize, std::max(c_minCellSize, m_size.h)) };
+		return { m_cellSize.w > 0 ? m_cellSize.w : std::clamp(calculated.w, 1, m_size.w),
+				 m_cellSize.h > 0 ? m_cellSize.h : std::clamp(calculated.h, 1, m_size.h) };
 	}
 
 	//____ setPrecision() _____________________________________________________
