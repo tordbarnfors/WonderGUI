@@ -403,6 +403,8 @@ namespace wax
 			int			xBeg, xEnd;		// Pixels inside on the current row, relative to the Warpmap.
 			int64_t		col[3];			// Of the edges of the Setup, on the current row.
 			int32_t		rem[3];
+			int64_t		step[2];		// Without perspective: change of position along the row and from
+			int64_t		dy[2];			// row to row, rounded and limited once for the triangle.
 		};
 
 		struct WarpSetup
@@ -450,6 +452,8 @@ namespace wax
 		void	_addWarpSpans(const WarpTriangle& triangle, int row);
 		int		_addWarpSpan(int kind, int x, int length, const int64_t pos[2], const int64_t step[2], const int64_t dx[2], const int64_t dy[2],
 							 const int64_t dxStep[2], const int64_t dyStep[2], int64_t marginEighths, bool bAddMixed = true);
+		int		_addLinearWarpSpan(int kind, int x, int length, const int64_t pos[2], const int64_t step[2], const int64_t dy[2]);
+		WarpSpan& _newWarpSpan();
 		int		_warpClassify(const int64_t lo[2], const int64_t hi[2]) const;
 		int		_warpSolidSegment(const int64_t lo[2], const int64_t hi[2], const int64_t copy[2]) const;
 		void	_drawWarpRow(int y, int xBeg, int xEnd, uint8_t* pOrigin, int pitch, int prefetchRow);
@@ -457,7 +461,7 @@ namespace wax
 		void			_warpInsideRange( const WarpSpan& span, const int64_t * pos, int length, int& insideBeg, int& insideEnd ) const;
 		int		_warpEdgemapCoverage(int64_t sx, int64_t sy, int64_t ax, int64_t bx, int64_t ay, int64_t by, int* pCoverage, int& solidSegment) const;
 		void	_warpTintSpan(const SoftTint& tint, int64_t x, int64_t y, int64_t dx, int64_t dy, int length, HiColor* pOutput);
-		void	_warpReadSpan(int64_t x, int64_t y, int64_t dx, int64_t dy, int length, HiColor* pOutput, const int* pCoverage,
+		bool	_warpReadSpan(int64_t x, int64_t y, int64_t dx, int64_t dy, int length, HiColor* pOutput, const int* pCoverage,
 								  uint8_t* pDirect = nullptr, CoordI directPos = { 0,0 }, uint8_t* pDrawn = nullptr);
 		int		_warpOpaqueAlpha(int a) const;
 		HiColor* _warpBuffer(int index, int length);
@@ -550,7 +554,10 @@ namespace wax
 		std::vector<WarpTriangle>	m_warpTriangles;					// Triangles on the rows being drawn, and free entries.
 		std::vector<int>			m_warpFree;							// Entries of m_warpTriangles of triangles that have ended.
 		std::vector<int>			m_warpRowOrder;						// Triangles on the current row, by first pixel.
-		std::vector<WarpSpan>		m_warpSpans;						// Spans of the current row.
+		std::vector<int>			m_warpRowX;							// Their first pixels, in the same order, for sorting.
+		std::vector<int>			m_warpMerge;						// Room for merging them.
+		std::vector<WarpSpan>		m_warpSpans;						// Spans of the current row, the first m_nWarpSpans of them,
+		int							m_nWarpSpans = 0;					// the rest kept from earlier rows.
 		std::vector<SoftShapes::Run>	m_warpRuns;
 		std::vector<CoveragePixel>	m_warpPixels;
 		std::vector<int>			m_warpCoverage;

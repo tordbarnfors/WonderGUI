@@ -575,6 +575,8 @@ namespace wax
 
 		for (int y = y0; y < y1; y++)
 		{
+			const int nOld = int(m_warpRowOrder.size());
+
 			// Triangles starting on this row, or above it on the first row.
 
 			while (next < order.size() && setups[order[next]].rowBeg <= y)
@@ -630,10 +632,20 @@ namespace wax
 			// insertion sort is fast.
 
 			int nTriangles = 0;
+			int nKept = 0;								// Of those that were on the row above, which come first.
 
-			for (int index : m_warpRowOrder)
+			if (m_warpRowX.size() < m_warpRowOrder.size())
+				m_warpRowX.resize(m_warpRowOrder.size());
+
+			int* pRowX = m_warpRowX.data();
+
+			for (int k = 0; k < (int)m_warpRowOrder.size(); k++)
 			{
+				int index = m_warpRowOrder[k];
 				WarpTriangle& triangle = m_warpTriangles[index];
+
+				if (k == nOld)
+					nKept = nTriangles;
 
 				if (triangle.pSetup->rowEnd <= y)
 				{
@@ -645,28 +657,81 @@ namespace wax
 				triangle.xBeg = std::max(triangle.xBeg, x0);
 				triangle.xEnd = std::min(triangle.xEnd, x1);
 
+				pRowX[nTriangles] = triangle.xBeg;
 				m_warpRowOrder[nTriangles++] = index;
 			}
 
+			if ((int)m_warpRowOrder.size() <= nOld)
+				nKept = nTriangles;
+
 			m_warpRowOrder.resize(nTriangles);
 
-			for (int k = 1; k < nTriangles; k++)
+			int* pRowOrder = m_warpRowOrder.data();
+
+			auto insertionSort = [&](int begin, int end)
 			{
-				int index = m_warpRowOrder[k];
-				int xBeg = m_warpTriangles[index].xBeg;
-				int j = k;
-				while (j > 0 && m_warpTriangles[m_warpRowOrder[j - 1]].xBeg > xBeg)
+				for (int k = begin + 1; k < end; k++)
 				{
-					m_warpRowOrder[j] = m_warpRowOrder[j - 1];
-					j--;
+					int index = pRowOrder[k];
+					int xBeg = pRowX[k];
+					int j = k;
+					while (j > begin && pRowX[j - 1] > xBeg)
+					{
+						pRowOrder[j] = pRowOrder[j - 1];
+						pRowX[j] = pRowX[j - 1];
+						j--;
+					}
+					pRowOrder[j] = index;
+					pRowX[j] = xBeg;
 				}
-				m_warpRowOrder[j] = index;
+			};
+
+			insertionSort(0, nKept);
+			insertionSort(nKept, nTriangles);
+
+			if (nKept > 0 && nKept < nTriangles && pRowX[nKept - 1] > pRowX[nKept])
+			{
+				// Merged by first pixel, those kept first where equal, as insertion would.
+
+				if ((int)m_warpMerge.size() < nTriangles * 2)
+					m_warpMerge.resize(nTriangles * 2);
+
+				int* pOrder = m_warpMerge.data();
+				int* pX = pOrder + nTriangles;
+				int a = 0, b = nKept, n = 0;
+
+				while (a < nKept && b < nTriangles)
+				{
+					if (pRowX[b] < pRowX[a])
+					{
+						pOrder[n] = pRowOrder[b];
+						pX[n++] = pRowX[b++];
+					}
+					else
+					{
+						pOrder[n] = pRowOrder[a];
+						pX[n++] = pRowX[a++];
+					}
+				}
+				for (; a < nKept; a++, n++)
+				{
+					pOrder[n] = pRowOrder[a];
+					pX[n] = pRowX[a];
+				}
+				for (; b < nTriangles; b++, n++)
+				{
+					pOrder[n] = pRowOrder[b];
+					pX[n] = pRowX[b];
+				}
+
+				std::memcpy(pRowOrder, pOrder, nTriangles * sizeof(int));
+				std::memcpy(pRowX, pX, nTriangles * sizeof(int));
 			}
 
 			if (nTriangles == 0)
 				continue;
 
-			m_warpSpans.clear();
+			m_nWarpSpans = 0;
 
 			for (int index : m_warpRowOrder)
 			{
@@ -674,7 +739,7 @@ namespace wax
 					_addWarpSpans(m_warpTriangles[index], y);
 			}
 
-			if (m_warpSpans.empty())
+			if (m_nWarpSpans == 0)
 				continue;
 
 			int canvasY = y + w.dest.y;
@@ -695,6 +760,15 @@ namespace wax
 	{
 		const SoftWarpmap::Setup& s = *triangle.pSetup;
 		const int64_t rows = row - s.rowBeg;
+
+		if (!triangle.pPerspective)
+		{
+			for (int a = 0; a < 2; a++)
+			{
+				triangle.step[a] = std::clamp((s.f[a][1] + (int64_t(1) << 15)) >> 16, -c_maxGradient, c_maxGradient);
+				triangle.dy[a] = std::clamp((s.f[a][2] + (int64_t(1) << 15)) >> 16, -c_maxGradient, c_maxGradient);
+			}
+		}
 
 		for (int i = 0; i < s.nLower + s.nUpper; i++)
 		{
@@ -795,22 +869,19 @@ namespace wax
 
 		if (!triangle.pPerspective)
 		{
-			int64_t step[2], dy[2];
-			for (int a = 0; a < 2; a++)
-			{
-				step[a] = (s.f[a][1] + (int64_t(1) << 15)) >> 16;
-				dy[a] = (s.f[a][2] + (int64_t(1) << 15)) >> 16;
-			}
-
 			const int chunk = triangle.kind == c_warpMixed ? 32 : xEnd - xBeg;
+
+			int64_t rowPos[2];
+			for (int a = 0; a < 2; a++)
+				rowPos[a] = s.f[a][0] + s.f[a][2] * (row - s.oy) + (int64_t(1) << 15);
 
 			for (int x = xBeg; x < xEnd; x += chunk)
 			{
 				int64_t pos[2];
 				for (int a = 0; a < 2; a++)
-					pos[a] = ((s.f[a][0] + s.f[a][1] * (x - s.ox) + s.f[a][2] * (row - s.oy) + (int64_t(1) << 15)) >> 16) + w.offset[a];
+					pos[a] = ((rowPos[a] + s.f[a][1] * (x - s.ox)) >> 16) + w.offset[a];
 
-				_addWarpSpan(triangle.kind, x + w.dest.x, std::min(chunk, xEnd - x), pos, step, step, dy, zero, zero, 4);
+				_addLinearWarpSpan(triangle.kind, x + w.dest.x, std::min(chunk, xEnd - x), pos, triangle.step, triangle.dy);
 			}
 			return;
 		}
@@ -1050,8 +1121,108 @@ namespace wax
 			return kind;
 
 		span.kind = kind;
-		m_warpSpans.push_back(span);
+		_newWarpSpan() = span;
 		return kind;
+	}
+
+	//____ _addLinearWarpSpan() _________________________________________________
+	/*
+		The same as _addWarpSpan() for a span of a triangle without perspective, where the derivatives
+		are the step along the row and dy, already limited for the triangle, and don't change along
+		the row. The span is made in place.
+	*/
+
+	int SoftBackend::_addLinearWarpSpan(int kind, int x, int length, const int64_t pos[2], const int64_t step[2], const int64_t dy[2])
+	{
+		const WarpSetup& w = m_warp;
+
+		int64_t p[2];
+		for (int a = 0; a < 2; a++)
+		{
+			int64_t v = std::clamp(pos[a], -c_maxPos, c_maxPos);
+			int64_t period = w.period[a];
+			if (period > 0 && (v < 0 || v >= period))
+			{
+				if (v >= period && v < 2 * period)
+					v -= period;
+				else if (v < 0 && v >= -period)
+					v += period;
+				else
+					v -= floorDiv(v, period) * period;
+			}
+			p[a] = v;
+		}
+
+		if (kind == c_warpMixed)
+		{
+			int64_t lo[2], hi[2];
+
+			for (int a = 0; a < 2; a++)
+			{
+				int64_t last = p[a] + step[a] * (length - 1);
+				int64_t margin = ((abs64(step[a]) + abs64(dy[a])) * 4) / 8 + 64;
+
+				lo[a] = std::min(p[a], last) - margin;
+				hi[a] = std::max(p[a], last) + margin;
+			}
+
+			kind = _warpClassify(lo, hi);
+		}
+
+		if (kind == c_warpOutside || (kind >= 0 && w.pEdgemap && w.bSkip[kind]))
+			return kind;
+
+		bool bFade = false;
+		int64_t fade = 0, fadeStep = 0;
+
+		if (m_warpRowFade.bActive)
+		{
+			const int64_t c_full = int64_t(4096) << 16;
+			int64_t first = m_warpRowFade.row + m_warpRowFade.step * x;
+			int64_t last = first + m_warpRowFade.step * (length - 1);
+
+			if (std::max(first, last) < (int64_t(1) << 16))
+				return c_warpOutside;
+
+			if (std::min(first, last) < c_full)
+			{
+				bFade = true;
+				fade = first;
+				fadeStep = m_warpRowFade.step;
+				kind = c_warpMixed;
+			}
+		}
+
+		WarpSpan& span = _newWarpSpan();
+		span.x = x;
+		span.w = length;
+		span.kind = kind;
+
+		for (int a = 0; a < 2; a++)
+		{
+			span.pos[a] = p[a];
+			span.step[a] = step[a];
+			span.dx[a] = step[a];
+			span.dy[a] = dy[a];
+			span.dxStep[a] = 0;
+			span.dyStep[a] = 0;
+		}
+
+		span.bFade = bFade;
+		span.fade = fade;
+		span.fadeStep = fadeStep;
+		return kind;
+	}
+
+	//____ _newWarpSpan() _______________________________________________________
+	// Room for one more span of the row, not cleared, as it is filled in by the caller.
+
+	SoftBackend::WarpSpan& SoftBackend::_newWarpSpan()
+	{
+		if (m_nWarpSpans == int(m_warpSpans.size()))
+			m_warpSpans.resize(std::max(size_t(64), m_warpSpans.size() * 2));
+
+		return m_warpSpans[m_nWarpSpans++];
 	}
 
 	//____ _warpClassify() ______________________________________________________
@@ -1270,7 +1441,7 @@ namespace wax
 		};
 
 
-		const int nSpans = int(m_warpSpans.size());
+		const int nSpans = m_nWarpSpans;
 
 		for (int i = 0; i < nSpans; i++)
 		{
@@ -1306,12 +1477,23 @@ namespace wax
 			const int64_t* dxStep = span.dxStep;
 			const int64_t* dyStep = span.dyStep;
 
+			const int skipped = beg - span.x;
+
 			for (int a = 0; a < 2; a++)
 			{
-				pos[a] = span.pos[a] + span.step[a] * (beg - span.x);
 				step[a] = span.step[a];
-				dx[a] = span.dx[a] + span.dxStep[a] * (beg - span.x);
-				dy[a] = span.dy[a] + span.dyStep[a] * (beg - span.x);
+				if (skipped == 0)
+				{
+					pos[a] = span.pos[a];
+					dx[a] = span.dx[a];
+					dy[a] = span.dy[a];
+				}
+				else
+				{
+					pos[a] = span.pos[a] + span.step[a] * skipped;
+					dx[a] = span.dx[a] + span.dxStep[a] * skipped;
+					dy[a] = span.dy[a] + span.dyStep[a] * skipped;
+				}
 			}
 
 			if (kind >= 0)
@@ -1330,15 +1512,15 @@ namespace wax
 						m_warpDrawn.resize(length);
 
 					uint8_t* pDrawn = m_warpDrawn.data();
-					std::memset(pDrawn, 0, length);
 
-					_warpReadSpan(pos[0], pos[1], step[0], step[1], length, pColors, nullptr,
-								  pOrigin + y * pitch + beg * m_canvasPixelBytes, { beg, y }, pDrawn);
-
-					for (int k = 0; k < length; k++)
+					if (!_warpReadSpan(pos[0], pos[1], step[0], step[1], length, pColors, nullptr,
+									   pOrigin + y * pitch + beg * m_canvasPixelBytes, { beg, y }, pDrawn))
 					{
-						if (!pDrawn[k])
-							addColoredPixel(beg + k, pColors[k]);
+						for (int k = 0; k < length; k++)
+						{
+							if (!pDrawn[k])
+								addColoredPixel(beg + k, pColors[k]);
+						}
 					}
 					continue;
 				}
@@ -1418,7 +1600,6 @@ namespace wax
 						m_warpDrawn.resize(length);
 
 					uint8_t* pDrawn = m_warpDrawn.data();
-					std::memset(pDrawn, 0, length);
 
 					for (int k = 0; k < length; )
 					{
@@ -1432,12 +1613,12 @@ namespace wax
 						while (runEnd < length && pCoverage[runEnd] == 4096)
 							runEnd++;
 
-						_warpReadSpan(pos[0] + step[0] * k, pos[1] + step[1] * k, step[0], step[1], runEnd - k, pColors + k, nullptr,
-									  pOrigin + y * pitch + (beg + k) * m_canvasPixelBytes, { beg + k, y }, pDrawn + k);
+						bool bAllDrawn = _warpReadSpan(pos[0] + step[0] * k, pos[1] + step[1] * k, step[0], step[1], runEnd - k, pColors + k, nullptr,
+													   pOrigin + y * pitch + (beg + k) * m_canvasPixelBytes, { beg + k, y }, pDrawn + k);
 
 						for (int j = k; j < runEnd; j++)
 						{
-							if (pDrawn[j])
+							if (bAllDrawn || pDrawn[j])
 								pCoverage[j] = 0;
 						}
 
@@ -1886,10 +2067,11 @@ namespace wax
 
 		If pDirect is set (the first pixel of the span on the canvas, at directPos), pixels that the
 		kernel reads as they are are drawn straight onto the canvas by WarpSetup::pDirectOp instead,
-		and marked in pDrawn. Only for spans all covered.
+		marked 1 in pDrawn and the others 0, unless all are drawn, which is returned. Only for spans
+		all covered.
 	*/
 
-	void SoftBackend::_warpReadSpan(int64_t x, int64_t y, int64_t dx, int64_t dy, int length, HiColor* pOutput, const int* pCoverage,
+	bool SoftBackend::_warpReadSpan(int64_t x, int64_t y, int64_t dx, int64_t dy, int length, HiColor* pOutput, const int* pCoverage,
 									uint8_t* pDirect, CoordI directPos, uint8_t* pDrawn)
 	{
 		const WarpSetup& w = m_warp;
@@ -1898,6 +2080,8 @@ namespace wax
 		const int64_t half = w.bBilinear ? c_one / 2 : 0;		// Bilinear kernels take positions relative to pixel centers.
 
 		binalInt matrix[2][2] = { { binalInt(toBinal(dx)), binalInt(toBinal(dy)) }, { 0, 0 } };
+
+		bool bAllDrawn = pDirect != nullptr;
 
 		forWrappedSpans(w.period, w.colorLow, x, y, dx, dy, length, [&](int begin, int n, int64_t px, int64_t py)
 		{
@@ -1969,9 +2153,17 @@ namespace wax
 				if (pCoverage && pCoverage[begin + i] == 0)
 					continue;
 
+				if (pDirect)
+				{
+					pDrawn[begin + i] = 0;
+					bAllDrawn = false;
+				}
+
 				read(i, 1, std::clamp(sx + dx * i, minX, maxX), std::clamp(sy + dy * i, minY, maxY));
 			}
 		});
+
+		return bAllDrawn;
 	}
 
 	//____ _warpOpaqueAlpha() __________________________________________________

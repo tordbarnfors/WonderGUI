@@ -70,7 +70,16 @@ in someone's memory or an old chat. Add to it when you decide something, move it
     on the rows being drawn while drawing: 190 KB for a thick ring of 992 triangles rather than
     480 KB. Without `__int128`, values are worked out in 64 bits where they fit, with the same
     rounding, which makes setting up the ring 9 times faster on a CPU without it.
-  - **Perspective runs divide once per point:** positions and derivatives at the start of a run
+  - **Spans are cheap to set up,** as a triangle costs a span on every row it crosses, which
+    for small or thin triangles costs more than its pixels. Drawing triangle by triangle rather
+    than row by row wouldn't change that, as a triangle is still drawn a row at a time, and would
+    lose joining spans across triangles into runs (edgemaps) and touching each canvas row once.
+    Without perspective, the steps of a triangle are rounded and limited once when it starts,
+    spans are made in place without clearing them, pixels drawn straight onto the canvas are only
+    marked when not all of a span is, and the triangles of a row are kept sorted by merging those
+    starting on it with those from the row above. 6-9% fewer instructions and 5-13% less time for
+    blits of rings, balls and lenses, with the same pixels.
+  - **Perspective runs divide once per point:**  - **Perspective runs divide once per point:** positions and derivatives at the start of a run
     share one W, which a reciprocal (one division) divides by exactly, with a few steps of the
     remainder, and steps along a run are divided by its length with a shift where it is a power of
     two, as runs mostly are. Results are the same as with divisions. Coverage of a pixel
