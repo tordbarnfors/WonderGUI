@@ -19,30 +19,37 @@ set(SOURCES
 	wax_dx12surfacefactory.h
 )
 
-set(SHADER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
+# The shaders are shared with VulkanBackend, see ../hlsl/README.md.
+
+set(SHADER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../hlsl)
 
 set(SHADERS
 
-	shaders/vs_fill.hlsl
-	shaders/ps_fill.hlsl
-	shaders/vs_fill_aa.hlsl
-	shaders/ps_fill_aa.hlsl
-	shaders/vs_blit.hlsl
-	shaders/ps_blit.hlsl
-	shaders/ps_blur.hlsl
-	shaders/ps_blit_palette.hlsl
-	shaders/ps_blur_palette.hlsl
-	shaders/vs_line.hlsl
-	shaders/ps_line.hlsl
-	shaders/vs_segments.hlsl
-	shaders/ps_segments.hlsl
-	shaders/vs_shape.hlsl
-	shaders/ps_shape.hlsl
-	shaders/vs_warp.hlsl
-	shaders/warp.hlsl
-	shaders/ps_warp_edgemap.hlsl
-	shaders/ps_warp_blit.hlsl
-	shaders/ps_warp_blit_palette.hlsl
+	../hlsl/constants.hlsl
+	../hlsl/output.hlsl
+	../hlsl/ps_blit.hlsl
+	../hlsl/ps_blit_palette.hlsl
+	../hlsl/ps_blur.hlsl
+	../hlsl/ps_blur_palette.hlsl
+	../hlsl/ps_fill.hlsl
+	../hlsl/ps_fill_aa.hlsl
+	../hlsl/ps_line.hlsl
+	../hlsl/ps_mipmap.hlsl
+	../hlsl/ps_segments.hlsl
+	../hlsl/ps_shape.hlsl
+	../hlsl/ps_warp_blit.hlsl
+	../hlsl/ps_warp_blit_palette.hlsl
+	../hlsl/ps_warp_edgemap.hlsl
+	../hlsl/tint.hlsl
+	../hlsl/vs_blit.hlsl
+	../hlsl/vs_fill.hlsl
+	../hlsl/vs_fill_aa.hlsl
+	../hlsl/vs_line.hlsl
+	../hlsl/vs_mipmap.hlsl
+	../hlsl/vs_segments.hlsl
+	../hlsl/vs_shape.hlsl
+	../hlsl/vs_warp.hlsl
+	../hlsl/warp.hlsl
 )
 
 
