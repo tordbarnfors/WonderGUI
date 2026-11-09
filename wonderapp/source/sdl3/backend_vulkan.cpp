@@ -425,7 +425,8 @@ bool backend_specific_init()
 
 void backend_specific_exit()
 {
-	VulkanContext::waitIdle();
+	if (g_device)
+		vkDeviceWaitIdle(g_device);
 
 	for (auto pWin : g_windows)
 		pWin->releaseVulkanObjects();
@@ -523,7 +524,10 @@ void SDLWindowVulkan::releaseVulkanObjects()
 	if (!g_device)
 		return;
 
-	VulkanContext::waitIdle();
+	// The presentation engine may still wait for our semaphores, which only waiting for the
+	// whole device covers.
+
+	vkDeviceWaitIdle(g_device);
 
 	_destroyCanvas();
 	_destroySwapchain();
@@ -842,7 +846,9 @@ void SDLWindowVulkan::onWindowSizeUpdated()
 	if (!m_pRootPanel || !m_surface)
 		return;
 
-	VulkanContext::waitIdle();
+	// The swap chain and its semaphores go, which presentation may still be using.
+
+	vkDeviceWaitIdle(g_device);
 
 	_destroyCanvas();
 

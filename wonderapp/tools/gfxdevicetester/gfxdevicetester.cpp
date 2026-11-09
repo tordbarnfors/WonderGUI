@@ -84,13 +84,19 @@ bool GfxDeviceTester::init(wapp::API* pAPI)
 	// "--accuracy [--dump] [suite ...]" runs the accuracy tests of the given suites (all if none are
 	// given) at the first update, prints the results and quits, for runs without anyone at the window.
 	// With --dump, testee and reference images of tests that aren't OK are saved as PPM files.
+	//
+	// "--performance [suite ...]" times the tests of the given suites on the testee the same way,
+	// as the performance view does with the passes set there.
 
 	auto arguments = pAPI->programArguments();
 	for (size_t i = 0; i < arguments.size(); i++)
 	{
-		if (arguments[i] == "--accuracy")
+		if (arguments[i] == "--accuracy" || arguments[i] == "--performance")
 		{
-			m_bBatchAccuracy = true;
+			if (arguments[i] == "--accuracy")
+				m_bBatchAccuracy = true;
+			else
+				m_bBatchPerformance = true;
 
 			for (size_t j = i + 1; j < arguments.size(); j++)
 			{
@@ -126,6 +132,12 @@ bool GfxDeviceTester::update()
 	if (m_bBatchAccuracy)
 	{
 		run_batch_accuracy();
+		return false;
+	}
+
+	if (m_bBatchPerformance)
+	{
+		run_batch_performance();
 		return false;
 	}
 
@@ -1493,6 +1505,60 @@ void GfxDeviceTester::select_accuracy_row(int test)
 
 	if (m_accuracyViewer.test != test)
 		show_test(m_accuracyViewer, test);
+}
+
+//____ run_batch_performance() ________________________________________________
+/*
+	Times the tests of the suites asked for on the command line, in as many passes as the
+	performance view would, and prints a line per test.
+*/
+
+void GfxDeviceTester::run_batch_performance()
+{
+	vector<int> tests;
+
+	for (int i = 0; i < (int)m_tests.size(); i++)
+	{
+		auto& suite = m_suites[m_tests[i].suite];
+
+		if (m_batchSuites.empty() || std::find(m_batchSuites.begin(), m_batchSuites.end(), suite.name) != m_batchSuites.end())
+		{
+			m_tests[i].performance = PerformanceResult();
+			tests.push_back(i);
+		}
+	}
+
+	if (tests.empty())
+		return;
+
+	warm_up_testee(tests.front());
+
+	for (int pass = 0; pass < m_performancePasses; pass++)
+		for (int test : tests)
+			run_performance_pass(test);
+
+	double total = 0;
+	int nbFailed = 0;
+
+	for (int test : tests)
+	{
+		auto& entry = m_tests[test];
+		auto& result = entry.performance;
+
+		if (result.bFailed)
+		{
+			nbFailed++;
+			printf("%-24s %-36s %s\n", m_suites[entry.suite].name.c_str(), entry.name.c_str(), "NOT WORKING");
+			continue;
+		}
+
+		total += result.secondsPerRun;
+		printf("%-24s %-36s %12.1f us  spread %5.1f%%\n", m_suites[entry.suite].name.c_str(), entry.name.c_str(),
+			   result.secondsPerRun * 1000000.0, result.spread() * 100.0);
+	}
+
+	printf("%d tests timed in %d passes, one run of each adds up to %s.%s\n", int(tests.size()) - nbFailed, m_performancePasses,
+		   format_time(total).c_str(), nbFailed > 0 ? (" " + std::to_string(nbFailed) + " could not be run.").c_str() : "");
 }
 
 //____ start_performance_run() ________________________________________________

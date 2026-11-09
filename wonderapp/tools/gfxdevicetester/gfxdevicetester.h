@@ -225,6 +225,7 @@ protected:
 	void		continue_accuracy_run();
 	void		run_accuracy_test(int test);
 	void		run_batch_accuracy();
+	void		run_batch_performance();
 	void		refresh_accuracy_table();
 	void		select_accuracy_row(int test);
 
@@ -299,6 +300,7 @@ protected:
 	int					m_accuracyNext = 0;
 
 	bool				m_bBatchAccuracy = false;			// Run from command line, see init().
+	bool				m_bBatchPerformance = false;
 	vector<string>		m_batchSuites;
 	bool				m_bBatchDump = false;
 
