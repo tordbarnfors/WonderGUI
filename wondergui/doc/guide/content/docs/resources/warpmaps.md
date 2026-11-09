@@ -279,4 +279,4 @@ b0, b1 and b2 being the barycentric coordinates of the point in the triangle, an
 
 ReferenceBackend measures coverage by sampling each pixel at many points and divides for perspective at each point. The other backends estimate coverage from the position at the center of the pixel and how fast it changes, taking each border and edge as straight over the pixel. That is off by a few percent where an edge bends sharply within a pixel. They may also divide for perspective only once every few pixels, up to 16, and interpolate linearly in between, keeping within about a quarter of a pixel.
 
-**The DX12 and Metal backends draw Warpmaps as the OpenGL backend does, but haven't been built or tested yet.**
+**The DX12 and Metal backends draw Warpmaps as the OpenGL backend does. The Metal backend hasn't been built or tested yet.**

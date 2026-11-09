@@ -164,13 +164,12 @@ balls are caught by the windows. Only sent when tilt or roll changes, not when s
 
 `MeshCompressor::compress()` in `wax/source/compression/wax_meshcompression.cpp`
 
-### DX12 and Metal warps are untested
+### Metal warps are untested
 
-DX12Backend and MetalBackend were changed over to triangle meshes (see ROADMAP.md) in a Linux
-container, where neither can be built. Their warp shaders were checked by compiling the HLSL with
-glslang and type checking the Metal code with clang, but the C++ and Objective-C++ have not been
-compiled, and nothing has been drawn. Build them and run gfxdevicetester's WarpTests on each.
+MetalBackend was changed over to triangle meshes (see ROADMAP.md) in a Linux container, where it
+can't be built. Its warp shaders were type checked with clang, but the Objective-C++ has not been
+compiled, and nothing has been drawn. Build it and run gfxdevicetester's WarpTests. DX12Backend,
+changed the same way, has been built and tested on Windows.
 
-`wax/extensions/dx12gfx/wax_dx12warpmap*`, `_drawWarp()` in `wax_dx12backend.cpp`,
-`shaders/vs_warp.hlsl`, `shaders/warp.hlsl`, `wax/extensions/metalgfx/wax_metalwarpmap*`, the warp
-command in `wax_metalbackend.mm`, the warp shaders in `wax_shadercontent.mm`
+`wax/extensions/metalgfx/wax_metalwarpmap*`, the warp command in `wax_metalbackend.mm`, the warp
+shaders in `wax_shadercontent.mm`

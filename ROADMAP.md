@@ -44,9 +44,9 @@ in someone's memory or an old chat. Add to it when you decide something, move it
      implement instead was removed once none did: `_meshSize()` and `_generateMesh()` are what a
      generator implements. A grid builder for making meshes by hand would share vertices between
      cells and is a helper of its own, not part of WarpGenerator.
-  5. **Done, untested:** DX12Backend and MetalBackend keep the mesh as GlBackend does, with the
-     vertex shader reading the vertices from the buffer of the Warpmap, drawn with its triangles
-     as index buffer. See KNOWN_ISSUES.md.
+  5. **Done:** DX12Backend and MetalBackend keep the mesh as GlBackend does, with the vertex
+     shader reading the vertices from the buffer of the Warpmap, drawn with its triangles as index
+     buffer. DX12Backend is tested, MetalBackend not yet, see KNOWN_ISSUES.md.
 
   Decided so far:
   - **Vertices in spx:** positions in spx of the Warpmap, u and v in spx of the source as the
