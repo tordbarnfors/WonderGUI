@@ -279,6 +279,26 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   `_pieceTolerance()` and `_outlineTolerance()`, in pixels. Values of precision in the entries
   above, written before this, are in pixels: precision 0.25 there is 4 now, 2 is 0.5 and 8 is
   0.125.
+- **Lens rings have any number of pieces, not halvings.** They first had half, a quarter or an
+  eighth of the pieces of the rim (11-19% fewer triangles for a bubble), which took halvings
+  per ring, radius limits for each, a pass keeping neighbours within one halving, the rim
+  rounded to a multiple of 8 and two ways to join rings. Once the rim got its pieces from the
+  outline tolerance, removing that would have taken 36% more triangles at precision 0.5, 14%
+  at 1 and 5% at 2 (ten lenses). Instead each ring has as few pieces as keeps it within the
+  tolerance, at most as many as the rim, and at least a quarter more than the ring inside it
+  where it has more, so that most rings have as many as the next. Two rings are joined by
+  walking around both and taking the next piece of the one whose next piece has its middle
+  first, which works for any numbers and makes their sides span at most half a piece of each.
+  Where rings are as close as allowed and the change doesn't fit, a pass from the rim inwards
+  gives the inner ring the pieces of the outer, moving the change inwards. Shorter code, and on
+  the same ten lenses as many triangles at precision 0.5, 8% fewer at 1, 6% fewer at 2 and 7%
+  fewer at 4. Single lenses range from 29% fewer to 47% more: most bubbles have fewer, while a
+  plain glass (70 -> 103) and a falloff of 0.1 (286 -> 379) have more at 0.5, as halving could
+  halve the ring at the inner edge of the outline. Tried and dropped: the ring at the inner edge of the outline with
+  half of the pieces of the rim (13-16% fewer altogether, but the outline 0.8 pixels off, as
+  its vertices don't line up with those of the rim as halving had them), placing rings for the
+  pieces of the rim and reducing afterwards (too few reductions), and choosing per ring between
+  its fewest pieces and those of the rim by triangles per pixel (more triangles altogether).
 - **GPU warps bias positions by 1/32768 of a texel with Nearest sampling,** so that one exactly on
   a border between texels takes the texel after it, as in SoftBackend, rather than either one by
   how the interpolation rounds, which showed as lines where an edge of a Warpmap runs along such
@@ -339,10 +359,8 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   (|s''| d^2 / 8 / s') and that turn within 0.7 of precision, and are at least two pixels apart.
   Pieces along the rim keep the outline within precision; positions between the vertices of a
   ring are off by less, as the source follows the same circle. Rings close to the middle have
-  half, a quarter or an eighth as many pieces, where longer pieces keep them within precision,
-  at most doubling from one ring to the next with three triangles for each inner piece between
-  them: 11-19% fewer triangles for a bubble (falloff 1), nothing for lenses whose falloff starts
-  further out. Fewer than 16 pieces only within an eighth of the radius. Lenses measure 0.6-0.8 of
+  fewer pieces, as few as keeps each within precision, see the next entry. Fewer than 16 pieces
+  only within an eighth of the radius. Lenses measure 0.6-0.8 of
   precision where the source isn't squeezed. Altogether 30-55% fewer triangles than with rings in
   line, a pixel apart and pieces within half of precision, and 12-27% less time to draw on
   SoftBackend, with a largest difference against a fine mesh of 41-62 rather than 30-52 levels

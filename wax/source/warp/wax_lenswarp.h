@@ -54,8 +54,8 @@ namespace wax
 	 * - falloff 1 magnifies the most in the middle and less and less out to the rim, like a bubble.
 	 *
 	 * The Warpmap is the middle of the lens as one polygon, where positions are linear, rings
-	 * through the falloff as close as precision allows, at least two pixels apart, each
-	 * turned by half a piece and with fewer pieces close to the middle, and a ring of triangles
+	 * through the falloff as close as precision allows, at least two pixels apart, every other
+	 * one turned by half a piece and each with as few pieces as precision allows, and a ring of triangles
 	 * around the outline that goes from full coverage of the vertices to none, which antialiases
 	 * it. Pieces along the rim are as long as keeps the outline within the outline tolerance. Without
 	 * falloff, magnification only changes positions in the source, so the Warpmap is updated in
@@ -111,17 +111,15 @@ namespace wax
 		void		_meshSize( int& nVertices, int& nTriangles ) const override;
 		void		_generateMesh( Warpmap::Vertex * pVertices, Warpmap::Triangle * pTriangles ) const override;
 
-		// Rings of vertices from the middle out, each with as many vertices as there are pieces
-		// along the rim. The first is the outline of the middle polygon, the last half a pixel
-		// outside the outline. Worked out when the settings change.
+		// Rings of vertices from the middle out, with a vertex for each piece of the ring. The first
+		// is the outline of the middle polygon, the last half a pixel outside the outline. Worked
+		// out when the settings change.
 
 		struct Ring
 		{
 			int64_t		radius;										// In 1/256 spx of the Warpmap.
 			int64_t		u, v;										// Distance from the middle of the source, in 1/256 spx.
 			int			coverage;
-			int			halvings;									// Of the pieces of the Layout, for rings close to the middle.
-			int			offset;										// Of vertex 0, in 1/(2 * pieces) of a turn.
 		};
 
 		struct Layout
@@ -133,13 +131,13 @@ namespace wax
 			float		magnification;
 			float		falloff;
 
-			int					pieces;
 			std::vector<Ring>	rings;
+			std::vector<int>	pieces;								// Of each ring.
 		};
 
 		const Layout&	_layout() const;
 		void			_calcLayout( Layout& layout ) const;
-		static void		_counts( const Layout& layout, int& nVertices, int& nTriangles );
+		static void		_counts( const std::vector<int>& pieces, int& nVertices, int& nTriangles );
 
 		float		m_magnification;
 		float		m_falloff;
