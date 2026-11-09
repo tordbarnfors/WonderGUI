@@ -139,6 +139,13 @@ The UTF-8 text system was built and tested on Linux (SDL2 software and OpenGL) a
 been run on Win32/DX12. The macOS frameworks (Cocoa software/Metal, SDL2 Metal) haven't
 been built with it yet.
 
+### DX12Backend and MetalBackend with GpuTools
+
+Both were switched to the shared helpers in `wax_gputools.h` (state changes, lines without caps,
+blur taps) on a machine without Windows or macOS, so neither has been compiled since. The changes
+are mechanical and GlBackend gives the same gfxdevicetester results with them, but build both and
+run gfxdevicetester before relying on them.
+
 ## Graphics
 
 ### DX12Surface: reading pixels is slow, 16 ms to read back a 512x512 canvas
