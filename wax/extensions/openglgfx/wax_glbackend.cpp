@@ -2418,6 +2418,11 @@ void GlBackend::endSession()
 
 					float clampInset = pSurf->isTiling() ? 0.f : pSurf->sampleMethod() == SampleMethod::Bilinear ? 0.5f : 1.f / 256;
 					glUniform1f(pUniforms->clampInset, clampInset);
+
+					// Positions exactly on a border between texels take the texel after it, as in
+					// SoftBackend, rather than either one by how floats round, see WAX_GL_WARP_SAMPLE.
+
+					glUniform1f(pUniforms->nearestBias, pSurf->sampleMethod() == SampleMethod::Nearest ? 1.f / 32768 : 0.f);
 				}
 
 				glActiveTexture(GL_TEXTURE0);
@@ -2879,6 +2884,7 @@ void GlBackend::_loadPrograms(int uboBindingPoint)
 	auto warpUniforms = [](GLuint progId, WarpUniforms& uniforms)
 	{
 		uniforms.clampInset = glGetUniformLocation(progId, "clampInset");
+		uniforms.nearestBias = glGetUniformLocation(progId, "nearestBias");
 		uniforms.colorsOfs = glGetUniformLocation(progId, "warpColorsOfs");
 		uniforms.dest = glGetUniformLocation(progId, "warpDest");
 		uniforms.extrasOfs = glGetUniformLocation(progId, "warpExtrasOfs");

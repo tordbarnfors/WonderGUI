@@ -164,21 +164,6 @@ balls are caught by the windows. Only sent when tilt or roll changes, not when s
 
 `MeshCompressor::compress()` in `wax/source/compression/wax_meshcompression.cpp`
 
-### GPU warps with Nearest sampling pick the other texel exactly on texel boundaries
-
-GlBackend (and the DX12 and Metal shaders, written the same way) samples a warp blit with
-Nearest through the texture unit, with positions interpolated in floating point. Where a
-position is exactly on the border between two texels, SoftBackend, with exact integers, always
-takes the one after it, while the GPU lands a hair either side of it. It shows in scattered
-pixels, or in a line where an edge of the Warpmap runs exactly along such a border, as in
-gfxdevicetester's "Blit source rectangle" test on GlBackend since the default precision is 1:
-an edge between sectors of the quarter ring there falls on a texel border of its source. A small
-bias of positions towards larger values before sampling with Nearest, a fraction of what floats
-are off by, would make the GPU take the same texel.
-
-`warpSample()` in `wax/extensions/openglgfx/wax_glbackendshaders.cpp`, and the warp shaders of
-DX12Backend and MetalBackend
-
 ### DX12 and Metal warps are untested
 
 DX12Backend and MetalBackend were changed over to triangle meshes (see ROADMAP.md) in a Linux

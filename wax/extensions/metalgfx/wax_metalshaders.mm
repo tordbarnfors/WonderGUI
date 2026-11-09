@@ -3027,6 +3027,8 @@ const char MetalBackend::shaders[] =
 "		s = clamp(s, min(e2.xy + e2.z, center), max(e2.xy + e0.xy - e2.z, center));\n"
 "	}\n"
 "\n"
+"	s += e2.w;			// Bias for Nearest sampling, see wax_metalbackend.mm.\n"
+"\n"
 "	return cov;\n"
 "}\n"
 "\n"

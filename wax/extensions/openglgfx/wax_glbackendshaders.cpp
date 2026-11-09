@@ -2024,12 +2024,17 @@ WAX_GL_WARP_SEGMENTS("{ acc += segColor(e, flatColorsOfs, tintTableOfs, sc).a * 
 // 1 alpha only (Alpha_8 as white with alpha), 2 palette with nearest sampling and 3 palette with
 // bilinear sampling, which looks up the four texels around the position. Gradients are given
 // for mipmapped surfaces, which the derivatives of positions that wrap would get wrong.
+// nearestBias, 1/32768 of a texel with Nearest sampling and otherwise 0, makes a position exactly
+// on a border between texels take the texel after it, as SoftBackend does, rather than either one
+// by how the interpolation rounds. SoftBackend has positions in steps of 1/65536 of a pixel, so a
+// larger bias moves those it has just before a border: 1/1024 made more pixels differ than none.
 
 #define WAX_GL_WARP_SAMPLE \
 "uniform sampler2D texId;															" \
 "uniform sampler2D paletteId;														" WAX_GL_PALETTE_FUNC \
 "uniform int sourceKind;															" \
 "uniform float clampInset;															" \
+"uniform float nearestBias;															" \
 "vec2 warpKeepInside(vec2 p, vec2 begin, vec2 size)									" \
 "{																					" \
 "	vec2 center = begin + 0.5 * size;												" \
@@ -2039,6 +2044,7 @@ WAX_GL_WARP_SEGMENTS("{ acc += segColor(e, flatColorsOfs, tintTableOfs, sc).a * 
 "}																					" \
 "vec4 warpSample(vec2 p, vec2 gx, vec2 gy)											" \
 "{																					" \
+"	p += nearestBias;																" \
 "	vec2 texSize = vec2(textureSize(texId, 0));										" \
 "	if (sourceKind == 2)															" \
 "		return paletteLookup(textureLod(texId, p / texSize, 0.0).r);				" \

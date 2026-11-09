@@ -1658,10 +1658,15 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 					MetalSurface* pSurf = m_pActiveBlitSource;
 					float clampInset = pSurf->isTiling() ? 0.f : pSurf->sampleMethod() == SampleMethod::Bilinear ? 0.5f : 1.f / 256;
 
+					// Positions exactly on a border between texels take the texel after it, as in
+					// SoftBackend, rather than either one by how floats round.
+
+					float nearestBias = pSurf->sampleMethod() == SampleMethod::Nearest ? 1.f / 32768 : 0.f;
+
 					*pExtrasMTL++ = params.source.x / 64.f;
 					*pExtrasMTL++ = params.source.y / 64.f;
 					*pExtrasMTL++ = clampInset;
-					*pExtrasMTL++ = 0.f;
+					*pExtrasMTL++ = nearestBias;
 				}
 
 				if( pWarpmap->triangleCount() == 0 )

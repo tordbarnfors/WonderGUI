@@ -179,5 +179,7 @@ float warpBlitCoverage(uint ofs, float3 uvw, float fade, out float2 s, out float
         s = clamp(s, min(e2.xy + e2.z, center), max(e2.xy + e0.xy - e2.z, center));
     }
 
+    s += e2.w;              // Bias for Nearest sampling, see wax_dx12backend.cpp.
+
     return cov;
 }

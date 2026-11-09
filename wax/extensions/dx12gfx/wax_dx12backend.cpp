@@ -3475,7 +3475,12 @@ namespace wax
 
 			float clampInset = m_pBlitSource->isTiling() ? 0.f : m_pBlitSource->sampleMethod() == SampleMethod::Bilinear ? 0.5f : 1.f / 256;
 
-			*m_pExtrasPtr++ = { params.source.x / 64.f, params.source.y / 64.f, clampInset, 0.f };
+			// Positions exactly on a border between texels take the texel after it, as in SoftBackend,
+			// rather than either one by how floats round.
+
+			float nearestBias = m_pBlitSource->sampleMethod() == SampleMethod::Nearest ? 1.f / 32768 : 0.f;
+
+			*m_pExtrasPtr++ = { params.source.x / 64.f, params.source.y / 64.f, clampInset, nearestBias };
 		}
 
 		if (pWarpmap->triangleCount() == 0 || !_setPipeline(pPipeline) || !m_bCommandListOpen)
