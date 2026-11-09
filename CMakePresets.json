@@ -36,6 +36,8 @@
 
 		{ "name": "linux-wappsdl3gl", "displayName": "SDL3, OpenGL (Debug)", "inherits": "linux", "cacheVariables": { "WAPPLIB": "wappsdl3gl" } },
 		{ "name": "linux-wappsdl3gl-release", "displayName": "SDL3, OpenGL (Release)", "inherits": "linux-release", "cacheVariables": { "WAPPLIB": "wappsdl3gl" } },
+		{ "name": "linux-wappsdl3vk", "displayName": "SDL3, Vulkan (Debug)", "inherits": "linux", "cacheVariables": { "WAPPLIB": "wappsdl3vk" } },
+		{ "name": "linux-wappsdl3vk-release", "displayName": "SDL3, Vulkan (Release)", "inherits": "linux-release", "cacheVariables": { "WAPPLIB": "wappsdl3vk" } },
 		{ "name": "linux-wappsdl3sw", "displayName": "SDL3, software (Debug)", "inherits": "linux", "cacheVariables": { "WAPPLIB": "wappsdl3sw" } },
 		{ "name": "linux-wappsdl3sw-release", "displayName": "SDL3, software (Release)", "inherits": "linux-release", "cacheVariables": { "WAPPLIB": "wappsdl3sw" } },
 		{ "name": "linux-wappsdl2gl", "displayName": "SDL2, OpenGL (Debug)", "inherits": "linux", "cacheVariables": { "WAPPLIB": "wappsdl2gl" } },
