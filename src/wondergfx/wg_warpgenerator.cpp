@@ -20,6 +20,7 @@
 
 =========================================================================*/
 #include <wg_warpgenerator.h>
+#include <wg_gfxbase.h>
 
 #include <algorithm>
 #include <cmath>
@@ -29,18 +30,13 @@ namespace wg
 {
 	const TypeInfo WarpGenerator::TYPEINFO = { "WarpGenerator", &Object::TYPEINFO };
 
-	static const int c_minCellSize = 4;
-	static const int c_maxCellSize = 64;
-
 	//____ constructor ________________________________________________________
 
-	WarpGenerator::WarpGenerator(SizeI size, SizeSPX sourceSize, SizeI cellSize, float precision, WarpmapFactory* pFactory)
+	WarpGenerator::WarpGenerator(SizeI size, SizeSPX sourceSize, float precision, WarpmapFactory* pFactory)
 	{
 		m_size		= size;
 		m_sourceSize = sourceSize;
-		m_cellSize	= cellSize;
 		m_precision	= precision;
-		m_precisionFixed = int64_t(double(precision) * 65536.0 + 0.5);
 		m_pFactory	= pFactory;
 	}
 
@@ -87,34 +83,6 @@ namespace wg
 		return true;
 	}
 
-	//____ setCellSize() ______________________________________________________
-
-	bool WarpGenerator::setCellSize(SizeI cellSize)
-	{
-		if (cellSize.w < 0 || cellSize.h < 0)
-			return false;
-
-		if (cellSize != m_cellSize)
-		{
-			m_cellSize = cellSize;
-			m_bDirty = true;
-		}
-		return true;
-	}
-
-	//____ cellSize() _________________________________________________________
-
-	SizeI WarpGenerator::cellSize() const
-	{
-		if (m_cellSize.w > 0 && m_cellSize.h > 0)
-			return m_cellSize;
-
-		SizeI calculated = _calcCellSize();
-
-		return { m_cellSize.w > 0 ? m_cellSize.w : std::clamp(calculated.w, c_minCellSize, std::max(c_minCellSize, m_size.w)),
-				 m_cellSize.h > 0 ? m_cellSize.h : std::clamp(calculated.h, c_minCellSize, std::max(c_minCellSize, m_size.h)) };
-	}
-
 	//____ setPrecision() _____________________________________________________
 
 	bool WarpGenerator::setPrecision(float precision)
@@ -125,7 +93,6 @@ namespace wg
 		if (precision != m_precision)
 		{
 			m_precision = precision;
-			m_precisionFixed = int64_t(double(precision) * 65536.0 + 0.5);
 			m_bDirty = true;
 		}
 		return true;
@@ -136,8 +103,9 @@ namespace wg
 		Draws are rendered when the canvas update ends and read the Warpmap then, so a Warpmap that
 		a draw holds (or anyone else) is left as it is and a new one created in its place.
 
-		A Warpmap that only we hold has its nodes and periods written in place, then normalized and
-		sent on once.
+		A Warpmap that only we hold has its vertices, triangles and periods written in place and
+		sent on once. The counts of vertices and triangles are fixed for a Warpmap, so it is
+		created anew when they change.
 	*/
 
 	Warpmap_p WarpGenerator::generate()
@@ -145,47 +113,52 @@ namespace wg
 		if (!m_bDirty && m_pWarpmap)
 			return m_pWarpmap;
 
-		SizeI cellSize = this->cellSize();
-		spx uPeriod = _uPeriod();
-		spx vPeriod = _vPeriod();
+		spx uPeriod = std::clamp(_uPeriod(), 0, Warpmap::maxValue);
+		spx vPeriod = std::clamp(_vPeriod(), 0, Warpmap::maxValue);
 
-		if (!m_pWarpmap || m_pWarpmap->refcount() > 1 || m_pWarpmap->pixelSize() != m_size || m_pWarpmap->cellSize() != cellSize)
+		int nVertices, nTriangles;
+		_meshSize(nVertices, nTriangles);
+
+		auto generateInto = [&](Warpmap::Vertex* pVertices, Warpmap::Triangle* pTriangles)
+		{
+			_generateMesh(pVertices, pTriangles);
+			for (int i = 0; i < nVertices; i++)
+				pVertices[i] = Warpmap::_clamped(pVertices[i]);
+		};
+
+		Warpmap* pMap = m_pWarpmap;
+
+		if (!pMap || pMap->refcount() > 1 || pMap->pixelSize() != m_size || pMap->vertexCount() != nVertices || pMap->triangleCount() != nTriangles)
 		{
 			Warpmap::Blueprint bp;
 			bp.size = m_size;
-			bp.cellSize = cellSize;
+			bp.triangles = nTriangles;
 			bp.uPeriod = uPeriod;
+			bp.vertices = nVertices;
 			bp.vPeriod = vPeriod;
 
-			SizeI nodes = { (m_size.w + cellSize.w - 1) / cellSize.w + 1, (m_size.h + cellSize.h - 1) / cellSize.h + 1 };
-			std::vector<CoordSPX> buffer(nodes.w * nodes.h);
-			_generateNodes(buffer.data(), nodes, cellSize);
+			std::vector<Warpmap::Vertex> vertices(nVertices);
+			std::vector<Warpmap::Triangle> triangles(nTriangles);
+			generateInto(vertices.data(), triangles.data());
 
-			m_pWarpmap = m_pFactory->createWarpmap(bp, buffer.data());
+			m_pWarpmap = m_pFactory->createWarpmap(bp, vertices.data(), triangles.data());
+		}
+		else if (pMap->m_pVertices && pMap->m_pTriangles)
+		{
+			generateInto(pMap->m_pVertices, pMap->m_pTriangles);
+			pMap->m_uPeriod = uPeriod;
+			pMap->m_vPeriod = vPeriod;
+			pMap->_updated(0, nVertices, 0, nTriangles);
 		}
 		else
 		{
-			Warpmap* pMap = m_pWarpmap;
-			SizeI nodes = pMap->nodes();
+			// No content of its own to write to, it goes through importMesh().
 
-			if (pMap->m_pNodes)
-			{
-				RectI all = { 0, 0, nodes.w, nodes.h };
+			std::vector<Warpmap::Vertex> vertices(nVertices);
+			std::vector<Warpmap::Triangle> triangles(nTriangles);
+			generateInto(vertices.data(), triangles.data());
 
-				_generateNodes(pMap->m_pNodes, nodes, cellSize);
-				pMap->m_uPeriod = uPeriod;
-				pMap->m_vPeriod = vPeriod;
-				pMap->_normalizeNodes(all);
-				pMap->_nodesUpdated(all);
-			}
-			else
-			{
-				// No nodes of its own to write to, they go through importAllNodes().
-
-				std::vector<CoordSPX> buffer(nodes.w * nodes.h);
-				_generateNodes(buffer.data(), nodes, cellSize);
-				pMap->importAllNodes(buffer.data(), uPeriod, vPeriod);
-			}
+			pMap->importMesh(vertices.data(), triangles.data(), uPeriod, vPeriod);
 		}
 
 		_generated();
@@ -194,31 +167,482 @@ namespace wg
 		return m_pWarpmap;
 	}
 
-	//____ _validateSettings() ________________________________________________
-
-	bool WarpGenerator::_validateSettings(SizeI size, SizeSPX sourceSize, SizeI cellSize, float precision)
-	{
-		return size.w > 0 && size.h > 0 && sourceSize.w > 0 && sourceSize.h > 0 && cellSize.w >= 0 && cellSize.h >= 0 && precision > 0.f;
-	}
-
-	//____ _cellSizeForRadius() _______________________________________________
+	//____ Outline bands ______________________________________________________
 	/*
-		A curve of radius r drawn through cells of size c is off by about c^2 / (8 * r), so the
-		largest cell size that keeps within precision is sqrt(8 * precision * r).
+		The band covers the whole outline, whatever the sweep, since offsets can move the source
+		anywhere along it, from a pixel inside its inner edge to a pixel outside its outer edge, for
+		borders antialiased within its triangles. It is made of columns across the band, from the
+		outline outwards along its normal, walked clockwise from the start of the top side: one at
+		each end of the straight sides and nArc + 1 around each corner, the last one in the same place
+		as the first. Each column has nAcross + 1 vertices, at the same distances from the outline.
+
+		Along the straight sides positions are linear, so their quads are exact. Around the corners,
+		triangles are off where the outline curves, by r * a^2 / 8 for sectors of a radians at radius
+		r (largest at the outer edge), and along their diagonals, by a * h / 4 for parts h across the
+		band, from how the position along the outline changes across it. _bandLayout() shares
+		the tolerance between the two as gives the fewest triangles.
+
+		Where the band reaches further inside than the radius of the corners, the inside of the outline
+		is split along the diagonals from the centers of the corners, as the nearest point of the outline
+		is on one side or another, and positions are linear within each part. Those parts are added as
+		polygons, clipped to the band. Columns of corners then start in the center of the corner, and
+		vertices there take the position along the outline of the middle of their sector, which is all
+		that is drawn of them.
 	*/
 
-	int WarpGenerator::_cellSizeForRadius(int64_t radius) const
+	namespace
 	{
-		// 8 * precision * radius in pixels^2 is precision (16 binals) * radius (spx) / 2^19. Its
-		// square root rounded down is that of the value rounded down.
+		const double c_pi = 3.14159265358979323846;
+		const int64_t c_bandPixel = 64 << 8;					// A pixel in 1/256 spx.
 
-		if (radius <= 0)
-			return c_minCellSize;
+		// Distances from the outline: the inner and outer edge of the mesh, a pixel beyond the band
+		// but not beyond the deepest point inside, and where columns start.
 
-		const int64_t c_limit = int64_t(1) << 40;				// Far beyond the largest cell, and no overflow.
-		int64_t value = m_precisionFixed > 0 && radius > c_limit / m_precisionFixed ? c_limit : (m_precisionFixed * radius) >> 19;
+		void bandDistances(int64_t top, int64_t bottom, int64_t ax, int64_t ay, int64_t radius, int64_t& dIn, int64_t& dColumns, int64_t& dOut)
+		{
+			dOut = std::max(top, bottom) + c_bandPixel;
+			dIn = std::max(std::min(top, bottom) - c_bandPixel, -(radius + std::min(ax, ay)));
+			dColumns = std::max(dIn, -radius);
+		}
+	}
 
-		return std::clamp(int(_sqrt(uint64_t(value))), c_minCellSize, c_maxCellSize);
+	//____ _bandLayout() ______________________________________________________
+
+	void WarpGenerator::_bandLayout(const OutlineBand& band, int& nArc, int& nAcross) const
+	{
+		// The same as last time unless the shape or precision has changed, as when only angles or
+		// offsets do.
+
+		LayoutCache& cache = m_layoutCache;
+
+		if (cache.bValid && cache.ax == band.ax && cache.ay == band.ay && cache.radius == band.radius && cache.top == band.top &&
+			cache.bottom == band.bottom && cache.precision == m_precision)
+		{
+			nArc = cache.nArc;
+			nAcross = cache.nAcross;
+			return;
+		}
+
+		_calcBandLayout(band, nArc, nAcross);
+
+		cache = { true, band.ax, band.ay, band.radius, band.top, band.bottom, m_precision, nArc, nAcross };
+	}
+
+	//____ _calcBandLayout() __________________________________________________
+
+	void WarpGenerator::_calcBandLayout(const OutlineBand& band, int& nArc, int& nAcross) const
+	{
+		int64_t dIn, dColumns, dOut;
+		bandDistances(band.top, band.bottom, band.ax, band.ay, band.radius, dIn, dColumns, dOut);
+
+		double outer = double(band.radius + dOut) / c_bandPixel;
+		double across = double(dOut - dColumns) / c_bandPixel;
+
+		nArc = 0;
+		nAcross = 0;
+
+		if (across <= 0.0 || outer <= 0.0)
+			return;
+
+		const double quarter = c_pi / 2;
+		const double tolerance = _pieceTolerance();
+
+		// Kept within Warpmap::maxVertices: columns at the start of the top side and around the
+		// four corners, nAcross + 1 vertices each, the vertices at the centers of fans and up to six
+		// for each of the four parts inside the centers of the corners. Coarser across first, as long
+		// as pieces stay longer across than along.
+
+		auto cap = [&]()
+		{
+			auto vertices = [](int n, int m) { return int64_t(4 * n + 5) * (m + 1) + 4 * n + 24; };
+
+			while (vertices(nArc, nAcross) > Warpmap::maxVertices && (nArc > 2 || nAcross > 1))
+			{
+				if (nAcross > 1 && (nArc <= 2 || across / nAcross < outer * quarter / nArc))
+					nAcross = std::max(1, int(nAcross * 7 / 8));
+				else
+					nArc = std::max(2, int(nArc * 7 / 8));
+			}
+		};
+
+		auto arcs = [&](double angle) { return int(std::clamp(std::ceil(quarter / std::max(angle, 1e-6)), 2.0, 1024.0)); };
+		auto parts = [&](double angle, double budget) { return int(std::clamp(std::ceil(across * angle / (4 * budget)), 1.0, 256.0)); };
+
+		// Least work drawing for a share of the tolerance kept along the outline. A software backend
+		// spends about as much on each row a triangle covers, so that goes by the number of quads
+		// times their length plus how far across they go, which favours quads about as long as
+		// they are across over thin slivers.
+
+		// Sectors keep the outer edge, which is the outline, within the outline tolerance.
+
+		const int nOutline = arcs(std::sqrt(8 * _outlineTolerance() / outer));
+
+		double best = -1.0;
+		for (int i = 1; i < 20; i++)
+		{
+			double share = i / 20.0;
+			int n = std::max(arcs(std::sqrt(8 * share * tolerance / outer)), nOutline);
+			double angle = quarter / n;
+
+			int m = parts(angle, std::max(tolerance - outer * angle * angle / 8, tolerance / 20));
+
+			double cost = double(n + 1) * m * (outer * angle + across / m);
+			if (best < 0.0 || cost < best)
+			{
+				best = cost;
+				nArc = n;
+				nAcross = m;
+			}
+		}
+
+		cap();
+	}
+
+	//____ _bandMesh() ________________________________________________________
+	/*
+		Writes the mesh to pVertices and pTriangles, which have room for the counts it gives, or
+		only counts them if pVertices is null. Columns go along the outline: one at the start of the
+		top side if it has a length, then those of each corner, the first of a corner left out where
+		the side before it has no length, nAcross + 1 vertices each. Triangles between two columns
+		are written once the second has its vertices, and the vertex at the center of a fan, after
+		all those of the columns, as its triangle is.
+	*/
+
+	void WarpGenerator::_bandMesh(const OutlineBand& band, Warpmap::Vertex* pVertices, Warpmap::Triangle* pTriangles, int& nVertices, int& nTriangles) const
+	{
+		const bool bWrite = pVertices != nullptr;
+
+		nVertices = 0;
+		nTriangles = 0;
+
+		auto empty = [&]()
+		{
+			// No band to map the source onto, nothing to draw.
+
+			if (bWrite)
+			{
+				for (int i = 0; i < 3; i++)
+					pVertices[i] = { 0, 0, 0, 0 };
+				pTriangles[0] = { 0, 0, 0 };
+			}
+			nVertices = 3;
+			nTriangles = 1;
+		};
+
+		const int64_t ax = std::max(band.ax, int64_t(0));
+		const int64_t ay = std::max(band.ay, int64_t(0));
+		const int64_t r = std::max(band.radius, int64_t(0));
+
+		if (band.top == band.bottom)
+			return empty();
+
+		int64_t dIn, dColumns, dOut;
+		bandDistances(band.top, band.bottom, ax, ay, r, dIn, dColumns, dOut);
+
+		int nArc, nAcross;
+		_bandLayout(band, nArc, nAcross);
+
+		// Along the outline. pos is in 1/256 spx, from the middle of the top side.
+
+		const int64_t arc = _multiply(r, _factor(c_pi / 2));
+		int64_t perimeter = 4 * ax + 4 * ay + 4 * arc;
+		if (perimeter <= 0)
+			perimeter = 1;
+
+		const bool bClockwise = band.sweep > 0.0;
+		const double sweep = std::abs(band.sweep);
+		const int64_t pos0 = -ax;
+
+		Factor uFactor, vFactor;
+		int64_t u0 = 0;
+
+		if (bWrite)
+		{
+			uint32_t part0 = uint32_t(_multiply(pos0, _factor(0x1p32 / double(perimeter))));
+			u0 = _multiply(bClockwise ? part0 - band.start : band.start - part0, _factor(double(m_sourceSize.w) / (sweep * 0x1p32)));
+			uFactor = _factor(double(m_sourceSize.w) / (sweep * double(perimeter)));
+			vFactor = _factor(double(m_sourceSize.h) / double(band.bottom - band.top));
+		}
+
+		auto uAt = [&](int64_t pos) { int64_t du = _multiply(pos - pos0, uFactor); return u0 + (bClockwise ? du : -du); };
+		auto vAt = [&](int64_t distance) { return _multiply(distance - band.top, vFactor); };
+
+		auto toSpx = [](int64_t value) { return spx(std::clamp((value + 128) >> 8, -int64_t(Warpmap::maxPosition), int64_t(Warpmap::maxPosition))); };
+
+		auto writeVertex = [&](int index, int64_t x, int64_t y, int64_t u, int64_t v)
+		{
+			pVertices[index] = { toSpx(band.cx + x), toSpx(band.cy + y), _toSourceValue(u), _toSourceValue(v) };
+		};
+
+		// Columns across the band.
+
+		if (dOut > dColumns)
+		{
+			const int64_t cornerX[4] = { ax, ax, -ax, -ax };
+			const int64_t cornerY[4] = { -ay, ay, ay, -ay };
+			const int64_t cornerPos[4] = { ax, ax + arc + 2 * ay, 3 * ax + 2 * arc + 2 * ay, 3 * ax + 3 * arc + 4 * ay };
+
+			const bool bStart = ax > 0;
+			const bool bSkipFirst[4] = { false, ay == 0, ax == 0, ay == 0 };		// The side before has no length.
+
+			int nColumns = bStart ? 1 : 0;
+			for (int k = 0; k < 4; k++)
+				nColumns += nArc + (bSkipFirst[k] ? 0 : 1);
+
+			const int perColumn = nAcross + 1;
+			const bool bApex = dColumns == -r;
+
+			// Sectors of corners that start in their center are fans with a vertex of their own
+			// there, which takes the position along the outline of the middle of the sector.
+
+			int nFans = 0;
+			if (bApex)
+			{
+				for (int k = 0; k < 4; k++)
+					nFans += nArc - (bSkipFirst[k] ? 1 : 0);				// Pairs of columns of the corner.
+			}
+
+			if (!bWrite)
+			{
+				nVertices = nColumns * perColumn + nFans;
+				nTriangles = (nColumns - 1) * nAcross * 2 - nFans;
+			}
+			else
+			{
+				// Distances across the band, and v at them, the same for all columns.
+
+				int across = perColumn * int(sizeof(int64_t) * 2);
+				auto pAcross = (int64_t*) GfxBase::memStackAlloc(across);
+				int64_t* pV = pAcross + perColumn;
+
+				const int64_t span = dOut - dColumns;
+				for (int i = 0; i <= nAcross; i++)
+				{
+					pAcross[i] = dColumns + span * i / nAcross;
+					pV[i] = vAt(pAcross[i]);
+				}
+
+				int column = 0;
+				int fan = nColumns * perColumn;
+				int previousCorner = -2;
+
+				auto addColumn = [&](int64_t x, int64_t y, int32_t nx, int32_t ny, int64_t pos, int corner)
+				{
+					int64_t u = uAt(pos);
+					int base = column * perColumn;
+
+					for (int i = 0; i <= nAcross; i++)
+					{
+						int64_t d = pAcross[i];
+						writeVertex(base + i, x + ((d * nx) >> 20), y + ((d * ny) >> 20), u, pV[i]);
+					}
+
+					if (column > 0)
+					{
+						bool bFan = bApex && corner >= 0 && corner == previousCorner;
+
+						for (int i = 0; i < nAcross; i++)
+						{
+							int a = base - perColumn + i;
+							int b = a + perColumn;
+
+							if (bFan && i == 0)
+							{
+								Warpmap::Vertex apex = pVertices[a];
+								apex.u = _toSourceValue((int64_t(pVertices[a].u) + pVertices[b].u) / 2);
+								pVertices[fan] = apex;
+
+								*pTriangles++ = { fan, b + 1, a + 1 };
+								fan++;
+								nTriangles++;
+								continue;
+							}
+
+							*pTriangles++ = { a, b, b + 1 };
+							*pTriangles++ = { a, b + 1, a + 1 };
+							nTriangles += 2;
+						}
+					}
+
+					previousCorner = corner;
+					column++;
+				};
+
+				if (bStart)
+					addColumn(-ax, -ay - r, 0, -(1 << 20), pos0, -1);
+
+				for (int k = 0; k < 4; k++)
+				{
+					for (int i = bSkipFirst[k] ? 1 : 0; i <= nArc; i++)
+					{
+						int64_t pos = cornerPos[k] + arc * i / nArc;
+
+						int32_t sin, cos;
+						_sinCos((uint32_t(k) << 30) + uint32_t((uint64_t(1) << 30) * i / nArc), sin, cos);
+
+						int32_t nx = sin >> 10;
+						int32_t ny = -(cos >> 10);
+						addColumn(cornerX[k] + ((r * nx) >> 20), cornerY[k] + ((r * ny) >> 20), nx, ny, pos, k);
+					}
+				}
+
+				GfxBase::memStackFree(across);
+				nVertices = fan;
+			}
+		}
+
+		// Parts inside the centers of the corners, where the band reaches further in than their
+		// radius. Each is the part of the inside nearest to one side, cut along the diagonals from the
+		// centers of the corners, clipped to the band. Their edges are along the axes or diagonals,
+		// so the points where they are clipped are exact.
+
+		if (dIn < -r)
+		{
+			const int64_t m = std::min(ax, ay);
+			const int64_t hi = std::min(dOut, -r);
+
+			struct Point { int64_t x, y; };
+
+			struct Part
+			{
+				Point	corners[4];
+				int		axis;				// Of the line depth is measured along: 0 = x, 1 = y.
+				int64_t	edge;				// Where along it the depth is -r.
+				int		sign;				// Depth decreasing (going inwards) along the axis: +1 or -1.
+			};
+
+			const Part sides[4] = {
+				{ { { -ax, -ay }, { ax, -ay }, { ax - m, -ay + m }, { -ax + m, -ay + m } }, 1, -ay, 1 },		// Top, deeper as y grows.
+				{ { { ax, -ay }, { ax, ay }, { ax - m, ay - m }, { ax - m, -ay + m } }, 0, ax, -1 },			// Right.
+				{ { { ax, ay }, { -ax, ay }, { -ax + m, ay - m }, { ax - m, ay - m } }, 1, ay, -1 },			// Bottom.
+				{ { { -ax, ay }, { -ax, -ay }, { -ax + m, -ay + m }, { -ax + m, ay - m } }, 0, -ax, 1 }		// Left.
+			};
+
+			for (int k = 0; k < 4; k++)
+			{
+				const Part& part = sides[k];
+
+				// Depth at a point, and the position along the outline.
+
+				auto depth = [&](const Point& p) { return -r - (part.axis == 1 ? p.y - part.edge : p.x - part.edge) * part.sign; };
+				auto pos = [&](const Point& p)
+				{
+					switch (k)
+					{
+						case 0:	return p.x;
+						case 1:	return ax + arc + (p.y + ay);
+						case 2:	return ax + 2 * arc + 2 * ay + (ax - p.x);
+						default: return 3 * ax + 3 * arc + 2 * ay + (ay - p.y);
+					}
+				};
+
+				// Clipped to depth >= dIn and <= hi, which are lines across the axis. Each clip adds at
+				// most one corner to the four.
+
+				Point poly[6];
+				int nPoly = 4;
+				for (int i = 0; i < 4; i++)
+					poly[i] = part.corners[i];
+
+				auto clip = [&](int64_t limit, bool bKeepDeeper)
+				{
+					Point out[6];
+					int nOut = 0;
+					for (int i = 0; i < nPoly; i++)
+					{
+						const Point& a = poly[i];
+						const Point& b = poly[(i + 1) % nPoly];
+						int64_t da = depth(a) - limit, db = depth(b) - limit;
+						bool bInA = bKeepDeeper ? da <= 0 : da >= 0;
+						bool bInB = bKeepDeeper ? db <= 0 : db >= 0;
+
+						if (bInA)
+							out[nOut++] = a;
+
+						if (bInA != bInB)
+						{
+							// Along the axis depth is measured on, edges change by the same or nothing across it.
+
+							Point q;
+							int64_t at = part.edge - (limit + r) * part.sign;			// Where depth is limit.
+							if (part.axis == 1)
+							{
+								int64_t dx = b.x - a.x, dy = b.y - a.y;
+								q.y = at;
+								q.x = dy != 0 ? a.x + (at - a.y) * (dx / dy) : a.x;
+							}
+							else
+							{
+								int64_t dx = b.x - a.x, dy = b.y - a.y;
+								q.x = at;
+								q.y = dx != 0 ? a.y + (at - a.x) * (dy / dx) : a.y;
+							}
+							out[nOut++] = q;
+						}
+					}
+
+					nPoly = nOut;
+					for (int i = 0; i < nOut; i++)
+						poly[i] = out[i];
+				};
+
+				clip(dIn, false);
+				clip(hi, true);
+
+				// Without corners in the same place, a fan from the first.
+
+				Point unique[6];
+				int nUnique = 0;
+				for (int i = 0; i < nPoly; i++)
+				{
+					if (nUnique == 0 || unique[nUnique - 1].x != poly[i].x || unique[nUnique - 1].y != poly[i].y)
+						unique[nUnique++] = poly[i];
+				}
+				while (nUnique > 1 && unique[0].x == unique[nUnique - 1].x && unique[0].y == unique[nUnique - 1].y)
+					nUnique--;
+
+				if (nUnique < 3)
+					continue;
+
+				if (bWrite)
+				{
+					for (int i = 0; i < nUnique; i++)
+						writeVertex(nVertices + i, unique[i].x, unique[i].y, uAt(pos(unique[i])), vAt(depth(unique[i])));
+
+					for (int i = 1; i + 1 < nUnique; i++)
+						*pTriangles++ = { nVertices, nVertices + i, nVertices + i + 1 };
+				}
+
+				nVertices += nUnique;
+				nTriangles += nUnique - 2;
+			}
+		}
+
+		if (nTriangles == 0)
+			empty();
+	}
+
+	//____ _pieceTolerance() __________________________________________________
+
+	double WarpGenerator::_pieceTolerance() const
+	{
+		double tolerance = std::max(c_tolerance / double(m_precision), 0.01);
+		return std::max(tolerance - 1.0 / 64, tolerance / 2);
+	}
+
+	//____ _outlineTolerance() ________________________________________________
+
+	double WarpGenerator::_outlineTolerance() const
+	{
+		double tolerance = std::clamp(c_tolerance / double(m_precision), 0.01, double(c_outlineTolerance));
+		return std::max(tolerance - 1.0 / 64, tolerance / 2);
+	}
+
+	//____ _validateSettings() ________________________________________________
+
+	bool WarpGenerator::_validateSettings(SizeI size, SizeSPX sourceSize, float precision)
+	{
+		return size.w > 0 && size.h > 0 && sourceSize.w > 0 && sourceSize.h > 0 && precision > 0.f;
 	}
 
 	//____ _factor() __________________________________________________________
@@ -401,7 +825,7 @@ namespace wg
 
 	spx WarpGenerator::_offsetFor(uint32_t shift, Factor factor)
 	{
-		return _toNodeValue(-_multiply(int32_t(shift), factor));
+		return _toSourceValue(-_multiply(int32_t(shift), factor));
 	}
 
 	//____ _sqrt() ____________________________________________________________
@@ -483,11 +907,11 @@ namespace wg
 		sin = bHalfTurn ? -y : y;
 	}
 
-	//____ _toNodeValue() _____________________________________________________
+	//____ _toSourceValue() ___________________________________________________
 
-	spx WarpGenerator::_toNodeValue(int64_t value)
+	spx WarpGenerator::_toSourceValue(int64_t value)
 	{
-		return spx(std::clamp(value, -int64_t(Warpmap::maxNodeValue), int64_t(Warpmap::maxNodeValue)));
+		return spx(std::clamp(value, -int64_t(Warpmap::maxValue), int64_t(Warpmap::maxValue)));
 	}
 
 } // namespace wg

@@ -46,10 +46,17 @@ namespace wg
 	/**
 	 * @brief Warpmap for GlBackend.
 	 *
-	 * The cells are kept in a texture buffer for the shaders, two RGBA32F entries per cell, row by
-	 * row: the top-left and top-right corners, then the bottom-left and bottom-right corners, as
-	 * given by cellCorners(), so already moved by whole periods to be close to the top-left one,
-	 * converted from spx to pixels of the source.
+	 * The mesh is kept on the GPU as it is, in a vertex buffer of the vertices (x, y, u, v, w and
+	 * coverage as integers, the layout of Warpmap::Vertex) and an index buffer of the triangles (the
+	 * corners as unsigned shorts, the layout of Warpmap::Triangle), with a vertex array for both. Content that
+	 * changes is copied to them, with nothing worked out on the CPU. Drawing only gives where to
+	 * draw, the source offset and the periods.
+	 *
+	 * The vertex shader passes u * w, v * w and w on without perspective correction, which makes
+	 * them linear over the canvas, so that the fragment shaders get the position in the source as
+	 * their ratio, and its derivatives exactly from those of the three, also in the pixels around a
+	 * triangle that are shaded for it. u and v are taken relative to those of the first vertex, as
+	 * integers, to keep the precision of floats for meshes far into the source.
 	 */
 
 	class GlWarpmap : public Warpmap
@@ -60,7 +67,7 @@ namespace wg
 		//.____ Creation __________________________________________
 
 		static GlWarpmap_p	create( const Blueprint& blueprint );
-		static GlWarpmap_p	create( const Blueprint& blueprint, const CoordSPX * pNodes, int pitch = 0 );
+		static GlWarpmap_p	create( const Blueprint& blueprint, const Vertex * pVertices, const Triangle * pTriangles );
 
 		//.____ Identification __________________________________________
 
@@ -68,15 +75,14 @@ namespace wg
 		const static TypeInfo	TYPEINFO;
 
 	protected:
-		GlWarpmap( const Blueprint& bp, const CoordSPX * pNodes = nullptr, int pitch = 0 );
+		GlWarpmap( const Blueprint& bp, const Vertex * pVertices = nullptr, const Triangle * pTriangles = nullptr );
 		virtual ~GlWarpmap();
 
-		void	_nodesUpdated( const RectI& region ) override;
+		void	_updated( int firstVertex, int nVertices, int firstTriangle, int nTriangles ) override;
 
-		inline SizeI	_cells() const { return { m_nodes.w - 1, m_nodes.h - 1 }; }
-
-		GLuint		m_bufferId = 0;
-		GLuint		m_textureId = 0;
+		GLuint		m_vertexBufferId = 0;
+		GLuint		m_indexBufferId = 0;
+		GLuint		m_vertexArrayId = 0;
 	};
 
 } // namespace wg

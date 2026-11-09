@@ -25,7 +25,7 @@ SamplerState blitSampler : register(s0);
 PS_OUTPUT main(PS_INPUT input)
 {
     float2 s, dx, dy;
-    float cov = warpBlitCoverage(input.warpOfs, input.position.xy, s, dx, dy);
+    float cov = warpBlitCoverage(input.warpOfs, input.uvw, input.coverage, s, dx, dy);
 
     if (cov < 1.0f / 256.0f)
         discard;

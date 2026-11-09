@@ -59,7 +59,7 @@
 #include <wg_rlecompression.h>
 #include <wg_spans.h>
 #include <wg_spxcompression.h>
-#include <wg_nodecompression.h>
+#include <wg_meshcompression.h>
 #include <wg_tint.h>
 #include <wg_tinttools.h>
 #include <wg_gpushapes.h>

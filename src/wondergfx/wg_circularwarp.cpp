@@ -33,7 +33,7 @@ namespace wg
 
 	CircularWarp_p CircularWarp::create(const Blueprint& bp, WarpmapFactory* pFactory)
 	{
-		if (!_validateSettings(bp.size, bp.sourceSize, bp.cellSize, bp.precision) || bp.sweep == 0.f)
+		if (!_validateSettings(bp.size, bp.sourceSize, bp.precision) || bp.sweep == 0.f)
 			return nullptr;
 
 		if (!pFactory)
@@ -48,7 +48,7 @@ namespace wg
 	//____ constructor ________________________________________________________
 
 	CircularWarp::CircularWarp(const Blueprint& bp, WarpmapFactory* pFactory)
-		: WarpGenerator(bp.size, bp.sourceSize, bp.cellSize, bp.precision, pFactory)
+		: WarpGenerator(bp.size, bp.sourceSize, bp.precision, pFactory)
 	{
 		if (bp.finalizer)
 			setFinalizer(bp.finalizer);
@@ -125,19 +125,49 @@ namespace wg
 		return { _offsetFor(_toTurn(degrees * (1.0 / 360)), m_offsetFactor), 0 };
 	}
 
-	//____ _calcCellSize() ____________________________________________________
+	//____ _band() ___________________________________________________________
 	/*
-		Precision is kept at the smaller radius, where the error is largest. A disc has no smaller
-		radius and can't show detail close to its center anyway, so half its radius is used instead.
+		The outline is the circle of the larger radius, a rounded rectangle with nothing but corners,
+		and the radii are distances from it.
 	*/
 
-	SizeI CircularWarp::_calcCellSize() const
+	WarpGenerator::OutlineBand CircularWarp::_band() const
 	{
-		spx inner = std::min(m_topRadius, m_bottomRadius);
-		spx outer = std::max(m_topRadius, m_bottomRadius);
+		const double c_limit = 0x1p52;							// Keeps far away centers within int64 maths.
+		auto toFixed = [c_limit](double value) { return value == value ? int64_t(std::clamp(value + (value < 0 ? -0.5 : 0.5), -c_limit, c_limit)) : 0; };
 
-		int cellSize = _cellSizeForRadius(inner > 0 ? inner : outer / 2);
-		return { cellSize, cellSize };
+		OutlineBand band;
+		band.cx = toFixed(m_center.x * m_size.w * double(64 << 8));
+		band.cy = toFixed(m_center.y * m_size.h * double(64 << 8));
+		band.ax = 0;
+		band.ay = 0;
+		band.radius = int64_t(std::max(m_topRadius, m_bottomRadius)) << 8;
+		band.top = (int64_t(m_topRadius) << 8) - band.radius;
+		band.bottom = (int64_t(m_bottomRadius) << 8) - band.radius;
+		band.start = _toTurn(m_startAngle / 360.0);
+		band.sweep = m_sweep / 360.0;
+		return band;
+	}
+
+	//____ _meshSize() ________________________________________________________
+
+	void CircularWarp::_meshSize(int& nVertices, int& nTriangles) const
+	{
+		_bandMesh(_band(), nullptr, nullptr, nVertices, nTriangles);
+	}
+
+	//____ _generateMesh() ____________________________________________________
+	/*
+		Angle is measured clockwise from straight up. u goes from 0 at startAngle to the width of
+		the source at startAngle + sweep (counter clockwise for negative sweep) and is periodic with
+		a period of width * 360 / |sweep|. v goes from 0 at topRadius to the height of the source at
+		bottomRadius.
+	*/
+
+	void CircularWarp::_generateMesh(Warpmap::Vertex* pVertices, Warpmap::Triangle* pTriangles) const
+	{
+		int nVertices, nTriangles;
+		_bandMesh(_band(), pVertices, pTriangles, nVertices, nTriangles);
 	}
 
 	//____ _uPeriod() _________________________________________________________
@@ -148,58 +178,7 @@ namespace wg
 	spx CircularWarp::_uPeriod() const
 	{
 		double period = m_sourceSize.w * 360.0 / std::abs(double(m_sweep)) + 0.5;
-		return spx(std::clamp(period, 1.0, double(Warpmap::maxNodeValue)));
-	}
-
-	//____ _generateNodes() ___________________________________________________
-	/*
-		Angle is measured clockwise from straight up. u goes from 0 at startAngle to the width of
-		the source at startAngle + sweep (counter clockwise for negative sweep) and is periodic with
-		a period of width * 360 / |sweep|. v goes from 0 at topRadius to the height of the source at
-		bottomRadius. Positions are clamped to what a Warpmap can hold, far outside the source.
-
-		Nodes are calculated with integers only, positions in 1/256 spx and angles in 1/2^32 of a
-		turn. u is calculated from the angle to the node from startAngle in the direction of sweep,
-		within a turn, so the first period is exact even though the period of the Warpmap is
-		rounded to spx.
-	*/
-
-	void CircularWarp::_generateNodes(CoordSPX* pNodes, SizeI nodes, SizeI cellSize) const
-	{
-		const int c_fractionBits = 8;							// Of spx, so the center isn't rounded.
-		const int64_t c_pixel = 64 << c_fractionBits;
-		const double c_limit = 0x1p52;							// Keeps far away centers within int64 maths.
-
-		auto toFixed = [c_limit](double value) { return value == value ? int64_t(std::clamp(value + (value < 0 ? -0.5 : 0.5), -c_limit, c_limit)) : 0; };
-
-		int64_t cx = toFixed(m_center.x * m_size.w * double(c_pixel));
-		int64_t cy = toFixed(m_center.y * m_size.h * double(c_pixel));
-		int64_t topRadius = int64_t(m_topRadius) << c_fractionBits;
-
-		uint32_t start = _toTurn(m_startAngle / 360.0);
-
-		Factor uFactor = _factor(double(m_sourceSize.w) * 360.0 / (std::abs(double(m_sweep)) * 0x1p32));
-		bool bClockwise = m_sweep > 0.f;
-		Factor vFactor = _factor(double(m_sourceSize.h) / (double(m_bottomRadius - m_topRadius) * (1 << c_fractionBits)));
-		bool bFlat = m_bottomRadius == m_topRadius;
-
-		for (int row = 0; row < nodes.h; row++)
-		{
-			int64_t y = std::min(row * cellSize.h, m_size.h) * c_pixel - cy;
-
-			for (int col = 0; col < nodes.w; col++)
-			{
-				int64_t x = std::min(col * cellSize.w, m_size.w) * c_pixel - cx;
-
-				int64_t r;
-				uint32_t angle = _polar(-y, x, &r);				// Clockwise from up.
-
-				int64_t u = _multiply(bClockwise ? angle - start : start - angle, uFactor);
-				int64_t v = bFlat ? -Warpmap::maxNodeValue : _multiply(r - topRadius, vFactor);
-
-				*pNodes++ = { _toNodeValue(u), _toNodeValue(v) };
-			}
-		}
+		return spx(std::clamp(period, 1.0, double(Warpmap::maxValue)));
 	}
 
 } // namespace wg

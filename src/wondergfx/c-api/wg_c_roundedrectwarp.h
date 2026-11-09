@@ -35,9 +35,8 @@ extern "C" {
 	typedef struct wg_roundedRectWarpBP_struct		// NOT BINARY EQUIVALENT!
 	{
 		wg_spx				bottomDistance;			// Distance from the outline of the bottom of the source, positive outwards.
-		wg_sizeI			cellSize;				// 0 for width or height = calculated from precision.
 		wg_spx				cornerRadius;			// Radius of the corners of the outline, at most half its shorter side.
-		float				precision;				// Max position error in pixels when cellSize is calculated. 0 = default (0.25).
+		float				precision;				// Higher gives more triangles, positions within 1 / precision pixels, curved outlines within at most 0.5. 0 = default (1).
 		wg_rectSPX			rect;					// Mandatory. The outline, relative to the top-left corner of the Warpmap.
 		wg_sizeI			size;					// Mandatory. Size of the Warpmap in pixels.
 		wg_sizeSPX			sourceSize;				// Mandatory. Size of the source (edgemap or source rectangle) in spx.
@@ -47,7 +46,7 @@ extern "C" {
 	} wg_roundedRectWarpBP;
 
 	// Factory is the WarpmapFactory to create the Warpmap with, the default one if null.
-	// Size, source size, cell size, precision and generate are set and called through the WarpGenerator functions.
+	// Size, source size, precision and generate are set and called through the WarpGenerator functions.
 
 	WG_EXPORT wg_obj		wg_createRoundedRectWarp( const wg_roundedRectWarpBP* blueprint, wg_obj warpmapFactory );
 

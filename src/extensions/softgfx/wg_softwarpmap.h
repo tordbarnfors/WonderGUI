@@ -25,6 +25,8 @@
 
 #include <wg_warpmap.h>
 
+#include <vector>
+
 namespace wg
 {
 	class SoftWarpmap;
@@ -35,18 +37,20 @@ namespace wg
 	/**
 	 * @brief Warpmap for SoftBackend, LinearBackend and ReferenceBackend.
 	 *
-	 * The software backends read the nodes directly, so there is nothing more to it than
-	 * the Warpmap itself.
+	 * ReferenceBackend reads the vertices and triangles directly. For SoftBackend and LinearBackend
+	 * each triangle is set up for drawing when the content changes, see Setup.
 	 */
 
 	class SoftWarpmap : public Warpmap
 	{
+		friend class SoftBackend;
+
 	public:
 
 		//.____ Creation __________________________________________
 
 		static SoftWarpmap_p	create( const Blueprint& blueprint );
-		static SoftWarpmap_p	create( const Blueprint& blueprint, const CoordSPX * pNodes, int pitch = 0 );
+		static SoftWarpmap_p	create( const Blueprint& blueprint, const Vertex * pVertices, const Triangle * pTriangles );
 
 		//.____ Identification __________________________________________
 
@@ -54,10 +58,81 @@ namespace wg
 		const static TypeInfo	TYPEINFO;
 
 	protected:
-		SoftWarpmap( const Blueprint& bp, const CoordSPX * pNodes = nullptr, int pitch = 0 ) : Warpmap(bp, pNodes, pitch) {}
+		SoftWarpmap( const Blueprint& bp, const Vertex * pVertices = nullptr, const Triangle * pTriangles = nullptr );
 		virtual ~SoftWarpmap() {}
 
-		void	_nodesUpdated( const RectI& region ) override {}
+		void	_updated( int firstVertex, int nVertices, int firstTriangle, int nTriangles ) override;
+
+		// A triangle set up for drawing, see wg_softwarpmap.cpp. Pixels are those of the Warpmap,
+		// x and y in whole pixels, and their centers 32 spx into them.
+
+		// A bound of the pixels of a triangle on a row: the first column inside for a lower bound,
+		// the first one outside for an upper bound. Stepped exactly from row to row: col by stepCol
+		// and rem by -stepRem, then by one column more and the divisor where rem goes below 0.
+
+		struct Edge
+		{
+			int64_t		col;			// At rowBeg.
+			int32_t		rem;			// At rowBeg, 0 -> divisor - 1.
+			int32_t		divisor;
+			int32_t		stepCol;
+			int32_t		stepRem;		// 0 -> divisor - 1.
+		};
+
+		struct Setup
+		{
+			// Pixels with centers that can be inside: rows rowBeg -> rowEnd and columns colBeg ->
+			// colEnd, within the Warpmap and the rows that edges along a row allow.
+
+			int			rowBeg, rowEnd, colBeg, colEnd;
+
+			// Values at the center of pixel ox,oy and their change from one pixel to the next along x
+			// and y: f[axis][0] + f[axis][1] * (x - ox) + f[axis][2] * (y - oy), u (axis 0) and v
+			// (axis 1) as positions in the source in pixels with 32 binals. With perspective they are
+			// in m_perspective[perspective] instead.
+
+			int			ox, oy;
+			int			perspective;	// -1 without perspective.
+			int			fade;			// Index in m_fades, -1 for a triangle with all corners at coverageOne.
+
+			// The other edges, lower bounds first.
+
+			uint8_t		nLower, nUpper;
+			Edge		edges[3];
+
+			int64_t		f[2][3];
+
+			// Bounds of the positions over the area of its pixels, without perspective, in pixels of
+			// the source with 16 binals.
+
+			int64_t		lo[2], hi[2];
+		};
+
+		// Values of a triangle in perspective, as f of Setup: a position is ref + f[axis] / f[2], in
+		// pixels with 16 binals, f[2] being W. gradientW is how much W can change from one pixel to
+		// the next, |dW/dx| + |dW/dy|, which gives the pixels between divisions.
+
+		struct Perspective
+		{
+			int64_t		f[3][3];
+			int64_t		ref[2];
+			int64_t		gradientW;
+		};
+
+		// Coverage of the vertices of a triangle, as f of Setup, with 28 binals of full coverage.
+
+		struct Fade
+		{
+			int64_t		f[3];
+		};
+
+		void	_setupTriangles();
+
+		std::vector<Setup>			m_setups;			// Triangles with pixels.
+		std::vector<int>			m_order;			// Of m_setups, by first row.
+		std::vector<int>			m_rowStart;			// For sorting m_order.
+		std::vector<Perspective>	m_perspective;
+		std::vector<Fade>			m_fades;
 	};
 
 } // namespace wg

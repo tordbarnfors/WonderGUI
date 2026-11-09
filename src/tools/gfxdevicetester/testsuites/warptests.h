@@ -6,6 +6,7 @@
 #include <wg_cylinderwarp.h>
 
 #include <cmath>
+#include <functional>
 #include <vector>
 
 // Edgemaps and surfaces drawn through Warpmaps, with GfxDevice::warpDrawEdgemap() and warpBlit().
@@ -22,7 +23,7 @@ public:
 		addTest("Ring", &WarpTests::ring);
 		addTest("Arcs and offsets", &WarpTests::arcs);
 		addTest("Tinted segments", &WarpTests::tintedSegments);
-		addTest("Device tint", &WarpTests::deviceTint);
+		addTest("GfxDevice tint", &WarpTests::deviceTint);
 		addTest("Blit ring", &WarpTests::blitRing);
 		addTest("Blit nearest wave", &WarpTests::blitWave);
 		addTest("Blit source rectangle", &WarpTests::blitSourceRect);
@@ -31,6 +32,7 @@ public:
 		addTest("BlendModes", &WarpTests::blendModes);
 		addTest("Rounded rects", &WarpTests::roundedRects);
 		addTest("Cylinders", &WarpTests::cylinders);
+		addTest("Vertex coverage", &WarpTests::vertexCoverage);
 	}
 
 	bool init(GfxDevice * pDevice, const RectSPX& canvas, wapp::API * pAppAPI)
@@ -90,27 +92,6 @@ public:
 
 		// Surfaces: a pattern with partly transparent pixels, tiling and not.
 
-		{
-			const int w = 64, h = 32;
-			std::vector<Color8> pixels(w * h);
-
-			for (int y = 0; y < h; y++)
-			{
-				for (int x = 0; x < w; x++)
-				{
-					bool bChecker = ((x / 8) + (y / 8)) & 1;
-					pixels[y * w + x] = Color8(uint8_t(255 - y * 6), uint8_t(x * 4), bChecker ? 40 : 230, uint8_t(255 - ((x * 7 + y * 3) % 5) * 30));
-				}
-			}
-
-			m_pTiling = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear, _.tiling = true),
-													   (uint8_t*)pixels.data(), PixelFormat::ARGB_8);
-			m_pNearest = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Nearest),
-														(uint8_t*)pixels.data(), PixelFormat::ARGB_8);
-			m_pBilinear = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear),
-														 (uint8_t*)pixels.data(), PixelFormat::ARGB_8);
-		}
-
 		// A reel strip of 8 slots, each a colored diamond between dark separators, and the same
 		// turned on its side as a label. Even slots that get closer towards the rims is what shows
 		// a cylinder. Sizes are powers of two, as tiling surfaces need to wrap the same everywhere.
@@ -155,10 +136,9 @@ public:
 		m_forSmallRect = _makeWarps(pWarpmapFactory, { 64 * 24, 64 * 16 });
 		m_forBlendRect = _makeWarps(pWarpmapFactory, { 64 * 40, 64 * 24 });
 
-		m_pIdentity = pWarpmapFactory->createWarpmap(WGBP(Warpmap, _.size = m_pSmall->pixelSize(), _.cellSize = { 9, 9 }));
-		m_pIdentityBlit = pWarpmapFactory->createWarpmap(WGBP(Warpmap, _.size = { 64, 32 }, _.cellSize = { 7, 7 }));
+		m_pIdentity = _gridWarpmap(pWarpmapFactory, m_pSmall->pixelSize(), { 9, 9 }, [](int x, int y) { return CoordSPX(x * 64, y * 64); });
+		m_pIdentityBlit = _gridWarpmap(pWarpmapFactory, { 64, 32 }, { 7, 7 }, [](int x, int y) { return CoordSPX(x * 64, y * 64); });
 
-		return m_pGauge && m_pTintedGauge && m_pSmall && m_pTiling && m_pNearest && m_pBilinear && m_pReelStrip && m_pReelLabel &&
 			   m_forGauge.ring && m_forGauge.wave && m_forGauge.stripes;
 	}
 
@@ -170,6 +150,8 @@ public:
 		m_pTiling = nullptr;
 		m_pNearest = nullptr;
 		m_pBilinear = nullptr;
+		m_pReelStrip = nullptr;
+		m_pReelLabel = nullptr;
 		m_forGauge = {};
 		m_forSmall = {};
 		m_forSurface = {};
@@ -266,6 +248,7 @@ public:
 		return true;
 	}
 
+
 	// Warpmaps mapping straight onto the source draw as drawEdgemap() and blit() do.
 
 	bool identity(GfxDevice * pDevice, const RectSPX& canvas)
@@ -325,7 +308,7 @@ public:
 		auto pArc = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 240, 240 }, _.sourceSize = gauge, _.rect = { 64 * 30, 64 * 50, 64 * 180, 64 * 140 },
 												 _.cornerRadius = 64 * 50, _.topDistance = 64 * 25, _.bottomDistance = -64 * 20, _.start = -0.3f, _.sweep = 0.75f), pFactory);
 		auto pFrame = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 240, 240 }, _.sourceSize = surface, _.rect = { 64 * 10, 64 * 30, 64 * 220, 64 * 180 },
-												  _.cornerRadius = 64 * 8, _.topDistance = 0, _.bottomDistance = -64 * 36, _.cellSize = { 4, 4 }), pFactory);
+												  _.cornerRadius = 64 * 8, _.topDistance = 0, _.bottomDistance = -64 * 36, _.precision = 10.f), pFactory);
 
 		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 10 }, pBand->generate(), m_pGauge);
 		pDevice->setBlitSource(m_pTiling);
@@ -382,6 +365,58 @@ public:
 		return true;
 	}
 
+	// Discs with their outline going from full coverage half a pixel inside to none half a pixel
+	// outside, which antialiases it, and with half coverage everywhere.
+
+	bool vertexCoverage(GfxDevice * pDevice, const RectSPX& canvas)
+	{
+		auto disc = [&](SizeSPX source, int radius, int innerCoverage, int outerCoverage)
+		{
+			const int nSides = 72;
+			const double c = radius + 1.3;
+
+			std::vector<Warpmap::Vertex> vertices;
+			std::vector<Warpmap::Triangle> triangles;
+
+			auto add = [&](double x, double y, int coverage)
+			{
+				spx sx = spx(std::lround(x * 64)), sy = spx(std::lround(y * 64));
+				vertices.push_back({ sx, sy, spx(int64_t(sx) * source.w / (64 * 2 * (radius + 2))), spx(int64_t(sy) * source.h / (64 * 2 * (radius + 2))), Warpmap::weightOne, coverage });
+				return int(vertices.size()) - 1;
+			};
+
+			int center = add(c, c, innerCoverage);
+			for (int i = 0; i < nSides; i++)
+			{
+				double a = 2 * 3.14159265358979323846 * i / nSides;
+				add(c + std::cos(a) * (radius - 0.5), c + std::sin(a) * (radius - 0.5), innerCoverage);
+				add(c + std::cos(a) * (radius + 0.5), c + std::sin(a) * (radius + 0.5), outerCoverage);
+			}
+
+			for (int i = 0; i < nSides; i++)
+			{
+				int in0 = 1 + i * 2, out0 = in0 + 1, in1 = 1 + ((i + 1) % nSides) * 2, out1 = in1 + 1;
+				triangles.push_back({ center, in0, in1 });
+				triangles.push_back({ in0, out0, out1 });
+				triangles.push_back({ in0, out1, in1 });
+			}
+
+			int size = 2 * (radius + 2);
+			return pDevice->warpmapFactory()->createWarpmap(WGBP(Warpmap, _.size = { size, size }, _.triangles = int(triangles.size()), _.vertices = int(vertices.size())),
+															 vertices.data(), triangles.data());
+		};
+
+		SizeSPX gauge = m_pGauge->pixelSize() * 64, surface = m_pBilinear->pixelSize() * 64;
+
+		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 10 }, disc(gauge, 110, Warpmap::coverageOne, 0), m_pGauge);
+		pDevice->setBlitSource(m_pBilinear);
+		pDevice->warpBlit({ 64 * 260, 64 * 10 }, disc(surface, 110, Warpmap::coverageOne, 0));
+		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 260 + 20 }, disc(gauge, 57, Warpmap::coverageOne / 2, Warpmap::coverageOne / 2), m_pGauge);
+		pDevice->warpBlit({ 64 * 260 + 30, 64 * 260 }, disc(surface, 13, Warpmap::coverageOne, 0));
+		return true;
+	}
+
+
 private:
 
 	Edgemap_p	m_pGauge;
@@ -407,55 +442,62 @@ private:
 		Warpmap_p	stripes;			// Periodic along v, the source repeated three times down a sloping band.
 	};
 
+	// A Warpmap from a grid of cells, with the position in the source at each node from nodeAt(x, y)
+	// (pixels of the Warpmap), four vertices and two triangles for each cell.
+
+	static Warpmap_p _gridWarpmap(WarpmapFactory * pFactory, SizeI size, SizeI cellSize, const std::function<CoordSPX(int x, int y)>& nodeAt, spx vPeriod = 0)
+	{
+		std::vector<Warpmap::Vertex> vertices;
+		std::vector<Warpmap::Triangle> triangles;
+
+		for (int y0 = 0; y0 < size.h; y0 += cellSize.h)
+			for (int x0 = 0; x0 < size.w; x0 += cellSize.w)
+			{
+				int x1 = std::min(x0 + cellSize.w, size.w), y1 = std::min(y0 + cellSize.h, size.h);
+				const CoordI corners[4] = { { x0, y0 }, { x1, y0 }, { x1, y1 }, { x0, y1 } };
+
+				int first = int(vertices.size());
+				for (auto& c : corners)
+				{
+					CoordSPX uv = nodeAt(c.x, c.y);
+					vertices.push_back({ c.x * 64, c.y * 64, uv.x, uv.y });
+				}
+
+				triangles.push_back({ first, first + 1, first + 2 });
+				triangles.push_back({ first, first + 2, first + 3 });
+			}
+
+		return pFactory->createWarpmap(WGBP(Warpmap, _.size = size, _.triangles = int(triangles.size()), _.vertices = int(vertices.size()), _.vPeriod = vPeriod),
+									   vertices.data(), triangles.data());
+	}
+
 	Warps _makeWarps(WarpmapFactory * pFactory, SizeSPX source)
 	{
 		Warps warps;
 
 		warps.ring = CircularWarp::create(WGBP(CircularWarp, _.size = { 240, 240 }, _.sourceSize = source, _.topRadius = 118 * 64, _.bottomRadius = 60 * 64), pFactory)->generate();
-		warps.smallRing = CircularWarp::create(WGBP(CircularWarp, _.size = { 120, 120 }, _.sourceSize = source, _.topRadius = 58 * 64, _.bottomRadius = 25 * 64, _.cellSize = { 8, 8 }), pFactory)->generate();
+		warps.smallRing = CircularWarp::create(WGBP(CircularWarp, _.size = { 120, 120 }, _.sourceSize = source, _.topRadius = 58 * 64, _.bottomRadius = 25 * 64, _.precision = 1.f), pFactory)->generate();
 		warps.arc = CircularWarp::create(WGBP(CircularWarp, _.size = { 240, 240 }, _.sourceSize = source, _.topRadius = 118 * 64, _.bottomRadius = 80 * 64, _.startAngle = -135.f, _.sweep = 270.f), pFactory)->generate();
 		warps.quarter = CircularWarp::create(WGBP(CircularWarp, _.size = { 240, 240 }, _.sourceSize = source, _.center = { 0.f, 1.f }, _.topRadius = 230 * 64, _.bottomRadius = 150 * 64, _.sweep = 90.f), pFactory)->generate();
 		warps.blendRing = CircularWarp::create(WGBP(CircularWarp, _.size = { 150, 150 }, _.sourceSize = source, _.topRadius = 74 * 64, _.bottomRadius = 30 * 64), pFactory)->generate();
 
+		warps.wave = _gridWarpmap(pFactory, { 240, 240 }, { 12, 12 }, [&](int px, int py)
 		{
-			warps.wave = pFactory->createWarpmap(WGBP(Warpmap, _.size = { 240, 240 }, _.cellSize = { 12, 12 }));
+			float x = px / 240.f;
+			float y = py / 240.f;
+			float u = (x - 0.5f) * 1.2f + 0.5f + 0.08f * std::sin(y * 7.f);
+			float v = (y - 0.5f) * 1.15f + 0.5f + 0.06f * std::sin(x * 6.f);
+			return CoordSPX(spx(std::lround(u * source.w)), spx(std::lround(v * source.h)));
+		});
 
-			SizeI n = warps.wave->nodes();
-			std::vector<CoordSPX> nodes(n.w * n.h);
+		// v goes on past the period, it is wrapped after interpolation.
 
-			for (int r = 0; r < n.h; r++)
-			{
-				for (int c = 0; c < n.w; c++)
-				{
-					float x = warps.wave->nodeX(c) / 240.f;
-					float y = warps.wave->nodeY(r) / 240.f;
-					float u = (x - 0.5f) * 1.2f + 0.5f + 0.08f * std::sin(y * 7.f);
-					float v = (y - 0.5f) * 1.15f + 0.5f + 0.06f * std::sin(x * 6.f);
-					nodes[r * n.w + c] = { spx(std::lround(u * source.w)), spx(std::lround(v * source.h)) };
-				}
-			}
-
-			warps.wave->importNodes({ 0, 0, n.w, n.h }, nodes.data());
-		}
-
+		warps.stripes = _gridWarpmap(pFactory, { 200, 240 }, { 10, 10 }, [&](int px, int py)
 		{
-			warps.stripes = pFactory->createWarpmap(WGBP(Warpmap, _.size = { 200, 240 }, _.cellSize = { 10, 10 }, _.vPeriod = source.h));
-
-			SizeI n = warps.stripes->nodes();
-			std::vector<CoordSPX> nodes(n.w * n.h);
-
-			for (int r = 0; r < n.h; r++)
-			{
-				for (int c = 0; c < n.w; c++)
-				{
-					float x = warps.stripes->nodeX(c) / 200.f;
-					float y = warps.stripes->nodeY(r) / 240.f;
-					nodes[r * n.w + c] = { spx(std::lround(x * source.w)), spx(std::lround((y * 3.f + x * 0.7f) * source.h)) };
-				}
-			}
-
-			warps.stripes->importNodes({ 0, 0, n.w, n.h }, nodes.data());
-		}
+			float x = px / 200.f;
+			float y = py / 240.f;
+			return CoordSPX(spx(std::lround(x * source.w)), spx(std::lround((y * 3.f + x * 0.7f) * source.h)));
+		}, source.h);
 
 		return warps;
 	}

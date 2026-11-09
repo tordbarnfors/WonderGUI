@@ -35,6 +35,7 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <vector>
 
 namespace wg
 {
@@ -868,10 +869,12 @@ namespace wg
 		Draws the part of a WarpBlit (pEdgemap is null) or WarpDrawEdgemap that is within rect,
 		following the definition in Warpmap:
 
-		The Warpmap is placed with its top-left corner at dest, rounded to nearest pixel. The
-		position in the source of a point of the Warpmap is interpolated from the corners of its
-		cell (Warpmap::positionAt()), offset by the source offset, converted from spx to pixels of
-		the source and wrapped on periodic axes.
+		The Warpmap is placed with its top-left corner at dest, rounded to nearest pixel. A pixel is
+		drawn by the triangle its center is inside of (Warpmap::isInside()), if any. The position in
+		the source of a point of the pixel is interpolated from the corners of that triangle with
+		perspective (as Warpmap::positionIn()), offset by the source offset, converted from spx to
+		pixels of the source and wrapped on periodic axes. A point beyond the horizon of the triangle
+		is outside the source.
 
 		The part of a pixel that is covered (by the source or by each segment of the edgemap) is
 		measured by sampling the pixel at the points of a Fibonacci lattice, which are spread evenly
@@ -924,50 +927,76 @@ namespace wg
 		double periodX = pWarpmap->uPeriod() / 64.0;
 		double periodY = pWarpmap->vPeriod() / 64.0;
 
-		const SizeI cellSize = pWarpmap->cellSize();
-		const SizeI nodes = pWarpmap->nodes();
+		// Triangles set up for interpolation: the first corner, the edges from it and the area they
+		// span, in spx of the Warpmap, and the corners' weights and positions in the source.
 
-		// Position in the source (relative to the source rectangle) at point x,y of the Warpmap,
-		// which is in the cell with the given corners (as Warpmap::positionAt()). Pixels are
-		// always within one cell.
-
-		struct Cell
+		struct Setup
 		{
-			double	x0, y0, w, h;
-			CoordSPX	corners[4];
+			double	x0, y0, e1x, e1y, e2x, e2y, area;
+			double	w[3], u[3], v[3];
+			double	coverage[3];			// Of the corners, 0 -> 1.
+			spx		minX, maxX, minY, maxY;
 		};
 
-		auto cellOf = [&](int x, int y)
+		int nTriangles = pWarpmap->triangleCount();
+		const Warpmap::Vertex* pVertices = pWarpmap->vertexData();
+		const Warpmap::Triangle* pTriangles = pWarpmap->triangleData();
+
+		std::vector<Setup> setups(nTriangles);
+
+		for (int i = 0; i < nTriangles; i++)
 		{
-			Cell cell;
-			int column = std::clamp(x / cellSize.w, 0, nodes.w - 2);
-			int row = std::clamp(y / cellSize.h, 0, nodes.h - 2);
+			const Warpmap::Vertex* c[3] = { &pVertices[pTriangles[i].a], &pVertices[pTriangles[i].b], &pVertices[pTriangles[i].c] };
+			Setup& s = setups[i];
 
-			pWarpmap->cellCorners(column, row, cell.corners);
-			cell.x0 = pWarpmap->nodeX(column);
-			cell.y0 = pWarpmap->nodeY(row);
-			cell.w = pWarpmap->nodeX(column + 1) - cell.x0;
-			cell.h = pWarpmap->nodeY(row + 1) - cell.y0;
-			return cell;
-		};
+			s.x0 = c[0]->x;
+			s.y0 = c[0]->y;
+			s.e1x = double(c[1]->x) - c[0]->x;
+			s.e1y = double(c[1]->y) - c[0]->y;
+			s.e2x = double(c[2]->x) - c[0]->x;
+			s.e2y = double(c[2]->y) - c[0]->y;
+			s.area = s.e1x * s.e2y - s.e1y * s.e2x;
 
-		auto sourcePos = [&](const Cell& cell, double x, double y, double& sx, double& sy)
+			for (int k = 0; k < 3; k++)
+			{
+				s.w[k] = c[k]->w;
+				s.u[k] = c[k]->u;
+				s.v[k] = c[k]->v;
+				s.coverage[k] = double(c[k]->coverage) / Warpmap::coverageOne;
+			}
+
+			s.minX = std::min({ c[0]->x, c[1]->x, c[2]->x });
+			s.maxX = std::max({ c[0]->x, c[1]->x, c[2]->x });
+			s.minY = std::min({ c[0]->y, c[1]->y, c[2]->y });
+			s.maxY = std::max({ c[0]->y, c[1]->y, c[2]->y });
+		}
+
+		// Position in the source (relative to the source rectangle) at point x,y (in pixels) of the
+		// Warpmap, as given by a triangle. False beyond its horizon.
+
+		auto sourcePos = [&](const Setup& s, double x, double y, double& sx, double& sy)
 		{
-			const CoordSPX* c = cell.corners;
+			double dx = x * 64 - s.x0;
+			double dy = y * 64 - s.y0;
 
-			double fx = (x - cell.x0) / cell.w;
-			double fy = (y - cell.y0) / cell.h;
+			double b1 = (dx * s.e2y - dy * s.e2x) / s.area;
+			double b2 = (s.e1x * dy - s.e1y * dx) / s.area;
+			double b0 = 1.0 - b1 - b2;
 
-			double u = (double(c[0].x) * (1 - fx) + double(c[1].x) * fx) * (1 - fy) + (double(c[2].x) * (1 - fx) + double(c[3].x) * fx) * fy;
-			double v = (double(c[0].y) * (1 - fx) + double(c[1].y) * fx) * (1 - fy) + (double(c[2].y) * (1 - fx) + double(c[3].y) * fx) * fy;
+			double w0 = b0 * s.w[0], w1 = b1 * s.w[1], w2 = b2 * s.w[2];
+			double w = w0 + w1 + w2;
 
-			sx = u / 64.0 + offsetX;
-			sy = v / 64.0 + offsetY;
+			if (w <= 0.0)
+				return false;
+
+			sx = (w0 * s.u[0] + w1 * s.u[1] + w2 * s.u[2]) / w / 64.0 + offsetX;
+			sy = (w0 * s.v[0] + w1 * s.v[1] + w2 * s.v[2]) / w / 64.0 + offsetY;
 
 			if (periodX > 0)
 				sx -= periodX * std::floor(sx / periodX);
 			if (periodY > 0)
 				sy -= periodY * std::floor(sy / periodY);
+			return true;
 		};
 
 		// Position of a center in the gap between copies moved to the nearest copy, for colors.
@@ -989,14 +1018,43 @@ namespace wg
 
 		RectI pixels = RectI::overlap(_pixelRect(rect), RectI(dest, warpSize));
 
+		std::vector<int> candidates;
+
 		for (int y = pixels.y; y < pixels.y + pixels.h; y++)
 		{
+			// Triangles that can have the centers of this row of pixels inside them.
+
+			spx pixelCenterY = (y - dest.y) * 64 + 32;
+
+			candidates.clear();
+			for (int i = 0; i < nTriangles; i++)
+			{
+				if (setups[i].area != 0.0 && setups[i].minY <= pixelCenterY && setups[i].maxY >= pixelCenterY)
+					candidates.push_back(i);
+			}
+
+			if (candidates.empty())
+				continue;
+
 			for (int x = pixels.x; x < pixels.x + pixels.w; x++)
 			{
 				if (!_isInsideCanvas(x, y))
 					continue;
 
-				Cell cell = cellOf(x - dest.x, y - dest.y);
+				spx pixelCenterX = (x - dest.x) * 64 + 32;
+
+				const Setup* pSetup = nullptr;
+				for (int i : candidates)
+				{
+					if (setups[i].minX <= pixelCenterX && setups[i].maxX >= pixelCenterX && pWarpmap->isInside(i, { pixelCenterX, pixelCenterY }))
+					{
+						pSetup = &setups[i];
+						break;
+					}
+				}
+
+				if (!pSetup)
+					continue;
 
 				// Coverage of the source or of each segment, -1 for outside.
 
@@ -1019,11 +1077,9 @@ namespace wg
 						double py = y - dest.y + (((int64_t(i) * step) % nSamples) + 0.5) / nSamples;
 
 						double posX, posY;
-						sourcePos(cell, px, py, posX, posY);
-
 						int seg = -1;
 
-						if (isInside(posX, posY))
+						if (sourcePos(*pSetup, px, py, posX, posY) && isInside(posX, posY))
 						{
 							seg = pEdgemap ? _edgemapSegmentAt(pEdgemap, posX, posY) : 0;
 							coverage[seg] += sampleArea;
@@ -1042,13 +1098,29 @@ namespace wg
 				if (!measure(c_warpQuickSamples, c_warpQuickStep))
 					measure(c_warpSamples, c_warpStep);
 
+				// Coverage of the vertices, interpolated without perspective at the center.
+
+				{
+					const Setup& s = *pSetup;
+					double dx = (x - dest.x + 0.5) * 64 - s.x0;
+					double dy = (y - dest.y + 0.5) * 64 - s.y0;
+					double b1 = (dx * s.e2y - dy * s.e2x) / s.area;
+					double b2 = (s.e1x * dy - s.e1y * dx) / s.area;
+					double fade = std::clamp((1.0 - b1 - b2) * s.coverage[0] + b1 * s.coverage[1] + b2 * s.coverage[2], 0.0, 1.0);
+
+					covered *= fade;
+					for (int seg = 0; seg < nSegments; seg++)
+						coverage[seg] *= fade;
+				}
+
 				if (covered <= 0.0)
 					continue;
 
 				// Colors at the center of the pixel.
 
 				double centerX, centerY;
-				sourcePos(cell, x - dest.x + 0.5, y - dest.y + 0.5, centerX, centerY);
+				if (!sourcePos(*pSetup, x - dest.x + 0.5, y - dest.y + 0.5, centerX, centerY))
+					continue;
 				nearestCopy(centerX, srcW, periodX);
 				nearestCopy(centerY, srcH, periodY);
 

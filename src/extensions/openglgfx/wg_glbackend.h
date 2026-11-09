@@ -239,12 +239,27 @@ namespace wg
 		GLuint	m_warpEdgemapProg[2];							// [RGB/A_8 dest]
 		GLuint	m_warpBlitProg[2];								// [RGB/A_8 dest]
 
+		struct WarpUniforms
+		{
+			GLint	clampInset;
+			GLint	nearestBias;
+			GLint	colorsOfs;
+			GLint	dest;
+			GLint	extrasOfs;
+			GLint	ref;
+			GLint	sourceKind;
+			GLint	tintOfs;
+		};
+
+		WarpUniforms	m_warpEdgemapUniforms[2];				// [RGB/A_8 dest]
+		WarpUniforms	m_warpBlitUniforms[2];					// [RGB/A_8 dest]
+
 		GLuint	m_blitProgMatrix[PixelFormat_size][2][2][2];	// [source format][interpolation][tintgradient][RGB/A_8 dest]
 
 		//
 
 		const static int c_nbPrograms = 44 + (c_maxSegments-1) * 2;
-		const static int c_versionNb = 117;		// 104: Tints replaced Tintmaps. 105: Tint color applied together with tint. 106: Palette ClipBlit clipping. 107: Palette read by index, capacity wide. 108: Blur for Alpha_8 sources and canvases. 109: Alpha of sources without alpha in ClipBlits. 110: Bilinear palette taps and weights from the same value. 111: Palette sampled with texture(), not texelFetch(). 112: Shape programs. 113: Premultiplied canvases, output by blend mode, tinted lines. 114: Tiled edgemaps. 115: Edgemap segments where edges cross and on canvases without alpha. 116: Effect modes on premultiplied colors in one pass. 117: Warps.
+		const static int c_versionNb = 122;		// 104: Tints replaced Tintmaps. 105: Tint color applied together with tint. 106: Palette ClipBlit clipping. 107: Palette read by index, capacity wide. 108: Blur for Alpha_8 sources and canvases. 109: Alpha of sources without alpha in ClipBlits. 110: Bilinear palette taps and weights from the same value. 111: Palette sampled with texture(), not texelFetch(). 112: Shape programs. 113: Premultiplied canvases, output by blend mode, tinted lines. 114: Tiled edgemaps. 115: Edgemap segments where edges cross and on canvases without alpha. 116: Effect modes on premultiplied colors in one pass. 117: Warps. 118: Warps through triangles. 119: Warps through the mesh as it is. 120: Three extras for warps. 121: Coverage of warp vertices. 122: Bias of warp positions for Nearest sampling.
 
 		struct ProgramBlobEntry
 		{

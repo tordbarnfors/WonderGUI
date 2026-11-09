@@ -31,6 +31,7 @@
 #include <vector>
 
 using namespace wg;
+using namespace wg;
 
 /*
 	Draws through Warpmaps with GfxDeviceGen2 and the software backends:
@@ -45,11 +46,12 @@ using namespace wg;
 
 namespace
 {
+
 	const SizeI c_canvasSize = { 160, 96 };
 
 	const HiColor c_background = HiColor(800, 1500, 2600, 4096);
 
-	enum class Backend
+	enum class TestBackend
 	{
 		Soft,
 		Linear,
@@ -62,11 +64,11 @@ namespace
 	//____ render() ___________________________________________________________
 	// Renders a scene on a cleared canvas. LinearBackend renders in two update rectangles.
 
-	Pixels render(Backend backend, const Scene& scene, PixelFormat canvasFormat = PixelFormat::ARGB_8)
+	Pixels render(TestBackend backend, const Scene& scene, PixelFormat canvasFormat = PixelFormat::ARGB_8)
 	{
 		Pixels pixels(c_canvasSize.w * c_canvasSize.h * 4, 0);
 
-		if (backend == Backend::Linear)
+		if (backend == TestBackend::Linear)
 		{
 			std::vector<uint8_t> buffer(c_canvasSize.w * c_canvasSize.h * 4 * 2);
 
@@ -103,7 +105,7 @@ namespace
 
 		GfxBackend_p pBackend;
 
-		if (backend == Backend::Soft)
+		if (backend == TestBackend::Soft)
 		{
 			auto pSoft = SoftBackend::create();
 			addDefaultSoftKernels(pSoft);
@@ -273,29 +275,76 @@ namespace
 											_.sweep = sweep), pDevice->warpmapFactory())->generate();
 	}
 
+	// Vertices and triangles for a grid of cells, with the position in the source at each node from
+	// nodeAt(x, y) (pixels of the Warpmap): four vertices and two triangles for each cell, as
+	// WarpGenerator makes them. With a period, values are moved by whole periods to be close to the
+	// top-left corner of their cell.
+
+	struct Mesh
+	{
+		Warpmap::Blueprint				bp;
+		std::vector<Warpmap::Vertex>	vertices;
+		std::vector<Warpmap::Triangle>	triangles;
+	};
+
+	Mesh gridMesh(SizeI size, SizeI cellSize, const std::function<CoordSPX(int x, int y)>& nodeAt, spx uPeriod = 0)
+	{
+		Mesh mesh;
+		SizeI cells = { (size.w + cellSize.w - 1) / cellSize.w, (size.h + cellSize.h - 1) / cellSize.h };
+
+		for (int row = 0; row < cells.h; row++)
+			for (int col = 0; col < cells.w; col++)
+			{
+				int x0 = col * cellSize.w, x1 = std::min(x0 + cellSize.w, size.w);
+				int y0 = row * cellSize.h, y1 = std::min(y0 + cellSize.h, size.h);
+				const CoordI corners[4] = { { x0, y0 }, { x1, y0 }, { x1, y1 }, { x0, y1 } };
+
+				int first = int(mesh.vertices.size());
+				spx u0 = 0;
+
+				for (int i = 0; i < 4; i++)
+				{
+					CoordSPX pos = nodeAt(corners[i].x, corners[i].y);
+
+					if (uPeriod > 0)
+					{
+						if (i == 0)
+							pos.x = u0 = ((pos.x % uPeriod) + uPeriod) % uPeriod;
+						else
+							pos.x -= spx(std::floor((pos.x - u0) / double(uPeriod) + 0.5)) * uPeriod;
+					}
+
+					mesh.vertices.push_back({ corners[i].x * 64, corners[i].y * 64, pos.x, pos.y });
+				}
+
+				mesh.triangles.push_back({ first, first + 1, first + 2 });
+				mesh.triangles.push_back({ first, first + 2, first + 3 });
+			}
+
+		mesh.bp.size = size;
+		mesh.bp.triangles = int(mesh.triangles.size());
+		mesh.bp.uPeriod = uPeriod;
+		mesh.bp.vertices = int(mesh.vertices.size());
+		return mesh;
+	}
+
+	Warpmap_p createMesh(WarpmapFactory* pFactory, const Mesh& mesh)
+	{
+		return pFactory->createWarpmap(mesh.bp, mesh.vertices.data(), mesh.triangles.data());
+	}
+
 	// A smooth, non-periodic warp of a rectangle, partly outside the source.
 
 	Warpmap_p makeWave(GfxDevice* pDevice, int size, SizeSPX source)
 	{
-		auto pWarpmap = pDevice->warpmapFactory()->createWarpmap(WGBP(Warpmap, _.size = { size, size }, _.cellSize = { 8, 8 }));
-
-		SizeI n = pWarpmap->nodes();
-		std::vector<CoordSPX> nodes(n.w * n.h);
-
-		for (int r = 0; r < n.h; r++)
+		return createMesh(pDevice->warpmapFactory(), gridMesh({ size, size }, { 8, 8 }, [&](int px, int py)
 		{
-			for (int c = 0; c < n.w; c++)
-			{
-				float x = pWarpmap->nodeX(c) / float(size);
-				float y = pWarpmap->nodeY(r) / float(size);
-				float u = (x - 0.5f) * 1.3f + 0.5f + 0.1f * std::sin(y * 9.f);
-				float v = (y - 0.5f) * 1.25f + 0.5f + 0.08f * std::sin(x * 7.f);
-				nodes[r * n.w + c] = { spx(std::lround(u * source.w)), spx(std::lround(v * source.h)) };
-			}
-		}
-
-		pWarpmap->importNodes({ 0, 0, n.w, n.h }, nodes.data());
-		return pWarpmap;
+			float x = px / float(size);
+			float y = py / float(size);
+			float u = (x - 0.5f) * 1.3f + 0.5f + 0.1f * std::sin(y * 9.f);
+			float v = (y - 0.5f) * 1.25f + 0.5f + 0.08f * std::sin(x * 7.f);
+			return CoordSPX(spx(std::lround(u * source.w)), spx(std::lround(v * source.h)));
+		}));
 	}
 
 	// Scene drawing all kinds of warps.
@@ -323,11 +372,14 @@ namespace
 		pDevice->warpBlit({ 98 * 64, 50 * 64 }, makeWave(pDevice, 44, c_surfaceSource));
 	}
 
-	// The default Warpmap: straight onto the source.
+	// Straight onto the source, with cells of cellSize, or the default Warpmap if 0.
 
 	Warpmap_p identity(SizeI size, int cellSize)
 	{
-		return SoftWarpmapFactory::create()->createWarpmap(WGBP(Warpmap, _.size = size, _.cellSize = { cellSize, cellSize }));
+		if (cellSize == 0)
+			return SoftWarpmapFactory::create()->createWarpmap(WGBP(Warpmap, _.size = size));
+
+		return createMesh(SoftWarpmapFactory::create(), gridMesh(size, { cellSize, cellSize }, [](int x, int y) { return CoordSPX(x * 64, y * 64); }));
 	}
 
 	// Renders a scene through StreamBackend and StreamPlayer onto a SoftBackend. Resources are
@@ -382,6 +434,9 @@ WarpRenderTest::WarpRenderTest()
 {
 	ADD_TEST(identityEdgemapTest);
 	ADD_TEST(identityBlitTest);
+	ADD_TEST(meshSeamTest);
+	ADD_TEST(perspectiveWeightTest);
+	ADD_TEST(vertexCoverageTest);
 	ADD_TEST(softVsReferenceTest);
 	ADD_TEST(blendModesTest);
 	ADD_TEST(linearBackendTest);
@@ -389,7 +444,7 @@ WarpRenderTest::WarpRenderTest()
 	ADD_TEST(clipTest);
 	ADD_TEST(opaqueCanvasTest);
 	ADD_TEST(streamTest);
-	ADD_TEST(streamNodesTest);
+	ADD_TEST(streamContentTest);
 	ADD_TEST(nonSquareCellsTest);
 	ADD_TEST(cApiTest);
 	ADD_TEST(seamColorTest);
@@ -428,8 +483,8 @@ bool WarpRenderTest::identityEdgemapTest(std::ostream& output)
 		pDevice->warpDrawEdgemap({ 70 * 64 + 20, 40 * 64 - 10 }, pWarpmap, pEdgemap);
 	};
 
-	bool bOk = compare(output, "SoftBackend", render(Backend::Soft, warped), "warp", render(Backend::Soft, direct), "drawEdgemap", 2);
-	bOk = bOk && compare(output, "ReferenceBackend", render(Backend::Reference, warped), "warp", render(Backend::Reference, direct), "drawEdgemap", 2);
+	bool bOk = compare(output, "SoftBackend", render(TestBackend::Soft, warped), "warp", render(TestBackend::Soft, direct), "drawEdgemap", 2);
+	bOk = bOk && compare(output, "ReferenceBackend", render(TestBackend::Reference, warped), "warp", render(TestBackend::Reference, direct), "drawEdgemap", 2);
 
 	return bOk;
 }
@@ -466,11 +521,274 @@ bool WarpRenderTest::identityBlitTest(std::ostream& output)
 
 		const char* pWhat = sampleMethod == SampleMethod::Nearest ? "Nearest" : "Bilinear";
 
-		bOk = bOk && compare(output, pWhat, render(Backend::Soft, warped), "SoftBackend warp", render(Backend::Soft, direct), "SoftBackend blit", 1);
-		bOk = bOk && compare(output, pWhat, render(Backend::Reference, warped), "ReferenceBackend warp", render(Backend::Reference, direct), "ReferenceBackend blit", 1);
+		bOk = bOk && compare(output, pWhat, render(TestBackend::Soft, warped), "SoftBackend warp", render(TestBackend::Soft, direct), "SoftBackend blit", 1);
+		bOk = bOk && compare(output, pWhat, render(TestBackend::Reference, warped), "ReferenceBackend warp", render(TestBackend::Reference, direct), "ReferenceBackend blit", 1);
 	}
 
 	return bOk;
+}
+
+//____ meshSeamTest() _________________________________________________________
+/*
+	Triangles don't show where they meet: a linear mapping drawn through two triangles, through a
+	grid of cells split along either diagonal and through a fan around a point that isn't on the
+	grid draws the same. Edges cross the source and its edges in all directions, and the mesh goes
+	past the source so that its borders are antialiased inside triangles.
+*/
+
+bool WarpRenderTest::meshSeamTest(std::ostream& output)
+{
+	auto pRes = resourceDevice();
+	auto pEdgemap = makeEdgemap(pRes, false, true);
+	auto pSurface = makeSurface(pRes, false, SampleMethod::Bilinear);
+
+	const SizeI size = { 64, 40 };
+	auto nodeAt = [](int x, int y) { return CoordSPX(52 * x + 17 * y - 400, -11 * x + 47 * y - 160); };
+
+	auto vertex = [&](int x, int y) { CoordSPX uv = nodeAt(x, y); return Warpmap::Vertex{ x * 64, y * 64, uv.x, uv.y }; };
+
+	// Two triangles.
+
+	std::vector<Warpmap::Vertex> quadVertices = { vertex(0, 0), vertex(size.w, 0), vertex(size.w, size.h), vertex(0, size.h) };
+	std::vector<Warpmap::Triangle> quadTriangles = { { 0, 1, 2 }, { 0, 2, 3 } };
+
+	// Cells of 8 x 8, split along alternating diagonals, except the middle 2 x 2 cells which are a
+	// fan of 8 triangles around a point off the grid.
+
+	std::vector<Warpmap::Vertex> gridVertices;
+	std::vector<Warpmap::Triangle> gridTriangles;
+
+	auto index = [&](int x, int y)
+	{
+		for (int i = 0; i < int(gridVertices.size()); i++)
+			if (gridVertices[i].x == x * 64 && gridVertices[i].y == y * 64)
+				return i;
+		gridVertices.push_back(vertex(x, y));
+		return int(gridVertices.size()) - 1;
+	};
+
+	for (int row = 0; row < size.h / 8; row++)
+		for (int col = 0; col < size.w / 8; col++)
+		{
+			if ((col == 3 || col == 4) && (row == 2 || row == 3))
+				continue;
+
+			int tl = index(col * 8, row * 8), tr = index(col * 8 + 8, row * 8), br = index(col * 8 + 8, row * 8 + 8), bl = index(col * 8, row * 8 + 8);
+
+			if ((row + col) % 2)
+			{
+				gridTriangles.push_back({ tl, tr, br });
+				gridTriangles.push_back({ tl, bl, br });				// Counter clockwise.
+			}
+			else
+			{
+				gridTriangles.push_back({ tl, tr, bl });
+				gridTriangles.push_back({ tr, br, bl });
+			}
+		}
+
+	gridVertices.push_back(vertex(31, 22));
+	int center = int(gridVertices.size()) - 1;
+
+	const CoordI ring[8] = { { 24, 16 }, { 32, 16 }, { 40, 16 }, { 40, 24 }, { 40, 32 }, { 32, 32 }, { 24, 32 }, { 24, 24 } };
+	for (int i = 0; i < 8; i++)
+		gridTriangles.push_back({ center, index(ring[i].x, ring[i].y), index(ring[(i + 1) % 8].x, ring[(i + 1) % 8].y) });
+
+	auto create = [&](const std::vector<Warpmap::Vertex>& vertices, const std::vector<Warpmap::Triangle>& triangles)
+	{
+		Warpmap::Blueprint bp;
+		bp.size = size;
+		bp.triangles = int(triangles.size());
+		bp.vertices = int(vertices.size());
+		return SoftWarpmapFactory::create()->createWarpmap(bp, vertices.data(), triangles.data());
+	};
+
+	auto pQuad = create(quadVertices, quadTriangles);
+	auto pGrid = create(gridVertices, gridTriangles);
+	TEST_ASSERT(pQuad && pGrid);
+
+	auto scene = [&](Warpmap* pWarpmap)
+	{
+		return [=](GfxDevice* pDevice)
+		{
+			pDevice->warpDrawEdgemap({ 4 * 64, 4 * 64 }, pWarpmap, pEdgemap);
+			pDevice->setBlitSource(pSurface);
+			pDevice->warpBlit({ 80 * 64, 4 * 64 }, pWarpmap, { 0, 0, 24 * 64, 16 * 64 });
+			pDevice->setBlendMode(BlendMode::Add);
+			pDevice->warpBlit({ 40 * 64, 50 * 64 }, pWarpmap, { 0, 0, 24 * 64, 16 * 64 });
+		};
+	};
+
+	for (TestBackend backend : { TestBackend::Soft, TestBackend::Linear, TestBackend::Reference })
+	{
+		if (!compare(output, "Mesh of many triangles", render(backend, scene(pGrid)), "many triangles", render(backend, scene(pQuad)), "two triangles", 1))
+			return false;
+	}
+
+	return true;
+}
+
+//____ perspectiveWeightTest() ________________________________________________
+/*
+	A quad in perspective drawn through two triangles with weights draws as a fine mesh without
+	weights, whose positions are exact at its vertices and linear in between.
+*/
+
+bool WarpRenderTest::perspectiveWeightTest(std::ostream& output)
+{
+	auto pRes = resourceDevice();
+	auto pEdgemap = makeEdgemap(pRes, false, true);
+	auto pSurface = makeSurface(pRes, true, SampleMethod::Bilinear);
+
+	// The source from x = 5 to 60, shrinking to the right towards a horizon at x = 105, partly
+	// outside the Warpmap at the top and bottom. Positions in the source are (u, v) / d.
+
+	const SizeI size = { 70, 50 };
+	const SizeSPX source = c_edgemapSource;
+
+	auto divisor = [](double x, double y) { return 1.0 - 0.01 * (x - 5); };
+	auto exact = [&](double x, double y)
+	{
+		double d = divisor(x, y);
+		double u = source.w * (x - 5) * 0.45 / 55;
+		double v = source.h / 2 + source.h * (y - 25) / 40;
+		return CoordSPX(spx(std::lround(u / d)), spx(std::lround((v - source.h / 2 * (1 - d)) / d)));
+	};
+
+	Warpmap::Vertex vertices[4];
+	const CoordI corners[4] = { { 0, 0 }, { size.w, 0 }, { size.w, size.h }, { 0, size.h } };
+	for (int i = 0; i < 4; i++)
+	{
+		CoordSPX uv = exact(corners[i].x, corners[i].y);
+		vertices[i] = { corners[i].x * 64, corners[i].y * 64, uv.x, uv.y, int(std::lround(divisor(corners[i].x, corners[i].y) * Warpmap::weightOne)) };
+	}
+
+	Warpmap::Triangle triangles[2] = { { 0, 1, 3 }, { 1, 2, 3 } };
+	auto pQuad = SoftWarpmapFactory::create()->createWarpmap(WGBP(Warpmap, _.size = size), vertices, triangles);
+	auto pFine = createMesh(SoftWarpmapFactory::create(), gridMesh(size, { 1, 1 }, [&](int x, int y) { return exact(x, y); }));
+	TEST_ASSERT(pQuad && pFine);
+
+	auto scene = [&](Warpmap* pWarpmap)
+	{
+		return [=](GfxDevice* pDevice)
+		{
+			pDevice->warpDrawEdgemap({ 4 * 64, 4 * 64 }, pWarpmap, pEdgemap);
+			pDevice->setBlitSource(pSurface);
+			pDevice->warpBlit({ 84 * 64, 4 * 64 }, pWarpmap, { 64 * 4, 0 });
+		};
+	};
+
+	// SoftBackend and LinearBackend divide for perspective every few pixels, keeping within a
+	// quarter of a pixel, which shows by more along the edges of the checkers of the surface.
+
+	for (TestBackend backend : { TestBackend::Soft, TestBackend::Linear, TestBackend::Reference })
+	{
+		bool bExact = backend == TestBackend::Reference;
+		if (!compare(output, "Perspective by weights", render(backend, scene(pQuad)), "weights", render(backend, scene(pFine)), "fine mesh",
+											3, bExact ? 20 : 500, bExact ? 12 : 32))
+			return false;
+	}
+
+	return true;
+}
+
+//____ vertexCoverageTest() ___________________________________________________
+// Coverage of the vertices multiplies the coverage of pixels: a disc with its outline going from
+// full coverage half a pixel inside to none half a pixel outside is antialiased the same by all
+// backends, half coverage everywhere draws as a tint of half alpha, and none draws nothing.
+
+bool WarpRenderTest::vertexCoverageTest(std::ostream& output)
+{
+	auto pRes = resourceDevice();
+	auto pEdgemap = makeEdgemap(pRes, false, true);
+	auto pSurface = makeSurface(pRes, true, SampleMethod::Bilinear);
+
+	// A disc of radius 23 pixels over a Warpmap of 60 x 50, mapped straight onto the source.
+
+	const SizeI size = { 60, 50 };
+	const double cx = 30.3, cy = 24.6, radius = 23;
+	const int nSides = 64;
+
+	auto disc = [&](int innerCoverage, int outerCoverage)
+	{
+		Mesh mesh;
+		auto add = [&](double x, double y, int coverage)
+		{
+			mesh.vertices.push_back({ spx(std::lround(x * 64)), spx(std::lround(y * 64)), spx(std::lround(x * 64)), spx(std::lround(y * 64)), Warpmap::weightOne, coverage });
+			return int(mesh.vertices.size()) - 1;
+		};
+
+		int center = add(cx, cy, innerCoverage);
+		for (int i = 0; i < nSides; i++)
+		{
+			double a = 2 * M_PI * i / nSides;
+			add(cx + std::cos(a) * (radius - 0.5), cy + std::sin(a) * (radius - 0.5), innerCoverage);
+			add(cx + std::cos(a) * (radius + 0.5), cy + std::sin(a) * (radius + 0.5), outerCoverage);
+		}
+
+		for (int i = 0; i < nSides; i++)
+		{
+			int in0 = 1 + i * 2, out0 = in0 + 1;
+			int in1 = 1 + ((i + 1) % nSides) * 2, out1 = in1 + 1;
+			mesh.triangles.push_back({ center, in0, in1 });
+			mesh.triangles.push_back({ in0, out0, out1 });
+			mesh.triangles.push_back({ in0, out1, in1 });
+		}
+
+		mesh.bp.size = size;
+		mesh.bp.triangles = int(mesh.triangles.size());
+		mesh.bp.vertices = int(mesh.vertices.size());
+		return createMesh(SoftWarpmapFactory::create(), mesh);
+	};
+
+	auto pFaded = disc(Warpmap::coverageOne, 0);
+	auto pHalf = disc(Warpmap::coverageOne / 2, Warpmap::coverageOne / 2);
+	auto pFull = disc(Warpmap::coverageOne, Warpmap::coverageOne);
+	auto pNone = disc(0, 0);
+	TEST_ASSERT(pFaded && pHalf && pFull && pNone);
+
+	auto scene = [&](Warpmap* pWarpmap, HiColor tint = HiColor::White)
+	{
+		return [=](GfxDevice* pDevice)
+		{
+			pDevice->setTintColor(tint);
+			pDevice->warpDrawEdgemap({ 4 * 64, 4 * 64 }, pWarpmap, pEdgemap);
+			pDevice->setBlitSource(pSurface);
+			pDevice->warpBlit({ 84 * 64, 4 * 64 }, pWarpmap);
+		};
+	};
+
+	// Faded outline: the backends that estimate coverage against the one that measures it. Along
+	// the outline coverage is linear across a pixel, as for any straight edge.
+
+	Pixels reference = render(TestBackend::Reference, scene(pFaded));
+
+	for (TestBackend backend : { TestBackend::Soft, TestBackend::Linear })
+	{
+		if (!compare(output, "Faded outline", render(backend, scene(pFaded)), backend == TestBackend::Soft ? "soft" : "linear", reference, "reference", 6, 40, 16))
+			return false;
+	}
+
+	// The faded outline differs from the full one only along the outline.
+
+	if (compare(output, "Faded outline", reference, "faded", render(TestBackend::Reference, scene(pFull)), "full", 3, 0, 0))
+	{
+		output << "Coverage of the vertices made no difference" << std::endl;
+		return false;
+	}
+
+	// Half coverage everywhere as half alpha, and none as nothing.
+
+	for (TestBackend backend : { TestBackend::Soft, TestBackend::Linear, TestBackend::Reference })
+	{
+		if (!compare(output, "Half coverage", render(backend, scene(pHalf)), "half coverage", render(backend, scene(pFull, HiColor(4096, 4096, 4096, 2048))), "half alpha", 2, 0, 2))
+			return false;
+
+		if (!compare(output, "No coverage", render(backend, scene(pNone)), "no coverage", render(backend, [](GfxDevice*) {}), "nothing drawn", 0))
+			return false;
+	}
+
+	return true;
 }
 
 //____ softVsReferenceTest() __________________________________________________
@@ -479,7 +797,7 @@ bool WarpRenderTest::identityBlitTest(std::ostream& output)
 
 bool WarpRenderTest::softVsReferenceTest(std::ostream& output)
 {
-	return compare(output, "Warp scene", render(Backend::Soft, warpScene), "SoftBackend", render(Backend::Reference, warpScene), "ReferenceBackend", 6, 60, 48);
+	return compare(output, "Warp scene", render(TestBackend::Soft, warpScene), "SoftBackend", render(TestBackend::Reference, warpScene), "ReferenceBackend", 6, 60, 48);
 }
 
 //____ blendModesTest() _______________________________________________________
@@ -521,7 +839,7 @@ bool WarpRenderTest::blendModesTest(std::ostream& output)
 
 		std::string what = std::string("BlendMode::") + toString(mode);
 
-		if (!compare(output, what.c_str(), render(Backend::Soft, scene), "SoftBackend", render(Backend::Reference, scene), "ReferenceBackend", 6, 40, 48))
+		if (!compare(output, what.c_str(), render(TestBackend::Soft, scene), "SoftBackend", render(TestBackend::Reference, scene), "ReferenceBackend", 6, 40, 48))
 			return false;
 	}
 
@@ -533,7 +851,7 @@ bool WarpRenderTest::blendModesTest(std::ostream& output)
 
 bool WarpRenderTest::linearBackendTest(std::ostream& output)
 {
-	return compare(output, "Warp scene", render(Backend::Linear, warpScene), "LinearBackend", render(Backend::Soft, warpScene), "SoftBackend", 0);
+	return compare(output, "Warp scene", render(TestBackend::Linear, warpScene), "LinearBackend", render(TestBackend::Soft, warpScene), "SoftBackend", 0);
 }
 
 //____ offsetPeriodTest() _____________________________________________________
@@ -561,10 +879,10 @@ bool WarpRenderTest::offsetPeriodTest(std::ostream& output)
 		};
 	};
 
-	auto base = render(Backend::Soft, scene(0, 0));
+	auto base = render(TestBackend::Soft, scene(0, 0));
 
-	return compare(output, "Offset one period", render(Backend::Soft, scene(64 * 64, 32 * 64)), "offset", base, "no offset", 0) &&
-		   compare(output, "Offset minus two periods", render(Backend::Soft, scene(-128 * 64, -64 * 64)), "offset", base, "no offset", 0);
+	return compare(output, "Offset one period", render(TestBackend::Soft, scene(64 * 64, 32 * 64)), "offset", base, "no offset", 0) &&
+		   compare(output, "Offset minus two periods", render(TestBackend::Soft, scene(-128 * 64, -64 * 64)), "offset", base, "no offset", 0);
 }
 
 //____ clipTest() _____________________________________________________________
@@ -580,9 +898,9 @@ bool WarpRenderTest::clipTest(std::ostream& output)
 		warpScene(pDevice);
 	};
 
-	auto background = render(Backend::Soft, [](GfxDevice*) {});
+	auto background = render(TestBackend::Soft, [](GfxDevice*) {});
 
-	for (Backend backend : { Backend::Soft, Backend::Linear })
+	for (TestBackend backend : { TestBackend::Soft, TestBackend::Linear })
 	{
 		auto full = render(backend, warpScene);
 		auto pixels = render(backend, clipped);
@@ -598,7 +916,7 @@ bool WarpRenderTest::clipTest(std::ostream& output)
 				std::memcpy(expected.data() + (y * c_canvasSize.w + r.x) * 4, full.data() + (y * c_canvasSize.w + r.x) * 4, r.w * 4);
 		}
 
-		if (!compare(output, backend == Backend::Soft ? "SoftBackend" : "LinearBackend", pixels, "clipped", expected, "expected", 0))
+		if (!compare(output, backend == TestBackend::Soft ? "SoftBackend" : "LinearBackend", pixels, "clipped", expected, "expected", 0))
 			return false;
 	}
 
@@ -623,8 +941,8 @@ bool WarpRenderTest::opaqueCanvasTest(std::ostream& output)
 
 		std::string what = std::string("XRGB_8 canvas, BlendMode::") + toString(mode);
 
-		if (!compare(output, what.c_str(), render(Backend::Soft, scene, PixelFormat::XRGB_8), "SoftBackend",
-					 render(Backend::Reference, scene, PixelFormat::XRGB_8), "ReferenceBackend", 6, 60, 48))
+		if (!compare(output, what.c_str(), render(TestBackend::Soft, scene, PixelFormat::XRGB_8), "SoftBackend",
+					 render(TestBackend::Reference, scene, PixelFormat::XRGB_8), "ReferenceBackend", 6, 60, 48))
 			return false;
 	}
 
@@ -633,7 +951,7 @@ bool WarpRenderTest::opaqueCanvasTest(std::ostream& output)
 
 //____ streamTest() ___________________________________________________________
 // Warps streamed through StreamBackend and StreamPlayer draw exactly as directly. The resources
-// are created through the stream, so Warpmaps, their nodes and periods are streamed too.
+// are created through the stream, so Warpmaps, their content and periods are streamed too.
 
 bool WarpRenderTest::streamTest(std::ostream& output)
 {
@@ -641,21 +959,19 @@ bool WarpRenderTest::streamTest(std::ostream& output)
 	{
 		warpScene(pDevice);
 
-		// Periods changed after creation, sent with the nodes.
+		// Periods changed after creation.
 
 		auto pWarpmap = makeRing(pDevice, 40, c_edgemapSource, 270.f, -135.f);
-		std::vector<CoordSPX> nodes(pWarpmap->nodes().w * pWarpmap->nodes().h);
-		pWarpmap->exportNodes({ 0, 0, pWarpmap->nodes().w, pWarpmap->nodes().h }, nodes.data());
-		pWarpmap->importAllNodes(nodes.data(), c_edgemapSource.w * 2, 0);
+		pWarpmap->setPeriods(c_edgemapSource.w * 2, 0);
 		pDevice->warpDrawEdgemap({ 64 * 110, 64 * 50 }, pWarpmap, makeEdgemap(pDevice, true), { 64 * 30, 0 });
 	};
 
-	return compare(output, "Streamed warps", renderStreamed(scene), "streamed", render(Backend::Soft, scene), "direct", 0);
+	return compare(output, "Streamed warps", renderStreamed(scene), "streamed", render(TestBackend::Soft, scene), "direct", 0);
 }
 
-//____ streamNodesTest() ______________________________________________________
-// Nodes are streamed compressed, one update at a time, and the receiver creates a Warpmap with its
-// nodes and applies each update at once, exactly.
+//____ streamContentTest() ____________________________________________________
+// Vertices and triangles are streamed compressed, one update at a time, and the receiver creates a
+// Warpmap with its content and applies each update at once, exactly.
 
 namespace
 {
@@ -664,25 +980,25 @@ namespace
 	class CountingSoftWarpmap : public SoftWarpmap
 	{
 	public:
-		CountingSoftWarpmap(const Blueprint& bp, const CoordSPX* pNodes, int pitch) : SoftWarpmap(bp, pNodes, pitch) {}
+		CountingSoftWarpmap(const Blueprint& bp, const Vertex* pVertices, const Triangle* pTriangles) : SoftWarpmap(bp, pVertices, pTriangles) {}
 
 		int		updates = 0;
 
 	protected:
-		void _nodesUpdated(const RectI& region) override { updates++; }
+		void _updated(int firstVertex, int nVertices, int firstTriangle, int nTriangles) override { updates++; }
 	};
 
 	class CountingSoftWarpmapFactory : public WarpmapFactory
 	{
 	public:
-		Warpmap_p createWarpmap(const Warpmap::Blueprint& bp) override { return _created(new CountingSoftWarpmap(bp, nullptr, 0), false); }
-		Warpmap_p createWarpmap(const Warpmap::Blueprint& bp, const CoordSPX* pNodes, int pitch) override { return _created(new CountingSoftWarpmap(bp, pNodes, pitch), true); }
+		Warpmap_p createWarpmap(const Warpmap::Blueprint& bp) override { return _created(new CountingSoftWarpmap(bp, nullptr, nullptr), false); }
+		Warpmap_p createWarpmap(const Warpmap::Blueprint& bp, const Warpmap::Vertex* pVertices, const Warpmap::Triangle* pTriangles) override { return _created(new CountingSoftWarpmap(bp, pVertices, pTriangles), true); }
 
 		std::vector<CountingSoftWarpmap*>	created;		// Kept alive by the test through the stream.
-		int									createdWithNodes = 0;
+		int									createdWithContent = 0;
 
 	private:
-		Warpmap_p _created(CountingSoftWarpmap* p, bool bWithNodes) { created.push_back(p); createdWithNodes += bWithNodes; return p; }
+		Warpmap_p _created(CountingSoftWarpmap* p, bool bWithContent) { created.push_back(p); createdWithContent += bWithContent; return p; }
 	};
 
 	class CountingSoftBackend : public SoftBackend
@@ -724,7 +1040,7 @@ namespace
 	};
 }
 
-bool WarpRenderTest::streamNodesTest(std::ostream& output)
+bool WarpRenderTest::streamContentTest(std::ostream& output)
 {
 	using Id = GfxStream::ChunkId;
 
@@ -737,47 +1053,56 @@ bool WarpRenderTest::streamNodesTest(std::ostream& output)
 	auto pStreamBackend = StreamBackend::create(pEncoder);
 
 	auto pWarp = CircularWarp::create(WGBP(CircularWarp, _.size = { 200, 200 }, _.sourceSize = c_edgemapSource, _.topRadius = 98 * 64, _.bottomRadius = 40 * 64,
-										   _.cellSize = { 4, 4 }), pStreamBackend->warpmapFactory());
+										   _.precision = 10.f), pStreamBackend->warpmapFactory());
 
-	auto sameNodes = [&](Warpmap* pSent, CountingSoftWarpmap* pGot)
+	auto sameContent = [&](Warpmap* pSent, CountingSoftWarpmap* pGot)
 	{
-		SizeI nodes = pSent->nodes();
-		return pGot->nodes() == nodes && pGot->uPeriod() == pSent->uPeriod() && pGot->vPeriod() == pSent->vPeriod() &&
-			std::equal(pSent->nodeData(), pSent->nodeData() + nodes.w * nodes.h, pGot->nodeData());
+		return pGot->vertexCount() == pSent->vertexCount() && pGot->triangleCount() == pSent->triangleCount() &&
+			pGot->uPeriod() == pSent->uPeriod() && pGot->vPeriod() == pSent->vPeriod() &&
+			std::memcmp(pSent->vertexData(), pGot->vertexData(), pSent->vertexCount() * sizeof(Warpmap::Vertex)) == 0 &&
+			std::memcmp(pSent->triangleData(), pGot->triangleData(), pSent->triangleCount() * sizeof(Warpmap::Triangle)) == 0;
 	};
 
-	// Created with all its nodes, compressed.
+	// Created with all its content, compressed.
 
 	pCounter->clear();
 	Warpmap_p pSent = pWarp->generate();
 	pEncoder->flush();
 
-	int rawBytes = pSent->nodes().w * pSent->nodes().h * int(sizeof(CoordSPX));
+	int rawVertexBytes = pSent->vertexCount() * int(sizeof(Warpmap::Vertex));
+	int rawTriangleBytes = pSent->triangleCount() * int(sizeof(Warpmap::Triangle));
 
 	TEST_ASSERT(pCounter->count(Id::CreateWarpmap) == 1);
 	TEST_ASSERT(pCounter->count(Id::WarpmapUpdate) == 1);
-	TEST_ASSERT(pCounter->count(Id::WarpmapNodes) >= 1);
-	TEST_ASSERT(pCounter->size(Id::WarpmapNodes) * 3 < rawBytes);
-	TEST_ASSERT(pReceived->created.size() == 1 && pReceived->createdWithNodes == 1);
+	TEST_ASSERT(pCounter->count(Id::WarpmapVertices) >= 1 && pCounter->count(Id::WarpmapTriangles) >= 1);
+
+	// Vertices to less than half, triangles of 6 bytes to less than 4.
+
+	if (pCounter->size(Id::WarpmapVertices) * 2 >= rawVertexBytes || pCounter->size(Id::WarpmapTriangles) * 3 >= rawTriangleBytes * 2)
+		output << "Compressed to " << pCounter->size(Id::WarpmapVertices) << " of " << rawVertexBytes << " bytes of vertices and "
+			   << pCounter->size(Id::WarpmapTriangles) << " of " << rawTriangleBytes << " bytes of triangles" << std::endl;
+	TEST_ASSERT(pCounter->size(Id::WarpmapVertices) * 2 < rawVertexBytes);
+	TEST_ASSERT(pCounter->size(Id::WarpmapTriangles) * 3 < rawTriangleBytes * 2);
+	TEST_ASSERT(pReceived->created.size() == 1 && pReceived->createdWithContent == 1);
 
 	CountingSoftWarpmap* pGot = pReceived->created[0];
 	TEST_ASSERT(pGot->updates == 0);
-	TEST_ASSERT(sameNodes(pSent, pGot));
+	TEST_ASSERT(sameContent(pSent, pGot));
 
 	// Updated in place, applied at once.
 
 	pSent = nullptr;
 	pCounter->clear();
-	TEST_ASSERT(pWarp->setRadii(90 * 64, 50 * 64));
+	TEST_ASSERT(pWarp->setAngles(30.f, 360.f));
 	pSent = pWarp->generate();
 	pEncoder->flush();
 
 	TEST_ASSERT(pCounter->count(Id::CreateWarpmap) == 0 && pCounter->count(Id::WarpmapUpdate) == 1);
 	TEST_ASSERT(pReceived->created.size() == 1);
 	TEST_ASSERT(pGot->updates == 1);
-	TEST_ASSERT(sameNodes(pSent, pGot));
+	TEST_ASSERT(sameContent(pSent, pGot));
 
-	// New periods are sent with the nodes and applied together with them.
+	// New periods are sent with the content and applied together with it.
 
 	pSent = nullptr;
 	pCounter->clear();
@@ -790,38 +1115,88 @@ bool WarpRenderTest::streamNodesTest(std::ostream& output)
 	TEST_ASSERT(pReceived->created.size() == 1);
 	TEST_ASSERT(pGot->uPeriod() != oldPeriod);
 	TEST_ASSERT(pGot->updates == 2);
-	TEST_ASSERT(sameNodes(pSent, pGot));
+	TEST_ASSERT(sameContent(pSent, pGot));
 
-	// A region narrower than the Warpmap.
+	// Some of the vertices, some of the triangles and periods alone.
 
-	std::vector<CoordSPX> patch(7 * 3);
+	std::vector<Warpmap::Vertex> patch(21);
 	for (int i = 0; i < int(patch.size()); i++)
-		patch[i] = { i * 640, -i * 64 };
+		patch[i] = { i * 640, -i * 64, i * 7, i * 3, 1000 + i, i * 3000 };				// Weights and coverage.
+
+	std::vector<Warpmap::Triangle> triangles = { { 1, 2, 3 }, { 7, 8, 9 } };
 
 	int updates = pGot->updates;
 	pCounter->clear();
-	TEST_ASSERT(pSent->importNodes({ 5, 9, 7, 3 }, patch.data()));
+	TEST_ASSERT(pSent->importVertices(100, int(patch.size()), patch.data()));
+	TEST_ASSERT(pSent->importTriangles(30, 2, triangles.data()));
+	TEST_ASSERT(pSent->setPeriods(pSent->uPeriod() + 64, 640));
 	pEncoder->flush();
 
-	TEST_ASSERT(pCounter->count(Id::WarpmapUpdate) == 1);
-	TEST_ASSERT(pGot->updates == updates + 1);
-	TEST_ASSERT(sameNodes(pSent, pGot));
+	TEST_ASSERT(pCounter->count(Id::WarpmapUpdate) == 3);
+	TEST_ASSERT(pCounter->count(Id::WarpmapVertices) == 1 && pCounter->count(Id::WarpmapTriangles) == 1);
+	TEST_ASSERT(pGot->updates == updates + 3);
+	TEST_ASSERT(sameContent(pSent, pGot));
 
-	// Created without nodes, with the default ones.
+	// An odd number of triangles, which go two at a time.
 
-	auto pDefault = pStreamBackend->warpmapFactory()->createWarpmap({ .cellSize = { 8, 8 }, .size = { 30, 20 }, .uPeriod = 1000 });
+	std::vector<Warpmap::Triangle> odd = { { 4, 5, 6 }, { 10, 11, 12 }, { 20, 21, 22 } };
+
+	updates = pGot->updates;
+	TEST_ASSERT(pSent->importTriangles(41, int(odd.size()), odd.data()));
+	TEST_ASSERT(pSent->importTriangles(pSent->triangleCount() - 1, 1, odd.data()));
 	pEncoder->flush();
-	TEST_ASSERT(pReceived->created.size() == 2 && pReceived->createdWithNodes == 2);
-	TEST_ASSERT(sameNodes(pDefault, pReceived->created[1]));
+	TEST_ASSERT(pGot->updates == updates + 2);
+	TEST_ASSERT(sameContent(pSent, pGot));
+
+	// Weights are only sent when there are any other than 1.0. Back to all 1.0, a ring takes less.
+
+	pSent = nullptr;
+	pCounter->clear();
+	TEST_ASSERT(pWarp->setAngles(10.f, 360.f));
+	pSent = pWarp->generate();
+	pEncoder->flush();
+	TEST_ASSERT(sameContent(pSent, pGot));
+	int unweighted = pCounter->size(Id::WarpmapVertices);
+
+	std::vector<Warpmap::Vertex> weighted(pSent->vertexData(), pSent->vertexData() + pSent->vertexCount());
+	for (auto& v : weighted)
+		v.w = Warpmap::weightOne * 2;
+
+	pCounter->clear();
+	TEST_ASSERT(pSent->importVertices(0, int(weighted.size()), weighted.data()));
+	pEncoder->flush();
+	TEST_ASSERT(sameContent(pSent, pGot));
+	TEST_ASSERT(pCounter->size(Id::WarpmapVertices) > unweighted);
+
+	// A mesh in perspective, created with its weights.
+
+	Warpmap::Vertex cardVertices[4] = {
+		{ 64 * 10, 64 * 10, 0, 0, Warpmap::weightOne, Warpmap::coverageOne },
+		{ 64 * 110, 64 * 20, c_edgemapSource.w, 0, Warpmap::weightOne / 2, Warpmap::coverageOne },
+		{ 64 * 110, 64 * 80, c_edgemapSource.w, c_edgemapSource.h, Warpmap::weightOne / 2, Warpmap::coverageOne },
+		{ 64 * 10, 64 * 90, 0, c_edgemapSource.h, Warpmap::weightOne, Warpmap::coverageOne }
+	};
+	Warpmap::Triangle cardTriangles[2] = { { 0, 1, 2 }, { 0, 2, 3 } };
+
+	Warpmap_p pCardMap = pStreamBackend->warpmapFactory()->createWarpmap({ .size = { 120, 100 }, .triangles = 2, .vertices = 4 }, cardVertices, cardTriangles);
+	pEncoder->flush();
+	TEST_ASSERT(sameContent(pCardMap, pReceived->created.back()));
+
+	// Created without content, with the default one.
+
+	auto pDefault = pStreamBackend->warpmapFactory()->createWarpmap({ .size = { 30, 20 }, .triangles = 5, .uPeriod = 1000, .vertices = 9 });
+	pEncoder->flush();
+	TEST_ASSERT(pReceived->created.size() == 3 && pReceived->createdWithContent == 3);
+	TEST_ASSERT(sameContent(pDefault, pReceived->created[2]));
 
 	return true;
 }
 
 //____ nonSquareCellsTest() ___________________________________________________
-// Cells can have another width than height. A sheared and scaled mapping is linear, so any cells
-// give the same positions and draw the same, in all backends and streamed. SoftBackend steps
-// positions from the corners of each cell in fixed point, so rounding can differ by a unit and
-// colors by a level.
+// A sheared and scaled mapping is linear, so a mesh of any cells, with another width than height,
+// gives the same positions and draws the same, in all backends and streamed. Edges between
+// triangles don't show. SoftBackend steps positions from the corners of each cell in fixed point,
+// so rounding can differ by a unit and colors by a level.
 
 bool WarpRenderTest::nonSquareCellsTest(std::ostream& output)
 {
@@ -831,19 +1206,7 @@ bool WarpRenderTest::nonSquareCellsTest(std::ostream& output)
 
 	auto sheared = [&](GfxDevice* pDevice, SizeI cellSize)
 	{
-		auto pWarpmap = pDevice->warpmapFactory()->createWarpmap(WGBP(Warpmap, _.size = size, _.cellSize = cellSize));
-
-		SizeI n = pWarpmap->nodes();
-		std::vector<CoordSPX> nodes(n.w * n.h);
-		for (int r = 0; r < n.h; r++)
-			for (int c = 0; c < n.w; c++)
-			{
-				int x = pWarpmap->nodeX(c), y = pWarpmap->nodeY(r);
-				nodes[r * n.w + c] = { 59 * x + 13 * y - 320, 9 * x + 31 * y - 200 };
-			}
-
-		pWarpmap->importNodes({ 0, 0, n.w, n.h }, nodes.data());
-		return pWarpmap;
+		return createMesh(pDevice->warpmapFactory(), gridMesh(size, cellSize, [](int x, int y) { return CoordSPX(59 * x + 13 * y - 320, 9 * x + 31 * y - 200); }));
 	};
 
 	auto scene = [&](SizeI cellSize)
@@ -860,7 +1223,7 @@ bool WarpRenderTest::nonSquareCellsTest(std::ostream& output)
 
 	const SizeI shapes[] = { { 60, 4 }, { 3, 50 }, { 17, 11 }, { 100, 100 } };
 
-	for (Backend backend : { Backend::Soft, Backend::Linear, Backend::Reference })
+	for (TestBackend backend : { TestBackend::Soft, TestBackend::Linear, TestBackend::Reference })
 	{
 		auto square = render(backend, scene({ 5, 5 }));
 
@@ -872,7 +1235,7 @@ bool WarpRenderTest::nonSquareCellsTest(std::ostream& output)
 		}
 	}
 
-	return compare(output, "Cells of 60 x 4, streamed", renderStreamed(scene({ 60, 4 })), "streamed", render(Backend::Soft, scene({ 60, 4 })), "direct", 0);
+	return compare(output, "Cells of 60 x 4, streamed", renderStreamed(scene({ 60, 4 })), "streamed", render(TestBackend::Soft, scene({ 60, 4 })), "direct", 0);
 }
 
 //____ cApiTest() _____________________________________________________________
@@ -884,30 +1247,26 @@ bool WarpRenderTest::cApiTest(std::ostream& output)
 	auto pEdgemap = makeEdgemap(pRes, true);
 	auto pSurface = makeSurface(pRes, true, SampleMethod::Bilinear);
 
-	// Nodes of a bent rectangle, given to both.
+	// Vertices and triangles of a bent rectangle, given to both.
 
 	const SizeI warpSize = { 40, 36 };
 	const int cellSize = 6;
-	const SizeI nodes = { (warpSize.w + cellSize - 1) / cellSize + 1, (warpSize.h + cellSize - 1) / cellSize + 1 };
-
-	std::vector<CoordSPX> nodeData(nodes.w * nodes.h);
-	for (int r = 0; r < nodes.h; r++)
-		for (int c = 0; c < nodes.w; c++)
-		{
-			float x = std::min(c * cellSize, warpSize.w) / float(warpSize.w);
-			float y = std::min(r * cellSize, warpSize.h) / float(warpSize.h);
-			float u = x * 1.1f - 0.05f + 0.07f * std::sin(y * 6.f);
-			float v = y + 0.05f * std::sin(x * 5.f);
-			nodeData[r * nodes.w + c] = { spx(std::lround(u * c_surfaceSource.w)), spx(std::lround(v * c_surfaceSource.h)) };
-		}
-
 	const spx bentPeriod = c_surfaceSource.w * 3 / 2;
+
+	Mesh bent = gridMesh(warpSize, { cellSize, cellSize }, [&](int px, int py)
+	{
+		float x = px / float(warpSize.w);
+		float y = py / float(warpSize.h);
+		float u = x * 1.1f - 0.05f + 0.07f * std::sin(y * 6.f);
+		float v = y + 0.05f * std::sin(x * 5.f);
+		return CoordSPX(spx(std::lround(u * c_surfaceSource.w)), spx(std::lround(v * c_surfaceSource.h)));
+	}, bentPeriod);
 
 	auto cpp = [&](GfxDevice* pDevice)
 	{
 		auto pRing = CircularWarp::create(WGBP(CircularWarp, _.size = { 44, 44 }, _.sourceSize = c_edgemapSource, _.topRadius = 21 * 64, _.bottomRadius = 10 * 64,
 											   _.startAngle = 30.f, _.sweep = 300.f), SoftWarpmapFactory::create());
-		auto pBent = SoftWarpmapFactory::create()->createWarpmap(WGBP(Warpmap, _.size = warpSize, _.cellSize = { cellSize, cellSize }, _.uPeriod = bentPeriod), nodeData.data());
+		auto pBent = createMesh(SoftWarpmapFactory::create(), bent);
 
 		pDevice->warpDrawEdgemap({ 64 * 3, 64 * 4 }, pRing->generate(), pEdgemap, { 64 * 5, 0 });
 
@@ -937,17 +1296,23 @@ bool WarpRenderTest::cApiTest(std::ostream& output)
 
 		wg_warpmapBP bentBP = {};
 		bentBP.size = { warpSize.w, warpSize.h };
-		bentBP.cellSize = { cellSize, cellSize };
+		bentBP.triangles = bent.bp.triangles;
 		bentBP.uPeriod = bentPeriod;
+		bentBP.vertices = bent.bp.vertices;
 
-		wg_obj bent = wg_createWarpmapFromNodes(factory, &bentBP, (const wg_coordSPX*) nodeData.data(), 0);
+		auto pVertices = (const wg_warpVertex*) bent.vertices.data();
+		auto pTriangles = (const wg_warpTriangle*) bent.triangles.data();
 
-		// The same, given its nodes and periods after creation.
+		wg_obj cBent = wg_createWarpmapFromMesh(factory, &bentBP, pVertices, pTriangles);
+
+		// The same, given its content and periods after creation, some at a time.
 
 		wg_warpmapBP plainBP = bentBP;
 		plainBP.uPeriod = 0;
 		wg_obj bentLater = wg_createWarpmap(factory, &plainBP);
-		wg_importAllWarpmapNodes(bentLater, (const wg_coordSPX*) nodeData.data(), bentPeriod, 0, 0);
+		wg_importWarpmapMesh(bentLater, pVertices, nullptr, bentPeriod, 0);
+		wg_importWarpmapTriangles(bentLater, 0, 10, pTriangles);
+		wg_importWarpmapTriangles(bentLater, 10, bent.bp.triangles - 10, pTriangles + 10);
 
 		wg_warpDrawEdgemap(device, { 64 * 3, 64 * 4 }, wg_generateWarpGenerator(ring), (wg_obj) static_cast<Object*>(pEdgemap.rawPtr()), { 64 * 5, 0 });
 
@@ -965,17 +1330,58 @@ bool WarpRenderTest::cApiTest(std::ostream& output)
 		wg_warpDrawEdgemap(device, { 64 * 3, 64 * 50 }, wg_generateWarpGenerator(frame), (wg_obj) static_cast<Object*>(pEdgemap.rawPtr()), { 0, 0 });
 		wg_release(frame);
 		pDevice->setBlitSource(pSurface);
-		wg_warpBlit(device, { 64 * 60, 64 * 4 }, bent, { 64 * 2, 64 * 3 });
+		wg_warpBlit(device, { 64 * 60, 64 * 4 }, cBent, { 64 * 2, 64 * 3 });
 		wg_rectSPX source = { 64 * 4, 64 * 2, 64 * 20, 64 * 12 };
 		wg_warpBlitRect(device, { 64 * 110, 64 * 4 }, bentLater, &source, { 0, 0 });
 
 		wg_release(bentLater);
-		wg_release(bent);
+		wg_release(cBent);
 		wg_release(ring);
 		wg_release(factory);
 	};
 
-	return compare(output, "C API", render(Backend::Soft, c), "C API", render(Backend::Soft, cpp), "C++", 0);
+	if (!compare(output, "C API", render(TestBackend::Soft, c), "C API", render(TestBackend::Soft, cpp), "C++", 0))
+		return false;
+
+	// Content and positions through the C API.
+
+	wg_obj factory = wg_createSoftWarpmapFactory();
+
+	wg_warpmapBP bentBP = {};
+	bentBP.size = { warpSize.w, warpSize.h };
+	bentBP.triangles = bent.bp.triangles;
+	bentBP.vertices = bent.bp.vertices;
+
+	auto pVertices = (const wg_warpVertex*) bent.vertices.data();
+	auto pTriangles = (const wg_warpTriangle*) bent.triangles.data();
+
+	wg_obj cBent = wg_createWarpmapFromMesh(factory, &bentBP, pVertices, pTriangles);
+	TEST_ASSERT(cBent != nullptr);
+	TEST_ASSERT(wg_warpmapVertexCount(cBent) == bent.bp.vertices && wg_warpmapTriangleCount(cBent) == bent.bp.triangles);
+	TEST_ASSERT(wg_warpmapPixelSize(cBent).w == warpSize.w && wg_warpmapPixelSize(cBent).h == warpSize.h);
+
+	TEST_ASSERT(wg_setWarpmapPeriods(cBent, bentPeriod, 0) && wg_warpmapUPeriod(cBent) == bentPeriod && wg_warpmapVPeriod(cBent) == 0);
+	TEST_ASSERT(!wg_importWarpmapTriangles(cBent, 10, bent.bp.triangles, pTriangles));
+	TEST_ASSERT(wg_importWarpmapVertices(cBent, 3, 2, pVertices + 7));
+
+	wg_warpVertex readBack;
+	TEST_ASSERT(wg_exportWarpmapVertices(cBent, 4, 1, &readBack) && readBack.u == bent.vertices[8].u && readBack.w == Warpmap::weightOne);
+
+	wg_warpTriangle readTriangle;
+	TEST_ASSERT(wg_exportWarpmapTriangles(cBent, 9, 1, &readTriangle) && readTriangle.c == bent.triangles[9].c);
+
+	wg_coordF pos;
+	int triangle = wg_warpmapTriangleAt(cBent, { 64 * 20 + 32, 64 * 20 + 32 });
+	TEST_ASSERT(triangle >= 0 && wg_warpmapPositionIn(cBent, triangle, 20.5, 20.5, &pos));
+
+	CoordF cppPos;
+	auto pCpp = createMesh(SoftWarpmapFactory::create(), bent);
+	TEST_ASSERT(pCpp->triangleAt({ 64 * 20 + 32, 64 * 20 + 32 }) == triangle && pCpp->positionIn(triangle, 20.5, 20.5, cppPos));
+	TEST_ASSERT(pos.x == cppPos.x && pos.y == cppPos.y);
+
+	wg_release(cBent);
+	wg_release(factory);
+	return true;
 }
 
 //____ seamColorTest() ________________________________________________________
@@ -1025,7 +1431,7 @@ bool WarpRenderTest::seamColorTest(std::ostream& output)
 		pDevice->warpDrawEdgemap({ 50 * 64, 50 * 64 }, pEdgemapArc, pEdgemap, { 7 * 64, 0 });
 	};
 
-	return compare(output, "Seams", render(Backend::Soft, scene), "SoftBackend", render(Backend::Reference, scene), "ReferenceBackend", 6, 4, 12);
+	return compare(output, "Seams", render(TestBackend::Soft, scene), "SoftBackend", render(TestBackend::Reference, scene), "ReferenceBackend", 6, 4, 12);
 }
 
 //____ sourceRectTest() _______________________________________________________
@@ -1094,7 +1500,7 @@ bool WarpRenderTest::sourceRectTest(std::ostream& output)
 
 		const char* pWhat = method == SampleMethod::Bilinear ? "Bilinear source rectangle" : "Nearest source rectangle";
 
-		for (Backend backend : { Backend::Soft, Backend::Linear, Backend::Reference })
+		for (TestBackend backend : { TestBackend::Soft, TestBackend::Linear, TestBackend::Reference })
 		{
 			if (!compare(output, pWhat, render(backend, scene(true)), "rectangle", render(backend, scene(false)), "cropped surface", 0))
 				return false;
@@ -1109,7 +1515,7 @@ bool WarpRenderTest::sourceRectTest(std::ostream& output)
 	Draws are rendered when the canvas update ends, so a CircularWarp drawn several times with
 	different settings within one update must not change the Warpmaps of the earlier draws.
 	generate() makes a new Warpmap when the one it has is held by a draw. Drawn on each backend
-	and through a stream, which sends the nodes as they change.
+	and through a stream, which sends the content as it changes.
 */
 
 bool WarpRenderTest::generateTest(std::ostream& output)
@@ -1146,13 +1552,13 @@ bool WarpRenderTest::generateTest(std::ostream& output)
 		pDevice->warpDrawEdgemap({ 98 * 64, 2 * 64 }, pThird->generate(), pEdgemap);
 	};
 
-	for (Backend backend : { Backend::Soft, Backend::Linear, Backend::Reference })
+	for (TestBackend backend : { TestBackend::Soft, TestBackend::Linear, TestBackend::Reference })
 	{
 		if (!compare(output, "One CircularWarp drawn three times", render(backend, oneGenerator), "one generator", render(backend, separateGenerators), "separate generators", 0))
 			return false;
 	}
 
-	return compare(output, "One CircularWarp drawn three times, streamed", renderStreamed(oneGenerator), "one generator", render(Backend::Soft, separateGenerators), "separate generators", 0);
+	return compare(output, "One CircularWarp drawn three times, streamed", renderStreamed(oneGenerator), "one generator", render(TestBackend::Soft, separateGenerators), "separate generators", 0);
 }
 
 //____ rotationOffsetTest() ___________________________________________________
@@ -1190,9 +1596,9 @@ bool WarpRenderTest::rotationOffsetTest(std::ostream& output)
 		pDevice->warpDrawEdgemap({ 60 * 64, 2 * 64 }, pMovedFrame->generate(), pEdgemap);
 	};
 
-	// Nodes of the two differ by rounding to spx, so a few pixels by a level or two.
+	// Vertices of the two differ by rounding to spx, so a few pixels by a level or two.
 
-	if (!compare(output, "Turned by offset", render(Backend::Soft, turned), "offset", render(Backend::Soft, generated), "generated", 2, 40, 4))
+	if (!compare(output, "Turned by offset", render(TestBackend::Soft, turned), "offset", render(TestBackend::Soft, generated), "generated", 2, 40, 4))
 		return false;
 
 	// C API gives the same offsets.
@@ -1237,8 +1643,8 @@ bool WarpRenderTest::roundedRectTest(std::ostream& output)
 		pDevice->warpDrawEdgemap({ 2 * 64, 48 * 64 }, pBand->generate(), makeEdgemap(pDevice, false, true));
 	};
 
-	return compare(output, "Rounded rects", render(Backend::Soft, scene), "SoftBackend", render(Backend::Reference, scene), "ReferenceBackend", 6, 60, 48) &&
-		   compare(output, "Rounded rects", render(Backend::Linear, scene), "LinearBackend", render(Backend::Soft, scene), "SoftBackend", 0);
+	return compare(output, "Rounded rects", render(TestBackend::Soft, scene), "SoftBackend", render(TestBackend::Reference, scene), "ReferenceBackend", 6, 60, 48) &&
+		   compare(output, "Rounded rects", render(TestBackend::Linear, scene), "LinearBackend", render(TestBackend::Soft, scene), "SoftBackend", 0);
 }
 
 //____ cylinderTest() _________________________________________________________
@@ -1265,9 +1671,9 @@ bool WarpRenderTest::cylinderTest(std::ostream& output)
 		pDevice->warpDrawEdgemap({ 70 * 64, 42 * 64 }, pCan->generate(), pEdgemap, pCan->rotationOffset(60.f));
 	};
 
-	if (!compare(output, "Cylinders", render(Backend::Soft, scene), "SoftBackend", render(Backend::Reference, scene), "ReferenceBackend", 6, 60, 48) ||
-		!compare(output, "Cylinders", render(Backend::Linear, scene), "LinearBackend", render(Backend::Soft, scene), "SoftBackend", 0) ||
-		!compare(output, "Cylinders, streamed", renderStreamed(scene), "streamed", render(Backend::Soft, scene), "direct", 0))
+	if (!compare(output, "Cylinders", render(TestBackend::Soft, scene), "SoftBackend", render(TestBackend::Reference, scene), "ReferenceBackend", 6, 60, 48) ||
+		!compare(output, "Cylinders", render(TestBackend::Linear, scene), "LinearBackend", render(TestBackend::Soft, scene), "SoftBackend", 0) ||
+		!compare(output, "Cylinders, streamed", renderStreamed(scene), "streamed", render(TestBackend::Soft, scene), "direct", 0))
 		return false;
 
 	// Through the C API.
@@ -1309,5 +1715,7 @@ bool WarpRenderTest::cylinderTest(std::ostream& output)
 		return true;
 	};
 
-	return compare(output, "Cylinders through the C API", render(Backend::Soft, [&](GfxDevice* p) { c(p); }), "C API", render(Backend::Soft, scene), "C++", 0);
+	return compare(output, "Cylinders through the C API", render(TestBackend::Soft, [&](GfxDevice* p) { c(p); }), "C API", render(TestBackend::Soft, scene), "C++", 0);
 }
+
+

@@ -54,7 +54,9 @@ namespace wg
 		//.____ Misc _______________________________________________________
 
 		virtual Warpmap_p createWarpmap( const Warpmap::Blueprint& blueprint ) = 0;
-		virtual Warpmap_p createWarpmap( const Warpmap::Blueprint& blueprint, const CoordSPX * pNodes, int pitch = 0 ) = 0;
+		// Creates a Warpmap with its vertices and triangles, see Warpmap.
+
+		virtual Warpmap_p createWarpmap( const Warpmap::Blueprint& blueprint, const Warpmap::Vertex * pVertices, const Warpmap::Triangle * pTriangles ) = 0;
 
 	protected:
 		WarpmapFactory() {}

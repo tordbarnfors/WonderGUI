@@ -34,39 +34,63 @@ extern "C" {
 
 	typedef struct wg_warpmapBP_struct			// NOT BINARY EQUIVALENT!
 	{
-		wg_sizeI			cellSize;				// Pixels between nodes, horizontally and vertically. 0 = default (16).
 		wg_sizeI			size;					// Mandatory. Size in pixels.
+		int					triangles;				// Number of triangles. 0 = default (2).
 		wg_spx				uPeriod;				// In spx of the source, 0 = not periodic.
+		int					vertices;				// Number of vertices. 0 = default (4).
 		wg_spx				vPeriod;				// In spx of the source, 0 = not periodic.
 	} wg_warpmapBP;
+
+	//____ wg_warpVertex _________________________________________________________
+
+	typedef struct wg_warpVertex_struct		// Binary equivalent of wg::Warpmap::Vertex.
+	{
+		wg_spx				x, y;					// Position in spx of the Warpmap, from its top-left corner.
+		wg_spx				u, v;					// Position in spx of the source.
+		int					w;						// Weight for perspective, 65536 is 1.0.
+		int					coverage;				// Coverage, 65536 is full, see wg::Warpmap.
+	} wg_warpVertex;
+
+	//____ wg_warpTriangle _______________________________________________________
+
+	typedef struct wg_warpTriangle_struct		// Binary equivalent of wg::Warpmap::Triangle.
+	{
+		uint16_t			a, b, c;				// Indices of the corners in the vertices.
+	} wg_warpTriangle;
 
 	//.____ Geometry ______________________________________________________
 
 	WG_EXPORT wg_sizeI		wg_warpmapPixelSize(wg_obj warpmap);
-	WG_EXPORT wg_sizeI		wg_warpmapCellSize(wg_obj warpmap);
-	WG_EXPORT wg_sizeI		wg_warpmapNodes(wg_obj warpmap);					// Nodes horizontally and vertically.
-	WG_EXPORT int			wg_warpmapNodeX(wg_obj warpmap, int column);		// Pixel position of a column of nodes.
-	WG_EXPORT int			wg_warpmapNodeY(wg_obj warpmap, int row);
 
 	//.____ Content _______________________________________________________
 
+	WG_EXPORT int			wg_warpmapVertexCount(wg_obj warpmap);
+	WG_EXPORT int			wg_warpmapTriangleCount(wg_obj warpmap);
+
 	WG_EXPORT wg_spx			wg_warpmapUPeriod(wg_obj warpmap);
 	WG_EXPORT wg_spx			wg_warpmapVPeriod(wg_obj warpmap);
+	WG_EXPORT int			wg_setWarpmapPeriods(wg_obj warpmap, wg_spx uPeriod, wg_spx vPeriod);
 
-	// Region is given in nodes, pitch is nodes between rows in source/destination, 0 meaning region width.
+	WG_EXPORT int			wg_importWarpmapVertices(wg_obj warpmap, int first, int count, const wg_warpVertex* pSource);
+	WG_EXPORT int			wg_importWarpmapTriangles(wg_obj warpmap, int first, int count, const wg_warpTriangle* pSource);
 
-	WG_EXPORT int			wg_importWarpmapNodes(wg_obj warpmap, const wg_rectI* region, const wg_coordSPX* pSource, int pitch);
+	// All vertices and triangles, and periods. Either pointer can be null to keep what is there.
 
-	// All nodes and the periods they are for. Periods can only change together with all nodes.
+	WG_EXPORT int			wg_importWarpmapMesh(wg_obj warpmap, const wg_warpVertex* pVertices, const wg_warpTriangle* pTriangles, wg_spx uPeriod, wg_spx vPeriod);
 
-	WG_EXPORT int			wg_importAllWarpmapNodes(wg_obj warpmap, const wg_coordSPX* pSource, wg_spx uPeriod, wg_spx vPeriod, int pitch);
-	WG_EXPORT int			wg_exportWarpmapNodes(wg_obj warpmap, const wg_rectI* region, wg_coordSPX* pDestination, int pitch);
+	WG_EXPORT int			wg_exportWarpmapVertices(wg_obj warpmap, int first, int count, wg_warpVertex* pDestination);
+	WG_EXPORT int			wg_exportWarpmapTriangles(wg_obj warpmap, int first, int count, wg_warpTriangle* pDestination);
 
 	//.____ Misc __________________________________________________________
 
-	// Position at x,y in spx of the source, with fractions.
+	// Triangle that a point (spx of the Warpmap) is inside of, -1 if none.
 
-	WG_EXPORT wg_coordF		wg_warpmapPositionAt(wg_obj warpmap, double x, double y);
+	WG_EXPORT int			wg_warpmapTriangleAt(wg_obj warpmap, wg_coordSPX point);
+
+	// Position at x,y (pixels of the Warpmap) as given by a triangle, in spx of the source with fractions.
+	// Returns 0 beyond the horizon of the triangle or if it has no area.
+
+	WG_EXPORT int			wg_warpmapPositionIn(wg_obj warpmap, int triangle, double x, double y, wg_coordF* pPosition);
 
 #ifdef __cplusplus
 }

@@ -40,9 +40,9 @@ namespace wg
 		return SoftWarpmap::create(blueprint);
 	}
 
-	Warpmap_p SoftWarpmapFactory::createWarpmap( const Warpmap::Blueprint& blueprint, const CoordSPX * pNodes, int pitch )
+	Warpmap_p SoftWarpmapFactory::createWarpmap( const Warpmap::Blueprint& blueprint, const Warpmap::Vertex * pVertices, const Warpmap::Triangle * pTriangles )
 	{
-		return SoftWarpmap::create(blueprint, pNodes, pitch);
+		return SoftWarpmap::create(blueprint, pVertices, pTriangles);
 	}
 
 } // namespace wg

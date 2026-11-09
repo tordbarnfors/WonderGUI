@@ -91,10 +91,11 @@ namespace wg
 			SetEdgemapTint = 29,
 			SurfacePalette = 30,		// Palette of surface just created, split over chunks like SurfacePixels.
 
-			CreateWarpmap = 31,			// Since 3.4. Followed by WarpmapUpdate and WarpmapNodes with all its nodes and periods.
-			WarpmapUpdate = 32,			// Region of nodes that following WarpmapNodes chunks hold, and the periods they are for.
-			WarpmapNodes = 33,			// Nodes of a region, row by row, split over chunks like EdgemapSamples. Compressed by NodeCompressor.
-			DeleteWarpmap = 34
+			CreateWarpmap = 31,			// Since 3.4. Followed by WarpmapUpdate, WarpmapVertices and WarpmapTriangles with all its content.
+			WarpmapUpdate = 32,			// Flags (see WarpmapFlags), vertices and triangles that following WarpmapVertices and WarpmapTriangles chunks hold, and periods.
+			WarpmapVertices = 33,		// Vertices as sequences of all x, y, u, v, then w with WarpmapFlags::Weights and coverage with WarpmapFlags::Coverage, int32 each, split over chunks like EdgemapSamples. Compressed by MeshCompressor.
+			WarpmapTriangles = 34,		// Triangles as sequences of all a, b and c, int32 each, split over chunks like EdgemapSamples. Compressed by MeshCompressor.
+			DeleteWarpmap = 35
 		};
 
 		const static ChunkId      ChunkId_min      = ChunkId::OutOfData;
@@ -109,6 +110,14 @@ namespace wg
 			operator spx() const {return value;}
 			
 			spx value;
+		};
+
+		// Flags of a WarpmapUpdate. Bits that aren't known are ignored.
+
+		struct WarpmapFlags
+		{
+			static constexpr uint16_t	Weights = 1;		// Vertices have weights, otherwise they are all Warpmap::weightOne.
+			static constexpr uint16_t	Coverage = 2;		// Vertices have coverage, otherwise they are all Warpmap::coverageOne.
 		};
 
 		enum class SpxFormat : uint8_t

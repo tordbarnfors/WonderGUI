@@ -70,8 +70,8 @@ set( SOURCES
 	wg_spans.h
 	wg_spxcompression.cpp
 	wg_spxcompression.h
-	wg_nodecompression.cpp
-	wg_nodecompression.h
+	wg_meshcompression.cpp
+	wg_meshcompression.h
 	wg_surface.cpp
 	wg_surface.h
 	wg_surfacefactory.cpp

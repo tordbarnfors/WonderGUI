@@ -2,27 +2,25 @@
 // follow. Shared by the warp pixel shaders, put in front of each of them after
 // output.hlsl and tint.hlsl.
 //
-// Each pixel finds the cell of the Warpmap it is in and interpolates the position in
-// the source at its center, and how fast that changes along x and y of the canvas.
-// Coverage is worked out from those, taking each border of the source and each edge
-// of an edgemap as straight over the pixel. Extras of a warp, five entries:
+// The triangles of the Warpmap are drawn, and each pixel gets the position in the source
+// at its center from the triangle that draws it, and how fast that changes along x and y
+// of the canvas. Coverage is worked out from those, taking each border of the source and
+// each edge of an edgemap as straight over the pixel. Extras of a warp, three entries:
 //
-//   0: position of Warpmap on canvas, cell width, number of edges.
-//   1: size of Warpmap, size of source in pixels.
-//   2: source offset in pixels of the source, periods in pixels of the source (0 if none).
-//   3: edgemaps: edges per column, offsets of flat colors, tint table and raw samples in
+//   0: size of source in pixels, number of edges, 0.
+//   1: source offset plus u and v of the first vertex (brought into the periods) in pixels
+//      of the source, periods in pixels of the source (0 if none).
+//   2: edgemaps: edges per column, offsets of flat colors, tint table and raw samples in
 //      the edgemap buffer. Blits: position of source rectangle in the surface, how far inside
 //      its edges positions are kept (0 for a tiling surface, see warpBlitCoverage()).
-//   4: cell height.
 //
-// The cells of the Warpmap are in its buffer, see DX12Warpmap.
+// The mesh of the Warpmap is in its buffer, see DX12Warpmap and vs_warp.hlsl.
 //
 // Functions return once, at their end, see ps_shape.hlsl. Integer arithmetic is
 // unsigned, the compiler warns about signed divisions.
 
 
 StructuredBuffer<float4> extras : register(t1);
-StructuredBuffer<float4> warpmap : register(t4);
 
 
 struct PS_INPUT
@@ -30,6 +28,8 @@ struct PS_INPUT
     float4 position : SV_POSITION;
     float4 color : COLOR;
     nointerpolation uint warpOfs : TEXCOORD1;
+    noperspective float3 uvw : TEXCOORD2;
+    noperspective float coverage : TEXCOORD3;       // Of the vertices, multiplies the coverage of the pixel.
 };
 
 
@@ -120,39 +120,34 @@ float warpAxisCoverage(float s, float2 g, float size, float period)
 }
 
 
-// Position in the source of the pixel center p, wrapped on periodic axes, and how it
-// changes along x (dx) and y (dy) of the canvas. The cell is found with integers, as a
-// division in floats can miss a whole number.
+// Position in the source at the center of the pixel, wrapped on periodic axes, and how it
+// changes along x (dx) and y (dy) of the canvas, from u * w, v * w and w (uvw), which are
+// linear over the canvas, so that their derivatives are exact. A pixel with its center
+// beyond the horizon is discarded. Must be called before anything else that can discard,
+// for the derivatives.
 
-float2 warpPosition(uint ofs, float2 p, out float2 dx, out float2 dy)
+float2 warpPosition(uint ofs, float3 uvw, out float2 dx, out float2 dy)
 {
-    float4 e0 = extras[ofs];
+    float3 gx = ddx(uvw);
+    float3 gy = ddy(uvw);
+    float w = uvw.z;
+
+    if (w <= 0.0f)
+        discard;
+
+    float2 uv = uvw.xy / w;
+
+    dx = (gx.xy - uv * gx.z) / w;
+    dy = (gy.xy - uv * gy.z) / w;
+
     float4 e1 = extras[ofs + 1];
-    float4 e2 = extras[ofs + 2];
+    float2 s = uv + e1.xy;
 
-    float2 q = p - e0.xy;
-    uint2 cellSize = uint2(uint(e0.z), uint(extras[ofs + 4].x));
-    uint2 cells = (uint2(e1.xy) + cellSize - 1u) / cellSize;
-    uint2 cell = min(uint2(floor(max(q, 0.0f))) / cellSize, cells - 1u);
-    float2 c0 = float2(cell * cellSize);
-    float2 c1 = min(c0 + float2(cellSize), e1.xy);
-    float2 f = (q - c0) / (c1 - c0);
+    if (e1.z > 0.0f)
+        s.x -= e1.z * floor(s.x / e1.z);
 
-    uint i = (cell.y * cells.x + cell.x) * 2u;
-    float4 top = warpmap[i];
-    float4 bottom = warpmap[i + 1u];
-
-    float2 u = lerp(lerp(top.xy, top.zw, f.x), lerp(bottom.xy, bottom.zw, f.x), f.y);
-    float2 s = u + e2.xy;
-
-    dx = lerp(top.zw - top.xy, bottom.zw - bottom.xy, f.y) / (c1.x - c0.x);
-    dy = lerp(bottom.xy - top.xy, bottom.zw - top.zw, f.x) / (c1.y - c0.y);
-
-    if (e2.z > 0.0f)
-        s.x -= e2.z * floor(s.x / e2.z);
-
-    if (e2.w > 0.0f)
-        s.y -= e2.w * floor(s.y / e2.w);
+    if (e1.w > 0.0f)
+        s.y -= e1.w * floor(s.y / e1.w);
 
     return s;
 }
@@ -163,26 +158,28 @@ float2 warpPosition(uint ofs, float2 p, out float2 dx, out float2 dy)
 // the edge pixels of the source rectangle continued outside it, by keeping positions half
 // a texel (bilinear) or a hair (nearest) inside its edges.
 
-float warpBlitCoverage(uint ofs, float2 p, out float2 s, out float2 dx, out float2 dy)
+float warpBlitCoverage(uint ofs, float3 uvw, float fade, out float2 s, out float2 dx, out float2 dy)
 {
-    float2 pos = warpPosition(ofs, p, dx, dy);
+    float2 pos = warpPosition(ofs, uvw, dx, dy);
 
+    float4 e0 = extras[ofs];
     float4 e1 = extras[ofs + 1];
     float4 e2 = extras[ofs + 2];
-    float4 e3 = extras[ofs + 3];
 
-    float cov = warpAxisCoverage(pos.x, float2(dx.x, dy.x), e1.z, e2.z);
+    float cov = warpAxisCoverage(pos.x, float2(dx.x, dy.x), e0.x, e1.z) * saturate(fade);
 
     if (cov > 0.0f)
-        cov *= warpAxisCoverage(pos.y, float2(dx.y, dy.y), e1.w, e2.w);
+        cov *= warpAxisCoverage(pos.y, float2(dx.y, dy.y), e0.y, e1.w);
 
-    s = e3.xy + warpNearestCopy(pos, e1.zw, e2.zw);
+    s = e2.xy + warpNearestCopy(pos, e0.xy, e1.zw);
 
-    if (e3.z > 0.0f)
+    if (e2.z > 0.0f)
     {
-        float2 center = e3.xy + 0.5f * e1.zw;
-        s = clamp(s, min(e3.xy + e3.z, center), max(e3.xy + e1.zw - e3.z, center));
+        float2 center = e2.xy + 0.5f * e0.xy;
+        s = clamp(s, min(e2.xy + e2.z, center), max(e2.xy + e0.xy - e2.z, center));
     }
+
+    s += e2.w;              // Bias for Nearest sampling, see wg_dx12backend.cpp.
 
     return cov;
 }

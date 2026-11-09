@@ -97,7 +97,7 @@ namespace wg
 
 		
 		static void					setErrorHandler(std::function<void(Error&)> handler);
-		std::function<void(Error&)>	errorHandler();
+		static std::function<void(Error&)>	errorHandler();
 				
 		//.____ Misc ________________________________________________
 

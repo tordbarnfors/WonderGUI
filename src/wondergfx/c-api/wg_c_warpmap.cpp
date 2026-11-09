@@ -23,13 +23,17 @@
 #include <wg_c_internal.h>
 #include <wg_warpmap.h>
 
+#include <cstddef>
+
 using namespace wg;
 
 inline Warpmap* getPtr(wg_obj obj) {
 	return static_cast<Warpmap*>(reinterpret_cast<Object*>(obj));
 }
 
-static_assert(sizeof(wg_coordSPX) == sizeof(CoordSPX), "wg_coordSPX differs in size from wg::CoordSPX!");
+static_assert(sizeof(wg_warpVertex) == sizeof(Warpmap::Vertex) && offsetof(wg_warpVertex, w) == offsetof(Warpmap::Vertex, w) &&
+			  offsetof(wg_warpVertex, coverage) == offsetof(Warpmap::Vertex, coverage), "wg_warpVertex differs from wg::Warpmap::Vertex!");
+static_assert(sizeof(wg_warpTriangle) == sizeof(Warpmap::Triangle), "wg_warpTriangle differs in size from wg::Warpmap::Triangle!");
 
 wg_sizeI wg_warpmapPixelSize(wg_obj warpmap)
 {
@@ -37,26 +41,14 @@ wg_sizeI wg_warpmapPixelSize(wg_obj warpmap)
 	return { sz.w, sz.h };
 }
 
-wg_sizeI wg_warpmapCellSize(wg_obj warpmap)
+int wg_warpmapVertexCount(wg_obj warpmap)
 {
-	SizeI cellSize = getPtr(warpmap)->cellSize();
-	return { cellSize.w, cellSize.h };
+	return getPtr(warpmap)->vertexCount();
 }
 
-wg_sizeI wg_warpmapNodes(wg_obj warpmap)
+int wg_warpmapTriangleCount(wg_obj warpmap)
 {
-	SizeI sz = getPtr(warpmap)->nodes();
-	return { sz.w, sz.h };
-}
-
-int wg_warpmapNodeX(wg_obj warpmap, int column)
-{
-	return getPtr(warpmap)->nodeX(column);
-}
-
-int wg_warpmapNodeY(wg_obj warpmap, int row)
-{
-	return getPtr(warpmap)->nodeY(row);
+	return getPtr(warpmap)->triangleCount();
 }
 
 wg_spx wg_warpmapUPeriod(wg_obj warpmap)
@@ -69,23 +61,48 @@ wg_spx wg_warpmapVPeriod(wg_obj warpmap)
 	return getPtr(warpmap)->vPeriod();
 }
 
-int wg_importWarpmapNodes(wg_obj warpmap, const wg_rectI* region, const wg_coordSPX* pSource, int pitch)
+int wg_setWarpmapPeriods(wg_obj warpmap, wg_spx uPeriod, wg_spx vPeriod)
 {
-	return getPtr(warpmap)->importNodes(*(const RectI*)region, (const CoordSPX*)pSource, pitch);
+	return getPtr(warpmap)->setPeriods(uPeriod, vPeriod);
 }
 
-int wg_importAllWarpmapNodes(wg_obj warpmap, const wg_coordSPX* pSource, wg_spx uPeriod, wg_spx vPeriod, int pitch)
+int wg_importWarpmapVertices(wg_obj warpmap, int first, int count, const wg_warpVertex* pSource)
 {
-	return getPtr(warpmap)->importAllNodes((const CoordSPX*)pSource, uPeriod, vPeriod, pitch);
+	return getPtr(warpmap)->importVertices(first, count, (const Warpmap::Vertex*) pSource);
 }
 
-int wg_exportWarpmapNodes(wg_obj warpmap, const wg_rectI* region, wg_coordSPX* pDestination, int pitch)
+int wg_importWarpmapTriangles(wg_obj warpmap, int first, int count, const wg_warpTriangle* pSource)
 {
-	return getPtr(warpmap)->exportNodes(*(const RectI*)region, (CoordSPX*)pDestination, pitch);
+	return getPtr(warpmap)->importTriangles(first, count, (const Warpmap::Triangle*) pSource);
 }
 
-wg_coordF wg_warpmapPositionAt(wg_obj warpmap, double x, double y)
+int wg_importWarpmapMesh(wg_obj warpmap, const wg_warpVertex* pVertices, const wg_warpTriangle* pTriangles, wg_spx uPeriod, wg_spx vPeriod)
 {
-	CoordF pos = getPtr(warpmap)->positionAt(x, y);
-	return { pos.x, pos.y };
+	return getPtr(warpmap)->importMesh((const Warpmap::Vertex*) pVertices, (const Warpmap::Triangle*) pTriangles, uPeriod, vPeriod);
+}
+
+int wg_exportWarpmapVertices(wg_obj warpmap, int first, int count, wg_warpVertex* pDestination)
+{
+	return getPtr(warpmap)->exportVertices(first, count, (Warpmap::Vertex*) pDestination);
+}
+
+int wg_exportWarpmapTriangles(wg_obj warpmap, int first, int count, wg_warpTriangle* pDestination)
+{
+	return getPtr(warpmap)->exportTriangles(first, count, (Warpmap::Triangle*) pDestination);
+}
+
+int wg_warpmapTriangleAt(wg_obj warpmap, wg_coordSPX point)
+{
+	return getPtr(warpmap)->triangleAt({ point.x, point.y });
+}
+
+int wg_warpmapPositionIn(wg_obj warpmap, int triangle, double x, double y, wg_coordF* pPosition)
+{
+	CoordF pos;
+	if (!getPtr(warpmap)->positionIn(triangle, x, y, pos))
+		return 0;
+
+	if (pPosition)
+		*pPosition = { pos.x, pos.y };
+	return 1;
 }

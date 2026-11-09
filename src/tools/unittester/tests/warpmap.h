@@ -10,16 +10,20 @@ public:
 
 private:
 
-	bool defaultNodesTest(std::ostream& output);
+	bool defaultMeshTest(std::ostream& output);
 	bool importExportTest(std::ostream& output);
-	bool createWithNodesTest(std::ostream& output);
+	bool createWithMeshTest(std::ostream& output);
 	bool periodTest(std::ostream& output);
+	bool fillRuleTest(std::ostream& output);
+	bool perspectivePositionTest(std::ostream& output);
 	bool circularWarpTest(std::ostream& output);
 	bool circularWarpGenerateTest(std::ostream& output);
 	bool generateUpdatesTest(std::ostream& output);
 	bool roundedRectWarpTest(std::ostream& output);
-	bool nodeCompressionTest(std::ostream& output);
+	bool meshCompressionTest(std::ostream& output);
 	bool offsetTest(std::ostream& output);
-	bool nonSquareCellsTest(std::ostream& output);
 	bool cylinderWarpTest(std::ostream& output);
+	bool limitsTest(std::ostream& output);
+	bool precisionTrianglesTest(std::ostream& output);
+	bool outlinePrecisionTest(std::ostream& output);
 };

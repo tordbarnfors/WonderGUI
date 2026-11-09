@@ -112,7 +112,9 @@ namespace wg
 			VertexBuffer = 0,
 			ColorBuffer = 1,
 			ExtrasBuffer = 2,
-			Uniform = 3
+			Uniform = 3,
+			WarpVertices = 4,		// Vertices of the Warpmap of a warp, see MetalWarpmap.
+			WarpInfo = 5			// Where the Warpmap is drawn, see WarpInfo.
 		};
 
 		enum class FragmentInputIndex
@@ -124,7 +126,16 @@ namespace wg
 			ClipToSource = 4,		// Palette blits: set for a ClipBlit, see insideSource() in the shaders.
 			SourceKind = 4,			// Warp blits: how to read the source, see warpSample() in the shaders.
 			MorphFactor = 5,		// For writeColor() and writeAlpha() in the shaders.
-			Warpmap = 6,			// Cells of the Warpmap of a warp, see MetalWarpmap.
+		};
+
+		// Where the Warpmap of a warp is drawn, as WarpInfo in the shaders.
+
+		struct WarpInfo
+		{
+			float		destX, destY;		// Position of the Warpmap on the canvas, in pixels.
+			int32_t		extrasOfs;			// Entry of warp in extras buffer.
+			int32_t		tintOfs;			// Device tint block in color buffer, -1 for none.
+			int32_t		refU, refV;			// u and v of the first vertex, in spx.
 		};
 
 

@@ -767,7 +767,7 @@ void MetalBackend::beginSession( CanvasRef canvasRef, Surface * pCanvasSurface, 
 	+ pInfo->nLineCoords/2 * GpuShapes::c_lineEntries * 4		// Lines with caps take the most.
 	+ pInfo->nRects * 4			// This is for possible subpixel fills. We have no way of knowing exactly how much is needed.
 	+ pInfo->nEdgemapDraws * 8
-	+ pInfo->nWarpDraws * 20
+	+ pInfo->nWarpDraws * 12
 	+ GpuShapes::maxSessionEntries(*pInfo) * 4;
 
 	m_extrasBufferId = [s_metalDevice newBufferWithLength:nExtrasFloats*sizeof(float) options:MTLResourceStorageModeShared];
@@ -1602,7 +1602,18 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 				const RectSPX* pWarpRects = pRects;
 				pRects += params.nRects;
 
-				// Extras, see warpVertexShader() in the shaders.
+				// u and v are taken relative to the first vertex by the vertex shader, which is
+				// added back to the source offset, brought into the periods.
+
+				CoordSPX ref;
+				if( pWarpmap->vertexCount() > 0 )
+					ref = { pWarpmap->vertexData()[0].u, pWarpmap->vertexData()[0].v };
+
+				spx uPeriod = pWarpmap->uPeriod(), vPeriod = pWarpmap->vPeriod();
+				spx refU = uPeriod > 0 ? ((ref.x % uPeriod) + uPeriod) % uPeriod : ref.x;
+				spx refV = vPeriod > 0 ? ((ref.y % vPeriod) + vPeriod) % vPeriod : ref.y;
+
+				// Extras, see the warp shaders.
 
 				CoordI dest = roundToPixels(params.dest);
 				SizeI warpSize = pWarpmap->pixelSize();
@@ -1622,20 +1633,15 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 
 				int extrasOfs = int(pExtrasMTL - m_pExtrasBuffer) / 4;
 
-				*pExtrasMTL++ = float(dest.x);
-				*pExtrasMTL++ = float(dest.y);
-				*pExtrasMTL++ = float(pWarpmap->cellSize().w);
-				*pExtrasMTL++ = pEdgemap ? float(pEdgemap->m_nbRenderSegments - 1) : 0.f;
-
-				*pExtrasMTL++ = float(warpSize.w);
-				*pExtrasMTL++ = float(warpSize.h);
 				*pExtrasMTL++ = srcW;
 				*pExtrasMTL++ = srcH;
+				*pExtrasMTL++ = pEdgemap ? float(pEdgemap->m_nbRenderSegments - 1) : 0.f;
+				*pExtrasMTL++ = 0.f;
 
-				*pExtrasMTL++ = params.sourceOffset.x / 64.f;
-				*pExtrasMTL++ = params.sourceOffset.y / 64.f;
-				*pExtrasMTL++ = pWarpmap->uPeriod() / 64.f;
-				*pExtrasMTL++ = pWarpmap->vPeriod() / 64.f;
+				*pExtrasMTL++ = (params.sourceOffset.x + refU) / 64.f;
+				*pExtrasMTL++ = (params.sourceOffset.y + refV) / 64.f;
+				*pExtrasMTL++ = uPeriod / 64.f;
+				*pExtrasMTL++ = vPeriod / 64.f;
 
 				if( pEdgemap )
 				{
@@ -1652,52 +1658,26 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 					MetalSurface* pSurf = m_pActiveBlitSource;
 					float clampInset = pSurf->isTiling() ? 0.f : pSurf->sampleMethod() == SampleMethod::Bilinear ? 0.5f : 1.f / 256;
 
+					// Positions exactly on a border between texels take the texel after it, as in
+					// SoftBackend, rather than either one by how floats round.
+
+					float nearestBias = pSurf->sampleMethod() == SampleMethod::Nearest ? 1.f / 32768 : 0.f;
+
 					*pExtrasMTL++ = params.source.x / 64.f;
 					*pExtrasMTL++ = params.source.y / 64.f;
 					*pExtrasMTL++ = clampInset;
-					*pExtrasMTL++ = 0.f;
+					*pExtrasMTL++ = nearestBias;
 				}
 
-				*pExtrasMTL++ = float(pWarpmap->cellSize().h);
-				*pExtrasMTL++ = 0.f;
-				*pExtrasMTL++ = 0.f;
-				*pExtrasMTL++ = 0.f;
-
-				// Vertices, a quad for the part of each clip rectangle covered by the Warpmap.
-
-				int vertexOfs = int(pVertexMTL - m_pVertexBuffer);
-				int nVertices = 0;
-				const simd_float2 noUV = { 0.f, 0.f };
-
-				for( int i = 0 ; i < params.nRects ; i++ )
-				{
-					RectI patch = RectI::overlap(roundToPixels(pWarpRects[i]), RectI(dest, warpSize));
-
-					if( patch.w <= 0 || patch.h <= 0 )
-						continue;
-
-					CoordI corners[6] = {	{ patch.x, patch.y }, { patch.x + patch.w, patch.y }, { patch.x + patch.w, patch.y + patch.h },
-											{ patch.x, patch.y }, { patch.x + patch.w, patch.y + patch.h }, { patch.x, patch.y + patch.h } };
-
-					for( auto& corner : corners )
-					{
-						pVertexMTL->coord = corner;
-						pVertexMTL->colorsOfs = 0;
-						pVertexMTL->extrasOfs = extrasOfs;
-						pVertexMTL->uv = noUV;
-						pVertexMTL->tintOfs = m_tintOfs;
-						pVertexMTL++;
-					}
-
-					nVertices += 6;
-				}
-
-				if( nVertices == 0 )
+				if( pWarpmap->triangleCount() == 0 )
 					break;
 
-				// Buffers, sampler and pipeline.
+				// The mesh of the Warpmap, see MetalWarpmap, and where to draw it.
 
-				[m_renderEncoder setFragmentBuffer:pWarpmap->m_bufferId offset:0 atIndex:(unsigned) FragmentInputIndex::Warpmap];
+				WarpInfo info = { float(dest.x), float(dest.y), extrasOfs, m_tintOfs, ref.x, ref.y };
+
+				[m_renderEncoder setVertexBuffer:pWarpmap->m_bufferId offset:0 atIndex:(unsigned) VertexInputIndex::WarpVertices];
+				[m_renderEncoder setVertexBytes:&info length:sizeof(WarpInfo) atIndex:(unsigned) VertexInputIndex::WarpInfo];
 
 				WarpFragShader shader = WarpFragShader::Edgemap;
 
@@ -1736,7 +1716,31 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 					pipeline = _compileWarpPipeline(shader, m_activeBlendMode, m_activeCanvasFormat);
 
 				[m_renderEncoder setRenderPipelineState:pipeline];
-				[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nVertices];
+
+				// Drawn once for each clip rectangle, with the part of it covered by the Warpmap as
+				// scissor.
+
+				bool bDrawn = false;
+
+				for( int i = 0 ; i < params.nRects ; i++ )
+				{
+					RectI patch = RectI::overlap(roundToPixels(pWarpRects[i]), RectI(dest, warpSize));
+
+					if( patch.w <= 0 || patch.h <= 0 )
+						continue;
+
+					MTLScissorRect metalClip = { (NSUInteger) patch.x, (NSUInteger) patch.y, (NSUInteger) patch.w, (NSUInteger) patch.h };
+					[m_renderEncoder setScissorRect:metalClip];
+					[m_renderEncoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle indexCount:NSUInteger(pWarpmap->triangleCount()) * 3
+												 indexType:MTLIndexTypeUInt16 indexBuffer:pWarpmap->m_bufferId indexBufferOffset:pWarpmap->m_indexOffset];
+					bDrawn = true;
+				}
+
+				if( bDrawn )
+				{
+					MTLScissorRect orgClip = {0, 0, (unsigned) m_activeCanvasSize.w, (unsigned) m_activeCanvasSize.h};
+					[m_renderEncoder setScissorRect:orgClip];
+				}
 				break;
 			}
 

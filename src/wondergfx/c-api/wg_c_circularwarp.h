@@ -35,9 +35,8 @@ extern "C" {
 	typedef struct wg_circularWarpBP_struct		// NOT BINARY EQUIVALENT!
 	{
 		wg_spx				bottomRadius;			// Radius the bottom of the source is placed at.
-		wg_sizeI			cellSize;				// 0 for width or height = calculated from precision.
 		wg_coordF			center;					// Center of circle, relative to size. Usually { 0.5f, 0.5f }.
-		float				precision;				// Max position error in pixels when cellSize is calculated. 0 = default (0.25).
+		float				precision;				// Higher gives more triangles, positions within 1 / precision pixels, curved outlines within at most 0.5. 0 = default (1).
 		wg_sizeI			size;					// Mandatory. Size of the Warpmap in pixels.
 		wg_sizeSPX			sourceSize;				// Mandatory. Size of the source (edgemap or source rectangle) in spx.
 		float				startAngle;				// Degrees. Where the left side of the source is placed. 0 = up, clockwise.
@@ -46,7 +45,7 @@ extern "C" {
 	} wg_circularWarpBP;
 
 	// Factory is the WarpmapFactory to create the Warpmap with, the default one if null.
-	// Size, source size, cell size, precision and generate are set and called through the WarpGenerator functions.
+	// Size, source size, precision and generate are set and called through the WarpGenerator functions.
 
 	WG_EXPORT wg_obj		wg_createCircularWarp( const wg_circularWarpBP* blueprint, wg_obj warpmapFactory );
 

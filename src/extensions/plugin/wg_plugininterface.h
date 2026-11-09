@@ -503,12 +503,16 @@ typedef struct wg_warpmap_calls_struct
 	int					structSize;
 
 	wg_sizeI			(*warpmapPixelSize)(wg_obj warpmap);
-	wg_sizeI			(*warpmapCellSize)(wg_obj warpmap);
+	int					(*warpmapVertexCount)(wg_obj warpmap);
+	int					(*warpmapTriangleCount)(wg_obj warpmap);
 	wg_spx				(*warpmapUPeriod)(wg_obj warpmap);
 	wg_spx				(*warpmapVPeriod)(wg_obj warpmap);
-	int					(*importWarpmapNodes)(wg_obj warpmap, const wg_rectI* region, const wg_coordSPX* pSource, int pitch);
-	int					(*importAllWarpmapNodes)(wg_obj warpmap, const wg_coordSPX* pSource, wg_spx uPeriod, wg_spx vPeriod, int pitch);
-	int					(*exportWarpmapNodes)(wg_obj warpmap, const wg_rectI* region, wg_coordSPX* pDestination, int pitch);
+	int					(*setWarpmapPeriods)(wg_obj warpmap, wg_spx uPeriod, wg_spx vPeriod);
+	int					(*importWarpmapVertices)(wg_obj warpmap, int first, int count, const wg_warpVertex* pSource);
+	int					(*importWarpmapTriangles)(wg_obj warpmap, int first, int count, const wg_warpTriangle* pSource);
+	int					(*importWarpmapMesh)(wg_obj warpmap, const wg_warpVertex* pVertices, const wg_warpTriangle* pTriangles, wg_spx uPeriod, wg_spx vPeriod);
+	int					(*exportWarpmapVertices)(wg_obj warpmap, int first, int count, wg_warpVertex* pDestination);
+	int					(*exportWarpmapTriangles)(wg_obj warpmap, int first, int count, wg_warpTriangle* pDestination);
 
 } wg_warpmap_calls;
 
@@ -520,7 +524,7 @@ typedef struct wg_warpmapfactory_calls_struct
 	int					structSize;
 
 	wg_obj				(*createWarpmap)(wg_obj factory, const wg_warpmapBP* blueprint);
-	wg_obj				(*createWarpmapFromNodes)(wg_obj factory, const wg_warpmapBP* blueprint, const wg_coordSPX* pNodes, int pitch);
+	wg_obj				(*createWarpmapFromMesh)(wg_obj factory, const wg_warpmapBP* blueprint, const wg_warpVertex* pVertices, const wg_warpTriangle* pTriangles);
 
 } wg_warpmapfactory_calls;
 

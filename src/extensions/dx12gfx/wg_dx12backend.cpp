@@ -3357,10 +3357,11 @@ namespace wg
 
 	//____ _drawWarp() _________________________________________________________
 	//
-	// A WarpBlit or WarpDrawEdgemap, drawn as a quad per clip rectangle by the warp
-	// shaders, which do the work per pixel, see warp.hlsl. Four extras entries tell
-	// them where the Warpmap is and what it maps onto, its cells are in its own
-	// buffer. pRects are the clip rectangles, which the caller steps past.
+	// A WarpBlit or WarpDrawEdgemap. The triangles of the Warpmap are drawn from its own
+	// buffer once for each clip rectangle, with the part of it covered by the Warpmap as
+	// scissor, see DX12Warpmap and warp.hlsl. Three extras entries tell the pixel shaders
+	// what the Warpmap maps onto, root constants tell the vertex shader where to draw it.
+	// pRects are the clip rectangles, which the caller steps past.
 
 	void DX12Backend::_drawWarp(Command cmd, const WarpParams& params, const RectSPX* pRects)
 	{
@@ -3431,11 +3432,8 @@ namespace wg
 			}
 		};
 
-		if (m_pExtrasEnd - m_pExtrasPtr < 4)
+		if (m_pExtrasEnd - m_pExtrasPtr < 3)
 			return bufferFull("Extras");
-
-		if (m_pVertexEnd - m_pVertexPtr < params.nRects * 6)
-			return bufferFull("Vertex");
 
 		// _addColor() multiplies by the tint color, so white is what gets it applied
 		// exactly once.
@@ -3443,6 +3441,17 @@ namespace wg
 		int colorOfs = _addColor(HiColor::White);
 		if (colorOfs < 0)
 			return;
+
+		// u and v are taken relative to the first vertex by the vertex shader, which is
+		// added back to the source offset, brought into the periods.
+
+		CoordSPX ref;
+		if (pWarpmap->vertexCount() > 0)
+			ref = { pWarpmap->vertexData()[0].u, pWarpmap->vertexData()[0].v };
+
+		spx uPeriod = pWarpmap->uPeriod(), vPeriod = pWarpmap->vPeriod();
+		spx refU = uPeriod > 0 ? ((ref.x % uPeriod) + uPeriod) % uPeriod : ref.x;
+		spx refV = vPeriod > 0 ? ((ref.y % vPeriod) + vPeriod) % vPeriod : ref.y;
 
 		// Extras, see warp.hlsl.
 
@@ -3454,9 +3463,8 @@ namespace wg
 
 		int extrasOfs = int(m_pExtrasPtr - m_pExtrasBeg);
 
-		*m_pExtrasPtr++ = { float(dest.x), float(dest.y), float(pWarpmap->cellSize().w), pEdgemap ? float(pEdgemap->m_nbRenderSegments - 1) : 0.f };
-		*m_pExtrasPtr++ = { float(warpSize.w), float(warpSize.h), srcW, srcH };
-		*m_pExtrasPtr++ = { params.sourceOffset.x / 64.f, params.sourceOffset.y / 64.f, pWarpmap->uPeriod() / 64.f, pWarpmap->vPeriod() / 64.f };
+		*m_pExtrasPtr++ = { srcW, srcH, pEdgemap ? float(pEdgemap->m_nbRenderSegments - 1) : 0.f, 0.f };
+		*m_pExtrasPtr++ = { (params.sourceOffset.x + refU) / 64.f, (params.sourceOffset.y + refV) / 64.f, uPeriod / 64.f, vPeriod / 64.f };
 
 		if (pEdgemap)
 			*m_pExtrasPtr++ = { float(pEdgemap->m_nbSegments - 1), float(pEdgemap->_flatColorsOfs()), float(pEdgemap->_tintTableOfs()), float(pEdgemap->_rawSamplesOfs()) };
@@ -3467,52 +3475,39 @@ namespace wg
 
 			float clampInset = m_pBlitSource->isTiling() ? 0.f : m_pBlitSource->sampleMethod() == SampleMethod::Bilinear ? 0.5f : 1.f / 256;
 
-			*m_pExtrasPtr++ = { params.source.x / 64.f, params.source.y / 64.f, clampInset, 0.f };
+			// Positions exactly on a border between texels take the texel after it, as in SoftBackend,
+			// rather than either one by how floats round.
+
+			float nearestBias = m_pBlitSource->sampleMethod() == SampleMethod::Nearest ? 1.f / 32768 : 0.f;
+
+			*m_pExtrasPtr++ = { params.source.x / 64.f, params.source.y / 64.f, clampInset, nearestBias };
 		}
 
-		*m_pExtrasPtr++ = { float(pWarpmap->cellSize().h), 0.f, 0.f, 0.f };
-
-		// A quad for the part of each clip rectangle covered by the Warpmap.
-
-		int firstVertex = int(m_pVertexPtr - m_pVertexBeg);
-		int nVertices = 0;
-
-		for (int i = 0; i < params.nRects; i++)
-		{
-			RectI patch = RectI::overlap(Util::roundToPixels(pRects[i]), RectI(dest, warpSize));
-
-			if (patch.w <= 0 || patch.h <= 0)
-				continue;
-
-			const float coords[4][2] = { { float(patch.x), float(patch.y) }, { float(patch.x + patch.w), float(patch.y) },
-										 { float(patch.x + patch.w), float(patch.y + patch.h) }, { float(patch.x), float(patch.y + patch.h) } };
-
-			const int corners[6] = { 0, 1, 2, 0, 2, 3 };
-
-			for (int vertex = 0; vertex < 6; vertex++)
-			{
-				int corner = corners[vertex];
-
-				m_pVertexPtr->x = coords[corner][0];
-				m_pVertexPtr->y = coords[corner][1];
-				m_pVertexPtr->colorOfs = (uint32_t) colorOfs;
-				m_pVertexPtr->extrasOfs = (uint32_t) extrasOfs;
-				m_pVertexPtr->u = 0.f;
-				m_pVertexPtr->v = 0.f;
-
-				m_pVertexPtr++;
-			}
-
-			nVertices += 6;
-		}
-
-		if (nVertices == 0 || !_setPipeline(pPipeline) || !m_bCommandListOpen)
+		if (pWarpmap->triangleCount() == 0 || !_setPipeline(pPipeline) || !m_bCommandListOpen)
 			return;
+
+		// What the vertex shader needs, see WarpInfo in vs_warp.hlsl.
+
+		struct
+		{
+			float		destX, destY;
+			uint32_t	colorOfs;
+			uint32_t	extrasOfs;
+			int32_t		refU, refV;
+			uint32_t	pad[2];
+		} warpInfo = { float(dest.x), float(dest.y), uint32_t(colorOfs), uint32_t(extrasOfs), ref.x, ref.y, { 0, 0 } };
+
+		static_assert(sizeof(warpInfo) == 8 * 4, "Root parameter 8 has eight values");
+
+		m_commandList->SetGraphicsRoot32BitConstants(8, 8, &warpInfo, 0);
 
 		// The command list keeps no references to the buffers, see _drawEdgemap().
 
 		_holdUntilDone(pWarpmap->m_buffer.Get());
 		m_commandList->SetGraphicsRootShaderResourceView(7, pWarpmap->_gpuAddress());
+
+		D3D12_INDEX_BUFFER_VIEW indexBufferView = pWarpmap->_indexBufferView();
+		m_commandList->IASetIndexBuffer(&indexBufferView);
 
 		if (pEdgemap)
 		{
@@ -3521,7 +3516,31 @@ namespace wg
 			m_bBlitSourceBound = false;			// A palette based blit source keeps its palette there too.
 		}
 
-		m_commandList->DrawInstanced(nVertices, 1, firstVertex, 0);
+		bool bDrawn = false;
+
+		for (int i = 0; i < params.nRects; i++)
+		{
+			RectI patch = RectI::overlap(Util::roundToPixels(pRects[i]), RectI(dest, warpSize));
+
+			if (patch.w <= 0 || patch.h <= 0)
+				continue;
+
+			D3D12_RECT scissorRect = { LONG(patch.x), LONG(patch.y), LONG(patch.x + patch.w), LONG(patch.y + patch.h) };
+			m_commandList->RSSetScissorRects(1, &scissorRect);
+			m_commandList->DrawIndexedInstanced(UINT(pWarpmap->triangleCount() * 3), 1, 0, 0, 0);
+			bDrawn = true;
+		}
+
+		// Back to the whole canvas, which is what everything else expects.
+
+		if (bDrawn)
+		{
+			D3D12_RECT fullRect = {};
+			fullRect.right = (LONG) m_activeCanvasSize.w;
+			fullRect.bottom = (LONG) m_activeCanvasSize.h;
+
+			m_commandList->RSSetScissorRects(1, &fullRect);
+		}
 	}
 
 	//____ _setPipeline() ______________________________________________________
@@ -3802,7 +3821,7 @@ namespace wg
 
 			nColors = pInfo->nColors + pInfo->nBlit + pInfo->nBlur + pInfo->nEdgemapDraws + pInfo->nShapeDraws + pInfo->nWarpDraws + pInfo->nLines
 					+ (pInfo->nStateChanges + pInfo->nShapeTints) * c_tintBlockOverhead;
-			nExtras = pInfo->nRects * 2 + nLines * GpuShapes::c_lineEntries + pInfo->nBlur * 18 + pInfo->nEdgemapDraws * 2 + pInfo->nWarpDraws * 5 + GpuShapes::maxSessionEntries(*pInfo);
+			nExtras = pInfo->nRects * 2 + nLines * GpuShapes::c_lineEntries + pInfo->nBlur * 18 + pInfo->nEdgemapDraws * 2 + pInfo->nWarpDraws * 3 + GpuShapes::maxSessionEntries(*pInfo);
 		}
 		else
 		{
@@ -4065,7 +4084,7 @@ namespace wg
 		samplerRange.RegisterSpace = 0;
 		samplerRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-		D3D12_ROOT_PARAMETER rootParameter[8] = {};
+		D3D12_ROOT_PARAMETER rootParameter[9] = {};
 
 		rootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
 		rootParameter[0].Constants.ShaderRegister = 0;			// b0.
@@ -4111,17 +4130,24 @@ namespace wg
 		rootParameter[6].Constants.Num32BitValues = sizeof(PixelInfo) / 4;
 		rootParameter[6].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
-		// The cells of the Warpmap of a warp, see DX12Warpmap.
+		// The vertices of the Warpmap of a warp, see DX12Warpmap, and where to draw it,
+		// see WarpInfo in vs_warp.hlsl.
 
 		rootParameter[7].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
 		rootParameter[7].Descriptor.ShaderRegister = 4;			// t4.
 		rootParameter[7].Descriptor.RegisterSpace = 0;
-		rootParameter[7].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+		rootParameter[7].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+
+		rootParameter[8].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+		rootParameter[8].Constants.ShaderRegister = 2;			// b2.
+		rootParameter[8].Constants.RegisterSpace = 0;
+		rootParameter[8].Constants.Num32BitValues = 8;
+		rootParameter[8].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
 
 		D3D12_VERSIONED_ROOT_SIGNATURE_DESC rsDesc = { };
 		rsDesc.Version = D3D_ROOT_SIGNATURE_VERSION_1_0;
 		rsDesc.Desc_1_0.pParameters = rootParameter;
-		rsDesc.Desc_1_0.NumParameters = 8;
+		rsDesc.Desc_1_0.NumParameters = 9;
 		rsDesc.Desc_1_0.NumStaticSamplers = 0;
 		rsDesc.Desc_1_0.pStaticSamplers = 0;
 		rsDesc.Desc_1_0.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
@@ -4447,9 +4473,9 @@ namespace wg
 		desc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
 		desc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
 
-		// One vertex layout for all of them. The plain fill shader ignores
-		// EXTRASOFS, which is fine - the input layout is allowed to offer more
-		// than a shader reads.
+		// One vertex layout for all but warps, whose vertex shader reads the vertices of
+		// the Warpmap itself, see DX12Warpmap. The plain fill shader ignores EXTRASOFS,
+		// which is fine - the input layout is allowed to offer more than a shader reads.
 
 		D3D12_INPUT_ELEMENT_DESC elements[] = {
 			{ "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0,
@@ -4464,8 +4490,10 @@ namespace wg
 
 		D3D12_INPUT_LAYOUT_DESC inputLayout = {};
 
-		inputLayout.NumElements = 4;
-		inputLayout.pInputElementDescs = elements;
+		bool bWarp = (kind == PipelineKind::WarpEdgemap || kind == PipelineKind::WarpBlit || kind == PipelineKind::WarpPaletteBlit);
+
+		inputLayout.NumElements = bWarp ? 0 : 4;
+		inputLayout.pInputElementDescs = bWarp ? nullptr : elements;
 
 
 		desc.InputLayout = inputLayout;

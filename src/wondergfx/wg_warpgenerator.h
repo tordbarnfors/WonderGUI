@@ -26,6 +26,8 @@
 #include <wg_warpmap.h>
 #include <wg_warpmapfactory.h>
 
+#include <vector>
+
 namespace wg
 {
 	class WarpGenerator;
@@ -39,15 +41,16 @@ namespace wg
 	 * A WarpGenerator keeps its Warpmap and updates it when generate() is called, see generate().
 	 *
 	 * The Warpmap is made for a source of sourceSize: the size of the edgemap or of the source
-	 * rectangle of the blit, in spx. The nodes are positions in that source, see Warpmap.
+	 * rectangle of the blit, in spx. Generators make a mesh of triangles that follows the shape.
 	 *
-	 * The cell size of the Warpmap decides how closely it follows the shape. Width and height of
-	 * cells are calculated by the generator from precision (max position error in pixels) unless
-	 * set explicitly, at least 4 and at most the size of the Warpmap. Along curves it is kept within
-	 * 4 -> 64 pixels, along straight axes cells can span the Warpmap.
+	 * Precision decides how closely the Warpmap follows the shape, through the size of the pieces
+	 * of the mesh, which each generator chooses for its shape. Higher precision gives more and
+	 * smaller pieces: positions are kept within c_tolerance / precision pixels, so 1 pixel by
+	 * default, half a pixel at 2 and two pixels at 0.5.
 	 *
-	 * When subclassing, implement _generateNodes() and _calcCellSize(), override _uPeriod() and
-	 * _vPeriod() for periodic axes and set m_bDirty when a setting changes.
+	 * When subclassing, implement _meshSize() and _generateMesh(), sizing the pieces from
+	 * _pieceTolerance() and _outlineTolerance(). Override _uPeriod() and _vPeriod() for periodic axes and set m_bDirty when a
+	 * setting changes.
 	 */
 
 	class WarpGenerator : public Object
@@ -69,36 +72,47 @@ namespace wg
 
 		//.____ Precision ___________________________________________________
 
-		bool		setCellSize( SizeI cellSize );					// 0 for width or height = calculated from precision.
-		SizeI		cellSize() const;								// Cell size in use, calculated or set.
-
 		bool		setPrecision( float precision );
 		float		precision() const { return m_precision; }
 
 		//.____ Content _____________________________________________________
 
 		// Generates the Warpmap from current settings, if they have changed since last time, and
-		// returns it. The nodes of the Warpmap are updated in place, without copying and sent on to
-		// the backend once, if nothing but the WarpGenerator holds it and size and cell size are
-		// unchanged. Otherwise a new Warpmap is created, so a
-		// Warpmap held elsewhere, such as by a draw that isn't rendered yet, never changes. Draw
-		// what generate() returns rather than keeping it.
+		// returns it. The content of the Warpmap is updated in place, without copying and sent on to
+		// the backend once, if nothing but the WarpGenerator holds it and its size and number of
+		// vertices and triangles are unchanged. Otherwise a new Warpmap is created, so a Warpmap
+		// held elsewhere, such as by a draw that isn't rendered yet, never changes. Draw what
+		// generate() returns rather than keeping it.
 
 		Warpmap_p	generate();
 
 	protected:
 
-		WarpGenerator( SizeI size, SizeSPX sourceSize, SizeI cellSize, float precision, WarpmapFactory * pFactory );
+		WarpGenerator( SizeI size, SizeSPX sourceSize, float precision, WarpmapFactory * pFactory );
 		virtual ~WarpGenerator();
 
-		static bool		_validateSettings( SizeI size, SizeSPX sourceSize, SizeI cellSize, float precision );
+		static bool		_validateSettings( SizeI size, SizeSPX sourceSize, float precision );
 
-		// Largest cell size that keeps a curve of the given radius (in spx) within precision,
-		// within 4 -> 64 pixels. Integers only.
+		// Max position error in pixels at precision 1. The error allowed is c_tolerance / precision,
+		// so this decides what the default precision means.
 
-		int				_cellSizeForRadius( int64_t radius ) const;
+		static constexpr float c_tolerance = 1.f;
 
-		// Integer maths for _generateNodes(), which runs once per node and so should avoid floating
+		// Max position error to size the pieces of the mesh by, in pixels: c_tolerance / precision,
+		// less what rounding the vertices to spx can add (1/64 pixel), but at least half of it.
+
+		double			_pieceTolerance() const;
+
+		// The same for the outline of a shape where it isn't a straight side, which is kept within
+		// c_outlineTolerance pixels whatever precision is set, as an outline off by a pixel or more
+		// shows as corners where it should be round, while the inside of a shape off as much hardly
+		// shows.
+
+		double			_outlineTolerance() const;
+
+		static constexpr float c_outlineTolerance = 0.5f;
+
+		// Integer maths for _generateMesh(), which runs once per vertex and so should avoid floating
 		// point on hardware without an FPU. Set up factors with _factor() once per generate.
 
 		struct Factor
@@ -131,20 +145,53 @@ namespace wg
 
 		static uint32_t	_toTurn( double turns );
 
-		// A value clamped to +-Warpmap::maxNodeValue.
+		// A value of u or v clamped to +-Warpmap::maxValue.
 
-		static spx		_toNodeValue( int64_t value );
+		static spx		_toSourceValue( int64_t value );
 
-		// Cell width and height from precision and the shape. Kept within 4 -> size of the Warpmap
-		// by cellSize().
+		// Number of vertices and triangles of the Warpmap, at most Warpmap::maxVertices and
+		// Warpmap::maxTriangles, and the vertices and triangles themselves. Vertices are clamped to
+		// the limits of Warpmap afterwards.
 
-		virtual SizeI	_calcCellSize() const = 0;
+		virtual void	_meshSize( int& nVertices, int& nTriangles ) const = 0;
+		virtual void	_generateMesh( Warpmap::Vertex * pVertices, Warpmap::Triangle * pTriangles ) const = 0;
 
-		// Fills pNodes with nodes.w * nodes.h positions in spx of the source, row by row, nodes being
-		// cellSize.w pixels apart horizontally and cellSize.h vertically (the last row and column at
-		// the edge). Keep them within Warpmap::maxNodeValue.
+		// A band along the outline of a rounded rectangle, or a circle with ax and ay 0, with the
+		// width of the source along the outline and its height across, for CircularWarp and
+		// RoundedRectWarp. A position is placed by the point of the outline nearest to it: its
+		// position along the outline and the distance to it. Lengths are in 1/256 spx.
 
-		virtual void	_generateNodes( CoordSPX * pNodes, SizeI nodes, SizeI cellSize ) const = 0;
+		struct OutlineBand
+		{
+			int64_t		cx, cy;			// Center of the outline, from the top-left corner of the Warpmap.
+			int64_t		ax, ay;			// Half the width and height of the outline, less the radius of the corners.
+			int64_t		radius;			// Of the corners.
+			int64_t		top, bottom;	// Distances from the outline of the top and bottom of the source, positive outwards.
+			uint32_t	start;			// Where the left side of the source is, in 1/2^32 of the outline clockwise from the middle of the top side.
+			double		sweep;			// Part of the outline covered by the width of the source, negative counter clockwise.
+		};
+
+		// Corners split into nArc sectors and the band into nAcross parts across it, from the tolerances.
+
+		void			_bandLayout( const OutlineBand& band, int& nArc, int& nAcross ) const;
+		void			_calcBandLayout( const OutlineBand& band, int& nArc, int& nAcross ) const;
+
+		// The mesh of a band, written to pVertices and pTriangles, or only counted if pVertices is
+		// null, as for _meshSize().
+
+		void			_bandMesh( const OutlineBand& band, Warpmap::Vertex * pVertices, Warpmap::Triangle * pTriangles, int& nVertices, int& nTriangles ) const;
+
+		// The layout of the band last worked out, kept as long as what it depends on is the same.
+
+		struct LayoutCache
+		{
+			bool		bValid = false;
+			int64_t		ax, ay, radius, top, bottom;
+			float		precision;
+			int			nArc, nAcross;
+		};
+
+		mutable LayoutCache	m_layoutCache;
 
 		virtual spx		_uPeriod() const { return 0; }			// In spx of the source, 0 = not periodic.
 		virtual spx		_vPeriod() const { return 0; }
@@ -163,9 +210,7 @@ namespace wg
 
 		SizeI		m_size;
 		SizeSPX		m_sourceSize;
-		SizeI		m_cellSize;										// As set, 0 = calculated.
 		float		m_precision;
-		int64_t		m_precisionFixed;								// Precision with 16 binals, for _cellSizeForRadius().
 
 		bool		m_bDirty = true;
 

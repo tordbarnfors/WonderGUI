@@ -34,7 +34,6 @@ wg_obj wg_createCylinderWarp( const wg_cylinderWarpBP* pCBP, wg_obj warpmapFacto
 
 	if (pCBP->axis != WG_AXIS_UNDEFINED)
 		bp.axis = (Axis) pCBP->axis;
-	bp.cellSize = { pCBP->cellSize.w, pCBP->cellSize.h };
 	if (pCBP->precision > 0.f)
 		bp.precision = pCBP->precision;
 	bp.size = { pCBP->size.w, pCBP->size.h };

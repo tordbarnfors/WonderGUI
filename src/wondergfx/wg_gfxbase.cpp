@@ -29,7 +29,7 @@
 #include <wg_qoicompression.h>
 #include <wg_lzcompression.h>
 #include <wg_spxcompression.h>
-#include <wg_nodecompression.h>
+#include <wg_meshcompression.h>
 #include <wg_rlecompression.h>
 
 
@@ -191,8 +191,8 @@ namespace wg
 			pDecompressor = LZDecompressor::create();
 		else if( idToken == SPXDecompressor::ID_TOKEN )
 			pDecompressor = SPXDecompressor::create();
-		else if( idToken == NodeDecompressor::ID_TOKEN )
-			pDecompressor = NodeDecompressor::create();
+		else if( idToken == MeshDecompressor::ID_TOKEN )
+			pDecompressor = MeshDecompressor::create();
 		else if (idToken == RLEDecompressor::ID_TOKEN)
 			pDecompressor = RLEDecompressor::create();
 		else if (idToken == QOIDecompressor::ID_TOKEN || idToken == QOIDecompressor::ID_TOKEN_BIG_ENDIAN)

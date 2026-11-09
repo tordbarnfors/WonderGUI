@@ -22,7 +22,7 @@
 #include <wg_glwarpmap.h>
 #include <wg_gfxbase.h>
 
-#include <algorithm>
+#include <cstddef>
 
 namespace wg
 {
@@ -38,39 +38,58 @@ namespace wg
 		return GlWarpmap_p(new GlWarpmap(bp));
 	}
 
-	GlWarpmap_p GlWarpmap::create( const Blueprint& bp, const CoordSPX * pNodes, int pitch )
+	GlWarpmap_p GlWarpmap::create( const Blueprint& bp, const Vertex * pVertices, const Triangle * pTriangles )
 	{
-		if (!_validateBlueprint(bp) || !pNodes)
+		if (!pVertices || !pTriangles || !_validateBlueprint(bp, pTriangles))
 			return nullptr;
 
-		return GlWarpmap_p(new GlWarpmap(bp, pNodes, pitch));
+		return GlWarpmap_p(new GlWarpmap(bp, pVertices, pTriangles));
 	}
 
 	//____ constructor ________________________________________________________
 
-	GlWarpmap::GlWarpmap( const Blueprint& bp, const CoordSPX * pNodes, int pitch ) : Warpmap(bp, pNodes, pitch)
+	GlWarpmap::GlWarpmap( const Blueprint& bp, const Vertex * pVertices, const Triangle * pTriangles ) : Warpmap(bp, pVertices, pTriangles)
 	{
-		SizeI cells = _cells();
+		static_assert(sizeof(Vertex) == 6 * sizeof(GLint) && sizeof(Triangle) == 3 * sizeof(GLushort), "Vertices and triangles are uploaded as they are");
 
-		glGenBuffers(1, &m_bufferId);
-		glBindBuffer(GL_TEXTURE_BUFFER, m_bufferId);
-		glBufferData(GL_TEXTURE_BUFFER, cells.w * cells.h * 2 * 4 * sizeof(GLfloat), nullptr, GL_DYNAMIC_DRAW);
+		GLint previousArray = 0, previousBuffer = 0;
+		glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &previousArray);
+		glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &previousBuffer);
 
-		glGenTextures(1, &m_textureId);
-		glBindTexture(GL_TEXTURE_BUFFER, m_textureId);
-		glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, m_bufferId);
-		glBindTexture(GL_TEXTURE_BUFFER, 0);
-		glBindBuffer(GL_TEXTURE_BUFFER, 0);
+		glGenBuffers(1, &m_vertexBufferId);
+		glGenBuffers(1, &m_indexBufferId);
+		glGenVertexArrays(1, &m_vertexArrayId);
 
-		_nodesUpdated({ 0, 0, m_nodes.w, m_nodes.h });
+		glBindVertexArray(m_vertexArrayId);
+
+		glBindBuffer(GL_ARRAY_BUFFER, m_vertexBufferId);
+		glBufferData(GL_ARRAY_BUFFER, m_nVertices * sizeof(Vertex), nullptr, GL_DYNAMIC_DRAW);
+
+		glVertexAttribIPointer(0, 2, GL_INT, sizeof(Vertex), (void*)offsetof(Vertex, x));
+		glVertexAttribIPointer(1, 2, GL_INT, sizeof(Vertex), (void*)offsetof(Vertex, u));
+		glVertexAttribIPointer(2, 1, GL_INT, sizeof(Vertex), (void*)offsetof(Vertex, w));
+		glVertexAttribIPointer(3, 1, GL_INT, sizeof(Vertex), (void*)offsetof(Vertex, coverage));
+		glEnableVertexAttribArray(0);
+		glEnableVertexAttribArray(1);
+		glEnableVertexAttribArray(2);
+		glEnableVertexAttribArray(3);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBufferId);		// Kept by the vertex array.
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_nTriangles * sizeof(Triangle), nullptr, GL_DYNAMIC_DRAW);
+
+		glBindVertexArray(GLuint(previousArray));
+		glBindBuffer(GL_ARRAY_BUFFER, GLuint(previousBuffer));
+
+		_updated(0, m_nVertices, 0, m_nTriangles);
 	}
 
 	//____ destructor _________________________________________________________
 
 	GlWarpmap::~GlWarpmap()
 	{
-		glDeleteTextures(1, &m_textureId);
-		glDeleteBuffers(1, &m_bufferId);
+		glDeleteVertexArrays(1, &m_vertexArrayId);
+		glDeleteBuffers(1, &m_indexBufferId);
+		glDeleteBuffers(1, &m_vertexBufferId);
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -80,43 +99,25 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ _nodesUpdated() ____________________________________________________
-	// Rebuilds and uploads the rows of cells touching the nodes that changed.
+	//____ _updated() _________________________________________________________
+	// Copies what changed to the buffers. Periods are given when drawing. Goes through the copy
+	// target, which no vertex array or other state of the backend depends on.
 
-	void GlWarpmap::_nodesUpdated( const RectI& region )
+	void GlWarpmap::_updated( int firstVertex, int nVertices, int firstTriangle, int nTriangles )
 	{
-		SizeI cells = _cells();
-
-		int rowBeg = std::max(0, region.y - 1);
-		int rowEnd = std::min(cells.h, region.y + region.h);
-
-		if (rowBeg >= rowEnd)
-			return;
-
-		int bytes = (rowEnd - rowBeg) * cells.w * 2 * 4 * sizeof(GLfloat);
-		auto pBuffer = (GLfloat*) GfxBase::memStackAlloc(bytes);
-		GLfloat* pOut = pBuffer;
-
-		for (int row = rowBeg; row < rowEnd; row++)
+		if (nVertices > 0)
 		{
-			for (int column = 0; column < cells.w; column++)
-			{
-				CoordSPX corners[4];
-				cellCorners(column, row, corners);
-
-				for (int i = 0; i < 4; i++)
-				{
-					*pOut++ = corners[i].x / 64.f;
-					*pOut++ = corners[i].y / 64.f;
-				}
-			}
+			glBindBuffer(GL_COPY_WRITE_BUFFER, m_vertexBufferId);
+			glBufferSubData(GL_COPY_WRITE_BUFFER, firstVertex * sizeof(Vertex), nVertices * sizeof(Vertex), m_pVertices + firstVertex);
 		}
 
-		glBindBuffer(GL_TEXTURE_BUFFER, m_bufferId);
-		glBufferSubData(GL_TEXTURE_BUFFER, rowBeg * cells.w * 2 * 4 * sizeof(GLfloat), bytes, pBuffer);
-		glBindBuffer(GL_TEXTURE_BUFFER, 0);
+		if (nTriangles > 0)
+		{
+			glBindBuffer(GL_COPY_WRITE_BUFFER, m_indexBufferId);
+			glBufferSubData(GL_COPY_WRITE_BUFFER, firstTriangle * sizeof(Triangle), nTriangles * sizeof(Triangle), m_pTriangles + firstTriangle);
+		}
 
-		GfxBase::memStackFree(bytes);
+		glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
 	}
 
 } // namespace wg

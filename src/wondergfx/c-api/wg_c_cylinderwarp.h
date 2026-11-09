@@ -35,8 +35,7 @@ extern "C" {
 	typedef struct wg_cylinderWarpBP_struct		// NOT BINARY EQUIVALENT!
 	{
 		wg_axis				axis;					// Axis of the cylinder. WG_AXIS_X lies down, like a slot machine reel. 0 = default (WG_AXIS_X).
-		wg_sizeI			cellSize;				// 0 for width or height = calculated from precision.
-		float				precision;				// Max position error in pixels when cellSize is calculated. 0 = default (0.25).
+		float				precision;				// Higher gives more triangles, positions within 1 / precision pixels, curved outlines within at most 0.5. 0 = default (1).
 		wg_sizeI			size;					// Mandatory. Size of the Warpmap in pixels, which the cylinder fills.
 		wg_sizeSPX			sourceSize;				// Mandatory. Size of the source (edgemap or source rectangle) in spx.
 		float				span;					// Degrees of the cylinder seen, above 0 and below 180. 0 = default (120).
@@ -45,7 +44,7 @@ extern "C" {
 	} wg_cylinderWarpBP;
 
 	// Factory is the WarpmapFactory to create the Warpmap with, the default one if null.
-	// Size, source size, cell size, precision and generate are set and called through the WarpGenerator functions.
+	// Size, source size, precision and generate are set and called through the WarpGenerator functions.
 
 	WG_EXPORT wg_obj		wg_createCylinderWarp( const wg_cylinderWarpBP* blueprint, wg_obj warpmapFactory );
 

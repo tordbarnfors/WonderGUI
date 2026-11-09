@@ -7,11 +7,11 @@ weight: 35
 
 A Warpmap bends a surface or an edgemap into another shape when it is drawn: a gauge or a progress ring from a straight bar, text along an arc, a waving flag. The source is drawn as it is and the Warpmap decides where each part of it ends up.
 
-A Warpmap covers a rectangle of pixels with a grid of nodes, one node every *cellSize.w* pixels horizontally and *cellSize.h* pixels vertically, plus one at the right and bottom edge. Each node holds the position in the source that is drawn at that point, in spx of the source (64 per pixel of the edgemap or surface, relative to the source rectangle of a blit): u along its width and v along its height. Positions between nodes are interpolated. Where a position falls outside the source nothing is drawn, so the shape of what is drawn is given by the nodes, with anti-aliased borders.
+A Warpmap covers a rectangle of pixels with a mesh of triangles. Each vertex has a position in the Warpmap (*x* and *y*, in spx from its top-left corner), the position in the source that is drawn there (*u* along the width of the source and *v* along its height, in spx of the source: 64 per pixel of the edgemap or surface, relative to the source rectangle of a blit) and a weight *w* for perspective. Positions within a triangle are interpolated from its corners. Where a position falls outside the source nothing is drawn, so the shape of what is drawn is given by the vertices, with anti-aliased borders. Nothing is drawn outside the triangles either.
 
-A Warpmap is made for a source of a certain size. It isn't stretched to fit a source of another size, that takes other nodes.
+A Warpmap is made for a source of a certain size. It isn't stretched to fit a source of another size, that takes other vertices.
 
-Warpmaps are *semi-mutable*: size and cell size are set when created, nodes can be changed and periods can be changed together with all nodes. Each graphics backend has its own Warpmap subtype, created by its WarpmapFactory (`GfxDevice::warpmapFactory()`), or through a WarpGenerator such as CircularWarp.
+Warpmaps are *semi-mutable*: size and the number of vertices and triangles are set when created, while vertices, triangles and periods can be changed. Each graphics backend has its own Warpmap subtype, created by its WarpmapFactory (`GfxDevice::warpmapFactory()`), or through a WarpGenerator such as CircularWarp.
 
 
 
@@ -27,24 +27,19 @@ Warpmaps are *semi-mutable*: size and cell size are set when created, nodes can 
 
 The Warpmap is placed with its top-left corner at *dest*, rounded to whole pixels, and nothing is drawn outside its rectangle. Blend mode, tint color and tint apply as for any other drawing, the tint in canvas space. Surfaces are read with their sample method. Nothing outside the source rectangle is read, as with stretchBlit(): along its borders the surface is read as if the edge pixels of the rectangle continued outside it. A tiling surface wraps around instead. There is no supersampling when a Warpmap shrinks a surface, use a mipmapped surface for that.
 
-Draws are rendered when the canvas update ends and read the Warpmap then. Changing the nodes or periods of a Warpmap changes all of its draws that aren't rendered yet, so use a Warpmap for each shape drawn within the same canvas update.
+Draws are rendered when the canvas update ends and read the Warpmap then. Changing the content of a Warpmap changes all of its draws that aren't rendered yet, so use a Warpmap for each shape drawn within the same canvas update.
 
-All methods take a *source offset* that is added to the position before reading, so a ring can be turned or a pattern scrolled without changing the Warpmap. It is in spx of the source, like the nodes.
+All methods take a *source offset* that is added to the position before reading, so a ring can be turned or a pattern scrolled without changing the Warpmap. It is in spx of the source, like u and v.
 
 
 
 ## Periods
 
-An axis can be periodic (*uPeriod* or *vPeriod* above 0, in spx of the source), as when u is the angle of a ring. Positions are then read modulo the period and interpolation between nodes across the seam takes the short way round.
+An axis can be periodic (*uPeriod* or *vPeriod* above 0, in spx of the source), as when u is the angle of a ring. Positions are then read modulo the period, after they have been interpolated, so the corners of a triangle keep values close to each other also where they go past the period: a triangle across the seam of a ring has corners with u just below the period and just above it, rather than just above 0.
 
 With a period of the size of the source it wraps around, which for an edgemap or surface that is tiling is seamless. A longer period leaves a gap between the copies of the source, as a 270 degree arc of a source *w* spx wide has uPeriod = w * 360 / 270. A pixel in the gap takes its colors from the nearest copy, so they don't jump where the copies meet.
 
-Values on a periodic axis are stored brought into 0 -> period, so periods are given together with all nodes: in the blueprint when created, or with `importAllNodes()`. Nodes for one period don't mean the same with another, so there is no changing periods alone.
-
-```c++
-	pWarpmap->importNodes( region, pNodes );						// Some nodes, same periods.
-	pWarpmap->importAllNodes( pNodes, uPeriod, vPeriod );			// All nodes, new periods.
-```
+Periods are given in the blueprint when created, and can be changed with `setPeriods()` or together with all vertices and triangles with `importMesh()`.
 
 
 
@@ -64,7 +59,7 @@ CircularWarp makes and keeps a Warpmap that bends the source around a circle: it
 	pDevice->warpDrawEdgemap( { 10*64, 10*64 }, pGauge->generate(), pEdgemap );
 ```
 
-The cell size decides how closely the Warpmap follows the circle and is calculated from *precision* (largest position error in pixels) at the smaller radius unless set. For a disc, precision is kept from half its radius and outwards. A radius of 0 gives a disc, which only works for content that doesn't change from left to right close to the center.
+The Warpmap is a ring of sectors, split into parts across the ring, which goes all the way around and a pixel beyond both radii whatever the sweep, so that the ring can be turned by an offset. How many sectors and parts it takes is calculated from *precision* (see [WarpGenerators](#warpgenerators)). A radius of 0 gives a disc, where the sectors meet in the center, which only works for content that doesn't change much from left to right close to the center.
 
 To turn the ring, draw it with the offset from `rotationOffset()` rather than generating it again. It turns the ring by a number of degrees, clockwise if positive, as if *startAngle* was that much larger, which costs nothing but the draw:
 
@@ -92,7 +87,9 @@ RoundedRectWarp makes and keeps a Warpmap that bends the source around the outli
 	pDevice->warpDrawEdgemap( { 10*64, 10*64 }, pFocusRing->generate(), pEdgemap, pFocusRing->shiftOffset(part) );		// Marching ants.
 ```
 
-Positions along the outline are those of the nearest point on it. The source keeps its width along the straight sides and is spread or squeezed around the corners, more the further from the outline, so placing the outline in the middle of the band gives the most even result. Corners stay round on the outside. On the inside they become mitered like a picture frame where the band goes deeper than *cornerRadius*, and since a Warpmap interpolates across the miter, that takes small cells to look clean. *cornerRadius* is limited to half the shorter side of *rect*, so a square with corners of half its side is a circle.
+Positions along the outline are those of the nearest point on it. The source keeps its width along the straight sides and is spread or squeezed around the corners, more the further from the outline, so placing the outline in the middle of the band gives the most even result. Corners stay round on the outside. On the inside they become mitered like a picture frame where the band goes deeper than *cornerRadius*. *cornerRadius* is limited to half the shorter side of *rect*, so a square with corners of half its side is a circle.
+
+The Warpmap follows the outline: a quad across the band for each straight side, which is exact, and sectors split into parts across the band around the corners, as many as *precision* takes. It goes all the way around and a pixel beyond the band, whatever the sweep.
 
 `shiftOffset()` gives the offset that moves the source along the outline by a part of it, clockwise if positive, as if *start* was that much larger. Both offsets go by the sweep and source size of the generated Warpmap.
 
@@ -115,45 +112,81 @@ CylinderWarp makes and keeps a Warpmap that wraps the source around a cylinder s
 	pDevice->warpBlit( { 10*64, 10*64 }, pMap, pReel->rotationOffset(angle) );
 ```
 
-`rotationOffset()` turns the cylinder by a number of degrees as if *startAngle* was that much larger, so a spinning reel is generated once. Positions change linearly along the axis, so cells span the length of the cylinder unless set, and across it the cell size is calculated from *precision* at the rims, where the cylinder curves away the most. A *span* close to 180 degrees therefore takes small cells. The view is straight from the side, without perspective, and the cylinder isn't shaded: draw it with a tint that gets darker towards the rims for that.
+`rotationOffset()` turns the cylinder by a number of degrees as if *startAngle* was that much larger, so a spinning reel is generated once. The Warpmap is a row of strips along the axis, where positions change linearly. Across it strips are as wide as *precision* allows, wide in the middle and narrower towards the rims, where the cylinder curves away the most. A *span* close to 180 degrees therefore takes many strips. The view is straight from the side, without perspective, and the cylinder isn't shaded: draw it with a tint that gets darker towards the rims for that.
 
 
 
 ## WarpGenerators
 
-CircularWarp, RoundedRectWarp and CylinderWarp are WarpGenerators: they make a Warpmap from a few settings and keep it. Size, source size, cell size, precision and generate() are the same for all WarpGenerators.
+CircularWarp, RoundedRectWarp and CylinderWarp are WarpGenerators: they make a Warpmap from a few settings and keep it. Size, source size, precision and generate() are the same for all WarpGenerators, though precision doesn't apply to PerspectiveWarp, which is exact. Each generator chooses the size of its pieces from precision, as suits its shape, so there is no setting for that.
 
-generate() updates the Warpmap after settings have changed and returns it. A Warpmap that is held elsewhere, such as by a draw that isn't rendered yet, is never changed: generate() then makes a new one, as it does when size or cell size has changed. So draw what generate() returns rather than keeping it, and one generator can be drawn several times with different settings within the same canvas update. Unless set, the cell size is calculated from *precision* and the shape: within 4 to 64 pixels along curves, and up to the size of the Warpmap along axes where positions change linearly. Width and height can be set separately, a 0 for either has it calculated.
+*precision* means the same for all of them, and higher precision gives more triangles. Positions are kept within 1 / *precision* pixels (*WarpGenerator::c_tolerance* / *precision*): the largest distance on screen between where a pixel shows the source and where it would show it exactly. It is 1 by default, a pixel, which suits most GUIs; 2 (half a pixel) is about as high as shows, and 0.5 (two pixels) makes generating, memory and streaming cheaper where that matters, while it hardly changes the time to draw, which mostly goes by the pixels. Curved outlines are kept within half a pixel (*WarpGenerator::c_outlineTolerance*) whatever precision is set, as an outline off by a pixel or more shows as corners where it should be round, while the inside of a shape off as much hardly shows: the radii of rings and rounded corners, the outline of a ball and the rim of a lens. Higher precision takes more triangles, how many more depending on the shape: a cylinder only gets more strips towards its rims, while a ball gets more pieces both ways. Pieces are sized for a little less than that distance, to leave room for rounding the vertices to spx. They are never narrower than two pixels, as narrower ones would only be needed where the source is squeezed into each pixel, such as the rims of a cylinder seen almost to its sides or a steep falloff of a lens. Positions there can be off by more than precision asks for, which doesn't show, as the source is still sampled once per pixel, and is cheaper to draw. Positions in the source are whole spx too, so where the source is magnified many times, such as a small surface wrapped around a large cylinder, positions closer than about the magnification / 128 pixels can't be kept, whatever the precision.
 
-To make your own, subclass WarpGenerator and implement _generateNodes(), which fills in the positions of all nodes, and _calcCellSize(), which picks the width and height of cells from *precision*. _cellSizeForRadius() gives the cell size for a curve of a given radius. Override _uPeriod() and _vPeriod() if an axis is periodic, and set *m_bDirty* when one of your settings changes.
+generate() updates the Warpmap after settings have changed and returns it. A Warpmap that is held elsewhere, such as by a draw that isn't rendered yet, is never changed: generate() then makes a new one, as it does when size or the number of vertices and triangles has changed. Settings that change the shape, such as the radii of a CircularWarp, can change that, while angles and offsets don't. So draw what generate() returns rather than keeping it, and one generator can be drawn several times with different settings within the same canvas update.
+
+To make your own, subclass WarpGenerator and implement _meshSize(), which gives the number of vertices and triangles, and _generateMesh(), which fills them in, sizing the pieces from *_pieceTolerance()* and *_outlineTolerance()*, which give the distances in pixels that *precision* allows. Override _uPeriod() and _vPeriod() if an axis is periodic, and set *m_bDirty* when one of your settings changes. WarpGenerator has integer maths for that, for CPUs without an FPU: fixed point factors, CORDIC angles and sines, and integer square roots.
 
 
 
 ## Making your own
 
 ```c++
-	auto pWarpmap = pDevice->warpmapFactory()->createWarpmap( WGBP(Warpmap, _.size = { 160, 120 }, _.cellSize = { 8, 8 }) );
+	// A wave, 6 pixels high, from a strip of 21 x 2 vertices and 40 triangles.
 
-	SizeI nodes = pWarpmap->nodes();
-	std::vector<CoordSPX> positions( nodes.w * nodes.h );
+	const int columns = 20;
+	SizeI size = { 160, 120 };
 
-	for( int row = 0 ; row < nodes.h ; row++ )
-		for( int col = 0 ; col < nodes.w ; col++ )
+	std::vector<Warpmap::Vertex> vertices;
+	std::vector<Warpmap::Triangle> triangles;
+
+	for( int col = 0 ; col <= columns ; col++ )
+	{
+		spx x = col * size.w * 64 / columns;
+		spx wave = spx(std::lround(6 * 64 * std::sin(x / 64 * 0.1)));
+
+		vertices.push_back( { x, 0, x, wave } );
+		vertices.push_back( { x, size.h * 64, x, size.h * 64 + wave } );
+
+		if( col > 0 )
 		{
-			int x = pWarpmap->nodeX(col);
-			int y = pWarpmap->nodeY(row);
-			positions[row*nodes.w + col] = { x * 64, y * 64 + spx(std::lround(6 * 64 * std::sin(x * 0.1))) };		// A wave, 6 pixels high.
+			int i = col * 2;
+			triangles.push_back( { i - 2, i, i - 1 } );
+			triangles.push_back( { i, i + 1, i - 1 } );
 		}
+	}
 
-	pWarpmap->importNodes( { 0, 0, nodes.w, nodes.h }, positions.data() );
+	auto pWarpmap = pDevice->warpmapFactory()->createWarpmap( WGBP(Warpmap, _.size = size, _.triangles = int(triangles.size()), _.vertices = int(vertices.size())),
+															  vertices.data(), triangles.data() );
 ```
 
-A new Warpmap maps its rectangle straight onto the source, pixel for pixel. Smaller cells follow curved shapes more closely, a circle of radius r is off by roughly cellSize² / (8 * r) pixels. Cells can be wider than high, or the other way around: where positions change linearly along one axis, as along a cylinder, a cell can span the Warpmap that way, which means fewer nodes and less work drawing.
+Triangles take their corners by index in the vertices, 16 bits each, so a Warpmap has at most *Warpmap::maxVertices* (65536) vertices and *Warpmap::maxTriangles* (twice that) triangles. Generators keep within that by making their pieces larger where a shape is very large or *precision* very high.
+
+A new Warpmap created without vertices and triangles maps its rectangle straight onto the source, pixel for pixel, with its first four vertices and two triangles, and leaves the rest of its triangles with all corners in the first vertex, which draws nothing. Unused triangles can be left like that, so a Warpmap can be made with room for the most triangles a shape needs. `importVertices()`, `importTriangles()` and `importMesh()` change the content later.
+
+Some things to keep in mind:
+
+* **Edges between triangles** don't show, as long as neighbouring triangles share the vertices along their common edge. A pixel is drawn by the one triangle that its center is inside of, and isn't antialiased along the edges of triangles.
+
+* **The border of what is drawn** is where the position leaves the source, which can cross the inside of a triangle. That is where it is antialiased, so let the triangles reach about a pixel beyond the part of the source that is drawn, with u and v going on outside the source. Otherwise the border is cut off without antialiasing along the edge of the mesh.
+
+* **Triangles may not overlap.** What is drawn where they do is undefined. The order of the corners doesn't matter, clockwise or counter clockwise.
+
+* **Positions are linear within a triangle,** unless it is in perspective. Smaller triangles follow curved shapes more closely, a circle of radius r drawn through triangles with sides of length l is off by roughly l² / (8 * r) pixels.
+
+* **Perspective** is given by the weights. A plane seen in perspective, such as a card turned in 3D, is exact with a single quad of two triangles when the weight of each corner is proportional to 1 / its distance from the eye, and positions are the ones at the corners. Only the ratios between the weights of a triangle matter. *Warpmap::weightOne* is 1.0, and is the weight of vertices that don't set one.
+
+* **Outlines that aren't borders of the source** are antialiased by the coverage of the vertices, *Warpmap::coverageOne* unless set. It is interpolated linearly over a triangle and multiplies the coverage of each pixel, so a row of triangles from coverageOne half a pixel inside an outline to 0 half a pixel outside it antialiases the outline. Triangles with all corners at coverageOne cost nothing extra.
 
 
 
 ## How it is drawn
 
-The exact rules all backends follow are given in the documentation of the Warpmap class. In short: the part of a pixel covered is the part of its area whose position is inside the source (or, for an edgemap, inside each segment), which is then blended as any anti-aliased edge, see [Blending and transparency](../basics/blending_and_transparency). Colors are taken at the position of the center of the pixel.
+The exact rules all backends follow are given in the documentation of the Warpmap class. In short: a pixel is drawn by the triangle its center is inside of, with a rule for centers exactly on an edge so that no pixel is drawn twice. The position at a point is interpolated from the corners of that triangle, with perspective:
 
-ReferenceBackend measures coverage by sampling each pixel at many points. The other backends estimate it from the position at the center of the pixel and how fast it changes, taking each border and edge as straight over the pixel. That is off by a few percent where an edge bends sharply within a pixel.
+	u = (b0*w0*u0 + b1*w1*u1 + b2*w2*u2) / (b0*w0 + b1*w1 + b2*w2)
+
+b0, b1 and b2 being the barycentric coordinates of the point in the triangle, and the same for v. That triangle gives the positions over the whole pixel, also where it reaches outside the triangle. The part of a pixel covered is the part of its area whose position is inside the source (or, for an edgemap, inside each segment), which is then blended as any anti-aliased edge, see [Blending and transparency](../basics/blending_and_transparency). Colors are taken at the position of the center of the pixel.
+
+ReferenceBackend measures coverage by sampling each pixel at many points and divides for perspective at each point. The other backends estimate coverage from the position at the center of the pixel and how fast it changes, taking each border and edge as straight over the pixel. That is off by a few percent where an edge bends sharply within a pixel. They may also divide for perspective only once every few pixels, up to 16, and interpolate linearly in between, keeping within about a quarter of a pixel.
+
+**The DX12 and Metal backends draw Warpmaps as the OpenGL backend does. The Metal backend hasn't been built or tested yet.**

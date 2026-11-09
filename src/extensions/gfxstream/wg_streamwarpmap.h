@@ -25,7 +25,7 @@
 
 #include <wg_warpmap.h>
 #include <wg_streamencoder.h>
-#include <wg_nodecompression.h>
+#include <wg_meshcompression.h>
 
 namespace wg
 {
@@ -37,9 +37,9 @@ namespace wg
 	/**
 	 * @brief Warpmap that is mirrored in a stream.
 	 *
-	 * Creation, nodes and deletion are sent in CreateWarpmap, WarpmapUpdate, WarpmapNodes and
-	 * DeleteWarpmap chunks. Nodes that change together are sent together, compressed by
-	 * NodeCompressor, with the periods they are for, and are applied at once by the receiver.
+	 * Creation, content and deletion are sent in CreateWarpmap, WarpmapUpdate, WarpmapVertices,
+	 * WarpmapTriangles and DeleteWarpmap chunks. Content that changes together is sent together,
+	 * compressed by MeshCompressor, with the periods, and is applied at once by the receiver.
 	 */
 
 	class StreamWarpmap : public Warpmap
@@ -49,7 +49,7 @@ namespace wg
 		//.____ Creation __________________________________________
 
 		static StreamWarpmap_p	create( StreamEncoder * pEncoder, const Blueprint& blueprint );
-		static StreamWarpmap_p	create( StreamEncoder * pEncoder, const Blueprint& blueprint, const CoordSPX * pNodes, int pitch = 0 );
+		static StreamWarpmap_p	create( StreamEncoder * pEncoder, const Blueprint& blueprint, const Vertex * pVertices, const Triangle * pTriangles );
 
 		//.____ Identification __________________________________________
 
@@ -59,14 +59,14 @@ namespace wg
 		uint16_t		inStreamId() const { return m_inStreamId; }
 
 	protected:
-		StreamWarpmap( StreamEncoder * pEncoder, const Blueprint& bp, const CoordSPX * pNodes = nullptr, int pitch = 0 );
+		StreamWarpmap( StreamEncoder * pEncoder, const Blueprint& bp, const Vertex * pVertices = nullptr, const Triangle * pTriangles = nullptr );
 		~StreamWarpmap();
 
-		void	_nodesUpdated( const RectI& region ) override;
+		void	_updated( int firstVertex, int nVertices, int firstTriangle, int nTriangles ) override;
 
 		StreamEncoder_p		m_pEncoder;
 		uint16_t			m_inStreamId;		// Id of this warpmap in the stream.
-		NodeCompressor_p	m_pCompressor;
+		MeshCompressor_p	m_pCompressor;
 	};
 
 } // namespace wg

@@ -47,15 +47,15 @@ namespace wg
 	 * from the outline. Place the outline in the middle of the band for the most even result.
 	 *
 	 * Corners stay round on the outside of the outline. Inside, deeper than cornerRadius, they become
-	 * mitered like a picture frame, where positions along the outline jump. A Warpmap interpolates
-	 * across that, so keep the band within cornerRadius on the inside, or use small cells there.
+	 * mitered like a picture frame, where positions along the outline jump.
 	 *
 	 * cornerRadius is limited to half the shorter side of rect, so a square with a cornerRadius of
 	 * half its side gives a circle, as CircularWarp.
 	 *
-	 * The Warpmap is made for a source of sourceSize (see WarpGenerator). The cell size decides how
-	 * closely it follows the corners, the straight sides are exact. Unless set explicitly it is
-	 * calculated from precision (max position error in pixels) at the tightest corner of the band.
+	 * The Warpmap is made for a source of sourceSize (see WarpGenerator). It goes all the way around
+	 * the outline and a pixel beyond the band, whatever the sweep, so the source can be moved along
+	 * it by an offset. The straight sides are exact. The corners are split into sectors, and parts
+	 * across the band, as many as precision (see WarpGenerator) takes.
 	 *
 	 * Like other WarpGenerators, RoundedRectWarp keeps its Warpmap and updates it when generate() is called.
 	 */
@@ -67,10 +67,9 @@ namespace wg
 		struct Blueprint
 		{
 			spx					bottomDistance = 0;				// Distance from the outline of the bottom of the source, positive outwards.
-			SizeI				cellSize;						// Pixels between nodes of the Warpmap. 0 = calculated, see above.
 			spx					cornerRadius = 0;				// Radius of the corners of the outline, at most half its shorter side.
 			Finalizer_p			finalizer = nullptr;
-			float				precision = 0.25f;				// Max position error in pixels when cellSize is calculated.
+			float				precision = 1.f;				// Higher gives more triangles. Positions within WarpGenerator::c_tolerance / precision pixels, curved outlines within at most WarpGenerator::c_outlineTolerance.
 			RectSPX				rect;							// Mandatory. The outline, relative to the top-left corner of the Warpmap.
 			SizeI				size;							// Mandatory. Size of the Warpmap in pixels.
 			SizeSPX				sourceSize;						// Mandatory. Size of the source (edgemap or source rectangle) in spx.
@@ -116,8 +115,10 @@ namespace wg
 		RoundedRectWarp( const Blueprint& bp, WarpmapFactory * pFactory );
 		virtual ~RoundedRectWarp();
 
-		SizeI		_calcCellSize() const override;
-		void		_generateNodes( CoordSPX * pNodes, SizeI nodes, SizeI cellSize ) const override;
+		OutlineBand	_band() const;
+
+		void		_meshSize( int& nVertices, int& nTriangles ) const override;
+		void		_generateMesh( Warpmap::Vertex * pVertices, Warpmap::Triangle * pTriangles ) const override;
 		spx			_uPeriod() const override;
 		void		_generated() override { m_offsetFactor = _offsetFactor(m_sweep, m_sourceSize.w); }
 

@@ -39,10 +39,12 @@ namespace wg
 	/**
 	 * @brief Warpmap for MetalBackend.
 	 *
-	 * The cells are kept in a buffer for the shaders, two float4 entries per cell, row by row:
-	 * the top-left and top-right corners, then the bottom-left and bottom-right corners, as
-	 * given by cellCorners(), so already moved by whole periods to be close to the top-left one,
-	 * converted from spx to pixels of the source.
+	 * The mesh is kept on the GPU as it is, in one shared buffer: the vertices (x, y, u, v, w and
+	 * coverage as integers, the layout of Warpmap::Vertex), read by the vertex shader, followed by
+	 * the triangles (the corners as 16-bit unsigned ints, the layout of Warpmap::Triangle), which are
+	 * the index buffer. Content that changes is copied there, with nothing worked out on the CPU.
+	 * Drawing only gives where to draw, the source offset and the periods. See the warp shaders for
+	 * what they do with it.
 	 */
 
 	class MetalWarpmap : public Warpmap
@@ -53,7 +55,7 @@ namespace wg
 		//.____ Creation __________________________________________
 
 		static MetalWarpmap_p	create( const Blueprint& blueprint );
-		static MetalWarpmap_p	create( const Blueprint& blueprint, const CoordSPX * pNodes, int pitch = 0 );
+		static MetalWarpmap_p	create( const Blueprint& blueprint, const Vertex * pVertices, const Triangle * pTriangles );
 
 		//.____ Identification __________________________________________
 
@@ -62,15 +64,14 @@ namespace wg
 
 	protected:
 
-		MetalWarpmap( const Blueprint& bp, const CoordSPX * pNodes = nullptr, int pitch = 0 );
+		MetalWarpmap( const Blueprint& bp, const Vertex * pVertices = nullptr, const Triangle * pTriangles = nullptr );
 		~MetalWarpmap();
 
-		void	_nodesUpdated( const RectI& region ) override;
-
-		inline SizeI	_cells() const { return { m_nodes.w - 1, m_nodes.h - 1 }; }
+		void	_updated( int firstVertex, int nVertices, int firstTriangle, int nTriangles ) override;
 
 		id<MTLBuffer>   m_bufferId = nil;
-		float *      	m_pBuffer = nullptr;
+		uint8_t *      	m_pBuffer = nullptr;
+		size_t			m_indexOffset = 0;			// Where the triangles start in the buffer, in bytes.
 	};
 
 } // namespace wg

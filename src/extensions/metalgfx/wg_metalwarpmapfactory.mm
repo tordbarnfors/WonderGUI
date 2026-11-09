@@ -41,9 +41,9 @@ namespace wg
 		return MetalWarpmap::create(blueprint);
 	}
 
-	Warpmap_p MetalWarpmapFactory::createWarpmap( const Warpmap::Blueprint& blueprint, const CoordSPX * pNodes, int pitch )
+	Warpmap_p MetalWarpmapFactory::createWarpmap( const Warpmap::Blueprint& blueprint, const Warpmap::Vertex * pVertices, const Warpmap::Triangle * pTriangles )
 	{
-		return MetalWarpmap::create(blueprint, pNodes, pitch);
+		return MetalWarpmap::create(blueprint, pVertices, pTriangles);
 	}
 
 } // namespace wg

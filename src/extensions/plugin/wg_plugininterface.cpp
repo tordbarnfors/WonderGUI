@@ -419,16 +419,20 @@ static void populateBody(wg_c_calls_body * pBody)
 
 	pBody->warpmap.structSize				= sizeof(wg_warpmap_calls);
 	pBody->warpmap.warpmapPixelSize			= LOCKED(wg_warpmapPixelSize);
-	pBody->warpmap.warpmapCellSize			= LOCKED(wg_warpmapCellSize);
+	pBody->warpmap.warpmapVertexCount		= LOCKED(wg_warpmapVertexCount);
+	pBody->warpmap.warpmapTriangleCount		= LOCKED(wg_warpmapTriangleCount);
 	pBody->warpmap.warpmapUPeriod			= LOCKED(wg_warpmapUPeriod);
 	pBody->warpmap.warpmapVPeriod			= LOCKED(wg_warpmapVPeriod);
-	pBody->warpmap.importWarpmapNodes		= LOCKED(wg_importWarpmapNodes);
-	pBody->warpmap.importAllWarpmapNodes	= LOCKED(wg_importAllWarpmapNodes);
-	pBody->warpmap.exportWarpmapNodes		= LOCKED(wg_exportWarpmapNodes);
+	pBody->warpmap.setWarpmapPeriods		= LOCKED(wg_setWarpmapPeriods);
+	pBody->warpmap.importWarpmapVertices	= LOCKED(wg_importWarpmapVertices);
+	pBody->warpmap.importWarpmapTriangles	= LOCKED(wg_importWarpmapTriangles);
+	pBody->warpmap.importWarpmapMesh		= LOCKED(wg_importWarpmapMesh);
+	pBody->warpmap.exportWarpmapVertices	= LOCKED(wg_exportWarpmapVertices);
+	pBody->warpmap.exportWarpmapTriangles	= LOCKED(wg_exportWarpmapTriangles);
 
 	pBody->warpmapFactory.structSize		= sizeof(wg_warpmapfactory_calls);
 	pBody->warpmapFactory.createWarpmap		= LOCKED(wg_createWarpmap);
-	pBody->warpmapFactory.createWarpmapFromNodes = LOCKED(wg_createWarpmapFromNodes);
+	pBody->warpmapFactory.createWarpmapFromMesh = LOCKED(wg_createWarpmapFromMesh);
 
 	pBody->hostBridge.structSize			= sizeof(wg_hostbridge_calls);
 	pBody->hostBridge.hidePointer			= LOCKED(wg_hidePointer);

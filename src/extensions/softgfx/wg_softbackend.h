@@ -29,6 +29,7 @@
 #include <wg_softsurface.h>
 #include <wg_softformat.h>
 #include <wg_softshapes.h>
+#include <wg_softwarpmap.h>
 
 namespace wg
 {
@@ -45,7 +46,6 @@ namespace wg
 
 	class SoftBackend;
 	class SoftEdgemap;
-	class SoftWarpmap;
 	typedef	StrongPtr<SoftBackend>	SoftBackend_p;
 	typedef	WeakPtr<SoftBackend>	SoftBackend_wp;
 
@@ -363,33 +363,47 @@ namespace wg
 		// prepares a command, _drawWarp() draws it within one clip rectangle onto pixels where
 		// pixel (x,y) is at pOrigin + y * pitch + x * m_canvasPixelBytes. See wg_softbackend_warp.cpp.
 
-		static const int c_warpOutside = -2;	// WarpCell::kind: Nothing of the source in the cell.
-		static const int c_warpMixed = -1;		// WarpCell::kind: Coverage or segment varies over the cell.
+		static const int c_warpOutside = -2;	// WarpSpan::kind: Nothing of the source in the span.
+		static const int c_warpMixed = -1;		// WarpSpan::kind: Coverage or segment varies over the span.
 
-		struct WarpCell
+		// Pixels of a row of the canvas drawn by one triangle, with linear positions, see _drawWarpRow().
+		// Positions in the source are in pixels with 16 binals, source offset applied.
+
+		struct WarpSpan
 		{
-			int			x;				// First pixel column of the cell, relative to the Warpmap.
-			int			w;				// Width of cell in pixels.
-			int			kind;			// c_warpOutside, c_warpMixed or segment (0 for WarpBlit) fully covering the cell.
-
-			// Positions in the source in pixels with 16 binals, source offset applied. Top-left
-			// corner is wrapped into the period on periodic axes, the others follow it.
-
-			int64_t		tl[2];			// Top-left corner.
-			int64_t		right[2];		// Top-right corner - top-left corner.
-			int64_t		down[2];		// Bottom-left corner - top-left corner.
-			int64_t		twist[2];		// Bottom-right - bottom-left - top-right + top-left.
-
-			// At the first pixel drawn of the current row of pixels, stepped from row to row so that
-			// rows need no divisions, see _beginWarpCellRow(). pos and step have c_warpExtraBits more
-			// binals than positions.
+			int			x;				// First pixel column of the span on the canvas.
+			int			w;				// Width of span in pixels.
+			int			kind;			// c_warpOutside, c_warpMixed or segment (0 for WarpBlit) fully covering the span.
 
 			int64_t		pos[2];			// Position at the center of the first pixel.
-			int64_t		posStep[2];		// Change of pos from one row to the next.
 			int64_t		step[2];		// Change of position from one pixel to the next along the row.
-			int64_t		stepStep[2];	// Change of step from one row to the next.
-			int64_t		dy[2];			// Change of position from one pixel to the one below, at the first pixel.
-			int64_t		dyStep[2];		// Change of dy along the row.
+			int64_t		dx[2];			// Derivatives of the position along x and y, at the first pixel, for coverage.
+			int64_t		dy[2];			// The same as step and 0 below without perspective.
+			int64_t		dxStep[2];		// Change of dx and dy along the row.
+			int64_t		dyStep[2];
+
+			// Coverage of the vertices at the center of the first pixel and its change along the row,
+			// with 28 binals of full coverage, when it isn't full all along the span.
+
+			bool		bFade;
+			int64_t		fade;
+			int64_t		fadeStep;
+		};
+
+		// A triangle on the rows being drawn, its edges stepped from row to row as the Edges of its
+		// Setup describe.
+
+		struct WarpTriangle
+		{
+			const SoftWarpmap::Setup*		pSetup;
+			const SoftWarpmap::Perspective*	pPerspective;		// nullptr without perspective.
+			const SoftWarpmap::Fade*		pFade;				// nullptr for all corners at full coverage.
+			int			kind;			// Of all of it, c_warpMixed if it varies or with perspective.
+			int			xBeg, xEnd;		// Pixels inside on the current row, relative to the Warpmap.
+			int64_t		col[3];			// Of the edges of the Setup, on the current row.
+			int32_t		rem[3];
+			int64_t		step[2];		// Without perspective: change of position along the row and from
+			int64_t		dy[2];			// row to row, rounded and limited once for the triangle.
 		};
 
 		struct WarpSetup
@@ -432,15 +446,21 @@ namespace wg
 
 		bool	_beginWarp(const WarpParams& params, SoftWarpmap* pWarpmap, SoftEdgemap* pEdgemap);
 		void	_drawWarp(const RectI& clip, uint8_t* pOrigin, int pitch);
-		void	_setupWarpCells(int row, int firstColumn, int nColumns);
-		void	_beginWarpCellRow(int firstRow, int xBeg, int cellRowY, int cellRowH);
+		void	_beginWarpTriangle(WarpTriangle& triangle, int row);
+		void	_warpTriangleRow(WarpTriangle& triangle);
+		void	_addWarpSpans(const WarpTriangle& triangle, int row);
+		int		_addWarpSpan(int kind, int x, int length, const int64_t pos[2], const int64_t step[2], const int64_t dx[2], const int64_t dy[2],
+							 const int64_t dxStep[2], const int64_t dyStep[2], int64_t marginEighths, bool bAddMixed = true);
+		int		_addLinearWarpSpan(int kind, int x, int length, const int64_t pos[2], const int64_t step[2], const int64_t dy[2]);
+		WarpSpan& _newWarpSpan();
+		int		_warpClassify(const int64_t lo[2], const int64_t hi[2]) const;
 		int		_warpSolidSegment(const int64_t lo[2], const int64_t hi[2], const int64_t copy[2]) const;
 		void	_drawWarpRow(int y, int xBeg, int xEnd, uint8_t* pOrigin, int pitch, int prefetchRow);
 		int		_warpAxisCoverage(int axis, int64_t s, int64_t gx, int64_t gy) const;
-		void			_warpInsideRange( const int64_t * pos, const int64_t * step, const int64_t * dy, const int64_t * dyStep, int length, int& insideBeg, int& insideEnd ) const;
+		void			_warpInsideRange( const WarpSpan& span, const int64_t * pos, int length, int& insideBeg, int& insideEnd ) const;
 		int		_warpEdgemapCoverage(int64_t sx, int64_t sy, int64_t ax, int64_t bx, int64_t ay, int64_t by, int* pCoverage, int& solidSegment) const;
 		void	_warpTintSpan(const SoftTint& tint, int64_t x, int64_t y, int64_t dx, int64_t dy, int length, HiColor* pOutput);
-		void	_warpReadSpan(int64_t x, int64_t y, int64_t dx, int64_t dy, int length, HiColor* pOutput, const int* pCoverage,
+		bool	_warpReadSpan(int64_t x, int64_t y, int64_t dx, int64_t dy, int length, HiColor* pOutput, const int* pCoverage,
 								  uint8_t* pDirect = nullptr, CoordI directPos = { 0,0 }, uint8_t* pDrawn = nullptr);
 		int		_warpOpaqueAlpha(int a) const;
 		HiColor* _warpBuffer(int index, int length);
@@ -522,7 +542,21 @@ namespace wg
 		// Warps
 
 		WarpSetup					m_warp;
-		std::vector<WarpCell>		m_warpCells;
+		struct WarpRowFade				// Coverage of the vertices of the triangle being made into spans, see _addWarpSpans().
+		{
+			bool		bActive = false;
+			int64_t		row;			// At canvas column 0 of the row.
+			int64_t		step;			// From one column to the next.
+		};
+
+		WarpRowFade					m_warpRowFade;
+		std::vector<WarpTriangle>	m_warpTriangles;					// Triangles on the rows being drawn, and free entries.
+		std::vector<int>			m_warpFree;							// Entries of m_warpTriangles of triangles that have ended.
+		std::vector<int>			m_warpRowOrder;						// Triangles on the current row, by first pixel.
+		std::vector<int>			m_warpRowX;							// Their first pixels, in the same order, for sorting.
+		std::vector<int>			m_warpMerge;						// Room for merging them.
+		std::vector<WarpSpan>		m_warpSpans;						// Spans of the current row, the first m_nWarpSpans of them,
+		int							m_nWarpSpans = 0;					// the rest kept from earlier rows.
 		std::vector<SoftShapes::Run>	m_warpRuns;
 		std::vector<CoveragePixel>	m_warpPixels;
 		std::vector<int>			m_warpCoverage;

@@ -995,22 +995,28 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				srcH = params.source.h / 64.f;
 			}
 
+			// u and v are taken relative to the first vertex by the vertex shader, which is added
+			// back to the source offset, brought into the periods.
+
+			CoordSPX ref;
+			if (pWarpmap->vertexCount() > 0)
+				ref = { pWarpmap->vertexData()[0].u, pWarpmap->vertexData()[0].v };
+
+			spx uPeriod = pWarpmap->uPeriod(), vPeriod = pWarpmap->vPeriod();
+			spx refU = uPeriod > 0 ? ((ref.x % uPeriod) + uPeriod) % uPeriod : ref.x;
+			spx refV = vPeriod > 0 ? ((ref.y % vPeriod) + vPeriod) % vPeriod : ref.y;
+
 			int extrasOfs = int(pExtrasGL - m_pExtrasBuffer) / 4;
 
-			*pExtrasGL++ = GLfloat(dest.x);
-			*pExtrasGL++ = GLfloat(dest.y);
-			*pExtrasGL++ = GLfloat(pWarpmap->cellSize().w);
-			*pExtrasGL++ = pEdgemap ? GLfloat(pEdgemap->m_nbRenderSegments - 1) : 0.f;
-
-			*pExtrasGL++ = GLfloat(warpSize.w);
-			*pExtrasGL++ = GLfloat(warpSize.h);
 			*pExtrasGL++ = srcW;
 			*pExtrasGL++ = srcH;
+			*pExtrasGL++ = pEdgemap ? GLfloat(pEdgemap->m_nbRenderSegments - 1) : 0.f;
+			*pExtrasGL++ = 0.f;
 
-			*pExtrasGL++ = params.sourceOffset.x / 64.f;
-			*pExtrasGL++ = params.sourceOffset.y / 64.f;
-			*pExtrasGL++ = pWarpmap->uPeriod() / 64.f;
-			*pExtrasGL++ = pWarpmap->vPeriod() / 64.f;
+			*pExtrasGL++ = (params.sourceOffset.x + refU) / 64.f;
+			*pExtrasGL++ = (params.sourceOffset.y + refV) / 64.f;
+			*pExtrasGL++ = uPeriod / 64.f;
+			*pExtrasGL++ = vPeriod / 64.f;
 
 			if (pEdgemap)
 			{
@@ -1027,15 +1033,28 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				*pExtrasGL++ = 0.f;
 			}
 
-			*pExtrasGL++ = GLfloat(pWarpmap->cellSize().h);
-			*pExtrasGL++ = 0.f;
-			*pExtrasGL++ = 0.f;
-			*pExtrasGL++ = 0.f;
-
-			// Vertices, a quad for the part of each clip rectangle covered by the Warpmap.
+			// The mesh of the Warpmap is in its own vertex and index buffers, see GlWarpmap, drawn once
+			// for each part of a clip rectangle covered by the Warpmap, with that as scissor. The
+			// command is followed by offsets into the extras and colors, the tint, dest, u and v of
+			// the first vertex and the number of rectangles, then x, y, w, h of each.
 
 			int flatTintOfs = m_tintColorOfs >= 0 ? m_tintColorOfs : 0;		// Entry 0 is white.
-			int nVertices = 0;
+
+			m_objects.push_back(pWarpmap);
+			if (pEdgemap)
+				m_objects.push_back(pEdgemap);
+
+			*pCommandGL++ = pEdgemap ? CommandGL::WarpEdgemap : CommandGL::WarpBlit;
+			*pCommandGL++ = extrasOfs;
+			*pCommandGL++ = flatTintOfs;
+			*pCommandGL++ = m_tintOfs;
+			*pCommandGL++ = dest.x;
+			*pCommandGL++ = dest.y;
+			*pCommandGL++ = ref.x;
+			*pCommandGL++ = ref.y;
+
+			int* pNbPatches = pCommandGL++;
+			*pNbPatches = 0;
 
 			for (int i = 0; i < params.nRects; i++)
 			{
@@ -1044,29 +1063,12 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				if (patch.w <= 0 || patch.h <= 0)
 					continue;
 
-				CoordI corners[6] = {	{ patch.x, patch.y }, { patch.x + patch.w, patch.y }, { patch.x + patch.w, patch.y + patch.h },
-										{ patch.x, patch.y }, { patch.x + patch.w, patch.y + patch.h }, { patch.x, patch.y + patch.h } };
-
-				for (auto& corner : corners)
-				{
-					pVertexGL->coord = corner;
-					pVertexGL->uv = { 0.f, 0.f };
-					pVertexGL->colorsOfs = flatTintOfs;
-					pVertexGL->extrasOfs = extrasOfs;
-					pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
-					pVertexGL->colorstripOfs = { 0.f, 0.f };
-					pVertexGL++;
-				}
-
-				nVertices += 6;
+				*pCommandGL++ = patch.x;
+				*pCommandGL++ = patch.y;
+				*pCommandGL++ = patch.w;
+				*pCommandGL++ = patch.h;
+				(*pNbPatches)++;
 			}
-
-			m_objects.push_back(pWarpmap);
-			if (pEdgemap)
-				m_objects.push_back(pEdgemap);
-
-			*pCommandGL++ = pEdgemap ? CommandGL::WarpEdgemap : CommandGL::WarpBlit;
-			*pCommandGL++ = nVertices;
 			break;
 		}
 
@@ -2002,7 +2004,7 @@ void GlBackend::beginSession( CanvasRef canvasRef, Surface * pCanvasSurface, int
 		+ pInfo->nLineCoords/2 * GpuShapes::c_lineEntries * 4		// Lines with caps take the most.
 		+ pInfo->nRects * 8			// This is margin for blits (+8) and  subpixel fills (+4).
 		+ pInfo->nEdgemapDraws * 8
-		+ pInfo->nWarpDraws * 20
+		+ pInfo->nWarpDraws * 12
 		+ GpuShapes::maxSessionEntries(*pInfo) * 4;
 
 	m_pExtrasBuffer = new GLfloat[nExtrasFloats];
@@ -2018,7 +2020,7 @@ void GlBackend::beginSession( CanvasRef canvasRef, Surface * pCanvasSurface, int
 		+ (pInfo->nLines * 3 + pInfo->nLineClipRects * 4) * 2		// Lines with and without caps in separate commands.
 		+ pInfo->nEdgemapDraws * 3
 		+ pInfo->nShapeDraws * 2
-		+ pInfo->nWarpDraws * 2
+		+ pInfo->nWarpDraws * 10 + pInfo->nRects * 4		// Warps with their clip rectangles.
 		+ pInfo->nSetCanvas];
 
 	m_commandQueueSize = 0;
@@ -2377,10 +2379,8 @@ void GlBackend::endSession()
 			{
 				auto pWarpmap = static_cast<GlWarpmap*>(m_objects[objectOfs++]);
 
-				glActiveTexture(GL_TEXTURE5);
-				glBindTexture(GL_TEXTURE_BUFFER, pWarpmap->m_textureId);
-
 				GLuint prog;
+				const WarpUniforms* pUniforms;
 
 				if (cmd == CommandGL::WarpEdgemap)
 				{
@@ -2391,6 +2391,7 @@ void GlBackend::endSession()
 					glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, pEdgemap->m_bufferId);
 
 					prog = m_warpEdgemapProg[m_bActiveCanvasIsA8];
+					pUniforms = &m_warpEdgemapUniforms[m_bActiveCanvasIsA8];
 					glUseProgram(prog);
 				}
 				else
@@ -2398,6 +2399,7 @@ void GlBackend::endSession()
 					GlSurface* pSurf = m_pActiveBlitSource;
 
 					prog = m_warpBlitProg[m_bActiveCanvasIsA8];
+					pUniforms = &m_warpBlitUniforms[m_bActiveCanvasIsA8];
 					glUseProgram(prog);
 
 					int sourceKind = 0;
@@ -2409,22 +2411,58 @@ void GlBackend::endSession()
 					else if (pSurf->pixelFormat() == PixelFormat::Alpha_8)
 						sourceKind = 1;
 
-					glUniform1i(glGetUniformLocation(prog, "sourceKind"), sourceKind);
+					glUniform1i(pUniforms->sourceKind, sourceKind);
 
 					// A surface that isn't tiling is read as if the edge pixels of the source rectangle
 					// continued outside it, see WG_GL_WARP_SAMPLE.
 
 					float clampInset = pSurf->isTiling() ? 0.f : pSurf->sampleMethod() == SampleMethod::Bilinear ? 0.5f : 1.f / 256;
-					glUniform1f(glGetUniformLocation(prog, "clampInset"), clampInset);
+					glUniform1f(pUniforms->clampInset, clampInset);
+
+					// Positions exactly on a border between texels take the texel after it, as in
+					// SoftBackend, rather than either one by how floats round, see WG_GL_WARP_SAMPLE.
+
+					glUniform1f(pUniforms->nearestBias, pSurf->sampleMethod() == SampleMethod::Nearest ? 1.f / 32768 : 0.f);
 				}
 
 				glActiveTexture(GL_TEXTURE0);
 
-				int nVertices = *pCmd++;
-				_setPartialCoverage(true);
+				int extrasOfs = *pCmd++;
+				int colorsOfs = *pCmd++;
+				int tintOfs = *pCmd++;
+				int destX = *pCmd++;
+				int destY = *pCmd++;
+				int refU = *pCmd++;
+				int refV = *pCmd++;
+				int nPatches = *pCmd++;
 
-				glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
-				vertexOfs += nVertices;
+				glUniform2f(pUniforms->dest, GLfloat(destX), GLfloat(destY));
+				glUniform1i(pUniforms->extrasOfs, extrasOfs);
+				glUniform1i(pUniforms->colorsOfs, colorsOfs);
+				glUniform1i(pUniforms->tintOfs, tintOfs);
+				glUniform2i(pUniforms->ref, refU, refV);
+
+				_setPartialCoverage(true);
+				glBindVertexArray(pWarpmap->m_vertexArrayId);
+
+				for (int i = 0; i < nPatches; i++)
+				{
+					int x = *pCmd++;
+					int y = *pCmd++;
+					int w = *pCmd++;
+					int h = *pCmd++;
+
+					// Scissor is in rows from the bottom, which the default canvas is drawn upside down to.
+
+					if (m_canvasUBO.yMul < 0)
+						y = m_activeCanvasSize.h - (y + h);
+
+					glScissor(x, y, w, h);
+					glDrawElements(GL_TRIANGLES, pWarpmap->triangleCount() * 3, GL_UNSIGNED_SHORT, nullptr);
+				}
+
+				glScissor(0, 0, m_activeCanvasSize.w, m_activeCanvasSize.h);
+				glBindVertexArray(m_vertexArrayId);
 				break;
 			}
 
@@ -2841,14 +2879,26 @@ void GlBackend::_loadPrograms(int uboBindingPoint)
 		LOG_INIT_GLERROR(glGetError());
 	}
 
-	// Create and init Warp shaders. Texture unit 4 is used for the edgemap buffer and 5 for the warpmap buffer.
+	// Create and init Warp shaders. Texture unit 4 is used for the edgemap buffer.
+
+	auto warpUniforms = [](GLuint progId, WarpUniforms& uniforms)
+	{
+		uniforms.clampInset = glGetUniformLocation(progId, "clampInset");
+		uniforms.nearestBias = glGetUniformLocation(progId, "nearestBias");
+		uniforms.colorsOfs = glGetUniformLocation(progId, "warpColorsOfs");
+		uniforms.dest = glGetUniformLocation(progId, "warpDest");
+		uniforms.extrasOfs = glGetUniformLocation(progId, "warpExtrasOfs");
+		uniforms.ref = glGetUniformLocation(progId, "warpRef");
+		uniforms.sourceKind = glGetUniformLocation(progId, "sourceKind");
+		uniforms.tintOfs = glGetUniformLocation(progId, "warpTintOfs");
+	};
 
 	for (int i = 0; i < 2; i++)
 	{
 		GLuint progId = _loadOrCompileProgram(programNb++, warpVertexShader, i == 0 ? warpEdgemapFragmentShader : warpEdgemapFragmentShader_A8);
 		_setUniforms(progId, uboBindingPoint);
 		glUniform1i(glGetUniformLocation(progId, "edgemapId"), 4);
-		glUniform1i(glGetUniformLocation(progId, "warpmapId"), 5);
+		warpUniforms(progId, m_warpEdgemapUniforms[i]);
 		m_warpEdgemapProg[i] = progId;
 		LOG_INIT_GLERROR(glGetError());
 	}
@@ -2857,7 +2907,7 @@ void GlBackend::_loadPrograms(int uboBindingPoint)
 	{
 		GLuint progId = _loadOrCompileProgram(programNb++, warpVertexShader, i == 0 ? warpBlitFragmentShader : warpBlitFragmentShader_A8);
 		_setUniforms(progId, uboBindingPoint);
-		glUniform1i(glGetUniformLocation(progId, "warpmapId"), 5);
+		warpUniforms(progId, m_warpBlitUniforms[i]);
 		m_warpBlitProg[i] = progId;
 		LOG_INIT_GLERROR(glGetError());
 	}

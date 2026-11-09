@@ -42,37 +42,37 @@ namespace wg
 		return p;
 	}
 
-	StreamWarpmap_p StreamWarpmap::create( StreamEncoder * pEncoder, const Blueprint& bp, const CoordSPX * pNodes, int pitch )
+	StreamWarpmap_p StreamWarpmap::create( StreamEncoder * pEncoder, const Blueprint& bp, const Vertex * pVertices, const Triangle * pTriangles )
 	{
-		if (!pEncoder || !_validateBlueprint(bp) || !pNodes)
+		if (!pEncoder || !pVertices || !pTriangles || !_validateBlueprint(bp, pTriangles))
 			return nullptr;
 
-		auto p = StreamWarpmap_p(new StreamWarpmap(pEncoder, bp, pNodes, pitch));
+		auto p = StreamWarpmap_p(new StreamWarpmap(pEncoder, bp, pVertices, pTriangles));
 		pEncoder->flush();
 		return p;
 	}
 
 	//____ constructor ________________________________________________________
 	/*
-		The receiving end creates its Warpmap with default nodes. We send ours even when they are
-		the defaults, so that it gets exactly ours.
+		The receiving end creates its Warpmap with default content. We send ours even when it is
+		the default, so that it gets exactly ours.
 	*/
 
-	StreamWarpmap::StreamWarpmap( StreamEncoder * pEncoder, const Blueprint& bp, const CoordSPX * pNodes, int pitch ) : Warpmap(bp, pNodes, pitch)
+	StreamWarpmap::StreamWarpmap( StreamEncoder * pEncoder, const Blueprint& bp, const Vertex * pVertices, const Triangle * pTriangles ) : Warpmap(bp, pVertices, pTriangles)
 	{
 		m_pEncoder = pEncoder;
 		m_inStreamId = pEncoder->allocObjectId();
-		m_pCompressor = NodeCompressor::create();
+		m_pCompressor = MeshCompressor::create();
 
 		auto& encoder = * m_pEncoder;
 
-		encoder << GfxStream::Header{ GfxStream::ChunkId::CreateWarpmap, 0, 14 };
+		encoder << GfxStream::Header{ GfxStream::ChunkId::CreateWarpmap, 0, 18 };
 		encoder << m_inStreamId;
 		encoder << m_size;
-		encoder << (uint16_t) m_cellSize.w;
-		encoder << (uint16_t) m_cellSize.h;
+		encoder << (int32_t) m_nVertices;
+		encoder << (int32_t) m_nTriangles;
 
-		_nodesUpdated({ 0, 0, m_nodes.w, m_nodes.h });
+		_updated(0, m_nVertices, 0, m_nTriangles);
 	}
 
 	//____ destructor _________________________________________________________
@@ -95,49 +95,80 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ _nodesUpdated() ____________________________________________________
+	//____ _updated() _________________________________________________________
 	/*
-		Sends the region and periods in a WarpmapUpdate, followed by WarpmapNodes chunks with the
-		nodes compressed. Rows narrower than the Warpmap are gathered first. Periods only change
-		together with all nodes, so the receiver applies them together.
+		Sends the ranges and periods in a WarpmapUpdate, followed by WarpmapVertices and
+		WarpmapTriangles chunks with the content compressed. Vertices are sent as sequences of all
+		x, then all y, u and v, w if any of them has a weight other than weightOne and coverage if any
+		has a coverage other than coverageOne, so that MeshCompressor predicts each from earlier
+		values of its own. Triangles likewise as all a,
+		then all b and c.
 	*/
 
-	void StreamWarpmap::_nodesUpdated( const RectI& region )
+	void StreamWarpmap::_updated( int firstVertex, int nVertices, int firstTriangle, int nTriangles )
 	{
-		if (region.w <= 0 || region.h <= 0)
-			return;
-
 		auto& encoder = * m_pEncoder;
 
-		encoder << GfxStream::Header{ GfxStream::ChunkId::WarpmapUpdate, 0, 18 };
+		bool bWeights = false, bCoverage = false;
+		for (int i = 0; i < nVertices; i++)
+		{
+			bWeights |= m_pVertices[firstVertex + i].w != weightOne;
+			bCoverage |= m_pVertices[firstVertex + i].coverage != coverageOne;
+		}
+
+		encoder << GfxStream::Header{ GfxStream::ChunkId::WarpmapUpdate, 0, 28 };
 		encoder << m_inStreamId;
-		encoder << (uint16_t) region.x;
-		encoder << (uint16_t) region.y;
-		encoder << (uint16_t) region.w;
-		encoder << (uint16_t) region.h;
+		encoder << (uint16_t) ((bWeights ? GfxStream::WarpmapFlags::Weights : 0) | (bCoverage ? GfxStream::WarpmapFlags::Coverage : 0));
+		encoder << (int32_t) firstVertex;
+		encoder << (int32_t) nVertices;
+		encoder << (int32_t) firstTriangle;
+		encoder << (int32_t) nTriangles;
 		encoder << (int32_t) m_uPeriod;
 		encoder << (int32_t) m_vPeriod;
 
-		const CoordSPX* pBeg = m_pNodes + region.y * m_nodes.w + region.x;
-		int nNodes = region.w * region.h;
-		int bytes = 0;
-
-		if (region.w != m_nodes.w)
+		if (nVertices > 0)
 		{
-			bytes = nNodes * sizeof(CoordSPX);
-			auto pGathered = (CoordSPX*) GfxBase::memStackAlloc(bytes);
+			const int sequences = 4 + (bWeights ? 1 : 0) + (bCoverage ? 1 : 0);
+			int bytes = nVertices * sequences * sizeof(int32_t);
+			auto pValues = (int32_t*) GfxBase::memStackAlloc(bytes);
 
-			for (int row = 0; row < region.h; row++)
-				std::memcpy(pGathered + row * region.w, pBeg + row * m_nodes.w, region.w * sizeof(CoordSPX));
+			for (int i = 0; i < nVertices; i++)
+			{
+				const Vertex& v = m_pVertices[firstVertex + i];
+				pValues[i] = v.x;
+				pValues[nVertices + i] = v.y;
+				pValues[nVertices * 2 + i] = v.u;
+				pValues[nVertices * 3 + i] = v.v;
+				if (bWeights)
+					pValues[nVertices * 4 + i] = v.w;
+				if (bCoverage)
+					pValues[nVertices * (bWeights ? 5 : 4) + i] = v.coverage;
+			}
 
-			pBeg = pGathered;
+			m_pCompressor->setSequences(sequences);
+			StreamBackend::_compressSplitAndEncode(m_pEncoder, GfxStream::ChunkId::WarpmapVertices, m_inStreamId, m_pCompressor, pValues, pValues + nVertices * sequences);
+
+			GfxBase::memStackFree(bytes);
 		}
 
-		m_pCompressor->setRowLength(region.w);
-		StreamBackend::_compressSplitAndEncode(m_pEncoder, GfxStream::ChunkId::WarpmapNodes, m_inStreamId, m_pCompressor, pBeg, pBeg + nNodes);
+		if (nTriangles > 0)
+		{
+			int bytes = nTriangles * 3 * sizeof(int32_t);
+			auto pValues = (int32_t*) GfxBase::memStackAlloc(bytes);
 
-		if (bytes > 0)
+			for (int i = 0; i < nTriangles; i++)
+			{
+				const Triangle& t = m_pTriangles[firstTriangle + i];
+				pValues[i] = t.a;
+				pValues[nTriangles + i] = t.b;
+				pValues[nTriangles * 2 + i] = t.c;
+			}
+
+			m_pCompressor->setSequences(3);
+			StreamBackend::_compressSplitAndEncode(m_pEncoder, GfxStream::ChunkId::WarpmapTriangles, m_inStreamId, m_pCompressor, pValues, pValues + nTriangles * 3);
+
 			GfxBase::memStackFree(bytes);
+		}
 	}
 
 } // namespace wg

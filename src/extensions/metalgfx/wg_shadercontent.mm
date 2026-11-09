@@ -2642,20 +2642,23 @@ fragment FragOutput shapeTintmapFragmentShader_A8(ShapeFragInput in [[stage_in]]
 //____ Warps _______________________________________________________________
 //
 // Warps (Command::WarpBlit and WarpDrawEdgemap), see Warpmap for the definition they follow.
-// Each pixel finds the cell of the Warpmap it is in and interpolates the position in the source
-// at its center, and how fast that changes along x and y of the canvas. Coverage is worked out
-// from those, taking each border of the source and each edge of an edgemap as straight over the
-// pixel. Extras of a warp, five entries:
+// The triangles of the Warpmap are drawn, and each pixel gets the position in the source at its
+// center from the triangle that draws it, and how fast that changes along x and y of the canvas.
+// Coverage is worked out from those, taking each border of the source and each edge of an
+// edgemap as straight over the pixel. Extras of a warp, three entries:
 //
-//   0: position of Warpmap on canvas, cell width, number of edges.
-//   1: size of Warpmap, size of source in pixels.
-//   2: source offset in pixels of the source, periods in pixels of the source (0 if none).
-//   3: edgemaps: edges per column, offsets of flat colors, tint table and raw samples in the
+//   0: size of source in pixels, number of edges, 0.
+//   1: source offset plus u and v of the first vertex (brought into the periods) in pixels of
+//      the source, periods in pixels of the source (0 if none).
+//   2: edgemaps: edges per column, offsets of flat colors, tint table and raw samples in the
 //      edgemap buffer. Blits: position of source rectangle in the surface, how far inside its
 //      edges positions are kept (0 for a tiling surface, see warpBlitCoverage()).
-//   4: cell height.
 //
-// The cells of the Warpmap are in its buffer, see MetalWarpmap.
+// The mesh of the Warpmap is in its buffer, see MetalWarpmap. The vertex shader reads its
+// vertices, drawn with its triangles as index buffer, which makes vertex_id the index of the
+// vertex. u * w, v * w and w go on to the fragment shaders without perspective correction, so they
+// are linear over the canvas. u and v are relative to the first vertex, to keep the precision of
+// floats, and the weight is brought down to 1.0 for 65536.
 
 typedef struct
 {
@@ -2663,18 +2666,36 @@ typedef struct
 	float4	color;						// Tint color.
 	int		warpOfs [[flat]];			// Entry of warp in extras buffer.
 	int		tintOfs [[flat]];			// Device tint block in color buffer, -1 for none.
+	float3	uvw [[center_no_perspective]];
+	float	coverage [[center_no_perspective]];		// Of the vertices, multiplies the coverage of the pixel.
 } WarpFragInput;
+
+typedef struct					// The vertices of a Warpmap as they are, see MetalWarpmap.
+{
+	int		x, y;				// Position in spx of the Warpmap.
+	int		u, v;				// Position in spx of the source.
+	int		w;					// Weight, 65536 for 1.0.
+	int		coverage;			// Coverage, 65536 for full.
+} WarpVertex;
+
+typedef struct					// Set for each warp, see MetalBackend::WarpInfo.
+{
+	float	destX, destY;		// Position of the Warpmap on the canvas, in pixels.
+	int		extrasOfs;			// Entry of warp in extras buffer.
+	int		tintOfs;			// Device tint block in color buffer, -1 for none.
+	int		refU, refV;			// u and v of the first vertex, in spx.
+} WarpInfo;
 
 vertex WarpFragInput
 warpVertexShader(uint vertexID [[vertex_id]],
-				 constant Vertex *pVertices [[buffer(0)]],
-				 constant vector_float4  *pColor [[buffer(1)]],
-				 constant vector_float4  *pExtras [[buffer(2)]],
-				 constant Uniform * pUniform[[buffer(3)]])
+				 constant Uniform * pUniform [[buffer(3)]],
+				 device const WarpVertex * pVertices [[buffer(4)]],
+				 constant WarpInfo & info [[buffer(5)]])
 {
 	WarpFragInput out;
 
-	float2 pos = (vector_float2) pVertices[vertexID].coord.xy;
+	WarpVertex v = pVertices[vertexID];
+	float2 pos = float2(float(v.x), float(v.y)) / 64.f + float2(info.destX, info.destY);
 
 	vector_float2 canvasSize = pUniform->canvasDim;
 
@@ -2683,8 +2704,12 @@ warpVertexShader(uint vertexID [[vertex_id]],
 	out.position.y = (pUniform->canvasYOfs + pUniform->canvasYMul*pos.y)*2 / canvasSize.y - 1.0;
 
 	out.color = pUniform->flatTint;
-	out.warpOfs = pVertices[vertexID].extrasOfs;
-	out.tintOfs = pVertices[vertexID].tintOfs;
+	out.warpOfs = info.extrasOfs;
+	out.tintOfs = info.tintOfs;
+
+	float w = float(v.w) / 65536.f;
+	out.uvw = float3(float2(float(v.u - info.refU), float(v.v - info.refV)) * (w / 64.f), w);
+	out.coverage = float(v.coverage) / 65536.f;
 	return out;
 }
 
@@ -2754,37 +2779,31 @@ inline float warpAxisCoverage(float s, float2 g, float size, float period)
 	return min(c, 1.f);
 }
 
-// Position in the source of the pixel center p, wrapped on periodic axes, and how it changes
-// along x (dx) and y (dy) of the canvas. The cell is found with integers, as a division in
-// floats can miss a whole number.
+// Position in the source at the center of the pixel, wrapped on periodic axes, and how it changes
+// along x (dx) and y (dy) of the canvas, from u * w, v * w and w (uvw), which are linear over the
+// canvas, so that their derivatives are exact. A pixel with its center beyond the horizon is
+// discarded. Must be called before anything else that can discard, for the derivatives.
 
-inline float2 warpPosition(constant float4 * pExtras, int ofs, constant float4 * pWarpmap, float2 p, thread float2& dx, thread float2& dy)
+inline float2 warpPosition(constant float4 * pExtras, int ofs, float3 uvw, thread float2& dx, thread float2& dy)
 {
-	float4 e0 = pExtras[ofs];
+	float3 gx = dfdx(uvw);
+	float3 gy = dfdy(uvw);
+	float w = uvw.z;
+
+	if( w <= 0.f )
+		discard_fragment();
+
+	float2 uv = uvw.xy / w;
+	dx = (gx.xy - uv * gx.z) / w;
+	dy = (gy.xy - uv * gy.z) / w;
+
 	float4 e1 = pExtras[ofs + 1];
-	float4 e2 = pExtras[ofs + 2];
+	float2 s = uv + e1.xy;
 
-	float2 q = p - e0.xy;
-	int2 cellSize = int2(int(e0.z), int(pExtras[ofs + 4].x));
-	int2 cells = (int2(e1.xy) + cellSize - 1) / cellSize;
-	int2 cell = clamp(int2(floor(max(q, float2(0.f)))) / cellSize, int2(0), cells - 1);
-	float2 c0 = float2(cell * cellSize);
-	float2 c1 = min(c0 + float2(cellSize), e1.xy);
-	float2 f = (q - c0) / (c1 - c0);
-
-	int i = (cell.y * cells.x + cell.x) * 2;
-	float4 top = pWarpmap[i];
-	float4 bottom = pWarpmap[i + 1];
-
-	float2 u = mix(mix(top.xy, top.zw, f.x), mix(bottom.xy, bottom.zw, f.x), f.y);
-	float2 s = u + e2.xy;
-	dx = mix(top.zw - top.xy, bottom.zw - bottom.xy, f.y) / (c1.x - c0.x);
-	dy = mix(bottom.xy - top.xy, bottom.zw - top.zw, f.x) / (c1.y - c0.y);
-
-	if( e2.z > 0.f )
-		s.x -= e2.z * floor(s.x / e2.z);
-	if( e2.w > 0.f )
-		s.y -= e2.w * floor(s.y / e2.w);
+	if( e1.z > 0.f )
+		s.x -= e1.z * floor(s.x / e1.z);
+	if( e1.w > 0.f )
+		s.y -= e1.w * floor(s.y / e1.w);
 
 	return s;
 }
@@ -2798,34 +2817,33 @@ inline float2 warpPosition(constant float4 * pExtras, int ofs, constant float4 *
 // source are measured, kept decreasing as an edge is pushed down to the edges above it, and
 // their differences are the parts of the segments.
 
-inline float warpSegmentParts(constant float4 * pExtras, int ofs, constant float4 * pEdgemap, float2 s, float2 dx, float2 dy, thread float * parts)
+inline float warpSegmentParts(constant float4 * pExtras, int ofs, constant float4 * pEdgemap, float2 s, float2 dx, float2 dy, float fade, thread float * parts)
 {
 	float4 e0 = pExtras[ofs];
 	float4 e1 = pExtras[ofs + 1];
 	float4 e2 = pExtras[ofs + 2];
-	float4 e3 = pExtras[ofs + 3];
 
-	int nEdges = int(e0.w);
+	int nEdges = int(e0.z);
 
 	for( int e = 0 ; e <= nEdges ; e++ )
 		parts[e] = 0.f;
 
-	float2 size = e1.zw;
-	float2 period = e2.zw;
+	float2 size = e0.xy;
+	float2 period = e1.zw;
 	float2 gx = float2(dx.x, dy.x);
 	float2 gy = float2(dx.y, dy.y);
 
-	float covX = warpAxisCoverage(s.x, gx, size.x, period.x);
+	float covX = warpAxisCoverage(s.x, gx, size.x, period.x) * saturate(fade);
 	if( covX <= 0.f )
 		return 0.f;
 
-	int pitch = int(e3.x);
+	int pitch = int(e2.x);
 
 	float ex = warpNearestCopy(s, size, period).x;
 
 	int column = clamp(int(floor(ex)), 0, int(size.x) - 1);
 	float frac = ex - float(column);
-	int base = int(e3.w) + column * pitch;
+	int base = int(e2.w) + column * pitch;
 
 	float insideY = warpInside(size.y, period.y);
 	float ext = 0.5f * (abs(gy.x) + abs(gy.y));
@@ -2879,22 +2897,21 @@ fragment FragOutput warpEdgemapFragmentShader(WarpFragInput in [[stage_in]],
 											  constant float4 * pColor [[buffer(0)]],
 											  constant float4 * pExtras [[buffer(1)]],
 											  constant float4 * pEdgemap [[buffer(3)]],
-											  constant float & morphFactor [[buffer(5)]],
-											  constant float4 * pWarpmap [[buffer(6)]])
+											  constant float & morphFactor [[buffer(5)]])
 {
 	float2 dx, dy;
-	float2 s = warpPosition(pExtras, in.warpOfs, pWarpmap, in.position.xy, dx, dy);
+	float2 s = warpPosition(pExtras, in.warpOfs, in.uvw, dx, dy);
 
 	float parts[16];						// MetalBackend::c_maxSegments.
-	float covered = warpSegmentParts(pExtras, in.warpOfs, pEdgemap, s, dx, dy, parts);
+	float covered = warpSegmentParts(pExtras, in.warpOfs, pEdgemap, s, dx, dy, in.coverage, parts);
 	if( covered < 1.f / 256.f )
 		discard_fragment();
 
-	int nEdges = int(pExtras[in.warpOfs].w);
-	float4 e3 = pExtras[in.warpOfs + 3];
-	int flatColorsOfs = int(e3.y);
-	int tintTableOfs = int(e3.z);
-	float2 sc = warpNearestCopy(s, pExtras[in.warpOfs + 1].zw, pExtras[in.warpOfs + 2].zw);
+	int nEdges = int(pExtras[in.warpOfs].z);
+	float4 e2 = pExtras[in.warpOfs + 2];
+	int flatColorsOfs = int(e2.y);
+	int tintTableOfs = int(e2.z);
+	float2 sc = warpNearestCopy(s, pExtras[in.warpOfs].xy, pExtras[in.warpOfs + 1].zw);
 
 	float4 tint = premul((in.tintOfs >= 0 ? evalTint(pColor, in.tintOfs, in.position.xy) : float4(1.f)) * in.color);
 
@@ -2922,22 +2939,21 @@ fragment FragOutput warpEdgemapFragmentShader_A8(WarpFragInput in [[stage_in]],
 												 constant float4 * pColor [[buffer(0)]],
 												 constant float4 * pExtras [[buffer(1)]],
 												 constant float4 * pEdgemap [[buffer(3)]],
-												 constant float & morphFactor [[buffer(5)]],
-												 constant float4 * pWarpmap [[buffer(6)]])
+												 constant float & morphFactor [[buffer(5)]])
 {
 	float2 dx, dy;
-	float2 s = warpPosition(pExtras, in.warpOfs, pWarpmap, in.position.xy, dx, dy);
+	float2 s = warpPosition(pExtras, in.warpOfs, in.uvw, dx, dy);
 
 	float parts[16];						// MetalBackend::c_maxSegments.
-	float covered = warpSegmentParts(pExtras, in.warpOfs, pEdgemap, s, dx, dy, parts);
+	float covered = warpSegmentParts(pExtras, in.warpOfs, pEdgemap, s, dx, dy, in.coverage, parts);
 	if( covered < 1.f / 256.f )
 		discard_fragment();
 
-	int nEdges = int(pExtras[in.warpOfs].w);
-	float4 e3 = pExtras[in.warpOfs + 3];
-	int flatColorsOfs = int(e3.y);
-	int tintTableOfs = int(e3.z);
-	float2 sc = warpNearestCopy(s, pExtras[in.warpOfs + 1].zw, pExtras[in.warpOfs + 2].zw);
+	int nEdges = int(pExtras[in.warpOfs].z);
+	float4 e2 = pExtras[in.warpOfs + 2];
+	int flatColorsOfs = int(e2.y);
+	int tintTableOfs = int(e2.z);
+	float2 sc = warpNearestCopy(s, pExtras[in.warpOfs].xy, pExtras[in.warpOfs + 1].zw);
 
 	float acc = 0.f;
 
@@ -2962,24 +2978,24 @@ fragment FragOutput warpEdgemapFragmentShader_A8(WarpFragInput in [[stage_in]],
 
 // Part of the pixel covered by the source, the position in the surface to read in s.
 
-inline float warpBlitCoverage(constant float4 * pExtras, int ofs, constant float4 * pWarpmap, float2 p, thread float2& s, thread float2& dx, thread float2& dy)
+inline float warpBlitCoverage(constant float4 * pExtras, int ofs, float3 uvw, float fade, thread float2& s, thread float2& dx, thread float2& dy)
 {
-	s = warpPosition(pExtras, ofs, pWarpmap, p, dx, dy);
+	s = warpPosition(pExtras, ofs, uvw, dx, dy);
 
+	float4 e0 = pExtras[ofs];
 	float4 e1 = pExtras[ofs + 1];
 	float4 e2 = pExtras[ofs + 2];
-	float4 e3 = pExtras[ofs + 3];
 
-	float cov = warpAxisCoverage(s.x, float2(dx.x, dy.x), e1.z, e2.z);
+	float cov = warpAxisCoverage(s.x, float2(dx.x, dy.x), e0.x, e1.z) * saturate(fade);
 	if( cov > 0.f )
-		cov *= warpAxisCoverage(s.y, float2(dx.y, dy.y), e1.w, e2.w);
+		cov *= warpAxisCoverage(s.y, float2(dx.y, dy.y), e0.y, e1.w);
 
-	s = e3.xy + warpNearestCopy(s, e1.zw, e2.zw);
+	s = e2.xy + warpNearestCopy(s, e0.xy, e1.zw);
 
-	if( e3.z > 0.f )
+	if( e2.z > 0.f )
 	{
-		float2 center = e3.xy + 0.5f * e1.zw;
-		s = clamp(s, min(e3.xy + e3.z, center), max(e3.xy + e1.zw - e3.z, center));
+		float2 center = e2.xy + 0.5f * e0.xy;
+		s = clamp(s, min(e2.xy + e2.z, center), max(e2.xy + e0.xy - e2.z, center));
 	}
 
 	return cov;
@@ -3031,11 +3047,10 @@ fragment FragOutput warpBlitFragmentShader(WarpFragInput in [[stage_in]],
 										   constant float4 * pColor [[buffer(0)]],
 										   constant float4 * pExtras [[buffer(1)]],
 										   constant int & sourceKind [[buffer(4)]],
-										   constant float & morphFactor [[buffer(5)]],
-										   constant float4 * pWarpmap [[buffer(6)]])
+										   constant float & morphFactor [[buffer(5)]])
 {
 	float2 s, dx, dy;
-	float cov = warpBlitCoverage(pExtras, in.warpOfs, pWarpmap, in.position.xy, s, dx, dy);
+	float cov = warpBlitCoverage(pExtras, in.warpOfs, in.uvw, in.coverage, s, dx, dy);
 	if( cov < 1.f / 256.f )
 		discard_fragment();
 
@@ -3050,11 +3065,10 @@ fragment FragOutput warpBlitFragmentShader_A8(WarpFragInput in [[stage_in]],
 											  constant float4 * pColor [[buffer(0)]],
 											  constant float4 * pExtras [[buffer(1)]],
 											  constant int & sourceKind [[buffer(4)]],
-											  constant float & morphFactor [[buffer(5)]],
-											  constant float4 * pWarpmap [[buffer(6)]])
+											  constant float & morphFactor [[buffer(5)]])
 {
 	float2 s, dx, dy;
-	float cov = warpBlitCoverage(pExtras, in.warpOfs, pWarpmap, in.position.xy, s, dx, dy);
+	float cov = warpBlitCoverage(pExtras, in.warpOfs, in.uvw, in.coverage, s, dx, dy);
 	if( cov < 1.f / 256.f )
 		discard_fragment();
 
@@ -3070,11 +3084,10 @@ fragment FragOutput warpPaletteBlitFragmentShader(WarpFragInput in [[stage_in]],
 												  constant float4 * pColor [[buffer(0)]],
 												  constant float4 * pExtras [[buffer(1)]],
 												  constant int & sourceKind [[buffer(4)]],
-												  constant float & morphFactor [[buffer(5)]],
-												  constant float4 * pWarpmap [[buffer(6)]])
+												  constant float & morphFactor [[buffer(5)]])
 {
 	float2 s, dx, dy;
-	float cov = warpBlitCoverage(pExtras, in.warpOfs, pWarpmap, in.position.xy, s, dx, dy);
+	float cov = warpBlitCoverage(pExtras, in.warpOfs, in.uvw, in.coverage, s, dx, dy);
 	if( cov < 1.f / 256.f )
 		discard_fragment();
 
@@ -3090,11 +3103,10 @@ fragment FragOutput warpPaletteBlitFragmentShader_A8(WarpFragInput in [[stage_in
 													 constant float4 * pColor [[buffer(0)]],
 													 constant float4 * pExtras [[buffer(1)]],
 													 constant int & sourceKind [[buffer(4)]],
-													 constant float & morphFactor [[buffer(5)]],
-													 constant float4 * pWarpmap [[buffer(6)]])
+													 constant float & morphFactor [[buffer(5)]])
 {
 	float2 s, dx, dy;
-	float cov = warpBlitCoverage(pExtras, in.warpOfs, pWarpmap, in.position.xy, s, dx, dy);
+	float cov = warpBlitCoverage(pExtras, in.warpOfs, in.uvw, in.coverage, s, dx, dy);
 	if( cov < 1.f / 256.f )
 		discard_fragment();
 
