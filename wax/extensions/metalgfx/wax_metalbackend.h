@@ -29,6 +29,7 @@
 #include <wax_types.h>
 #include <wax_backend.h>
 #include <wax_gpushapes.h>
+#include <wax_gputools.h>
 #include <wax_tinttools.h>
 #include <wax_metalsurface.h>
 
@@ -185,8 +186,6 @@ namespace wax
 		void 			_setBlurMatrices( id<MTLRenderCommandEncoder> renderEncoder, spx radius, const float red[9], const float green[9], const float blue[9] );
 		void            _setBlitSource( id<MTLRenderCommandEncoder>, MetalSurface * pSurf);
 
-		void    _initTables();
-		float    _scaleThickness(float thickness, float slope);
 
 		const char *	_destFormatName( DestFormat format );
 		bool			_toDestFormat( PixelFormat format, ColorSpace colorSpace, DestFormat& destFormat );
@@ -228,7 +227,6 @@ namespace wax
 		const Transform* m_pTransformsBeg = nullptr;
 		const Transform* m_pTransformsEnd = nullptr;
 
-		float    m_lineThicknessTable[17];
 
 
 		//
@@ -314,16 +312,7 @@ namespace wax
 
 		std::vector<GpuShapes::Segment>	m_shapeSegments;		// Segments of shape being processed.
 
-		struct CappedLine
-		{
-			CoordSPX	begin;
-			CoordSPX	end;
-			spx			thickness;
-			uint16_t	caps;
-			HiColor		color;
-		};
-
-		std::vector<CappedLine>	m_cappedLines;		// Lines with caps of line command being processed.
+		std::vector<GpuTools::CappedLine>	m_cappedLines;		// Lines with caps of line command being processed.
 
 
 
