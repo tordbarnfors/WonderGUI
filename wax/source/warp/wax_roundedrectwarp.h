@@ -69,7 +69,7 @@ namespace wax
 			spx					bottomDistance = 0;				// Distance from the outline of the bottom of the source, positive outwards.
 			spx					cornerRadius = 0;				// Radius of the corners of the outline, at most half its shorter side.
 			Finalizer_p			finalizer = nullptr;
-			float				precision = 0.25f;				// Max position error in pixels.
+			float				precision = 1.f;				// Max position error in pixels, of outlines at most WarpGenerator::c_outlinePrecision.
 			RectSPX				rect;							// Mandatory. The outline, relative to the top-left corner of the Warpmap.
 			SizeI				size;							// Mandatory. Size of the Warpmap in pixels.
 			SizeSPX				sourceSize;						// Mandatory. Size of the source (edgemap or source rectangle) in spx.

@@ -34,7 +34,7 @@ extern "C" {
 
 	typedef struct wax_ballWarpBP_struct			// NOT BINARY EQUIVALENT!
 	{
-		float				precision;				// Max position error in pixels. 0 = default (0.25).
+		float				precision;				// Max position error in pixels, of outlines at most 0.5. 0 = default (1).
 		float				roll;					// Degrees the axis of the ball is turned clockwise on screen.
 		wax_sizeI			size;					// Mandatory. Size of the Warpmap in pixels, which the ball is centered in.
 		wax_sizeSPX			sourceSize;				// Mandatory. Size of the map (edgemap or source rectangle) in spx.

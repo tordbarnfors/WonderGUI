@@ -76,7 +76,7 @@ namespace wax
 			float				falloff = 0.f;					// Part of the radius, 0 to 1, over which magnification falls off to none at the rim.
 			Finalizer_p			finalizer = nullptr;
 			float				magnification = 2.f;			// In the middle of the lens, 1 or more.
-			float				precision = 0.25f;				// Max position error in pixels.
+			float				precision = 1.f;				// Max position error in pixels, of outlines at most WarpGenerator::c_outlinePrecision.
 			SizeI				size;							// Mandatory. Size of the Warpmap in pixels, which the lens is centered in.
 			SizeSPX				sourceSize;						// Mandatory. Size of the source under the lens in spx, normally size * 64.
 		};

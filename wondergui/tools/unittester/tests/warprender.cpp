@@ -1984,6 +1984,7 @@ bool WarpRenderTest::ballTest(std::ostream& output)
 		auto toC = [](const BallWarp::Blueprint& bp)
 		{
 			wax_ballWarpBP c = {};
+			c.precision = 0.25f;								// As the scene draws them.
 			c.size = { bp.size.w, bp.size.h };
 			c.sourceSize = { bp.sourceSize.w, bp.sourceSize.h };
 			c.tilt = bp.tilt;
@@ -2087,6 +2088,7 @@ bool WarpRenderTest::lensTest(std::ostream& output)
 		auto toC = [](const LensWarp::Blueprint& bp)
 		{
 			wax_lensWarpBP c = {};
+			c.precision = 0.25f;								// As the scene draws them.
 			c.falloff = bp.falloff;
 			c.magnification = bp.magnification == 2.f ? 0.f : bp.magnification;			// 0 for the default.
 			c.size = { bp.size.w, bp.size.h };

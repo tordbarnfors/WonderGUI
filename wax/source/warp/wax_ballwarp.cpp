@@ -127,8 +127,11 @@ namespace wax
 		nLon = int(std::clamp(std::ceil(2 * c_pi / std::max(angle, 1e-6)), 16.0, 4096.0));
 		nLat = int(std::clamp(std::ceil(c_pi / std::max(angle, 1e-6)), 8.0, 2048.0));
 
+		uint32_t longestArc;
+		const int outlinePoints = _outlinePoints(longestArc);
+
 		int nVertices, nTriangles;
-		_counts(nLon, nLat, nVertices, nTriangles);
+		_counts(nLon, nLat, outlinePoints, nVertices, nTriangles);
 
 		while ((nVertices > Warpmap::maxVertices || nTriangles > Warpmap::maxTriangles) && (nLon > 16 || nLat > 8))
 		{
@@ -137,7 +140,7 @@ namespace wax
 			else
 				nLat = std::max(8, nLat * 7 / 8);
 
-			_counts(nLon, nLat, nVertices, nTriangles);
+			_counts(nLon, nLat, outlinePoints, nVertices, nTriangles);
 		}
 	}
 
@@ -147,14 +150,40 @@ namespace wax
 		two for each crossing of a meridian or parallel with the outline, inside and outside it.
 		Triangles: two for each piece of the grid, one more for each crossing on its sides when cut,
 		and two for each part of the outline, between two crossings. The outline crosses each meridian
-		and each parallel at most twice.
+		and each parallel at most twice. Points added along the outline take two vertices each, like
+		crossings, and three triangles, one in the fan of their piece and two in the outline.
 	*/
 
-	void BallWarp::_counts(int nLon, int nLat, int& nVertices, int& nTriangles)
+	void BallWarp::_counts(int nLon, int nLat, int outlinePoints, int& nVertices, int& nTriangles)
 	{
 		int crossings = _maxCrossings(nLon, nLat);
-		nVertices = (nLon + 1) * (nLat + 1) + 2 * crossings;
-		nTriangles = 2 * nLon * nLat + 4 * crossings;
+		nVertices = (nLon + 1) * (nLat + 1) + 2 * crossings + 2 * outlinePoints;
+		nTriangles = 2 * nLon * nLat + 4 * crossings + 3 * outlinePoints;
+	}
+
+	//____ _outlinePoints() ___________________________________________________
+	/*
+		Between two crossings, the outline is a straight line, off by up to r * d^2 / 8 for an arc of
+		d radians, which pieces of the grid keep within about 0.7 times precision. Where that is more
+		than the outline precision, points are added, so that no arc is longer than sqrt(8 * p / r)
+		for outline precision p. The arcs between crossings add up to the whole outline, so that
+		takes at most 2 * pi / sqrt(8 * p / r) points.
+	*/
+
+	int BallWarp::_outlinePoints(uint32_t& longestArc) const
+	{
+		const double c_pi = 3.14159265358979323846;
+
+		longestArc = 0;
+		double r = std::max(radius() - 32, 0) / 64.0;
+		double outline = _outlinePrecision();
+
+		if (r < 1.0 || _piecePrecision() <= outline)
+			return 0;
+
+		double arc = std::sqrt(8 * outline / r);
+		longestArc = uint32_t(std::min(arc / (2 * c_pi), 0.25) * 4294967296.0);
+		return int(std::ceil(2 * c_pi / arc));
 	}
 
 	//____ _meshSize() ________________________________________________________
@@ -163,7 +192,9 @@ namespace wax
 	{
 		int nLon, nLat;
 		_layout(nLon, nLat);
-		_counts(nLon, nLat, nVertices, nTriangles);
+
+		uint32_t longestArc;
+		_counts(nLon, nLat, _outlinePoints(longestArc), nVertices, nTriangles);
 	}
 
 	//____ _generateMesh() ____________________________________________________
@@ -192,8 +223,11 @@ namespace wax
 		int nLon, nLat;
 		_layout(nLon, nLat);
 
+		uint32_t longestArc;
+		const int outlinePoints = _outlinePoints(longestArc);
+
 		int nVertices, nTriangles;
-		_counts(nLon, nLat, nVertices, nTriangles);
+		_counts(nLon, nLat, outlinePoints, nVertices, nTriangles);
 
 		const int columns = nLon + 1;
 		const int gridVertices = columns * (nLat + 1);
@@ -293,7 +327,7 @@ namespace wax
 		// in the source.
 
 		int nextVertex = gridVertices;
-		const int vertexEnd = gridVertices + 2 * maxCrossings;
+		const int vertexEnd = gridVertices + 2 * maxCrossings + 2 * outlinePoints;
 
 		auto addCrossing = [&](int64_t sinP, int64_t cosP, int64_t sinL, int64_t cosL, int64_t u, int64_t v)
 		{
@@ -392,8 +426,54 @@ namespace wax
 			}
 		}
 
-		for (int index = nextVertex; index < vertexEnd; index++)
-			pVertices[index] = { 0, 0, 0, 0 };
+		// A point of the outline at screen angle a (from the x axis towards y), for the piece of the
+		// grid between meridians i and i + 1: the point of the ball seen there half a pixel inside
+		// the outline, found by turning the screen position back by roll and tilt, its longitude
+		// kept next to those of the piece.
+
+		auto addOutlinePoint = [&](uint32_t a, int i)
+		{
+			if (nextVertex + 2 > vertexEnd)
+				return -1;
+
+			int32_t sinA, cosA;
+			_sinCos(a, sinA, cosA);
+			int64_t xs = (ratio * cosA) >> 30;
+			int64_t ys = (ratio * sinA) >> 30;
+
+			int64_t x = (xs * cosR + ys * sinR) >> 30;
+			int64_t y1 = (ys * cosR - xs * sinR) >> 30;
+			int64_t y = (y1 * cosT - z0 * sinT) >> 30;
+			int64_t zz = (y1 * sinT + z0 * cosT) >> 30;
+
+			int64_t flat;
+			int64_t lon = int64_t(int32_t(_polar(zz, x, &flat)));
+			int64_t lat = int64_t(int32_t(_polar(flat, -y)));
+
+			const int64_t c_turn = int64_t(1) << 32;
+			while (lon < pLon[i] - c_quarter)
+				lon += c_turn;
+			while (lon > pLon[i + 1] + c_quarter)
+				lon -= c_turn;
+
+			int index = nextVertex;
+			int64_t u = ((lon + c_half) * width) >> 32;
+			int64_t v = ((c_quarter - lat) * height) >> 31;
+			writeVertex(index, xs, ys, u, v, Warpmap::coverageOne);
+			writeVertex(index + 1, (xs * outward) >> 30, (ys * outward) >> 30, u, v, 0);
+			nextVertex += 2;
+			return index;
+		};
+
+		// Screen angle of a vertex, from where it was written.
+
+		auto screenAngle = [&](int index)
+		{
+			const Warpmap::Vertex& v = pVertices[index];
+			return _polar(int64_t(v.x) - (int64_t(m_size.w) << 5), int64_t(v.y) - (int64_t(m_size.h) << 5));
+		};
+
+
 
 		// Pieces of the grid, the part seen of each as a fan, and the outline between crossings as
 		// quads from inside it to outside it.
@@ -465,21 +545,58 @@ namespace wax
 				if (m < 3)
 					continue;
 
-				for (int k = 1; k + 1 < m; k++)
-					addTriangle(polygon[0], polygon[k], polygon[k + 1]);
+				// Points along the outline between leaving what is seen and coming back, kind 3,
+				// where the arc between the crossings is longer than longestArc.
+
+				const int c_maxPoints = 32;
+				int outline[8 + 8 * c_maxPoints], outlineKinds[8 + 8 * c_maxPoints];
+				int e = 0;
 
 				for (int k = 0; k < m; k++)
 				{
+					outline[e] = polygon[k];
+					outlineKinds[e++] = kinds[k];
+
 					int next = (k + 1) % m;
-					if (kinds[k] == 1 && kinds[next] == 2)
+					if (longestArc > 0 && kinds[k] == 1 && kinds[next] == 2)
 					{
-						int a = polygon[k], b = polygon[next];
+						uint32_t from = screenAngle(polygon[k]);
+						int64_t arc = int32_t(screenAngle(polygon[next]) - from);
+						int points = std::min(int((std::abs(arc) + longestArc - 1) / longestArc) - 1, c_maxPoints);
+
+						for (int q = 1; q <= points; q++)
+						{
+							int index = addOutlinePoint(uint32_t(int64_t(from) + arc * q / (points + 1)), i);
+							if (index < 0)
+								break;
+							outline[e] = index;
+							outlineKinds[e++] = 3;
+						}
+					}
+				}
+
+				for (int k = 1; k + 1 < e; k++)
+					addTriangle(outline[0], outline[k], outline[k + 1]);
+
+				// The outline from leaving to coming back, through the points between.
+
+				for (int k = 0; k < e; k++)
+				{
+					int next = (k + 1) % e;
+					bool bFrom = outlineKinds[k] == 1 || outlineKinds[k] == 3;
+					bool bTo = outlineKinds[next] == 2 || outlineKinds[next] == 3;
+					if (bFrom && bTo)
+					{
+						int a = outline[k], b = outline[next];
 						addTriangle(a, b, b + 1);
 						addTriangle(a, b + 1, a + 1);
 					}
 				}
 			}
 		}
+
+		for (int index = nextVertex; index < vertexEnd; index++)
+			pVertices[index] = { 0, 0, 0, 0 };
 
 		while (nextTriangle < nTriangles)
 			pTriangles[nextTriangle++] = { 0, 0, 0 };

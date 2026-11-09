@@ -255,7 +255,22 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   of a ring, 16 x 8 of a ball, 16 around a lens) and the outline becomes a visible polygon. Balls
   and lenses had fewer, but pieces over 22.5 degrees went over precision (2.4 times for a lens
   with falloff at precision 8), as the estimates assume small angles.
-- **Pieces are at least two pixels across.** Narrower ones are only needed where the source is
+- **Precision is 1 by default, and curved outlines are kept within half a pixel**
+  (`WarpGenerator::c_outlinePrecision`, `_outlinePrecision()`) whatever precision is set. Most
+  GUIs are expected to use 1, hardly any finer than 0.5, and 2 where performance is short. Drawn
+  side by side at 0.25 to 2, the inside of shapes off by 1-2 pixels hardly shows, while curved
+  outlines and edges along them off by as much show as corners. Precision also hardly changes the
+  time to draw on SoftBackend at these sizes, which goes by the pixels (1 -> 2 saves 0-15%), but
+  halves generating, memory and streaming. So: sectors of rings and rounded corners keep their
+  radii within half a pixel, which also keeps edges of edgemaps along them round; a lens has as
+  many pieces along its rim as that takes, rings inside it fewer by precision; a ball adds points
+  along its outline between the crossings of the grid (exact positions in the map found by turning
+  the point back onto the ball), at most 2 * pi / sqrt(8 * p / r) of them, reserved only where
+  the grid alone would leave the outline off by more. At precision 2: a 160 px ball 835 rather
+  than 748 triangles, a gauge 56 rather than 48, a lens with falloff about 1.9 times as many, as
+  its rim's pieces go for all its rings, with outlines off by at most 0.45 pixels rather than up
+  to 1.05.
+- **Pieces are at least two pixels across.**- **Pieces are at least two pixels across.** Narrower ones are only needed where the source is
   squeezed into each pixel (the rims of a cylinder seen almost to its sides at fine precision, a
   steep falloff of a lens), where they don't show, as the source is still sampled once per
   pixel, but cost a backend for each row they cross. Positions there can be off by more than

@@ -96,6 +96,14 @@ namespace wax
 
 		double			_piecePrecision() const;
 
+		// The same for the outline of a shape where it isn't a straight side, which is kept within
+		// c_outlinePrecision whatever precision is set, as an outline off by a pixel or more shows as
+		// corners where it should be round, while the inside of a shape off as much hardly shows.
+
+		double			_outlinePrecision() const;
+
+		static constexpr float c_outlinePrecision = 0.5f;
+
 		// Integer maths for _generateMesh(), which runs once per vertex and so should avoid floating
 		// point on hardware without an FPU. Set up factors with _factor() once per generate.
 

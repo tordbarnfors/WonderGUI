@@ -67,7 +67,7 @@ namespace wax
 		{
 			Axis				axis = Axis::X;					// Axis of the cylinder. X lies down, like a slot machine reel.
 			Finalizer_p			finalizer = nullptr;
-			float				precision = 0.25f;				// Max position error in pixels.
+			float				precision = 1.f;				// Max position error in pixels, of outlines at most WarpGenerator::c_outlinePrecision.
 			SizeI				size;							// Mandatory. Size of the Warpmap in pixels, which the cylinder fills.
 			SizeSPX				sourceSize;						// Mandatory. Size of the source (edgemap or source rectangle) in spx.
 			float				span = 120.f;					// Degrees of the cylinder seen, centered on the side facing the viewer. Above 0, below 180.

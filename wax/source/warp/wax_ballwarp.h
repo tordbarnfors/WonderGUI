@@ -66,7 +66,7 @@ namespace wax
 		struct Blueprint
 		{
 			Finalizer_p			finalizer = nullptr;
-			float				precision = 0.25f;				// Max position error in pixels.
+			float				precision = 1.f;				// Max position error in pixels, of outlines at most WarpGenerator::c_outlinePrecision.
 			float				roll = 0.f;						// Degrees the axis of the ball is turned clockwise on screen.
 			SizeI				size;							// Mandatory. Size of the Warpmap in pixels, which the ball is centered in.
 			SizeSPX				sourceSize;						// Mandatory. Size of the map (edgemap or source rectangle) in spx.
@@ -115,7 +115,13 @@ namespace wax
 
 		void		_layout( int& nLon, int& nLat ) const;
 		static int	_maxCrossings( int nLon, int nLat ) { return 2 * (nLon + 1) + 2 * (nLat - 1); }
-		static void	_counts( int nLon, int nLat, int& nVertices, int& nTriangles );
+		static void	_counts( int nLon, int nLat, int outlinePoints, int& nVertices, int& nTriangles );
+
+		// Points added along the outline between crossings, where the grid alone would leave it off
+		// by more than the outline precision: at most how many, and the longest arc between two
+		// points (1/2^32 of a turn), 0 for none.
+
+		int			_outlinePoints( uint32_t& longestArc ) const;
 
 		float		m_tilt;
 		float		m_roll;

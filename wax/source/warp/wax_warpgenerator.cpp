@@ -273,11 +273,15 @@ namespace wax
 		// times their length plus how far across they go, which favours quads about as long as
 		// they are across over thin slivers.
 
+		// Sectors keep the outer edge, which is the outline, within the outline precision.
+
+		const int nOutline = arcs(std::sqrt(8 * _outlinePrecision() / outer));
+
 		double best = -1.0;
 		for (int i = 1; i < 20; i++)
 		{
 			double share = i / 20.0;
-			int n = arcs(std::sqrt(8 * share * precision / outer));
+			int n = std::max(arcs(std::sqrt(8 * share * precision / outer)), nOutline);
 			double angle = quarter / n;
 
 			int m = parts(angle, std::max(precision - outer * angle * angle / 8, precision / 20));
@@ -623,6 +627,14 @@ namespace wax
 	double WarpGenerator::_piecePrecision() const
 	{
 		double precision = std::max(double(m_precision), 0.01);
+		return std::max(precision - 1.0 / 64, precision / 2);
+	}
+
+	//____ _outlinePrecision() ________________________________________________
+
+	double WarpGenerator::_outlinePrecision() const
+	{
+		double precision = std::clamp(double(m_precision), 0.01, double(c_outlinePrecision));
 		return std::max(precision - 1.0 / 64, precision / 2);
 	}
 

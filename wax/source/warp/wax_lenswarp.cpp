@@ -141,10 +141,11 @@ namespace wax
 		Positions are linear between rings, which is off by up to |s''| * d^2 / 8 pixels of the source
 		over d pixels, seen magnified by 1 / s', and turned along the diagonals of the pieces where s
 		changes fast, so rings are as close as keeps both within 0.7 of precision. Pieces along the
-		rim are off by up to r * a^2 / 8 for an angle a, kept within precision. Between the vertices
-		of a ring, positions are off by less, as the source follows the same circle, and the two
-		seldom add up at the same place, which keeps lenses within precision, as measured. Worked out in floating point when the settings change, a few
-		hundred operations, after which the vertices take only integers.
+		rim are off by up to r * a^2 / 8 for an angle a, kept within the outline precision. Between
+		the vertices of a ring, positions are off by less, as the source follows the same circle, and
+		the two seldom add up at the same place, which keeps lenses within precision, as measured.
+		Worked out in floating point when the settings change, a few hundred operations, after which
+		the vertices take only integers.
 	*/
 
 	void LensWarp::_calcLayout(Layout& layout) const
@@ -335,9 +336,13 @@ namespace wax
 		// pieces up to twice that long. Where the middle polygon is small enough for rings to be
 		// halved, a multiple of 2, 4 or 8, as many times as halving leaves at least 8.
 
-		pieceAngle = std::sqrt(8 * precision / std::max(outer, 1.0));
+		// Pieces along the rim keep the outline within the outline precision, and rings inside it
+		// can have fewer by the precision.
+
+		pieceAngle = std::sqrt(8 * _outlinePrecision() / std::max(outer, 1.0));
 		pieces = int(std::clamp(std::ceil(2 * c_pi / std::max(pieceAngle, 1e-6)), 16.0, 4096.0));
-		if (std::min(r0, inner) < outer / 4)
+		pieceAngle = 2 * c_pi / pieces;
+		if (std::min(r0, inner) < std::min(limit(1), outer))
 		{
 			int multiple = 1;
 			while (multiple < (1 << c_maxHalvings) && pieces / (multiple * 2) >= 8)

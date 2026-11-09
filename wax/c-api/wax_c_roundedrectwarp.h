@@ -36,7 +36,7 @@ extern "C" {
 	{
 		wax_spx				bottomDistance;			// Distance from the outline of the bottom of the source, positive outwards.
 		wax_spx				cornerRadius;			// Radius of the corners of the outline, at most half its shorter side.
-		float				precision;				// Max position error in pixels. 0 = default (0.25).
+		float				precision;				// Max position error in pixels, of outlines at most 0.5. 0 = default (1).
 		wax_rectSPX			rect;					// Mandatory. The outline, relative to the top-left corner of the Warpmap.
 		wax_sizeI			size;					// Mandatory. Size of the Warpmap in pixels.
 		wax_sizeSPX			sourceSize;				// Mandatory. Size of the source (edgemap or source rectangle) in spx.
