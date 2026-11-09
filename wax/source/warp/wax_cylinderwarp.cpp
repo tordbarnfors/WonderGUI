@@ -138,7 +138,8 @@ namespace wax
 		strips of c pixels is off by about c^2 / 8 times its second derivative, which in pixels on
 		screen is c^2 * sin(a) / (8 * R * cos(a)^2) at angle a, the most at its outer edge. So from
 		each rim inwards, each strip is as wide as keeps that within precision, at least two pixels and
-		at most 64. Narrower strips would only be needed where the source is squeezed into each pixel,
+		at most 64. Two strips left are made as wide as each other, and the middle is one strip
+		across where that keeps within precision. Narrower strips would only be needed where the source is squeezed into each pixel,
 		which more strips don't improve on screen, as it is still sampled once per pixel.
 		What is left in the middle, where strips can be the widest, goes to the middle strip, so finer
 		precision never gives fewer strips. Worked out in floating point, once per generate for a few
@@ -191,15 +192,41 @@ namespace wax
 		while (y > 0.0)
 		{
 			double c = std::clamp(width(y), lo, std::max(64.0, lo));
-			y = y - c < lo ? 0.0 : y - c;
+			if (y <= c)
+				y = 0.0;							// The rest in one strip.
+			else if (y - c < c)
+				y /= 2;								// The rest in two strips as wide as each other, rather than a narrow one last.
+			else
+				y -= c;
 			outwards.push_back(y);
 		}
 		std::reverse(outwards.begin(), outwards.end());
 
+		// One strip across the middle rather than one on each side of it, where that keeps within
+		// precision. The angle is asin(y / R), which bends the least in the middle, and the strip
+		// is off by the most between where the angle and the line through its ends differ, seen on
+		// screen as that difference over how fast the angle changes there.
+
+		bool bMiddle = false;
+		if (outwards.size() > 1)
+		{
+			const double y1 = outwards[1];
+			const double end = std::asin(std::min(y1 / radius, 1.0));
+			double worst = 0.0;
+			for (int i = 1; i < 16; i++)
+			{
+				double t = y1 * i / 16;
+				double angle = std::asin(std::min(t / radius, 1.0));
+				double rate = 1.0 / std::sqrt(std::max(radius * radius - t * t, 1e-12));
+				worst = std::max(worst, std::abs(angle - t / y1 * end) / rate);
+			}
+			bMiddle = worst <= precision;
+		}
+
 		for (int i = int(outwards.size()) - 1; i > 0; i--)
 			edges.push_back(int64_t((half - outwards[i]) * c_pixel + 0.5));
-		for (double o : outwards)
-			edges.push_back(int64_t((half + o) * c_pixel + 0.5));
+		for (size_t i = bMiddle ? 1 : 0; i < outwards.size(); i++)
+			edges.push_back(int64_t((half + outwards[i]) * c_pixel + 0.5));
 
 		edges.front() = 0;
 		edges.back() = lengthAcross * c_pixel;

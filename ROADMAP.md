@@ -246,7 +246,8 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   (`_piecePrecision()`), for rounding the vertices to spx; ball pieces span
   sqrt(3.4 * precision / r) rather than sqrt(4 * ...); lens rings get 0.7 of precision.
   Cylinder strips are laid out from the rims inwards, so what is left goes to the widest strip in
-  the middle and finer precision never gives fewer strips. The tests check within precision
+  the middle and finer precision never gives fewer strips; the last two are made as wide as each
+  other, and the middle is one strip across where that keeps within precision. The tests check within precision
   itself, measured on screen (the 1.5 times allowed before came from the grid), and that finer
   precision never gives fewer triangles. Positions in the source are whole spx, so a magnified
   source limits precision to about magnification / 128 pixels, which is left as it is. Any
@@ -305,7 +306,11 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   triangles than rings in line, looking the same. Rings keep both the bend along a radius
   (|s''| d^2 / 8 / s') and that turn within 0.7 of precision, and are at least two pixels apart.
   Pieces along the rim keep the outline within precision; positions between the vertices of a
-  ring are off by less, as the source follows the same circle. Lenses measure 0.6-0.8 of
+  ring are off by less, as the source follows the same circle. Rings close to the middle have
+  half, a quarter or an eighth as many pieces, where longer pieces keep them within precision,
+  at most doubling from one ring to the next with three triangles for each inner piece between
+  them: 11-19% fewer triangles for a bubble (falloff 1), nothing for lenses whose falloff starts
+  further out. Fewer than 16 pieces only within an eighth of the radius. Lenses measure 0.6-0.8 of
   precision where the source isn't squeezed. Altogether 30-55% fewer triangles than with rings in
   line, a pixel apart and pieces within half of precision, and 12-27% less time to draw on
   SoftBackend, with a largest difference against a fine mesh of 41-62 rather than 30-52 levels

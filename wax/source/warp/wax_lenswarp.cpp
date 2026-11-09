@@ -208,7 +208,7 @@ namespace wax
 		// which turns it towards the end at b by a / 2 * (s(b) / (s(a) + s(b)) - 1/2), while the
 		// point is turned by a / 2 * (b / (a + b) - 1/2), which is off by r times the difference.
 
-		auto fits = [&](double a, double b, double angle, double allowed)
+		auto fits = [&](double a, double b, double across, double allowed)
 		{
 			double curve = std::max(std::abs(dds(a)), std::abs(dds(b)));
 			if (a < r0 && b > r0)
@@ -217,73 +217,148 @@ namespace wax
 			double along = curve * (b - a) * (b - a) / (8 * slope);
 
 			double sa = s(a), sb = s(b);
-			double across = sa + sb > 0 ? b * angle / 2 * std::abs(sb / (sa + sb) - b / (a + b)) : 0.0;
+			double turn = sa + sb > 0 ? b * across * std::abs(sb / (sa + sb) - b / (a + b)) : 0.0;
 
-			return along + across <= allowed;
+			return along + turn <= allowed;
 		};
 
-		auto step = [&](double a, double limit, double angle, double relax)
+		// Rings close to the middle have fewer pieces: half as many or fewer, at most 3 halvings,
+		// where pieces twice as long still keep the ring within precision, up to radius limit(h)
+		// for h halvings. Fewer than 16 only within an eighth of the radius, as larger rings need
+		// pieces of at most 22.5 degrees, see below. Outwards, the number of pieces at most doubles
+		// from one ring to the next.
+
+		const int c_maxHalvings = 3;
+		int pieces = 16;
+		int maxHalvings = 0;
+		double pieceAngle = 0.0;
+
+		auto limit = [&](int halvings)
+		{
+			double angle = pieceAngle * (1 << halvings);
+			return halvings == 0 ? 1e30 : 8 * precision / (angle * angle);
+		};
+
+		auto halvingsAt = [&](double r)
+		{
+			int h = 0;
+			while (h < maxHalvings && r <= limit(h + 1) && ((pieces >> (h + 1)) >= 16 || r <= outer / 8))
+				h++;
+			return h;
+		};
+
+		// The sides of the triangles between two rings span half a piece of the outer one where they
+		// have as many pieces, up to one and a half where the inner one has half as many.
+
+		auto acrossAngle = [&](int innerHalvings, int outerHalvings)
+		{
+			double angle = pieceAngle * (1 << outerHalvings);
+			return innerHalvings == outerHalvings ? angle / 2 : angle * 1.5;
+		};
+
+		auto step = [&](double a, int halvings, double limitR, double relax)
 		{
 			const double allowed = precision * 0.7 * relax;
-			double curve = std::abs(dds(std::max(a, r0)));
-			double b = curve > 0 ? std::min(a + std::sqrt(8 * allowed * ds(a) / curve), limit) : limit;
+			if (halvings > 0)
+				limitR = std::min(limitR, std::max(limit(halvings - 1), a + c_minStep));
 
-			while (b - a > c_minStep && !fits(a, b, angle, allowed))
+			double curve = std::abs(dds(std::max(a, r0)));
+			double b = curve > 0 ? std::min(a + std::sqrt(8 * allowed * ds(a) / curve), limitR) : limitR;
+
+			while (b - a > c_minStep && !fits(a, b, acrossAngle(halvings, std::min(halvings, halvingsAt(b))), allowed))
 				b = a + (b - a) * 0.8;
 
-			if (limit - b < c_minStep)
-				b = limit;
+			if (limitR - b < c_minStep)
+				b = limitR;
 			return b;
 		};
 
 		std::vector<double> radii;
+		std::vector<int> halvings;
 
-		auto makeRings = [&](int pieces, double relax)
+		auto makeRings = [&](double relax)
 		{
-			const double angle = 2 * c_pi / pieces;
+			pieceAngle = 2 * c_pi / pieces;
+			maxHalvings = 0;
+			while (maxHalvings < c_maxHalvings && (pieces >> (maxHalvings + 1)) >= 8 && (pieces & ((2 << maxHalvings) - 1)) == 0)
+				maxHalvings++;
 
 			radii.clear();
+			halvings.clear();
 
 			// The middle polygon, out to where the falloff starts, or as far as linear positions keep
-			// within precision when it starts close to the middle.
+			// within precision when it starts close to the middle. Positions are linear from the
+			// middle out to it, so its pieces don't matter there.
 
 			double core = std::min(r0, inner);
 			if (core < inner)
-				core = std::max(core, step(0.0, inner, angle, relax));
+				core = std::max(core, step(0.0, 0, inner, relax));
 			radii.push_back(core);
+			halvings.push_back(halvingsAt(core));
 
 			double r = core;
 			while (r < inner)
 			{
-				r = step(r, inner, angle, relax);
+				int h = halvings.back();
+				r = step(r, h, inner, relax);
 				radii.push_back(r);
+				halvings.push_back(std::min(h, halvingsAt(r)));
 			}
 
 			if (bFalloff && R > inner)
+			{
 				radii.push_back(R);
+				halvings.push_back(0);
+			}
 			radii.push_back(outer);
+			halvings.push_back(0);
+
+			// The rings of the outline have all pieces, so the ring inside them has at most one
+			// halving.
+
+			for (int k = int(halvings.size()) - 2; k >= 0; k--)
+				halvings[k] = std::min(halvings[k], halvings[k + 1] + 1);
 		};
 
-		double pieceAngle = std::sqrt(8 * precision / std::max(outer, 1.0));
-		// At least 16 pieces, of at most 22.5 degrees, as the errors of larger ones grow faster than
-		// worked out above.
+		auto counts = [&](int& nVertices, int& nTriangles)
+		{
+			nVertices = 0;
+			for (int h : halvings)
+				nVertices += pieces >> h;
+			nTriangles = (pieces >> halvings[0]) - 2;
+			for (size_t k = 0; k + 1 < halvings.size(); k++)
+				nTriangles += halvings[k] == halvings[k + 1] ? 2 * (pieces >> halvings[k]) : 3 * (pieces >> halvings[k]);
+		};
 
-		int pieces = int(std::clamp(std::ceil(2 * c_pi / std::max(pieceAngle, 1e-6)), 16.0, 4096.0));
+		// At least 16 pieces, of at most 22.5 degrees, as the errors of larger ones grow faster than
+		// worked out above, other than on rings close to the middle, which are small enough for
+		// pieces up to twice that long. Where the middle polygon is small enough for rings to be
+		// halved, a multiple of 2, 4 or 8, as many times as halving leaves at least 8.
+
+		pieceAngle = std::sqrt(8 * precision / std::max(outer, 1.0));
+		pieces = int(std::clamp(std::ceil(2 * c_pi / std::max(pieceAngle, 1e-6)), 16.0, 4096.0));
+		if (std::min(r0, inner) < outer / 4)
+		{
+			int multiple = 1;
+			while (multiple < (1 << c_maxHalvings) && pieces / (multiple * 2) >= 8)
+				multiple *= 2;
+			pieces = (pieces + multiple - 1) / multiple * multiple;
+		}
 
 		// Coarser where needed to keep within the limits of Warpmap.
 
 		double relax = 1.0;
 		for (;;)
 		{
-			makeRings(pieces, relax);
+			makeRings(relax);
 
 			int nVertices, nTriangles;
-			_counts(pieces, int(radii.size()), nVertices, nTriangles);
+			counts(nVertices, nTriangles);
 			if (nVertices <= Warpmap::maxVertices && nTriangles <= Warpmap::maxTriangles)
 				break;
 
 			if (pieces > 16 && pieces >= int(radii.size()))
-				pieces = std::max(16, pieces * 7 / 8);
+				pieces = std::max(16, (pieces * 7 / 8) & ~7);
 			else
 				relax *= 1.5;
 		}
@@ -294,7 +369,12 @@ namespace wax
 		layout.pieces = pieces;
 		layout.rings.resize(radii.size());
 
-		for (size_t i = 0; i < radii.size(); i++)
+		// Vertex j of a ring is at (offset + j * 2^(h + 1)) / (2 * pieces) of a turn from straight up,
+		// h being its halvings, and the vertices of a ring between those of the ring outside it: half
+		// a piece of that one further on.
+
+		int offset = 0;
+		for (int i = int(radii.size()) - 1; i >= 0; i--)
 		{
 			double r = radii[i];
 			Ring& ring = layout.rings[i];
@@ -302,36 +382,47 @@ namespace wax
 			ring.u = std::llround(s(r) * toU);
 			ring.v = std::llround(s(r) * toV);
 			ring.coverage = int(std::lround(std::clamp(outer - r, 0.0, 1.0) * Warpmap::coverageOne));
+			ring.halvings = halvings[i];
+			ring.offset = offset;
+			offset += 1 << halvings[i];
 		}
 	}
 
 	//____ _counts() __________________________________________________________
 	/*
 		Vertices: a ring of them for each ring. Triangles: the middle polygon split into a strip,
-		and two for each piece between two rings.
+		two for each piece between two rings with as many pieces, and three for each piece of the
+		inner ring between two where it has half as many.
 	*/
 
-	void LensWarp::_counts(int pieces, int rings, int& nVertices, int& nTriangles)
+	void LensWarp::_counts(const Layout& layout, int& nVertices, int& nTriangles)
 	{
-		nVertices = pieces * rings;
-		nTriangles = (pieces - 2) + 2 * pieces * (rings - 1);
+		const std::vector<Ring>& rings = layout.rings;
+		const int pieces = layout.pieces;
+
+		nVertices = 0;
+		for (const Ring& ring : rings)
+			nVertices += pieces >> ring.halvings;
+
+		nTriangles = (pieces >> rings[0].halvings) - 2;
+		for (size_t k = 0; k + 1 < rings.size(); k++)
+			nTriangles += (rings[k].halvings == rings[k + 1].halvings ? 2 : 3) * (pieces >> rings[k].halvings);
 	}
 
 	//____ _meshSize() ________________________________________________________
 
 	void LensWarp::_meshSize(int& nVertices, int& nTriangles) const
 	{
-		const Layout& l = _layout();
-		_counts(l.pieces, int(l.rings.size()), nVertices, nTriangles);
+		_counts(_layout(), nVertices, nTriangles);
 	}
 
 	//____ _generateMesh() ____________________________________________________
 	/*
-		Vertex j of each ring is at an angle of j / pieces of a turn clockwise from straight up, and
-		every other ring is turned by half a piece more. The middle polygon, the first ring, goes
-		down both sides from its top vertex and is split into a strip of triangles from top to
-		bottom, which gives a backend few triangles on each row. Positions in
-		1/256 spx, sines and cosines with 30 binals.
+		Vertices of a ring are evenly spaced, clockwise from where its offset says, each ring turned
+		by half a piece of the ring outside it, so the vertices of a ring are between those of the
+		next. The middle polygon, the first ring, goes down both sides from its vertex closest to
+		straight up and is split into a strip of triangles from top to bottom, which gives a backend
+		few triangles on each row. Positions in 1/256 spx, sines and cosines with 30 binals.
 	*/
 
 	void LensWarp::_generateMesh(Warpmap::Vertex* pVertices, Warpmap::Triangle* pTriangles) const
@@ -339,68 +430,98 @@ namespace wax
 		const Layout& l = _layout();
 		const int pieces = l.pieces;
 		const int rings = int(l.rings.size());
+		const uint64_t turn = uint64_t(2 * pieces);
 
 		const int64_t cx = int64_t(m_size.w) << 13, cy = int64_t(m_size.h) << 13;
 		const int64_t cu = int64_t(m_sourceSize.w) << 7, cv = int64_t(m_sourceSize.h) << 7;
 
 		auto round = [](int64_t value) { return spx((value + 128) >> 8); };
 
-		for (int turned = 0; turned < 2; turned++)
-			for (int j = 0; j < pieces; j++)
+		// First vertex of each ring, as rings have different numbers of vertices.
+
+		const int firstBytes = int(sizeof(int)) * (rings + 1);
+		int* first = (int*) Base::memStackAlloc(firstBytes);
+		first[0] = 0;
+		for (int k = 0; k < rings; k++)
+			first[k + 1] = first[k] + (pieces >> l.rings[k].halvings);
+
+		for (int k = 0; k < rings; k++)
+		{
+			const Ring& ring = l.rings[k];
+			const int n = pieces >> ring.halvings;
+			const uint64_t spacing = uint64_t(2) << ring.halvings;
+
+			for (int j = 0; j < n; j++)
 			{
-				uint32_t angle = uint32_t(0xC0000000u + uint32_t((uint64_t(2 * j + turned) << 31) / uint64_t(pieces)));
+				uint64_t at = (uint64_t(ring.offset) + spacing * j) % turn;
+				uint32_t angle = uint32_t(0xC0000000u + uint32_t((at << 32) / turn));
 				int32_t sin, cos;
 				_sinCos(angle, sin, cos);
 
-				for (int k = turned; k < rings; k += 2)
-				{
-					const Ring& ring = l.rings[k];
-					pVertices[k * pieces + j] = { round(cx + ((ring.radius * cos) >> 30)), round(cy + ((ring.radius * sin) >> 30)),
-												  round(cu + ((ring.u * cos) >> 30)), round(cv + ((ring.v * sin) >> 30)), Warpmap::weightOne, ring.coverage };
-				}
+				pVertices[first[k] + j] = { round(cx + ((ring.radius * cos) >> 30)), round(cy + ((ring.radius * sin) >> 30)),
+											round(cu + ((ring.u * cos) >> 30)), round(cv + ((ring.v * sin) >> 30)), Warpmap::weightOne, ring.coverage };
 			}
-
-		// The middle polygon, from its top vertex down both sides.
-
-		int right = 1, left = pieces - 1;
-		*pTriangles++ = { 0, right, left };
-		bool bRight = true;
-		while (left - right > 1)
-		{
-			if (bRight)
-			{
-				*pTriangles++ = { right, right + 1, left };
-				right++;
-			}
-			else
-			{
-				*pTriangles++ = { right, left - 1, left };
-				left--;
-			}
-			bRight = !bRight;
 		}
 
-		// Two triangles for each piece between two rings, one with a side along each ring. Vertex j
-		// of a ring turned by half a piece is between vertices j and j + 1 of the rings next to it.
+		// The middle polygon, from its vertex closest to straight up, down both sides.
 
-		for (int k = 0; k + 1 < rings; k++)
 		{
-			int a = k * pieces, b = a + pieces;
-			for (int j = 0; j < pieces; j++)
+			const Ring& ring = l.rings[0];
+			const int n = pieces >> ring.halvings;
+			const int spacing = 2 << ring.halvings;
+			const int top = int(((turn - uint64_t(ring.offset) % turn) % turn + spacing / 2) / spacing) % n;
+
+			auto vertex = [&](int j) { return first[0] + ((j % n) + n) % n; };
+
+			int right = top + 1, left = top - 1;
+			*pTriangles++ = { vertex(top), vertex(right), vertex(left) };
+			bool bRight = true;
+			while (right - left < n - 1)
 			{
-				int j1 = j + 1 == pieces ? 0 : j + 1;
-				if ((k & 1) == 0)
+				if (bRight)
 				{
-					*pTriangles++ = { a + j, a + j1, b + j };
-					*pTriangles++ = { b + j, a + j1, b + j1 };
+					*pTriangles++ = { vertex(right), vertex(right + 1), vertex(left) };
+					right++;
 				}
 				else
 				{
-					*pTriangles++ = { b + j, b + j1, a + j };
-					*pTriangles++ = { a + j, b + j1, a + j1 };
+					*pTriangles++ = { vertex(right), vertex(left - 1), vertex(left) };
+					left--;
+				}
+				bRight = !bRight;
+			}
+		}
+
+		// Between two rings. Vertex j of the inner ring is between vertices j and j + 1 of the outer
+		// one where they have as many, or between 2j and 2j + 1 where the inner one has half as many.
+
+		for (int k = 0; k + 1 < rings; k++)
+		{
+			const int nIn = pieces >> l.rings[k].halvings;
+			const int nOut = pieces >> l.rings[k + 1].halvings;
+			auto in = [&](int j) { return first[k] + (j % nIn); };
+			auto out = [&](int j) { return first[k + 1] + (j % nOut); };
+
+			if (nIn == nOut)
+			{
+				for (int j = 0; j < nIn; j++)
+				{
+					*pTriangles++ = { out(j), out(j + 1), in(j) };
+					*pTriangles++ = { in(j), out(j + 1), in(j + 1) };
+				}
+			}
+			else
+			{
+				for (int j = 0; j < nIn; j++)
+				{
+					*pTriangles++ = { out(2 * j), out(2 * j + 1), in(j) };
+					*pTriangles++ = { in(j), out(2 * j + 1), out(2 * j + 2) };
+					*pTriangles++ = { in(j), out(2 * j + 2), in(j + 1) };
 				}
 			}
 		}
+
+		Base::memStackFree(firstBytes);
 	}
 
 } // namespace wax
