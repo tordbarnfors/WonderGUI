@@ -18,6 +18,33 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   with `showMarkup` set, where all markers are visible.
 - **Shaping, graphemes and bidi** (likely HarfBuzz), and grapheme-aware caret movement.
 
+### GPU backends
+
+The GPU backends (GlBackend, DX12Backend, MetalBackend, VulkanBackend) each turned the command
+stream into GPU work in their own way, so every feature was written four times. GpuBackend
+(`wax/source/wax_gpubackend.h`) now does what doesn't need the graphics API, and VulkanBackend is
+built on it. Next steps, in order:
+
+1. **DX12Backend onto GpuBackend and GpuEdgemap.** GpuBackend was taken from DX12Backend, so this
+   mostly removes code: what is left is its root signature, descriptor heaps, resource states,
+   device loss and the hooks GpuBackend calls. Needs building and gfxdevicetester on Windows.
+2. **MetalBackend onto GpuBackend,** with its own shaders adapted to the buffers and constants
+   of GpuBackend (its layout is where DX12Backend's came from), or with MSL generated from the
+   HLSL by SPIRV-Cross, if that turns out readable and fast enough. Needs macOS.
+3. **GlBackend onto GpuBackend,** its hooks queueing commands for endSession() as it does now,
+   since GL uploads the buffers once per session. Its GLSL stays its own, GL 3.3 has no storage
+   buffers for the HLSL to be cross-compiled to.
+4. **Shaders:** if Metal keeps MSL, give MSL and GLSL the file split and names of the HLSL, so a
+   change can be made side by side.
+
+For VulkanBackend, still to do:
+
+- **Replacing a lost device,** as DX12Backend::setDevice() does. A lost device is reported and
+  rendering stops.
+- **A memory suballocator.** Every buffer and image has an allocation of its own, which stays
+  well within limits for a GUI, but Windows drivers can have as few as 4096 allocations.
+- **wappsdl2vk,** a Win32 framework, and running on Windows at all.
+
 ### Warpmaps
 
 - **Warpmaps as triangle meshes,** replacing the grid of nodes so that the number of triangles
@@ -371,6 +398,41 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   A LensCapsule widget, drawing a lens over a CanvasCapsule where the pointer is, comes later.
 - **wax::Base,** not wax::Core, is the static base class of Wax. `wg::Base` inherits it, and code
   using both namespaces says `wg::Base` or `wax::Base`.
+
+### GPU backends (2026-11)
+
+- **What doesn't need the graphics API is shared,** where it was written for each backend:
+  GpuTools (decoding state changes, blur taps, lines without caps), GpuShapes, TintTools, and
+  GpuBackend and GpuEdgemap, which do the whole command stream and the content of edgemap
+  buffers through a dozen protected methods a backend implements. Those methods are called per
+  draw, not per vertex, so being virtual costs nothing measurable. What does need the API stays
+  in each backend, duplicated in structure where the APIs are alike, as that is where they differ
+  in ways that matter for reliability: lifetime of resources, synchronization, device loss.
+- **DX12Backend and VulkanBackend draw with the same HLSL shaders** (`wax/extensions/hlsl`), see
+  its README.md. DX12 compiles them when it starts, Vulkan gets them as SPIR-V compiled by DXC.
+  The constants are declared once, in constants.hlsl, as root constants for DX12 and push
+  constants for Vulkan. A local variable may not be named like a constant, as they are defines
+  for Vulkan.
+- **SPIR-V is checked in** (`vulkangfx/spirv`), as binaries rather than as generated source,
+  which was three times the size, and turned into arrays by CMake, so building needs no shader
+  compiler.
+- **VulkanBackend needs Vulkan 1.3** with dynamic rendering, synchronization2, timeline
+  semaphores, demote to helper invocation (how DXC compiles discard) and dual-source blending,
+  and VK_KHR_push_descriptor. That is what lets it work like DX12Backend: render targets without
+  render pass objects, resources bound per draw like root descriptors, constants like root
+  constants.
+- **One timeline semaphore counts all submissions to the one queue** that all VulkanBackends
+  share. A resource let go of is destroyed once the GPU has passed every submission that may use
+  it, including those still being recorded (VulkanContext::destroyLater()), so nothing has to hold
+  on to them per command buffer as DX12Backend does.
+- **Alpha_8 is R8 in Vulkan,** read as alpha through the swizzle of the view, rather than A8, which
+  needs an extension. The shaders write the value of an alpha only canvas to all channels, so the
+  blend factors of color do what those of alpha do on A8. XRGB is BGRA read with alpha 1 and
+  rendered into without touching alpha, as Vulkan has no BGRX.
+- **Windows render into an image of their own,** copied to the swap chain when something was
+  drawn, as Wax only draws what changed and swap chain images don't keep their content.
+- **Mipmaps are made with linear blits** in Vulkan, rather than the shaders DX12Backend draws them
+  with, which average the same four texels.
 
 ### Software tiling (2026-11)
 
