@@ -39,6 +39,7 @@
 
 #include <wax_backend.h>
 #include <wax_gpushapes.h>
+#include <wax_gputools.h>
 #include <wax_tinttools.h>
 #include <wax_glsurface.h>
 
@@ -126,8 +127,6 @@ namespace wax
 		void	_uploadCanvasUBO();
 
 
-		void	_initTables();
-		float	_scaleThickness(float thickeness, float slope);
 
 		void	_setCanvas(Surface* pSurface);
 		void	_setPaletteInfo(GLuint prog, GlSurface* pSurf);
@@ -177,7 +176,6 @@ namespace wax
 		const Transform* m_pTransformsEnd = nullptr;
 
 
-		float	m_lineThicknessTable[17];
 
 		//
 
@@ -456,16 +454,7 @@ namespace wax
 
 		std::vector<GpuShapes::Segment>	m_shapeSegments;		// Segments of shape being processed.
 
-		struct CappedLine
-		{
-			CoordSPX	begin;
-			CoordSPX	end;
-			spx			thickness;
-			uint16_t	caps;
-			HiColor		color;
-		};
-
-		std::vector<CappedLine>	m_cappedLines;		// Lines with caps of line command being processed.
+		std::vector<GpuTools::CappedLine>	m_cappedLines;		// Lines with caps of line command being processed.
 
 
 	};

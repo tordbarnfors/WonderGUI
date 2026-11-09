@@ -36,6 +36,8 @@ set( SOURCES
 	source/wax_utf8.h
 	source/wax_gpushapes.cpp
 	source/wax_gpushapes.h
+	source/wax_gputools.cpp
+	source/wax_gputools.h
 	source/wax_memheap.cpp
 	source/wax_memheap.h
 	source/wax_mempool.cpp
