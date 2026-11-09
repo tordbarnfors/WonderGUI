@@ -1,12 +1,7 @@
-cbuffer CanvasInfo : register(b0)
-{
-    float2 canvasScale;     // Not used here.
-    float2 textureSize;     // Size of blit source, in pixels.
-    uint flags;             // Bit 1: bilinear. Bit 2: tiling.
-    uint blurOfs;           // Where a blur's 9 color matrices and 9 offsets start in extras.
-};
-
-StructuredBuffer<float4> extras : register(t1);
+// The constants (CanvasInfo, PixelInfo, WarpInfo) come from constants.hlsl. Here:
+//
+//   flags: Bit 1: bilinear. Bit 2: tiling. Bit 3: clip, nothing outside the source is read.
+//   blurOfs: Where a blur's 9 color matrices and 9 offsets start in extras.
 
 // writeOutput() and premul() come from output.hlsl, the tint, tintColor() and the
 // colors buffer from tint.hlsl, which are put in front of this file.
@@ -42,13 +37,20 @@ float4 paletteTexel(int2 texel)
         texel.x = (texel.x >= 0 || rest.x == 0u) ? int(rest.x) : int(usize.x - rest.x);
         texel.y = (texel.y >= 0 || rest.y == 0u) ? int(rest.y) : int(usize.y - rest.y);
     }
-    else
-        texel = clamp(texel, int2(0, 0), size - int2(1, 1));
+
+    // A ClipBlit gets transparent black outside the source, like the clip
+    // samplers of the ordinary shaders.
+
+    bool bOutside = ((flags & 8u) != 0u) && (any(texel < int2(0, 0)) || any(texel >= size));
+
+    texel = clamp(texel, int2(0, 0), size - int2(1, 1));
 
     uint index = blitSource.Load(int3(texel, 0));
     uint capacity = uint(palette[0].x);
 
-    return palette[min(index, capacity - 1u) + 1u];
+    float4 color = palette[min(index, capacity - 1u) + 1u];
+
+    return bOutside ? float4(0.0f, 0.0f, 0.0f, 0.0f) : color;
 }
 
 
@@ -80,12 +82,10 @@ float4 samplePalette(float2 uv)
     }
     else
     {
-        // Nearest. A pixel lined up with the source lands exactly on a texel
-        // edge, where rounding could tip it into the texel before. The sampler
-        // snaps to a fraction of a texel for the same reason, so we nudge by as
-        // much.
+        // Nearest. Samples that could land on a texel edge are already nudged
+        // forward by the backend.
 
-        color = paletteTexel(int2(floor(pos + 1.0f / 256.0f)));
+        color = paletteTexel(int2(floor(pos)));
     }
 
     return color;
@@ -102,25 +102,5 @@ struct PS_INPUT
 
 PS_OUTPUT main(PS_INPUT input)
 {
-    // As ps_blur, but with each tap looked up in the palette. The alpha row of
-    // the matrix only weights the center tap, so the palette entry's alpha there
-    // is kept. Taps are premultiplied, like the palette, and divided by their
-    // alphas to get straight colors to blur.
-
-    float4 color = float4(0.0f, 0.0f, 0.0f, 0.0f);
-
-    [unroll]
-    for (uint i = 0u; i < 9u; i++)
-    {
-        float2 ofs = extras[blurOfs + 9u + i].xy;
-
-        float4 tap = samplePalette(input.texUV + ofs);
-        tap.rgb = tap.a > 0.0f ? tap.rgb / tap.a : float3(0.0f, 0.0f, 0.0f);
-
-        color += tap * extras[blurOfs + i];
-    }
-
-    color.rgb = saturate(color.rgb);
-
-    return writeOutput(premul(color * input.color * tintColor(input.position.xy)), 1.0f);
+    return writeOutput(samplePalette(input.texUV) * premul(input.color * tintColor(input.position.xy)), 1.0f);
 }

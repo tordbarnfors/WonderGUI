@@ -1,6 +1,5 @@
-// Output of the pixel shaders that draw into canvases, and the root constants they
-// share. wax_dx12shaders.cpp.template puts this file in front of each of them, ahead
-// of tint.hlsl.
+// Output of the pixel shaders that draw into canvases. The shader templates put this
+// file in front of each of them, after constants.hlsl and ahead of tint.hlsl.
 //
 // Canvases with alpha hold premultiplied colors. A pixel shader works out the
 // premultiplied color of what it draws times the part of the pixel it covers (pc)
@@ -27,20 +26,23 @@
 // as on other canvases, effect modes take the alpha of the source as the value,
 // like an opaque source of that color. Mode 1 is also used by Multiply there.
 
-cbuffer PixelInfo : register(b1)
-{
-    int tintOfs;            // Offset of the tint block in the color buffer, -1 for no tint. See tint.hlsl.
-    uint outputMode;        // See above.
-    uint canvasKind;        // 0: canvas with alpha, 1: canvas without alpha, 2: alpha only canvas.
-    float morphFactor;      // 1 unless the blend mode is Morph.
-};
+// The constants (CanvasInfo, PixelInfo, WarpInfo) come from constants.hlsl.
 
+// Vulkan wants the second color of dual-source blending as index 1 of location 0.
+
+#ifdef __spirv__
+#   define WAX_OUTPUT_COLOR     [[vk::location(0)]]
+#   define WAX_OUTPUT_FACTOR    [[vk::location(0), vk::index(1)]]
+#else
+#   define WAX_OUTPUT_COLOR
+#   define WAX_OUTPUT_FACTOR
+#endif
 
 struct PS_OUTPUT
 {
-    float4 color : SV_Target0;
+    WAX_OUTPUT_COLOR float4 color : SV_Target0;
 #ifdef WAX_DUAL_SOURCE
-    float4 factor : SV_Target1;
+    WAX_OUTPUT_FACTOR float4 factor : SV_Target1;
 #endif
 };
 

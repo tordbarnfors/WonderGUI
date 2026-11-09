@@ -1,9 +1,6 @@
-cbuffer CanvasInfo : register(b0)
-{
-    float2 canvasScale;
-    float2 textureSize;
-    uint flags;             // Bit 0: source is alpha only. Bit 1: bilinear. Bit 3: clip, nothing outside the source is read. Bit 4: source has no alpha.
-};
+// The constants (CanvasInfo, PixelInfo, WarpInfo) come from constants.hlsl. Here:
+//
+//   flags: Bit 0: source is alpha only. Bit 1: bilinear. Bit 3: clip, nothing outside the source is read. Bit 4: source has no alpha.
 
 // writeOutput() and premul() come from output.hlsl, the tint, tintColor() and the
 // colors buffer from tint.hlsl, which are put in front of this file.

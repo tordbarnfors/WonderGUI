@@ -1,22 +1,5 @@
-cbuffer CanvasInfo : register(b0)
-{
-    float2 canvasScale;     // 2/canvasWidth, 2/canvasHeight, in pixels.
-    float2 textureSize;     // Not used here.
-    uint flags;             // Not used here.
-    uint blurOfs;           // Not used here.
-    uint edgemapEdges;      // Not used here.
-    uint edgemapPitch;      // Not used here.
-};
-
-// Where the Warpmap is drawn, set for each warp by DX12Backend::_drawWarp().
-
-cbuffer WarpInfo : register(b2)
-{
-    float2 warpDest;        // Position of the Warpmap on the canvas, in pixels.
-    uint warpColorOfs;      // Offset into the color buffer, of the tint color.
-    uint warpExtrasOfs;     // Offset into the extras buffer, of the warp.
-    int2 warpRef;           // u and v of the first vertex, in spx.
-};
+// The constants (CanvasInfo, PixelInfo, WarpInfo) come from constants.hlsl. WarpInfo, where
+// the Warpmap is drawn, is set for each warp by the backend.
 
 StructuredBuffer<float4> colors : register(t0);
 
