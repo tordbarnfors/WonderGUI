@@ -49,6 +49,10 @@ using namespace wax;
 // Environment variables:
 //
 //   WAPP_VK_DEVICE=n|name		Picks the physical device by index or part of its name.
+//								A device picked this way is used even if it can't
+//								present to our windows, which then show nothing. For
+//								tests that read back what was rendered, like
+//								gfxdevicetester --accuracy, on displays without DRI3.
 //   WAPP_VK_VALIDATION=1		Turns the Khronos validation layer on, if installed.
 //								On by default in debug builds, 0 turns it off.
 
@@ -106,6 +110,7 @@ static VkDevice							g_device = VK_NULL_HANDLE;
 static VkQueue							g_queue = VK_NULL_HANDLE;
 static uint32_t							g_queueFamily = 0;
 static VkDebugUtilsMessengerEXT			g_messenger = VK_NULL_HANDLE;
+static bool								g_bCanPresent = true;
 
 static VulkanBackend_p					g_pBackend;
 static std::vector<SDLWindowVulkan*>	g_windows;
@@ -159,7 +164,7 @@ static bool _hasLayer(const char * pName)
 // Vulkan 1.3, the extensions and features VulkanBackend needs, swap chains and a
 // queue that draws and presents.
 
-static bool _deviceIsUsable(VkPhysicalDevice device, uint32_t& queueFamily)
+static bool _deviceIsUsable(VkPhysicalDevice device, uint32_t& queueFamily, bool& bCanPresent)
 {
 	VkPhysicalDeviceProperties props;
 	vkGetPhysicalDeviceProperties(device, &props);
@@ -201,16 +206,30 @@ static bool _deviceIsUsable(VkPhysicalDevice device, uint32_t& queueFamily)
 	std::vector<VkQueueFamilyProperties> families(nFamilies);
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &nFamilies, families.data());
 
+	int graphicsFamily = -1;
+
 	for (uint32_t i = 0; i < nFamilies; i++)
 	{
-		if ((families[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) && SDL_Vulkan_GetPresentationSupport(g_instance, device, i))
+		if (families[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
 		{
-			queueFamily = i;
-			return true;
+			if (SDL_Vulkan_GetPresentationSupport(g_instance, device, i))
+			{
+				queueFamily = i;
+				bCanPresent = true;
+				return true;
+			}
+
+			if (graphicsFamily < 0)
+				graphicsFamily = int(i);
 		}
 	}
 
-	return false;
+	if (graphicsFamily < 0)
+		return false;
+
+	queueFamily = uint32_t(graphicsFamily);
+	bCanPresent = false;
+	return true;
 }
 
 //____ _pickPhysicalDevice() __________________________________________________
@@ -230,7 +249,8 @@ static bool _pickPhysicalDevice()
 	for (uint32_t i = 0; i < count; i++)
 	{
 		uint32_t family;
-		if (!_deviceIsUsable(devices[i], family))
+		bool bCanPresent;
+		if (!_deviceIsUsable(devices[i], family, bCanPresent))
 			continue;
 
 		VkPhysicalDeviceProperties props;
@@ -242,8 +262,10 @@ static bool _pickPhysicalDevice()
 		{
 			bool bIndex = pWanted[0] >= '0' && pWanted[0] <= '9';
 			bool bMatch = bIndex ? (uint32_t(atoi(pWanted)) == i) : (strstr(props.deviceName, pWanted) != nullptr);
-			score = bMatch ? 100 : 0;
+			score = bMatch ? 100 : (bCanPresent ? 1 : -1);
 		}
+		else if (!bCanPresent)
+			score = -1;
 		else
 		{
 			switch (props.deviceType)
@@ -260,6 +282,7 @@ static bool _pickPhysicalDevice()
 			bestScore = score;
 			g_physicalDevice = devices[i];
 			g_queueFamily = family;
+			g_bCanPresent = bCanPresent;
 		}
 	}
 
@@ -268,7 +291,7 @@ static bool _pickPhysicalDevice()
 
 	VkPhysicalDeviceProperties props;
 	vkGetPhysicalDeviceProperties(g_physicalDevice, &props);
-	printf("wappsdl3vk: Rendering with %s\n", props.deviceName);
+	printf("wappsdl3vk: Rendering with %s%s\n", props.deviceName, g_bCanPresent ? "" : ", which can't present to our windows");
 	return true;
 }
 
@@ -527,6 +550,18 @@ bool SDLWindowVulkan::_createSwapchain()
 {
 	if (!m_surface)
 		return false;
+
+	// Nothing to present to, but our canvas still gets the size of the window.
+
+	if (!g_bCanPresent)
+	{
+		SizeI pixels = _sizeInPixels();
+		m_extent = { uint32_t(std::max(pixels.w, 1)), uint32_t(std::max(pixels.h, 1)) };
+		m_swapchainFormat = VK_FORMAT_B8G8R8A8_UNORM;
+		m_bSwapchainStale = false;
+		m_bHidden = false;
+		return true;
+	}
 
 	VkSurfaceCapabilitiesKHR caps;
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(g_physicalDevice, m_surface, &caps);
