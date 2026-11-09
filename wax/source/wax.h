@@ -78,6 +78,7 @@
 #include <wax_tint.h>
 #include <wax_tinttools.h>
 #include <wax_gpushapes.h>
+#include <wax_gputools.h>
 #include <wax_surface.h>
 #include <wax_surfacefactory.h>
 #include <wax_surfacefileheader.h>
