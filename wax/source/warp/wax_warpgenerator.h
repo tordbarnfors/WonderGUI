@@ -43,11 +43,13 @@ namespace wax
 	 * The Warpmap is made for a source of sourceSize: the size of the edgemap or of the source
 	 * rectangle of the blit, in spx. Generators make a mesh of triangles that follows the shape.
 	 *
-	 * Precision (max position error in pixels) decides how closely the Warpmap follows the shape,
-	 * through the size of the pieces of the mesh, which each generator chooses for its shape.
+	 * Precision decides how closely the Warpmap follows the shape, through the size of the pieces
+	 * of the mesh, which each generator chooses for its shape. Higher precision gives more and
+	 * smaller pieces: positions are kept within c_tolerance / precision pixels, so 1 pixel by
+	 * default, half a pixel at 2 and two pixels at 0.5.
 	 *
 	 * When subclassing, implement _meshSize() and _generateMesh(), sizing the pieces from
-	 * precision. Override _uPeriod() and _vPeriod() for periodic axes and set m_bDirty when a
+	 * _pieceTolerance() and _outlineTolerance(). Override _uPeriod() and _vPeriod() for periodic axes and set m_bDirty when a
 	 * setting changes.
 	 */
 
@@ -91,18 +93,24 @@ namespace wax
 
 		static bool		_validateSettings( SizeI size, SizeSPX sourceSize, float precision );
 
-		// Precision to size the pieces of the mesh by, in pixels: what is set, less what rounding the
-		// vertices to spx can add (1/64 pixel), but at least half of it.
+		// Max position error in pixels at precision 1. The error allowed is c_tolerance / precision,
+		// so this decides what the default precision means.
 
-		double			_piecePrecision() const;
+		static constexpr float c_tolerance = 1.f;
+
+		// Max position error to size the pieces of the mesh by, in pixels: c_tolerance / precision,
+		// less what rounding the vertices to spx can add (1/64 pixel), but at least half of it.
+
+		double			_pieceTolerance() const;
 
 		// The same for the outline of a shape where it isn't a straight side, which is kept within
-		// c_outlinePrecision whatever precision is set, as an outline off by a pixel or more shows as
-		// corners where it should be round, while the inside of a shape off as much hardly shows.
+		// c_outlineTolerance pixels whatever precision is set, as an outline off by a pixel or more
+		// shows as corners where it should be round, while the inside of a shape off as much hardly
+		// shows.
 
-		double			_outlinePrecision() const;
+		double			_outlineTolerance() const;
 
-		static constexpr float c_outlinePrecision = 0.5f;
+		static constexpr float c_outlineTolerance = 0.5f;
 
 		// Integer maths for _generateMesh(), which runs once per vertex and so should avoid floating
 		// point on hardware without an FPU. Set up factors with _factor() once per generate.
@@ -163,7 +171,7 @@ namespace wax
 			double		sweep;			// Part of the outline covered by the width of the source, negative counter clockwise.
 		};
 
-		// Corners split into nArc sectors and the band into nAcross parts across it, from precision.
+		// Corners split into nArc sectors and the band into nAcross parts across it, from the tolerances.
 
 		void			_bandLayout( const OutlineBand& band, int& nArc, int& nAcross ) const;
 		void			_calcBandLayout( const OutlineBand& band, int& nArc, int& nAcross ) const;

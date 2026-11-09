@@ -108,8 +108,8 @@ namespace wax
 	/*
 		Positions are linear over pieces of the grid seen on screen. A piece of a ball of radius r
 		spanning an angle a is off by up to about r * a^2 / 4, twice as much as for a circle, as the
-		pieces are sheared where the ball turns away, so pieces span sqrt(4 * precision / r) along
-		both. Worked out in floating point when generating, a few operations. Made coarser where needed to keep within the limits of Warpmap.
+		pieces are sheared where the ball turns away, so pieces span sqrt(4 * t / r) along
+		both for tolerance t. Worked out in floating point when generating, a few operations. Made coarser where needed to keep within the limits of Warpmap.
 	*/
 
 	void BallWarp::_layout(int& nLon, int& nLat) const
@@ -117,8 +117,8 @@ namespace wax
 		const double c_pi = 3.14159265358979323846;
 
 		double r = std::max(radius() / 64.0, 1.0);
-		double precision = _piecePrecision();
-		double angle = std::sqrt(3.4 * precision / r);
+		double tolerance = _pieceTolerance();
+		double angle = std::sqrt(3.4 * tolerance / r);
 
 
 		// At least 16 meridians and 8 parallels, pieces of at most 22.5 degrees, as the error of larger
@@ -164,9 +164,9 @@ namespace wax
 	//____ _outlinePoints() ___________________________________________________
 	/*
 		Between two crossings, the outline is a straight line, off by up to r * d^2 / 8 for an arc of
-		d radians, which pieces of the grid keep within about 0.7 times precision. Where that is more
-		than the outline precision, points are added, so that no arc is longer than sqrt(8 * p / r)
-		for outline precision p. The arcs between crossings add up to the whole outline, so that
+		d radians, which pieces of the grid keep within about 0.7 times the tolerance. Where that is more
+		than the outline tolerance, points are added, so that no arc is longer than sqrt(8 * p / r)
+		for outline tolerance p. The arcs between crossings add up to the whole outline, so that
 		takes at most 2 * pi / sqrt(8 * p / r) points.
 	*/
 
@@ -176,9 +176,9 @@ namespace wax
 
 		longestArc = 0;
 		double r = std::max(radius() - 32, 0) / 64.0;
-		double outline = _outlinePrecision();
+		double outline = _outlineTolerance();
 
-		if (r < 1.0 || _piecePrecision() <= outline)
+		if (r < 1.0 || _pieceTolerance() <= outline)
 			return 0;
 
 		double arc = std::sqrt(8 * outline / r);

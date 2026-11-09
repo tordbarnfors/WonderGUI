@@ -1062,7 +1062,7 @@ bool WarpRenderTest::streamContentTest(std::ostream& output)
 	auto pStreamBackend = StreamBackend::create(pEncoder);
 
 	auto pWarp = CircularWarp::create(WGBP(CircularWarp, _.size = { 200, 200 }, _.sourceSize = c_edgemapSource, _.topRadius = 98 * 64, _.bottomRadius = 40 * 64,
-										   _.precision = 0.1f), pStreamBackend->warpmapFactory());
+										   _.precision = 10.f), pStreamBackend->warpmapFactory());
 
 	auto sameContent = [&](Warpmap* pSent, CountingSoftWarpmap* pGot)
 	{
@@ -1958,7 +1958,7 @@ bool WarpRenderTest::ballTest(std::ostream& output)
 		pDevice->warpDrawEdgemap({ 100 * 64, 50 * 64 }, pMarble->generate(), pEdgemap, pMarble->rotationOffset(100.f));
 	};
 
-	auto normal = [=](GfxDevice* pDevice) { scene(pDevice, 0.25f); };
+	auto normal = [=](GfxDevice* pDevice) { scene(pDevice, 4.f); };
 
 	if (!compare(output, "Balls", render(TestBackend::Soft, normal), "SoftBackend", render(TestBackend::Reference, normal), "ReferenceBackend", 6, 60, 48) ||
 		!compare(output, "Balls", render(TestBackend::Linear, normal), "LinearBackend", render(TestBackend::Soft, normal), "SoftBackend", 0) ||
@@ -1969,9 +1969,9 @@ bool WarpRenderTest::ballTest(std::ostream& output)
 	// shows by tens of levels where the source has sharp edges, most around the poles where the
 	// map is squeezed the most. A ball misplaced, cut or with a gap differs much more.
 
-	auto fine = [=](GfxDevice* pDevice) { scene(pDevice, 0.02f); };
+	auto fine = [=](GfxDevice* pDevice) { scene(pDevice, 50.f); };
 
-	if (!compare(output, "Balls", render(TestBackend::Reference, normal), "precision 0.25", render(TestBackend::Reference, fine), "precision 0.02", 20, 200, 96))
+	if (!compare(output, "Balls", render(TestBackend::Reference, normal), "precision 4", render(TestBackend::Reference, fine), "precision 50", 20, 200, 96))
 		return false;
 
 	// Through the C API.
@@ -1984,7 +1984,7 @@ bool WarpRenderTest::ballTest(std::ostream& output)
 		auto toC = [](const BallWarp::Blueprint& bp)
 		{
 			wax_ballWarpBP c = {};
-			c.precision = 0.25f;								// As the scene draws them.
+			c.precision = 4.f;									// As the scene draws them.
 			c.size = { bp.size.w, bp.size.h };
 			c.sourceSize = { bp.sourceSize.w, bp.sourceSize.h };
 			c.tilt = bp.tilt;
@@ -2061,7 +2061,7 @@ bool WarpRenderTest::lensTest(std::ostream& output)
 		pDevice->warpDrawEdgemap({ 100 * 64, 50 * 64 }, pGauge->generate(), makeEdgemap(pDevice, true));
 	};
 
-	auto normal = [=](GfxDevice* pDevice) { scene(pDevice, 0.25f); };
+	auto normal = [=](GfxDevice* pDevice) { scene(pDevice, 4.f); };
 
 	if (!compare(output, "Lenses", render(TestBackend::Soft, normal), "SoftBackend", render(TestBackend::Reference, normal), "ReferenceBackend", 6, 60, 48) ||
 		!compare(output, "Lenses", render(TestBackend::Linear, normal), "LinearBackend", render(TestBackend::Soft, normal), "SoftBackend", 0) ||
@@ -2073,9 +2073,9 @@ bool WarpRenderTest::lensTest(std::ostream& output)
 	// falloff squeezes the source into each pixel, as rings are at least two pixels apart. A lens
 	// misplaced or with a gap differs much more.
 
-	auto fine = [=](GfxDevice* pDevice) { scene(pDevice, 0.02f); };
+	auto fine = [=](GfxDevice* pDevice) { scene(pDevice, 50.f); };
 
-	if (!compare(output, "Lenses", render(TestBackend::Reference, normal), "precision 0.25", render(TestBackend::Reference, fine), "precision 0.02", 20, 240, 96))
+	if (!compare(output, "Lenses", render(TestBackend::Reference, normal), "precision 4", render(TestBackend::Reference, fine), "precision 50", 20, 240, 96))
 		return false;
 
 	// Through the C API.
@@ -2088,7 +2088,7 @@ bool WarpRenderTest::lensTest(std::ostream& output)
 		auto toC = [](const LensWarp::Blueprint& bp)
 		{
 			wax_lensWarpBP c = {};
-			c.precision = 0.25f;								// As the scene draws them.
+			c.precision = 4.f;									// As the scene draws them.
 			c.falloff = bp.falloff;
 			c.magnification = bp.magnification == 2.f ? 0.f : bp.magnification;			// 0 for the default.
 			c.size = { bp.size.w, bp.size.h };

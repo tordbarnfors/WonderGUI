@@ -441,7 +441,7 @@ public:
 		auto pArc = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 240, 240 }, _.sourceSize = gauge, _.rect = { 64 * 30, 64 * 50, 64 * 180, 64 * 140 },
 												 _.cornerRadius = 64 * 50, _.topDistance = 64 * 25, _.bottomDistance = -64 * 20, _.start = -0.3f, _.sweep = 0.75f), pFactory);
 		auto pFrame = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 240, 240 }, _.sourceSize = surface, _.rect = { 64 * 10, 64 * 30, 64 * 220, 64 * 180 },
-												  _.cornerRadius = 64 * 8, _.topDistance = 0, _.bottomDistance = -64 * 36, _.precision = 0.1f), pFactory);
+												  _.cornerRadius = 64 * 8, _.topDistance = 0, _.bottomDistance = -64 * 36, _.precision = 10.f), pFactory);
 
 		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 10 }, pBand->generate(), m_pGauge);
 		pDevice->setBlitSource(m_pTiling);

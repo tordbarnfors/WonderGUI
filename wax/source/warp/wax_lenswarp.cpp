@@ -140,10 +140,10 @@ namespace wax
 
 		Positions are linear between rings, which is off by up to |s''| * d^2 / 8 pixels of the source
 		over d pixels, seen magnified by 1 / s', and turned along the diagonals of the pieces where s
-		changes fast, so rings are as close as keeps both within 0.7 of precision. Pieces along the
-		rim are off by up to r * a^2 / 8 for an angle a, kept within the outline precision. Between
+		changes fast, so rings are as close as keeps both within 0.7 of the tolerance. Pieces along the
+		rim are off by up to r * a^2 / 8 for an angle a, kept within the outline tolerance. Between
 		the vertices of a ring, positions are off by less, as the source follows the same circle, and
-		the two seldom add up at the same place, which keeps lenses within precision, as measured.
+		the two seldom add up at the same place, which keeps lenses within the tolerance, as measured.
 		Worked out in floating point when the settings change, a few hundred operations, after which
 		the vertices take only integers.
 	*/
@@ -161,7 +161,7 @@ namespace wax
 		const double r0 = R - w;
 		const bool bFalloff = w > 1e-9;
 		const double p0 = r0 / m, m0 = 1 / m;
-		const double precision = _piecePrecision();
+		const double tolerance = _pieceTolerance();
 
 		// Rings at least two pixels apart. Closer ones are only needed where the falloff squeezes
 		// the source into each pixel, which they don't improve on screen, as it is still sampled
@@ -201,7 +201,7 @@ namespace wax
 			return ((12 * t - 6) * p0 + (6 * t - 4) * w * m0 + (-12 * t + 6) * R + (6 * t - 2) * w) / (w * w);
 		};
 
-		// Whether positions linear between rings at a and b keep within the precision, with pieces
+		// Whether positions linear between rings at a and b keep within the tolerance, with pieces
 		// of the given angle. Along a radius: s'' is linear over the falloff and 0 elsewhere, so it
 		// is largest at an end or where the falloff starts, and s' is smallest at an end. Across:
 		// every other ring is turned by half a piece, so the sides of the triangles between rings
@@ -224,7 +224,7 @@ namespace wax
 		};
 
 		// Rings close to the middle have fewer pieces: half as many or fewer, at most 3 halvings,
-		// where pieces twice as long still keep the ring within precision, up to radius limit(h)
+		// where pieces twice as long still keep the ring within the tolerance, up to radius limit(h)
 		// for h halvings. Fewer than 16 only within an eighth of the radius, as larger rings need
 		// pieces of at most 22.5 degrees, see below. Outwards, the number of pieces at most doubles
 		// from one ring to the next.
@@ -237,7 +237,7 @@ namespace wax
 		auto limit = [&](int halvings)
 		{
 			double angle = pieceAngle * (1 << halvings);
-			return halvings == 0 ? 1e30 : 8 * precision / (angle * angle);
+			return halvings == 0 ? 1e30 : 8 * tolerance / (angle * angle);
 		};
 
 		auto halvingsAt = [&](double r)
@@ -259,7 +259,7 @@ namespace wax
 
 		auto step = [&](double a, int halvings, double limitR, double relax)
 		{
-			const double allowed = precision * 0.7 * relax;
+			const double allowed = tolerance * 0.7 * relax;
 			if (halvings > 0)
 				limitR = std::min(limitR, std::max(limit(halvings - 1), a + c_minStep));
 
@@ -288,7 +288,7 @@ namespace wax
 			halvings.clear();
 
 			// The middle polygon, out to where the falloff starts, or as far as linear positions keep
-			// within precision when it starts close to the middle. Positions are linear from the
+			// within the tolerance when it starts close to the middle. Positions are linear from the
 			// middle out to it, so its pieces don't matter there.
 
 			double core = std::min(r0, inner);
@@ -336,10 +336,10 @@ namespace wax
 		// pieces up to twice that long. Where the middle polygon is small enough for rings to be
 		// halved, a multiple of 2, 4 or 8, as many times as halving leaves at least 8.
 
-		// Pieces along the rim keep the outline within the outline precision, and rings inside it
-		// can have fewer by the precision.
+		// Pieces along the rim keep the outline within the outline tolerance, and rings inside it
+		// can have fewer by the tolerance.
 
-		pieceAngle = std::sqrt(8 * _outlinePrecision() / std::max(outer, 1.0));
+		pieceAngle = std::sqrt(8 * _outlineTolerance() / std::max(outer, 1.0));
 		pieces = int(std::clamp(std::ceil(2 * c_pi / std::max(pieceAngle, 1e-6)), 16.0, 4096.0));
 		pieceAngle = 2 * c_pi / pieces;
 		if (std::min(r0, inner) < std::min(limit(1), outer))

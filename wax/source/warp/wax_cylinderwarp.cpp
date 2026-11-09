@@ -137,11 +137,11 @@ namespace wax
 		at distance y from the middle is asin(y / R), R being the radius. Interpolating that over
 		strips of c pixels is off by about c^2 / 8 times its second derivative, which in pixels on
 		screen is c^2 * sin(a) / (8 * R * cos(a)^2) at angle a, the most at its outer edge. So from
-		each rim inwards, each strip is as wide as keeps that within precision, at least two pixels and
+		each rim inwards, each strip is as wide as keeps that within the tolerance, at least two pixels and
 		at most 64. Two strips left are made as wide as each other, and the middle is one strip
-		across where that keeps within precision. Narrower strips would only be needed where the source is squeezed into each pixel,
+		across where that keeps within the tolerance. Narrower strips would only be needed where the source is squeezed into each pixel,
 		which more strips don't improve on screen, as it is still sampled once per pixel.
-		What is left in the middle, where strips can be the widest, goes to the middle strip, so finer
+		What is left in the middle, where strips can be the widest, goes to the middle strip, so higher
 		precision never gives fewer strips. Worked out in floating point, once per generate for a few
 		edges. Strips are made wider where needed to keep two vertices for each edge within
 		Warpmap::maxVertices.
@@ -178,13 +178,13 @@ namespace wax
 		const double half = lengthAcross / 2.0;
 		const double rim = m_span / 2 * 3.14159265358979323846 / 180;
 		const double radius = half / std::max(std::sin(rim), 1e-9);
-		const double precision = _piecePrecision();
+		const double tolerance = _pieceTolerance();
 
 		auto width = [&](double y)
 		{
 			double s = std::min(y / radius, 1.0);
 			double c2 = std::max(1.0 - s * s, 1e-12);
-			return s > 0 ? std::sqrt(8 * precision * radius * c2 / s) : 64.0;
+			return s > 0 ? std::sqrt(8 * tolerance * radius * c2 / s) : 64.0;
 		};
 
 		std::vector<double> outwards = { half };
@@ -203,7 +203,7 @@ namespace wax
 		std::reverse(outwards.begin(), outwards.end());
 
 		// One strip across the middle rather than one on each side of it, where that keeps within
-		// precision. The angle is asin(y / R), which bends the least in the middle, and the strip
+		// the tolerance. The angle is asin(y / R), which bends the least in the middle, and the strip
 		// is off by the most between where the angle and the line through its ends differ, seen on
 		// screen as that difference over how fast the angle changes there.
 
@@ -220,7 +220,7 @@ namespace wax
 				double rate = 1.0 / std::sqrt(std::max(radius * radius - t * t, 1e-12));
 				worst = std::max(worst, std::abs(angle - t / y1 * end) / rate);
 			}
-			bMiddle = worst <= precision;
+			bMiddle = worst <= tolerance;
 		}
 
 		for (int i = int(outwards.size()) - 1; i > 0; i--)

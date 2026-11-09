@@ -33,7 +33,7 @@ namespace wax
 
 	PerspectiveWarp_p PerspectiveWarp::create(const Blueprint& bp, WarpmapFactory* pFactory)
 	{
-		if (!_validateSettings(bp.size, bp.sourceSize, 0.25f) || !_isValidQuad(bp.corners))
+		if (!_validateSettings(bp.size, bp.sourceSize, 1.f) || !_isValidQuad(bp.corners))
 			return nullptr;
 
 		if (!pFactory)
@@ -48,7 +48,7 @@ namespace wax
 	//____ constructor ________________________________________________________
 
 	PerspectiveWarp::PerspectiveWarp(const Blueprint& bp, WarpmapFactory* pFactory)
-		: WarpGenerator(bp.size, bp.sourceSize, 0.25f, pFactory)
+		: WarpGenerator(bp.size, bp.sourceSize, 1.f, pFactory)
 	{
 		if (bp.finalizer)
 			setFinalizer(bp.finalizer);

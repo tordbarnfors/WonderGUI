@@ -50,7 +50,7 @@ namespace wax
 	 *
 	 * The Warpmap is a grid of meridians and parallels, which positions are linear between, cut where
 	 * the ball turns away and with a vertex of its own at the poles for each piece. Pieces are as
-	 * large as keeps them within precision, the same all over the ball. A row of triangles around
+	 * large as precision allows, the same all over the ball. A row of triangles around
 	 * the outline goes from full coverage of the vertices to none, which antialiases it, as it isn't
 	 * a border of the source. The number of vertices and triangles only depends on size and
 	 * precision, so tilting and rolling updates the Warpmap. Shading, such as the ball getting
@@ -66,7 +66,7 @@ namespace wax
 		struct Blueprint
 		{
 			Finalizer_p			finalizer = nullptr;
-			float				precision = 1.f;				// Max position error in pixels, of outlines at most WarpGenerator::c_outlinePrecision.
+			float				precision = 1.f;				// Higher gives more triangles. Positions within WarpGenerator::c_tolerance / precision pixels, curved outlines within at most WarpGenerator::c_outlineTolerance.
 			float				roll = 0.f;						// Degrees the axis of the ball is turned clockwise on screen.
 			SizeI				size;							// Mandatory. Size of the Warpmap in pixels, which the ball is centered in.
 			SizeSPX				sourceSize;						// Mandatory. Size of the map (edgemap or source rectangle) in spx.
@@ -118,7 +118,7 @@ namespace wax
 		static void	_counts( int nLon, int nLat, int outlinePoints, int& nVertices, int& nTriangles );
 
 		// Points added along the outline between crossings, where the grid alone would leave it off
-		// by more than the outline precision: at most how many, and the longest arc between two
+		// by more than the outline tolerance: at most how many, and the longest arc between two
 		// points (1/2^32 of a turn), 0 for none.
 
 		int			_outlinePoints( uint32_t& longestArc ) const;

@@ -48,7 +48,7 @@ namespace wax
 	 *
 	 * The Warpmap is a ring of sectors, each split in parts across the ring, which goes all the way
 	 * around and a pixel beyond both radii, whatever the sweep, so it can be turned by an offset. How
-	 * many is calculated from precision (max position error in pixels).
+	 * many is calculated from precision (see WarpGenerator).
 	 *
 	 * Like other WarpGenerators, CircularWarp keeps its Warpmap and updates it when generate() is called.
 	 */
@@ -62,7 +62,7 @@ namespace wax
 			spx					bottomRadius = 0;				// Radius the bottom of the source is placed at.
 			CoordF				center = { 0.5f, 0.5f };		// Center of circle, relative to size.
 			Finalizer_p			finalizer = nullptr;
-			float				precision = 1.f;				// Max position error in pixels, of outlines at most WarpGenerator::c_outlinePrecision.
+			float				precision = 1.f;				// Higher gives more triangles. Positions within WarpGenerator::c_tolerance / precision pixels, curved outlines within at most WarpGenerator::c_outlineTolerance.
 			SizeI				size;							// Mandatory. Size of the Warpmap in pixels.
 			SizeSPX				sourceSize;						// Mandatory. Size of the source (edgemap or source rectangle) in spx.
 			float				startAngle = 0.f;				// Degrees. Where the left side of the source is placed. 0 = up, increasing clockwise.

@@ -243,7 +243,7 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   over it (1.05-1.4) and CylinderWarp over it at fine precision, its strips being at least 2
   pixels wide and the last one at each rim taking up to a pixel more. Now all keep within
   precision with 10-40% to spare: pieces are sized for precision less 1/64 pixel
-  (`_piecePrecision()`), for rounding the vertices to spx; ball pieces span
+  (`_piecePrecision()`, now `_pieceTolerance()`), for rounding the vertices to spx; ball pieces span
   sqrt(3.4 * precision / r) rather than sqrt(4 * ...); lens rings get 0.7 of precision.
   Cylinder strips are laid out from the rims inwards, so what is left goes to the widest strip in
   the middle and finer precision never gives fewer strips; the last two are made as wide as each
@@ -256,7 +256,8 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   and lenses had fewer, but pieces over 22.5 degrees went over precision (2.4 times for a lens
   with falloff at precision 8), as the estimates assume small angles.
 - **Precision is 1 by default, and curved outlines are kept within half a pixel**
-  (`WarpGenerator::c_outlinePrecision`, `_outlinePrecision()`) whatever precision is set. Most
+  (`WarpGenerator::c_outlinePrecision`, `_outlinePrecision()`, now `c_outlineTolerance` and
+  `_outlineTolerance()`) whatever precision is set. Most
   GUIs are expected to use 1, hardly any finer than 0.5, and 2 where performance is short. Drawn
   side by side at 0.25 to 2, the inside of shapes off by 1-2 pixels hardly shows, while curved
   outlines and edges along them off by as much show as corners. Precision also hardly changes the
@@ -270,6 +271,14 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   than 748 triangles, a gauge 56 rather than 48, a lens with falloff about 1.9 times as many, as
   its rim's pieces go for all its rings, with outlines off by at most 0.45 pixels rather than up
   to 1.05.
+- **Precision is a quality factor, higher gives more triangles.** It was the largest position
+  error in pixels, so a higher value gave fewer triangles, the wrong way around for a setting
+  called precision. Generators now keep within `WarpGenerator::c_tolerance / precision` pixels,
+  `c_tolerance` being 1, so the default 1 still means a pixel, 2 half a pixel and 0.5 two pixels.
+  What 1 means can be tuned later by changing `c_tolerance` alone. Internally pieces are sized from
+  `_pieceTolerance()` and `_outlineTolerance()`, in pixels. Values of precision in the entries
+  above, written before this, are in pixels: precision 0.25 there is 4 now, 2 is 0.5 and 8 is
+  0.125.
 - **GPU warps bias positions by 1/32768 of a texel with Nearest sampling,** so that one exactly on
   a border between texels takes the texel after it, as in SoftBackend, rather than either one by
   how the interpolation rounds, which showed as lines where an edge of a Warpmap runs along such

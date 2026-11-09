@@ -36,7 +36,7 @@ extern "C" {
 	{
 		wax_spx				bottomRadius;			// Radius the bottom of the source is placed at.
 		wax_coordF			center;					// Center of circle, relative to size. Usually { 0.5f, 0.5f }.
-		float				precision;				// Max position error in pixels, of outlines at most 0.5. 0 = default (1).
+		float				precision;				// Higher gives more triangles, positions within 1 / precision pixels, curved outlines within at most 0.5. 0 = default (1).
 		wax_sizeI			size;					// Mandatory. Size of the Warpmap in pixels.
 		wax_sizeSPX			sourceSize;				// Mandatory. Size of the source (edgemap or source rectangle) in spx.
 		float				startAngle;				// Degrees. Where the left side of the source is placed. 0 = up, clockwise.

@@ -55,7 +55,7 @@ namespace wax
 	 * The Warpmap is made for a source of sourceSize (see WarpGenerator). It goes all the way around
 	 * the outline and a pixel beyond the band, whatever the sweep, so the source can be moved along
 	 * it by an offset. The straight sides are exact. The corners are split into sectors, and parts
-	 * across the band, as many as precision (max position error in pixels) takes.
+	 * across the band, as many as precision (see WarpGenerator) takes.
 	 *
 	 * Like other WarpGenerators, RoundedRectWarp keeps its Warpmap and updates it when generate() is called.
 	 */
@@ -69,7 +69,7 @@ namespace wax
 			spx					bottomDistance = 0;				// Distance from the outline of the bottom of the source, positive outwards.
 			spx					cornerRadius = 0;				// Radius of the corners of the outline, at most half its shorter side.
 			Finalizer_p			finalizer = nullptr;
-			float				precision = 1.f;				// Max position error in pixels, of outlines at most WarpGenerator::c_outlinePrecision.
+			float				precision = 1.f;				// Higher gives more triangles. Positions within WarpGenerator::c_tolerance / precision pixels, curved outlines within at most WarpGenerator::c_outlineTolerance.
 			RectSPX				rect;							// Mandatory. The outline, relative to the top-left corner of the Warpmap.
 			SizeI				size;							// Mandatory. Size of the Warpmap in pixels.
 			SizeSPX				sourceSize;						// Mandatory. Size of the source (edgemap or source rectangle) in spx.

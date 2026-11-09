@@ -566,7 +566,7 @@ bool WarpmapTest::perspectivePositionTest(std::ostream& output)
 }
 
 //____ circularWarpTest() _____________________________________________________
-// CircularWarp against exact polar math: exact at the vertices, within precision between them, and
+// CircularWarp against exact polar math: exact at the vertices, within 1 / precision pixels between them, and
 // covering the ring and a pixel beyond it.
 
 bool WarpmapTest::circularWarpTest(std::ostream& output)
@@ -576,12 +576,12 @@ bool WarpmapTest::circularWarpTest(std::ostream& output)
 	struct Case { CircularWarp::Blueprint bp; float tolerance; };
 
 	Case cases[] = {
-		{ WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 200, 200 }, _.topRadius = 98 * 64, _.bottomRadius = 60 * 64, _.precision = 0.25f), 0.25f },	// Full ring, top outside.
+		{ WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 200, 200 }, _.topRadius = 98 * 64, _.bottomRadius = 60 * 64, _.precision = 4.f), 0.25f },	// Full ring, top outside.
 		{ WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 300, 200 }, _.center = { 0.4f, 0.6f }, _.topRadius = 40 * 64, _.bottomRadius = 90 * 64,
-			   _.startAngle = -135.f, _.sweep = 270.f, _.precision = 0.25f), 0.25f },																	// Arc.
-		{ WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 200, 200 }, _.topRadius = 30 * 64, _.bottomRadius = 99 * 64, _.sweep = -90.f, _.precision = 0.1f), 0.1f },	// Counter clockwise, repeats 4 times.
-		{ WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 160, 160 }, _.topRadius = 0, _.bottomRadius = 80 * 64, _.precision = 0.25f), 0.25f },			// Disc.
-		{ WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 400, 400 }, _.topRadius = 190 * 64, _.bottomRadius = 182 * 64, _.precision = 0.25f), 0.25f }	// Thin and large.
+			   _.startAngle = -135.f, _.sweep = 270.f, _.precision = 4.f), 0.25f },																	// Arc.
+		{ WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 200, 200 }, _.topRadius = 30 * 64, _.bottomRadius = 99 * 64, _.sweep = -90.f, _.precision = 10.f), 0.1f },	// Counter clockwise, repeats 4 times.
+		{ WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 160, 160 }, _.topRadius = 0, _.bottomRadius = 80 * 64, _.precision = 4.f), 0.25f },			// Disc.
+		{ WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 400, 400 }, _.topRadius = 190 * 64, _.bottomRadius = 182 * 64, _.precision = 4.f), 0.25f }	// Thin and large.
 	};
 
 	for (auto& c : cases)
@@ -649,15 +649,15 @@ bool WarpmapTest::circularWarpTest(std::ostream& output)
 			}
 
 		if (maxError > c.tolerance)
-			output << "Max position error " << maxError << " px, precision " << c.tolerance << std::endl;
+			output << "Max position error " << maxError << " px, allowed " << c.tolerance << std::endl;
 		TEST_ASSERT(maxError <= c.tolerance);
 	}
 
-	// Finer precision, more triangles.
+	// Higher precision, more triangles.
 
 	auto pWarp = CircularWarp::create(WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 100, 100 }, _.topRadius = 10 * 64, _.bottomRadius = 50 * 64, _.precision = 1.f), pFactory);
 	int coarse = pWarp->generate()->triangleCount();
-	TEST_ASSERT(pWarp->setPrecision(0.1f));
+	TEST_ASSERT(pWarp->setPrecision(10.f));
 	TEST_ASSERT(pWarp->generate()->triangleCount() > coarse * 3);
 
 	// Invalid blueprints.
@@ -731,7 +731,7 @@ bool WarpmapTest::circularWarpGenerateTest(std::ostream& output)
 	auto pMap3 = pWarp->generate();
 	TEST_ASSERT(pMap3 != pMap2 && pMap3->pixelSize() == SizeI(120, 100));
 
-	TEST_ASSERT(pWarp->setPrecision(2.f));
+	TEST_ASSERT(pWarp->setPrecision(0.5f));
 	auto pMap4 = pWarp->generate();
 	TEST_ASSERT(pMap4 != pMap3 && pMap4->triangleCount() < pMap3->triangleCount());
 
@@ -825,7 +825,7 @@ bool WarpmapTest::roundedRectWarpTest(std::ostream& output)
 	for (double top : { -6.0, -20.0 })
 	{
 		auto pWarp = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 140, 100 }, _.sourceSize = c_sourceSize, _.rect = { 20 * 64, 20 * 64, 100 * 64, 60 * 64 },
-												  _.cornerRadius = 12 * 64, _.topDistance = spx(top * 64), _.bottomDistance = spx(bottom * 64), _.precision = 0.25f), pFactory);
+												  _.cornerRadius = 12 * 64, _.topDistance = spx(top * 64), _.bottomDistance = spx(bottom * 64), _.precision = 4.f), pFactory);
 		TEST_ASSERT(pWarp != nullptr);
 		TEST_ASSERT(pWarp->isInstanceOf(WarpGenerator::TYPEINFO));
 
@@ -932,7 +932,7 @@ bool WarpmapTest::roundedRectWarpTest(std::ostream& output)
 	// Less precision, fewer triangles. The straight sides take the same anyway.
 
 	auto pAuto = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 140, 100 }, _.sourceSize = c_sourceSize, _.rect = { 20 * 64, 20 * 64, 100 * 64, 60 * 64 },
-											  _.cornerRadius = 12 * 64, _.topDistance = -6 * 64, _.bottomDistance = 8 * 64, _.precision = 2.f), pFactory);
+											  _.cornerRadius = 12 * 64, _.topDistance = -6 * 64, _.bottomDistance = 8 * 64, _.precision = 0.5f), pFactory);
 	TEST_ASSERT(pAuto->generate()->triangleCount() < pWarp->generate()->triangleCount());
 
 	// Equal distances have no band to map the source onto, nothing is drawn.
@@ -1234,7 +1234,7 @@ bool WarpmapTest::cylinderWarpTest(std::ostream& output)
 	CylinderWarp::Blueprint cases[] = {
 		WGBP(CylinderWarp, _.size = { 80, 200 }, _.sourceSize = source),															// A reel.
 		WGBP(CylinderWarp, _.size = { 200, 90 }, _.sourceSize = { 240 * 64, 32 * 64 }, _.axis = Axis::Y, _.span = 150.f, _.startAngle = 30.f, _.sweep = -200.f),
-		WGBP(CylinderWarp, _.size = { 60, 120 }, _.sourceSize = source, _.span = 60.f, _.startAngle = -45.f, _.sweep = 90.f, _.precision = 0.1f)
+		WGBP(CylinderWarp, _.size = { 60, 120 }, _.sourceSize = source, _.span = 60.f, _.startAngle = -45.f, _.sweep = 90.f, _.precision = 10.f)
 	};
 
 	for (auto& bp : cases)
@@ -1294,9 +1294,10 @@ bool WarpmapTest::cylinderWarpTest(std::ostream& output)
 				TEST_ASSERT(alongDiff <= 0.51);
 			}
 
-		if (maxError > bp.precision)
-			output << "Max position error " << maxError << " px, precision " << bp.precision << std::endl;
-		TEST_ASSERT(maxError <= bp.precision);
+		const double allowed = 1.0 / bp.precision;
+		if (maxError > allowed)
+			output << "Max position error " << maxError << " px, allowed " << allowed << std::endl;
+		TEST_ASSERT(maxError <= allowed);
 
 		// Turning by offset gives the nodes of a larger start, within rounding.
 
@@ -1645,7 +1646,7 @@ bool WarpmapTest::perspectiveRotatedTest(std::ostream& output)
 
 //____ limitsTest() ___________________________________________________________
 // Corners of triangles are 16 bits, which limits vertices to maxVertices. Generators keep within
-// it however large the shape and fine the precision, by making the pieces larger.
+// it however large the shape and high the precision, by making the pieces larger.
 
 namespace
 {
@@ -1696,24 +1697,24 @@ bool WarpmapTest::limitsTest(std::ostream& output)
 	};
 
 	auto pRing = CircularWarp::create(WGBP(CircularWarp, _.size = { 4000, 4000 }, _.sourceSize = { 64 * 64, 64 * 64 }, _.topRadius = 64 * 1995,
-										   _.bottomRadius = 64 * 5, _.precision = 0.01f), pFactory);
+										   _.bottomRadius = 64 * 5, _.precision = 100.f), pFactory);
 	Warpmap_p pRingMap = pRing->generate();
 	TEST_ASSERT(fits(pRingMap, "Fine ring"));
 	TEST_ASSERT(pRingMap->vertexCount() > Warpmap::maxVertices / 2);		// Close to the limit, not much coarser.
 
 	auto pFrame = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 4000, 3000 }, _.sourceSize = { 64 * 64, 64 * 64 },
 											   _.rect = { 64 * 100, 64 * 100, 64 * 3800, 64 * 2800 }, _.cornerRadius = 64 * 900,
-											   _.topDistance = 64 * 50, _.bottomDistance = -64 * 1300, _.precision = 0.01f), pFactory);
+											   _.topDistance = 64 * 50, _.bottomDistance = -64 * 1300, _.precision = 100.f), pFactory);
 	TEST_ASSERT(fits(pFrame->generate(), "Fine frame"));
 
-	auto pTallCylinder = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 100, 120000 }, _.sourceSize = { 64 * 64, 64 * 64 }, _.precision = 0.01f), pFactory);
+	auto pTallCylinder = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 100, 120000 }, _.sourceSize = { 64 * 64, 64 * 64 }, _.precision = 100.f), pFactory);
 	TEST_ASSERT(fits(pTallCylinder->generate(), "Very long cylinder"));
 
 	return true;
 }
 
 //____ ballWarpTest() _________________________________________________________
-// A ball covered by a map: positions within precision of the exact ones, seen from any side,
+// A ball covered by a map: positions within the tolerance of the exact ones, seen from any side,
 // no holes, an outline fading as a straight edge would, updated in place when tilted and rolled,
 // and spun by an offset.
 
@@ -1725,7 +1726,7 @@ bool WarpmapTest::ballWarpTest(std::ostream& output)
 	TEST_ASSERT(BallWarp::create(WGBP(BallWarp, _.size = { 100, 100 }, _.sourceSize = source, _.tilt = 91.f), pFactory) == nullptr);
 	TEST_ASSERT(BallWarp::create(WGBP(BallWarp, _.size = { 100, 100 }, _.sourceSize = {} ), pFactory) == nullptr);
 
-	auto pBall = BallWarp::create(WGBP(BallWarp, _.size = { 241, 260 }, _.sourceSize = source, _.precision = 0.25f), pFactory);
+	auto pBall = BallWarp::create(WGBP(BallWarp, _.size = { 241, 260 }, _.sourceSize = source, _.precision = 4.f), pFactory);
 	TEST_ASSERT(pBall);
 	TEST_ASSERT(pBall->radius() == 241 * 32 - 32);
 	TEST_ASSERT(!pBall->setOrientation(-90.5f, 0.f));
@@ -1867,7 +1868,7 @@ bool WarpmapTest::ballWarpTest(std::ostream& output)
 
 	// Within the limits of Warpmap however large and fine.
 
-	auto pHuge = BallWarp::create(WGBP(BallWarp, _.size = { 4000, 4000 }, _.sourceSize = source, _.precision = 0.01f), pFactory);
+	auto pHuge = BallWarp::create(WGBP(BallWarp, _.size = { 4000, 4000 }, _.sourceSize = source, _.precision = 100.f), pFactory);
 	Warpmap_p pHugeMap = pHuge->generate();
 	TEST_ASSERT(pHugeMap && pHugeMap->vertexCount() <= Warpmap::maxVertices && pHugeMap->triangleCount() <= Warpmap::maxTriangles);
 
@@ -1875,7 +1876,7 @@ bool WarpmapTest::ballWarpTest(std::ostream& output)
 }
 
 //____ lensWarpTest() _________________________________________________________
-// A lens magnifying what is under it: positions within precision of the exact ones for any
+// A lens magnifying what is under it: positions within the tolerance of the exact ones for any
 // magnification and falloff, no holes, an outline fading as a straight edge would, meeting what
 // is around it at the rim with falloff, and updated in place without.
 
@@ -1890,7 +1891,7 @@ bool WarpmapTest::lensWarpTest(std::ostream& output)
 	TEST_ASSERT(LensWarp::create(WGBP(LensWarp, _.size = size, _.sourceSize = source, _.falloff = -0.1f), pFactory) == nullptr);
 	TEST_ASSERT(LensWarp::create(WGBP(LensWarp, _.size = size, _.sourceSize = {}), pFactory) == nullptr);
 
-	auto pLens = LensWarp::create(WGBP(LensWarp, _.size = size, _.sourceSize = source, _.precision = 0.25f), pFactory);
+	auto pLens = LensWarp::create(WGBP(LensWarp, _.size = size, _.sourceSize = source, _.precision = 4.f), pFactory);
 	TEST_ASSERT(pLens);
 	TEST_ASSERT(pLens->radius() == 241 * 32 - 32);
 	TEST_ASSERT(!pLens->setMagnification(0.5f) && !pLens->setFalloff(2.f));
@@ -1972,7 +1973,7 @@ bool WarpmapTest::lensWarpTest(std::ostream& output)
 				// Where the position from the Warpmap is shown by the exact lens, against the point.
 				// Rings are at least two pixels apart, so over the first pixel of the falloff and where
 				// it squeezes the source into each pixel, positions follow the falloff less closely:
-				// within 1.5 times precision where it is squeezed up to 4 times, not measured where
+				// within 1.5 times the tolerance where it is squeezed up to 4 times, not measured where
 				// it is squeezed more. They are still continuous, so it doesn't show.
 
 				double r0 = R * (1 - falloff);
@@ -2052,7 +2053,7 @@ bool WarpmapTest::lensWarpTest(std::ostream& output)
 
 	// Within the limits of Warpmap however large and fine, and with tiny lenses.
 
-	auto pHuge = LensWarp::create(WGBP(LensWarp, _.size = { 4000, 4000 }, _.sourceSize = { 4000 * 64, 4000 * 64 }, _.falloff = 0.2f, _.magnification = 30.f, _.precision = 0.01f), pFactory);
+	auto pHuge = LensWarp::create(WGBP(LensWarp, _.size = { 4000, 4000 }, _.sourceSize = { 4000 * 64, 4000 * 64 }, _.falloff = 0.2f, _.magnification = 30.f, _.precision = 100.f), pFactory);
 	Warpmap_p pHugeMap = pHuge->generate();
 	TEST_ASSERT(pHugeMap && pHugeMap->vertexCount() <= Warpmap::maxVertices && pHugeMap->triangleCount() <= Warpmap::maxTriangles);
 
@@ -2067,7 +2068,7 @@ bool WarpmapTest::lensWarpTest(std::ostream& output)
 
 //____ precisionTrianglesTest() _______________________________________________
 // Precision decides the number of triangles the same way for all generators that use it: never
-// fewer for finer precision, and clearly more from 1 pixel to 0.1. How close each keeps to its
+// fewer for higher precision, and clearly more from 1 to 10. How close each keeps to its
 // precision is tested with the generator.
 
 bool WarpmapTest::precisionTrianglesTest(std::ostream& output)
@@ -2092,13 +2093,13 @@ bool WarpmapTest::precisionTrianglesTest(std::ostream& output)
 		TEST_ASSERT(g.pGenerator);
 
 		int previous = 0, coarse = 0;
-		for (float precision : { 1.f, 0.5f, 0.25f, 0.1f })
+		for (float precision : { 1.f, 2.f, 4.f, 10.f })
 		{
 			TEST_ASSERT(g.pGenerator->setPrecision(precision));
 			int triangles = g.pGenerator->generate()->triangleCount();
 			if (triangles < previous)
 			{
-				output << g.pName << ": " << triangles << " triangles at precision " << precision << ", fewer than " << previous << " at a coarser one" << std::endl;
+				output << g.pName << ": " << triangles << " triangles at precision " << precision << ", fewer than " << previous << " at a lower one" << std::endl;
 				return false;
 			}
 			if (precision == 1.f)
@@ -2108,7 +2109,7 @@ bool WarpmapTest::precisionTrianglesTest(std::ostream& output)
 
 		if (previous < coarse * 3 / 2)
 		{
-			output << g.pName << ": " << previous << " triangles at precision 0.1, " << coarse << " at 1" << std::endl;
+			output << g.pName << ": " << previous << " triangles at precision 10, " << coarse << " at 1" << std::endl;
 			return false;
 		}
 	}
@@ -2116,7 +2117,7 @@ bool WarpmapTest::precisionTrianglesTest(std::ostream& output)
 }
 
 //____ outlinePrecisionTest() _________________________________________________
-// Curved outlines stay within WarpGenerator's outline precision, half a pixel, however coarse the
+// Curved outlines stay within WarpGenerator's outline tolerance, half a pixel, however low the
 // precision: where a ring crosses the top of its source, and where the coverage of the outline of
 // a ball and a lens is a half, found along rays from the middle.
 
@@ -2160,20 +2161,20 @@ bool WarpmapTest::outlinePrecisionTest(std::ostream& output)
 		for (int k = 0; k < 720; k++)
 			worst = std::max(worst, std::abs(crossing(c, c, 2 * M_PI * (k + 0.37) / 720, lo, hi, value, target) - exact));
 		if (worst > tolerance)
-			output << pWhat << ": outline off by " << worst << " pixels at precision 2" << std::endl;
+			output << pWhat << ": outline off by " << worst << " pixels at precision 0.5" << std::endl;
 		return worst <= tolerance;
 	};
 
-	Warpmap_p pRing = CircularWarp::create(WGBP(CircularWarp, _.size = { 120, 120 }, _.sourceSize = c_sourceSize, _.topRadius = 58 * 64, _.bottomRadius = 44 * 64, _.precision = 2.f), pFactory)->generate();
+	Warpmap_p pRing = CircularWarp::create(WGBP(CircularWarp, _.size = { 120, 120 }, _.sourceSize = c_sourceSize, _.topRadius = 58 * 64, _.bottomRadius = 44 * 64, _.precision = 0.5f), pFactory)->generate();
 	TEST_ASSERT(check("Ring", pRing, 60, 58, 51, 58.9, [&](double x, double y) { return positionAt(pRing, x, y).y; }, 0.0));
 
-	Warpmap_p pBall = BallWarp::create(WGBP(BallWarp, _.size = { 160, 160 }, _.sourceSize = { 256 * 64, 128 * 64 }, _.tilt = 23.5f, _.roll = 10.f, _.precision = 2.f), pFactory)->generate();
+	Warpmap_p pBall = BallWarp::create(WGBP(BallWarp, _.size = { 160, 160 }, _.sourceSize = { 256 * 64, 128 * 64 }, _.tilt = 23.5f, _.roll = 10.f, _.precision = 0.5f), pFactory)->generate();
 	double R = (160 * 32 - 32) / 64.0;
 	TEST_ASSERT(check("Ball", pBall, 80, R, R - 3, R + 0.9, [&](double x, double y) { return coverageAt(pBall, x, y); }, 0.5));
 
 	for (float falloff : { 0.f, 0.3f })
 	{
-		Warpmap_p pLens = LensWarp::create(WGBP(LensWarp, _.size = { 160, 160 }, _.sourceSize = { 160 * 64, 160 * 64 }, _.falloff = falloff, _.precision = 2.f), pFactory)->generate();
+		Warpmap_p pLens = LensWarp::create(WGBP(LensWarp, _.size = { 160, 160 }, _.sourceSize = { 160 * 64, 160 * 64 }, _.falloff = falloff, _.precision = 0.5f), pFactory)->generate();
 		TEST_ASSERT(check("Lens", pLens, 80, R, R - 3, R + 0.9, [&](double x, double y) { return coverageAt(pLens, x, y); }, 0.5));
 	}
 	return true;

@@ -35,7 +35,7 @@ extern "C" {
 	typedef struct wax_cylinderWarpBP_struct		// NOT BINARY EQUIVALENT!
 	{
 		wax_axis				axis;					// Axis of the cylinder. WAX_AXIS_X lies down, like a slot machine reel. 0 = default (WAX_AXIS_X).
-		float				precision;				// Max position error in pixels, of outlines at most 0.5. 0 = default (1).
+		float				precision;				// Higher gives more triangles, positions within 1 / precision pixels, curved outlines within at most 0.5. 0 = default (1).
 		wax_sizeI			size;					// Mandatory. Size of the Warpmap in pixels, which the cylinder fills.
 		wax_sizeSPX			sourceSize;				// Mandatory. Size of the source (edgemap or source rectangle) in spx.
 		float				span;					// Degrees of the cylinder seen, above 0 and below 180. 0 = default (120).

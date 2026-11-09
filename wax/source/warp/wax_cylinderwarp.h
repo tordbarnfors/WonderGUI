@@ -51,7 +51,7 @@ namespace wax
 	 * Turn the cylinder by drawing with rotationOffset() rather than generating again.
 	 *
 	 * The Warpmap is a row of strips along the axis, where positions change linearly. Across it,
-	 * strips are as wide as keeps them within precision, wide in the middle and narrower towards
+	 * strips are as wide as precision allows, wide in the middle and narrower towards
 	 * the rims, where the cylinder curves away the most, so a span close to 180 degrees takes many.
 	 * Shading, such as the
 	 * cylinder getting darker towards the rims, is done with a tint when drawing.
@@ -67,7 +67,7 @@ namespace wax
 		{
 			Axis				axis = Axis::X;					// Axis of the cylinder. X lies down, like a slot machine reel.
 			Finalizer_p			finalizer = nullptr;
-			float				precision = 1.f;				// Max position error in pixels, of outlines at most WarpGenerator::c_outlinePrecision.
+			float				precision = 1.f;				// Higher gives more triangles. Positions within WarpGenerator::c_tolerance / precision pixels, curved outlines within at most WarpGenerator::c_outlineTolerance.
 			SizeI				size;							// Mandatory. Size of the Warpmap in pixels, which the cylinder fills.
 			SizeSPX				sourceSize;						// Mandatory. Size of the source (edgemap or source rectangle) in spx.
 			float				span = 120.f;					// Degrees of the cylinder seen, centered on the side facing the viewer. Above 0, below 180.

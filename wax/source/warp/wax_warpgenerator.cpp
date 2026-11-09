@@ -180,7 +180,7 @@ namespace wax
 		triangles are off where the outline curves, by r * a^2 / 8 for sectors of a radians at radius
 		r (largest at the outer edge), and along their diagonals, by a * h / 4 for parts h across the
 		band, from how the position along the outline changes across it. _bandLayout() shares
-		precision between the two as gives the fewest triangles.
+		the tolerance between the two as gives the fewest triangles.
 
 		Where the band reaches further inside than the radius of the corners, the inside of the outline
 		is split along the diagonals from the centers of the corners, as the nearest point of the outline
@@ -245,7 +245,7 @@ namespace wax
 			return;
 
 		const double quarter = c_pi / 2;
-		const double precision = _piecePrecision();
+		const double tolerance = _pieceTolerance();
 
 		// Kept within Warpmap::maxVertices: columns at the start of the top side and around the
 		// four corners, nAcross + 1 vertices each, the vertices at the centers of fans and up to six
@@ -268,23 +268,23 @@ namespace wax
 		auto arcs = [&](double angle) { return int(std::clamp(std::ceil(quarter / std::max(angle, 1e-6)), 2.0, 1024.0)); };
 		auto parts = [&](double angle, double budget) { return int(std::clamp(std::ceil(across * angle / (4 * budget)), 1.0, 256.0)); };
 
-		// Least work drawing for a share of precision kept along the outline. A software backend
+		// Least work drawing for a share of the tolerance kept along the outline. A software backend
 		// spends about as much on each row a triangle covers, so that goes by the number of quads
 		// times their length plus how far across they go, which favours quads about as long as
 		// they are across over thin slivers.
 
-		// Sectors keep the outer edge, which is the outline, within the outline precision.
+		// Sectors keep the outer edge, which is the outline, within the outline tolerance.
 
-		const int nOutline = arcs(std::sqrt(8 * _outlinePrecision() / outer));
+		const int nOutline = arcs(std::sqrt(8 * _outlineTolerance() / outer));
 
 		double best = -1.0;
 		for (int i = 1; i < 20; i++)
 		{
 			double share = i / 20.0;
-			int n = std::max(arcs(std::sqrt(8 * share * precision / outer)), nOutline);
+			int n = std::max(arcs(std::sqrt(8 * share * tolerance / outer)), nOutline);
 			double angle = quarter / n;
 
-			int m = parts(angle, std::max(precision - outer * angle * angle / 8, precision / 20));
+			int m = parts(angle, std::max(tolerance - outer * angle * angle / 8, tolerance / 20));
 
 			double cost = double(n + 1) * m * (outer * angle + across / m);
 			if (best < 0.0 || cost < best)
@@ -622,20 +622,20 @@ namespace wax
 			empty();
 	}
 
-	//____ _piecePrecision() __________________________________________________
+	//____ _pieceTolerance() __________________________________________________
 
-	double WarpGenerator::_piecePrecision() const
+	double WarpGenerator::_pieceTolerance() const
 	{
-		double precision = std::max(double(m_precision), 0.01);
-		return std::max(precision - 1.0 / 64, precision / 2);
+		double tolerance = std::max(c_tolerance / double(m_precision), 0.01);
+		return std::max(tolerance - 1.0 / 64, tolerance / 2);
 	}
 
-	//____ _outlinePrecision() ________________________________________________
+	//____ _outlineTolerance() ________________________________________________
 
-	double WarpGenerator::_outlinePrecision() const
+	double WarpGenerator::_outlineTolerance() const
 	{
-		double precision = std::clamp(double(m_precision), 0.01, double(c_outlinePrecision));
-		return std::max(precision - 1.0 / 64, precision / 2);
+		double tolerance = std::clamp(c_tolerance / double(m_precision), 0.01, double(c_outlineTolerance));
+		return std::max(tolerance - 1.0 / 64, tolerance / 2);
 	}
 
 	//____ _validateSettings() ________________________________________________

@@ -54,10 +54,10 @@ namespace wax
 	 * - falloff 1 magnifies the most in the middle and less and less out to the rim, like a bubble.
 	 *
 	 * The Warpmap is the middle of the lens as one polygon, where positions are linear, rings
-	 * through the falloff as close as keeps them within precision, at least two pixels apart, each
+	 * through the falloff as close as precision allows, at least two pixels apart, each
 	 * turned by half a piece and with fewer pieces close to the middle, and a ring of triangles
 	 * around the outline that goes from full coverage of the vertices to none, which antialiases
-	 * it. Pieces along the rim are as long as keeps the outline within precision. Without
+	 * it. Pieces along the rim are as long as keeps the outline within the outline tolerance. Without
 	 * falloff, magnification only changes positions in the source, so the Warpmap is updated in
 	 * place. A frame, a highlight or a shadow are drawn separately.
 	 *
@@ -76,7 +76,7 @@ namespace wax
 			float				falloff = 0.f;					// Part of the radius, 0 to 1, over which magnification falls off to none at the rim.
 			Finalizer_p			finalizer = nullptr;
 			float				magnification = 2.f;			// In the middle of the lens, 1 or more.
-			float				precision = 1.f;				// Max position error in pixels, of outlines at most WarpGenerator::c_outlinePrecision.
+			float				precision = 1.f;				// Higher gives more triangles. Positions within WarpGenerator::c_tolerance / precision pixels, curved outlines within at most WarpGenerator::c_outlineTolerance.
 			SizeI				size;							// Mandatory. Size of the Warpmap in pixels, which the lens is centered in.
 			SizeSPX				sourceSize;						// Mandatory. Size of the source under the lens in spx, normally size * 64.
 		};
