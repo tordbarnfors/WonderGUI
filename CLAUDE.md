@@ -21,7 +21,7 @@
 
 ## Layout
 
-- `wax/` - graphics base library and its extensions (soft, OpenGL, DX12, Metal backends, FreeType fonts, streaming). `c-api/` is compiled into the `wax` library, so changing the Wax API usually means updating it too. `wrappers/` has the C# wrapper.
+- `wax/` - graphics base library and its extensions (soft, OpenGL, DX12, Metal, Vulkan backends, FreeType fonts, streaming). DX12 and Vulkan share the HLSL shaders in `wax/extensions/hlsl` and, for Vulkan so far, the API independent part of a GPU backend in `wax/source/wax_gpubackend.h`. `c-api/` is compiled into the `wax` library, so changing the Wax API usually means updating it too. `wrappers/` has the C# wrapper.
 - `wondergui/` - the UI toolkit: `source/` (widgets, components, text layouts), `extensions/` (legacy GUI, debugger, plugin), `tools/`, `widgetkits/`.
 - `wonderapp/` - application frameworks (SDL2/SDL3, Win32, Cocoa) and tools built on them.
 - `thirdparty/` - vendored third-party code.
@@ -37,6 +37,11 @@
   collection name to run only those tests, e.g. `unittester TextSystem`; the full suite
   includes some slow shape tests.
 - Tools and examples also load `resources/`, so run them from the repository root too.
+- `wappsdl3vk` renders with Vulkan. Headless under `xvfb-run` it presents with lavapipe only, as
+  Xvfb has no DRI3; `WAPP_VK_DEVICE=Intel` renders on the GPU without presenting, which is enough
+  for `gfxdevicetester --accuracy`. `WAPP_VK_VALIDATION=1` turns on the validation layer.
+- After changing a shader in `wax/extensions/hlsl`, run `wax/extensions/vulkangfx/compile_shaders.py`
+  (needs DXC) and regenerate `wax/extensions/dx12gfx/wax_dx12shaders.cpp`, see `wax/extensions/hlsl/README.md`.
 - `gfxdevicetester` compares the native device of the selected `WAPPLIB` against the software
   reference. Use it when changing a graphics backend or blending. `widgetbench` is for looking at
   widgets, skins and layouts (see its `README.md` for adding a test), `workbench` for trying things out.

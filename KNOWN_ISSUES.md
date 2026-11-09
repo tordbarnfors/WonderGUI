@@ -131,14 +131,60 @@ The UTF-8 text system was built and tested on Linux (SDL2 software and OpenGL) a
 been run on Win32/DX12. The macOS frameworks (Cocoa software/Metal, SDL2 Metal) haven't
 been built with it yet.
 
-### DX12Backend and MetalBackend with GpuTools
+### DX12Backend and MetalBackend since the GPU backends were streamlined
 
-Both were switched to the shared helpers in `wax_gputools.h` (state changes, lines without caps,
-blur taps) on a machine without Windows or macOS, so neither has been compiled since. The changes
-are mechanical and GlBackend gives the same gfxdevicetester results with them, but build both and
-run gfxdevicetester before relying on them.
+Both were changed on a machine without Windows or macOS, so neither has been compiled since:
+
+- They use the shared helpers in `wax_gputools.h` (state changes, lines without caps, blur taps).
+  The changes are mechanical and GlBackend gives the same gfxdevicetester results with them.
+- DX12Backend's shaders moved to `wax/extensions/hlsl`, with the constants declared once in
+  `constants.hlsl` rather than in each shader, and `wax_dx12shaders.cpp` was generated anew. All
+  shaders compile with DXC to DXIL, but DX12Backend compiles them with `D3DCompile()`.
+
+Build both and run gfxdevicetester before relying on them.
+
+### VulkanBackend on Windows and on other GPUs
+
+Only run on Linux, with lavapipe and Intel UHD 770 (Mesa).
 
 ## Graphics
+
+### gfxdevicetester: tests that differ on GlBackend and VulkanBackend alike
+
+SegmentTests Circles, MipmapTests Mipmapped_0.4 and EdgemapTintTests ReplaceVerticalAndFlat differ
+from ReferenceBackend by the same amounts on GlBackend (llvmpipe) and VulkanBackend (lavapipe and
+Intel UHD 770), so it is likely something they have in common with each other, and maybe with the
+other GPU backends, rather than a bug of one backend. Not looked into yet.
+
+### gfxdevicetester's ReadbackTests differs on VulkanBackend
+
+The RGB_565 canvas is kept as XRGB_8, as on DX12Backend and MetalBackend, which keeps the dark
+colors a Replace leaves in a linear canvas, where RGB_565 rounds them to black. Expected, see the
+comment in `readbacktests.h`.
+
+### GPU backends stall when pixels of a surface are uploaded
+
+DX12Surface and VulkanSurface submit what every backend has recorded and wait for the GPU before
+and after copying pixels to a texture. Fine for surfaces filled while loading, slow for one
+updated every frame.
+
+`syncTexture()` in `wax_dx12surface.cpp` and `wax_vulkansurface.cpp`
+
+### Edgemaps and Warpmaps of GPU backends have one buffer for two frames in flight
+
+Changing an edgemap or a Warpmap writes into the buffer the GPU may still be reading for the
+previous frame, so it can show the new content early. DX12, Metal and Vulkan alike.
+
+### VulkanBackend: a lost device stops rendering for good
+
+It is reported once, and nothing renders after that. Replacing the device, as DX12Backend
+does, is planned, see ROADMAP.md.
+
+### VulkanBackend: one memory allocation per buffer and image
+
+Drivers can limit allocations to 4096, which an app with that many surfaces would hit.
+
+`VulkanContext::createBuffer()` and `createImage()` in `wax/extensions/vulkangfx/wax_vulkancontext.cpp`
 
 ### SoftBackend draws thick rings slower than the grid of nodes did
 

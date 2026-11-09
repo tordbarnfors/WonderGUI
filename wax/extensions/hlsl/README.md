@@ -19,6 +19,13 @@ DX12Backend compiles them when it starts. `dx12gfx/wax_dx12shaders.cpp.template`
     cd wax/extensions/dx12gfx
     ruby ../../../scripts/insert_quoted.rb wax_dx12shaders.cpp.template
 
+VulkanBackend gets them as SPIR-V, compiled by DXC into `vulkangfx/spirv`, which is checked in.
+`vulkangfx/compile_shaders.py` lists them and compiles them all:
+
+    python3 wax/extensions/vulkangfx/compile_shaders.py --dxc path/to/dxc
+
+Both lists have to be kept in step when a shader is added.
+
 ## Rules that keep them working on both
 
 - **Constants** come from `constants.hlsl`. DX12 has them as three cbuffers of root constants,
