@@ -106,6 +106,20 @@ namespace wax
 		void	blurOffsets(spx radius, SizeI sourceSize, float offsets[9][2]);
 
 
+		//____ Pixels _________________________________________________________
+
+		/**
+		 * GPU backends keep the colors of surfaces with alpha premultiplied in their textures, so
+		 * that blending and filtering work on premultiplied colors, and hand them out straight.
+		 * These convert ARGB_8 pixels, 32-bit words in native byte order with alpha in the high
+		 * byte, in place, in linear light for sRGB pixels.
+		 */
+
+		void	convertAlpha( uint8_t * pPixels, int pitch, int width, int height, bool bPremultiply, bool bSRGB );
+
+		bool	isOpaque( const uint8_t * pPixels, int pitch, int width, int height );		// All ARGB_8 pixels have alpha 255.
+
+
 		//____ Lines __________________________________________________________
 
 		/**

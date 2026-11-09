@@ -38,6 +38,10 @@ set( SOURCES
 	source/wax_gpushapes.h
 	source/wax_gputools.cpp
 	source/wax_gputools.h
+	source/wax_gpubackend.cpp
+	source/wax_gpubackend.h
+	source/wax_gpuedgemap.cpp
+	source/wax_gpuedgemap.h
 	source/wax_memheap.cpp
 	source/wax_memheap.h
 	source/wax_mempool.cpp
