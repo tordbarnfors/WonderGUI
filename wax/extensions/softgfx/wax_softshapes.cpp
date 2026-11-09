@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <climits>
 #include <cstring>
+#include <type_traits>
 
 namespace wax
 {
@@ -94,6 +95,22 @@ namespace wax
 		inline int64_t recip37(int64_t n)
 		{
 			return n < 1024 ? c_recipTable.v[n] : (int64_t(1) << 37) / n;
+		}
+
+		//____ highestBit() ___________________________________________________
+		// Position of the highest set bit of a value that isn't 0.
+
+		inline int highestBit(uint32_t value)
+		{
+#if defined(__GNUC__) || defined(__clang__)
+			return 31 - __builtin_clz(value);
+#else
+			int bit = 0;
+			for (int step = 16; step > 0; step >>= 1)
+				if ((value >> (bit + step)) != 0)
+					bit += step;
+			return bit;
+#endif
 		}
 
 		//____ isqrt() ________________________________________________________
@@ -1928,7 +1945,7 @@ namespace wax
 
 		int32_t v0 = c_sinTable.v[idx];
 		int32_t v1 = c_sinTable.v[idx + 1];
-		int32_t v = v0 + int32_t((int64_t(v1 - v0) * frac) >> 20);
+		int32_t v = v0 + int32_t((int64_t(v1 - v0) * int32_t(frac)) >> 20);
 
 		return quadrant >= 2 ? -v : v;
 	}
@@ -2588,6 +2605,10 @@ namespace wax
 		All values are in 1/16 spx, from the end and the direction of the line scaled to
 		2^29 -> 2^30, so integer math neither overflows nor loses precision. Directions and
 		vertices are rounded, to within 1/256 pixel.
+
+		Thickness, up to 16 bits as in the commands, and the limit on how far caps reach keep
+		profiles and everything else across and along the line in 32 bits, so that only
+		multiplications of two 32-bit values into 64 bits are needed on 32-bit CPUs.
 	*/
 
 	namespace
@@ -2595,21 +2616,30 @@ namespace wax
 		// Position on the canvas, spx, of the point a along and w across a line from px, py
 		// in direction ux, uy (2.30), in 1/16 spx.
 
-		inline void lineToCanvas(int64_t px, int64_t py, int64_t ux, int64_t uy, int64_t a, int64_t w, int64_t& x, int64_t& y)
+		inline void lineToCanvas(int64_t px, int64_t py, int32_t ux, int32_t uy, int32_t a, int32_t w, int64_t& x, int64_t& y)
 		{
 			const int64_t half = int64_t(1) << 33;
-			x = px + ((a * ux - w * uy + half) >> 34);
-			y = py + ((a * uy + w * ux + half) >> 34);
+			x = px + ((int64_t(a) * ux - int64_t(w) * uy + half) >> 34);
+			y = py + ((int64_t(a) * uy + int64_t(w) * ux + half) >> 34);
 		}
 
-		// Value of a profile at w, between its first and last point.
+		// Value of a profile at w, between its first and last point. The search starts at
+		// the point of the last call for the profile, kept in hint, as calls tend to go
+		// along it. Points of the profile itself need no division.
 
 		template<class Profile>
-		inline int64_t profileAt(const Profile& profile, int64_t w)
+		inline int32_t profileAt(const Profile& profile, int32_t w, int& hint)
 		{
-			size_t i = 1;
-			while (i < profile.size() - 1 && profile[i].w < w)
+			const int last = int(profile.size()) - 1;
+			int i = hint;
+
+			while (i > 1 && profile[i - 1].w >= w)
+				i--;
+
+			while (i < last && profile[i].w < w)
 				i++;
+
+			hint = i;
 
 			const auto& p0 = profile[i - 1];
 			const auto& p1 = profile[i];
@@ -2617,7 +2647,13 @@ namespace wax
 			if (p1.w == p0.w)
 				return std::min(p0.a, p1.a);
 
-			return p0.a + (p1.a - p0.a) * (w - p0.w) / (p1.w - p0.w);
+			if (w == p1.w)
+				return p1.a;
+
+			if (w == p0.w)
+				return p0.a;
+
+			return p0.a + int32_t(int64_t(p1.a - p0.a) * (w - p0.w) / (p1.w - p0.w));
 		}
 	}
 
@@ -2627,44 +2663,45 @@ namespace wax
 		way. Vertical and Horizontal ends need it to have some extent along x or y.
 	*/
 
-	void SoftShapes::_capProfile(LineCap cap, int64_t r, int64_t dirX, int64_t dirY, std::vector<ProfilePoint>& profile)
+	void SoftShapes::_capProfile(LineCap cap, int32_t r, int32_t dirX, int32_t dirY, std::vector<ProfilePoint>& profile)
 	{
-		profile.clear();
+		// Only reaches of Vertical and Horizontal ends can get beyond c_maxCapReach.
 
-		auto add = [&](int64_t w, int64_t a)
-		{
-			profile.push_back({ w, std::min(std::max(a, -c_maxCapReach), c_maxCapReach) });
-		};
+		auto limited = [](int64_t a) { return int32_t(std::min(std::max(a, -c_maxCapReach), c_maxCapReach)); };
 
 		switch (cap.shape)
 		{
 			case LineCapShape::Square:
-				add(-r, -r);
-				add(r, -r);
+				profile.resize(2);
+				profile[0] = { -r, -r };
+				profile[1] = { r, -r };
 				break;
 
 			case LineCapShape::Vertical:					// Through the end along y: a = w * dirY / dirX.
 			{
-				const int64_t a = r * dirY / dirX;
-				add(-r, -a);
-				add(r, a);
+				const int64_t a = int64_t(r) * dirY / dirX;
+				profile.resize(2);
+				profile[0] = { -r, limited(-a) };
+				profile[1] = { r, limited(a) };
 				break;
 			}
 
 			case LineCapShape::Horizontal:					// Through the end along x: a = -w * dirX / dirY.
 			{
-				const int64_t a = r * dirX / dirY;
-				add(-r, a);
-				add(r, -a);
+				const int64_t a = int64_t(r) * dirX / dirY;
+				profile.resize(2);
+				profile[0] = { -r, limited(a) };
+				profile[1] = { r, limited(-a) };
 				break;
 			}
 
 			case LineCapShape::Spear:						// Tip on the end, full width at spearLength percent of thickness.
 			{
-				const int64_t length = r * std::min(std::max(int(cap.spearLength), 25), 800) / 50;
-				add(-r, length);
-				add(0, 0);
-				add(r, length);
+				const int32_t length = r * std::min(std::max(int(cap.spearLength), 25), 800) / 50;
+				profile.resize(3);
+				profile[0] = { -r, length };
+				profile[1] = { 0, 0 };
+				profile[2] = { r, length };
 				break;
 			}
 
@@ -2673,33 +2710,129 @@ namespace wax
 				// Half circle into chords as in _quarter(), vertices between the ends moved out
 				// by half the sagitta.
 
-				const int64_t rSpx = r >> c_lineUnitShift;
-				const int64_t halves = rSpx >= 64 * 64 ? 2 : 1;
+				const int32_t rSpx = r >> c_lineUnitShift;
+				const int32_t halves = rSpx >= 64 * 64 ? 2 : 1;
 
-				int n = 2 * std::max(int((isqrt(uint64_t(rSpx * halves / c_maxSagitta)) * 569 + 1023) >> 10), 1);
+				const int n = 2 * std::max(int((isqrt(uint64_t(rSpx * halves / c_maxSagitta)) * 569 + 1023) >> 10), 1);
 
-				const int64_t cosHalfStep = _sin30(uint32_t((int64_t(1) << 30) / n) + 0x40000000);
-				const int64_t rOut = (r << 31) / ((int64_t(1) << 30) + cosHalfStep);		// 2r / (1 + cos(angle / 2)), 1/2^30.
+				const int64_t cosHalfStep = _sin30((0x40000000u / n) + 0x40000000);
+				const int32_t rOut = int32_t((int64_t(r) << 31) / ((int64_t(1) << 30) + cosHalfStep));		// 2r / (1 + cos(angle / 2)), 1/2^30.
+
+				// Half a turn over the profile, angle k is (k << 31) / n.
+
+				const uint32_t step = 0x80000000u / n;
+				const uint32_t stepRest = 0x80000000u - step * n;
+
+				uint32_t angle = 0;
+				uint32_t angleRest = 0;
+
+				profile.resize(n + 1);
+				ProfilePoint* pPoint = profile.data();
 
 				for (int k = 0; k <= n; k++)
 				{
-					const uint32_t angle = uint32_t((int64_t(k) << 31) / n);				// Half a turn over the profile.
-					const int64_t sin30 = _sin30(angle);
-					const int64_t cos30 = _sin30(angle + 0x40000000);
+					const int32_t cos30 = _sin30(angle + 0x40000000);
 
 					if (k == 0 || k == n)
-						add((-r * cos30 + (1 << 29)) >> 30, 0);
+						pPoint[k] = { int32_t((int64_t(-r) * cos30 + (1 << 29)) >> 30), 0 };
 					else
-						add((-rOut * cos30 + (int64_t(1) << 29)) >> 30, (-rOut * sin30 + (int64_t(1) << 29)) >> 30);
+					{
+						const int32_t sin30 = _sin30(angle);
+						pPoint[k] = { int32_t((int64_t(-rOut) * cos30 + (1 << 29)) >> 30), int32_t((int64_t(-rOut) * sin30 + (1 << 29)) >> 30) };
+					}
+
+					angle += step;
+					angleRest += stepRest;
+
+					if (angleRest >= uint32_t(n))
+					{
+						angleRest -= n;
+						angle++;
+					}
 				}
 				break;
 			}
 
 			default:										// Flat
-				add(-r, 0);
-				add(r, 0);
+				profile.resize(2);
+				profile[0] = { -r, 0 };
+				profile[1] = { r, 0 };
 				break;
 		}
+	}
+
+	//____ _setPartEdges() ____________________________________________________
+	/*
+		Sets left and right edge from the vertices of a convex polygon, in either order around
+		it, with vertex top at the top. Returns false if it covers no area.
+	*/
+
+	template<class T>
+	bool SoftShapes::_setPartEdges(const T* pX, const T* pY, int n, int top, T topY, T bottomY, std::vector<T>& leftY, std::vector<T>& leftX, std::vector<T>& rightY, std::vector<T>& rightX)
+	{
+		// Twice the area, positive if clockwise on the canvas, which has y pointing down.
+		// Only the total has to fit, the sum can wrap around on its way there.
+
+		using Unsigned = typename std::make_unsigned<T>::type;
+
+		Unsigned area = 0;
+		for (int i = 0; i < n; i++)
+		{
+			const int j = i + 1 < n ? i + 1 : 0;
+			area += Unsigned(pX[i] - pX[0]) * Unsigned(pY[j] - pY[0]) - Unsigned(pX[j] - pX[0]) * Unsigned(pY[i] - pY[0]);
+		}
+
+		if (area == 0)
+			return false;
+
+		const bool bClockwise = T(area) > 0;
+
+		// From the top along each way around to the bottom. Clockwise goes down the right edge.
+
+		auto walk = [&](int step, std::vector<T>& ys, std::vector<T>& xs)
+		{
+			ys.resize(n);
+			xs.resize(n);
+
+			T* pYs = ys.data();
+			T* pXs = xs.data();
+
+			auto next = [&](int k)
+			{
+				k += step;
+				return k < 0 ? k + n : k >= n ? k - n : k;
+			};
+
+			int i = top;
+
+			while (pY[next(i)] == topY && next(i) != top)
+				i = next(i);
+
+			pYs[0] = pY[i];
+			pXs[0] = pX[i];
+			int count = 1;
+
+			while (pY[i] != bottomY)
+			{
+				i = next(i);
+
+				if (pY[i] <= pYs[count - 1])
+					pXs[count - 1] = pX[i];				// Kink flattened by rounding.
+				else
+				{
+					pYs[count] = pY[i];
+					pXs[count] = pX[i];
+					count++;
+				}
+			}
+
+			ys.resize(count);
+			xs.resize(count);
+		};
+
+		walk(bClockwise ? 1 : -1, rightY, rightX);
+		walk(bClockwise ? -1 : 1, leftY, leftX);
+		return true;
 	}
 
 	//____ _setLinePart() _____________________________________________________
@@ -2712,88 +2845,74 @@ namespace wax
 	{
 		// Drop vertices repeated by rounding.
 
-		size_t n = 0;
-		for (size_t i = 0; i < vx.size(); i++)
+		int n = 0;
+		const int nGiven = int(vx.size());
+		int64_t* pX = vx.data();
+		int64_t* pY = vy.data();
+
+		for (int i = 0; i < nGiven; i++)
 		{
-			if (n > 0 && vx[i] == vx[n - 1] && vy[i] == vy[n - 1])
+			if (n > 0 && pX[i] == pX[n - 1] && pY[i] == pY[n - 1])
 				continue;
-			vx[n] = vx[i];
-			vy[n] = vy[i];
+			pX[n] = pX[i];
+			pY[n] = pY[i];
 			n++;
 		}
 
-		while (n > 1 && vx[n - 1] == vx[0] && vy[n - 1] == vy[0])
+		while (n > 1 && pX[n - 1] == pX[0] && pY[n - 1] == pY[0])
 			n--;
 
 		if (n < 3)
 			return false;
 
-		// Twice the area, positive if clockwise on the canvas, which has y pointing down.
+		int top = 0;
+		part.top = pY[0];
+		part.bottom = pY[0];
+		part.left = pX[0];
+		part.right = pX[0];
 
-		int64_t area = 0;
-		for (size_t i = 0; i < n; i++)
+		for (int i = 1; i < n; i++)
 		{
-			const size_t j = (i + 1) % n;
-			area += (vx[i] - vx[0]) * (vy[j] - vy[0]) - (vx[j] - vx[0]) * (vy[i] - vy[0]);
-		}
-
-		if (area == 0)
-			return false;
-
-		size_t top = 0;
-		part.top = vy[0];
-		part.bottom = vy[0];
-		part.left = vx[0];
-		part.right = vx[0];
-
-		for (size_t i = 1; i < n; i++)
-		{
-			if (vy[i] < part.top)
+			if (pY[i] < part.top)
 			{
-				part.top = vy[i];
+				part.top = pY[i];
 				top = i;
 			}
-			part.bottom = std::max(part.bottom, vy[i]);
-			part.left = std::min(part.left, vx[i]);
-			part.right = std::max(part.right, vx[i]);
+			part.bottom = std::max(part.bottom, pY[i]);
+			part.left = std::min(part.left, pX[i]);
+			part.right = std::max(part.right, pX[i]);
 		}
 
 		if (part.top == part.bottom)
 			return false;
 
-		// From the top along each way around to the bottom. Clockwise goes down the right edge.
+		// Edges relative to the part, if they fit.
 
-		auto walk = [&](int step, std::vector<int64_t>& ys, std::vector<int64_t>& xs)
+		part.originColumn = floorPixel(part.left);
+		part.originRow = floorPixel(part.top);
+
+		const int64_t originX = int64_t(part.originColumn) * 64;
+		const int64_t originY = int64_t(part.originRow) * 64;
+
+		part.bSmall = part.right - originX <= c_maxSmallPart && part.bottom - originY <= c_maxSmallPart;
+
+		if (!part.bSmall)
+			return _setPartEdges<int64_t>(pX, pY, n, top, part.top, part.bottom, part.leftY, part.leftX, part.rightY, part.rightX);
+
+		m_smallVertexX.resize(n);
+		m_smallVertexY.resize(n);
+
+		int32_t* pSmallX = m_smallVertexX.data();
+		int32_t* pSmallY = m_smallVertexY.data();
+
+		for (int i = 0; i < n; i++)
 		{
-			ys.clear();
-			xs.clear();
+			pSmallX[i] = int32_t(pX[i] - originX);
+			pSmallY[i] = int32_t(pY[i] - originY);
+		}
 
-			size_t i = top;
-			auto next = [&](size_t k) { return (k + n + step) % n; };
-
-			while (vy[next(i)] == part.top && next(i) != top)
-				i = next(i);
-
-			ys.push_back(vy[i]);
-			xs.push_back(vx[i]);
-
-			while (vy[i] != part.bottom)
-			{
-				i = next(i);
-
-				if (vy[i] <= ys.back())
-					xs.back() = vx[i];				// Kink flattened by rounding.
-				else
-				{
-					ys.push_back(vy[i]);
-					xs.push_back(vx[i]);
-				}
-			}
-		};
-
-		walk(area > 0 ? 1 : -1, part.rightY, part.rightX);
-		walk(area > 0 ? -1 : 1, part.leftY, part.leftX);
-		return true;
+		return _setPartEdges<int32_t>(pSmallX, pSmallY, n, top, int32_t(part.top - originY), int32_t(part.bottom - originY),
+									  part.smallLeftY, part.smallLeftX, part.smallRightY, part.smallRightX);
 	}
 
 	//____ prepareLine() ______________________________________________________
@@ -2804,7 +2923,7 @@ namespace wax
 		parts.bodyBeg = 0;
 		parts.bodyEnd = 0;
 
-		if (line.thickness <= 0)
+		if (line.thickness <= 0 || line.thickness > c_maxLineThickness)
 			return false;
 
 		CoordSPX beg = line.begin;
@@ -2827,37 +2946,45 @@ namespace wax
 			dy = -dy;
 		}
 
-		// Direction, along x if no length, scaled to 2^29 -> 2^30.
-
-		int64_t dirX = bZero ? 1 : dx;
-		int64_t dirY = bZero ? 0 : dy;
-
 		for (LineCap& cap : caps)
 		{
 			if (cap.shape == LineCapShape::None)
 				cap.shape = bAlongX ? LineCapShape::Vertical : LineCapShape::Horizontal;
 
-			if ((cap.shape == LineCapShape::Vertical && dirX == 0) || (cap.shape == LineCapShape::Horizontal && dirY == 0))
+			if ((cap.shape == LineCapShape::Vertical && !bZero && dx == 0) || (cap.shape == LineCapShape::Horizontal && (bZero || dy == 0)))
 				return false;
 		}
 
-		while (std::max(std::abs(dirX), std::abs(dirY)) >= (int64_t(1) << 30))
+		// Direction, along x if no length, scaled to 2^29 -> 2^30.
+
+		int32_t dirX;
+		int32_t dirY;
+
 		{
-			dirX /= 2;
-			dirY /= 2;
+			int64_t scaledX = bZero ? 1 : dx;
+			int64_t scaledY = bZero ? 0 : dy;
+
+			while (std::max(std::abs(scaledX), std::abs(scaledY)) >= (int64_t(1) << 30))
+			{
+				scaledX /= 2;
+				scaledY /= 2;
+			}
+
+			dirX = int32_t(scaledX);
+			dirY = int32_t(scaledY);
+
+			const uint32_t largest = std::max(uint32_t(std::abs(dirX)), uint32_t(std::abs(dirY)));
+			const int32_t scale = int32_t(1) << (29 - highestBit(largest));
+
+			dirX *= scale;
+			dirY *= scale;
 		}
 
-		while (std::max(std::abs(dirX), std::abs(dirY)) < (int64_t(1) << 29))
-		{
-			dirX *= 2;
-			dirY *= 2;
-		}
+		const int32_t dirLength = int32_t(isqrt(uint64_t(int64_t(dirX) * dirX + int64_t(dirY) * dirY)));
+		const int32_t ux = int32_t(int64_t(dirX) * (int64_t(1) << 30) / dirLength);
+		const int32_t uy = int32_t(int64_t(dirY) * (int64_t(1) << 30) / dirLength);
 
-		const int64_t dirLength = isqrt(uint64_t(dirX * dirX + dirY * dirY));
-		const int64_t ux = dirX * (int64_t(1) << 30) / dirLength;
-		const int64_t uy = dirY * (int64_t(1) << 30) / dirLength;
-
-		const int64_t r = int64_t(line.thickness) << (c_lineUnitShift - 1);
+		const int32_t r = line.thickness << (c_lineUnitShift - 1);
 
 		_capProfile(caps[0], r, dirX, dirY, m_profiles[0]);
 		_capProfile(caps[1], r, dirX, dirY, m_profiles[1]);
@@ -2866,24 +2993,32 @@ namespace wax
 
 		const int64_t endX[2] = { beg.x, end.x };
 		const int64_t endY[2] = { beg.y, end.y };
-		const int64_t endUX[2] = { ux, -ux };
-		const int64_t endUY[2] = { uy, -uy };
+		const int32_t endUX[2] = { ux, -ux };
+		const int32_t endUY[2] = { uy, -uy };
 
-		// Columns each end reaches, from lo to hi, spx.
+		// Profiles on the canvas and the columns each end reaches, from lo to hi, spx.
 
 		int64_t lo[2], hi[2];
 
 		for (int e = 0; e < 2; e++)
 		{
+			const int nPoints = int(m_profiles[e].size());
+			const ProfilePoint* pPoint = m_profiles[e].data();
+
+			m_profileX[e].resize(nPoints);
+			m_profileY[e].resize(nPoints);
+
+			int64_t* pX = m_profileX[e].data();
+			int64_t* pY = m_profileY[e].data();
+
 			lo[e] = INT64_MAX;
 			hi[e] = INT64_MIN;
 
-			for (const ProfilePoint& point : m_profiles[e])
+			for (int i = 0; i < nPoints; i++)
 			{
-				int64_t x, y;
-				lineToCanvas(endX[e], endY[e], endUX[e], endUY[e], point.a, point.w, x, y);
+				lineToCanvas(endX[e], endY[e], endUX[e], endUY[e], pPoint[i].a, pPoint[i].w, pX[i], pY[i]);
 
-				const int64_t column = bAlongX ? x : y;
+				const int64_t column = bAlongX ? pX[i] : pY[i];
 				lo[e] = std::min(lo[e], column);
 				hi[e] = std::max(hi[e], column);
 			}
@@ -2905,7 +3040,7 @@ namespace wax
 			const int64_t minor = bAlongX ? beg.y : beg.x;
 
 			const int64_t slope24 = dMinor * (int64_t(1) << 24) / dMajor;
-			const int64_t width = int64_t(line.thickness) * 1024 * dirLength / std::abs(bAlongX ? dirX : dirY);
+			const int64_t width = int64_t(line.thickness * 1024) * dirLength / std::abs(bAlongX ? dirX : dirY);
 
 			parts.bodyBeg = bodyBeg;
 			parts.bodyEnd = bodyEnd;
@@ -2926,24 +3061,21 @@ namespace wax
 
 				const int64_t endMajor = bAlongX ? endX[e] : endY[e];
 				const int64_t distance = e == 0 ? int64_t(bodyBeg) * 64 - endMajor : endMajor - int64_t(bodyEnd) * 64;
-				const int64_t cut = (3 * (distance + line.thickness / 2) / 2 + 64) << c_lineUnitShift;
+				const int32_t cut = int32_t((3 * (distance + line.thickness / 2) / 2 + 64) << c_lineUnitShift);
 
-				m_vertexX.clear();
-				m_vertexY.clear();
+				const int nPoints = int(m_profiles[e].size());
 
-				auto vertex = [&](int64_t a, int64_t w)
+				m_vertexX.resize(nPoints + 2);
+				m_vertexY.resize(nPoints + 2);
+
+				for (int i = 0; i < nPoints; i++)
 				{
-					int64_t x, y;
-					lineToCanvas(endX[e], endY[e], endUX[e], endUY[e], a, w, x, y);
-					m_vertexX.push_back(x);
-					m_vertexY.push_back(y);
-				};
+					m_vertexX[i] = m_profileX[e][i];
+					m_vertexY[i] = m_profileY[e][i];
+				}
 
-				for (const ProfilePoint& point : m_profiles[e])
-					vertex(point.a, point.w);
-
-				vertex(cut, r);
-				vertex(cut, -r);
+				lineToCanvas(endX[e], endY[e], endUX[e], endUY[e], cut, r, m_vertexX[nPoints], m_vertexY[nPoints]);
+				lineToCanvas(endX[e], endY[e], endUX[e], endUY[e], cut, -r, m_vertexX[nPoints + 1], m_vertexY[nPoints + 1]);
 
 				LinePart& part = m_lineParts[parts.nParts];
 				if (_setLinePart(part, m_vertexX, m_vertexY))
@@ -2962,34 +3094,49 @@ namespace wax
 		// No whole columns between the ends, which are close: the band between both profiles,
 		// in the frame of the first end. The second end has w the other way.
 
-		if (std::abs(dx) >= (int64_t(1) << 27) || std::abs(dy) >= (int64_t(1) << 27))
+		if (std::abs(dx) >= (int64_t(1) << 25) || std::abs(dy) >= (int64_t(1) << 25))
 			return false;													// Can't be, ends reach no further.
 
-		const int64_t length = isqrt(uint64_t(dx * dx + dy * dy) << (2 * c_lineUnitShift));
+		const int32_t length = int32_t(isqrt(uint64_t(dx * dx + dy * dy) << (2 * c_lineUnitShift)));
 
 		const auto& first = m_profiles[0];
 		const auto& second = m_profiles[1];
 
-		std::vector<int64_t>& ws = m_vertexX;			// Borrowed for the w of the corners.
-		ws.clear();
+		// The w of the corners, in order. Both profiles are in order, the second from its end.
 
-		for (const ProfilePoint& point : first)
-			ws.push_back(point.w);
-		for (const ProfilePoint& point : second)
-			ws.push_back(-point.w);
+		const int nFirst = int(first.size());
+		int iA = 0;
+		int iB = int(second.size()) - 1;
+		int nWs = 0;
 
-		std::sort(ws.begin(), ws.end());
-		ws.erase(std::unique(ws.begin(), ws.end()), ws.end());
+		m_lineWs.resize(nFirst + second.size());
+		int32_t* pWs = m_lineWs.data();
+
+		while (iA < nFirst || iB >= 0)
+		{
+			int32_t w;
+
+			if (iB < 0 || (iA < nFirst && first[iA].w <= -second[iB].w))
+				w = first[iA++].w;
+			else
+				w = -second[iB--].w;
+
+			if (nWs == 0 || pWs[nWs - 1] != w)
+				pWs[nWs++] = w;
+		}
 
 		// Where the band is long enough to reach between the profiles: g(w) <= length, where
 		// g(w) is the sum of the profiles, which is convex.
 
-		auto g = [&](int64_t w) { return profileAt(first, w) + profileAt(second, -w); };
+		int hintFirst = 1;
+		int hintSecond = 1;
+
+		auto g = [&](int32_t w) { return profileAt(first, w, hintFirst) + profileAt(second, -w, hintSecond); };
 
 		int iFirst = -1, iLast = -1;
-		for (int i = 0; i < (int)ws.size(); i++)
+		for (int i = 0; i < nWs; i++)
 		{
-			if (g(ws[i]) <= length)
+			if (g(pWs[i]) <= length)
 			{
 				if (iFirst < 0)
 					iFirst = i;
@@ -3000,41 +3147,48 @@ namespace wax
 		if (iFirst < 0)
 			return false;
 
-		auto crossing = [&](int64_t wOut, int64_t wIn)
+		auto crossing = [&](int32_t wOut, int32_t wIn)
 		{
-			const int64_t gOut = g(wOut);
-			const int64_t gIn = g(wIn);
-			return wOut + (wIn - wOut) * (gOut - length) / (gOut - gIn);
+			const int32_t gOut = g(wOut);
+			const int32_t gIn = g(wIn);
+			return int32_t(wOut + int64_t(wIn - wOut) * (gOut - length) / (gOut - gIn));
 		};
 
-		std::vector<int64_t> corners;
-		corners.push_back(iFirst > 0 ? crossing(ws[iFirst - 1], ws[iFirst]) : ws[iFirst]);
+		m_lineCorners.resize(nWs + 2);
+		int32_t* pCorners = m_lineCorners.data();
+		int nCorners = 0;
+
+		pCorners[nCorners++] = iFirst > 0 ? crossing(pWs[iFirst - 1], pWs[iFirst]) : pWs[iFirst];
+
 		for (int i = iFirst; i <= iLast; i++)
-			if (ws[i] > corners.back())
-				corners.push_back(ws[i]);
+			if (pWs[i] > pCorners[nCorners - 1])
+				pCorners[nCorners++] = pWs[i];
 
-		const int64_t wLast = iLast < (int)ws.size() - 1 ? crossing(ws[iLast + 1], ws[iLast]) : ws[iLast];
-		if (wLast > corners.back())
-			corners.push_back(wLast);
+		const int32_t wLast = iLast < nWs - 1 ? crossing(pWs[iLast + 1], pWs[iLast]) : pWs[iLast];
+		if (wLast > pCorners[nCorners - 1])
+			pCorners[nCorners++] = wLast;
 
-		std::vector<int64_t> vx, vy;
+		m_vertexX.resize(nCorners * 2);
+		m_vertexY.resize(nCorners * 2);
 
-		auto vertex = [&](int64_t a, int64_t w)
+		int64_t* pX = m_vertexX.data();
+		int64_t* pY = m_vertexY.data();
+
+		for (int i = 0; i < nCorners; i++)
 		{
-			int64_t x, y;
-			lineToCanvas(endX[0], endY[0], ux, uy, a, w, x, y);
-			vx.push_back(x);
-			vy.push_back(y);
-		};
+			const int32_t a = profileAt(first, pCorners[i], hintFirst);
+			lineToCanvas(endX[0], endY[0], ux, uy, a, pCorners[i], pX[i], pY[i]);
+		}
 
-		for (size_t i = 0; i < corners.size(); i++)
-			vertex(profileAt(first, corners[i]), corners[i]);
-
-		for (size_t i = corners.size(); i-- > 0; )
-			vertex(length - profileAt(second, -corners[i]), corners[i]);
+		for (int i = 0; i < nCorners; i++)
+		{
+			const int32_t w = pCorners[nCorners - 1 - i];
+			const int32_t a = length - profileAt(second, -w, hintSecond);
+			lineToCanvas(endX[0], endY[0], ux, uy, a, w, pX[nCorners + i], pY[nCorners + i]);
+		}
 
 		LinePart& part = m_lineParts[0];
-		if (!_setLinePart(part, vx, vy))
+		if (!_setLinePart(part, m_vertexX, m_vertexY))
 			return false;
 
 		part.columnBeg = floorPixel(bAlongX ? part.left : part.top);
@@ -3067,6 +3221,12 @@ namespace wax
 			rowEnd = std::min(rowEnd, part.columnEnd);
 		}
 
+		if (part.bSmall)
+		{
+			_rasterizeSmallPart(part, rowBeg, rowEnd, clipBeg, clipEnd, pSink);
+			return;
+		}
+
 		PolygonShape shape;
 		shape.left = { part.leftY.data(), part.leftX.data(), int(part.leftY.size()), 0 };
 		shape.right = { part.rightY.data(), part.rightX.data(), int(part.rightY.size()), 0 };
@@ -3078,6 +3238,383 @@ namespace wax
 		shape.nIds = 2;
 
 		_rasterize(shape, 1, rowBeg, rowEnd, clipBeg, clipEnd, pSink);
+	}
+
+	//____ Small parts of lines _______________________________________________
+	/*
+		Gives the same pixels as rasterizing a PolygonShape, but in 32-bit math where that
+		is an int64_t, which matters on 32-bit CPUs. Only multiplications of two 32-bit values
+		into 64 bits are left, which those CPUs have instructions for.
+
+		It is simpler too, since a convex polygon of one segment always has one sub-row with
+		edges in a row, and two edges in it.
+
+		Reciprocals are 2^37 / n split into the 32 bits above its 5 lowest and those bits, so
+		that products with it can be worked out exactly:
+
+			(d * inv) >> 5 = d * high + ((d * low) >> 5)
+	*/
+
+	namespace
+	{
+		struct SmallRecip
+		{
+			uint32_t	high;
+			uint32_t	low;
+		};
+
+		// 2^37 / n. High is out of range for n = 1, which edges at whole spx never need.
+
+		inline SmallRecip smallRecip(uint32_t n)
+		{
+			if (n < 1024)
+			{
+				const int64_t inv = c_recipTable.v[n];
+				return { uint32_t(inv >> 5), uint32_t(inv) & 31 };
+			}
+
+			uint32_t high = 0xFFFFFFFFu / n;
+			uint32_t rest = 0xFFFFFFFFu - high * n + 1;			// 2^32 - high * n, up to n.
+
+			if (rest == n)
+			{
+				high++;
+				rest = 0;
+			}
+
+			return { high, rest * 32 / n };
+		}
+	}
+
+	//____ _smallPolylineX() __________________________________________________
+	// x of polyline at y, see _polylineX().
+
+	inline int SoftShapes::_smallPolylineX(SmallPolyline& polyline, int y)
+	{
+		const int32_t* pY = polyline.pY;
+		int k = polyline.line;
+
+		while (k > 0 && pY[k] > y)
+			k--;
+
+		while (k < polyline.n - 2 && pY[k + 1] < y)
+			k++;
+
+		polyline.line = k;
+
+		const int y1 = pY[k], y2 = pY[k + 1];
+		const int x1 = polyline.pX[k], x2 = polyline.pX[k + 1];
+
+		if (y <= y1 || x1 == x2)
+			return x1;
+
+		if (y >= y2)
+			return x2;
+
+		const int base = std::min(x1, x2);
+		const uint32_t h = y2 - y1;
+		const uint32_t d = uint32_t(x1 - base) * (y2 - y) + uint32_t(x2 - base) * (y - y1);
+
+		if (h >= 1024)
+			return base + int((d + h / 2) / h);
+
+		const SmallRecip inv = smallRecip(h);
+		return base + int((uint64_t(d) * inv.high + ((d * inv.low) >> 5) + 0x80000000u) >> 32);
+	}
+
+	//____ _smallArea() _______________________________________________________
+	// See _area().
+
+	inline int SoftShapes::_smallArea(const SmallPiece& piece, int x)
+	{
+		if (x <= piece.lo)
+			return 0;
+
+		if (x >= piece.hi)
+			return (piece.hi - piece.lo) * 32 + (x - piece.hi) * 64;
+
+		const uint32_t d = x - piece.lo;
+		const uint32_t frac = d * piece.invHigh + ((d * piece.invLow) >> 5);
+
+		return int((uint64_t(d) * frac) >> 27);
+	}
+
+	//____ _smallEdgeLeftOf() _________________________________________________
+	// See _edgeLeftOf().
+
+	inline int SoftShapes::_smallEdgeLeftOf(const SmallPiece* pPieces, const Edge& edge, int x)
+	{
+		const SmallPiece* pPiece = pPieces + edge.first;
+
+		int area = 0;
+		for (int i = 0; i < edge.n; i++)
+			area += pPiece[i].h * _smallArea(pPiece[i], x);
+
+		return area;
+	}
+
+	//____ _addSmallPiece() ___________________________________________________
+
+	inline void SoftShapes::_addSmallPiece(Edge& edge, int yTop, int xTop, int yBottom, int xBottom, int originColumn)
+	{
+		SmallPiece& piece = m_smallPieces[m_nSmallPieces++];
+
+		const int lo = std::min(xTop, xBottom);
+		const int hi = std::max(xTop, xBottom);
+
+		const int clipBeg64 = (m_clipBeg - originColumn) * 64;
+		const int clipEnd64 = (m_clipEnd - originColumn) * 64;
+
+		piece.lo = lo;
+		piece.hi = hi;
+		piece.h = yBottom - yTop;
+		piece.bandBeg = lo < clipBeg64 ? m_clipBeg - 1 : lo >= clipEnd64 ? m_clipEnd + 1 : originColumn + (lo >> 6);
+		piece.bandEnd = hi < clipBeg64 ? m_clipBeg - 1 : hi >= clipEnd64 ? m_clipEnd + 1 : originColumn + ((hi + 63) >> 6);
+
+		if (hi > lo && piece.bandEnd > m_clipBeg && piece.bandBeg < m_clipEnd)
+		{
+			const SmallRecip inv = smallRecip(hi - lo);
+			piece.invHigh = inv.high;
+			piece.invLow = inv.low;
+		}
+		else
+		{
+			piece.invHigh = 0;
+			piece.invLow = 0;
+		}
+
+		edge.bandBeg = std::min(edge.bandBeg, piece.bandBeg);
+		edge.bandEnd = std::max(edge.bandEnd, piece.bandEnd);
+	}
+
+	//____ _setSmallEdge() ____________________________________________________
+	// Edge in the sub-row from ya to yb as pieces, see _subRowEdges().
+
+	inline void SoftShapes::_setSmallEdge(Edge& edge, SmallPolyline& polyline, int ya, int yb, int originColumn)
+	{
+		const int xTop = _smallPolylineX(polyline, ya);
+		const int topLine = polyline.line;
+		const int xBottom = _smallPolylineX(polyline, yb);
+
+		edge.first = m_nSmallPieces;
+		edge.bandBeg = INT_MAX;
+		edge.bandEnd = INT_MIN;
+
+		int y = ya;
+		int x = xTop;
+
+		for (int k = topLine + 1; k < polyline.n && polyline.pY[k] < yb; k++)
+		{
+			if (polyline.pY[k] > y)
+			{
+				_addSmallPiece(edge, y, x, polyline.pY[k], polyline.pX[k], originColumn);
+				y = polyline.pY[k];
+				x = polyline.pX[k];
+			}
+		}
+
+		_addSmallPiece(edge, y, x, yb, xBottom, originColumn);
+
+		edge.n = m_nSmallPieces - edge.first;
+	}
+
+	//____ _smallFilled() _____________________________________________________
+	// Pixels covered from edge to edge of the sub-row, full being the coverage of that.
+
+	inline void SoftShapes::_smallFilled(int beg, int end, int full)
+	{
+		if (full == c_fullCoverage)
+		{
+			_fillRun(beg, end, 0);
+			return;
+		}
+
+		auto mixed = [full](const int16_t* pColor) -> CoveragePixel
+		{
+			return { int16_t((pColor[0] * full) >> 12), int16_t((pColor[1] * full) >> 12), int16_t((pColor[2] * full) >> 12),
+					 int16_t((pColor[3] * full) >> 12), int16_t(full), 0 };
+		};
+
+		if (m_mix[0].bFlat)
+			_mixedRun(beg, end, mixed(m_mix[0].p));
+		else
+		{
+			for (int p = beg; p < end; p++)
+				_mixedPixel(p) = mixed(_mixColor(0, p));
+		}
+	}
+
+	//____ _smallPartial() ____________________________________________________
+
+	inline void SoftShapes::_smallPartial(int x, int coverage)
+	{
+		const int16_t* pColor = _mixColor(0, x);
+
+		_mixedPixel(x) = { int16_t((pColor[0] * coverage) >> 12), int16_t((pColor[1] * coverage) >> 12), int16_t((pColor[2] * coverage) >> 12),
+						   int16_t((pColor[3] * coverage) >> 12), int16_t(coverage), 0 };
+	}
+
+	//____ _smallOneEdge() ____________________________________________________
+	// Pixels of a band reached by one edge only. The part is right of the left edge and
+	// left of the right edge.
+
+	void SoftShapes::_smallOneEdge(const Edge& edge, bool bRightEdge, int beg, int end, int h, int originColumn)
+	{
+		const SmallPiece* pPieces = m_smallPieces.data();
+		const SmallPiece& piece = pPieces[edge.first];
+		const bool bStraight = edge.n == 1;
+		const int full = h * 64;
+
+		int x = (beg - originColumn) * 64;
+		int prevArea = bStraight ? _smallArea(piece, x) : _smallEdgeLeftOf(pPieces, edge, x);
+
+		for (int p = beg; p < end; p++)
+		{
+			int right;
+			x += 64;
+
+			if (bStraight)
+			{
+				const int area = _smallArea(piece, x);
+				right = area - prevArea;
+				prevArea = area;
+
+				if (h != 64)
+					right = (right * h + 32) >> 6;
+			}
+			else
+			{
+				const int area = _smallEdgeLeftOf(pPieces, edge, x);
+				right = (area - prevArea + 32) >> 6;
+				prevArea = area;
+			}
+
+			if (right <= 0)
+			{
+				if (bRightEdge)
+					_smallFilled(p, p + 1, full);
+			}
+			else if (right >= full)
+			{
+				if (!bRightEdge)
+					_smallFilled(p, p + 1, full);
+			}
+			else
+				_smallPartial(p, bRightEdge ? full - right : right);
+		}
+	}
+
+	//____ _smallTwoEdges() ___________________________________________________
+	// Pixels of a band reached by both edges.
+
+	void SoftShapes::_smallTwoEdges(const Edge& left, const Edge& right, int beg, int end, int full, int originColumn)
+	{
+		const SmallPiece* pPieces = m_smallPieces.data();
+
+		int x = (beg - originColumn) * 64;
+		int prevLeft = _smallEdgeLeftOf(pPieces, left, x);
+		int prevRight = _smallEdgeLeftOf(pPieces, right, x);
+
+		for (int p = beg; p < end; p++)
+		{
+			x += 64;
+
+			const int areaLeft = _smallEdgeLeftOf(pPieces, left, x);
+			const int rightOfLeft = std::min(std::max((areaLeft - prevLeft + 32) >> 6, 0), full);
+			prevLeft = areaLeft;
+
+			const int areaRight = _smallEdgeLeftOf(pPieces, right, x);
+			const int rightOfRight = std::min(std::max((areaRight - prevRight + 32) >> 6, 0), rightOfLeft);
+			prevRight = areaRight;
+
+			const int coverage = rightOfLeft - rightOfRight;
+
+			if (coverage == full)
+				_smallFilled(p, p + 1, full);
+			else if (coverage > 0)
+				_smallPartial(p, coverage);
+		}
+	}
+
+	//____ _rasterizeSmallPart() ______________________________________________
+
+	void SoftShapes::_rasterizeSmallPart(const LinePart& part, int rowBeg, int rowEnd, int clipBeg, int clipEnd, RowSink* pSink)
+	{
+		if (rowBeg >= rowEnd || clipBeg >= clipEnd)
+			return;
+
+		bool bFlat = true;
+		const int16_t* pColors = pSink->segmentColors(0, rowBeg, clipBeg, clipEnd, bFlat);
+
+		if (!pColors)
+			return;
+
+		m_pSink = pSink;
+		m_clipBeg = clipBeg;
+		m_clipEnd = clipEnd;
+
+		if (m_mix.empty())
+			m_mix.resize(1);
+
+		m_mix[0] = { pColors, bFlat, rowBeg };
+
+		const int width = clipEnd - clipBeg;
+
+		if ((int)m_runs.size() < width + 1)
+		{
+			m_runs.resize(width + 1);
+			m_pixels.resize(width + 1);
+		}
+
+		SmallPolyline leftEdge = { part.smallLeftY.data(), part.smallLeftX.data(), int(part.smallLeftY.size()), 0 };
+		SmallPolyline rightEdge = { part.smallRightY.data(), part.smallRightX.data(), int(part.smallRightY.size()), 0 };
+
+		if ((int)m_smallPieces.size() < leftEdge.n + rightEdge.n)
+			m_smallPieces.resize(leftEdge.n + rightEdge.n);
+
+		const int top = leftEdge.pY[0];
+		const int bottom = leftEdge.pY[leftEdge.n - 1];
+		const int originColumn = part.originColumn;
+
+		for (int row = rowBeg; row < rowEnd; row++)
+		{
+			const int rowTop = (row - part.originRow) * 64;
+			const int ya = std::max(rowTop, top);
+			const int yb = std::min(rowTop + 64, bottom);
+			const int h = yb - ya;
+
+			m_row = row;
+			m_nRuns = 0;
+			m_nPixels = 0;
+			m_nSmallPieces = 0;
+
+			Edge left, right;
+			_setSmallEdge(left, leftEdge, ya, yb, originColumn);
+			_setSmallEdge(right, rightEdge, ya, yb, originColumn);
+
+			const int leftBeg = std::max(left.bandBeg, clipBeg);
+
+			if (right.bandBeg < left.bandEnd)
+			{
+				_smallTwoEdges(left, right, leftBeg, std::min(std::max(left.bandEnd, right.bandEnd), clipEnd), h * 64, originColumn);
+			}
+			else
+			{
+				const int leftEnd = std::min(left.bandEnd, clipEnd);
+				_smallOneEdge(left, false, leftBeg, leftEnd, h, originColumn);
+
+				const int x = std::max(clipBeg, leftEnd);
+				const int rightBeg = std::max(right.bandBeg, clipBeg);
+
+				if (rightBeg > x && x < clipEnd)
+					_smallFilled(x, std::min(rightBeg, clipEnd), h * 64);
+
+				_smallOneEdge(right, true, rightBeg, std::min(right.bandEnd, clipEnd), h, originColumn);
+			}
+
+			if (m_nRuns > 0)
+				pSink->row(row, m_nRuns, m_runs.data(), m_pixels.data());
+		}
 	}
 
 }

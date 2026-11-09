@@ -205,7 +205,7 @@ namespace wax
 		{
 			CoordSPX	begin;
 			CoordSPX	end;
-			spx			thickness = 64;
+			spx			thickness = 64;				// Up to 65535, nothing is drawn beyond that.
 			LineCaps	caps;						// Not both LineCap::None, see LineCap.
 		};
 
@@ -398,11 +398,12 @@ namespace wax
 
 		static constexpr int		c_lineUnitShift = 4;	// Lines are worked out in 1/16 spx.
 		static constexpr int64_t	c_maxCapReach = int64_t(1) << 26;	// 65536 pixels in 1/16 spx.
+		static constexpr int		c_maxLineThickness = 65535;			// The most commands can hold, spx.
 
 		struct ProfilePoint
 		{
-			int64_t		w;					// Across the line.
-			int64_t		a;					// Along the line, where the line begins at w.
+			int32_t		w;					// Across the line.
+			int32_t		a;					// Along the line, where the line begins at w.
 		};
 
 		struct LinePart
@@ -411,14 +412,67 @@ namespace wax
 			int64_t					top, bottom, left, right;		// Bounds, spx.
 			std::vector<int64_t>	leftY, leftX;					// Left and right edge from top to bottom.
 			std::vector<int64_t>	rightY, rightX;
+
+			bool					bSmall = false;					// Fits in c_maxSmallPart, drawn by _rasterizeSmallPart().
+			int						originColumn = 0;				// Pixel the small edges are relative to.
+			int						originRow = 0;
+			std::vector<int32_t>	smallLeftY, smallLeftX;			// Edges relative to the origin, spx.
+			std::vector<int32_t>	smallRightY, smallRightX;
 		};
 
-		void	_capProfile(LineCap cap, int64_t r, int64_t dirX, int64_t dirY, std::vector<ProfilePoint>& profile);
+		// Parts of lines are small, so their edges fit in 32 bits relative to the part, with
+		// products of two coordinates in 2^26. Larger parts are rasterized as other shapes.
+
+		static constexpr int		c_maxSmallPart = 1 << 13;		// 128 pixels, spx.
+
+		struct SmallPolyline
+		{
+			const int32_t*	pY;
+			const int32_t*	pX;
+			int				n;
+			int				line;				// Line last used, from vertex line to line + 1.
+		};
+
+		struct SmallPiece						// As Piece, relative to the part.
+		{
+			int				lo, hi;				// Range of x, spx.
+			uint32_t		invHigh;			// 2^37 / (hi - lo) without its 5 lowest bits...
+			uint32_t		invLow;				// ...and those bits, if hi > lo and within the clip rectangle.
+			int				h;					// Height, spx.
+			int				bandBeg, bandEnd;	// Pixels partly right of the piece, clamped to the clip rectangle +/- 1.
+		};
+
+		void	_capProfile(LineCap cap, int32_t r, int32_t dirX, int32_t dirY, std::vector<ProfilePoint>& profile);
 		bool	_setLinePart(LinePart& part, std::vector<int64_t>& vx, std::vector<int64_t>& vy);
+
+		template<class T>
+		bool	_setPartEdges(const T* pX, const T* pY, int n, int top, T topY, T bottomY, std::vector<T>& leftY, std::vector<T>& leftX, std::vector<T>& rightY, std::vector<T>& rightX);
+
+		void	_rasterizeSmallPart(const LinePart& part, int rowBeg, int rowEnd, int clipBeg, int clipEnd, RowSink* pSink);
+
+		static inline int	_smallPolylineX(SmallPolyline& polyline, int y);
+		static inline int	_smallArea(const SmallPiece& piece, int x);
+		static inline int	_smallEdgeLeftOf(const SmallPiece* pPieces, const Edge& edge, int x);
+
+		inline void			_addSmallPiece(Edge& edge, int yTop, int xTop, int yBottom, int xBottom, int originColumn);
+		inline void			_setSmallEdge(Edge& edge, SmallPolyline& polyline, int ya, int yb, int originColumn);
+		inline void			_smallFilled(int beg, int end, int full);
+		inline void			_smallPartial(int x, int coverage);
+		void				_smallOneEdge(const Edge& edge, bool bRightEdge, int beg, int end, int h, int originColumn);
+		void				_smallTwoEdges(const Edge& left, const Edge& right, int beg, int end, int full, int originColumn);
+
+		std::vector<SmallPiece>		m_smallPieces;
+		int							m_nSmallPieces = 0;
 
 		std::vector<ProfilePoint>	m_profiles[2];
 		std::vector<int64_t>		m_vertexX;
 		std::vector<int64_t>		m_vertexY;
+		std::vector<int64_t>		m_profileX[2];		// Profiles on the canvas.
+		std::vector<int64_t>		m_profileY[2];
+		std::vector<int32_t>		m_lineWs;			// Across the line at the corners of a line without body.
+		std::vector<int32_t>		m_lineCorners;
+		std::vector<int32_t>		m_smallVertexX;		// Vertices of a small part, relative to it.
+		std::vector<int32_t>		m_smallVertexY;
 		LinePart					m_lineParts[2];
 		bool						m_bLineAlongX = true;
 

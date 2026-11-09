@@ -384,3 +384,20 @@ in someone's memory or an old chat. Add to it when you decide something, move it
 - **Custom transform steps are rounded up past the float's rounding error** (see
   `SoftBackend::_transformStep()`), so positions that should land exactly on a pixel boundary do,
   whether stepping forwards or backwards. This matches ReferenceBackend's snapping to boundaries.
+
+### Line caps on CPUs without FPU (2026-11)
+
+- **The ends of lines are rasterized in 32-bit math,** see `SoftShapes::_rasterizeSmallPart()`.
+  Integer math alone wasn't enough: `int64_t` for every coordinate made a 1 pixel wide line take
+  about 10 ms on a 16 MHz 68030, most of it in the general rasterizer. Parts up to 128 pixels
+  use coordinates relative to the part, with only 32x32 to 64-bit multiplications left, about
+  2.2 times faster there. Larger parts stay with the general 64-bit rasterizer, where
+  pixel writes dominate anyway.
+- **Same pixels as the general rasterizer, by design.** Reciprocals are kept as the bits above
+  and below the 5 lowest of 2^37 / n so that every product comes out exactly as in 64 bits,
+  which lets the two be compared pixel for pixel.
+- **Setup of lines is in 32-bit math too,** see `SoftShapes::prepareLine()`. Thickness is limited
+  to 65535 spx, which is all that commands can hold, so profiles of caps fit in 32 bits. Only a
+  handful of 64-bit divisions per line remain, one set for the direction and slope and one per
+  Vertical or Horizontal cap and per round cap, and lines allocate nothing once buffers have grown.
+  Output is the same as before, down to the rounding.
