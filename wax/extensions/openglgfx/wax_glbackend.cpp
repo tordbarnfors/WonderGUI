@@ -390,14 +390,15 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 
 		case Command::StateChange:
 		{
-			int32_t statesChanged = *p++;
+			GpuTools::StateChangeParams state;
+			p = GpuTools::decodeStateChange(p, pColors, state);
 
 			* pCommandGL++ = (int) CommandGL::StateChange;
-			* pCommandGL++ = statesChanged;
+			* pCommandGL++ = state.changed;
 
-			if (statesChanged & uint8_t(StateChange::BlitSource))
+			if (GpuTools::hasChanged(state, StateChange::BlitSource))
 			{
-				auto pSource = static_cast<GlSurface*>(m_pObjectsBeg[readObjectIndex(p)]);
+				auto pSource = static_cast<GlSurface*>(m_pObjectsBeg[state.blitSource]);
 
 				// Save size and sampleMethod for blit-command processing
 
@@ -409,11 +410,11 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				m_objects.push_back(pSource);
 			}
 
-			if (statesChanged & uint8_t(StateChange::TintColor))
+			if (GpuTools::hasChanged(state, StateChange::TintColor))
 			{
 				// Process right away, tint color ofs is stored in vertex data
 
-				HiColor tintColor = *pColors++;
+				HiColor tintColor = state.tintColor;
 
 				if (tintColor == HiColor::White || tintColor == HiColor::Undefined)
 				{
@@ -428,25 +429,22 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 	 			}
 			}
 
-			if (statesChanged & uint8_t(StateChange::Tint))
+			if (GpuTools::hasChanged(state, StateChange::Tint))
 			{
 				// Tint block is written to color buffer, its offset stored in vertex data.
 
-				TintTools::DecodedTint tint;
-				p = TintTools::decodeTint(p, pColors, tint);
-
-				if (tint.nLayers == 0)
+				if (state.tint.nLayers == 0)
 					m_tintOfs = -1;
 				else
 				{
-					int blockSize = TintTools::gpuTintBlockSize(tint);
+					int blockSize = TintTools::gpuTintBlockSize(state.tint);
 
 					int used = int(pColorGL - m_pColorBuffer);
 					_reserveColors(used, blockSize);
 					pColorGL = m_pColorBuffer + used;
 
 					m_tintOfs = used;
-					TintTools::writeGpuTintBlock(tint, (float*) pColorGL);
+					TintTools::writeGpuTintBlock(state.tint, (float*) pColorGL);
 					pColorGL += blockSize;
 				}
 
@@ -455,38 +453,23 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				*pCommandGL++ = (m_tintOfs >= 0) ? 1 : 0;
 			}
 
-			if (statesChanged & uint8_t(StateChange::BlendMode))
+			// Blend mode, morph factor and blur need to be applied between draw calls, so they
+			// are saved for later processing. We use BlendMode::Blend in place of
+			// BlendMode::BlendFixedColor, so the fixed blend color is of no use to us.
+
+			if (GpuTools::hasChanged(state, StateChange::BlendMode))
+				* pCommandGL++ = int(state.blendMode);
+
+			if (GpuTools::hasChanged(state, StateChange::MorphFactor))
+				*pCommandGL++ = state.morphFactor;
+
+			if (GpuTools::hasChanged(state, StateChange::Blur))
 			{
-				// Save for later processing, needs to be applied between draw calls.
+				*pCommandGL++ = state.blurRadius;
 
-				* pCommandGL++ = *p++;
+				for( int i = 0 ; i < 27 ; i++ )
+					*pCommandGL++ = int(state.pBlurWeights[i]);
 			}
-
-			if (statesChanged & uint8_t(StateChange::MorphFactor))
-			{
-				// Save for later processing, needs to be applied between draw calls.
-
-				*pCommandGL++ = *p++;
-			}
-
-			if (statesChanged & uint8_t(StateChange::FixedBlendColor))
-			{
-				// Just retrieve the value but do nothing. We use BlendMode::Blend 
-				// in place of BlendMode::BlendFixedColor.
-
-				HiColor fixedBlendColor = *pColors++;
-			}
-
-			if (statesChanged & uint8_t(StateChange::Blur))
-			{
-				for( int i = 0 ; i < 28 ; i++ )
-					*pCommandGL++ = int(*p++);
-			}
-
-			// Take care of alignment
-
-			if( (uintptr_t(p) & 0x2) == 2 )
-				p++;
 
 			break;
 		}
@@ -676,90 +659,29 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 					continue;
 				}
 
-				float thickness = thicknessSPX / 64.f;
+				GpuTools::LineQuad quad;
+				if (!GpuTools::lineQuad(begin, end, thicknessSPX, quad))
+					continue;
 
-				begin = roundToPixels(begin);
-				end = roundToPixels(end);
+				// The default canvas is drawn upside down, which the offset of the line has to
+				// follow.
 
-				int 	length;
-				float   width;
+				float s;
 
-				float	slope;
-				float	s, w;
-				bool	bSteep;
-
-				CoordI	c1, c2, c3, c4;
-
-				if (std::abs(begin.x - end.x) > std::abs(begin.y - end.y))
+				if (!quad.bSteep)
 				{
-					// Prepare mainly horizontal line segment
-
-					if (begin.x > end.x)
-						swap(begin, end);
-
-					length = end.x - begin.x;
-					if (length == 0)
-						continue;											// TODO: Should stil draw the caps!
-
-					slope = ((float)(end.y - begin.y)) / length;
-					width = _scaleThickness(thickness, slope);
-					bSteep = false;
-
 					if( m_pActiveCanvas )
-						s = ((begin.y + 0.5f) - (begin.x + 0.5f) * slope);
+						s = quad.offset;
 					else
-						s = m_defaultCanvas.size.h / 64 - ((begin.y + 0.5f) - (begin.x + 0.5f) * slope);
-
-					w = width / 2 + 0.5f;
-
-					// The quad holds every pixel whose center is closer than w to the center of the line,
-					// rounded outwards. The line passes through the centers of the pixels at begin and end.
-
-					float   y1 = begin.y + 0.5f - slope / 2;				// Center of the line at the left side of the quad.
-					float   y2 = y1 + slope * length;					// ...and at the right side.
-
-					c1.x = begin.x;
-					c1.y = int(std::floor(y1 - w));
-					c2.x = end.x;
-					c2.y = int(std::floor(y2 - w));
-					c3.x = end.x;
-					c3.y = int(std::ceil(y2 + w));
-					c4.x = begin.x;
-					c4.y = int(std::ceil(y1 + w));
+						s = m_defaultCanvas.size.h / 64 - quad.offset;
 				}
 				else
-				{
-					// Prepare mainly vertical line segment
+					s = (quad.begin.x + 0.5f) - (m_canvasUBO.yOfs * m_canvasUBO.yMul + (quad.begin.y + 0.5f)) * quad.slope;
 
-					if (begin.y > end.y)
-						swap(begin, end);
-
-					length = end.y - begin.y;
-					if (length == 0)
-						continue;											// TODO: Should stil draw the caps!
-
-					slope = ((float)(end.x - begin.x)) / length;
-					width = _scaleThickness(thickness, slope);
-					bSteep = true;
-
-					s = (begin.x + 0.5f) - (m_canvasUBO.yOfs * m_canvasUBO.yMul + (begin.y + 0.5f)) * slope;
-					w = width / 2 + 0.5f;
-
-					// The quad holds every pixel whose center is closer than w to the center of the line,
-					// rounded outwards. The line passes through the centers of the pixels at begin and end.
-
-					float   x1 = begin.x + 0.5f - slope / 2;				// Center of the line at the top of the quad.
-					float   x2 = x1 + slope * length;					// ...and at the bottom.
-
-					c1.x = int(std::floor(x1 - w));
-					c1.y = begin.y;
-					c2.x = int(std::ceil(x1 + w));
-					c2.y = begin.y;
-					c3.x = int(std::ceil(x2 + w));
-					c3.y = end.y;
-					c4.x = int(std::floor(x2 - w));
-					c4.y = end.y;
-				}
+				const CoordI& c1 = quad.corners[0];
+				const CoordI& c2 = quad.corners[1];
+				const CoordI& c3 = quad.corners[2];
+				const CoordI& c4 = quad.corners[3];
 
 				int extrasOfs = int(pExtrasGL - m_pExtrasBuffer) / 4;
 				int colorsOfs = int(pColorGL - m_pColorBuffer);
@@ -776,9 +698,9 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				}
 
 				*pExtrasGL++ = s;
-				*pExtrasGL++ = w;
-				*pExtrasGL++ = slope;
-				*pExtrasGL++ = bSteep;
+				*pExtrasGL++ = quad.w;
+				*pExtrasGL++ = quad.slope;
+				*pExtrasGL++ = quad.bSteep;
 
 				// Add colors to buffer
 
@@ -828,7 +750,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 			int nCappedWritten = 0;
 			int flatTintOfs = m_tintColorOfs >= 0 ? m_tintColorOfs : 0;		// Entry 0 is white.
 
-			for (const CappedLine& line : m_cappedLines)
+			for (const GpuTools::CappedLine& line : m_cappedLines)
 			{
 				CoordF quad[4];
 				int nEntries = GpuShapes::writeLine(line.begin, line.end, line.thickness, decodeLineCaps(line.caps), pExtrasGL, quad);
@@ -1539,7 +1461,6 @@ GlBackend::GlBackend( int uboBindingPoint )
 
 	m_bFullyInitialized = true;
 
-	_initTables();
 
 	_loadPrograms(uboBindingPoint);
 
@@ -2121,20 +2042,8 @@ void GlBackend::endSession()
 				{
 					m_activeBlurRadius = *pCmd++;
 
-					const int* pRed = pCmd;
-					const int* pGreen = pCmd+9;
-					const int* pBlue = pCmd+18;
-					pCmd+=27;
-
-					for (int i = 0; i < 9; i++)
-					{
-						m_activeBlurInfo.colorMtx[i][0] = pRed[i]/32768.f;
-						m_activeBlurInfo.colorMtx[i][1] = pGreen[i] / 32768.f;
-						m_activeBlurInfo.colorMtx[i][2] = pBlue[i] / 32768.f;
-						m_activeBlurInfo.colorMtx[i][3] = 0.f;
-					}
-
-					m_activeBlurInfo.colorMtx[4][3] = 1.f;
+					GpuTools::blurColorMatrix(pCmd, m_activeBlurInfo.colorMtx);
+					pCmd += 27;
 
 					// The offsets are in texture coordinates of the blit source, so they are
 					// calculated at draw time, from whatever blit source is active then.
@@ -2309,27 +2218,10 @@ void GlBackend::endSession()
 
 				auto size = m_pActiveBlitSource->pixelSize();
 
-				// Blur taps are whole pixels, rounded the way the software backend does it, so
-				// they land on texel centers and read the same texels whatever the sample method.
 				// Offsets are added to texture coordinates normalized against the blit source,
 				// so they are normalized against its size as well.
 
-				int corner = m_activeBlurRadius * 7 / 10;
-
-				float posX = float((m_activeBlurRadius + 32) >> 6) / size.w, negX = float((-m_activeBlurRadius + 32) >> 6) / size.w;
-				float posY = float((m_activeBlurRadius + 32) >> 6) / size.h, negY = float((-m_activeBlurRadius + 32) >> 6) / size.h;
-				float cPosX = float((corner + 32) >> 6) / size.w, cNegX = float((-corner + 32) >> 6) / size.w;
-				float cPosY = float((corner + 32) >> 6) / size.h, cNegY = float((-corner + 32) >> 6) / size.h;
-
-				const float offsets[9][2] = { { cNegX, cNegY }, { 0.f, negY }, { cPosX, cNegY },
-											  { negX, 0.f },   { 0.f, 0.f },  { posX, 0.f },
-											  { cNegX, cPosY }, { 0.f, posY }, { cPosX, cPosY } };
-
-				for (int i = 0; i < 9; i++)
-				{
-					m_activeBlurInfo.offset[i][0] = offsets[i][0];
-					m_activeBlurInfo.offset[i][1] = offsets[i][1];
-				}
+				GpuTools::blurOffsets(m_activeBlurRadius, size, m_activeBlurInfo.offset);
 
 				auto& uniformLocation = m_blurUniformLocation[blurSource][m_bTintIsActive][m_bActiveCanvasIsA8];
 
@@ -3101,37 +2993,6 @@ Blob_p GlBackend::_generateProgramBlob()
 	assert(wpBinary = pBuffer + sizeof(ProgramBlobHeader) + totalSize);
 
 	return pBlob;
-}
-
-//____ _initTables() ___________________________________________________________
-
-void GlBackend::_initTables()
-{
-	// Init lineThicknessTable
-
-	for (int i = 0; i < 17; i++)
-	{
-		double b = i / 16.0;
-		m_lineThicknessTable[i] = (float)Util::squareRoot(1.0 + b * b);
-	}
-}
-
-
-//____ _scaleThickness() ___________________________________________________
-
-float GlBackend::_scaleThickness(float thickness, float slope)
-{
-	slope = std::abs(slope);
-
-	float scale = m_lineThicknessTable[(int)(slope * 16)];
-
-	if (slope < 1.f)
-	{
-		float scale2 = m_lineThicknessTable[(int)(slope * 16) + 1];
-		scale += (scale2 - scale)*((slope * 16) - ((int)(slope * 16)));
-	}
-
-	return thickness * scale;
 }
 
 } // namespace wax
