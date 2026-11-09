@@ -25,6 +25,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <utility>
+#include <algorithm>
 
 namespace wax
 {
@@ -118,6 +119,61 @@ namespace wax
 				offsets[i][0] = taps[i][0];
 				offsets[i][1] = taps[i][1];
 			}
+		}
+
+		//____ convertAlpha() _________________________________________________
+
+		void convertAlpha( uint8_t * pPixels, int pitch, int width, int height, bool bPremultiply, bool bSRGB )
+		{
+			for( int y = 0 ; y < height ; y++ )
+			{
+				auto p = (uint32_t*)(pPixels + y * pitch);
+
+				for( int x = 0 ; x < width ; x++ )
+				{
+					uint32_t v = p[x];
+
+					int a = v >> 24;
+					if( a == 255 )
+						continue;
+
+					if( a == 0 )
+					{
+						p[x] = 0;
+						continue;
+					}
+
+					int c[3] = { int(v & 0xFF), int((v >> 8) & 0xFF), int((v >> 16) & 0xFF) };
+
+					for( int i = 0; i < 3; i++ )
+					{
+						if( bSRGB )
+						{
+							int linear = HiColor::unpackSRGBTab[c[i]];
+							linear = bPremultiply ? (linear * a + 127) / 255 : std::min(4096, (linear * 255 + a / 2) / a);
+							c[i] = HiColor::packSRGBTab[linear];
+						}
+						else
+							c[i] = bPremultiply ? (c[i] * a + 127) / 255 : std::min(255, (c[i] * 255 + a / 2) / a);
+					}
+
+					p[x] = (uint32_t(a) << 24) | (uint32_t(c[2]) << 16) | (uint32_t(c[1]) << 8) | uint32_t(c[0]);
+				}
+			}
+		}
+
+		//____ isOpaque() _____________________________________________________
+
+		bool isOpaque( const uint8_t * pPixels, int pitch, int width, int height )
+		{
+			for( int y = 0; y < height; y++ )
+			{
+				auto p = (const uint32_t*)(pPixels + y * pitch);
+				for( int x = 0; x < width; x++ )
+					if( (p[x] >> 24) != 255 )
+						return false;
+			}
+			return true;
 		}
 
 		//____ scaleLineThickness() ___________________________________________

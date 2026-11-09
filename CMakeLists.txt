@@ -28,8 +28,8 @@ option(WONDERGUI_FETCH_DEPS "Automatically download SDL3, SDL2, FreeType and GLE
 # applications. Pick one below, or pass -DWAPPLIB=<name> to cmake.
 #
 # Only the selected framework and the rendering extension it needs are built,
-# so OpenGL is only required when wappsdl2gl or wappsdl3gl is selected, and SDL2
-# only when one of the SDL2 frameworks is.
+# so OpenGL is only required when wappsdl2gl or wappsdl3gl is selected, Vulkan
+# when wappsdl3vk is, and SDL2 only when one of the SDL2 frameworks is.
 #
 #------------------------------------------------------------------------------
 
@@ -51,13 +51,15 @@ if(NOT WAPPLIB)
 									# Works on Windows, Mac and Linux.
 	#set(WAPPLIB wappsdl3gl)		# WonderApp framework based on SDL3, using OpenGL rendering.
 									# Works on Windows, Mac and Linux.
+	#set(WAPPLIB wappsdl3vk)		# WonderApp framework based on SDL3, using Vulkan rendering.
+									# Works on Windows and Linux.
 	#set(WAPPLIB wappsdl3dx12)		# WonderApp framework based on SDL3, using DirectX 12 rendering.
 									# Works on Windows.
 	#set(WAPPLIB wappsdl3metal)		# WonderApp framework based on SDL3, using Metal rendering.
 									# Works on Mac.
 endif()
 
-set(WAPPLIBS wappwin32sw wappwin32dx12 wappcocoasw wappcocoametal wappsdl2sw wappsdl2gl wappsdl2metal wappsdl3sw wappsdl3gl wappsdl3dx12 wappsdl3metal)
+set(WAPPLIBS wappwin32sw wappwin32dx12 wappcocoasw wappcocoametal wappsdl2sw wappsdl2gl wappsdl2metal wappsdl3sw wappsdl3gl wappsdl3vk wappsdl3dx12 wappsdl3metal)
 
 if(NOT WAPPLIB IN_LIST WAPPLIBS)
 	message(FATAL_ERROR "Unknown WonderApp framework: ${WAPPLIB}. Choose one of: ${WAPPLIBS}")
@@ -185,6 +187,8 @@ elseif( WAPPLIB STREQUAL "wappwin32dx12" OR WAPPLIB STREQUAL "wappsdl3dx12" )
 	add_subdirectory(wax/extensions/dx12gfx)
 elseif( WAPPLIB STREQUAL "wappsdl2gl" OR WAPPLIB STREQUAL "wappsdl3gl" )
 	add_subdirectory(wax/extensions/openglgfx)
+elseif( WAPPLIB STREQUAL "wappsdl3vk" )
+	add_subdirectory(wax/extensions/vulkangfx)
 endif()
 
 add_subdirectory(wax/extensions/gfxstream)

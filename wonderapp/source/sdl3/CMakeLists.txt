@@ -33,7 +33,7 @@ set(INCDIRS
 )
 
 # Only the selected framework gets a target, so nothing here needs OpenGL,
-# DirectX 12 or Metal unless that is what was asked for.
+# Vulkan, DirectX 12 or Metal unless that is what was asked for.
 
 ### Software rendering version
 
@@ -75,6 +75,30 @@ if(WAPPLIB STREQUAL "wappsdl3gl")
 
 	target_link_libraries(wappsdl3gl PRIVATE
 		waxopenglgfx
+		waxfreetypefont
+		wondergui
+		wgdebugger
+		${SDL3_LIBS}
+	)
+
+endif()
+
+### Vulkan version
+
+if(WAPPLIB STREQUAL "wappsdl3vk")
+
+	add_library(wappsdl3vk STATIC
+		${SOURCES}
+		backend_vulkan.cpp
+	)
+
+	target_include_directories(wappsdl3vk PRIVATE
+		${INCDIRS}
+		${WAXVULKANGFX_INCDIRS}
+	)
+
+	target_link_libraries(wappsdl3vk PRIVATE
+		waxvulkangfx
 		waxfreetypefont
 		wondergui
 		wgdebugger
