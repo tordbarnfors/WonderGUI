@@ -121,18 +121,21 @@ namespace wax
 		double angle = std::sqrt(3.4 * precision / r);
 
 
-		nLon = int(std::clamp(std::ceil(2 * c_pi / std::max(angle, 1e-6)), 8.0, 4096.0));
-		nLat = int(std::clamp(std::ceil(c_pi / std::max(angle, 1e-6)), 4.0, 2048.0));
+		// At least 16 meridians and 8 parallels, pieces of at most 22.5 degrees, as the error of larger
+		// ones grows faster than r * a^2 / 4.
+
+		nLon = int(std::clamp(std::ceil(2 * c_pi / std::max(angle, 1e-6)), 16.0, 4096.0));
+		nLat = int(std::clamp(std::ceil(c_pi / std::max(angle, 1e-6)), 8.0, 2048.0));
 
 		int nVertices, nTriangles;
 		_counts(nLon, nLat, nVertices, nTriangles);
 
-		while ((nVertices > Warpmap::maxVertices || nTriangles > Warpmap::maxTriangles) && (nLon > 8 || nLat > 4))
+		while ((nVertices > Warpmap::maxVertices || nTriangles > Warpmap::maxTriangles) && (nLon > 16 || nLat > 8))
 		{
-			if (nLon > 2 * nLat || nLat <= 4)
-				nLon = std::max(8, nLon * 7 / 8);
+			if (nLon > 2 * nLat || nLat <= 8)
+				nLon = std::max(16, nLon * 7 / 8);
 			else
-				nLat = std::max(4, nLat * 7 / 8);
+				nLat = std::max(8, nLat * 7 / 8);
 
 			_counts(nLon, nLat, nVertices, nTriangles);
 		}

@@ -249,7 +249,11 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   the middle and finer precision never gives fewer strips. The tests check within precision
   itself, measured on screen (the 1.5 times allowed before came from the grid), and that finer
   precision never gives fewer triangles. Positions in the source are whole spx, so a magnified
-  source limits precision to about magnification / 128 pixels, which is left as it is.
+  source limits precision to about magnification / 128 pixels, which is left as it is. Any
+  precision above 0 is allowed; at several pixels, generators reach their least pieces (8 sectors
+  of a ring, 16 x 8 of a ball, 16 around a lens) and the outline becomes a visible polygon. Balls
+  and lenses had fewer, but pieces over 22.5 degrees went over precision (2.4 times for a lens
+  with falloff at precision 8), as the estimates assume small angles.
 - **Pieces are at least two pixels across.** Narrower ones are only needed where the source is
   squeezed into each pixel (the rims of a cylinder seen almost to its sides at fine precision, a
   steep falloff of a lens), where they don't show, as the source is still sampled once per

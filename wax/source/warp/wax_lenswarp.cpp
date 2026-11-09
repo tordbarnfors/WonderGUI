@@ -265,7 +265,10 @@ namespace wax
 		};
 
 		double pieceAngle = std::sqrt(8 * precision / std::max(outer, 1.0));
-		int pieces = int(std::clamp(std::ceil(2 * c_pi / std::max(pieceAngle, 1e-6)), 8.0, 4096.0));
+		// At least 16 pieces, of at most 22.5 degrees, as the errors of larger ones grow faster than
+		// worked out above.
+
+		int pieces = int(std::clamp(std::ceil(2 * c_pi / std::max(pieceAngle, 1e-6)), 16.0, 4096.0));
 
 		// Coarser where needed to keep within the limits of Warpmap.
 
@@ -279,8 +282,8 @@ namespace wax
 			if (nVertices <= Warpmap::maxVertices && nTriangles <= Warpmap::maxTriangles)
 				break;
 
-			if (pieces > 8 && pieces >= int(radii.size()))
-				pieces = std::max(8, pieces * 7 / 8);
+			if (pieces > 16 && pieces >= int(radii.size()))
+				pieces = std::max(16, pieces * 7 / 8);
 			else
 				relax *= 1.5;
 		}
