@@ -147,6 +147,15 @@ its geometry while `size()` reports the new one.
 
 `wonderapp/source/wappwindow.cpp`
 
+### SDL frameworks ignore SIGTERM and other requests to quit
+
+The handling of `SDL_EVENT_QUIT` (`SDL_QUIT` for SDL2) is commented out in `process_system_events()`,
+so an app only quits when its windows are closed or `update()` says so. `timeout` and Ctrl+C in a
+terminal don't stop it, which matters for scripted runs: kill such a process with SIGKILL. Found
+with gfxdevicetester, which behaves the same with OpenGL and Vulkan.
+
+`wonderapp/source/sdl3/main.cpp`, `wonderapp/source/sdl2/main.cpp`
+
 ### wappsdl2gl draws into the front buffer of its windows
 
 It never swaps, which shows nothing on Wayland, where a window isn't mapped until it has swapped
