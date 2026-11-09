@@ -74,7 +74,6 @@ MetalBackend::MetalBackend()
 
 	m_flushesInProgress = 0;
 
-	_initTables();
 
 	// Modify shader source
 
@@ -959,11 +958,12 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 			{
 				bool	bUniformChanged = false;
 
-				int32_t statesChanged = *p++;
+				GpuTools::StateChangeParams state;
+				p = GpuTools::decodeStateChange(p, pColors, state);
 
-				if (statesChanged & uint8_t(StateChange::BlitSource))
+				if (GpuTools::hasChanged(state, StateChange::BlitSource))
 				{
-					auto pSurf = static_cast<MetalSurface*>(m_pObjectsBeg[readObjectIndex(p)]);
+					auto pSurf = static_cast<MetalSurface*>(m_pObjectsBeg[state.blitSource]);
 
 					if( pSurf )
 					{
@@ -1001,82 +1001,59 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 
 				}
 
-				if (statesChanged & uint8_t(StateChange::TintColor))
+				if (GpuTools::hasChanged(state, StateChange::TintColor))
 				{
-					HiColor color = *pColors++;
+					HiColor color = state.tintColor;
 
 					color.toLinearFloat((float*) &m_uniform.flatTint);		// Colors are sRGB, but we blend in linear.
 
 					bUniformChanged = true;
 				}
 
-				if (statesChanged & uint8_t(StateChange::Tint))
+				if (GpuTools::hasChanged(state, StateChange::Tint))
 				{
 					// Tint block is written to color buffer, its offset stored in vertex data.
 					// Tint color (flatTint in uniform) is applied on top of it.
 
-					TintTools::DecodedTint tint;
-					p = TintTools::decodeTint(p, pColors, tint);
-
-					if (tint.nLayers == 0)
+					if (state.tint.nLayers == 0)
 						m_tintOfs = -1;
 					else
 					{
 						m_tintOfs = int(pColorMTL - m_pColorBuffer);
-						TintTools::writeGpuTintBlock(tint, (float*) pColorMTL);
-						pColorMTL += TintTools::gpuTintBlockSize(tint);
+						TintTools::writeGpuTintBlock(state.tint, (float*) pColorMTL);
+						pColorMTL += TintTools::gpuTintBlockSize(state.tint);
 					}
 				}
 
-				if (statesChanged & uint8_t(StateChange::BlendMode))
+				if (GpuTools::hasChanged(state, StateChange::BlendMode))
 				{
-					m_activeBlendMode = (BlendMode) * p++;
+					m_activeBlendMode = state.blendMode;
 				}
 
-				if (statesChanged & uint8_t(StateChange::MorphFactor))
+				if (GpuTools::hasChanged(state, StateChange::MorphFactor))
 				{
-					m_activeMorphFactor = (* p++) / 4096.f;
+					m_activeMorphFactor = GpuTools::morphFactor(state.morphFactor);
 
 					[m_renderEncoder setFragmentBytes:&m_activeMorphFactor length:sizeof(float) atIndex:(unsigned) FragmentInputIndex::MorphFactor];
 				}
 
-				if (statesChanged & uint8_t(StateChange::FixedBlendColor))
-				{
-					// Just retrieve the value but do nothing. We use BlendMode::Blend
-					// in place of BlendMode::BlendFixedColor.
+				// The fixed blend color is of no use to us, we use BlendMode::Blend in place of
+				// BlendMode::BlendFixedColor.
 
-					pColors++;
-				}
-
-				if (statesChanged & uint8_t(StateChange::Blur))
+				if (GpuTools::hasChanged(state, StateChange::Blur))
 				{
 					// Only the radius is stored here. The offsets are in texture coordinates of the
 					// blit source, so they are calculated at draw time from whatever source is active then.
 
-					m_activeBlurRadius = * p++;
+					m_activeBlurRadius = state.blurRadius;
 
-					for( int i = 0 ; i < 9 ; i++ )
-					{
-						m_blurUniform.colorMtx[i][0] = p[i]/32768.f;
-						m_blurUniform.colorMtx[i][1] = p[9+i]/32768.f;
-						m_blurUniform.colorMtx[i][2] = p[18+i]/32768.f;
-						m_blurUniform.colorMtx[i][3] = 0;
-					}
-
-					m_blurUniform.colorMtx[4][3] = 1.f;
-
-					p += 27;
+					GpuTools::blurColorMatrix(state.pBlurWeights, (float(*)[4]) m_blurUniform.colorMtx);
 				}
 
 				// Update uniform if changed
 
 				if( bUniformChanged )
 					[m_renderEncoder setVertexBytes:&m_uniform length:sizeof(Uniform) atIndex:(unsigned) VertexInputIndex::Uniform];
-
-				// Take care of alignment
-
-				if( (uintptr_t(p) & 0x2) == 2 )
-					p++;
 
 				break;
 			}
@@ -1280,90 +1257,22 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 						continue;
 					}
 
-					float thickness = thicknessSPX / 64.f;
+					GpuTools::LineQuad quad;
+					if (!GpuTools::lineQuad(begin, end, thicknessSPX, quad))
+						continue;
 
-					begin = roundToPixels(begin);
-					end = roundToPixels(end);
+					// The default canvas is drawn upside down, which the offset of a mainly
+					// horizontal line has to follow.
 
-					int 	length;
-					float   width;
+					float s = quad.offset;
 
-					float	slope;
-					float	s, w;
-					bool	bSteep;
+					if( !quad.bSteep && !m_pActiveCanvas )
+						s = m_defaultCanvas.size.h / 64 - quad.offset;
 
-					CoordI	c1, c2, c3, c4;
-
-					if (std::abs(begin.x - end.x) > std::abs(begin.y - end.y))
-					{
-						// Prepare mainly horizontal line segment
-
-						if (begin.x > end.x)
-							std::swap(begin, end);
-
-						length = end.x - begin.x;
-						if (length == 0)
-							continue;											// TODO: Should stil draw the caps!
-
-						slope = ((float)(end.y - begin.y)) / length;
-						width = _scaleThickness(thickness, slope);
-						bSteep = false;
-
-						if( m_pActiveCanvas )
-							s = ((begin.y + 0.5f) - (begin.x + 0.5f) * slope);
-						else
-							s = m_defaultCanvas.size.h / 64 - ((begin.y + 0.5f) - (begin.x + 0.5f) * slope);
-
-						w = width / 2 + 0.5f;
-
-						// The quad holds every pixel whose center is closer than w to the center of the line,
-						// rounded outwards. The line passes through the centers of the pixels at begin and end.
-
-						float   y1 = begin.y + 0.5f - slope / 2;				// Center of the line at the left side of the quad.
-						float   y2 = y1 + slope * length;					// ...and at the right side.
-
-						c1.x = begin.x;
-						c1.y = int(std::floor(y1 - w));
-						c2.x = end.x;
-						c2.y = int(std::floor(y2 - w));
-						c3.x = end.x;
-						c3.y = int(std::ceil(y2 + w));
-						c4.x = begin.x;
-						c4.y = int(std::ceil(y1 + w));
-					}
-					else
-					{
-						// Prepare mainly vertical line segment
-
-						if (begin.y > end.y)
-							std::swap(begin, end);
-
-						length = end.y - begin.y;
-						if (length == 0)
-							continue;											// TODO: Should stil draw the caps!
-
-						slope = ((float)(end.x - begin.x)) / length;
-						width = _scaleThickness(thickness, slope);
-						bSteep = true;
-
-						s = (begin.x + 0.5f) - (begin.y + 0.5f) * slope;
-						w = width / 2 + 0.5f;
-
-						// The quad holds every pixel whose center is closer than w to the center of the line,
-						// rounded outwards. The line passes through the centers of the pixels at begin and end.
-
-						float   x1 = begin.x + 0.5f - slope / 2;				// Center of the line at the top of the quad.
-						float   x2 = x1 + slope * length;					// ...and at the bottom.
-
-						c1.x = int(std::floor(x1 - w));
-						c1.y = begin.y;
-						c2.x = int(std::ceil(x1 + w));
-						c2.y = begin.y;
-						c3.x = int(std::ceil(x2 + w));
-						c3.y = end.y;
-						c4.x = int(std::floor(x2 - w));
-						c4.y = end.y;
-					}
+					const CoordI& c1 = quad.corners[0];
+					const CoordI& c2 = quad.corners[1];
+					const CoordI& c3 = quad.corners[2];
+					const CoordI& c4 = quad.corners[3];
 
 					int extrasOfs = int(pExtrasMTL - m_pExtrasBuffer) / 4;
 					int colorsOfs = int(pColorMTL - m_pColorBuffer);
@@ -1405,9 +1314,9 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 					pVertexMTL++;
 
 					*pExtrasMTL++ = s;
-					*pExtrasMTL++ = w;
-					*pExtrasMTL++ = slope;
-					*pExtrasMTL++ = bSteep;
+					*pExtrasMTL++ = quad.w;
+					*pExtrasMTL++ = quad.slope;
+					*pExtrasMTL++ = quad.bSteep;
 
 					col.toLinearFloat(&pColorMTL->r);		// Colors are sRGB, but we blend in linear.
 					pColorMTL++;
@@ -1443,7 +1352,7 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 				int cappedVertexOfs = int(pVertexMTL - m_pVertexBuffer);
 				const simd_float2 noUV = { 0.f, 0.f };
 
-				for (const CappedLine& line : m_cappedLines)
+				for (const GpuTools::CappedLine& line : m_cappedLines)
 				{
 					CoordF quad[4];
 					int nEntries = GpuShapes::writeLine(line.begin, line.end, line.thickness, decodeLineCaps(line.caps), pExtrasMTL, quad);
@@ -2079,29 +1988,10 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 
 					if( cmd == Command::Blur )
 					{
-						// Blur taps are whole pixels, rounded the way the software backend does it, so
-						// they land on texel centers and read the same texels whatever the sample method.
 						// Offsets are added to texture coordinates that are normalized against the blit
 						// source, so they are normalized against its size as well.
 
-						SizeI size = pSurf->pixelSize();
-
-						int corner = m_activeBlurRadius * 7 / 10;
-
-						float posX = float((m_activeBlurRadius + 32) >> 6) / size.w, negX = float((-m_activeBlurRadius + 32) >> 6) / size.w;
-						float posY = float((m_activeBlurRadius + 32) >> 6) / size.h, negY = float((-m_activeBlurRadius + 32) >> 6) / size.h;
-						float cPosX = float((corner + 32) >> 6) / size.w, cNegX = float((-corner + 32) >> 6) / size.w;
-						float cPosY = float((corner + 32) >> 6) / size.h, cNegY = float((-corner + 32) >> 6) / size.h;
-
-						m_blurUniform.offset[0] = { cNegX, cNegY };
-						m_blurUniform.offset[1] = { 0, negY };
-						m_blurUniform.offset[2] = { cPosX, cNegY };
-						m_blurUniform.offset[3] = { negX, 0 };
-						m_blurUniform.offset[4] = { 0, 0 };
-						m_blurUniform.offset[5] = { posX, 0 };
-						m_blurUniform.offset[6] = { cNegX, cPosY };
-						m_blurUniform.offset[7] = { 0, posY };
-						m_blurUniform.offset[8] = { cPosX, cPosY };
+						GpuTools::blurOffsets(m_activeBlurRadius, pSurf->pixelSize(), (float(*)[2]) m_blurUniform.offset);
 
 						[m_renderEncoder setFragmentBytes:&m_blurUniform length:sizeof(BlurUniform) atIndex: (unsigned) FragmentInputIndex::BlurUniform];
 
@@ -2261,36 +2151,6 @@ id<MTLRenderCommandEncoder> MetalBackend::_setCanvas( MetalSurface * pCanvas, in
 	return renderEncoder;
 }
 
-
-//____ _initTables() ___________________________________________________________
-
-void MetalBackend::_initTables()
-{
-	// Init lineThicknessTable
-
-	for (int i = 0; i < 17; i++)
-	{
-		double b = i / 16.0;
-		m_lineThicknessTable[i] = (float)Util::squareRoot(1.0 + b * b);
-	}
-}
-
-//____ _scaleThickness() ___________________________________________________
-
-float MetalBackend::_scaleThickness(float thickness, float slope)
-{
-	slope = std::abs(slope);
-
-	float scale = m_lineThicknessTable[(int)(slope * 16)];
-
-	if (slope < 1.f)
-	{
-		float scale2 = m_lineThicknessTable[(int)(slope * 16) + 1];
-		scale += (scale2 - scale)*((slope * 16) - ((int)(slope * 16)));
-	}
-
-	return thickness * scale;
-}
 
 //____ _setSampler() __________________________________________________________
 //
