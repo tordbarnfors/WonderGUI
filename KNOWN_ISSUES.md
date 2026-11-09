@@ -163,13 +163,3 @@ hundred vertices along the outline. It takes 818 bytes rather than 19, 5% of the
 balls are caught by the windows. Only sent when tilt or roll changes, not when spinning.
 
 `MeshCompressor::compress()` in `wax/source/compression/wax_meshcompression.cpp`
-
-### Metal warps are untested
-
-MetalBackend was changed over to triangle meshes (see ROADMAP.md) in a Linux container, where it
-can't be built. Its warp shaders were type checked with clang, but the Objective-C++ has not been
-compiled, and nothing has been drawn. Build it and run gfxdevicetester's WarpTests. DX12Backend,
-changed the same way, has been built and tested on Windows.
-
-`wax/extensions/metalgfx/wax_metalwarpmap*`, the warp command in `wax_metalbackend.mm`, the warp
-shaders in `wax_shadercontent.mm`

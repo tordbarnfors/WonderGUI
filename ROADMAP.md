@@ -46,7 +46,7 @@ in someone's memory or an old chat. Add to it when you decide something, move it
      cells and is a helper of its own, not part of WarpGenerator.
   5. **Done:** DX12Backend and MetalBackend keep the mesh as GlBackend does, with the vertex
      shader reading the vertices from the buffer of the Warpmap, drawn with its triangles as index
-     buffer. DX12Backend is tested, MetalBackend not yet, see KNOWN_ISSUES.md.
+     buffer. Both are tested.
 
   Decided so far:
   - **Vertices in spx:** positions in spx of the Warpmap, u and v in spx of the source as the
