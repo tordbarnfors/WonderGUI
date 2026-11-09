@@ -270,7 +270,15 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   than 748 triangles, a gauge 56 rather than 48, a lens with falloff about 1.9 times as many, as
   its rim's pieces go for all its rings, with outlines off by at most 0.45 pixels rather than up
   to 1.05.
-- **Pieces are at least two pixels across.**- **Pieces are at least two pixels across.** Narrower ones are only needed where the source is
+- **GPU warps bias positions by 1/32768 of a texel with Nearest sampling,** so that one exactly on
+  a border between texels takes the texel after it, as in SoftBackend, rather than either one by
+  how the interpolation rounds, which showed as lines where an edge of a Warpmap runs along such
+  a border. SoftBackend has positions in steps of 1/65536 of a pixel, so a larger bias moves
+  those it has just before a border: 1/1024 made GlBackend differ in more pixels than none,
+  1/65536 to 1/32768 in the fewest (gfxdevicetester's Nearest tests from 139, 19 and 19 to 13, 7
+  and 1). GlBackend through a uniform, DX12Backend and MetalBackend in the fourth value of the
+  third extra.
+- **Pieces are at least two pixels across.** Narrower ones are only needed where the source is
   squeezed into each pixel (the rims of a cylinder seen almost to its sides at fine precision, a
   steep falloff of a lens), where they don't show, as the source is still sampled once per
   pixel, but cost a backend for each row they cross. Positions there can be off by more than
