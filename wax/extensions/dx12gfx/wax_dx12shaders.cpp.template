@@ -26,134 +26,153 @@ namespace wax {
 
 const char DX12Backend::g_fillVS[] =
 
-@INSERTLINEQUOTED <shaders/vs_fill.hlsl>
+@INSERTLINEQUOTED <../hlsl/constants.hlsl>
+@INSERTLINEQUOTED <../hlsl/vs_fill.hlsl>
 ;
 
 const char DX12Backend::g_fillPS[] =
 
-@INSERTLINEQUOTED <shaders/output.hlsl>
-@INSERTLINEQUOTED <shaders/tint.hlsl>
-@INSERTLINEQUOTED <shaders/ps_fill.hlsl>
+@INSERTLINEQUOTED <../hlsl/constants.hlsl>
+@INSERTLINEQUOTED <../hlsl/output.hlsl>
+@INSERTLINEQUOTED <../hlsl/tint.hlsl>
+@INSERTLINEQUOTED <../hlsl/ps_fill.hlsl>
 ;
 
 const char DX12Backend::g_fillAAVS[] =
 
-@INSERTLINEQUOTED <shaders/vs_fill_aa.hlsl>
+@INSERTLINEQUOTED <../hlsl/constants.hlsl>
+@INSERTLINEQUOTED <../hlsl/vs_fill_aa.hlsl>
 ;
 
 const char DX12Backend::g_fillAAPS[] =
 
-@INSERTLINEQUOTED <shaders/output.hlsl>
-@INSERTLINEQUOTED <shaders/tint.hlsl>
-@INSERTLINEQUOTED <shaders/ps_fill_aa.hlsl>
+@INSERTLINEQUOTED <../hlsl/constants.hlsl>
+@INSERTLINEQUOTED <../hlsl/output.hlsl>
+@INSERTLINEQUOTED <../hlsl/tint.hlsl>
+@INSERTLINEQUOTED <../hlsl/ps_fill_aa.hlsl>
 ;
 
 const char DX12Backend::g_blitVS[] =
 
-@INSERTLINEQUOTED <shaders/vs_blit.hlsl>
+@INSERTLINEQUOTED <../hlsl/constants.hlsl>
+@INSERTLINEQUOTED <../hlsl/vs_blit.hlsl>
 ;
 
 const char DX12Backend::g_blitPS[] =
 
-@INSERTLINEQUOTED <shaders/output.hlsl>
-@INSERTLINEQUOTED <shaders/tint.hlsl>
-@INSERTLINEQUOTED <shaders/ps_blit.hlsl>
+@INSERTLINEQUOTED <../hlsl/constants.hlsl>
+@INSERTLINEQUOTED <../hlsl/output.hlsl>
+@INSERTLINEQUOTED <../hlsl/tint.hlsl>
+@INSERTLINEQUOTED <../hlsl/ps_blit.hlsl>
 ;
 
 const char DX12Backend::g_blurPS[] =
 
-@INSERTLINEQUOTED <shaders/output.hlsl>
-@INSERTLINEQUOTED <shaders/tint.hlsl>
-@INSERTLINEQUOTED <shaders/ps_blur.hlsl>
+@INSERTLINEQUOTED <../hlsl/constants.hlsl>
+@INSERTLINEQUOTED <../hlsl/output.hlsl>
+@INSERTLINEQUOTED <../hlsl/tint.hlsl>
+@INSERTLINEQUOTED <../hlsl/ps_blur.hlsl>
 ;
 
 const char DX12Backend::g_paletteBlitPS[] =
 
-@INSERTLINEQUOTED <shaders/output.hlsl>
-@INSERTLINEQUOTED <shaders/tint.hlsl>
-@INSERTLINEQUOTED <shaders/ps_blit_palette.hlsl>
+@INSERTLINEQUOTED <../hlsl/constants.hlsl>
+@INSERTLINEQUOTED <../hlsl/output.hlsl>
+@INSERTLINEQUOTED <../hlsl/tint.hlsl>
+@INSERTLINEQUOTED <../hlsl/ps_blit_palette.hlsl>
 ;
 
 const char DX12Backend::g_paletteBlurPS[] =
 
-@INSERTLINEQUOTED <shaders/output.hlsl>
-@INSERTLINEQUOTED <shaders/tint.hlsl>
-@INSERTLINEQUOTED <shaders/ps_blur_palette.hlsl>
+@INSERTLINEQUOTED <../hlsl/constants.hlsl>
+@INSERTLINEQUOTED <../hlsl/output.hlsl>
+@INSERTLINEQUOTED <../hlsl/tint.hlsl>
+@INSERTLINEQUOTED <../hlsl/ps_blur_palette.hlsl>
 ;
 
 const char DX12Backend::g_mipmapVS[] =
 
-@INSERTLINEQUOTED <shaders/vs_mipmap.hlsl>
+@INSERTLINEQUOTED <../hlsl/vs_mipmap.hlsl>
 ;
 
 const char DX12Backend::g_mipmapPS[] =
 
-@INSERTLINEQUOTED <shaders/ps_mipmap.hlsl>
+@INSERTLINEQUOTED <../hlsl/ps_mipmap.hlsl>
 ;
 
 const char DX12Backend::g_lineVS[] =
 
-@INSERTLINEQUOTED <shaders/vs_line.hlsl>
+@INSERTLINEQUOTED <../hlsl/constants.hlsl>
+@INSERTLINEQUOTED <../hlsl/vs_line.hlsl>
 ;
 
 const char DX12Backend::g_linePS[] =
 
-@INSERTLINEQUOTED <shaders/output.hlsl>
-@INSERTLINEQUOTED <shaders/tint.hlsl>
-@INSERTLINEQUOTED <shaders/ps_line.hlsl>
+@INSERTLINEQUOTED <../hlsl/constants.hlsl>
+@INSERTLINEQUOTED <../hlsl/output.hlsl>
+@INSERTLINEQUOTED <../hlsl/tint.hlsl>
+@INSERTLINEQUOTED <../hlsl/ps_line.hlsl>
 ;
 
 const char DX12Backend::g_segmentsVS[] =
 
-@INSERTLINEQUOTED <shaders/vs_segments.hlsl>
+@INSERTLINEQUOTED <../hlsl/constants.hlsl>
+@INSERTLINEQUOTED <../hlsl/vs_segments.hlsl>
 ;
 
 const char DX12Backend::g_segmentsPS[] =
 
-@INSERTLINEQUOTED <shaders/output.hlsl>
-@INSERTLINEQUOTED <shaders/tint.hlsl>
-@INSERTLINEQUOTED <shaders/ps_segments.hlsl>
+@INSERTLINEQUOTED <../hlsl/constants.hlsl>
+@INSERTLINEQUOTED <../hlsl/output.hlsl>
+@INSERTLINEQUOTED <../hlsl/tint.hlsl>
+@INSERTLINEQUOTED <../hlsl/ps_segments.hlsl>
 ;
 
 const char DX12Backend::g_shapeVS[] =
 
-@INSERTLINEQUOTED <shaders/vs_shape.hlsl>
+@INSERTLINEQUOTED <../hlsl/constants.hlsl>
+@INSERTLINEQUOTED <../hlsl/vs_shape.hlsl>
 ;
 
 const char DX12Backend::g_shapePS[] =
 
-@INSERTLINEQUOTED <shaders/output.hlsl>
-@INSERTLINEQUOTED <shaders/tint.hlsl>
-@INSERTLINEQUOTED <shaders/ps_shape.hlsl>
+@INSERTLINEQUOTED <../hlsl/constants.hlsl>
+@INSERTLINEQUOTED <../hlsl/output.hlsl>
+@INSERTLINEQUOTED <../hlsl/tint.hlsl>
+@INSERTLINEQUOTED <../hlsl/ps_shape.hlsl>
 ;
 
 const char DX12Backend::g_warpVS[] =
 
-@INSERTLINEQUOTED <shaders/vs_warp.hlsl>
+@INSERTLINEQUOTED <../hlsl/constants.hlsl>
+@INSERTLINEQUOTED <../hlsl/vs_warp.hlsl>
 ;
 
 const char DX12Backend::g_warpEdgemapPS[] =
 
-@INSERTLINEQUOTED <shaders/output.hlsl>
-@INSERTLINEQUOTED <shaders/tint.hlsl>
-@INSERTLINEQUOTED <shaders/warp.hlsl>
-@INSERTLINEQUOTED <shaders/ps_warp_edgemap.hlsl>
+@INSERTLINEQUOTED <../hlsl/constants.hlsl>
+@INSERTLINEQUOTED <../hlsl/output.hlsl>
+@INSERTLINEQUOTED <../hlsl/tint.hlsl>
+@INSERTLINEQUOTED <../hlsl/warp.hlsl>
+@INSERTLINEQUOTED <../hlsl/ps_warp_edgemap.hlsl>
 ;
 
 const char DX12Backend::g_warpBlitPS[] =
 
-@INSERTLINEQUOTED <shaders/output.hlsl>
-@INSERTLINEQUOTED <shaders/tint.hlsl>
-@INSERTLINEQUOTED <shaders/warp.hlsl>
-@INSERTLINEQUOTED <shaders/ps_warp_blit.hlsl>
+@INSERTLINEQUOTED <../hlsl/constants.hlsl>
+@INSERTLINEQUOTED <../hlsl/output.hlsl>
+@INSERTLINEQUOTED <../hlsl/tint.hlsl>
+@INSERTLINEQUOTED <../hlsl/warp.hlsl>
+@INSERTLINEQUOTED <../hlsl/ps_warp_blit.hlsl>
 ;
 
 const char DX12Backend::g_warpPaletteBlitPS[] =
 
-@INSERTLINEQUOTED <shaders/output.hlsl>
-@INSERTLINEQUOTED <shaders/tint.hlsl>
-@INSERTLINEQUOTED <shaders/warp.hlsl>
-@INSERTLINEQUOTED <shaders/ps_warp_blit_palette.hlsl>
+@INSERTLINEQUOTED <../hlsl/constants.hlsl>
+@INSERTLINEQUOTED <../hlsl/output.hlsl>
+@INSERTLINEQUOTED <../hlsl/tint.hlsl>
+@INSERTLINEQUOTED <../hlsl/warp.hlsl>
+@INSERTLINEQUOTED <../hlsl/ps_warp_blit_palette.hlsl>
 ;
 
 

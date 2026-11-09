@@ -307,25 +307,25 @@ void ringElements(uint ofs, int n, uint base, float band, float2 p, float2 v, fl
 void ringCoverage(uint ofs, float2 p, inout float4 acc, inout float covered)
 {
     float4 head = extras[ofs];
-    int flags = int(head.y);
+    int ringFlags = int(head.y);
     float4 circles = extras[ofs + 1];
     float4 inner = extras[ofs + 2];
     float4 rect = extras[ofs + 3];
 
     float2 v = p - circles.xy;
     float d = length(v);
-    bool bSquare = (flags & 1) != 0;
+    bool bSquare = (ringFlags & 1) != 0;
 
     float c0 = bSquare ? rectCoverage(rect, p) : circleCoverage(circles.z, v, d);
     float c1 = min(bSquare ? rectCoverage(extras[ofs + 4], p) : circleCoverage(circles.w, v, d), c0);
     float c2 = min(circleCoverage(inner.x, v, d), c1);
     float c3 = min(circleCoverage(inner.y, v, d), c2);
 
-    float back = (flags & 2) != 0 ? max(rectCoverage(rect, p) - c0, 0.0f) : 0.0f;
+    float back = (ringFlags & 2) != 0 ? max(rectCoverage(rect, p) - c0, 0.0f) : 0.0f;
     float outline = c0 - c1 + c2 - c3;
     float band = c1 - c2;
 
-    if ((flags & 16) == 0)
+    if ((ringFlags & 16) == 0)
     {
         outline += band;
         band = 0.0f;
@@ -333,7 +333,7 @@ void ringCoverage(uint ofs, float2 p, inout float4 acc, inout float covered)
 
     addSegment(ofs + 5, back, p, acc, covered);
     addSegment(ofs + 6, outline, p, acc, covered);
-    addSegment(ofs + 7, (flags & 4) != 0 ? c3 : 0.0f, p, acc, covered);
+    addSegment(ofs + 7, (ringFlags & 4) != 0 ? c3 : 0.0f, p, acc, covered);
 
     if (band > 0.0f)
         ringElements(ofs, int(head.z), ofs + uint(head.w), band, p, v, d, acc, covered);

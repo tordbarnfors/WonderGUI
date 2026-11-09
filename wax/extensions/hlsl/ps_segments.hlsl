@@ -1,12 +1,7 @@
-cbuffer CanvasInfo : register(b0)
-{
-    float2 canvasScale;     // Not used here.
-    float2 textureSize;     // Not used here.
-    uint flags;             // Not used here.
-    uint blurOfs;           // Not used here.
-    uint edgemapEdges;      // Edges to walk, one fewer than the segments we render.
-    uint edgemapPitch;      // Edges per column in the edgemap's buffer.
-};
+// The constants (CanvasInfo, PixelInfo, WarpInfo) come from constants.hlsl. Here:
+//
+//   edgemapEdges: Edges to walk, one fewer than the segments we render.
+//   edgemapPitch: Edges per column in the edgemap's buffer.
 
 // writeOutput() and premul() come from output.hlsl, the tint, tintColor() and the
 // colors buffer from tint.hlsl, which are put in front of this file.

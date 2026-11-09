@@ -1,10 +1,7 @@
-cbuffer CanvasInfo : register(b0)
-{
-    float2 canvasScale;     // Not used here.
-    float2 textureSize;     // Not used here, the vertex shader has already used it.
-    uint flags;             // Bit 0: source is alpha only.
-    uint blurOfs;           // Where our 9 color matrices and 9 offsets start in extras.
-};
+// The constants (CanvasInfo, PixelInfo, WarpInfo) come from constants.hlsl. Here:
+//
+//   flags: Bit 0: source is alpha only.
+//   blurOfs: Where our 9 color matrices and 9 offsets start in extras.
 
 // writeOutput() and premul() come from output.hlsl, the tint, tintColor() and the
 // colors buffer from tint.hlsl, which are put in front of this file.

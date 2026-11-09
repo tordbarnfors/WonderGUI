@@ -1,9 +1,6 @@
-cbuffer CanvasInfo : register(b0)
-{
-    float2 canvasScale;     // 2/canvasWidth, 2/canvasHeight, in pixels.
-    float2 textureSize;     // Size of blit source, in pixels.
-    uint flags;             // Bit 0: source is alpha only.
-};
+// The constants (CanvasInfo, PixelInfo, WarpInfo) come from constants.hlsl. Here:
+//
+//   flags: Bit 0: source is alpha only.
 
 StructuredBuffer<float4> colors : register(t0);
 StructuredBuffer<float4> extras : register(t1);

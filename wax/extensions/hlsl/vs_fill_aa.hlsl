@@ -1,9 +1,4 @@
-cbuffer CanvasInfo : register(b0)
-{
-    float2 canvasScale;     // 2/canvasWidth, 2/canvasHeight, in pixels.
-    float2 textureSize;     // Not used here.
-    uint flags;             // Not used here.
-};
+// The constants (CanvasInfo, PixelInfo, WarpInfo) come from constants.hlsl.
 
 StructuredBuffer<float4> colors : register(t0);
 StructuredBuffer<float4> extras : register(t1);

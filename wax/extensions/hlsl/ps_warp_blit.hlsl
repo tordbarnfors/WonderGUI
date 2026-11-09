@@ -1,9 +1,6 @@
-cbuffer CanvasInfo : register(b0)
-{
-    float2 canvasScale;     // Not used here.
-    float2 textureSize;     // Size of blit source, in pixels.
-    uint flags;             // Bit 0: source is alpha only. Others not used here.
-};
+// The constants (CanvasInfo, PixelInfo, WarpInfo) come from constants.hlsl. Here:
+//
+//   flags: Bit 0: source is alpha only. Others not used here.
 
 // Warped blits. writeOutput() and premul() come from output.hlsl, tintColor() from
 // tint.hlsl and the warp functions from warp.hlsl, which are put in front of this
