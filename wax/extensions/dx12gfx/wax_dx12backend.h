@@ -26,6 +26,7 @@
 
 #include <wax_backend.h>
 #include <wax_gpushapes.h>
+#include <wax_gputools.h>
 #include <wax_tinttools.h>
 
 #include <wrl.h>
@@ -274,7 +275,6 @@ namespace wax
 		ID3D12PipelineState* _pipeline(BlendMode blendMode, PipelineKind kind);
 		void _updatePixelInfo();				// Blend mode, morph factor or canvas has changed.
 
-		float _scaleThickness(float thickness, float slope);
 		bool _setPipeline(ID3D12PipelineState* pPipeline);
 
 		void _setCanvas(DX12Surface* pCanvas);
@@ -440,16 +440,7 @@ namespace wax
 
 		std::vector<GpuShapes::Segment>	m_shapeSegments;		// Segments of the shape being drawn.
 
-		struct CappedLine
-		{
-			CoordSPX	begin;
-			CoordSPX	end;
-			spx			thickness;
-			uint16_t	caps;
-			HiColor		color;
-		};
-
-		std::vector<CappedLine>	m_cappedLines;		// Lines with caps of line command being drawn.
+		std::vector<GpuTools::CappedLine>	m_cappedLines;		// Lines with caps of line command being drawn.
 		BlendMode				m_activeBlendMode = BlendMode::Blend;
 		float					m_morphFactor = 0.5f;			// Only used by BlendMode::Morph.
 
@@ -602,11 +593,6 @@ namespace wax
 		static bool											s_bDeviceLost;			// Cleared when setDevice() is given a device.
 		static HRESULT										s_deviceRemovedReason;
 		static std::vector<DX12Backend*>					s_backends;				// All that exist. Not thread safe, like the rest of the backend.
-
-		// Widths a line of a given slope needs to keep an even thickness. Indexed
-		// by slope * 16, interpolated in between. See _scaleThickness().
-
-		float												m_lineThicknessTable[17];
 
 		// Source code for shaders:
 

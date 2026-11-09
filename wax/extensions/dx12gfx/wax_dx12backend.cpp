@@ -1581,79 +1581,49 @@ namespace wax
 
 				case Command::StateChange:
 				{
-					// Every payload has to be stepped past even when we ignore it,
-					// or we lose track of where we are in the command stream.
+					GpuTools::StateChangeParams state;
+					p = GpuTools::decodeStateChange(p, pColors, state);
 
-					int32_t statesChanged = *p++;
-
-					if (statesChanged & uint8_t(StateChange::BlitSource))
+					if (GpuTools::hasChanged(state, StateChange::BlitSource))
 					{
-						uint32_t index = readObjectIndex(p);
-						Object * pObject = _object(index);
+						Object * pObject = _object(state.blitSource);
 
-						_setBlitSource( _isDX12Surface(pObject) ? static_cast<DX12Surface*>(pObject) : nullptr, index );
+						_setBlitSource( _isDX12Surface(pObject) ? static_cast<DX12Surface*>(pObject) : nullptr, state.blitSource );
 					}
 
 					// Tint color and tint are independent. The tint color goes into
 					// every color _addColor() writes, the tint is evaluated per pixel
 					// by the pixel shaders and multiplied on top.
 
-					if (statesChanged & uint8_t(StateChange::TintColor))
-						m_tintColor = *pColors++;
+					if (GpuTools::hasChanged(state, StateChange::TintColor))
+						m_tintColor = state.tintColor;
 
-					if (statesChanged & uint8_t(StateChange::Tint))
+					if (GpuTools::hasChanged(state, StateChange::Tint))
 					{
-						TintTools::DecodedTint tint;
-						p = TintTools::decodeTint(p, pColors, tint);
-
-						if (tint.nLayers == 0)
+						if (state.tint.nLayers == 0)
 							_clearTint();
 						else
-							_setTint(tint);
+							_setTint(state.tint);
 					}
 
-					if (statesChanged & uint8_t(StateChange::BlendMode))
-						m_activeBlendMode = BlendMode(*p++);
+					if (GpuTools::hasChanged(state, StateChange::BlendMode))
+						m_activeBlendMode = state.blendMode;
 
-					if (statesChanged & uint8_t(StateChange::MorphFactor))
-						m_morphFactor = (*p++) / 4096.f;
+					if (GpuTools::hasChanged(state, StateChange::MorphFactor))
+						m_morphFactor = GpuTools::morphFactor(state.morphFactor);
 
-					if (statesChanged & (uint8_t(StateChange::BlendMode) | uint8_t(StateChange::MorphFactor)))
+					if (state.changed & (uint8_t(StateChange::BlendMode) | uint8_t(StateChange::MorphFactor)))
 						_updatePixelInfo();
 
-					if (statesChanged & uint8_t(StateChange::FixedBlendColor))
+					// Blending against a known background (FixedBlendColor) is an
+					// optimization for software rendering. We render it as an ordinary
+					// Blend, which gives the same result, so the color is of no use to us.
+
+					if (GpuTools::hasChanged(state, StateChange::Blur))
 					{
-						// Blending against a known background is an optimization for
-						// software rendering. We render it as an ordinary Blend, which
-						// gives the same result, so the color is of no use to us.
-
-						pColors++;
+						m_blurRadius = state.blurRadius;
+						GpuTools::blurColorMatrix(state.pBlurWeights, m_blurColorMtx);
 					}
-
-					if (statesChanged & uint8_t(StateChange::Blur))
-					{
-						m_blurRadius = *p++;
-
-						// Nine taps, each with its own weight per color channel. The
-						// values are 15 bit fixed point, so they can go above one.
-
-						for (int i = 0; i < 9; i++)
-						{
-							m_blurColorMtx[i][0] = p[i] / 32768.f;
-							m_blurColorMtx[i][1] = p[9+i] / 32768.f;
-							m_blurColorMtx[i][2] = p[18+i] / 32768.f;
-							m_blurColorMtx[i][3] = 0.f;
-						}
-
-						m_blurColorMtx[4][3] = 1.f;
-
-						p += 27;
-					}
-
-					// Take care of alignment
-
-					if( (uintptr_t(p) & 0x2) == 2 )
-						p++;
 
 					break;
 				}
@@ -1928,8 +1898,6 @@ namespace wax
 				continue;
 			}
 
-			float thickness = thicknessSPX / 64.f;
-
 			if (!bDraw)
 				continue;
 
@@ -1946,84 +1914,11 @@ namespace wax
 				continue;
 			}
 
-			CoordI begin = Util::roundToPixels(beginSpx);
-			CoordI end = Util::roundToPixels(endSpx);
+			GpuTools::LineQuad quad;
+			if (!GpuTools::lineQuad(beginSpx, endSpx, thicknessSPX, quad))
+				continue;
 
-			float	width;
-			float	slope;
-			float	s, w;
-			bool	bSteep;
-
-			CoordI	c1, c2, c3, c4;
-
-			if (std::abs(begin.x - end.x) > std::abs(begin.y - end.y))
-			{
-				// Mainly horizontal, so it is measured along X.
-
-				if (begin.x > end.x)
-					std::swap(begin, end);
-
-				int length = end.x - begin.x;
-				if (length == 0)
-					continue;						//TODO: Should still draw the caps!
-
-				slope = ((float)(end.y - begin.y)) / length;
-				width = _scaleThickness(thickness, slope);
-				bSteep = false;
-
-				s = (begin.y + 0.5f) - (begin.x + 0.5f) * slope;
-				w = width / 2 + 0.5f;
-
-				// The quad holds every pixel whose center is closer than w to the center of the line,
-				// rounded outwards. The line passes through the centers of the pixels at begin and end.
-
-				float y1 = begin.y + 0.5f - slope / 2;				// Center of the line at the left side of the quad.
-				float y2 = y1 + slope * length;					// ...and at the right side.
-
-				c1.x = begin.x;
-				c1.y = int(std::floor(y1 - w));
-				c2.x = end.x;
-				c2.y = int(std::floor(y2 - w));
-				c3.x = end.x;
-				c3.y = int(std::ceil(y2 + w));
-				c4.x = begin.x;
-				c4.y = int(std::ceil(y1 + w));
-			}
-			else
-			{
-				// Mainly vertical, so X and Y swap roles.
-
-				if (begin.y > end.y)
-					std::swap(begin, end);
-
-				int length = end.y - begin.y;
-				if (length == 0)
-					continue;						//TODO: Should still draw the caps!
-
-				slope = ((float)(end.x - begin.x)) / length;
-				width = _scaleThickness(thickness, slope);
-				bSteep = true;
-
-				s = (begin.x + 0.5f) - (begin.y + 0.5f) * slope;
-				w = width / 2 + 0.5f;
-
-				// The quad holds every pixel whose center is closer than w to the center of the line,
-				// rounded outwards. The line passes through the centers of the pixels at begin and end.
-
-				float x1 = begin.x + 0.5f - slope / 2;				// Center of the line at the top of the quad.
-				float x2 = x1 + slope * length;					// ...and at the bottom.
-
-				c1.x = int(std::floor(x1 - w));
-				c1.y = begin.y;
-				c2.x = int(std::ceil(x1 + w));
-				c2.y = begin.y;
-				c3.x = int(std::ceil(x2 + w));
-				c3.y = end.y;
-				c4.x = int(std::floor(x2 - w));
-				c4.y = end.y;
-			}
-
-			ExtrasDX12 lineInfo = { s, w, slope, bSteep ? 1.f : 0.f };
+			ExtrasDX12 lineInfo = { quad.offset, quad.w, quad.slope, quad.bSteep ? 1.f : 0.f };
 
 			int extrasOfs = _addExtras(lineInfo);
 			if (extrasOfs < 0)
@@ -2033,7 +1928,7 @@ namespace wax
 			if (colorOfs < 0)
 				continue;
 
-			const CoordI coords[6] = { c1, c2, c3, c1, c3, c4 };
+			const CoordI coords[6] = { quad.corners[0], quad.corners[1], quad.corners[2], quad.corners[0], quad.corners[2], quad.corners[3] };
 
 			for (int vertex = 0; vertex < 6; vertex++)
 			{
@@ -2118,7 +2013,7 @@ namespace wax
 		int firstVertex = int(m_pVertexPtr - m_pVertexBeg);
 		int nLinesDrawn = 0;
 
-		for (const CappedLine& line : m_cappedLines)
+		for (const GpuTools::CappedLine& line : m_cappedLines)
 		{
 			if (m_pExtrasEnd - m_pExtrasPtr < GpuShapes::c_lineEntries || m_pVertexEnd - m_pVertexPtr < 6 || m_pColorPtr == m_pColorEnd)
 			{
@@ -2342,22 +2237,10 @@ namespace wax
 			m_pExtrasPtr++;
 		}
 
-		// Blur taps are whole pixels, rounded the way the software backend does it, so they
-		// land on texel centers and read the same texels whatever the sample method. The
-		// offsets are in texture coordinates, so they are measured against the source.
+		// The offsets are in texture coordinates, so they are measured against the source.
 
-		float w = float(std::max(m_blitSourceSize.w, 1)), h = float(std::max(m_blitSourceSize.h, 1));
-		int corner = m_blurRadius * 7 / 10;
-
-		float posX = float((m_blurRadius + 32) >> 6) / w, negX = float((-m_blurRadius + 32) >> 6) / w;
-		float posY = float((m_blurRadius + 32) >> 6) / h, negY = float((-m_blurRadius + 32) >> 6) / h;
-		float cPosX = float((corner + 32) >> 6) / w, cNegX = float((-corner + 32) >> 6) / w;
-		float cPosY = float((corner + 32) >> 6) / h, cNegY = float((-corner + 32) >> 6) / h;
-
-		const float offsets[9][2] = {
-			{ cNegX, cNegY },	{ 0.f, negY },	{ cPosX, cNegY },
-			{ negX, 0.f },		{ 0.f, 0.f },	{ posX, 0.f },
-			{ cNegX, cPosY },	{ 0.f, posY },	{ cPosX, cPosY } };
+		float offsets[9][2];
+		GpuTools::blurOffsets(m_blurRadius, m_blitSourceSize, offsets);
 
 		for (int i = 0; i < 9; i++)
 		{
@@ -3985,17 +3868,6 @@ namespace wax
 		if (!_createSamplers())
 			return false;
 
-		// A line of a given thickness has to be drawn wider the steeper it runs, or
-		// it comes out thinner than asked for. The table holds that widening for
-		// slopes from 0 to 1, which is all we need since a steeper line is measured
-		// against the other axis.
-
-		for (int i = 0; i < 17; i++)
-		{
-			double b = i / 16.0;
-			m_lineThicknessTable[i] = (float) Util::squareRoot(1.0 + b * b);
-		}
-
 		struct { PipelineKind kind; const char * pVS; } shaders[] =
 		{
 			{ PipelineKind::Fill,	g_fillVS },
@@ -4032,23 +3904,6 @@ namespace wax
 			return false;
 
 		return true;
-	}
-
-	//____ _scaleThickness() ___________________________________________________
-
-	float DX12Backend::_scaleThickness(float thickness, float slope)
-	{
-		slope = std::abs(slope);
-
-		float scale = m_lineThicknessTable[(int)(slope * 16)];
-
-		if (slope < 1.f)
-		{
-			float scale2 = m_lineThicknessTable[(int)(slope * 16) + 1];
-			scale += (scale2 - scale) * ((slope * 16) - ((int)(slope * 16)));
-		}
-
-		return thickness * scale;
 	}
 
 	//____ _createRootSignature() _____________________________________________
