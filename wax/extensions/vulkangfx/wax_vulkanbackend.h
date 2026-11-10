@@ -140,7 +140,7 @@ namespace wax
 		void		_beginSessionOnDevice( Surface * pCanvas ) override;
 		void		_endSessionOnDevice() override;
 
-		bool		_reserveFrameBuffers( int nVertices, int nColors, int nExtras ) override;
+		bool		_reserveFrameBuffers( int nVertices, int nColors, int nExtras, int nObjects ) override;
 
 		bool		_bindCanvas( Surface * pCanvas, SizeI& size, CanvasKind& kind ) override;
 		bool		_setPipeline( PipelineKind kind ) override;

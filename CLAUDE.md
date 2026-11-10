@@ -21,7 +21,7 @@
 
 ## Layout
 
-- `wax/` - graphics base library and its extensions (soft, OpenGL, DX12, Metal, Vulkan backends, FreeType fonts, streaming). DX12 and Vulkan share the HLSL shaders in `wax/extensions/hlsl` and, for Vulkan so far, the API independent part of a GPU backend in `wax/source/wax_gpubackend.h`. `c-api/` is compiled into the `wax` library, so changing the Wax API usually means updating it too. `wrappers/` has the C# wrapper.
+- `wax/` - graphics base library and its extensions (soft, OpenGL, DX12, Metal, Vulkan backends, FreeType fonts, streaming). DX12 and Vulkan share the HLSL shaders in `wax/extensions/hlsl` and the API independent part of a GPU backend in `wax/source/wax_gpubackend.h` (and `wax_gpuedgemap.h`). `c-api/` is compiled into the `wax` library, so changing the Wax API usually means updating it too. `wrappers/` has the C# wrapper.
 - `wondergui/` - the UI toolkit: `source/` (widgets, components, text layouts), `extensions/` (legacy GUI, debugger, plugin), `tools/`, `widgetkits/`.
 - `wonderapp/` - application frameworks (SDL2/SDL3, Win32, Cocoa) and tools built on them.
 - `thirdparty/` - vendored third-party code.

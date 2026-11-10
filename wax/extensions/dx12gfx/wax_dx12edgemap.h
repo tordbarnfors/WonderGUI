@@ -25,7 +25,7 @@
 #pragma once
 
 #define NOMINMAX
-#include <wax_edgemap.h>
+#include <wax_gpuedgemap.h>
 
 #include <wrl.h>
 #include <d3d12.h>
@@ -37,7 +37,15 @@ namespace wax
 	typedef StrongPtr<DX12Edgemap> DX12Edgemap_p;
 	typedef WeakPtr<DX12Edgemap> DX12Edgemap_wp;
 
-	class DX12Edgemap : public Edgemap
+	//____ DX12Edgemap __________________________________________________________
+	/**
+	 * @brief Edgemap for DX12Backend.
+	 *
+	 * GpuEdgemap fills in the buffer the shaders read, this class keeps it in an
+	 * upload heap buffer, permanently mapped.
+	 */
+
+	class DX12Edgemap : public GpuEdgemap
 	{
 		friend class DX12Backend;
 
@@ -68,8 +76,8 @@ namespace wax
 		DX12Edgemap(const Blueprint& bp);
 		~DX12Edgemap();
 
-		void	_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd) override;
-		void	_colorsUpdated(int beginColor, int endColor) override;
+		float *	_allocBuffer( size_t bytes ) override;
+		void	_commitBuffer() override;
 
 		// Used by DX12Backend::setDevice() to move every edgemap from one device to
 		// another. Our buffer only holds what Edgemap already has in memory, so
@@ -81,34 +89,14 @@ namespace wax
 		void	_link();						// Into the list of live edgemaps.
 		void	_unlink();
 
-		// Where DX12Backend finds us. Everything the segments shader reads lives in
-		// one buffer, in float4 entries, which is how the shader indexes it:
-		//
-		//   Edge strips, one per pixel column.
-		//   Raw samples, the left and right side of each column and edge in pixels, for warps.
-		//   Flat colors, one per segment.
-		//   Tint table, one per segment. X is the offset of the segment's tint
-		//   block, -1 for a flat colored segment.
-		//   Tint blocks, a slot per segment big enough for any tint. Only there
-		//   once a segment has had a tint, most edgemaps never do.
+		void	_releaseBuffer( Microsoft::WRL::ComPtr<ID3D12Resource>& buffer );
+
+		// Where DX12Backend finds us.
 
 		D3D12_GPU_VIRTUAL_ADDRESS	_gpuAddress() const { return m_buffer ? m_buffer->GetGPUVirtualAddress() : 0; }
 
-		int		_rawSamplesOfs() const { return m_samplesSize / 2; }
-		int		_flatColorsOfs() const { return m_samplesSize; }
-		int		_tintTableOfs() const { return m_samplesSize + m_nbSegments; }
-		int		_tintSlotOfs(int segment) const { return m_samplesSize + m_nbSegments * 2 + segment * c_tintSlotSize; }
-
-		bool	_createBuffer(bool bWithTintSlots);
-		void	_writeColors(int beginSegment, int endSegment);
-
-		static const int c_tintSlotSize;		// In float4 entries.
-
-		Microsoft::WRL::ComPtr<ID3D12Resource>	m_buffer;
-		float *	m_pBuffer = nullptr;			// Permanently mapped content of m_buffer.
-
-		int		m_samplesSize = 0;				// Size of the edge strips and raw samples, in float4 entries.
-		bool	m_bHasTintSlots = false;
+		Microsoft::WRL::ComPtr<ID3D12Resource>	m_buffer;		// Permanently mapped at m_pGpuData.
+		Microsoft::WRL::ComPtr<ID3D12Resource>	m_newBuffer;	// From _allocBuffer() until _commitBuffer().
 
 		// All live edgemaps, linked through themselves, so they can be found when
 		// the device has to be replaced.

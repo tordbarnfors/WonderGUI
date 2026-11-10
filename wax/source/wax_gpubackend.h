@@ -48,7 +48,7 @@ namespace wax
 	 * needs the API: render targets, pipelines, binding resources and recording draws, through the
 	 * protected virtual methods below, which this class calls between draws, never per vertex.
 	 *
-	 * Taken from DX12Backend, which does all of this itself. VulkanBackend is built on it.
+	 * Taken from DX12Backend. DX12Backend and VulkanBackend are built on it.
 	 *
 	 * What the shaders get, see wax/extensions/hlsl:
 	 *
@@ -214,10 +214,12 @@ namespace wax
 		virtual void		_endSessionOnDevice() = 0;
 
 		// Makes room in the buffers of the frame for what a session may write, and points
-		// m_buffers at it. Returns false if some buffer couldn't be made big enough, in which case
-		// m_buffers points at what there is, or is null.
+		// m_buffers at it. nObjects is how many objects the object tables of the session hold at
+		// most, which is also the most blit sources it can have, 0 if not known. Returns false if
+		// some buffer couldn't be made big enough, in which case m_buffers points at what there
+		// is, or is null.
 
-		virtual bool		_reserveFrameBuffers( int nVertices, int nColors, int nExtras ) = 0;
+		virtual bool		_reserveFrameBuffers( int nVertices, int nColors, int nExtras, int nObjects ) = 0;
 
 		// Points the recording at a canvas, null for the default one. Fills in its size in pixels
 		// and its kind, returns false if it can't be rendered into.

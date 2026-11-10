@@ -65,7 +65,7 @@ namespace wax
 		pObject->SetName( name );
 	}
 
-	const TypeInfo DX12Backend::TYPEINFO = { "DX12Backend", &Backend::TYPEINFO };
+	const TypeInfo DX12Backend::TYPEINFO = { "DX12Backend", &GpuBackend::TYPEINFO };
 
 
 	// Debug aid: clear each update rect before drawing it, so it is obvious which
@@ -584,7 +584,7 @@ namespace wax
 		// Each frame resource also has its own vertex, color and extras buffers,
 		// since the GPU may still be reading the other frame's. They are created
 		// by beginSession(), sized by what the sessions say they need, see
-		// _reserveBuffers().
+		// _reserveFrameBuffers().
 
 		for (int i = 0; i < c_nbFrameResources; ++i)
 		{
@@ -669,9 +669,7 @@ namespace wax
 			frame.fenceValue = 0;
 		}
 
-		m_pVertexBeg = m_pVertexEnd = m_pVertexPtr = nullptr;
-		m_pColorBeg = m_pColorEnd = m_pColorPtr = nullptr;
-		m_pExtrasBeg = m_pExtrasEnd = m_pExtrasPtr = nullptr;
+		m_buffers = FrameBuffers();
 
 		m_pipelines.clear();
 		m_mipmapPipelines.clear();
@@ -680,6 +678,8 @@ namespace wax
 		m_pSamplerHeap = nullptr;
 
 		m_pActiveCanvas = nullptr;
+		m_bCanvasBound = false;
+		m_pCanvasSurface = nullptr;
 		m_activeCanvasRTV = {};
 		m_activeCanvasFormat = DXGI_FORMAT_UNKNOWN;
 
@@ -747,10 +747,7 @@ namespace wax
 		if (!m_bDeviceObjectsOK || checkDeviceLost())
 		{
 			m_bCommandListOpen = false;
-
-			m_pVertexBeg = m_pVertexEnd = m_pVertexPtr = nullptr;
-			m_pColorBeg = m_pColorEnd = m_pColorPtr = nullptr;
-			m_pExtrasBeg = m_pExtrasEnd = m_pExtrasPtr = nullptr;
+			m_buffers = FrameBuffers();
 			return;
 		}
 
@@ -768,17 +765,19 @@ namespace wax
 		// executed. The buffers may not exist yet, beginSession() creates or grows
 		// them as needed.
 
-		m_pVertexBeg = m_frameResources[frame].pVertexBufferData;
-		m_pVertexEnd = m_pVertexBeg ? m_pVertexBeg + m_frameResources[frame].vertexCapacity : nullptr;
-		m_pVertexPtr = m_pVertexBeg;
+		auto& res = m_frameResources[frame];
 
-		m_pColorBeg = m_frameResources[frame].pColorBufferData;
-		m_pColorEnd = m_pColorBeg ? m_pColorBeg + m_frameResources[frame].colorCapacity : nullptr;
-		m_pColorPtr = m_pColorBeg;
+		m_buffers.pVertexBeg = res.pVertexBufferData;
+		m_buffers.pVertexEnd = res.pVertexBufferData ? res.pVertexBufferData + res.vertexCapacity : nullptr;
+		m_buffers.pVertexPtr = res.pVertexBufferData;
 
-		m_pExtrasBeg = m_frameResources[frame].pExtrasBufferData;
-		m_pExtrasEnd = m_pExtrasBeg ? m_pExtrasBeg + m_frameResources[frame].extrasCapacity : nullptr;
-		m_pExtrasPtr = m_pExtrasBeg;
+		m_buffers.pColorBeg = res.pColorBufferData;
+		m_buffers.pColorEnd = res.pColorBufferData ? res.pColorBufferData + res.colorCapacity : nullptr;
+		m_buffers.pColorPtr = res.pColorBufferData;
+
+		m_buffers.pExtrasBeg = res.pExtrasBufferData;
+		m_buffers.pExtrasEnd = res.pExtrasBufferData ? res.pExtrasBufferData + res.extrasCapacity : nullptr;
+		m_buffers.pExtrasPtr = res.pExtrasBufferData;
 
 		m_frameResources[frame].nSRVDescriptors = 0;
 		_forgetObjectSRVs();
@@ -928,10 +927,14 @@ namespace wax
 			m_commandList->IASetVertexBuffers(0, 1, &vertexBufferView );
 		}
 
-		_bindPixelInfo();
+		// Setting the root signature dropped all root arguments, the constants
+		// among them.
 
-		// Setting the root signature dropped the pipeline and whatever the blit
-		// source had bound.
+		_setConstants(ConstantBlock::Canvas);
+		_setConstants(ConstantBlock::Pixel);
+		_setConstants(ConstantBlock::Warp);
+
+		// And the pipeline and whatever the blit source had bound.
 
 		m_pActivePipeline = nullptr;
 		m_bBlitSourceBound = false;
@@ -939,7 +942,7 @@ namespace wax
 
 	//____ _bindCanvasState() __________________________________________________
 	//
-	// Points the command list at the canvas _setCanvas() picked out.
+	// Points the command list at the canvas _bindCanvas() picked out.
 
 	void DX12Backend::_bindCanvasState()
 	{
@@ -949,13 +952,13 @@ namespace wax
 		m_commandList->OMSetRenderTargets(1, &m_activeCanvasRTV, FALSE, nullptr);
 
 		// Viewport and scissor are in pixels. Canvas size is in spx for the default
-		// canvas, so _setCanvas() divided it by 64.
+		// canvas, so _bindCanvas() divided it by 64.
 
 		D3D12_VIEWPORT viewport = {};
 		viewport.TopLeftX = 0;
 		viewport.TopLeftY = 0;
-		viewport.Width = (FLOAT) m_activeCanvasSize.w;
-		viewport.Height = (FLOAT) m_activeCanvasSize.h;
+		viewport.Width = (FLOAT) m_targetSize.w;
+		viewport.Height = (FLOAT) m_targetSize.h;
 		viewport.MinDepth = 0.0f;
 		viewport.MaxDepth = 1.0f;
 		m_commandList->RSSetViewports(1, &viewport);
@@ -963,17 +966,12 @@ namespace wax
 		D3D12_RECT scissorRect = {};
 		scissorRect.left = 0;
 		scissorRect.top = 0;
-		scissorRect.right = (LONG) m_activeCanvasSize.w;
-		scissorRect.bottom = (LONG) m_activeCanvasSize.h;
+		scissorRect.right = (LONG) m_targetSize.w;
+		scissorRect.bottom = (LONG) m_targetSize.h;
 		m_commandList->RSSetScissorRects(1, &scissorRect);
 
-		// Vertex positions are in canvas pixels, the vertex shader needs the canvas
-		// size to bring them into clip space.
-
-		float canvasScale[2] = { m_activeCanvasSize.w > 0 ? 2.f / m_activeCanvasSize.w : 0.f,
-								 m_activeCanvasSize.h > 0 ? 2.f / m_activeCanvasSize.h : 0.f };
-
-		m_commandList->SetGraphicsRoot32BitConstants(0, 2, canvasScale, 0);
+		// The canvas scale the vertex shaders need is in the canvas constants, set
+		// by GpuBackend after _bindCanvas() and by _bindSessionState() after a flush.
 
 		// Pipelines are tied to the render target format, so the one we had is no
 		// longer the one to use.
@@ -993,7 +991,7 @@ namespace wax
 		if (!m_bCommandListOpen)
 			return;
 
-		// The textures were held by _bindBlitSource(), so the surfaces can go.
+		// The textures were held by _bindBlitTexture(), so the surfaces can go.
 
 		for (auto& pSurface : m_blitSourceCanvases)
 		{
@@ -1002,109 +1000,65 @@ namespace wax
 			// The one we are rendering into belongs in RENDER_TARGET until the
 			// session lets go of it, so leave that one alone.
 
-			if (pCanvas != m_pActiveCanvas)
+			if (pCanvas != m_pCanvasSurface)
 				_transitionCanvas(pCanvas, D3D12_RESOURCE_STATE_COMMON);
 		}
 
 		m_blitSourceCanvases.clear();
 	}
 
-	//____ _isDX12Surface() ____________________________________________________
-	//
-	// TypeInfo compares by address, so a plain == would turn away anything derived
-	// from DX12Surface. Walk the chain instead.
-
-	bool DX12Backend::_isOfType(const TypeInfo& type, const TypeInfo& base)
-	{
-		for (const TypeInfo* pType = &type; pType; pType = pType->pSuperClass)
-		{
-			if (pType == &base)
-				return true;
-		}
-
-		return false;
-	}
+	//____ _isDX12SurfaceType() _______________________________________________
 
 	bool DX12Backend::_isDX12SurfaceType(const TypeInfo& type)
 	{
 		return _isOfType(type, DX12Surface::TYPEINFO);
 	}
 
-	bool DX12Backend::_isDX12Surface(const Object* pObject) const
+	//____ _isRecording() ________________________________________________________
+
+	bool DX12Backend::_isRecording() const
 	{
-		return pObject ? _isDX12SurfaceType(pObject->typeInfo()) : false;
+		return m_bCommandListOpen && !s_bDeviceLost;
+	}
+
+	//____ _isNativeSurface() ____________________________________________________
+
+	bool DX12Backend::_isNativeSurface(const Object* pObject) const
+	{
+		return pObject && _isOfType(pObject->typeInfo(), DX12Surface::TYPEINFO);
+	}
+
+	//____ _isNativeEdgemap() ____________________________________________________
+
+	bool DX12Backend::_isNativeEdgemap(const Object* pObject) const
+	{
+		return pObject && _isOfType(pObject->typeInfo(), DX12Edgemap::TYPEINFO);
+	}
+
+	//____ _isNativeWarpmap() ____________________________________________________
+
+	bool DX12Backend::_isNativeWarpmap(const Object* pObject) const
+	{
+		return pObject && _isOfType(pObject->typeInfo(), DX12Warpmap::TYPEINFO);
 	}
 
 	//____ beginSession() _____________________________________________________
+	//
+	// GpuBackend does the work. We must not touch a single pixel outside the
+	// update rects: the swap chain is presented with them as dirty rects, and
+	// DXGI copies everything else from the previously presented buffer. Hence no
+	// clear of the canvas.
+	//
+	// Set c_bDebugClearUpdateRects to make the updated areas stand out, which
+	// also shows which parts of the canvas are being redrawn. Note that this
+	// paints the whole update rect, which breaks the rule above, so the window
+	// must present full frames while it is on.
 
 	void DX12Backend::beginSession(CanvasRef canvasRef, Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, const SessionInfo* pInfo)
 	{
-		DX12Surface * pCanvasSurface = nullptr;
+		GpuBackend::beginSession(canvasRef, pCanvas, nUpdateRects, pUpdateRects, pInfo);
 
-		if (pCanvas)
-		{
-			if (_isDX12Surface(pCanvas))
-				pCanvasSurface = static_cast<DX12Surface*>(pCanvas);
-			else
-				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Canvas is not a DX12Surface, rendering to default canvas instead.",
-					this, &TYPEINFO, __func__, __FILE__, __LINE__);
-		}
-
-		// The swap chain buffer is only ours while we render into it, and only if
-		// this session renders into it at all.
-
-		m_bSessionOnDefaultCanvas = (pCanvasSurface == nullptr);
-
-		if (!m_bCommandListOpen || s_bDeviceLost)
-			return;					// Nothing can be recorded: device lost, beginRender() never called or the list broke.
-
-		if (m_bSessionOnDefaultCanvas && m_defaultCanvasBuffer)
-		{
-			D3D12_RESOURCE_BARRIER barrier = {};
-			barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-			barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-			barrier.Transition.pResource = m_defaultCanvasBuffer;
-			barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-			barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-			barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-
-			m_commandList->ResourceBarrier(1, &barrier);
-		}
-
-		m_bInSession = true;
-
-		// Sessions start with default state, changes arrive as StateChange commands.
-		// This has to happen before the command list is set up, since some of it -
-		// the tint and how pixel shaders hand their results to the blender - is
-		// recorded into the list rather than kept in a pipeline.
-
-		_resetStates();
-
-		// Room for everything the session may write, in buffers the session state
-		// then points at.
-
-		_reserveBuffers(pInfo);
-
-		_bindSessionState();
-
-		// Sets render target, viewport and the canvas scale our shaders need.
-
-		m_pActiveCanvas = nullptr;
-		_setCanvas(pCanvasSurface);
-
-		// We must not touch a single pixel outside the update rects: the swap chain
-		// is presented with them as dirty rects, and DXGI copies everything else
-		// from the previously presented buffer. Hence no clear of the canvas.
-		//
-		// The rects we get for the draw commands are already clipped against the
-		// update rects by DeviceGen2, so no extra clipping is needed here.
-		//
-		// Set c_bDebugClearUpdateRects to make the updated areas stand out, which
-		// also shows which parts of the canvas are being redrawn. Note that this
-		// paints the whole update rect, which breaks the rule above, so the window
-		// must present full frames while it is on.
-
-		if (c_bDebugClearUpdateRects && nUpdateRects > 0 && m_bCommandListOpen && m_activeCanvasRTV.ptr != 0)
+		if (c_bDebugClearUpdateRects && nUpdateRects > 0 && m_bInSession && m_bCommandListOpen && m_activeCanvasRTV.ptr != 0)
 		{
 			std::vector<D3D12_RECT> rects;
 			rects.reserve(nUpdateRects);
@@ -1126,19 +1080,30 @@ namespace wax
 		}
 	}
 
-	//____ endSession() _______________________________________________________
+	//____ _beginSessionOnDevice() _______________________________________________
+	//
+	// The swap chain buffer is only ours while we render into it, and only if
+	// this session renders into it at all, so it is claimed by _bindCanvas().
 
-	void DX12Backend::endSession()
+	void DX12Backend::_beginSessionOnDevice(Surface* pCanvas)
 	{
-		_checkSessionUsage();
+		m_bSessionOnDefaultCanvas = false;
+		m_pCanvasSurface = nullptr;
+		m_activeCanvasRTV.ptr = 0;
+		m_activeCanvasFormat = DXGI_FORMAT_UNKNOWN;
+	}
 
+	//____ _endSessionOnDevice() _________________________________________________
+
+	void DX12Backend::_endSessionOnDevice()
+	{
 		// A canvas surface goes back to COMMON, where D3D12 promotes it on its own
 		// when it is read as a blit source or copied from.
 
-		if (m_pActiveCanvas)
+		if (m_pCanvasSurface)
 		{
-			_transitionCanvas(m_pActiveCanvas, D3D12_RESOURCE_STATE_COMMON);
-			m_pActiveCanvas = nullptr;
+			_transitionCanvas(m_pCanvasSurface, D3D12_RESOURCE_STATE_COMMON);
+			m_pCanvasSurface = nullptr;
 		}
 
 		// Nothing stays parked between sessions, or the next one would find a
@@ -1157,80 +1122,11 @@ namespace wax
 			barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 
 			m_commandList->ResourceBarrier(1, &barrier);
-
-			m_bSessionOnDefaultCanvas = false;
 		}
 
-		m_bInSession = false;
-	}
-
-	//____ setCanvas() ________________________________________________________
-	//
-	// Called between processCommands() within a session, when a render layer has
-	// a canvas of its own.
-
-	void DX12Backend::setCanvas(Surface* pSurface)
-	{
-		if (pSurface && !_isDX12Surface(pSurface))
-		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Canvas is not a DX12Surface.",
-				this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			return;
-		}
-
-		if (!m_bCommandListOpen || s_bDeviceLost)
-			return;					// Nothing to render into it with, see processCommands().
-
-		_resetStates();
-		_setCanvas(static_cast<DX12Surface*>(pSurface));
-	}
-
-	void DX12Backend::setCanvas(CanvasRef ref)
-	{
-		if (ref == CanvasRef::Default)
-		{
-			if (m_bCommandListOpen && !s_bDeviceLost)
-			{
-				_resetStates();
-				_setCanvas(nullptr);
-			}
-		}
-		else
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only CanvasRef::Default is supported.",
-				this, &TYPEINFO, __func__, __FILE__, __LINE__);
-	}
-
-	//____ _resetStates() _____________________________________________________
-	//
-	// States start over with each session and each canvas, as DeviceGen2 sets
-	// them again for it, like SoftBackend does. It encodes a state change only when
-	// a value differs from these defaults, so getting them out of step means drawing
-	// with the values of the previous session or canvas. The root constants that
-	// follow from them are bound by _setCanvas().
-
-	void DX12Backend::_resetStates()
-	{
-		m_tintColor = HiColor::White;
-		m_pixelInfo.tintOfs = -1;
-		m_activeBlendMode = BlendMode::Blend;
-		m_morphFactor = 0.5f;
-
-		// No brush until a StateChange says otherwise. Should one ever be missing,
-		// this makes a blur come out as a plain blit rather than as something built
-		// from whatever was left behind.
-
-		m_blurRadius = 0;
-
-		for (int i = 0; i < 9; i++)
-			for (int j = 0; j < 4; j++)
-				m_blurColorMtx[i][j] = 0.f;
-
-		m_blurColorMtx[4][0] = 1.f;
-		m_blurColorMtx[4][1] = 1.f;
-		m_blurColorMtx[4][2] = 1.f;
-		m_blurColorMtx[4][3] = 1.f;
-
-		_setBlitSource(nullptr);
+		m_bSessionOnDefaultCanvas = false;
+		m_activeCanvasRTV.ptr = 0;
+		m_activeCanvasFormat = DXGI_FORMAT_UNKNOWN;
 	}
 
 	//____ _transitionCanvas() ________________________________________________
@@ -1429,18 +1325,20 @@ namespace wax
 			Sleep(1);
 	}
 
-	//____ _setCanvas() _______________________________________________________
+	//____ _bindCanvas() ______________________________________________________
 	//
 	// Points the command list at the canvas we should render into from here on.
 	// A null surface means the default canvas, which the window owns.
 
-	void DX12Backend::_setCanvas(DX12Surface* pCanvas)
+	bool DX12Backend::_bindCanvas(Surface* pCanvas, SizeI& size, CanvasKind& kind)
 	{
-		if (pCanvas && (!pCanvas->texture() || !pCanvas->canBeCanvas() || pCanvas->renderTargetView().ptr == 0))
+		DX12Surface* pSurface = static_cast<DX12Surface*>(pCanvas);
+
+		if (pSurface && (!pSurface->texture() || !pSurface->canBeCanvas() || pSurface->renderTargetView().ptr == 0))
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Surface can not be used as canvas.",
+			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Surface can not be used as canvas, rendering to default canvas instead.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			pCanvas = nullptr;
+			pSurface = nullptr;
 		}
 
 		// Getting here can flush the command list, and a flush rebinds the canvas.
@@ -1449,20 +1347,19 @@ namespace wax
 
 		m_activeCanvasRTV.ptr = 0;
 		m_activeCanvasFormat = DXGI_FORMAT_UNKNOWN;
+		m_targetSize = SizeI();
 
 		// Whatever we rendered into before is done now.
 
-		if (m_pActiveCanvas && m_pActiveCanvas != pCanvas)
-			_transitionCanvas(m_pActiveCanvas, D3D12_RESOURCE_STATE_COMMON);
+		if (m_pCanvasSurface && m_pCanvasSurface != pSurface)
+			_transitionCanvas(m_pCanvasSurface, D3D12_RESOURCE_STATE_COMMON);
 
-		// We can't read from what we paint into.
+		m_pCanvasSurface = nullptr;
 
-		if (pCanvas && pCanvas == m_pBlitSource)
-			_setBlitSource(nullptr);
+		if (!m_bCommandListOpen)
+			return false;
 
-		m_pActiveCanvas = pCanvas;
-
-		if (pCanvas)
+		if (pSurface)
 		{
 			// Gets any pixels the CPU wrote into the texture before we render over
 			// it, and marks our copy of them as the older one from here on. That
@@ -1470,28 +1367,35 @@ namespace wax
 			// rests in COMMON, so the surface goes back there first. It usually
 			// already is, in which case the call below records nothing.
 
-			_transitionCanvas(pCanvas, D3D12_RESOURCE_STATE_COMMON);
+			_transitionCanvas(pSurface, D3D12_RESOURCE_STATE_COMMON);
 
-			pCanvas->notifyRendered();
+			pSurface->notifyRendered();
 
-			_transitionCanvas(pCanvas, D3D12_RESOURCE_STATE_RENDER_TARGET);
+			if (!m_bCommandListOpen)
+				return false;
+
+			_transitionCanvas(pSurface, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 			// Whoever owns the canvas may let go of it as soon as the session has
 			// ended - RootPanel does when the window is resized - while the GPU is
 			// still rendering into it.
 
-			_holdUntilDone(pCanvas->texture());
+			_holdUntilDone(pSurface->texture());
 
-			m_activeCanvasRTV = pCanvas->renderTargetView();
-			m_activeCanvasSize = pCanvas->pixelSize();
-			m_activeCanvasFormat = pCanvas->dxgiFormat();
+			m_pCanvasSurface = pSurface;
+			m_activeCanvasRTV = pSurface->renderTargetView();
+			m_activeCanvasFormat = pSurface->dxgiFormat();
+			m_targetSize = pSurface->pixelSize();
 		}
 		else
 		{
-			// A session that started on a surface canvas has not claimed the swap
-			// chain buffer yet. endSession() hands it back.
+			if (m_defaultCanvasRTV.ptr == 0)
+				return false;
 
-			if (!m_bSessionOnDefaultCanvas && m_defaultCanvasBuffer && m_bCommandListOpen)
+			// A session that started on a surface canvas has not claimed the swap
+			// chain buffer yet. _endSessionOnDevice() hands it back.
+
+			if (!m_bSessionOnDefaultCanvas && m_defaultCanvasBuffer)
 			{
 				D3D12_RESOURCE_BARRIER barrier = {};
 				barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -1507,20 +1411,22 @@ namespace wax
 			}
 
 			m_activeCanvasRTV = m_defaultCanvasRTV;
-			m_activeCanvasSize = { m_defaultCanvas.size.w / 64, m_defaultCanvas.size.h / 64 };
 			m_activeCanvasFormat = m_defaultCanvasFormat;
+			m_targetSize = { m_defaultCanvas.size.w / 64, m_defaultCanvas.size.h / 64 };
 		}
 
 		_bindCanvasState();
-		_updatePixelInfo();				// The pixel shaders write differently to canvases without alpha.
+
+		size = m_targetSize;
+		kind = _canvasKindOfFormat(m_activeCanvasFormat);
+		return true;
 	}
 
 	//____ setObjects() ________________________________________________________
 
 	void DX12Backend::setObjects(Object* const* pBeg, Object* const* pEnd)
 	{
-		m_pObjectsBeg = pBeg;
-		m_pObjectsEnd = pEnd;
+		GpuBackend::setObjects(pBeg, pEnd);
 
 		// A new table, so nothing has been copied for it yet. The descriptors of the
 		// previous one stay in the heap, earlier draws read them.
@@ -1528,828 +1434,45 @@ namespace wax
 		m_objectSRVs.assign(pEnd - pBeg, SRVSlot());
 	}
 
-	//____ setRects() __________________________________________________________
+	//____ _prepareBlitSource() ________________________________________________
 
-	void DX12Backend::setRects(const RectSPX* pBeg, const RectSPX* pEnd)
+	void DX12Backend::_prepareBlitSource(Surface* pSurface)
 	{
-		m_pRectsBeg = pBeg;
-		m_pRectsEnd = pEnd;
-		m_pRectsPtr = pBeg;
+		static_cast<DX12Surface*>(pSurface)->syncTexture();
 	}
 
-	//____ setColors() _________________________________________________________
-
-	void DX12Backend::setColors(const HiColor* pBeg, const HiColor* pEnd)
-	{
-		m_pColorsBeg = pBeg;
-		m_pColorsEnd = pEnd;
-		m_pColorsPtr = pBeg;
-	}
-
-	//____ setTransforms() _____________________________________________________
-
-	void DX12Backend::setTransforms(const Transform* pBeg, const Transform* pEnd)
-	{
-		m_pTransformsBeg = pBeg;
-		m_pTransformsEnd = pEnd;
-	}
-
-	//____ processCommands() ___________________________________________________
-
-	void DX12Backend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int version )
-	{
-		// Nothing can be recorded: the device is lost, beginRender() was never
-		// called, or the list broke. Every draw would fail on its own and many
-		// would say so, so the commands are dropped here, quietly. The streams
-		// are set again before the next call, so there is no need to step through
-		// them.
-
-		if (!m_bCommandListOpen || s_bDeviceLost)
-			return;
-
-		const RectSPX*	pRects = m_pRectsPtr;
-		const HiColor*	pColors = m_pColorsPtr;
-
-		auto p = pBeg;
-		while (p < pEnd)
-		{
-			auto cmd = Command(*p++);
-			switch (cmd)
-			{
-				case Command::None:
-					break;
-
-				case Command::StateChange:
-				{
-					GpuTools::StateChangeParams state;
-					p = GpuTools::decodeStateChange(p, pColors, state);
-
-					if (GpuTools::hasChanged(state, StateChange::BlitSource))
-					{
-						Object * pObject = _object(state.blitSource);
-
-						_setBlitSource( _isDX12Surface(pObject) ? static_cast<DX12Surface*>(pObject) : nullptr, state.blitSource );
-					}
-
-					// Tint color and tint are independent. The tint color goes into
-					// every color _addColor() writes, the tint is evaluated per pixel
-					// by the pixel shaders and multiplied on top.
-
-					if (GpuTools::hasChanged(state, StateChange::TintColor))
-						m_tintColor = state.tintColor;
-
-					if (GpuTools::hasChanged(state, StateChange::Tint))
-					{
-						if (state.tint.nLayers == 0)
-							_clearTint();
-						else
-							_setTint(state.tint);
-					}
-
-					if (GpuTools::hasChanged(state, StateChange::BlendMode))
-						m_activeBlendMode = state.blendMode;
-
-					if (GpuTools::hasChanged(state, StateChange::MorphFactor))
-						m_morphFactor = GpuTools::morphFactor(state.morphFactor);
-
-					if (state.changed & (uint8_t(StateChange::BlendMode) | uint8_t(StateChange::MorphFactor)))
-						_updatePixelInfo();
-
-					// Blending against a known background (FixedBlendColor) is an
-					// optimization for software rendering. We render it as an ordinary
-					// Blend, which gives the same result, so the color is of no use to us.
-
-					if (GpuTools::hasChanged(state, StateChange::Blur))
-					{
-						m_blurRadius = state.blurRadius;
-						GpuTools::blurColorMatrix(state.pBlurWeights, m_blurColorMtx);
-					}
-
-					break;
-				}
-
-				case Command::Fill:
-				{
-					int32_t nRects = *p++;
-					HiColor col = *pColors++;
-
-					_drawFillRects(pRects, nRects, col);
-					pRects += nRects;
-					break;
-				}
-
-				case Command::Blit:
-				case Command::ClipBlit:
-				case Command::Tile:
-				case Command::Blur:
-				{
-					// All four carry the same payload and cover the same geometry.
-					// Whether the source is clamped or tiled is a property of the
-					// surface, and the rects have already been clipped by
-					// DeviceGen2, so only a blur draws differently - it reads nine
-					// texels per pixel instead of one.
-
-					int32_t nRects = *p++;
-
-					_drawBlitRects(p, pRects, nRects, version,
-								   cmd == Command::Blur ? PipelineKind::Blur : PipelineKind::Blit, cmd == Command::ClipBlit);
-					break;
-				}
-
-				case Command::Line:
-				{
-					int32_t nClipRects = *p++;
-					int32_t nLines = *p++;
-					p++;								// padding
-
-					_drawLines(p, pRects, pColors, nClipRects, nLines);
-					break;
-				}
-
-				case Command::DrawShape:
-				{
-					auto kind = ShapeKind(p[0]);
-					int nRects = p[1];
-					int nColors = p[2];
-					int nWords = p[3];
-					const uint16_t* pPayload = p + c_drawShapeHeaderWords - 1;
-
-					_drawShape(kind, pPayload, pRects, nRects, pColors);
-
-					p = pPayload + nWords;
-					pRects += nRects;
-					pColors += nColors;
-					break;
-				}
-
-				case Command::WarpBlit:
-				case Command::WarpDrawEdgemap:
-				{
-					WarpParams params;
-					p = decodeWarp(cmd, p, params);
-
-					_drawWarp(cmd, params, pRects);
-					pRects += params.nRects;
-					break;
-				}
-
-				case Command::DrawEdgemap:
-				case Command::TileEdgemap:
-				{
-					int32_t nRects = *p++;
-
-					_drawEdgemap(p, pRects, nRects, cmd == Command::TileEdgemap);
-					break;
-				}
-
-				default:
-				{
-					// Every command we know of is either drawn or stepped over above,
-					// so this is a command that didn't exist when this was written. We
-					// don't know how big its payload is, so there is no way to find the
-					// next one and the rest of the session has to go.
-
-					static bool bReported = false;
-					if (!bReported)
-					{
-						char buffer[128];
-						sprintf_s(buffer, "Command %d is unknown, rest of session dropped.", (int)cmd);
-						Base::throwError(ErrorLevel::Error, ErrorCode::Other, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
-						bReported = true;
-					}
-
-					p = pEnd;
-					break;
-				}
-			}
-		}
-
-		m_pRectsPtr = pRects;
-		m_pColorsPtr = pColors;
-	}
-
-	//____ _object() ___________________________________________________________
-
-	Object* DX12Backend::_object(uint32_t index) const
-	{
-		return (m_pObjectsBeg && index < uint32_t(m_pObjectsEnd - m_pObjectsBeg)) ? m_pObjectsBeg[index] : nullptr;
-	}
-
-	//____ _drawFillRects() ____________________________________________________
-	//
-	// A rectangle that lands on whole pixels is just a quad. One that doesn't needs
-	// the coverage of the pixels along its edges worked out, which is a different
-	// pipeline and an entry in the extras buffer. A single command can hold both
-	// kinds, so runs are drawn as the kind changes, the way MetalBackend does it.
-
-	void DX12Backend::_drawFillRects(const RectSPX* pRects, int nRects, HiColor color)
-	{
-		if (nRects <= 0 || !m_pVertexPtr)
-			return;
-
-		// One color for the whole command, the vertices only carry its offset.
-
-		int colorOfs = _addColor(color);
-		if (colorOfs < 0)
-			return;
-
-		PipelineKind kind = PipelineKind::Fill;
-
-		int firstVertex = int(m_pVertexPtr - m_pVertexBeg);
-		int nRectsInRun = 0;
-
-		for (int i = 0; i < nRects; i++)
-		{
-			const RectSPX& rect = pRects[i];
-
-			spx x2spx = rect.x + rect.w;
-			spx y2spx = rect.y + rect.h;
-
-			PipelineKind rectKind = (((rect.x | rect.y | x2spx | y2spx) & 63) == 0) ? PipelineKind::Fill : PipelineKind::FillAA;
-
-			if (rectKind != kind)
-			{
-				_drawFillRun(kind, firstVertex, nRectsInRun);
-
-				kind = rectKind;
-				firstVertex = int(m_pVertexPtr - m_pVertexBeg);
-				nRectsInRun = 0;
-			}
-
-			if (m_pVertexEnd - m_pVertexPtr < 6)
-			{
-				static bool bReported = false;
-				if (!bReported && _blameSessionInfo())
-				{
-					Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, fills dropped. SessionInfo underestimated what the session needs.",
-						this, &TYPEINFO, __func__, __FILE__, __LINE__);
-					bReported = true;
-				}
-
-				break;
-			}
-
-			int extrasOfs = 0;
-
-			float x1, y1, x2, y2;
-
-			if (kind == PipelineKind::Fill)
-			{
-				x1 = float(rect.x >> 6);
-				y1 = float(rect.y >> 6);
-				x2 = float(x2spx >> 6);
-				y2 = float(y2spx >> 6);
-			}
-			else
-			{
-				// Center and radius of the rectangle, in pixels, for the shader.
-
-				float radiusX = rect.w / 128.f;
-				float radiusY = rect.h / 128.f;
-
-				ExtrasDX12 centerAndRadius = { rect.x / 64.f + radiusX, rect.y / 64.f + radiusY, radiusX, radiusY };
-
-				extrasOfs = _addExtras(centerAndRadius);
-				if (extrasOfs < 0)
-					break;
-
-				// The quad has to cover every pixel the rectangle touches, so it
-				// reaches out to whole pixels in both directions.
-
-				x1 = float(rect.x >> 6);
-				y1 = float(rect.y >> 6);
-				x2 = float((x2spx + 63) >> 6);
-				y2 = float((y2spx + 63) >> 6);
-			}
-
-			const float coords[6][2] = { {x1,y1}, {x2,y1}, {x2,y2},
-										 {x1,y1}, {x2,y2}, {x1,y2} };
-
-			for (int vertex = 0; vertex < 6; vertex++)
-			{
-				m_pVertexPtr->x = coords[vertex][0];
-				m_pVertexPtr->y = coords[vertex][1];
-				m_pVertexPtr->colorOfs = (uint32_t) colorOfs;
-				m_pVertexPtr->extrasOfs = (uint32_t) extrasOfs;
-
-				m_pVertexPtr++;
-			}
-
-			nRectsInRun++;
-		}
-
-		_drawFillRun(kind, firstVertex, nRectsInRun);
-	}
-
-	//____ _drawFillRun() ______________________________________________________
-
-	void DX12Backend::_drawFillRun(PipelineKind kind, int firstVertex, int nRects)
-	{
-		if (nRects <= 0)
-			return;
-
-		if (!_setPipeline(_pipeline(m_activeBlendMode, kind)))
-			return;
-
-		m_commandList->DrawInstanced(nRects * 6, 1, firstVertex, 0);
-	}
-
-	//____ _drawLines() ________________________________________________________
-	//
-	// Lines are quads that cover everything the line might touch, with the line
-	// itself handed to the pixel shader as an offset, a half width and a slope. It
-	// works out the coverage of each pixel from those, which is what antialiases
-	// the edges. The geometry follows MetalBackend, except that we never flip Y.
-
-	void DX12Backend::_drawLines(const uint16_t*& pCmd, const RectSPX*& pRects, const HiColor*& pColors, int nClipRects, int nLines)
-	{
-		bool bDraw = _setPipeline(_pipeline(m_activeBlendMode, PipelineKind::Line)) && m_pVertexPtr != nullptr;
-
-		const RectSPX* pClipRects = pRects;
-		pRects += nClipRects;
-
-		int firstVertex = bDraw ? int(m_pVertexPtr - m_pVertexBeg) : 0;
-		int nLinesDrawn = 0;
-
-		for (int i = 0; i < nLines; i++)
-		{
-			// Even when we can't draw we have to step through the command's data,
-			// or we lose track of where we are in the command stream.
-
-			HiColor col = *pColors++;
-
-			auto p32 = (const spx*) pCmd;
-
-			CoordSPX beginSpx, endSpx;
-
-			beginSpx.x = *p32++;
-			beginSpx.y = *p32++;
-			endSpx.x = *p32++;
-			endSpx.y = *p32++;
-
-			pCmd = (const uint16_t*) p32;
-
-			spx thicknessSPX = *pCmd++;
-			uint16_t capsWord = *pCmd++;
-
-			if (capsWord != 0)
-			{
-				m_cappedLines.push_back({ beginSpx, endSpx, thicknessSPX, capsWord, col });
-				continue;
-			}
-
-			if (!bDraw)
-				continue;
-
-			if (m_pVertexEnd - m_pVertexPtr < 6)
-			{
-				static bool bReported = false;
-				if (!bReported && _blameSessionInfo())
-				{
-					Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, lines dropped. SessionInfo underestimated what the session needs.",
-						this, &TYPEINFO, __func__, __FILE__, __LINE__);
-					bReported = true;
-				}
-
-				continue;
-			}
-
-			GpuTools::LineQuad quad;
-			if (!GpuTools::lineQuad(beginSpx, endSpx, thicknessSPX, quad))
-				continue;
-
-			ExtrasDX12 lineInfo = { quad.offset, quad.w, quad.slope, quad.bSteep ? 1.f : 0.f };
-
-			int extrasOfs = _addExtras(lineInfo);
-			if (extrasOfs < 0)
-				continue;
-
-			int colorOfs = _addColor(col);
-			if (colorOfs < 0)
-				continue;
-
-			const CoordI coords[6] = { quad.corners[0], quad.corners[1], quad.corners[2], quad.corners[0], quad.corners[2], quad.corners[3] };
-
-			for (int vertex = 0; vertex < 6; vertex++)
-			{
-				m_pVertexPtr->x = float(coords[vertex].x);
-				m_pVertexPtr->y = float(coords[vertex].y);
-				m_pVertexPtr->colorOfs = (uint32_t) colorOfs;
-				m_pVertexPtr->extrasOfs = (uint32_t) extrasOfs;
-
-				m_pVertexPtr++;
-			}
-
-			nLinesDrawn++;
-		}
-
-		// The clip rects are ours to apply. Unlike fills and blits, the rects of a
-		// line command are not the geometry, they are what it may be drawn inside,
-		// so the same lines are drawn once per rect with the scissor set to it.
-		//
-		// Nothing in this loop may flush the command list: a flush rebinds the
-		// canvas, which puts the scissor back to the whole canvas and would quietly
-		// unclip every rect after it.
-
-		if (nLinesDrawn > 0 && m_bCommandListOpen)
-		{
-			_drawScissored(pClipRects, nClipRects, firstVertex, nLinesDrawn * 6);
-		}
-
-		if (!m_cappedLines.empty())
-		{
-			_drawCappedLines(pClipRects, nClipRects);
-			m_cappedLines.clear();
-		}
-	}
-
-	//____ _drawScissored() ____________________________________________________
-	//
-	// Draws vertices once for each clip rectangle, with the scissor set to it, then
-	// puts the scissor back to the whole canvas.
-
-	void DX12Backend::_drawScissored(const RectSPX* pClipRects, int nClipRects, int firstVertex, int nVertices)
-	{
-		for (int i = 0; i < nClipRects; i++)
-		{
-			const RectSPX& clip = pClipRects[i];
-
-			D3D12_RECT scissorRect;
-			scissorRect.left = clip.x >> 6;
-			scissorRect.top = clip.y >> 6;
-			scissorRect.right = (clip.x + clip.w) >> 6;
-			scissorRect.bottom = (clip.y + clip.h) >> 6;
-
-			m_commandList->RSSetScissorRects(1, &scissorRect);
-			m_commandList->DrawInstanced(nVertices, 1, firstVertex, 0);
-		}
-
-		// Back to the whole canvas, which is what everything else expects.
-
-		D3D12_RECT fullRect = {};
-		fullRect.right = (LONG) m_activeCanvasSize.w;
-		fullRect.bottom = (LONG) m_activeCanvasSize.h;
-
-		m_commandList->RSSetScissorRects(1, &fullRect);
-	}
-
-	//____ _drawCappedLines() __________________________________________________
-	//
-	// Lines with caps, drawn by the shape shaders in a quad around each, see
-	// GpuShapes::writeLine(). As for shapes, their colors are written as given and
-	// the tint color comes with the white color of the vertices.
-
-	void DX12Backend::_drawCappedLines(const RectSPX* pClipRects, int nClipRects)
-	{
-		ID3D12PipelineState* pPipeline = _pipeline(m_activeBlendMode, PipelineKind::Shape);
-
-		if (!pPipeline || !m_pVertexPtr || !m_pColorPtr || !m_pExtrasPtr)
-			return;
-
-		int colorOfs = _addColor(HiColor::White);
-		if (colorOfs < 0)
-			return;
-
-		int firstVertex = int(m_pVertexPtr - m_pVertexBeg);
-		int nLinesDrawn = 0;
-
-		for (const GpuTools::CappedLine& line : m_cappedLines)
-		{
-			if (m_pExtrasEnd - m_pExtrasPtr < GpuShapes::c_lineEntries || m_pVertexEnd - m_pVertexPtr < 6 || m_pColorPtr == m_pColorEnd)
-			{
-				static bool bReported = false;
-				if (!bReported && _blameSessionInfo())
-				{
-					Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Buffer full, lines dropped. SessionInfo underestimated what the session needs.",
-						this, &TYPEINFO, __func__, __FILE__, __LINE__);
-					bReported = true;
-				}
-				break;
-			}
-
-			ExtrasDX12* pEntries = m_pExtrasPtr;
-			CoordF quad[4];
-
-			int nEntries = GpuShapes::writeLine(line.begin, line.end, line.thickness, decodeLineCaps(line.caps), (float*) pEntries, quad);
-			if (nEntries == 0)
-				continue;
-
-			pEntries[0].w = float(m_pColorPtr - m_pColorBeg);
-			line.color.toLinearFloat(&m_pColorPtr->r);
-			m_pColorPtr++;
-
-			int extrasOfs = int(pEntries - m_pExtrasBeg);
-			m_pExtrasPtr += nEntries;
-
-			const int corners[6] = { 0, 1, 2, 0, 2, 3 };
-
-			for (int vertex = 0; vertex < 6; vertex++)
-			{
-				const CoordF& corner = quad[corners[vertex]];
-
-				m_pVertexPtr->x = corner.x;
-				m_pVertexPtr->y = corner.y;
-				m_pVertexPtr->colorOfs = (uint32_t) colorOfs;
-				m_pVertexPtr->extrasOfs = (uint32_t) extrasOfs;
-				m_pVertexPtr->u = 0.f;
-				m_pVertexPtr->v = 0.f;
-
-				m_pVertexPtr++;
-			}
-
-			nLinesDrawn++;
-		}
-
-		if (nLinesDrawn == 0 || !_setPipeline(pPipeline) || !m_bCommandListOpen)
-			return;
-
-		_drawScissored(pClipRects, nClipRects, firstVertex, nLinesDrawn * 6);
-	}
-
-	//____ _addColor() _________________________________________________________
-
-	int DX12Backend::_addColor(HiColor color)
-	{
-		if (!m_pColorPtr)
-			return -1;
-
-		if (m_pColorPtr == m_pColorEnd)
-		{
-			static bool bReported = false;
-			if (!bReported && _blameSessionInfo())
-			{
-				Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Color buffer full, draws dropped. SessionInfo underestimated what the session needs.",
-					this, &TYPEINFO, __func__, __FILE__, __LINE__);
-				bReported = true;
-			}
-
-			return -1;
-		}
-
-		// Colors are sRGB, but we blend in linear. Tint is a plain multiplication, in linear.
-
-		float col[4], tint[4];
-		color.toLinearFloat(col);
-		m_tintColor.toLinearFloat(tint);
-
-		m_pColorPtr->r = col[0] * tint[0];
-		m_pColorPtr->g = col[1] * tint[1];
-		m_pColorPtr->b = col[2] * tint[2];
-		m_pColorPtr->a = col[3] * tint[3];
-
-		return int(m_pColorPtr++ - m_pColorBeg);
-	}
-
-	//____ _setTint() __________________________________________________________
-	//
-	// Writes the tint block into the color buffer and points the pixel shaders
-	// at it. Its stop colors are not multiplied by the tint color, _addColor()
-	// has already put that into the colors the tint is multiplied with.
-
-	void DX12Backend::_setTint(const TintTools::DecodedTint& tint)
-	{
-		int blockSize = TintTools::gpuTintBlockSize(tint);
-
-		if (!m_pColorPtr || m_pColorEnd - m_pColorPtr < blockSize)
-		{
-			static bool bReported = false;
-			if (!bReported && _blameSessionInfo())
-			{
-				Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Color buffer full, tint ignored. SessionInfo underestimated what the session needs.",
-					this, &TYPEINFO, __func__, __FILE__, __LINE__);
-				bReported = true;
-			}
-
-			_clearTint();
-			return;
-		}
-
-		static_assert(sizeof(ColorDX12) == 4 * sizeof(float), "Tint blocks are written as float4 entries.");
-
-		m_pixelInfo.tintOfs = int32_t(m_pColorPtr - m_pColorBeg);
-		TintTools::writeGpuTintBlock(tint, (float*) m_pColorPtr);
-		m_pColorPtr += blockSize;
-
-		_bindPixelInfo();
-	}
-
-	//____ _clearTint() ________________________________________________________
-
-	void DX12Backend::_clearTint()
-	{
-		if (m_pixelInfo.tintOfs < 0)
-			return;
-
-		m_pixelInfo.tintOfs = -1;
-		_bindPixelInfo();
-	}
-
-	//____ _updatePixelInfo() __________________________________________________
-	//
-	// How the pixel shaders hand what they draw to the blender, see output.hlsl and
-	// _createPipeline(). It follows blend mode, morph factor and the kind of canvas.
-
-	void DX12Backend::_updatePixelInfo()
-	{
-		BlendMode mode = _normalizeBlendMode(m_activeBlendMode);
-		uint32_t canvasKind = _canvasKind(m_activeCanvasFormat);
-
-		uint32_t outputMode = 0;
-
-		if (mode == BlendMode::Replace || mode == BlendMode::Morph || (mode == BlendMode::Multiply && canvasKind == 2))
-			outputMode = 1;
-		else if (mode == BlendMode::Min)
-			outputMode = 2;
-		else if ((mode == BlendMode::Add || mode == BlendMode::Invert || mode == BlendMode::Max) && canvasKind != 2)
-			outputMode = 3;
-
-		m_pixelInfo.outputMode = outputMode;
-		m_pixelInfo.canvasKind = canvasKind;
-		m_pixelInfo.morphFactor = (mode == BlendMode::Morph) ? m_morphFactor : 1.f;
-
-		_bindPixelInfo();
-	}
-
-	//____ _bindPixelInfo() ____________________________________________________
-	//
-	// Root constants are recorded into the command list, so every draw after this
-	// sees the new values and none before it does. A reset list has lost them,
-	// which is why _bindSessionState() calls this too.
-
-	void DX12Backend::_bindPixelInfo()
-	{
-		if (!m_bCommandListOpen)
-			return;
-
-		m_commandList->SetGraphicsRoot32BitConstants(6, sizeof(PixelInfo) / 4, &m_pixelInfo, 0);
-	}
-
-	//____ _addExtras() ________________________________________________________
-
-	int DX12Backend::_addExtras(const ExtrasDX12& extras)
-	{
-		if (!m_pExtrasPtr || m_pExtrasPtr == m_pExtrasEnd)
-		{
-			static bool bReported = false;
-			if (!bReported && _blameSessionInfo() && m_pExtrasPtr)
-			{
-				Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Extras buffer full, draws dropped. SessionInfo underestimated what the session needs.",
-					this, &TYPEINFO, __func__, __FILE__, __LINE__);
-				bReported = true;
-			}
-
-			return -1;
-		}
-
-		int ofs = int(m_pExtrasPtr - m_pExtrasBeg);
-
-		*m_pExtrasPtr++ = extras;
-
-		return ofs;
-	}
-
-	int DX12Backend::_addBlurExtras()
-	{
-		const int nEntries = 18;			// Nine color matrices, then nine offsets.
-
-		if (!m_pExtrasPtr || m_pExtrasEnd - m_pExtrasPtr < nEntries)
-		{
-			static bool bReported = false;
-			if (!bReported && _blameSessionInfo() && m_pExtrasPtr)
-			{
-				Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Extras buffer full, blurs dropped. SessionInfo underestimated what the session needs.",
-					this, &TYPEINFO, __func__, __FILE__, __LINE__);
-				bReported = true;
-			}
-
-			return -1;
-		}
-
-		int ofs = int(m_pExtrasPtr - m_pExtrasBeg);
-
-		for (int i = 0; i < 9; i++)
-		{
-			m_pExtrasPtr->x = m_blurColorMtx[i][0];
-			m_pExtrasPtr->y = m_blurColorMtx[i][1];
-			m_pExtrasPtr->z = m_blurColorMtx[i][2];
-			m_pExtrasPtr->w = m_blurColorMtx[i][3];
-
-			m_pExtrasPtr++;
-		}
-
-		// The offsets are in texture coordinates, so they are measured against the source.
-
-		float offsets[9][2];
-		GpuTools::blurOffsets(m_blurRadius, m_blitSourceSize, offsets);
-
-		for (int i = 0; i < 9; i++)
-		{
-			m_pExtrasPtr->x = offsets[i][0];
-			m_pExtrasPtr->y = offsets[i][1];
-			m_pExtrasPtr->z = 0.f;
-			m_pExtrasPtr->w = 0.f;
-
-			m_pExtrasPtr++;
-		}
-
-		return ofs;
-	}
-
-	int DX12Backend::_addExtras(const ExtrasDX12& first, const ExtrasDX12& second)
-	{
-		if (!m_pExtrasPtr)
-			return -1;
-
-		if (m_pExtrasEnd - m_pExtrasPtr < 2)
-		{
-			static bool bReported = false;
-			if (!bReported && _blameSessionInfo())
-			{
-				Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Extras buffer full, blits dropped. SessionInfo underestimated what the session needs.",
-					this, &TYPEINFO, __func__, __FILE__, __LINE__);
-				bReported = true;
-			}
-
-			return -1;
-		}
-
-		int ofs = int(m_pExtrasPtr - m_pExtrasBeg);
-
-		*m_pExtrasPtr++ = first;
-		*m_pExtrasPtr++ = second;
-
-		return ofs;
-	}
-
-	//____ _setBlitSource() ____________________________________________________
-
-	void DX12Backend::_setBlitSource(DX12Surface* pSurface, uint32_t objectIndex)
-	{
-		m_pBlitSource = pSurface;
-		m_blitSourceObject = objectIndex;
-		m_bBlitSourceBound = false;
-		m_bBlitSourceIndexed = false;
-
-		if (!pSurface)
-			return;
-
-		// Reading from the surface we are painting into can't work, the texture
-		// can't be render target and shader resource at the same time.
-
-		if (pSurface == m_pActiveCanvas)
-		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
-				"Can't blit from the surface we are rendering into.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			m_pBlitSource = nullptr;
-			return;
-		}
-
-		// Make sure the texture holds everything written to the surface.
-
-		pSurface->syncTexture();
-
-		m_blitSourceSize = pSurface->pixelSize();
-		m_bBlitSourceAlphaOnly = pSurface->isAlphaOnly();
-		m_bBlitSourceIndexed = pSurface->isIndexed();
-
-		// Samplers are ordered nearest/bilinear, then clamp/tile.
-
-		m_blitSourceSampler = (pSurface->isTiling() ? 2 : 0) + (pSurface->sampleMethod() == SampleMethod::Bilinear ? 1 : 0);
-	}
-
-	//____ _bindBlitSource() ___________________________________________________
+	//____ _bindBlitTexture() __________________________________________________
 	//
 	// Copies the source's descriptor into this frame's shader visible heap and
-	// points the root descriptor tables at it. Only needed when the source has
-	// changed or our bindings have been invalidated.
+	// points the root descriptor table at it, and binds its palette if it has one.
+	// GpuBackend binds the sampler and sets the constants.
 
-	bool DX12Backend::_bindBlitSource()
+	bool DX12Backend::_bindBlitTexture(Surface* pSurface)
 	{
-		if (!m_bCommandListOpen || !m_pBlitSource || !m_pBlitSource->texture())
-			return false;
+		auto pSource = static_cast<DX12Surface*>(pSurface);
 
-		if (m_bBlitSourceBound)
-			return true;
+		if (!m_bCommandListOpen || !pSource->texture())
+			return false;
 
 		// Mip levels that no longer match level 0 are drawn anew before anything
 		// reads them.
 
-		if (m_pBlitSource->isMipmapStale())
-			_generateMipmaps(m_pBlitSource);
+		if (pSource->isMipmapStale())
+			_generateMipmaps(pSource);
 
 		// D3D12 would promote a texture resting in COMMON to a shader resource on
 		// its own, but a canvas surface's state is one we track, so we do it with
 		// a barrier and put it back before the command list closes.
 
-		if (m_pBlitSource->canBeCanvas() && m_pBlitSource->resourceState() == D3D12_RESOURCE_STATE_COMMON)
+		if (pSource->canBeCanvas() && pSource->resourceState() == D3D12_RESOURCE_STATE_COMMON)
 		{
-			_transitionCanvas(m_pBlitSource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-			m_blitSourceCanvases.push_back(m_pBlitSource);
+			_transitionCanvas(pSource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+			m_blitSourceCanvases.push_back(pSource);
 		}
 
 		// A palette based surface is read through its palette buffer as well.
 
-		_holdUntilDone(m_pBlitSource->paletteBuffer());
+		_holdUntilDone(pSource->paletteBuffer());
 
 		auto& frame = m_frameResources[m_currentFrameIndex];
 
@@ -2360,8 +1483,8 @@ namespace wax
 		// in the object table is used, after that we point at the copy, see
 		// m_objectSRVs.
 
-		ID3D12Resource* pTexture = m_pBlitSource->texture();
-		D3D12_CPU_DESCRIPTOR_HANDLE srcSRV = m_pBlitSource->textureSRV();
+		ID3D12Resource* pTexture = pSource->texture();
+		D3D12_CPU_DESCRIPTOR_HANDLE srcSRV = pSource->textureSRV();
 
 		SRVSlot dummy;
 		SRVSlot& entry = m_blitSourceObject < m_objectSRVs.size() ? m_objectSRVs[m_blitSourceObject] : dummy;
@@ -2407,20 +1530,13 @@ namespace wax
 
 		m_commandList->SetGraphicsRootDescriptorTable(3, srvHandle);
 
-		// The shaders need the source size to get from pixels to texture coordinates.
-
-		float textureSize[2] = { (float) m_blitSourceSize.w, (float) m_blitSourceSize.h };
-		m_commandList->SetGraphicsRoot32BitConstants(0, 2, textureSize, 2);
-
-		_bindBlitSamplerAndFlags();
-
 		// A palette based source has its palette in the slot edgemaps use, which is
-		// free while we blit. _drawEdgemap() clears m_bBlitSourceBound, so we come
+		// free while we blit. Drawing an edgemap clears m_bBlitSourceBound, so we come
 		// back here and put it back afterwards.
 
-		if (m_bBlitSourceIndexed)
+		if (pSource->isIndexed())
 		{
-			D3D12_GPU_VIRTUAL_ADDRESS palette = m_pBlitSource->paletteGPUAddress();
+			D3D12_GPU_VIRTUAL_ADDRESS palette = pSource->paletteGPUAddress();
 
 			if (palette == 0)
 				return false;
@@ -2428,7 +1544,6 @@ namespace wax
 			m_commandList->SetGraphicsRootShaderResourceView(5, palette);
 		}
 
-		m_bBlitSourceBound = true;
 		return true;
 	}
 
@@ -2438,12 +1553,12 @@ namespace wax
 	// MetalBackend has Metal do it and GlBackend has OpenGL. D3D12 has no such
 	// call, so we draw them ourselves, see ps_mipmap.hlsl.
 	//
-	// We get here from _bindBlitSource() when level 0 has changed since the
+	// We get here from _bindBlitTexture() when level 0 has changed since the
 	// levels were drawn: after an upload, which flushed the command list, or
 	// after rendering into the surface, which ended with it back in COMMON.
 	// Either way every level rests in COMMON and this command list hasn't
 	// promoted it, so we can barrier it ourselves. We leave it in COMMON, where
-	// _bindBlitSource() expects it.
+	// _bindBlitTexture() expects it.
 
 	void DX12Backend::_generateMipmaps(DX12Surface* pSurface)
 	{
@@ -2615,41 +1730,21 @@ namespace wax
 		return pPipeline.Get();
 	}
 
-	//____ _bindBlitSamplerAndFlags() __________________________________________
-	//
-	// A ClipBlit must not read outside the source: the transform can put parts of
-	// the destination beyond the source's edges, and those should be left alone,
-	// not filled with the edge texels a clamping sampler gives. So a clipping
-	// draw of a non-tiling source uses a sampler that returns transparent black
-	// outside, the same as MetalBackend's ClampToZero. Tiling sources wrap either
-	// way.
+	//____ _bindBlitSampler() _________________________________________________
 
-	void DX12Backend::_bindBlitSamplerAndFlags()
+	void DX12Backend::_bindBlitSampler(Surface* pSurface, bool bClip)
 	{
-		bool bClip = m_bBlitClip && !m_pBlitSource->isTiling();
+		if (!m_bCommandListOpen || !m_pSamplerHeap)
+			return;
+
+		// Samplers are ordered nearest/bilinear, clamp/tile, then clip, see _createSamplers().
+
+		int index = (bClip ? 4 : 0) + (pSurface->isTiling() ? 2 : 0) + (pSurface->sampleMethod() == SampleMethod::Bilinear ? 1 : 0);
 
 		D3D12_GPU_DESCRIPTOR_HANDLE samplerHandle = m_pSamplerHeap->GetGPUDescriptorHandleForHeapStart();
-		samplerHandle.ptr += UINT64(m_blitSourceSampler + (bClip ? 4 : 0)) * m_samplerDescriptorSize;
+		samplerHandle.ptr += UINT64(index) * m_samplerDescriptorSize;
 
 		m_commandList->SetGraphicsRootDescriptorTable(4, samplerHandle);
-
-		// Bits 0 and 4 are for the ordinary shaders. The palette shaders fetch texels
-		// themselves, so they need to know what the sampler would have done. A source
-		// without alpha (bit 4) reads alpha 1 also from the transparent border, so the
-		// ordinary blit shader works out its alpha itself when clipping.
-
-		auto pDesc = m_pBlitSource->pixelDescription();
-		bool bNoAlpha = pDesc->type != PixelType::Index && pDesc->A_mask == 0 && !m_bBlitSourceAlphaOnly;
-
-		uint32_t flags = (m_bBlitSourceAlphaOnly ? 1 : 0) |
-						 (m_pBlitSource->sampleMethod() == SampleMethod::Bilinear ? 2 : 0) |
-						 (m_pBlitSource->isTiling() ? 4 : 0) |
-						 (bClip ? 8 : 0) |
-						 (bNoAlpha ? 16 : 0);
-
-		m_commandList->SetGraphicsRoot32BitConstants(0, 1, &flags, 4);
-
-		m_bBoundBlitClip = m_bBlitClip;
 	}
 
 	//____ _createSRVHeap() _____________________________________________________
@@ -2687,8 +1782,8 @@ namespace wax
 	// until the GPU is done with them.
 	//
 	// Switching heaps leaves the descriptor tables set so far pointing into a
-	// heap that is no longer bound. That is fine: _reserveBuffers() grows it
-	// before _bindSessionState() binds anything, and _bindBlitSource() and
+	// heap that is no longer bound. That is fine: _reserveFrameBuffers() grows it
+	// before _bindSessionState() binds anything, and _bindBlitTexture() and
 	// _generateMipmaps() set both tables right after. Nothing else uses them.
 
 	bool DX12Backend::_growSRVHeap(int nNeeded)
@@ -2727,710 +1822,64 @@ namespace wax
 			entry = SRVSlot();
 	}
 
-	//____ _drawBlitRects() ____________________________________________________
+	//____ _bindEdgemap() _____________________________________________________
 
-	void DX12Backend::_drawBlitRects(const uint16_t*& pCmd, const RectSPX*& pRects, int nRects, int version, PipelineKind kind, bool bClip)
+	bool DX12Backend::_bindEdgemap(GpuEdgemap* pEdgemap)
 	{
-		m_bBlitClip = bClip;
+		auto pDX12Edgemap = static_cast<DX12Edgemap*>(pEdgemap);
 
-		// Transforms below this index are the standard ones, the rest were handed
-		// to us through setTransforms().
-
-		int customTransformStart = (version == 1) ? GfxFlip_size : NbStandardTransforms;
-
-		bool bBilinear = (m_pBlitSource && m_pBlitSource->sampleMethod() == SampleMethod::Bilinear);
-
-		// Custom transforms sample bilinear sources at the center of the texel, but nearest
-		// ones at the corner, so that stretched pixels are evenly distributed. A corner on a
-		// texel edge belongs to the texel after it, but rounding could tip it into the one
-		// before. Corners land exactly on texel edges when an axis aligned stretch has a
-		// simple ratio, so those are nudged forward by a fraction of a texel. Rotated ones
-		// practically never do, and a nudge would only move samples that weren't on an edge.
-		// Blurs always sample the center, so their fractional sample offsets round to the
-		// nearest pixel either way. Standard transforms are dealt with per rectangle below.
-
-		bool bCenter = bBilinear || kind == PipelineKind::Blur;
-
-		// Even when we can't draw we have to step through the command's data, or
-		// we lose track of where we are in the stream.
-
-		bool bDraw = _bindBlitSource() && m_pVertexPtr != nullptr;
-
-		// The source may be bound for a different kind of blit.
-
-		if (bDraw && m_bBoundBlitClip != m_bBlitClip)
-			_bindBlitSamplerAndFlags();
-
-		// A palette based source has shaders of its own.
-
-		if (m_bBlitSourceIndexed)
-			kind = (kind == PipelineKind::Blur) ? PipelineKind::PaletteBlur : PipelineKind::PaletteBlit;
-
-		// A blur needs its brush where the pixel shader can reach it. It goes in the
-		// extras buffer, which the shader indexes into from a root constant.
-		//
-		// That constant is written again for every blur draw, which is what keeps
-		// it right: a mid-session flush sets the root signature again and drops
-		// every root argument with it. Skipping this when the brush hasn't changed
-		// would need a flag cleared alongside m_bBlitSourceBound.
-
-		if (bDraw && (kind == PipelineKind::Blur || kind == PipelineKind::PaletteBlur))
-		{
-			int blurOfs = _addBlurExtras();
-
-			if (blurOfs < 0)
-				bDraw = false;
-			else
-			{
-				uint32_t ofs = (uint32_t) blurOfs;
-				m_commandList->SetGraphicsRoot32BitConstants(0, 1, &ofs, 5);
-			}
-		}
-
-		if (bDraw)
-			bDraw = _setPipeline(_pipeline(m_activeBlendMode, kind));
-
-		// _addColor() multiplies by the tint, so what a blit wants here is white.
-		// Passing the tint would apply it twice.
-
-		int colorOfs = bDraw ? _addColor(HiColor::White) : -1;
-
-		if (colorOfs < 0)
-			bDraw = false;
-
-		int firstVertex = bDraw ? int(m_pVertexPtr - m_pVertexBeg) : 0;
-		int nRectsDrawn = 0;
-
-		for (int i = 0; i < nRects; i++)
-		{
-			auto p32 = (const spx*) pCmd;
-
-			int		srcX = *p32++;			// Source coordinates are in 1/1024 pixels.
-			int		srcY = *p32++;
-			spx		dstX = *p32++;
-			spx		dstY = *p32++;
-
-			pCmd = (const uint16_t*) p32;
-
-			int32_t transform = *pCmd++;
-			pCmd++;							// padding
-
-			const RectSPX& dest = *pRects++;
-
-			if (!bDraw)
-				continue;
-
-			if (m_pVertexEnd - m_pVertexPtr < 6)
-			{
-				static bool bReported = false;
-				if (!bReported && _blameSessionInfo())
-				{
-					Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, blits dropped. SessionInfo underestimated what the session needs.",
-						this, &TYPEINFO, __func__, __FILE__, __LINE__);
-					bReported = true;
-				}
-
-				continue;
-			}
-
-			// Source and destination origin plus the transform is all the vertex
-			// shader needs to work out texture coordinates for each corner.
-
-			auto& mtx = (transform < customTransformStart) ? s_standardTransforms[transform] : m_pTransformsBeg[transform - customTransformStart];
-
-			// The source coordinate is where the corner of the first destination pixel lands.
-			// Standard transforms (blits, tiles and blurs, possibly flipped) map pixels 1:1,
-			// so they sample the center of each source pixel, half a pixel along the
-			// transformed axes, whichever way those point.
-
-			float srcOfsX, srcOfsY;
-
-			if (transform < customTransformStart)
-			{
-				srcOfsX = (mtx.xx + mtx.yx) * 0.5f;
-				srcOfsY = (mtx.xy + mtx.yy) * 0.5f;
-			}
-			else if (bCenter)
-				srcOfsX = srcOfsY = 0.5f;
-			else if ((mtx.xy == 0.f && mtx.yx == 0.f) || (mtx.xx == 0.f && mtx.yy == 0.f))
-				srcOfsX = srcOfsY = 1.f / 4096;
-			else
-				srcOfsX = srcOfsY = 0.f;
-
-			ExtrasDX12 srcDst;
-
-			srcDst.x = srcX / 1024.f + srcOfsX;
-			srcDst.y = srcY / 1024.f + srcOfsY;
-			srcDst.z = float(dstX >> 6) + 0.5f;
-			srcDst.w = float(dstY >> 6) + 0.5f;
-
-			ExtrasDX12 matrix = { mtx.xx, mtx.xy, mtx.yx, mtx.yy };
-
-			int extrasOfs = _addExtras(srcDst, matrix);
-			if (extrasOfs < 0)
-				continue;
-
-			float x1 = float(dest.x >> 6);
-			float y1 = float(dest.y >> 6);
-			float x2 = x1 + float(dest.w >> 6);
-			float y2 = y1 + float(dest.h >> 6);
-
-			const float coords[6][2] = { {x1,y1}, {x2,y1}, {x2,y2},
-										 {x1,y1}, {x2,y2}, {x1,y2} };
-
-			for (int vertex = 0; vertex < 6; vertex++)
-			{
-				m_pVertexPtr->x = coords[vertex][0];
-				m_pVertexPtr->y = coords[vertex][1];
-				m_pVertexPtr->colorOfs = (uint32_t) colorOfs;
-				m_pVertexPtr->extrasOfs = (uint32_t) extrasOfs;
-
-				m_pVertexPtr++;
-			}
-
-			nRectsDrawn++;
-		}
-
-		if (nRectsDrawn > 0)
-			m_commandList->DrawInstanced(nRectsDrawn * 6, 1, firstVertex, 0);
-	}
-
-	//____ _drawEdgemap() ______________________________________________________
-	//
-	// An edgemap is drawn as one quad per patch, with the work done in the pixel
-	// shader: it walks down a column of edges and works out how much of the pixel
-	// each segment covers. The vertices carry where in the edgemap each corner
-	// sits, which is what lets the same quad be flipped or rotated.
-
-	void DX12Backend::_drawEdgemap(const uint16_t*& pCmd, const RectSPX*& pRects, int nRects, bool bTile)
-	{
-		int32_t flip = *pCmd++;
-		pCmd++;								// padding
-
-		Object * pObject = _object(readObjectIndex(pCmd));
-
-		auto p32 = (const spx*) pCmd;
-
-		spx destX = *p32++;
-		spx destY = *p32++;
-
-		pCmd = (const uint16_t*) p32;
-
-		DX12Edgemap * pEdgemap = (pObject && _isOfType(pObject->typeInfo(), DX12Edgemap::TYPEINFO)) ?
-								 static_cast<DX12Edgemap*>(pObject) : nullptr;
-
-		if (!pEdgemap || pEdgemap->_gpuAddress() == 0 || !m_pVertexPtr || flip < 0 || flip >= GfxFlip_size)
-		{
-			static bool bReported = false;
-			if (!bReported)
-			{
-				const char * pReason = !pEdgemap ? "it is not a DX12Edgemap" :
-									   pEdgemap->_gpuAddress() == 0 ? "it has no buffer" :
-									   !m_pVertexPtr ? "there is no vertex buffer" : "the flip value is out of range";
-
-				char buffer[256];
-				sprintf_s(buffer, "Can't draw edgemap, %s.", pReason);
-				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
-				bReported = true;
-			}
-
-			pRects += nRects;
-			return;
-		}
-
-		int nSegments = pEdgemap->m_nbRenderSegments;
-
-		if (nSegments < 1 || nRects <= 0)
-		{
-			pRects += nRects;
-			return;
-		}
-
-		auto& mtx = s_standardTransforms[flip];
-
-		// Where the edgemap lands, before any patch is taken out of it.
-
-		RectSPX destIn = {
-			destX,
-			destY,
-			pEdgemap->m_size.w * 64 * int(std::abs(mtx.xx)) + pEdgemap->m_size.h * 64 * int(std::abs(mtx.yx)),
-			pEdgemap->m_size.w * 64 * int(std::abs(mtx.xy)) + pEdgemap->m_size.h * 64 * int(std::abs(mtx.yy))
-		};
-
-		RectI dest = Util::roundToPixels(destIn);
-
-		int uIncX = int(mtx.xx);
-		int vIncX = int(mtx.xy);
-		int uIncY = int(mtx.yx);
-		int vIncY = int(mtx.yy);
-
-		// We may have been given room for more columns than the edgemap has.
-
-		int maxCol = pEdgemap->m_size.w;
-
-		if (uIncX != 0)								// Columns run horizontally.
-		{
-			if (dest.w > maxCol)
-			{
-				if (uIncX < 0)
-					dest.x += dest.w - maxCol;
-
-				dest.w = maxCol;
-			}
-		}
-		else										// Columns run vertically.
-		{
-			if (dest.h > maxCol)
-			{
-				if (uIncY < 0)
-					dest.y += dest.h - maxCol;
-
-				dest.h = maxCol;
-			}
-		}
-
-		// Where the top left corner sits in the edgemap, once it has been flipped.
-
-		int uTopLeft = 0;
-		int vTopLeft = 0;
-
-		if (uIncX + uIncY < 0)
-			uTopLeft = maxCol;
-
-		if (vIncX < 0)
-			vTopLeft = dest.w;
-		else if (vIncY < 0)
-			vTopLeft = dest.h;
-
-		// _addColor() multiplies by the tint, so white is what gets the tint applied
-		// exactly once. Passing the tint itself would square it.
-
-		int colorOfs = _addColor(HiColor::White);
-
-		// Where the segment colors are in the edgemap's buffer: flat colors and the
-		// table of tint blocks, see DX12Edgemap. Then the size of the edgemap when
-		// tiled, in columns and pixels, which the shader wraps positions outside of
-		// it by. Zero when not.
-
-		ExtrasDX12 tileSize = { bTile ? float(pEdgemap->m_size.w) : 0.f, bTile ? float(pEdgemap->m_size.h) : 0.f, 0.f, 0.f };
-
-		int extrasOfs = _addExtras({ float(pEdgemap->_flatColorsOfs()), float(pEdgemap->_tintTableOfs()), 0.f, 0.f }, tileSize);
-
-		if (colorOfs < 0 || extrasOfs < 0)
-		{
-			pRects += nRects;
-			return;
-		}
-
-		if (m_pVertexEnd - m_pVertexPtr < nRects * 6)
-		{
-			static bool bReported = false;
-			if (!bReported && _blameSessionInfo())
-			{
-				Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, edgemaps dropped. SessionInfo underestimated what the session needs.",
-					this, &TYPEINFO, __func__, __FILE__, __LINE__);
-				bReported = true;
-			}
-
-			pRects += nRects;
-			return;
-		}
-
-		int firstVertex = int(m_pVertexPtr - m_pVertexBeg);
-
-		for (int i = 0; i < nRects; i++)
-		{
-			const RectSPX& patchSpx = *pRects++;
-
-			RectI patch = Util::roundToPixels(patchSpx);		// Rounded like the position of the edgemap.
-
-			int dx1 = patch.x;
-			int dy1 = patch.y;
-			int dx2 = patch.x + patch.w;
-			int dy2 = patch.y + patch.h;
-
-			// U is which column of the edgemap, V how far down that column. Half a
-			// pixel back, so that the shader works from pixel centers.
-
-			float u1 = float(uTopLeft + (patch.x - dest.x) * mtx.xx + (patch.y - dest.y) * mtx.yx);
-			float v1 = float(vTopLeft + (patch.x - dest.x) * mtx.xy + (patch.y - dest.y) * mtx.yy);
-
-			float u2 = float(uTopLeft + (patch.x + patch.w - dest.x) * mtx.xx + (patch.y - dest.y) * mtx.yx);
-			float v2 = float(vTopLeft + (patch.x + patch.w - dest.x) * mtx.xy + (patch.y - dest.y) * mtx.yy);
-
-			float u3 = float(uTopLeft + (patch.x + patch.w - dest.x) * mtx.xx + (patch.y + patch.h - dest.y) * mtx.yx);
-			float v3 = float(vTopLeft + (patch.x + patch.w - dest.x) * mtx.xy + (patch.y + patch.h - dest.y) * mtx.yy);
-
-			float u4 = float(uTopLeft + (patch.x - dest.x) * mtx.xx + (patch.y + patch.h - dest.y) * mtx.yx);
-			float v4 = float(vTopLeft + (patch.x - dest.x) * mtx.xy + (patch.y + patch.h - dest.y) * mtx.yy);
-
-			const float uv[4][2] = { { u1, v1 - 0.5f }, { u2, v2 - 0.5f }, { u3, v3 - 0.5f }, { u4, v4 - 0.5f } };
-
-			const float coords[4][2] = { { float(dx1), float(dy1) }, { float(dx2), float(dy1) },
-										 { float(dx2), float(dy2) }, { float(dx1), float(dy2) } };
-
-			const int corners[6] = { 0, 1, 2, 0, 2, 3 };
-
-			for (int vertex = 0; vertex < 6; vertex++)
-			{
-				int corner = corners[vertex];
-
-				m_pVertexPtr->x = coords[corner][0];
-				m_pVertexPtr->y = coords[corner][1];
-				m_pVertexPtr->colorOfs = (uint32_t) colorOfs;
-				m_pVertexPtr->extrasOfs = (uint32_t) extrasOfs;
-				m_pVertexPtr->u = uv[corner][0];
-				m_pVertexPtr->v = uv[corner][1];
-
-				m_pVertexPtr++;
-			}
-		}
-
-		if (!_setPipeline(_pipeline(m_activeBlendMode, PipelineKind::Segments)) || !m_bCommandListOpen)
-			return;
-
-		// The edgemap's own buffer, and how to walk it. The number of edges we draw
-		// and the number stored per column are not always the same, so the shader
-		// is told both rather than assuming, as GlBackend and MetalBackend do.
+		if (!m_bCommandListOpen || pDX12Edgemap->_gpuAddress() == 0)
+			return false;
 
 		// The command list mentions the edgemap's buffer but keeps no reference to
 		// it, and DeviceGen2 lets go of the edgemap when the session ends. A
 		// waveform drawn from a temporary would otherwise be freed while the GPU
 		// still had work referring to it.
 
-		_holdUntilDone(pEdgemap->m_buffer.Get());
+		_holdUntilDone(pDX12Edgemap->m_buffer.Get());
 
-		m_commandList->SetGraphicsRootShaderResourceView(5, pEdgemap->_gpuAddress());
-		m_bBlitSourceBound = false;			// A palette based blit source keeps its palette here too.
-
-		uint32_t edgeCounts[2] = { uint32_t(nSegments - 1), uint32_t(pEdgemap->m_nbSegments - 1) };
-		m_commandList->SetGraphicsRoot32BitConstants(0, 2, edgeCounts, 6);
-
-		m_commandList->DrawInstanced(nRects * 6, 1, firstVertex, 0);
+		m_commandList->SetGraphicsRootShaderResourceView(5, pDX12Edgemap->_gpuAddress());
+		return true;
 	}
 
-	//____ _drawShape() ________________________________________________________
+	//____ _drawWarpmap() _____________________________________________________
 	//
-	// A shape, drawn by the shape shaders from the entries GpuShapes makes of it, with
-	// the colors and tint blocks of its segments in the color buffer. Its segment
-	// colors are written as given, the tint color comes with the white color of the
-	// vertices, as for edgemaps.
+	// The triangles of the Warpmap, from its own buffer, see DX12Warpmap.
 
-	void DX12Backend::_drawShape(ShapeKind kind, const uint16_t* pPayload, const RectSPX* pRects, int nRects, const HiColor* pColors)
+	void DX12Backend::_drawWarpmap(Warpmap* pWarpmap, const RectI* pPatches, int nPatches)
 	{
-		int maxEntries, nSegments;
-		GpuShapes::measure(kind, pPayload, maxEntries, nSegments);
+		auto pDX12Warpmap = static_cast<DX12Warpmap*>(pWarpmap);
 
-		if (maxEntries == 0)
-		{
-			Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, "Failed DrawShape operation. Unsupported kind of shape.",
-				this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			return;
-		}
-
-		ID3D12PipelineState* pPipeline = _pipeline(m_activeBlendMode, PipelineKind::Shape);
-
-		if (!pPipeline || !m_pVertexPtr || !m_pColorPtr || !m_pExtrasPtr)
+		if (!m_bCommandListOpen || pDX12Warpmap->_gpuAddress() == 0 || pWarpmap->triangleCount() == 0 || nPatches <= 0)
 			return;
 
-		auto bufferFull = [this](const char* pBuffer)
-		{
-			static bool bReported = false;
-			if (!bReported && _blameSessionInfo())
-			{
-				char buffer[256];
-				sprintf_s(buffer, "%s buffer full, shapes dropped. SessionInfo underestimated what the session needs.", pBuffer);
-				Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
-				bReported = true;
-			}
-		};
+		// The command list keeps no references to the buffers, see _bindEdgemap().
 
-		if (m_pExtrasEnd - m_pExtrasPtr < maxEntries)
-			return bufferFull("Extras");
+		_holdUntilDone(pDX12Warpmap->m_buffer.Get());
+		m_commandList->SetGraphicsRootShaderResourceView(7, pDX12Warpmap->_gpuAddress());
 
-		if (m_pVertexEnd - m_pVertexPtr < nRects * 6)
-			return bufferFull("Vertex");
-
-		// _addColor() multiplies by the tint color, so white is what gets it applied
-		// exactly once.
-
-		int colorOfs = _addColor(HiColor::White);
-		if (colorOfs < 0)
-			return;
-
-		if ((int)m_shapeSegments.size() < nSegments)
-			m_shapeSegments.resize(nSegments);
-
-		ExtrasDX12* pEntries = m_pExtrasPtr;
-		int nEntries = GpuShapes::write(kind, pPayload, pColors, (float*) pEntries, m_shapeSegments.data());
-
-		static_assert(sizeof(ExtrasDX12) == 4 * sizeof(float), "Shape entries are written as float4.");
-
-		// Colors and tint blocks of drawn segments, their offsets in the entries of the
-		// segments.
-
-		for (int i = 0; i < nSegments; i++)
-		{
-			const GpuShapes::Segment& seg = m_shapeSegments[i];
-
-			if (!seg.bDrawn)
-				continue;
-
-			if (m_pColorPtr == m_pColorEnd)
-				return bufferFull("Color");
-
-			ExtrasDX12& entry = pEntries[seg.entry];
-
-			entry.x = float(m_pColorPtr - m_pColorBeg);
-			seg.color.toLinearFloat(&m_pColorPtr->r);
-			m_pColorPtr++;
-
-			if (seg.pTint)
-			{
-				TintTools::DecodedTint tint;
-				const HiColor* pTintColors = seg.pTintColors;
-				TintTools::decodeTint(seg.pTint, pTintColors, tint);
-
-				int blockSize = TintTools::gpuTintBlockSize(tint);
-				if (m_pColorEnd - m_pColorPtr < blockSize)
-					return bufferFull("Color");
-
-				entry.y = float(m_pColorPtr - m_pColorBeg);
-				TintTools::writeGpuTintBlock(tint, (float*) m_pColorPtr);
-				m_pColorPtr += blockSize;
-			}
-		}
-
-		int extrasOfs = int(pEntries - m_pExtrasBeg);
-		m_pExtrasPtr += nEntries;
-
-		// A quad for each clip rectangle.
-
-		int firstVertex = int(m_pVertexPtr - m_pVertexBeg);
-
-		for (int i = 0; i < nRects; i++)
-		{
-			RectI patch = pRects[i] / 64;
-
-			const float coords[4][2] = { { float(patch.x), float(patch.y) }, { float(patch.x + patch.w), float(patch.y) },
-										 { float(patch.x + patch.w), float(patch.y + patch.h) }, { float(patch.x), float(patch.y + patch.h) } };
-
-			const int corners[6] = { 0, 1, 2, 0, 2, 3 };
-
-			for (int vertex = 0; vertex < 6; vertex++)
-			{
-				int corner = corners[vertex];
-
-				m_pVertexPtr->x = coords[corner][0];
-				m_pVertexPtr->y = coords[corner][1];
-				m_pVertexPtr->colorOfs = (uint32_t) colorOfs;
-				m_pVertexPtr->extrasOfs = (uint32_t) extrasOfs;
-				m_pVertexPtr->u = 0.f;
-				m_pVertexPtr->v = 0.f;
-
-				m_pVertexPtr++;
-			}
-		}
-
-		if (!_setPipeline(pPipeline) || !m_bCommandListOpen)
-			return;
-
-		m_commandList->DrawInstanced(nRects * 6, 1, firstVertex, 0);
-	}
-
-	//____ _drawWarp() _________________________________________________________
-	//
-	// A WarpBlit or WarpDrawEdgemap. The triangles of the Warpmap are drawn from its own
-	// buffer once for each clip rectangle, with the part of it covered by the Warpmap as
-	// scissor, see DX12Warpmap and warp.hlsl. Three extras entries tell the pixel shaders
-	// what the Warpmap maps onto, root constants tell the vertex shader where to draw it.
-	// pRects are the clip rectangles, which the caller steps past.
-
-	void DX12Backend::_drawWarp(Command cmd, const WarpParams& params, const RectSPX* pRects)
-	{
-		bool bEdgemap = (cmd == Command::WarpDrawEdgemap);
-
-		Object * pWarpObject = _object(params.warpmap);
-		Object * pEdgemapObject = bEdgemap ? _object(params.edgemap) : nullptr;
-
-		DX12Warpmap * pWarpmap = (pWarpObject && _isOfType(pWarpObject->typeInfo(), DX12Warpmap::TYPEINFO)) ?
-								 static_cast<DX12Warpmap*>(pWarpObject) : nullptr;
-
-		DX12Edgemap * pEdgemap = (pEdgemapObject && _isOfType(pEdgemapObject->typeInfo(), DX12Edgemap::TYPEINFO)) ?
-								 static_cast<DX12Edgemap*>(pEdgemapObject) : nullptr;
-
-		if (!pWarpmap || pWarpmap->_gpuAddress() == 0 || (bEdgemap && (!pEdgemap || pEdgemap->_gpuAddress() == 0)))
-		{
-			static bool bReported = false;
-			if (!bReported)
-			{
-				const char * pReason = !pWarpmap ? "the warpmap is not a DX12Warpmap" :
-									   pWarpmap->_gpuAddress() == 0 ? "the warpmap has no buffer" :
-									   !pEdgemap ? "the edgemap is not a DX12Edgemap" : "the edgemap has no buffer";
-
-				char buffer[256];
-				sprintf_s(buffer, "Can't draw warp, %s.", pReason);
-				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
-				bReported = true;
-			}
-
-			return;
-		}
-
-		if (!m_pVertexPtr || !m_pExtrasPtr)
-			return;
-
-		// A blit reads around the source rather than clipping to it, the shaders take
-		// care of its borders. A palette based source has a shader of its own.
-
-		PipelineKind kind = PipelineKind::WarpEdgemap;
-
-		if (!bEdgemap)
-		{
-			m_bBlitClip = false;
-
-			if (!_bindBlitSource())
-				return;
-
-			if (m_bBoundBlitClip != m_bBlitClip)
-				_bindBlitSamplerAndFlags();
-
-			kind = m_bBlitSourceIndexed ? PipelineKind::WarpPaletteBlit : PipelineKind::WarpBlit;
-		}
-
-		ID3D12PipelineState* pPipeline = _pipeline(m_activeBlendMode, kind);
-
-		if (!pPipeline)
-			return;
-
-		auto bufferFull = [this](const char* pBuffer)
-		{
-			static bool bReported = false;
-			if (!bReported && _blameSessionInfo())
-			{
-				char buffer[256];
-				sprintf_s(buffer, "%s buffer full, warps dropped. SessionInfo underestimated what the session needs.", pBuffer);
-				Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
-				bReported = true;
-			}
-		};
-
-		if (m_pExtrasEnd - m_pExtrasPtr < 3)
-			return bufferFull("Extras");
-
-		// _addColor() multiplies by the tint color, so white is what gets it applied
-		// exactly once.
-
-		int colorOfs = _addColor(HiColor::White);
-		if (colorOfs < 0)
-			return;
-
-		// u and v are taken relative to the first vertex by the vertex shader, which is
-		// added back to the source offset, brought into the periods.
-
-		CoordSPX ref;
-		if (pWarpmap->vertexCount() > 0)
-			ref = { pWarpmap->vertexData()[0].u, pWarpmap->vertexData()[0].v };
-
-		spx uPeriod = pWarpmap->uPeriod(), vPeriod = pWarpmap->vPeriod();
-		spx refU = uPeriod > 0 ? ((ref.x % uPeriod) + uPeriod) % uPeriod : ref.x;
-		spx refV = vPeriod > 0 ? ((ref.y % vPeriod) + vPeriod) % vPeriod : ref.y;
-
-		// Extras, see warp.hlsl.
-
-		CoordI dest = Util::roundToPixels(params.dest);
-		SizeI warpSize = pWarpmap->pixelSize();
-
-		float srcW = pEdgemap ? float(pEdgemap->m_size.w) : params.source.w / 64.f;
-		float srcH = pEdgemap ? float(pEdgemap->m_size.h) : params.source.h / 64.f;
-
-		int extrasOfs = int(m_pExtrasPtr - m_pExtrasBeg);
-
-		*m_pExtrasPtr++ = { srcW, srcH, pEdgemap ? float(pEdgemap->m_nbRenderSegments - 1) : 0.f, 0.f };
-		*m_pExtrasPtr++ = { (params.sourceOffset.x + refU) / 64.f, (params.sourceOffset.y + refV) / 64.f, uPeriod / 64.f, vPeriod / 64.f };
-
-		if (pEdgemap)
-			*m_pExtrasPtr++ = { float(pEdgemap->m_nbSegments - 1), float(pEdgemap->_flatColorsOfs()), float(pEdgemap->_tintTableOfs()), float(pEdgemap->_rawSamplesOfs()) };
-		else
-		{
-			// A surface that isn't tiling is read as if the edge pixels of the source rectangle
-			// continued outside it, see warpBlitCoverage() in warp.hlsl.
-
-			float clampInset = m_pBlitSource->isTiling() ? 0.f : m_pBlitSource->sampleMethod() == SampleMethod::Bilinear ? 0.5f : 1.f / 256;
-
-			// Positions exactly on a border between texels take the texel after it, as in SoftBackend,
-			// rather than either one by how floats round.
-
-			float nearestBias = m_pBlitSource->sampleMethod() == SampleMethod::Nearest ? 1.f / 32768 : 0.f;
-
-			*m_pExtrasPtr++ = { params.source.x / 64.f, params.source.y / 64.f, clampInset, nearestBias };
-		}
-
-		if (pWarpmap->triangleCount() == 0 || !_setPipeline(pPipeline) || !m_bCommandListOpen)
-			return;
-
-		// What the vertex shader needs, see WarpInfo in vs_warp.hlsl.
-
-		struct
-		{
-			float		destX, destY;
-			uint32_t	colorOfs;
-			uint32_t	extrasOfs;
-			int32_t		refU, refV;
-			uint32_t	pad[2];
-		} warpInfo = { float(dest.x), float(dest.y), uint32_t(colorOfs), uint32_t(extrasOfs), ref.x, ref.y, { 0, 0 } };
-
-		static_assert(sizeof(warpInfo) == 8 * 4, "Root parameter 8 has eight values");
-
-		m_commandList->SetGraphicsRoot32BitConstants(8, 8, &warpInfo, 0);
-
-		// The command list keeps no references to the buffers, see _drawEdgemap().
-
-		_holdUntilDone(pWarpmap->m_buffer.Get());
-		m_commandList->SetGraphicsRootShaderResourceView(7, pWarpmap->_gpuAddress());
-
-		D3D12_INDEX_BUFFER_VIEW indexBufferView = pWarpmap->_indexBufferView();
+		D3D12_INDEX_BUFFER_VIEW indexBufferView = pDX12Warpmap->_indexBufferView();
 		m_commandList->IASetIndexBuffer(&indexBufferView);
 
-		if (pEdgemap)
+		for (int i = 0; i < nPatches; i++)
 		{
-			_holdUntilDone(pEdgemap->m_buffer.Get());
-			m_commandList->SetGraphicsRootShaderResourceView(5, pEdgemap->_gpuAddress());
-			m_bBlitSourceBound = false;			// A palette based blit source keeps its palette there too.
-		}
-
-		bool bDrawn = false;
-
-		for (int i = 0; i < params.nRects; i++)
-		{
-			RectI patch = RectI::overlap(Util::roundToPixels(pRects[i]), RectI(dest, warpSize));
-
-			if (patch.w <= 0 || patch.h <= 0)
-				continue;
-
-			D3D12_RECT scissorRect = { LONG(patch.x), LONG(patch.y), LONG(patch.x + patch.w), LONG(patch.y + patch.h) };
-			m_commandList->RSSetScissorRects(1, &scissorRect);
+			_setScissor(pPatches[i]);
 			m_commandList->DrawIndexedInstanced(UINT(pWarpmap->triangleCount() * 3), 1, 0, 0, 0);
-			bDrawn = true;
 		}
 
-		// Back to the whole canvas, which is what everything else expects.
-
-		if (bDrawn)
-		{
-			D3D12_RECT fullRect = {};
-			fullRect.right = (LONG) m_activeCanvasSize.w;
-			fullRect.bottom = (LONG) m_activeCanvasSize.h;
-
-			m_commandList->RSSetScissorRects(1, &fullRect);
-		}
+		_resetScissor();
 	}
 
 	//____ _setPipeline() ______________________________________________________
 
-	bool DX12Backend::_setPipeline(ID3D12PipelineState* pPipeline)
+	bool DX12Backend::_setPipeline(PipelineKind kind)
 	{
-		if (!pPipeline || !m_bCommandListOpen)
+		if (!m_bCommandListOpen || m_activeCanvasRTV.ptr == 0)
+			return false;
+
+		ID3D12PipelineState* pPipeline = _pipeline(m_activeBlendMode, kind);
+
+		if (!pPipeline)
 			return false;
 
 		if (pPipeline != m_pActivePipeline)
@@ -3442,25 +1891,68 @@ namespace wax
 		return true;
 	}
 
-	//____ _normalizeBlendMode() _______________________________________________
+	//____ _setConstants() _____________________________________________________
+	//
+	// Root constants are recorded into the command list, so every draw after this
+	// sees the new values and none before it does. A reset list has lost them,
+	// which is why _bindSessionState() sets them all again.
 
-	BlendMode DX12Backend::_normalizeBlendMode(BlendMode blendMode)
+	void DX12Backend::_setConstants(ConstantBlock block)
 	{
-		switch (blendMode)
+		if (!m_bCommandListOpen)
+			return;
+
+		static_assert(sizeof(CanvasConstants) == 8 * 4 && sizeof(PixelConstants) == 4 * 4 && sizeof(WarpConstants) == 8 * 4,
+					  "Constant blocks must match constants.hlsl and the root signature");
+
+		switch (block)
 		{
-			case BlendMode::Undefined:
-				return BlendMode::Blend;
+			case ConstantBlock::Canvas:
+				m_commandList->SetGraphicsRoot32BitConstants(0, sizeof(CanvasConstants) / 4, &m_canvasConstants, 0);
+				break;
 
-			case BlendMode::BlendFixedColor:
-				// Blending against a known background is an optimization for software
-				// rendering, and an ordinary Blend is an allowed stand-in. Keeping them
-				// as one mode also keeps one pipeline instead of two identical ones.
+			case ConstantBlock::Pixel:
+				m_commandList->SetGraphicsRoot32BitConstants(6, sizeof(PixelConstants) / 4, &m_pixelConstants, 0);
+				break;
 
-				return BlendMode::Blend;
-
-			default:
-				return blendMode;
+			case ConstantBlock::Warp:
+				m_commandList->SetGraphicsRoot32BitConstants(8, sizeof(WarpConstants) / 4, &m_warpConstants, 0);
+				break;
 		}
+	}
+
+	//____ _draw() ______________________________________________________________
+
+	void DX12Backend::_draw(int firstVertex, int nVertices)
+	{
+		if (!m_bCommandListOpen || nVertices <= 0)
+			return;
+
+		m_commandList->DrawInstanced(UINT(nVertices), 1, UINT(firstVertex), 0);
+	}
+
+	//____ _setScissor() ________________________________________________________
+
+	void DX12Backend::_setScissor(const RectI& rect)
+	{
+		if (!m_bCommandListOpen)
+			return;
+
+		D3D12_RECT scissorRect = { LONG(rect.x), LONG(rect.y), LONG(rect.x + rect.w), LONG(rect.y + rect.h) };
+		m_commandList->RSSetScissorRects(1, &scissorRect);
+	}
+
+	//____ _resetScissor() ______________________________________________________
+	//
+	// Back to the whole canvas, which is what everything else expects.
+
+	void DX12Backend::_resetScissor()
+	{
+		if (!m_bCommandListOpen)
+			return;
+
+		D3D12_RECT fullRect = { 0, 0, LONG(m_targetSize.w), LONG(m_targetSize.h) };
+		m_commandList->RSSetScissorRects(1, &fullRect);
 	}
 
 	//____ _pipeline() _________________________________________________________
@@ -3582,13 +2074,6 @@ namespace wax
 		return m_pWarpmapFactory;
 	}
 
-	//____ maxEdges() ___________________________________________________________
-
-	int DX12Backend::maxEdges() const
-	{
-		return c_maxSegments - 1;
-	}
-
 	//____ canBeBlitSource() __________________________________________________
 
 	bool DX12Backend::canBeBlitSource(const TypeInfo& type) const
@@ -3666,142 +2151,38 @@ namespace wax
 	}
 
 
-	//____ _reserveBuffers() __________________________________________________
+	//____ _reserveFrameBuffers() _______________________________________________
 	//
 	// Makes sure what is left of this frame's vertex, color and extras buffers
-	// can hold everything the session may write, going by its SessionInfo. The
-	// counts are upper bounds: we can't tell ahead how many fills are subpixel
-	// or which rects are blits, so we assume the worst.
-	//
-	// Per session it can use at most:
-	//
-	//   Vertices: six per rect of any kind, six per line.
-	//   Colors:   those in the color stream - fills, lines and tints copy
-	//             theirs in - plus a white one per blit, blur and edgemap draw.
-	//             A tint block also has a header, geometry and stop positions
-	//             besides its colors, at most c_tintBlockOverhead entries, and
-	//             any state change may carry a tint.
-	//   Extras:   two per rect (blits need two, subpixel fills and patches
-	//             fewer), one per line, 18 per blur for its brush, one per
-	//             edgemap draw and the entries of shapes, see GpuShapes.
-	//
-	//   Shapes also add a white color per draw, for the tint color, and a tint
-	//   block overhead per tinted segment.
+	// can hold what GpuBackend says the session may write, and that the frame's
+	// descriptor heap has room for its blit sources.
 
-	void DX12Backend::_reserveBuffers(const SessionInfo* pInfo)
+	bool DX12Backend::_reserveFrameBuffers(int nVertices, int nColors, int nExtras, int nObjects)
 	{
-		int nVertices, nColors, nExtras;
-
-		if (pInfo)
-		{
-			int nLines = pInfo->nLineCoords / 2;
-
-			nVertices = pInfo->nRects * 6 + nLines * 6;
-			// Overhead of a tint block besides the stop colors, which are in nColors.
-
-			const int c_maxTintStops = Tint::c_maxMixComponents * Tint::c_maxStops;
-			const int c_tintBlockOverhead = TintTools::gpuTintBlockMaxSize(Tint::c_maxMixComponents, c_maxTintStops) - c_maxTintStops;
-
-			nColors = pInfo->nColors + pInfo->nBlit + pInfo->nBlur + pInfo->nEdgemapDraws + pInfo->nShapeDraws + pInfo->nWarpDraws + pInfo->nLines
-					+ (pInfo->nStateChanges + pInfo->nShapeTints) * c_tintBlockOverhead;
-			nExtras = pInfo->nRects * 2 + nLines * GpuShapes::c_lineEntries + pInfo->nBlur * 18 + pInfo->nEdgemapDraws * 2 + pInfo->nWarpDraws * 3 + GpuShapes::maxSessionEntries(*pInfo);
-		}
-		else
-		{
-			nVertices = c_defaultVertices;
-			nColors = c_defaultColors;
-			nExtras = c_defaultExtras;
-		}
-
 		auto& frame = m_frameResources[m_currentFrameIndex];
 
 		bool bOK = _reserveBuffer(frame.vertexBuffer, frame.pVertexBufferData, frame.vertexCapacity,
-								  m_pVertexBeg, m_pVertexPtr, m_pVertexEnd, nVertices, L"Wax Vertex Buffer");
+								  m_buffers.pVertexBeg, m_buffers.pVertexPtr, m_buffers.pVertexEnd, nVertices, L"Wax Vertex Buffer");
 
 		bOK = _reserveBuffer(frame.colorBuffer, frame.pColorBufferData, frame.colorCapacity,
-							 m_pColorBeg, m_pColorPtr, m_pColorEnd, nColors, L"Wax Color Buffer") && bOK;
+							 m_buffers.pColorBeg, m_buffers.pColorPtr, m_buffers.pColorEnd, nColors, L"Wax Color Buffer") && bOK;
 
 		bOK = _reserveBuffer(frame.extrasBuffer, frame.pExtrasBufferData, frame.extrasCapacity,
-							 m_pExtrasBeg, m_pExtrasPtr, m_pExtrasEnd, nExtras, L"Wax Extras Buffer") && bOK;
+							 m_buffers.pExtrasBeg, m_buffers.pExtrasPtr, m_buffers.pExtrasEnd, nExtras, L"Wax Extras Buffer") && bOK;
 
 		// One descriptor per entry in the object tables of the session is enough
 		// for every blit source, see m_objectSRVs. Mipmaps that need drawing take
 		// a few more, which _generateMipmaps() makes room for itself. Should the
-		// heap fail to grow, _bindBlitSource() tries again and reports it.
+		// heap fail to grow, _bindBlitTexture() tries again and reports it.
 
-		int nDescriptors = pInfo ? pInfo->nObjects : 0;
+		if (frame.srvHeap && frame.srvCapacity - frame.nSRVDescriptors < nObjects)
+			_growSRVHeap(nObjects);
 
-		if (frame.srvHeap && frame.srvCapacity - frame.nSRVDescriptors < nDescriptors)
-			_growSRVHeap(nDescriptors);
+		// The buffers may be new, and a session starts with everything bound anew.
 
-		// If a buffer couldn't grow, the draws that don't fit are dropped, and the
-		// messages for that would blame SessionInfo. It is the buffer's fault, so
-		// say so, once. A lost device has been reported already.
+		_bindSessionState();
 
-		m_bSessionBuffersShort = !bOK;
-
-		if (!bOK && !s_bDeviceLost)
-		{
-			static bool bReported = false;
-			if (!bReported)
-			{
-				char buffer[256];
-				sprintf_s(buffer, "Couldn't make room for %d vertices, %d colors and %d extras, draws that don't fit are dropped.",
-						  nVertices, nColors, nExtras);
-				Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
-				bReported = true;
-			}
-		}
-
-		// What _checkSessionUsage() measures the session against.
-
-		m_bSessionInfoGiven = (pInfo != nullptr);
-		m_sessionVertices = nVertices;
-		m_sessionColors = nColors;
-		m_sessionExtras = nExtras;
-		m_pSessionVertexBeg = m_pVertexPtr;
-		m_pSessionColorBeg = m_pColorPtr;
-		m_pSessionExtrasBeg = m_pExtrasPtr;
-	}
-
-	//____ _checkSessionUsage() _______________________________________________
-	//
-	// Called by endSession(). _reserveBuffers() only makes sure there is room for
-	// what SessionInfo says, and the buffers have usually grown well beyond that,
-	// so a session that uses more mostly gets away with it - until the one time
-	// it doesn't, and draws go missing. This catches it every time, while it is
-	// still harmless.
-	//
-	// Only the vertices, colors and extras this backend writes are measured,
-	// against what _reserveBuffers() worked out from SessionInfo. Without a
-	// SessionInfo the defaults are a guess, not a promise, so there is nothing to
-	// check.
-
-	void DX12Backend::_checkSessionUsage()
-	{
-		if (!m_bSessionInfoGiven || s_bDeviceLost)
-			return;
-
-		struct { const char* pWhat; int used; int reserved; } usage[] = {
-			{ "vertices",	m_pSessionVertexBeg ? int(m_pVertexPtr - m_pSessionVertexBeg) : 0,		m_sessionVertices },
-			{ "colors",		m_pSessionColorBeg ? int(m_pColorPtr - m_pSessionColorBeg) : 0,		m_sessionColors },
-			{ "extras",		m_pSessionExtrasBeg ? int(m_pExtrasPtr - m_pSessionExtrasBeg) : 0,		m_sessionExtras } };
-
-		static bool bReported[3] = { false, false, false };
-
-		for (int i = 0; i < 3; i++)
-		{
-			if (usage[i].used > usage[i].reserved && !bReported[i])
-			{
-				char buffer[256];
-				sprintf_s(buffer, "SessionInfo underestimated what the session needs: room was made for %d %s, the session wrote %d.",
-						  usage[i].reserved, usage[i].pWhat, usage[i].used);
-				Base::throwError(ErrorLevel::Warning, ErrorCode::Internal, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
-				bReported[i] = true;
-			}
-		}
-
-		m_bSessionInfoGiven = false;
+		return bOK;
 	}
 
 	//____ _reserveBuffer() ____________________________________________________
@@ -3947,7 +2328,7 @@ namespace wax
 		// Eight is also what HLSL rounds the constant buffer up to, whole 16 byte
 		// registers, and the root signature has to cover all of it.
 
-		rootParameter[0].Constants.Num32BitValues = 8;			// canvasScale, textureSize, flags, blurOfs, edgemapEdges, edgemapPitch.
+		rootParameter[0].Constants.Num32BitValues = sizeof(CanvasConstants) / 4;	// canvasScale, textureSize, flags, blurOfs, edgemapEdges, edgemapPitch.
 		rootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
 		rootParameter[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
@@ -3977,16 +2358,16 @@ namespace wax
 
 		// The tint, where its block is in the color buffer, and how the pixel shaders
 		// hand what they draw to the blender. Only the pixel shaders use them. See
-		// PixelInfo.
+		// PixelConstants.
 
 		rootParameter[6].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
 		rootParameter[6].Constants.ShaderRegister = 1;			// b1.
 		rootParameter[6].Constants.RegisterSpace = 0;
-		rootParameter[6].Constants.Num32BitValues = sizeof(PixelInfo) / 4;
+		rootParameter[6].Constants.Num32BitValues = sizeof(PixelConstants) / 4;
 		rootParameter[6].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
 		// The vertices of the Warpmap of a warp, see DX12Warpmap, and where to draw it,
-		// see WarpInfo in vs_warp.hlsl.
+		// see WarpConstants and WarpInfo in constants.hlsl.
 
 		rootParameter[7].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
 		rootParameter[7].Descriptor.ShaderRegister = 4;			// t4.
@@ -3996,7 +2377,7 @@ namespace wax
 		rootParameter[8].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
 		rootParameter[8].Constants.ShaderRegister = 2;			// b2.
 		rootParameter[8].Constants.RegisterSpace = 0;
-		rootParameter[8].Constants.Num32BitValues = 8;
+		rootParameter[8].Constants.Num32BitValues = sizeof(WarpConstants) / 4;
 		rootParameter[8].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
 
 		D3D12_VERSIONED_ROOT_SIGNATURE_DESC rsDesc = { };
@@ -4103,19 +2484,19 @@ namespace wax
 		}
 	}
 
-	//____ _canvasKind() _______________________________________________________
+	//____ _canvasKindOfFormat() _______________________________________________
 	//
 	// What the pixel shaders need to know about the canvas, see output.hlsl.
 
-	uint32_t DX12Backend::_canvasKind(DXGI_FORMAT format)
+	GpuBackend::CanvasKind DX12Backend::_canvasKindOfFormat(DXGI_FORMAT format)
 	{
 		if (format == DXGI_FORMAT_A8_UNORM)
-			return 2;
+			return CanvasKind::AlphaOnly;
 
 		if (format == DXGI_FORMAT_B8G8R8X8_UNORM || format == DXGI_FORMAT_B8G8R8X8_UNORM_SRGB)
-			return 1;
+			return CanvasKind::WithoutAlpha;
 
-		return 0;
+		return CanvasKind::WithAlpha;
 	}
 
 	//____ _createPipeline() __________________________________________________
@@ -4145,10 +2526,9 @@ namespace wax
 
 	bool DX12Backend::_createPipeline(BlendMode blendMode, PipelineKind kind, DXGI_FORMAT rtvFormat, Microsoft::WRL::ComPtr<ID3D12PipelineState>& pPipeline)
 	{
-		bool bAlphaOnly = (_canvasKind(rtvFormat) == 2);
-		bool bNoAlpha = (_canvasKind(rtvFormat) == 1);
-		bool bPartialCoverage = (kind == PipelineKind::FillAA || kind == PipelineKind::Line || kind == PipelineKind::Shape ||
-								 kind == PipelineKind::WarpEdgemap || kind == PipelineKind::WarpBlit || kind == PipelineKind::WarpPaletteBlit);
+		bool bAlphaOnly = (_canvasKindOfFormat(rtvFormat) == CanvasKind::AlphaOnly);
+		bool bNoAlpha = (_canvasKindOfFormat(rtvFormat) == CanvasKind::WithoutAlpha);
+		bool bPartialCoverage = _hasPartialCoverage(kind);
 
 		// Blend state. Factors are for colors and alpha alike, unless the alpha of the
 		// canvas is kept or inverted. On an alpha only canvas only alpha is written, so the colors
@@ -4345,7 +2725,7 @@ namespace wax
 
 		D3D12_INPUT_LAYOUT_DESC inputLayout = {};
 
-		bool bWarp = (kind == PipelineKind::WarpEdgemap || kind == PipelineKind::WarpBlit || kind == PipelineKind::WarpPaletteBlit);
+		bool bWarp = _isWarp(kind);
 
 		inputLayout.NumElements = bWarp ? 0 : 4;
 		inputLayout.pInputElementDescs = bWarp ? nullptr : elements;

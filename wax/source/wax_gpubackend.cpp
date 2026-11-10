@@ -1743,7 +1743,7 @@ namespace wax
 			nExtras = c_defaultExtras;
 		}
 
-		bool bOK = _reserveFrameBuffers(nVertices, nColors, nExtras);
+		bool bOK = _reserveFrameBuffers(nVertices, nColors, nExtras, pInfo ? pInfo->nObjects : 0);
 
 		// If a buffer couldn't grow, the draws that don't fit are dropped, and the messages for
 		// that would blame SessionInfo. It is the buffer's fault, so say so, once.

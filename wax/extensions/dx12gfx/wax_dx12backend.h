@@ -24,10 +24,7 @@
 #define WAX_DX12BACKEND_DOT_H
 #pragma once
 
-#include <wax_backend.h>
-#include <wax_gpushapes.h>
-#include <wax_gputools.h>
-#include <wax_tinttools.h>
+#include <wax_gpubackend.h>
 
 #include <wrl.h>
 
@@ -50,8 +47,17 @@ namespace wax
 
 
 	//____ DX12Backend __________________________________________________________
+	/**
+	 * @brief Backend rendering with Direct3D 12.
+	 *
+	 * Built on GpuBackend, which turns the commands into what the shaders in
+	 * wax/extensions/hlsl read. This class does what needs D3D12: the root
+	 * signature, descriptor heaps, resource states, pipelines, recording draws
+	 * and keeping resources alive until the GPU is done with them, and moving
+	 * everything to a new device when the old one is lost.
+	 */
 
-	class DX12Backend : public Backend
+	class DX12Backend : public GpuBackend
 	{
 	public:
 
@@ -81,18 +87,8 @@ namespace wax
 		void	endRender() override;
 
 		void	beginSession(CanvasRef canvasRef, Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, const SessionInfo* pInfo = nullptr) override;
-		void	endSession() override;
-
-		void	setCanvas(Surface* pSurface) override;
-		void	setCanvas(CanvasRef ref) override;
 
 		void	setObjects(Object* const* pBeg, Object* const* pEnd) override;
-
-		void	setRects(const RectSPX* pBeg, const RectSPX* pEnd) override;
-		void	setColors(const HiColor* pBeg, const HiColor* pEnd) override;
-		void	setTransforms(const Transform* pBeg, const Transform* pEnd) override;
-
-		void	processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int version = 2) override;
 
 
 		//.____ Device _______________________________________________________
@@ -190,8 +186,6 @@ namespace wax
 		EdgemapFactory_p	edgemapFactory() override;
 		WarpmapFactory_p	warpmapFactory() override;
 
-		int		maxEdges() const override;
-
 		bool	canBeBlitSource(const TypeInfo& type) const override;
 		bool	canBeCanvas(const TypeInfo& type) const override;
 
@@ -199,56 +193,43 @@ namespace wax
 
 	protected:
 
-		struct Vertex {
-			float		x, y;		// Canvas pixels, origin top left. Subpixel positions allowed.
-			uint32_t	colorOfs;	// Offset into the color buffer.
-			uint32_t	extrasOfs;	// Offset into the extras buffer. Not used by plain fills.
-
-			// Only edgemaps use these. They cost every other primitive eight bytes
-			// a vertex, which is what MetalBackend pays too - the alternative is a
-			// second vertex format and a second buffer to keep in step with it.
-
-			float		u, v;					// Column, and distance down the column.
-		};
-
-		struct ColorDX12 {
-			float	r, g, b, a;
-		};
-
-		struct ExtrasDX12 {
-			float	x, y, z, w;
-		};
-
-		// What a pipeline draws. Together with blend mode and canvas format this
-		// is what tells one pipeline from another.
-
-		enum class PipelineKind
-		{
-			Fill,			// Rectangles on whole pixels.
-			FillAA,			// Rectangles that aren't, with coverage worked out per pixel.
-			Blit,
-			Blur,			// Same geometry as a blit, nine taps instead of one.
-			PaletteBlit,	// Blit and blur from a palette based source,
-			PaletteBlur,	// which has to be looked up before it is filtered.
-			Line,
-			Segments,		// Edgemaps.
-			Shape,			// Shapes, coverage worked out per pixel, see GpuShapes.
-			WarpEdgemap,	// Warps, coverage worked out per pixel, see warp.hlsl.
-			WarpBlit,
-			WarpPaletteBlit,
-
-			Size
-		};
-
 		DX12Backend(ID3D12Device* pDX12Device, ID3D12CommandQueue* pDX12CommandQueue);
 		~DX12Backend();
+
+		//.____ GpuBackend ___________________________________________________
+
+		bool		_isRecording() const override;
+
+		bool		_isNativeSurface(const Object* pObject) const override;
+		bool		_isNativeEdgemap(const Object* pObject) const override;
+		bool		_isNativeWarpmap(const Object* pObject) const override;
+
+		void		_beginSessionOnDevice(Surface* pCanvas) override;
+		void		_endSessionOnDevice() override;
+
+		bool		_reserveFrameBuffers(int nVertices, int nColors, int nExtras, int nObjects) override;
+
+		bool		_bindCanvas(Surface* pCanvas, SizeI& size, CanvasKind& kind) override;
+		bool		_setPipeline(PipelineKind kind) override;
+		void		_setConstants(ConstantBlock block) override;
+		void		_draw(int firstVertex, int nVertices) override;
+		void		_setScissor(const RectI& rect) override;
+		void		_resetScissor() override;
+
+		void		_prepareBlitSource(Surface* pSurface) override;
+		bool		_bindBlitTexture(Surface* pSurface) override;
+		void		_bindBlitSampler(Surface* pSurface, bool bClip) override;
+		bool		_bindEdgemap(GpuEdgemap* pEdgemap) override;
+		void		_drawWarpmap(Warpmap* pWarpmap, const RectI* pPatches, int nPatches) override;
+
+		//.____ Internal ______________________________________________________
 
 		void _waitForFence(UINT64 fenceValue);
 		void _flushCommandList();				// Submits what we have recorded so far and reopens the list.
 		void _restoreBlitSourceCanvases();		// Returns canvas surfaces we read from to COMMON state.
 
 		void _bindSessionState();				// Everything a session needs on a freshly reset command list.
-		void _bindCanvasState();				// Render target, viewport and canvas scale for the active canvas.
+		void _bindCanvasState();				// Render target, viewport and scissor for the bound canvas.
 
 		static void _reportDeviceLost(HRESULT hr);		// Sets s_bDeviceLost and reports it, the first time only.
 
@@ -258,9 +239,6 @@ namespace wax
 
 
 		void _createBuffer(Microsoft::WRL::ComPtr<ID3D12Resource>& pointer, int nbBytes, D3D12_HEAP_TYPE heapType, D3D12_RESOURCE_STATES initialState, LPCWSTR name);
-		void _reserveBuffers(const SessionInfo* pInfo);	// Makes sure the frame's buffers have room for the session.
-		void _checkSessionUsage();						// Reports a session that used more than its SessionInfo said.
-		bool _blameSessionInfo() const { return !m_bSessionBuffersShort && !s_bDeviceLost; }
 
 		template<typename T>
 		bool _reserveBuffer(Microsoft::WRL::ComPtr<ID3D12Resource>& buffer, T*& pData, int& capacity,
@@ -271,14 +249,8 @@ namespace wax
 		bool _createSamplers();
 		bool _createPipeline(BlendMode blendMode, PipelineKind kind, DXGI_FORMAT rtvFormat, Microsoft::WRL::ComPtr<ID3D12PipelineState>& pPipeline);
 
-		BlendMode _normalizeBlendMode(BlendMode blendMode);
 		ID3D12PipelineState* _pipeline(BlendMode blendMode, PipelineKind kind);
-		void _updatePixelInfo();				// Blend mode, morph factor or canvas has changed.
 
-		bool _setPipeline(ID3D12PipelineState* pPipeline);
-
-		void _setCanvas(DX12Surface* pCanvas);
-		void _resetStates();					// To start values, for a new session or canvas.
 		void _transitionCanvas(DX12Surface* pCanvas, D3D12_RESOURCE_STATES state);
 
 		// Resources the command list being recorded uses, held until the GPU is
@@ -292,42 +264,17 @@ namespace wax
 		static void _flushPendingReleases();			// Once the GPU is done or gone: releases what callbacks still hold.
 		static void CALLBACK _onSubmissionDone(PTP_CALLBACK_INSTANCE pInstance, PVOID pContext, PTP_WAIT pWait, TP_WAIT_RESULT waitResult);
 
-		void _drawFillRects(const RectSPX* pRects, int nRects, HiColor color);
-		void _drawFillRun(PipelineKind kind, int firstVertex, int nRects);
-		void _drawBlitRects(const uint16_t*& pCmd, const RectSPX*& pRects, int nRects, int version, PipelineKind kind, bool bClip);
-		void _drawLines(const uint16_t*& pCmd, const RectSPX*& pRects, const HiColor*& pColors, int nClipRects, int nLines);
-		void _drawCappedLines(const RectSPX* pClipRects, int nClipRects);
-		void _drawScissored(const RectSPX* pClipRects, int nClipRects, int firstVertex, int nVertices);
-		void _drawEdgemap(const uint16_t*& pCmd, const RectSPX*& pRects, int nRects, bool bTile);
-		void _drawShape(ShapeKind kind, const uint16_t* pPayload, const RectSPX* pRects, int nRects, const HiColor* pColors);
-		void _drawWarp(Command cmd, const WarpParams& params, const RectSPX* pRects);
-
-		Object* _object(uint32_t index) const;		// From the object table, null if the index is out of range.
-
 		bool _createSRVHeap(int frameIndex, int nDescriptors);
 		bool _growSRVHeap(int nNeeded = 0);			// When the current frame's heap is full or can't fit a session.
 		void _forgetObjectSRVs();					// Descriptors must be copied anew for the object table.
 
-		bool _isDX12Surface(const Object* pObject) const;
 		static bool _isDX12SurfaceType(const TypeInfo& type);
-		static bool _isOfType(const TypeInfo& type, const TypeInfo& base);
 
-		void _setBlitSource(DX12Surface* pSurface, uint32_t objectIndex = c_noObject);
-		bool _bindBlitSource();					// Puts source and sampler in place for the coming draw.
 		void _generateMipmaps(DX12Surface* pSurface);			// Draws every mip level from level 0.
 		ID3D12PipelineState* _mipmapPipeline(DXGI_FORMAT format);
-		void _bindBlitSamplerAndFlags();		// Sampler and shader flags for the source, depending on m_bBlitClip.
-
-		int _addColor(HiColor color);			// Returns offset into color buffer, -1 if full.
-		void _setTint(const TintTools::DecodedTint& tint);
-		void _clearTint();
-		void _bindPixelInfo();					// Records the pixel shader root constants into the command list.
-		int _addExtras(const ExtrasDX12& extras);							// Returns offset, -1 if full.
-		int _addBlurExtras();												// Returns offset to 18 entries, -1 if full.
-		int _addExtras(const ExtrasDX12& first, const ExtrasDX12& second);	// Returns offset, -1 if full.
 
 		static const char * _pixelShaderSource(PipelineKind kind);
-		static uint32_t _canvasKind(DXGI_FORMAT format);		// 0: with alpha, 1: without alpha, 2: alpha only.
+		static CanvasKind _canvasKindOfFormat(DXGI_FORMAT format);
 
 		bool _compileVertexShader(Microsoft::WRL::ComPtr<ID3DBlob>& shaderBlob, LPCVOID pSrc );
 		bool _compilePixelShader(Microsoft::WRL::ComPtr<ID3DBlob>& shaderBlob, LPCVOID pSrc, bool bDualSource = false);
@@ -343,127 +290,18 @@ namespace wax
 		CanvasInfo			m_defaultCanvas;
 		CanvasInfo			m_dummyCanvas;
 
-		// The canvas we are rendering into right now. Null means the default one.
-		// It can change between processCommands() calls, for render layers.
+		// The canvas the command list renders into, see _bindCanvas(). It can change
+		// between processCommands() calls, for render layers.
 
-		DX12Surface*				m_pActiveCanvas = nullptr;
-		D3D12_CPU_DESCRIPTOR_HANDLE	m_activeCanvasRTV = {};
+		DX12Surface*				m_pCanvasSurface = nullptr;		// In RENDER_TARGET state, null for the default canvas.
+		D3D12_CPU_DESCRIPTOR_HANDLE	m_activeCanvasRTV = {};			// Zero when there is nothing to render into.
 		DXGI_FORMAT					m_activeCanvasFormat = DXGI_FORMAT_UNKNOWN;
-		SizeI						m_activeCanvasSize;
-		bool						m_bSessionOnDefaultCanvas = false;
-		bool						m_bInSession = false;			// Between beginSession() and endSession().
+		SizeI						m_targetSize;					// Of the canvas, in pixels.
+		bool						m_bSessionOnDefaultCanvas = false;	// Swap chain buffer is in RENDER_TARGET state.
 
-		Object* const* m_pObjectsBeg = nullptr;		// Object table, commands refer to objects by index.
-		Object* const* m_pObjectsEnd = nullptr;
-
-		static const uint32_t		c_noObject = 0xFFFFFFFF;
-
-		const RectSPX* m_pRectsBeg = nullptr;
-		const RectSPX* m_pRectsEnd = nullptr;
-		const RectSPX* m_pRectsPtr = nullptr;
-
-		const HiColor* m_pColorsBeg = nullptr;
-		const HiColor* m_pColorsEnd = nullptr;
-		const HiColor* m_pColorsPtr = nullptr;
-
-		const Transform* m_pTransformsBeg = nullptr;
-		const Transform* m_pTransformsEnd = nullptr;
-
-		// Vertex, color and extras buffers are per frame resource, and all sessions
-		// of a frame draw from them until beginRender() rewinds. beginSession() works
-		// out from the SessionInfo how much the session can use at most and grows
-		// the buffers when what is left isn't enough, see _reserveBuffers(). They
-		// never shrink.
-		//
-		// Without a SessionInfo we have nothing to go on, so we make sure there is
-		// at least this much room.
-
-		const static int	c_defaultVertices = 32*1024;		// ~5400 rects.
-		const static int	c_defaultColors = 8*1024;
-		const static int	c_defaultExtras = 16*1024;
-		const static int	c_maxSegments = 16;					// As many as MetalBackend and GlBackend handle.
 		const static int	c_nbSRVDescriptors = 1024;			// Per frame resource to begin with, grows when needed. One per distinct blit source.
 
-		Vertex*	m_pVertexBeg = nullptr;		// Start of the current frame's vertex buffer.
-		Vertex* m_pVertexEnd = nullptr;
-		Vertex* m_pVertexPtr = nullptr;
-
-		ColorDX12* m_pColorBeg = nullptr;	// Start of the current frame's color buffer.
-		ColorDX12* m_pColorEnd = nullptr;
-		ColorDX12* m_pColorPtr = nullptr;
-
-		ExtrasDX12* m_pExtrasBeg = nullptr;	// Start of the current frame's extras buffer.
-		ExtrasDX12* m_pExtrasEnd = nullptr;
-		ExtrasDX12* m_pExtrasPtr = nullptr;
-
-		// What _reserveBuffers() was asked to make room for this session, and where
-		// the session started writing, so that _checkSessionUsage() can tell when
-		// SessionInfo said too little. A buffer has usually grown well beyond the
-		// session's needs, so an underestimate rarely shows up as a dropped draw.
-		//
-		// m_bSessionBuffersShort is set when a buffer couldn't be grown, which
-		// makes the drops that follow ours rather than SessionInfo's.
-
-		int			m_sessionVertices = 0;
-		int			m_sessionColors = 0;
-		int			m_sessionExtras = 0;
-		Vertex*		m_pSessionVertexBeg = nullptr;
-		ColorDX12*	m_pSessionColorBeg = nullptr;
-		ExtrasDX12*	m_pSessionExtrasBeg = nullptr;
-		bool		m_bSessionInfoGiven = false;
-		bool		m_bSessionBuffersShort = false;
-
-
-		// State tracked while processing commands.
-
-		HiColor					m_tintColor = HiColor::White;
-
-		// Root constants for the pixel shaders, see output.hlsl. The tint is where its
-		// block is in the color buffer, -1 for none. See TintTools::writeGpuTintBlock()
-		// for what the block holds. The tint color is independent of it and multiplied
-		// into every color _addColor() writes, so the shaders only see the tint. The
-		// rest tell how the shaders hand what they draw to the blender, and follow
-		// blend mode, morph factor and canvas, see _updatePixelInfo().
-		//
-		// Four values, which is also what HLSL rounds the constant buffer up to, a
-		// whole register, and the root constants have to cover all of it.
-
-		struct PixelInfo
-		{
-			int32_t		tintOfs;
-			uint32_t	outputMode;
-			uint32_t	canvasKind;		// 0: with alpha, 1: without alpha, 2: alpha only.
-			float		morphFactor;	// 1 unless blending by Morph.
-		};
-
-		PixelInfo				m_pixelInfo = { -1, 0, 0, 1.f };
-
-		std::vector<GpuShapes::Segment>	m_shapeSegments;		// Segments of the shape being drawn.
-
-		std::vector<GpuTools::CappedLine>	m_cappedLines;		// Lines with caps of line command being drawn.
-		BlendMode				m_activeBlendMode = BlendMode::Blend;
-		float					m_morphFactor = 0.5f;			// Only used by BlendMode::Morph.
-
-		// The blurbrush, set through StateChange commands. The radius is in spx,
-		// turned into texture coordinates at draw time, when we know what we are
-		// reading from.
-
-		int						m_blurRadius = 0;
-		float					m_blurColorMtx[9][4] = {};
 		ID3D12PipelineState*	m_pActivePipeline = nullptr;
-
-		// Blit source, set through StateChange commands.
-
-		DX12Surface *			m_pBlitSource = nullptr;
-		uint32_t				m_blitSourceObject = c_noObject;	// Its index in the object table.
-		SizeI					m_blitSourceSize;
-		bool					m_bBlitSourceAlphaOnly = false;
-		bool					m_bBlitSourceIndexed = false;		// Palette based, see PipelineKind::PaletteBlit.
-		int						m_blitSourceSampler = 0;			// Index into the sampler heap, without the clip offset.
-		bool					m_bBlitClip = false;				// Coming draw is a ClipBlit: nothing outside the source is read.
-		bool					m_bBoundBlitClip = false;			// What the bound sampler and flags were set up for.
-		bool					m_bBlitSourceBound = false;			// Cleared when source or session changes.
-
 
 		Microsoft::WRL::ComPtr<ID3D12Device>		m_pDX12Device;
 		Microsoft::WRL::ComPtr<ID3D12CommandQueue>	m_pDX12CommandQueue;
@@ -477,8 +315,8 @@ namespace wax
 			Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	srvHeap;						// Shader visible, holds blit source descriptors.
 			int												srvCapacity = 0;				// Descriptors in srvHeap.
 			Vertex*											pVertexBufferData = nullptr;	// Permanently mapped.
-			ColorDX12*										pColorBufferData = nullptr;		// Permanently mapped.
-			ExtrasDX12*										pExtrasBufferData = nullptr;	// Permanently mapped.
+			Color*											pColorBufferData = nullptr;		// Permanently mapped.
+			Extras*											pExtrasBufferData = nullptr;	// Permanently mapped.
 			int												vertexCapacity = 0;				// In entries, not bytes.
 			int												colorCapacity = 0;
 			int												extrasCapacity = 0;

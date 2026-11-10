@@ -680,7 +680,7 @@ namespace wax
 	// the GPU is done with them. Buffers at least double when they grow, so a frame settles on a
 	// size after a few frames rather than growing a little every session.
 
-	bool VulkanBackend::_reserveFrameBuffers( int nVertices, int nColors, int nExtras )
+	bool VulkanBackend::_reserveFrameBuffers( int nVertices, int nColors, int nExtras, int nObjects )
 	{
 		Frame& frame = m_frames[m_frameIndex];
 

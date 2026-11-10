@@ -148,6 +148,12 @@ GlBackend and DX12Backend give the same gfxdevicetester results with the same ch
 
 Build it and run gfxdevicetester before relying on it.
 
+### DX12Backend on GpuBackend is untested
+
+DX12Backend and DX12Edgemap were moved onto GpuBackend and GpuEdgemap on a machine without
+Windows. They pass a syntax check against Microsoft's DirectX-Headers, but haven't been built
+with MSVC or run. Build and run gfxdevicetester before relying on them.
+
 ### VulkanBackend on Windows and on other GPUs
 
 Only run on Linux, with lavapipe and Intel UHD 770 (Mesa).
