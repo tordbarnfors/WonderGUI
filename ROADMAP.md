@@ -22,12 +22,11 @@ in someone's memory or an old chat. Add to it when you decide something, move it
 
 The GPU backends (GlBackend, DX12Backend, MetalBackend, VulkanBackend) each turned the command
 stream into GPU work in their own way, so every feature was written four times. GpuBackend
-(`wax/source/wax_gpubackend.h`) now does what doesn't need the graphics API, and VulkanBackend is
-built on it. Next steps, in order:
+(`wax/source/wax_gpubackend.h`) now does what doesn't need the graphics API, and DX12Backend and
+VulkanBackend are built on it. Next steps, in order:
 
-1. **DX12Backend onto GpuBackend and GpuEdgemap.** GpuBackend was taken from DX12Backend, so this
-   mostly removes code: what is left is its root signature, descriptor heaps, resource states,
-   device loss and the hooks GpuBackend calls. Needs building and gfxdevicetester on Windows.
+1. **Done, untested:** DX12Backend onto GpuBackend and GpuEdgemap. What is left in it is its root
+   signature, descriptor heaps, resource states, device loss and the hooks GpuBackend calls.
 2. **MetalBackend onto GpuBackend,** with its own shaders adapted to the buffers and constants
    of GpuBackend (its layout is where DX12Backend's came from), or with MSL generated from the
    HLSL by SPIRV-Cross, if that turns out readable and fast enough. Needs macOS.

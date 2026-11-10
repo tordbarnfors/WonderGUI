@@ -34,12 +34,10 @@
 namespace wax
 {
 
-	const TypeInfo DX12Edgemap::TYPEINFO = { "DX12Edgemap", &Edgemap::TYPEINFO };
+	const TypeInfo DX12Edgemap::TYPEINFO = { "DX12Edgemap", &GpuEdgemap::TYPEINFO };
 
 	ID3D12Device * DX12Edgemap::s_pDevice = nullptr;
 	DX12Edgemap *  DX12Edgemap::s_pFirstLive = nullptr;
-
-	const int DX12Edgemap::c_tintSlotSize = TintTools::gpuTintBlockMaxSize(Tint::c_maxMixComponents, Tint::c_maxMixComponents * Tint::c_maxStops);
 
 	//____ setDevice() _________________________________________________________
 
@@ -101,11 +99,9 @@ namespace wax
 
 	//____ constructor ___________________________________________________________
 
-	DX12Edgemap::DX12Edgemap(const Blueprint& bp) : Edgemap(bp)
+	DX12Edgemap::DX12Edgemap(const Blueprint& bp) : GpuEdgemap(bp)
 	{
 		_link();
-
-		m_samplesSize = bp.size.w * (bp.segments - 1) * 2;			// Edge strips and raw samples.
 
 		// Nothing can be created on a lost device. The edgemap is left without a
 		// buffer, as when creating one fails, and DX12Backend draws nothing for it
@@ -122,8 +118,7 @@ namespace wax
 			return;
 		}
 
-		if( _createBuffer(m_nbTints > 0) )
-			_writeColors(0, m_nbSegments);
+		_createContent();
 	}
 
 	//____ destructor ____________________________________________________________
@@ -132,21 +127,22 @@ namespace wax
 	{
 		_unlink();
 
-		if( m_buffer && m_pBuffer )
-			m_buffer->Unmap(0, nullptr);
+		_releaseBuffer(m_newBuffer);
+		_releaseBuffer(m_buffer);
 	}
 
 	//____ _evacuateAll() ________________________________________________________
 
 	void DX12Edgemap::_evacuateAll()
 	{
-		// Releasing the buffer unmaps it. Everything in it is worked out from what
-		// Edgemap keeps in memory, so nothing is lost.
+		// Everything in the buffer is worked out from what Edgemap keeps in memory,
+		// so nothing is lost.
 
 		for( DX12Edgemap * p = s_pFirstLive; p; p = p->m_pNextLive )
 		{
-			p->m_buffer = nullptr;
-			p->m_pBuffer = nullptr;
+			p->_releaseBuffer(p->m_newBuffer);
+			p->_releaseBuffer(p->m_buffer);
+			p->m_pGpuData = nullptr;
 			p->m_bHasTintSlots = false;
 		}
 	}
@@ -160,11 +156,8 @@ namespace wax
 
 		for( DX12Edgemap * p = s_pFirstLive; p; p = p->m_pNextLive )
 		{
-			if( !p->m_buffer && p->_createBuffer(p->m_nbTints > 0) )
-			{
-				p->_samplesUpdated(0, p->m_nbSegments - 1, 0, p->samples());
-				p->_writeColors(0, p->m_nbSegments);
-			}
+			if( !p->m_buffer )
+				p->_createContent();
 		}
 	}
 
@@ -203,135 +196,22 @@ namespace wax
 		return TYPEINFO;
 	}
 
-	//____ _samplesUpdated() _______________________________________________________
-
-	void DX12Edgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd)
-	{
-		if( !m_pBuffer )
-			return;
-
-		// The columns on either side of the first and last sample change too.
-
-		int columnBegin = sampleBegin == 0 ? 0 : sampleBegin - 1;
-		int columnEnd = sampleEnd > m_size.w ? m_size.w : sampleEnd;
-
-		int nPixelColumns = columnEnd - columnBegin;
-
-		int edgeStripPitch = m_nbSegments - 1;
-
-		const spx * pEdges = m_pSamples + edgeStripPitch * columnBegin;
-		int outColumnSkip = ((m_nbSegments - 1) - (edgeEnd - edgeBegin)) * 4;
-
-		// Raw samples for warps, the left and right side of each column in pixels.
-
-		float * pRaw = m_pBuffer + (_rawSamplesOfs() + columnBegin * edgeStripPitch + edgeBegin) * 4;
-
-		for (int i = 0; i < nPixelColumns; i++)
-		{
-			for (int j = edgeBegin; j < edgeEnd; j++)
-			{
-				*pRaw++ = pEdges[i * edgeStripPitch + j] / 64.f;
-				*pRaw++ = pEdges[(i + 1) * edgeStripPitch + j] / 64.f;
-				*pRaw++ = 0.f;
-				*pRaw++ = 0.f;
-			}
-
-			pRaw += outColumnSkip;
-		}
-
-		// Edge strips
-
-		float * pOut = m_pBuffer + columnBegin * edgeStripPitch * 4 + edgeBegin * 4;
-
-		for (int i = 0; i < nPixelColumns; i++)
-		{
-			for (int j = edgeBegin; j < edgeEnd; j++)
-			{
-				int edgeIn = pEdges[j];
-				int edgeOut = pEdges[edgeStripPitch + j];
-
-				if (edgeIn > edgeOut)
-					std::swap(edgeIn, edgeOut);
-
-				float increment = edgeOut == edgeIn ? 100.f : 64.f / (edgeOut - edgeIn);
-				float beginAdder;
-				float endAdder;
-
-				if ((edgeOut & 0xFFFFFFC0) == (edgeIn & 0xFFFFFFC0))
-				{
-					float firstPixelCoverage = ((64 - (edgeOut & 0x3F)) + (edgeOut - edgeIn) / 2) / 64.f;
-
-					beginAdder = increment * (edgeIn & 0x3F) / 64.f + firstPixelCoverage;
-					endAdder = beginAdder;
-				}
-				else
-				{
-					int height = 64 - (edgeIn & 0x3F);
-					int width = (int)(increment * height);
-					float firstPixelCoverage = (height * width) / (2 * 4096.f);
-					float lastPixelCoverage = 1.f - (edgeOut & 0x3F) * increment * (edgeOut & 0x3F) / (2 * 4096.f);
-
-					beginAdder = increment * (edgeIn & 0x3F) / 64.f + firstPixelCoverage;
-					endAdder = lastPixelCoverage - (1.f - (edgeOut & 0x3F) * increment / 64.f);
-				}
-
-				*pOut++ = edgeIn / 64.f;				// Where the segment begins, in pixels.
-				*pOut++ = increment;
-				*pOut++ = beginAdder;
-				*pOut++ = endAdder;
-			}
-
-			pEdges += edgeStripPitch;
-			pOut += outColumnSkip;
-		}
-	}
-
-	//____ _colorsUpdated() ______________________________________________________
-
-	void DX12Edgemap::_colorsUpdated(int beginSegment, int endSegment)
-	{
-		if( !m_pBuffer )
-			return;
-
-		// First tint on an edgemap that had none, it needs a bigger buffer. The
-		// GPU may still be reading the one we have, so wait for it before letting
-		// go. Happens once per edgemap at most.
-
-		if( m_nbTints > 0 && !m_bHasTintSlots )
-		{
-			DX12Backend::waitForCompletionOfAll();
-
-			if( !_createBuffer(true) )
-				return;
-
-			beginSegment = 0;
-			endSegment = m_nbSegments;
-		}
-
-		_writeColors(beginSegment, endSegment);
-	}
-
-	//____ _createBuffer() _________________________________________________________
+	//____ _allocBuffer() ________________________________________________________
 	//
-	// Creates the buffer, with or without room for tint blocks, and carries over
-	// the edge strips of the one it replaces. Colors are left for _writeColors().
+	//TODO: There is one buffer and two frames in flight, so updating samples can
+	// change what the GPU is still reading for the previous frame.
 
-	bool DX12Edgemap::_createBuffer(bool bWithTintSlots)
+	float * DX12Edgemap::_allocBuffer( size_t bytes )
 	{
-		int entries = m_samplesSize + m_nbSegments * 2;
-
-		if( bWithTintSlots )
-			entries += m_nbSegments * c_tintSlotSize;
-
-		size_t bytes = size_t(entries) * 4 * sizeof(float);
+		_releaseBuffer(m_newBuffer);
 
 		// Nothing can be created on a lost device, and trying costs an exception
 		// inside the D3D12 runtime. The edgemap is left with the buffer it has,
 		// or without one, as when creating one fails, and DX12Backend draws
 		// nothing for it.
 
-		if( DX12Backend::isDeviceLost() )
-			return false;
+		if( DX12Backend::isDeviceLost() || !s_pDevice )
+			return nullptr;
 
 		D3D12_HEAP_PROPERTIES heapProps = {};
 		heapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
@@ -357,7 +237,7 @@ namespace wax
 			if( !DX12Backend::checkDeviceLost() )
 				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for edgemap.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			return false;
+			return nullptr;
 		}
 
 		// Named after us, so the debug layer's live object report shows where it comes from.
@@ -374,74 +254,41 @@ namespace wax
 			if( !DX12Backend::checkDeviceLost() )
 				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to map buffer for edgemap.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			return false;
+			return nullptr;
 		}
 
-		// A D3D12 upload buffer comes with whatever was in that memory, unlike an
-		// MTLBuffer. Columns nothing has written to yet would otherwise be noise.
-		//
-		//TODO: There is one buffer and two frames in flight, so updating samples
-		// can change what the GPU is still reading for the previous frame. Metal
-		// has the same, but our own per-frame buffers show what the fix looks like.
-
-		memset( pBuffer, 0, bytes );
-
-		if( m_pBuffer )
-		{
-			memcpy( pBuffer, m_pBuffer, size_t(m_samplesSize) * 4 * sizeof(float) );
-			m_buffer->Unmap(0, nullptr);
-		}
-
-		m_buffer = buffer;
-		m_pBuffer = pBuffer;
-		m_bHasTintSlots = bWithTintSlots;
-		return true;
+		m_newBuffer = buffer;
+		return pBuffer;
 	}
 
-	//____ _writeColors() __________________________________________________________
+	//____ _commitBuffer() _______________________________________________________
 	//
-	// Flat colors, tint table entries and tint blocks of the given segments. A
-	// segment with a tint gets its block written to its own slot.
+	// Replacing a buffer we had happens once per edgemap at most, when it gets its
+	// first tint. The GPU may still be reading the old one, so we wait for it
+	// before letting go.
 
-	void DX12Edgemap::_writeColors(int beginSegment, int endSegment)
+	void DX12Edgemap::_commitBuffer()
 	{
-		RectSPX rect(0, 0, m_size.w * 64, m_size.h * 64);
-
-		for (int seg = beginSegment; seg < endSegment; seg++)
+		if( m_buffer )
 		{
-			float * pFlat = m_pBuffer + (_flatColorsOfs() + seg) * 4;
-			float * pTable = m_pBuffer + (_tintTableOfs() + seg) * 4;
-
-			m_pFlatColors[seg].toLinearFloat(pFlat);		// Colors are sRGB, but we blend in linear.
-
-			int blockOfs = -1;
-
-			if( m_pTints[seg] && m_bHasTintSlots )
-			{
-				uint16_t	words[TintTools::c_maxEncodedTintWords];
-				HiColor		colors[TintTools::c_maxEncodedTintColors];
-				int			nColors;
-
-				TintTools::encodeTint(m_pTints[seg], rect, words, colors, nColors);
-
-				const HiColor* pColors = colors;
-				TintTools::DecodedTint decoded;
-				TintTools::decodeTint(words, pColors, decoded);
-
-				if( decoded.nLayers > 0 )
-				{
-					blockOfs = _tintSlotOfs(seg);
-					TintTools::writeGpuTintBlock(decoded, m_pBuffer + blockOfs * 4);
-				}
-			}
-
-			pTable[0] = float(blockOfs);
-			pTable[1] = 0.f;
-			pTable[2] = 0.f;
-			pTable[3] = 0.f;
+			DX12Backend::waitForCompletionOfAll();
+			_releaseBuffer(m_buffer);
 		}
+
+		m_buffer = m_newBuffer;
+		m_newBuffer = nullptr;
 	}
 
+	//____ _releaseBuffer() ______________________________________________________
+
+	void DX12Edgemap::_releaseBuffer( Microsoft::WRL::ComPtr<ID3D12Resource>& buffer )
+	{
+		if( buffer )
+		{
+			buffer->Unmap(0, nullptr);
+			buffer = nullptr;
+		}
+	}
 
 } // namespace wax
 
