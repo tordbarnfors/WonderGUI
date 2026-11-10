@@ -140,29 +140,6 @@ The UTF-8 text system was built and tested on Linux (SDL2 software and OpenGL) a
 been run on Win32/DX12. The macOS frameworks (Cocoa software/Metal, SDL2 Metal) haven't
 been built with it yet.
 
-### MetalBackend on GpuBackend is untested
-
-MetalBackend, MetalEdgemap and MetalSurface were moved onto GpuBackend, GpuEdgemap and the HLSL
-shaders on a machine without macOS. The Objective-C++ passes a syntax check with clang against
-stub Foundation and Metal headers written from Apple's declarations, but hasn't been compiled
-with the real ones, and the generated MSL (`wax_metalshaders.mm`) has never been compiled by
-Metal. Build and run gfxdevicetester before relying on it. What changed besides moving code:
-
-- **Needs macOS 11** (MSL 2.3) for the generated shaders, see `metalgfx/compile_shaders.py`.
-- **Shaders are compiled the first time a pipeline needs them,** one library each, with fast math
-  off, so the first frames that use a kind of draw take longer.
-- **Alpha_8 and XRGB_8 surfaces are read through a swizzled view,** and palette based ones keep
-  their indexes in R8Uint or R16Uint and their palette in a buffer of float4, as on DX12 and
-  Vulkan.
-- **The default canvas is loaded, not cleared,** when a session renders into it a second time,
-  for example after a render layer: the render pass descriptor we are given is only used as it is
-  for the first pass of a session.
-
-### DX12Backend on GpuBackend
-
-DX12Backend and DX12Edgemap were moved onto GpuBackend and GpuEdgemap on a machine without
-Windows. They build with MSVC, gfxdevicetester hasn't been run on them yet.
-
 ### VulkanBackend on Windows and on other GPUs
 
 Only run on Linux, with lavapipe and Intel UHD 770 (Mesa).
