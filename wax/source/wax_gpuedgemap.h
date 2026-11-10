@@ -51,7 +51,7 @@ namespace wax
 	 *   Tint blocks, a slot per segment big enough for any tint. Only there once a segment has
 	 *   had a tint, most edgemaps never do.
 	 *
-	 * DX12Edgemap and VulkanEdgemap are built on it.
+	 * DX12Edgemap, MetalEdgemap and VulkanEdgemap are built on it.
 	 */
 
 	class GpuEdgemap : public Edgemap

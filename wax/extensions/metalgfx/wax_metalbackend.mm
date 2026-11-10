@@ -29,16 +29,19 @@
 #include <wax_metalwarpmapfactory.h>
 #include <wax_metalwarpmap.h>
 #include <wax_base.h>
-#include <wax_util.h>
 
-#include <cmath>
+#include <algorithm>
+#include <cstddef>
+#include <cstdio>
+#include <cstring>
+#include <type_traits>
+#include <unistd.h>
 
 
 namespace wax
 {
-using namespace Util;
 
-const TypeInfo MetalBackend::TYPEINFO = { "MetalBackend", &Backend::TYPEINFO };
+const TypeInfo MetalBackend::TYPEINFO = { "MetalBackend", &GpuBackend::TYPEINFO };
 
 id<MTLDevice>       MetalBackend::s_metalDevice = nil;
 id<MTLCommandQueue> MetalBackend::s_metalCommandQueue = nil;
@@ -69,72 +72,35 @@ MetalBackend_p MetalBackend::create()
 MetalBackend::MetalBackend()
 {
 	m_defaultCanvas.ref = CanvasRef::Default;
-
-	m_bFullyInitialized = true;
-
 	m_flushesInProgress = 0;
+	m_constants = ShaderConstants();
 
-
-	// Modify shader source
-
-	std::string shaderSource = shaders;
-	auto maxSegPos = shaderSource.find("$MAXSEG");
-
-	while(maxSegPos != std::string::npos )
-	{
-		shaderSource.replace(maxSegPos, 7, std::to_string(c_maxSegments));
-		maxSegPos = shaderSource.find("$MAXSEG");
-	}
-
-	// Create shader library
-
-	NSError *error = nil;
-	NSString *shaderString = [[NSString alloc] initWithUTF8String:shaderSource.c_str()];
-	m_library = [s_metalDevice newLibraryWithSource:shaderString options:nil error:&error];
-
-	if( m_library == nil )
-	{
-		NSString * pMessage = [NSString stringWithFormat:@"Failed to compile shaders: %@", error ? error.localizedDescription : @"unknown error"];
-		Base::throwError(ErrorLevel::Critical, ErrorCode::Internal, pMessage.UTF8String, this, &TYPEINFO, __func__, __FILE__, __LINE__);
-	}
-
-	[shaderString release];
-
-	// Create samplers
+	// Samplers, as those of DX12Backend and VulkanBackend: tiling sources repeat, ClipBlit reads
+	// transparent black outside the source and everything else, including Blur, reads the edge
+	// pixels. Mip levels are only there for mipmapped surfaces.
 
 	MTLSamplerDescriptor *desc = [MTLSamplerDescriptor new];
 
-	for( int mipmapped = 0 ; mipmapped < 2 ; mipmapped++ )
+	for( int i = 0 ; i < 8 ; i++ )
 	{
-		desc.mipFilter = (mipmapped == 0) ? MTLSamplerMipFilterNotMipmapped : MTLSamplerMipFilterLinear;
+		bool bClip = (i & 4) != 0;
+		bool bTiling = (i & 2) != 0;
+		bool bBilinear = (i & 1) != 0;
 
-		for( int interpolated = 0 ; interpolated < 2 ; interpolated++ )
-		{
-			MTLSamplerMinMagFilter filter = (interpolated == 0) ? MTLSamplerMinMagFilterNearest : MTLSamplerMinMagFilterLinear;
-			desc.minFilter = filter;
-			desc.magFilter = filter;
+		MTLSamplerAddressMode addressMode = bTiling ? MTLSamplerAddressModeRepeat
+										  : bClip ? MTLSamplerAddressModeClampToZero : MTLSamplerAddressModeClampToEdge;
 
-			// Like the GL and DX12 backends: tiling sources repeat, ClipBlit reads transparent
-			// black outside the source and everything else, including Blur, reads the edge pixels.
+		desc.minFilter = bBilinear ? MTLSamplerMinMagFilterLinear : MTLSamplerMinMagFilterNearest;
+		desc.magFilter = desc.minFilter;
+		desc.mipFilter = bBilinear ? MTLSamplerMipFilterLinear : MTLSamplerMipFilterNearest;
+		desc.rAddressMode = addressMode;
+		desc.sAddressMode = addressMode;
+		desc.tAddressMode = addressMode;
 
-			const MTLSamplerAddressMode addressModes[3] = { MTLSamplerAddressModeClampToEdge, MTLSamplerAddressModeRepeat, MTLSamplerAddressModeClampToZero };
-
-			for( int edge = 0 ; edge < 3 ; edge++ )
-			{
-				desc.rAddressMode = addressModes[edge];
-				desc.sAddressMode = addressModes[edge];
-				desc.tAddressMode = addressModes[edge];
-
-				m_samplers[mipmapped][interpolated][edge] = [s_metalDevice newSamplerStateWithDescriptor:desc];
-			}
-		}
+		m_samplers[i] = [s_metalDevice newSamplerStateWithDescriptor:desc];
 	}
 
 	[desc release];
-
-	// Initialize our shader environment
-
-	m_uniform.flatTint = { 1.f, 1.f, 1.f, 1.f };
 }
 
 //____ destructor() _______________________________________________________
@@ -142,459 +108,33 @@ MetalBackend::MetalBackend()
 MetalBackend::~MetalBackend()
 {
 	while( m_flushesInProgress > 0 )
-	{
 		usleep(100);
-	}
-
-	m_metalCommandBuffer = nil;
 
 	[m_defaultCanvasRenderPassDesc release];
 	m_defaultCanvasRenderPassDesc = nil;
 	m_drawableToAutoPresent = nil;
 
-	[m_vertexBufferId release];
-	m_vertexBufferId = nil;
+	for( auto& sampler : m_samplers )
+		[sampler release];
 
-	[m_extrasBufferId release];
-	m_extrasBufferId = nil;
-
-
-	for( int mipmapped = 0 ; mipmapped < 2 ; mipmapped++ )
-	{
-		for( int interpolated = 0 ; interpolated < 2 ; interpolated++ )
-		{
-			for( int edge = 0 ; edge < 3 ; edge++ )
-			{
-				[m_samplers[mipmapped][interpolated][edge] release];
-			}
-		}
-	}
-
-
-	for( int blendMode = 0 ; blendMode < BlendMode_size ; blendMode++ )
-	{
-		[m_linePipelines[blendMode][(int)DestFormat::BGRA8_linear] release];
-		[m_linePipelines[blendMode][(int)DestFormat::BGRX8_linear] release];
-		[m_linePipelines[blendMode][(int)DestFormat::BGRA8_sRGB] release];
-		[m_linePipelines[blendMode][(int)DestFormat::BGRX8_sRGB] release];
-		[m_linePipelines[blendMode][(int)DestFormat::Alpha_8] release];
-	}
-
-	for( int blendMode = 0 ; blendMode < BlendMode_size ; blendMode++ )
-	{
-		[m_fillPipelines[0][blendMode][(int)DestFormat::BGRA8_linear] release];
-		[m_fillPipelines[0][blendMode][(int)DestFormat::BGRX8_linear] release];
-		[m_fillPipelines[0][blendMode][(int)DestFormat::BGRA8_sRGB] release];
-		[m_fillPipelines[0][blendMode][(int)DestFormat::BGRX8_sRGB] release];
-		[m_fillPipelines[0][blendMode][(int)DestFormat::Alpha_8] release];
-
-		[m_fillPipelines[1][blendMode][(int)DestFormat::BGRA8_linear] release];
-		[m_fillPipelines[1][blendMode][(int)DestFormat::BGRX8_linear] release];
-		[m_fillPipelines[1][blendMode][(int)DestFormat::BGRA8_sRGB] release];
-		[m_fillPipelines[1][blendMode][(int)DestFormat::BGRX8_sRGB] release];
-		[m_fillPipelines[1][blendMode][(int)DestFormat::Alpha_8] release];
-
-		[m_fillAAPipelines[0][blendMode][(int)DestFormat::BGRA8_linear] release];
-		[m_fillAAPipelines[0][blendMode][(int)DestFormat::BGRX8_linear] release];
-		[m_fillAAPipelines[0][blendMode][(int)DestFormat::BGRA8_sRGB] release];
-		[m_fillAAPipelines[0][blendMode][(int)DestFormat::BGRX8_sRGB] release];
-		[m_fillAAPipelines[0][blendMode][(int)DestFormat::Alpha_8] release];
-
-		[m_fillAAPipelines[1][blendMode][(int)DestFormat::BGRA8_linear] release];
-		[m_fillAAPipelines[1][blendMode][(int)DestFormat::BGRX8_linear] release];
-		[m_fillAAPipelines[1][blendMode][(int)DestFormat::BGRA8_sRGB] release];
-		[m_fillAAPipelines[1][blendMode][(int)DestFormat::BGRX8_sRGB] release];
-		[m_fillAAPipelines[1][blendMode][(int)DestFormat::Alpha_8] release];
-	}
-
-	// Release Blit pipelines
-
-	for( int blendMode = 0 ; blendMode < BlendMode_size ; blendMode++ )
-	{
-		[m_blitPipelines[(int)BlitFragShader::Normal][0][blendMode][(int)DestFormat::BGRA8_linear] release];
-		[m_blitPipelines[(int)BlitFragShader::Normal][0][blendMode][(int)DestFormat::BGRX8_linear] release];
-		[m_blitPipelines[(int)BlitFragShader::Normal][0][blendMode][(int)DestFormat::BGRA8_sRGB] release];
-		[m_blitPipelines[(int)BlitFragShader::Normal][0][blendMode][(int)DestFormat::BGRX8_sRGB] release];
-		[m_blitPipelines[(int)BlitFragShader::Normal][0][blendMode][(int)DestFormat::Alpha_8] release];
-
-		[m_blitPipelines[(int)BlitFragShader::Normal][1][blendMode][(int)DestFormat::BGRA8_linear] release];
-		[m_blitPipelines[(int)BlitFragShader::Normal][1][blendMode][(int)DestFormat::BGRX8_linear] release];
-		[m_blitPipelines[(int)BlitFragShader::Normal][1][blendMode][(int)DestFormat::BGRA8_sRGB] release];
-		[m_blitPipelines[(int)BlitFragShader::Normal][1][blendMode][(int)DestFormat::BGRX8_sRGB] release];
-		[m_blitPipelines[(int)BlitFragShader::Normal][1][blendMode][(int)DestFormat::Alpha_8] release];
-
-		[m_blitPipelines[(int)BlitFragShader::PaletteNearest][0][blendMode][(int)DestFormat::BGRA8_linear] release];
-		[m_blitPipelines[(int)BlitFragShader::PaletteNearest][0][blendMode][(int)DestFormat::BGRX8_linear] release];
-		[m_blitPipelines[(int)BlitFragShader::PaletteNearest][0][blendMode][(int)DestFormat::BGRA8_sRGB] release];
-		[m_blitPipelines[(int)BlitFragShader::PaletteNearest][0][blendMode][(int)DestFormat::BGRX8_sRGB] release];
-		[m_blitPipelines[(int)BlitFragShader::PaletteNearest][0][blendMode][(int)DestFormat::Alpha_8] release];
-
-		[m_blitPipelines[(int)BlitFragShader::PaletteNearest][1][blendMode][(int)DestFormat::BGRA8_linear] release];
-		[m_blitPipelines[(int)BlitFragShader::PaletteNearest][1][blendMode][(int)DestFormat::BGRX8_linear] release];
-		[m_blitPipelines[(int)BlitFragShader::PaletteNearest][1][blendMode][(int)DestFormat::BGRA8_sRGB] release];
-		[m_blitPipelines[(int)BlitFragShader::PaletteNearest][1][blendMode][(int)DestFormat::BGRX8_sRGB] release];
-		[m_blitPipelines[(int)BlitFragShader::PaletteNearest][1][blendMode][(int)DestFormat::Alpha_8] release];
-
-		[m_blitPipelines[(int)BlitFragShader::PaletteInterpolated][0][blendMode][(int)DestFormat::BGRA8_linear] release];
-		[m_blitPipelines[(int)BlitFragShader::PaletteInterpolated][0][blendMode][(int)DestFormat::BGRX8_linear] release];
-		[m_blitPipelines[(int)BlitFragShader::PaletteInterpolated][0][blendMode][(int)DestFormat::BGRA8_sRGB] release];
-		[m_blitPipelines[(int)BlitFragShader::PaletteInterpolated][0][blendMode][(int)DestFormat::BGRX8_sRGB] release];
-		[m_blitPipelines[(int)BlitFragShader::PaletteInterpolated][0][blendMode][(int)DestFormat::Alpha_8] release];
-
-		[m_blitPipelines[(int)BlitFragShader::PaletteInterpolated][1][blendMode][(int)DestFormat::BGRA8_linear] release];
-		[m_blitPipelines[(int)BlitFragShader::PaletteInterpolated][1][blendMode][(int)DestFormat::BGRX8_linear] release];
-		[m_blitPipelines[(int)BlitFragShader::PaletteInterpolated][1][blendMode][(int)DestFormat::BGRA8_sRGB] release];
-		[m_blitPipelines[(int)BlitFragShader::PaletteInterpolated][1][blendMode][(int)DestFormat::BGRX8_sRGB] release];
-		[m_blitPipelines[(int)BlitFragShader::PaletteInterpolated][1][blendMode][(int)DestFormat::Alpha_8] release];
-
-		[m_blitPipelines[(int)BlitFragShader::A8Source][0][blendMode][(int)DestFormat::BGRA8_linear] release];
-		[m_blitPipelines[(int)BlitFragShader::A8Source][0][blendMode][(int)DestFormat::BGRX8_linear] release];
-		[m_blitPipelines[(int)BlitFragShader::A8Source][0][blendMode][(int)DestFormat::BGRA8_sRGB] release];
-		[m_blitPipelines[(int)BlitFragShader::A8Source][0][blendMode][(int)DestFormat::BGRX8_sRGB] release];
-		[m_blitPipelines[(int)BlitFragShader::A8Source][0][blendMode][(int)DestFormat::Alpha_8] release];
-
-		[m_blitPipelines[(int)BlitFragShader::A8Source][1][blendMode][(int)DestFormat::BGRA8_linear] release];
-		[m_blitPipelines[(int)BlitFragShader::A8Source][1][blendMode][(int)DestFormat::BGRX8_linear] release];
-		[m_blitPipelines[(int)BlitFragShader::A8Source][1][blendMode][(int)DestFormat::BGRA8_sRGB] release];
-		[m_blitPipelines[(int)BlitFragShader::A8Source][1][blendMode][(int)DestFormat::BGRX8_sRGB] release];
-		[m_blitPipelines[(int)BlitFragShader::A8Source][1][blendMode][(int)DestFormat::Alpha_8] release];
-
-		[m_blitPipelines[(int)BlitFragShader::RGBXSource][0][blendMode][(int)DestFormat::BGRA8_linear] release];
-		[m_blitPipelines[(int)BlitFragShader::RGBXSource][0][blendMode][(int)DestFormat::BGRX8_linear] release];
-		[m_blitPipelines[(int)BlitFragShader::RGBXSource][0][blendMode][(int)DestFormat::BGRA8_sRGB] release];
-		[m_blitPipelines[(int)BlitFragShader::RGBXSource][0][blendMode][(int)DestFormat::BGRX8_sRGB] release];
-		[m_blitPipelines[(int)BlitFragShader::RGBXSource][0][blendMode][(int)DestFormat::Alpha_8] release];
-
-		[m_blitPipelines[(int)BlitFragShader::RGBXSource][1][blendMode][(int)DestFormat::BGRA8_linear] release];
-		[m_blitPipelines[(int)BlitFragShader::RGBXSource][1][blendMode][(int)DestFormat::BGRX8_linear] release];
-		[m_blitPipelines[(int)BlitFragShader::RGBXSource][1][blendMode][(int)DestFormat::BGRA8_sRGB] release];
-		[m_blitPipelines[(int)BlitFragShader::RGBXSource][1][blendMode][(int)DestFormat::BGRX8_sRGB] release];
-		[m_blitPipelines[(int)BlitFragShader::RGBXSource][1][blendMode][(int)DestFormat::Alpha_8] release];
-	}
-
-
-	for( int shader = 0 ; shader < 4 ; shader++ )
-	{
-		for( int tint = 0 ; tint < 2 ; tint++ )
-		{
-			for( int blendMode = 0 ; blendMode < BlendMode_size ; blendMode++ )
-			{
-				for( int format = 0 ; format < 5 ; format++ )
-					[m_blurPipelines[shader][tint][blendMode][format] release];
-			}
-		}
-	}
-
-	int maxSegments = c_maxSegments;                // std::min can't operate on static const only present in header. Does some introspection that fails then.
-	int nbShaders = std::min(maxSegments, 16);
-	for( int shader = 1 ; shader < nbShaders ; shader++ )
-	{
-		for( int blendMode = 0 ; blendMode < BlendMode_size ; blendMode++ )
-		{
-			[m_segmentsPipelines[shader][0][blendMode][(int)DestFormat::BGRA8_linear] release];
-			[m_segmentsPipelines[shader][0][blendMode][(int)DestFormat::BGRX8_linear] release];
-
-			[m_segmentsPipelines[shader][0][blendMode][(int)DestFormat::BGRA8_sRGB] release];
-			[m_segmentsPipelines[shader][0][blendMode][(int)DestFormat::BGRX8_sRGB] release];
-
-			[m_segmentsPipelines[shader][0][blendMode][(int)DestFormat::Alpha_8] release];
-
-			[m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::BGRA8_linear] release];
-			[m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::BGRX8_linear] release];
-
-			[m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::BGRA8_sRGB] release];
-			[m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::BGRX8_sRGB] release];
-
-			[m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::Alpha_8] release];
-		}
-	}
-
-	for( int tint = 0 ; tint < 2 ; tint++ )
-	{
-		for( int blendMode = 0 ; blendMode < BlendMode_size ; blendMode++ )
-		{
-			for( int format = 0 ; format < 5 ; format++ )
-				[m_shapePipelines[tint][blendMode][format] release];
-		}
-	}
-
-	for( int shader = 0 ; shader < 3 ; shader++ )
-	{
-		for( int blendMode = 0 ; blendMode < BlendMode_size ; blendMode++ )
-		{
-			for( int format = 0 ; format < 5 ; format++ )
-				[m_warpPipelines[shader][blendMode][format] release];
-		}
-	}
+	for( auto& entry : m_pipelines )
+		[entry.second release];
 
 	for( auto& entry : m_mipmapPipelines )
 		[entry.second release];
 
-	[m_library release];
+	for( auto& entry : m_functions )
+		[entry.second release];
+
+	for( auto library : m_libraries )
+		[library release];
 }
-
-//____ _destFormatName() _____________________________________________________
-
-const char * MetalBackend::_destFormatName( DestFormat format )
-{
-	switch( format )
-	{
-		case DestFormat::BGRX8_linear:
-			return "XRGB_8 linear";
-		case DestFormat::BGRA8_linear:
-			return "ARGB_8 linear";
-		case DestFormat::BGRX8_sRGB:
-			return "XRGB_8 sRGB";
-		case DestFormat::BGRA8_sRGB:
-			return "ARGB_8 sRGB";
-		case DestFormat::Alpha_8:
-			return "Alpha_8";
-	}
-	return "Undefined";
-}
-
-//____ _toDestFormat() ________________________________________________________
-
-bool MetalBackend::_toDestFormat( PixelFormat format, ColorSpace colorSpace, DestFormat& destFormat )
-{
-	bool bLinear = (colorSpace == ColorSpace::Linear);
-
-	switch( format )
-	{
-		case PixelFormat::XRGB_8:
-			destFormat = bLinear ? DestFormat::BGRX8_linear : DestFormat::BGRX8_sRGB;
-			return true;
-		case PixelFormat::ARGB_8:
-			destFormat = bLinear ? DestFormat::BGRA8_linear : DestFormat::BGRA8_sRGB;
-			return true;
-		case PixelFormat::Alpha_8:
-			destFormat = DestFormat::Alpha_8;
-			return true;
-		default:
-			return false;
-	}
-}
-
-
-//____ _compileLinePipeline() _________________________________________________
-
-id<MTLRenderPipelineState> MetalBackend::_compileLinePipeline( BlendMode blendMode, DestFormat canvasFormat )
-{
-	bool        isAlpha8    = (canvasFormat == DestFormat::Alpha_8);
-
-	NSString* vertexShader   = @"lineVertexShader";
-	NSString* fragmentShader = isAlpha8 ? @"lineFragmentShader_A8" : @"lineFragmentShader";
-
-	NSString* label = [NSString stringWithFormat:@"Line Pipeline (format=%s, blendMode=%s)",
-						_destFormatName(canvasFormat), toString(blendMode)];
-
-	return _compileRenderPipeline( label, vertexShader, fragmentShader, blendMode, canvasFormat, true );
-}
-
-
-//____ _compileFillPipeline() _________________________________________________
-
-id<MTLRenderPipelineState> MetalBackend::_compileFillPipeline( bool bTintmap, BlendMode blendMode, DestFormat canvasFormat )
-{
-	bool        isAlpha8    = (canvasFormat == DestFormat::Alpha_8);
-
-	NSString* vertexShader   = bTintmap ? @"fillTintmapVertexShader" : @"fillVertexShader";
-	NSString* fragmentShader = bTintmap ? @"fillTintmapFragmentShader" : @"fillFragmentShader";
-	if( isAlpha8 )
-		fragmentShader = [fragmentShader stringByAppendingString:@"_A8"];
-
-	NSString* label = [NSString stringWithFormat:@"%@Fill Pipeline (format=%s, blendMode=%s, tintmap=%s)",
-						bTintmap ? @"Tintmap" : @"", _destFormatName(canvasFormat), toString(blendMode), bTintmap ? "true" : "false"];
-
-	return _compileRenderPipeline( label, vertexShader, fragmentShader, blendMode, canvasFormat, false );
-}
-
-//____ _compileFillAAPipeline() _______________________________________________
-
-id<MTLRenderPipelineState> MetalBackend::_compileFillAAPipeline( bool bTintmap, BlendMode blendMode, DestFormat canvasFormat )
-{
-	bool        isAlpha8    = (canvasFormat == DestFormat::Alpha_8);
-
-	NSString* vertexShader   = bTintmap ? @"fillAATintmapVertexShader" : @"fillAAVertexShader";
-	NSString* fragmentShader = bTintmap ? @"fillAATintmapFragmentShader" : @"fillAAFragmentShader";
-	if( isAlpha8 )
-		fragmentShader = [fragmentShader stringByAppendingString:@"_A8"];
-
-	NSString* label = [NSString stringWithFormat:@"AA%@Fill Pipeline (format=%s, blendMode=%s, tintmap=%s)",
-						bTintmap ? @"Tintmap" : @"", _destFormatName(canvasFormat), toString(blendMode), bTintmap ? "true" : "false"];
-
-	return _compileRenderPipeline( label, vertexShader, fragmentShader, blendMode, canvasFormat, true );
-}
-
-
-//____ _compileBlurPipeline() _________________________________________________
-
-id<MTLRenderPipelineState> MetalBackend::_compileBlurPipeline( BlurFragShader shader, bool bTintmap, BlendMode blendMode, DestFormat canvasFormat )
-{
-	NSString* namePrefix         = nil;
-	NSString* fragmentShaderBase = nil;
-
-	switch( shader )
-	{
-		case BlurFragShader::Normal:
-			namePrefix         = @"Blur";
-			fragmentShaderBase = bTintmap ? @"blurTintmapFragmentShader" : @"blurFragmentShader";
-			break;
-
-		case BlurFragShader::Palette:
-			namePrefix         = @"PaletteBlur";
-			fragmentShaderBase = bTintmap ? @"paletteBlurTintmapFragmentShader" : @"paletteBlurFragmentShader";
-			break;
-
-		case BlurFragShader::A8Source:
-			namePrefix         = @"A8SourceBlur";
-			fragmentShaderBase = bTintmap ? @"alphaBlurTintmapFragmentShader" : @"alphaBlurFragmentShader";
-			break;
-
-		case BlurFragShader::RGBXSource:
-			namePrefix         = @"RGBXSourceBlur";
-			fragmentShaderBase = bTintmap ? @"rgbxBlurTintmapFragmentShader" : @"rgbxBlurFragmentShader";
-			break;
-	}
-
-	NSString* vertexShader		= bTintmap ? @"blitTintmapVertexShader" : @"blitVertexShader";
-
-	bool        isAlpha8        = (canvasFormat == DestFormat::Alpha_8);
-	NSString*   fragmentShader  = isAlpha8 ? [fragmentShaderBase stringByAppendingString:@"_A8"] : fragmentShaderBase;
-
-	NSString* label 			= [namePrefix stringByAppendingFormat:@" Pipeline (format=%s, blendMode=%s, tintmap=%s)", _destFormatName(canvasFormat), toString(blendMode), bTintmap ? "true" : "false"];
-
-	return _compileRenderPipeline( label, vertexShader, fragmentShader, blendMode, canvasFormat, false );
-}
-
-//____ _compileBlitPipeline() _________________________________________________
-
-id<MTLRenderPipelineState> MetalBackend::_compileBlitPipeline( BlitFragShader shader, bool bTintmap, BlendMode blendMode, DestFormat canvasFormat )
-{
-	NSString* namePrefix         = nil;
-	NSString* vertexShader       = nil;
-	NSString* fragmentShaderBase = nil;
-
-	switch( shader )
-	{
-		case BlitFragShader::Normal:
-			namePrefix         = @"Blit";
-			vertexShader       = bTintmap ? @"blitTintmapVertexShader" : @"blitVertexShader";
-			fragmentShaderBase = bTintmap ? @"blitTintmapFragmentShader" : @"blitFragmentShader";
-			break;
-
-		case BlitFragShader::PaletteNearest:
-			namePrefix         = @"PaletteBlitNearest";
-			vertexShader       = bTintmap ? @"blitTintmapVertexShader" : @"blitVertexShader";
-			fragmentShaderBase = bTintmap ? @"paletteBlitNearestTintmapFragmentShader" : @"paletteBlitNearestFragmentShader";
-			break;
-
-		case BlitFragShader::PaletteInterpolated:
-			namePrefix         = @"PaletteBlitInterpolated";
-			vertexShader       = bTintmap ? @"paletteBlitInterpolateTintmapVertexShader" : @"paletteBlitInterpolateVertexShader";
-			fragmentShaderBase = bTintmap ? @"paletteBlitInterpolateTintmapFragmentShader" : @"paletteBlitInterpolateFragmentShader";
-			break;
-
-		case BlitFragShader::A8Source:
-			namePrefix         = @"A8SourceBlit";
-			vertexShader       = bTintmap ? @"blitTintmapVertexShader" : @"blitVertexShader";
-			fragmentShaderBase = bTintmap ? @"alphaBlitTintmapFragmentShader" : @"alphaBlitFragmentShader";
-			break;
-
-		case BlitFragShader::RGBXSource:
-			namePrefix         = @"RGBXSourceBlit";
-			vertexShader       = bTintmap ? @"blitTintmapVertexShader" : @"blitVertexShader";
-			fragmentShaderBase = bTintmap ? @"rgbxBlitTintmapFragmentShader" : @"rgbxBlitFragmentShader";
-			break;
-	}
-
-	bool        isAlpha8     = (canvasFormat == DestFormat::Alpha_8);
-	NSString*   fragmentShader = isAlpha8 ? [fragmentShaderBase stringByAppendingString:@"_A8"] : fragmentShaderBase;
-
-	NSString* label = [namePrefix stringByAppendingFormat:@" Pipeline (format=%s, blendMode=%s, tintmap=%s)",
-						_destFormatName(canvasFormat), toString(blendMode), bTintmap ? "true" : "false"];
-
-	return _compileRenderPipeline( label, vertexShader, fragmentShader, blendMode, canvasFormat, false );
-}
-
-//____ _compileSegmentsPipeline() _____________________________________________
-
-id<MTLRenderPipelineState> MetalBackend::_compileSegmentsPipeline( int shaderIndex, bool bTintmap, BlendMode blendMode, DestFormat canvasFormat )
-{
-	bool        isAlpha8    = (canvasFormat == DestFormat::Alpha_8);
-
-	NSString* vertexShader = @"segmentsVertexShader";
-
-	NSString* fragmentShader = [NSString stringWithFormat:@"segments%@FragmentShader%d%@",
-								 bTintmap ? @"Tintmap" : @"", shaderIndex, isAlpha8 ? @"_A8" : @""];
-
-	NSString* label = [NSString stringWithFormat:@"Segments Pipeline (shader=%d, format=%s, blendMode=%s, tintmap=%s)",
-						shaderIndex, _destFormatName(canvasFormat), toString(blendMode), bTintmap ? "true" : "false"];
-
-	return _compileRenderPipeline( label, vertexShader, fragmentShader, blendMode, canvasFormat, false );
-}
-
-//____ _compileShapePipeline() ________________________________________________
-
-id<MTLRenderPipelineState> MetalBackend::_compileShapePipeline( bool bTintmap, BlendMode blendMode, DestFormat canvasFormat )
-{
-	bool        isAlpha8    = (canvasFormat == DestFormat::Alpha_8);
-
-	NSString* vertexShader = @"shapeVertexShader";
-
-	NSString* fragmentShader = [NSString stringWithFormat:@"shape%@FragmentShader%@",
-								 bTintmap ? @"Tintmap" : @"", isAlpha8 ? @"_A8" : @""];
-
-	NSString* label = [NSString stringWithFormat:@"Shape Pipeline (format=%s, blendMode=%s, tintmap=%s)",
-						_destFormatName(canvasFormat), toString(blendMode), bTintmap ? "true" : "false"];
-
-	return _compileRenderPipeline( label, vertexShader, fragmentShader, blendMode, canvasFormat, true );
-}
-
-//____ _compileWarpPipeline() _________________________________________________
-
-id<MTLRenderPipelineState> MetalBackend::_compileWarpPipeline( WarpFragShader shader, BlendMode blendMode, DestFormat canvasFormat )
-{
-	bool        isAlpha8    = (canvasFormat == DestFormat::Alpha_8);
-
-	NSString* fragmentShaderBase = nil;
-
-	switch( shader )
-	{
-		case WarpFragShader::Edgemap:
-			fragmentShaderBase = @"warpEdgemapFragmentShader";
-			break;
-
-		case WarpFragShader::Blit:
-			fragmentShaderBase = @"warpBlitFragmentShader";
-			break;
-
-		case WarpFragShader::PaletteBlit:
-			fragmentShaderBase = @"warpPaletteBlitFragmentShader";
-			break;
-	}
-
-	NSString* fragmentShader = isAlpha8 ? [fragmentShaderBase stringByAppendingString:@"_A8"] : fragmentShaderBase;
-
-	NSString* label = [NSString stringWithFormat:@"Warp Pipeline (shader=%@, format=%s, blendMode=%s)",
-						fragmentShaderBase, _destFormatName(canvasFormat), toString(blendMode)];
-
-	return _compileRenderPipeline( label, @"warpVertexShader", fragmentShader, blendMode, canvasFormat, true );
-}
-
 
 //____ typeInfo() _________________________________________________________
 
 const TypeInfo& MetalBackend::typeInfo(void) const
 {
 	return TYPEINFO;
-}
-
-//____ maxEdges() _____________________________________________
-
-int MetalBackend::maxEdges() const
-{
-	return c_maxSegments - 1;
 }
 
 //____ canBeBlitSource() ______________________________________________________
@@ -612,6 +152,9 @@ bool MetalBackend::canBeCanvas(const TypeInfo& type) const
 }
 
 //____ waitForCompletion() ___________________________________________________
+//
+// The queue runs command buffers in the order they were committed, so once an empty one is
+// done, so are all sessions before it.
 
 void MetalBackend::waitForCompletion()
 {
@@ -623,8 +166,6 @@ void MetalBackend::waitForCompletion()
 		[commandBuffer commit];
 		[commandBuffer waitUntilCompleted];
 	}
-
-	return;
 }
 
 //____ surfaceFactory() _______________________________________________________
@@ -645,7 +186,6 @@ EdgemapFactory_p MetalBackend::edgemapFactory()
 		m_pEdgemapFactory = MetalEdgemapFactory::create();
 
 	return m_pEdgemapFactory;
-
 }
 
 //____ warpmapFactory() ___________________________________________________
@@ -678,18 +218,17 @@ bool MetalBackend::setDefaultCanvas( MTLRenderPassDescriptor* renderPassDesc, Si
 	if( colorSpace == ColorSpace::Undefined )
 		colorSpace = ColorSpace::sRGB;
 
-	DestFormat destFormat;
-	if( !_toDestFormat(pixelFormat, colorSpace, destFormat) )
+	MTLPixelFormat format;
+	if( !_toMetalFormat(pixelFormat, colorSpace, format) )
 	{
 		Base::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "pixelFormat must be ARGB_8, XRGB_8 or Alpha_8", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return false;
 	}
 
-	if( m_defaultCanvasRenderPassDesc )
-		[m_defaultCanvasRenderPassDesc release];
+	[renderPassDesc retain];
+	[m_defaultCanvasRenderPassDesc release];
 	m_defaultCanvasRenderPassDesc = renderPassDesc;
-	m_defaultCanvasDestFormat = destFormat;
-	[m_defaultCanvasRenderPassDesc retain];
+	m_defaultCanvasFormat = format;
 	m_defaultCanvas.size = pixelSize*64;
 	m_defaultCanvas.scale = scale;
 	m_defaultCanvas.format = pixelFormat;
@@ -698,1379 +237,39 @@ bool MetalBackend::setDefaultCanvas( MTLRenderPassDescriptor* renderPassDesc, Si
 	return true;
 }
 
+//____ _toMetalFormat() _______________________________________________________
+//
+// The texture formats of canvases, as MetalSurface has them.
+
+bool MetalBackend::_toMetalFormat( PixelFormat format, ColorSpace colorSpace, MTLPixelFormat& metalFormat )
+{
+	bool bLinear = (colorSpace == ColorSpace::Linear);
+
+	switch( format )
+	{
+		case PixelFormat::XRGB_8:
+		case PixelFormat::ARGB_8:
+			metalFormat = bLinear ? MTLPixelFormatBGRA8Unorm : MTLPixelFormatBGRA8Unorm_sRGB;
+			return true;
+		case PixelFormat::Alpha_8:
+			metalFormat = MTLPixelFormatR8Unorm;
+			return true;
+		default:
+			return false;
+	}
+}
+
 //____ beginRender() _________________________________________________________
 
 void MetalBackend::beginRender()
 {
-
 }
 
 //____ endRender() ___________________________________________________________
 
 void MetalBackend::endRender()
 {
-
 }
-
-//____ beginSession() ________________________________________________________
-
-void MetalBackend::beginSession( CanvasRef canvasRef, Surface * pCanvasSurface, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
-{
-	if( !pCanvasSurface && canvasRef != CanvasRef::Default )
-		return;
-
-//	m_bFullCanvasSession = (nUpdateRects == 1 && pUpdateRects[0] == RectSPX(0,0,pCanvasSurface->pixelSize()*64) );
-
-	// The command buffer and encoders we get from Metal are autoreleased and the
-	// command buffer keeps our buffers alive. If no autorelease pool is drained
-	// between sessions, as when rendering from a loop of our own, they would pile
-	// up until Metal runs out of memory, so we give each session a pool of its own.
-
-	m_pSessionPool = [[NSAutoreleasePool alloc] init];
-
-	// Reserve buffer for coordinates
-
-	int nVertices = pInfo->nRects * 6 + pInfo->nLineCoords/2 * 6;
-
-	m_vertexBufferId = [s_metalDevice newBufferWithLength:nVertices*sizeof(VertexMTL) options:MTLResourceStorageModeShared];
-	m_pVertexBuffer = (VertexMTL *)[m_vertexBufferId contents];
-	m_nVertices = 0;
-
-	// Reserve buffer for colors
-
-	// Tint blocks need a header, geometry and stop positions on top of their
-	// colors, which are counted in nColors. Any state change may carry a tint.
-
-	const int maxTintStops = Tint::c_maxMixComponents * Tint::c_maxStops;
-	const int tintBlockOverhead = TintTools::gpuTintBlockMaxSize(Tint::c_maxMixComponents, maxTintStops) - maxTintStops;
-
-	int nColors = pInfo->nColors + 1 + (pInfo->nStateChanges + pInfo->nShapeTints) * tintBlockOverhead;
-
-	m_colorBufferId = [s_metalDevice newBufferWithLength:nColors*sizeof(ColorMTL) options:MTLResourceStorageModeShared];
-	m_pColorBuffer = (ColorMTL *)[m_colorBufferId contents];
-
-	// Always present white color used as default tint for blits.
-
-	m_pColorBuffer[0].r = 1.f;
-	m_pColorBuffer[0].g = 1.f;
-	m_pColorBuffer[0].b = 1.f;
-	m_pColorBuffer[0].a = 1.f;
-
-	m_nColors = 1;
-
-	// Reserve buffer for extras
-
-	int nExtrasFloats =
-	pInfo->nBlit * 8
-	+ pInfo->nBlur * 8
-	+ pInfo->nLineCoords/2 * GpuShapes::c_lineEntries * 4		// Lines with caps take the most.
-	+ pInfo->nRects * 4			// This is for possible subpixel fills. We have no way of knowing exactly how much is needed.
-	+ pInfo->nEdgemapDraws * 8
-	+ pInfo->nWarpDraws * 12
-	+ GpuShapes::maxSessionEntries(*pInfo) * 4;
-
-	m_extrasBufferId = [s_metalDevice newBufferWithLength:nExtrasFloats*sizeof(float) options:MTLResourceStorageModeShared];
-	m_pExtrasBuffer = (float *)[m_extrasBufferId contents];
-	m_extrasBufferSize = 0;
-
-	// Setup a metal command buffer for this session
-
-	m_metalCommandBuffer = [s_metalCommandQueue commandBuffer];
-	m_metalCommandBuffer.label = @"MetalBackend";
-
-	// Set canvas, which also resets states to start values.
-
-	if( pCanvasSurface )
-		setCanvas(pCanvasSurface);
-	else
-		setCanvas( canvasRef );
-}
-
-//____ endSession() __________________________________________________________
-
-void MetalBackend::endSession()
-{
-	//
-
-	[m_renderEncoder endEncoding];
-	m_renderEncoder = nil;
-
-	// Finalize and execute our command buffer
-
-	// Schedule a present once the framebuffer is complete using the current drawable.
-
-	m_flushesInProgress++;
-
-	if( m_drawableToAutoPresent != nil )
-	{
-		[m_metalCommandBuffer presentDrawable:m_drawableToAutoPresent];
-		m_drawableToAutoPresent = nil;
-	}
-
-	// Add a completion handler.
-	[m_metalCommandBuffer addCompletedHandler:^(id<MTLCommandBuffer> cb) {
-		// Shared buffer is populated.
-		m_flushesInProgress--;
-	}];
-
-	// Finalize rendering here & push the command buffer to the GPU.
-	[m_metalCommandBuffer commit];
-
-	[m_metalCommandBuffer waitUntilScheduled];
-
-	m_metalCommandBuffer = nil;
-
-	//
-
-	//		[m_metalCommandBuffer release];		We don't release these. Metal handles that itself.
-	m_metalCommandBuffer = nil;
-
-	[m_vertexBufferId release];
-	m_vertexBufferId = nil;
-
-	[m_colorBufferId release];
-	m_colorBufferId = nil;
-
-	[m_extrasBufferId release];
-	m_extrasBufferId = nil;
-
-	if( m_pActiveCanvas )
-	{
-		m_pActiveCanvas->m_bBufferNeedsSync = true;
-		m_pActiveCanvas->m_bMipmapStale = m_pActiveCanvas->m_bMipmapped;
-	}
-
-	m_pActiveCanvas = nullptr;
-
-	[m_pSessionPool drain];
-	m_pSessionPool = nil;
-}
-
-//____ setCanvas() ___________________________________________________________
-
-void MetalBackend::setCanvas(Surface* _pSurface)
-{
-	MetalSurface * pSurface = dynamic_cast<MetalSurface*>(_pSurface);
-	if( !pSurface )
-	{
-		//TODO: Error handling.
-
-		return;
-	}
-
-	if( m_renderEncoder != nil )
-		[m_renderEncoder endEncoding];
-
-	_resetStates();
-	m_renderEncoder = _setCanvas(pSurface, pSurface->pixelWidth(), pSurface->pixelHeight() );
-}
-
-void MetalBackend::setCanvas(CanvasRef ref)
-{
-	if( ref != CanvasRef::Default )
-		return;								// ERROR: Only CanvasRef::Default supported yet.
-
-	if( m_renderEncoder != nil )
-		[m_renderEncoder endEncoding];
-
-	_resetStates();
-	m_renderEncoder = _setCanvas(nullptr, m_defaultCanvas.size.w/64, m_defaultCanvas.size.h/64 );
-}
-
-//____ _resetStates() _________________________________________________________
-//
-// States start over with each canvas, as the device sets them again for it, like
-// SoftBackend does. Called before _setCanvas(), which hands them to the new render
-// encoder. That has no blit source until one is set.
-
-void MetalBackend::_resetStates()
-{
-	m_tintColorOfs			= -1;
-	m_tintOfs				= -1;
-
-	m_pActiveBlitSource		= nullptr;
-	m_activeBlendMode		= BlendMode::Blend;
-	m_activeMorphFactor		= 0.5f;
-	m_activeBlurRadius		= 64;
-
-	m_uniform.flatTint = { 1.f, 1.f, 1.f, 1.f };
-}
-
-//____ setObjects() ________________________________________________________
-
-void MetalBackend::setObjects(Object* const * pBeg, Object* const * pEnd)
-{
-	m_pObjectsBeg = pBeg;
-	m_pObjectsEnd = pEnd;
-}
-
-//____ setRects() _________________________________________________________
-
-void MetalBackend::setRects(const RectSPX* pBeg, const RectSPX* pEnd)
-{
-	m_pRectsBeg = pBeg;
-	m_pRectsEnd = pEnd;
-	m_pRectsPtr = pBeg;
-}
-
-//____ setColors() _________________________________________________________
-
-void MetalBackend::setColors(const HiColor* pBeg, const HiColor* pEnd)
-{
-	m_pColorsBeg = pBeg;
-	m_pColorsEnd = pEnd;
-	m_pColorsPtr = pBeg;
-}
-
-//____ setTransforms() _____________________________________________________
-
-void MetalBackend::setTransforms(const Transform* pBeg, const Transform* pEnd)
-{
-	m_pTransformsBeg = pBeg;
-	m_pTransformsEnd = pEnd;
-
-}
-
-//____ processCommands() _____________________________________________________
-
-void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int version)
-{
-	const RectSPX* 	pRects = m_pRectsPtr;
-	const HiColor* 	pColors = m_pColorsPtr;
-
-	VertexMTL *	pVertexMTL	= m_pVertexBuffer + m_nVertices;
-	ColorMTL*	pColorMTL	= m_pColorBuffer + m_nColors;
-	float*		pExtrasMTL	= m_pExtrasBuffer + m_extrasBufferSize;
-
-	int 		customTransformStart = version == 1 ? GfxFlip_size : NbStandardTransforms;
-
-
-	auto p = pBeg;
-	while (p < pEnd)
-	{
-		auto cmd = Command(*p++);
-		switch (cmd)
-		{
-			case Command::None:
-				break;
-
-			case Command::StateChange:
-			{
-				bool	bUniformChanged = false;
-
-				GpuTools::StateChangeParams state;
-				p = GpuTools::decodeStateChange(p, pColors, state);
-
-				if (GpuTools::hasChanged(state, StateChange::BlitSource))
-				{
-					auto pSurf = static_cast<MetalSurface*>(m_pObjectsBeg[state.blitSource]);
-
-					if( pSurf )
-					{
-						if( pSurf->m_bMipmapStale )
-						{
-							[m_renderEncoder endEncoding];
-
-							_generateMipmaps(pSurf);
-
-							m_renderEncoder = _setCanvas( m_pActiveCanvas, m_activeCanvasSize.w, m_activeCanvasSize.h );
-
-							pSurf->m_bMipmapStale = false;
-						}
-
-						[m_renderEncoder setFragmentTexture:pSurf->getTexture() atIndex: (unsigned) TextureIndex::Texture];
-
-						m_pActiveBlitSource = pSurf;
-						pSurf->m_bPendingReads = false;            // Clear this as we pass it by. All pending reads will have encoded before _executeBuffer() ends.
-
-						m_uniform.textureSize = pSurf->pixelSize();
-						bUniformChanged = true;
-
-						if (pSurf->m_pPalette)
-						{
-							[m_renderEncoder setFragmentTexture:pSurf->getPaletteTexture() atIndex:(unsigned) TextureIndex::Palette];
-						}
-					}
-					else
-					{
-						[m_renderEncoder setFragmentTexture:nil atIndex:(unsigned) TextureIndex::Texture];
-						[m_renderEncoder setFragmentSamplerState: m_samplers[0][0][0] atIndex:0];
-
-						m_pActiveBlitSource = nullptr;
-					}
-
-				}
-
-				if (GpuTools::hasChanged(state, StateChange::TintColor))
-				{
-					HiColor color = state.tintColor;
-
-					color.toLinearFloat((float*) &m_uniform.flatTint);		// Colors are sRGB, but we blend in linear.
-
-					bUniformChanged = true;
-				}
-
-				if (GpuTools::hasChanged(state, StateChange::Tint))
-				{
-					// Tint block is written to color buffer, its offset stored in vertex data.
-					// Tint color (flatTint in uniform) is applied on top of it.
-
-					if (state.tint.nLayers == 0)
-						m_tintOfs = -1;
-					else
-					{
-						m_tintOfs = int(pColorMTL - m_pColorBuffer);
-						TintTools::writeGpuTintBlock(state.tint, (float*) pColorMTL);
-						pColorMTL += TintTools::gpuTintBlockSize(state.tint);
-					}
-				}
-
-				if (GpuTools::hasChanged(state, StateChange::BlendMode))
-				{
-					m_activeBlendMode = state.blendMode;
-				}
-
-				if (GpuTools::hasChanged(state, StateChange::MorphFactor))
-				{
-					m_activeMorphFactor = GpuTools::morphFactor(state.morphFactor);
-
-					[m_renderEncoder setFragmentBytes:&m_activeMorphFactor length:sizeof(float) atIndex:(unsigned) FragmentInputIndex::MorphFactor];
-				}
-
-				// The fixed blend color is of no use to us, we use BlendMode::Blend in place of
-				// BlendMode::BlendFixedColor.
-
-				if (GpuTools::hasChanged(state, StateChange::Blur))
-				{
-					// Only the radius is stored here. The offsets are in texture coordinates of the
-					// blit source, so they are calculated at draw time from whatever source is active then.
-
-					m_activeBlurRadius = state.blurRadius;
-
-					GpuTools::blurColorMatrix(state.pBlurWeights, (float(*)[4]) m_blurUniform.colorMtx);
-				}
-
-				// Update uniform if changed
-
-				if( bUniformChanged )
-					[m_renderEncoder setVertexBytes:&m_uniform length:sizeof(Uniform) atIndex:(unsigned) VertexInputIndex::Uniform];
-
-				break;
-			}
-			case Command::Fill:
-			{
-				int32_t nRects = *p++;
-
-				const HiColor& col = *pColors++;
-
-				bool	bStraightFill = true;
-				int		nRectsWritten = 0;
-				int		extrasOfs = 0;
-
-				// Setup Tintmap
-
-
-				//
-
-				int vertexOfs = int(pVertexMTL - m_pVertexBuffer);
-
-				// Add rects to vertex buffer
-
-				for (int i = 0; i < nRects; i++)
-				{
-
-					int	dx1 = pRects->x;
-					int	dy1 = pRects->y;
-					int dx2 = dx1 + pRects->w;
-					int dy2 = dy1 + pRects->h;
-
-					if (((dx1 | dy1 | dx2 | dy2) & 63) == 0)
-					{
-						// Straight fill
-
-						if (!bStraightFill)
-						{
-							if( nRectsWritten > 0 )
-							{
-								if( m_fillAAPipelines[m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
-									m_fillAAPipelines[m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileFillAAPipeline(m_tintOfs >= 0, m_activeBlendMode, m_activeCanvasFormat);
-
-								[m_renderEncoder setRenderPipelineState:m_fillAAPipelines[m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
-								[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRectsWritten*6];
-
-								vertexOfs = int(pVertexMTL - m_pVertexBuffer);
-								nRectsWritten = 0;
-								extrasOfs = 0;
-							}
-							bStraightFill = true;
-						}
-					}
-					else
-					{
-						// Subpixel fill
-
-						if(bStraightFill)
-						{
-							if (nRectsWritten > 0)
-							{
-								if( m_fillPipelines[m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
-									m_fillPipelines[m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileFillPipeline(m_tintOfs >= 0, m_activeBlendMode, m_activeCanvasFormat);
-
-								[m_renderEncoder setRenderPipelineState:m_fillPipelines[m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
-								[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRectsWritten*6];
-
-								vertexOfs = int(pVertexMTL - m_pVertexBuffer);
-								nRectsWritten = 0;
-							}
-							bStraightFill = false;
-						}
-
-						extrasOfs = int(pExtrasMTL - m_pExtrasBuffer)/4;
-
-						// Provide rectangle center and radius as extras
-
-						RectSPX rect = * pRects;
-
-						SizeF    radius(rect.w / (2.f * 64), rect.h / (2.f * 64));
-						CoordF    center((rect.x / 64.f) + radius.w, (rect.y / 64.f) + radius.h);
-
-						* pExtrasMTL++ = center.x;
-						* pExtrasMTL++ = center.y;
-						* pExtrasMTL++ = radius.w;
-						* pExtrasMTL++ = radius.h;
-
-						dx2 += 63;
-						dy2 += 63;
-					}
-
-					dx1 >>= 6;
-					dy1 >>= 6;
-					dx2 >>= 6;
-					dy2 >>= 6;
-
-
-
-					int colOfs = int(pColorMTL - m_pColorBuffer);
-
-					pVertexMTL->coord.x = dx1;
-					pVertexMTL->coord.y = dy1;
-					pVertexMTL->colorsOfs = colOfs;
-					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintOfs = m_tintOfs;
-					pVertexMTL++;
-
-					pVertexMTL->coord.x = dx2;
-					pVertexMTL->coord.y = dy1;
-					pVertexMTL->colorsOfs = colOfs;
-					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintOfs = m_tintOfs;
-					pVertexMTL++;
-
-					pVertexMTL->coord.x = dx2;
-					pVertexMTL->coord.y = dy2;
-					pVertexMTL->colorsOfs = colOfs;
-					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintOfs = m_tintOfs;
-					pVertexMTL++;
-
-					pVertexMTL->coord.x = dx1;
-					pVertexMTL->coord.y = dy1;
-					pVertexMTL->colorsOfs = colOfs;
-					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintOfs = m_tintOfs;
-					pVertexMTL++;
-
-					pVertexMTL->coord.x = dx2;
-					pVertexMTL->coord.y = dy2;
-					pVertexMTL->colorsOfs = colOfs;
-					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintOfs = m_tintOfs;
-					pVertexMTL++;
-
-					pVertexMTL->coord.x = dx1;
-					pVertexMTL->coord.y = dy2;
-					pVertexMTL->colorsOfs = colOfs;
-					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintOfs = m_tintOfs;
-					pVertexMTL++;
-
-					pRects++;
-					nRectsWritten++;
-				}
-
-				// Add colors to buffer
-
-				col.toLinearFloat(&pColorMTL->r);		// Colors are sRGB, but we blend in linear.
-				pColorMTL++;
-
-				// Draw
-
-				if( bStraightFill )
-				{
-					if( m_fillPipelines[m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
-						m_fillPipelines[m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileFillPipeline(m_tintOfs >= 0, m_activeBlendMode, m_activeCanvasFormat);
-
-					[m_renderEncoder setRenderPipelineState:m_fillPipelines[m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
-				}
-				else
-				{
-					if( m_fillAAPipelines[m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
-						m_fillAAPipelines[m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileFillAAPipeline(m_tintOfs >= 0, m_activeBlendMode, m_activeCanvasFormat);
-
-					[m_renderEncoder setRenderPipelineState:m_fillAAPipelines[m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
-				}
-
-				[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRectsWritten*6];
-				break;
-			}
-
-			case Command::Line:
-			{
-				int32_t nClipRects = *p++;
-				int32_t nLines = *p++;
-				p++;							// padding
-
-				// Calculate and store vertices
-
-				int nLinesWritten = 0;
-				int vertexOfs = int(pVertexMTL - m_pVertexBuffer);
-
-				for (int i = 0; i < nLines; i++)
-				{
-					HiColor col = *pColors++;
-
-					CoordSPX begin, end;
-
-					auto p32 = (const spx *) p;
-					begin.x = *p32++;
-					begin.y = *p32++;
-					end.x = *p32++;
-					end.y = *p32++;
-					p = (const uint16_t*) p32;
-
-					spx thicknessSPX = *p++;
-					uint16_t capsWord = *p++;
-
-					if (capsWord != 0)
-					{
-						m_cappedLines.push_back({ begin, end, thicknessSPX, capsWord, col });
-						continue;
-					}
-
-					GpuTools::LineQuad quad;
-					if (!GpuTools::lineQuad(begin, end, thicknessSPX, quad))
-						continue;
-
-					// The default canvas is drawn upside down, which the offset of a mainly
-					// horizontal line has to follow.
-
-					float s = quad.offset;
-
-					if( !quad.bSteep && !m_pActiveCanvas )
-						s = m_defaultCanvas.size.h / 64 - quad.offset;
-
-					const CoordI& c1 = quad.corners[0];
-					const CoordI& c2 = quad.corners[1];
-					const CoordI& c3 = quad.corners[2];
-					const CoordI& c4 = quad.corners[3];
-
-					int extrasOfs = int(pExtrasMTL - m_pExtrasBuffer) / 4;
-					int colorsOfs = int(pColorMTL - m_pColorBuffer);
-
-					pVertexMTL->coord = c1;
-					pVertexMTL->colorsOfs = colorsOfs;
-					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintOfs = m_tintOfs;
-					pVertexMTL++;
-
-					pVertexMTL->coord = c2;
-					pVertexMTL->colorsOfs = colorsOfs;
-					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintOfs = m_tintOfs;
-					pVertexMTL++;
-
-					pVertexMTL->coord = c3;
-					pVertexMTL->colorsOfs = colorsOfs;
-					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintOfs = m_tintOfs;
-					pVertexMTL++;
-
-					pVertexMTL->coord = c1;
-					pVertexMTL->colorsOfs = colorsOfs;
-					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintOfs = m_tintOfs;
-					pVertexMTL++;
-
-					pVertexMTL->coord = c3;
-					pVertexMTL->colorsOfs = colorsOfs;
-					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintOfs = m_tintOfs;
-					pVertexMTL++;
-
-					pVertexMTL->coord = c4;
-					pVertexMTL->colorsOfs = colorsOfs;
-					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintOfs = m_tintOfs;
-					pVertexMTL++;
-
-					*pExtrasMTL++ = s;
-					*pExtrasMTL++ = quad.w;
-					*pExtrasMTL++ = quad.slope;
-					*pExtrasMTL++ = quad.bSteep;
-
-					col.toLinearFloat(&pColorMTL->r);		// Colors are sRGB, but we blend in linear.
-					pColorMTL++;
-
-					nLinesWritten++;
-				}
-
-				// Store command, with clip rects
-
-				if (nLinesWritten > 0)
-				{
-					if( m_linePipelines[(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
-						m_linePipelines[(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileLinePipeline(m_activeBlendMode, m_activeCanvasFormat);
-
-					[m_renderEncoder setRenderPipelineState:m_linePipelines[(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
-
-					for (int i = 0; i < nClipRects; i++)
-					{
-						RectI clip = pRects[i]/64;
-						MTLScissorRect metalClip = {(unsigned) clip.x, (unsigned) clip.y, (unsigned) clip.w, (unsigned) clip.h};
-						[m_renderEncoder setScissorRect:metalClip];
-						[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nLinesWritten*6];
-					}
-
-					MTLScissorRect orgClip = {0, 0, (unsigned) m_activeCanvasSize.w, (unsigned) m_activeCanvasSize.h};
-					[m_renderEncoder setScissorRect:orgClip];
-				}
-
-				// Lines with caps, as shapes in a quad around each, see GpuShapes::writeLine().
-				// The shader applies tint color and tint.
-
-				int nCappedWritten = 0;
-				int cappedVertexOfs = int(pVertexMTL - m_pVertexBuffer);
-				const simd_float2 noUV = { 0.f, 0.f };
-
-				for (const GpuTools::CappedLine& line : m_cappedLines)
-				{
-					CoordF quad[4];
-					int nEntries = GpuShapes::writeLine(line.begin, line.end, line.thickness, decodeLineCaps(line.caps), pExtrasMTL, quad);
-					if (nEntries == 0)
-						continue;
-
-					pExtrasMTL[3] = float(pColorMTL - m_pColorBuffer);
-					line.color.toLinearFloat(&pColorMTL->r);
-					pColorMTL++;
-
-					int extrasOfs = int(pExtrasMTL - m_pExtrasBuffer) / 4;
-					pExtrasMTL += nEntries * 4;
-
-					for (int corner : { 0, 1, 2, 0, 2, 3 })
-					{
-						pVertexMTL->coord = { int(std::lround(quad[corner].x)), int(std::lround(quad[corner].y)) };
-						pVertexMTL->colorsOfs = 0;
-						pVertexMTL->extrasOfs = extrasOfs;
-						pVertexMTL->uv = noUV;
-						pVertexMTL->tintOfs = m_tintOfs;
-						pVertexMTL++;
-					}
-
-					nCappedWritten++;
-				}
-
-				m_cappedLines.clear();
-
-				if (nCappedWritten > 0)
-				{
-					auto& pipeline = m_shapePipelines[m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat];
-					if( pipeline == nil )
-						pipeline = _compileShapePipeline(m_tintOfs >= 0, m_activeBlendMode, m_activeCanvasFormat);
-
-					[m_renderEncoder setRenderPipelineState:pipeline];
-
-					for (int i = 0; i < nClipRects; i++)
-					{
-						RectI clip = pRects[i] / 64;
-						MTLScissorRect metalClip = {(unsigned) clip.x, (unsigned) clip.y, (unsigned) clip.w, (unsigned) clip.h};
-						[m_renderEncoder setScissorRect:metalClip];
-						[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:cappedVertexOfs vertexCount:nCappedWritten*6];
-					}
-
-					MTLScissorRect orgClip = {0, 0, (unsigned) m_activeCanvasSize.w, (unsigned) m_activeCanvasSize.h};
-					[m_renderEncoder setScissorRect:orgClip];
-				}
-
-				pRects += nClipRects;
-				break;
-			}
-
-			case Command::DrawShape:
-			{
-				auto kind = ShapeKind(p[0]);
-				int nRects = p[1];
-				int nColors = p[2];
-				int nWords = p[3];
-				const uint16_t* pPayload = p + c_drawShapeHeaderWords - 1;
-				p = pPayload + nWords;
-
-				const RectSPX* pShapeRects = pRects;
-				const HiColor* pShapeColors = pColors;
-				pRects += nRects;
-				pColors += nColors;
-
-				int maxEntries, nSegments;
-				GpuShapes::measure(kind, pPayload, maxEntries, nSegments);
-
-				if (maxEntries == 0)
-				{
-					Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, "Failed DrawShape operation. Unsupported kind of shape.",
-						this, &TYPEINFO, __func__, __FILE__, __LINE__);
-					break;
-				}
-
-				// Shape data in extras buffer, read by the shader.
-
-				if ((int)m_shapeSegments.size() < nSegments)
-					m_shapeSegments.resize(nSegments);
-
-				int extrasOfs = int(pExtrasMTL - m_pExtrasBuffer) / 4;
-				int nEntries = GpuShapes::write(kind, pPayload, pShapeColors, pExtrasMTL, m_shapeSegments.data());
-
-				// Colors and tint blocks of drawn segments in color buffer, their offsets in the
-				// entries of the segments. Tint color and tint are applied by the shader.
-
-				for (int i = 0; i < nSegments; i++)
-				{
-					const GpuShapes::Segment& seg = m_shapeSegments[i];
-
-					if (!seg.bDrawn)
-						continue;
-
-					float* pEntry = pExtrasMTL + seg.entry * 4;
-
-					pEntry[0] = float(pColorMTL - m_pColorBuffer);
-					seg.color.toLinearFloat(&pColorMTL->r);
-					pColorMTL++;
-
-					if (seg.pTint)
-					{
-						TintTools::DecodedTint tint;
-						const HiColor* pTintColors = seg.pTintColors;
-						TintTools::decodeTint(seg.pTint, pTintColors, tint);
-
-						pEntry[1] = float(pColorMTL - m_pColorBuffer);
-						TintTools::writeGpuTintBlock(tint, (float*) pColorMTL);
-						pColorMTL += TintTools::gpuTintBlockSize(tint);
-					}
-				}
-
-				pExtrasMTL += nEntries * 4;
-
-				// Vertices, a quad for each clip rectangle.
-
-				int vertexOfs = int(pVertexMTL - m_pVertexBuffer);
-				const simd_float2 noUV = { 0.f, 0.f };
-
-				for (int i = 0; i < nRects; i++)
-				{
-					RectI patch = pShapeRects[i] / 64;
-
-					CoordI corners[6] = {	{ patch.x, patch.y }, { patch.x + patch.w, patch.y }, { patch.x + patch.w, patch.y + patch.h },
-											{ patch.x, patch.y }, { patch.x + patch.w, patch.y + patch.h }, { patch.x, patch.y + patch.h } };
-
-					for (auto& corner : corners)
-					{
-						pVertexMTL->coord = corner;
-						pVertexMTL->colorsOfs = 0;
-						pVertexMTL->extrasOfs = extrasOfs;
-						pVertexMTL->uv = noUV;
-						pVertexMTL->tintOfs = m_tintOfs;
-						pVertexMTL++;
-					}
-				}
-
-				auto& pipeline = m_shapePipelines[m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat];
-				if( pipeline == nil )
-					pipeline = _compileShapePipeline(m_tintOfs >= 0, m_activeBlendMode, m_activeCanvasFormat);
-
-				[m_renderEncoder setRenderPipelineState:pipeline];
-				[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRects*6];
-				break;
-			}
-
-			case Command::WarpBlit:
-			case Command::WarpDrawEdgemap:
-			{
-				WarpParams params;
-				p = decodeWarp(cmd, p, params);
-
-				auto pWarpmap = static_cast<MetalWarpmap*>(m_pObjectsBeg[params.warpmap]);
-				auto pEdgemap = (cmd == Command::WarpDrawEdgemap) ? static_cast<MetalEdgemap*>(m_pObjectsBeg[params.edgemap]) : nullptr;
-
-				const RectSPX* pWarpRects = pRects;
-				pRects += params.nRects;
-
-				// u and v are taken relative to the first vertex by the vertex shader, which is
-				// added back to the source offset, brought into the periods.
-
-				CoordSPX ref;
-				if( pWarpmap->vertexCount() > 0 )
-					ref = { pWarpmap->vertexData()[0].u, pWarpmap->vertexData()[0].v };
-
-				spx uPeriod = pWarpmap->uPeriod(), vPeriod = pWarpmap->vPeriod();
-				spx refU = uPeriod > 0 ? ((ref.x % uPeriod) + uPeriod) % uPeriod : ref.x;
-				spx refV = vPeriod > 0 ? ((ref.y % vPeriod) + vPeriod) % vPeriod : ref.y;
-
-				// Extras, see the warp shaders.
-
-				CoordI dest = roundToPixels(params.dest);
-				SizeI warpSize = pWarpmap->pixelSize();
-
-				float srcW, srcH;
-
-				if( pEdgemap )
-				{
-					srcW = float(pEdgemap->m_size.w);
-					srcH = float(pEdgemap->m_size.h);
-				}
-				else
-				{
-					srcW = params.source.w / 64.f;
-					srcH = params.source.h / 64.f;
-				}
-
-				int extrasOfs = int(pExtrasMTL - m_pExtrasBuffer) / 4;
-
-				*pExtrasMTL++ = srcW;
-				*pExtrasMTL++ = srcH;
-				*pExtrasMTL++ = pEdgemap ? float(pEdgemap->m_nbRenderSegments - 1) : 0.f;
-				*pExtrasMTL++ = 0.f;
-
-				*pExtrasMTL++ = (params.sourceOffset.x + refU) / 64.f;
-				*pExtrasMTL++ = (params.sourceOffset.y + refV) / 64.f;
-				*pExtrasMTL++ = uPeriod / 64.f;
-				*pExtrasMTL++ = vPeriod / 64.f;
-
-				if( pEdgemap )
-				{
-					*pExtrasMTL++ = float(pEdgemap->m_nbSegments - 1);
-					*pExtrasMTL++ = float(pEdgemap->_flatColorsOfs());
-					*pExtrasMTL++ = float(pEdgemap->_tintTableOfs());
-					*pExtrasMTL++ = float(pEdgemap->_rawSamplesOfs());
-				}
-				else
-				{
-					// A surface that isn't tiling is read as if the edge pixels of the source rectangle
-					// continued outside it, see warpBlitCoverage() in the shaders.
-
-					MetalSurface* pSurf = m_pActiveBlitSource;
-					float clampInset = pSurf->isTiling() ? 0.f : pSurf->sampleMethod() == SampleMethod::Bilinear ? 0.5f : 1.f / 256;
-
-					// Positions exactly on a border between texels take the texel after it, as in
-					// SoftBackend, rather than either one by how floats round.
-
-					float nearestBias = pSurf->sampleMethod() == SampleMethod::Nearest ? 1.f / 32768 : 0.f;
-
-					*pExtrasMTL++ = params.source.x / 64.f;
-					*pExtrasMTL++ = params.source.y / 64.f;
-					*pExtrasMTL++ = clampInset;
-					*pExtrasMTL++ = nearestBias;
-				}
-
-				if( pWarpmap->triangleCount() == 0 )
-					break;
-
-				// The mesh of the Warpmap, see MetalWarpmap, and where to draw it.
-
-				WarpInfo info = { float(dest.x), float(dest.y), extrasOfs, m_tintOfs, ref.x, ref.y };
-
-				[m_renderEncoder setVertexBuffer:pWarpmap->m_bufferId offset:0 atIndex:(unsigned) VertexInputIndex::WarpVertices];
-				[m_renderEncoder setVertexBytes:&info length:sizeof(WarpInfo) atIndex:(unsigned) VertexInputIndex::WarpInfo];
-
-				WarpFragShader shader = WarpFragShader::Edgemap;
-
-				if( pEdgemap )
-				{
-					[m_renderEncoder setFragmentBuffer:pEdgemap->m_bufferId offset:0 atIndex:(unsigned) FragmentInputIndex::Edgemap];
-				}
-				else
-				{
-					// The source is read at the position of each pixel center, so it only needs to
-					// be wrapped or clamped there, and the shaders keep it within the source rectangle
-					// if not tiling. Coverage takes care of its borders.
-
-					MetalSurface* pSurf = m_pActiveBlitSource;
-
-					_setSampler(pSurf, pSurf->isTiling() ? SamplerEdge::Tile : SamplerEdge::Clamp);
-
-					int sourceKind = 0;
-					shader = WarpFragShader::Blit;
-
-					if( pSurf->m_pPixelDescription->type == PixelType::Index )
-					{
-						shader = WarpFragShader::PaletteBlit;
-						sourceKind = pSurf->sampleMethod() == SampleMethod::Bilinear ? 1 : 0;
-					}
-					else if( pSurf->m_pixelFormat == PixelFormat::Alpha_8 )
-						sourceKind = 1;
-					else if( pSurf->m_pPixelDescription->A_mask == 0 )
-						sourceKind = 2;
-
-					[m_renderEncoder setFragmentBytes:&sourceKind length:sizeof(int) atIndex: (unsigned) FragmentInputIndex::SourceKind];
-				}
-
-				auto& pipeline = m_warpPipelines[(int)shader][(int)m_activeBlendMode][(int)m_activeCanvasFormat];
-				if( pipeline == nil )
-					pipeline = _compileWarpPipeline(shader, m_activeBlendMode, m_activeCanvasFormat);
-
-				[m_renderEncoder setRenderPipelineState:pipeline];
-
-				// Drawn once for each clip rectangle, with the part of it covered by the Warpmap as
-				// scissor.
-
-				bool bDrawn = false;
-
-				for( int i = 0 ; i < params.nRects ; i++ )
-				{
-					RectI patch = RectI::overlap(roundToPixels(pWarpRects[i]), RectI(dest, warpSize));
-
-					if( patch.w <= 0 || patch.h <= 0 )
-						continue;
-
-					MTLScissorRect metalClip = { (NSUInteger) patch.x, (NSUInteger) patch.y, (NSUInteger) patch.w, (NSUInteger) patch.h };
-					[m_renderEncoder setScissorRect:metalClip];
-					[m_renderEncoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle indexCount:NSUInteger(pWarpmap->triangleCount()) * 3
-												 indexType:MTLIndexTypeUInt16 indexBuffer:pWarpmap->m_bufferId indexBufferOffset:pWarpmap->m_indexOffset];
-					bDrawn = true;
-				}
-
-				if( bDrawn )
-				{
-					MTLScissorRect orgClip = {0, 0, (unsigned) m_activeCanvasSize.w, (unsigned) m_activeCanvasSize.h};
-					[m_renderEncoder setScissorRect:orgClip];
-				}
-				break;
-			}
-
-			case Command::DrawEdgemap:
-			case Command::TileEdgemap:
-			{
-				bool bTile = (cmd == Command::TileEdgemap);		// Origo is for one of the copies, rects give area to fill.
-
-				int32_t nRects = *p++;
-				int32_t	flip = *p++;
-
-				p++;					// padding
-
-				auto pEdgemap = static_cast<MetalEdgemap*>(m_pObjectsBeg[readObjectIndex(p)]);
-
-				auto p32 = (const spx *) p;
-				int32_t	destX = *p32++;
-				int32_t	destY = *p32++;
-				p = (const uint16_t*) p32;
-
-				//
-
-				auto& mtx = s_standardTransforms[flip];
-
-				RectSPX _destIn = {
-					destX,
-					destY,
-					pEdgemap->m_size.w * 64 * int(abs(mtx.xx)) + pEdgemap->m_size.h * 64 * int(abs(mtx.yx)),
-					pEdgemap->m_size.w * 64 * int(abs(mtx.xy)) + pEdgemap->m_size.h * 64 * int(abs(mtx.yy)),
-				};
-
-
-				int nSegments = pEdgemap->m_nbRenderSegments;
-
-				// Do transformations
-
-				RectI dest = roundToPixels(_destIn);
-
-				int uIncX = mtx.xx;
-				int vIncX = mtx.xy;
-				int uIncY = mtx.yx;
-				int vIncY = mtx.yy;
-
-				// Possibly clip the destination rectangle if we have space for more columns than we have
-
-				int maxCol = pEdgemap->m_size.w;
-				if (uIncX != 0)								// Columns are aligned horizontally
-				{
-					if (dest.w > maxCol)
-					{
-						if (uIncX < 0)
-							dest.x += dest.w - maxCol;
-						dest.w = maxCol;
-					}
-				}
-				else										// Columns are aligned vertically
-				{
-					if (dest.h > maxCol)
-					{
-						if (uIncY < 0)
-							dest.y += dest.h - maxCol;
-						dest.h = maxCol;
-					}
-				}
-
-				// Calc topLeft UV values
-
-				int uTopLeft = 0;
-				int vTopLeft = 0;
-
-				if (uIncX + uIncY < 0)
-					uTopLeft = maxCol;
-
-				if (vIncX < 0)
-					vTopLeft = dest.w;
-				else if (vIncY < 0)
-					vTopLeft = dest.h;
-
-				//
-
-				int extrasOfs = int(pExtrasMTL - m_pExtrasBuffer) / 4;
-
-				int vertexOfs = int(pVertexMTL - m_pVertexBuffer);
-
-				// Setup vertices
-
-				for (int i = 0; i < nRects; i++)
-				{
-					RectI patch = roundToPixels(*pRects++);		// Rounded like the position of the edgemap.
-
-					int		dx1 = patch.x;
-					int		dx2 = patch.x + patch.w;
-					int		dy1 = patch.y;
-					int		dy2 = patch.y + patch.h;
-
-					//
-
-
-					//
-
-					// Calc UV-coordinates. U is edge offset, V is pixel offset from begin in column.
-
-					float	u1 = (float)(uTopLeft + (patch.x - dest.x) * mtx.xx + (patch.y - dest.y) * mtx.yx);
-					float	v1 = (float)(vTopLeft + (patch.x - dest.x) * mtx.xy + (patch.y - dest.y) * mtx.yy);
-
-					float	u2 = (float)(uTopLeft + (patch.x + patch.w - dest.x) * mtx.xx + (patch.y - dest.y) * mtx.yx);
-					float	v2 = (float)(vTopLeft + (patch.x + patch.w - dest.x) * mtx.xy + (patch.y - dest.y) * mtx.yy);
-
-					float	u3 = (float)(uTopLeft + (patch.x + patch.w - dest.x) * mtx.xx + (patch.y + patch.h - dest.y) * mtx.yx);
-					float	v3 = (float)(vTopLeft + (patch.x + patch.w - dest.x) * mtx.xy + (patch.y + patch.h - dest.y) * mtx.yy);
-
-					float	u4 = (float)(uTopLeft + (patch.x - dest.x) * mtx.xx + (patch.y + patch.h - dest.y) * mtx.yx);
-					float	v4 = (float)(vTopLeft + (patch.x - dest.x) * mtx.xy + (patch.y + patch.h - dest.y) * mtx.yy);
-
-					simd_float2	uv1 = { u1, v1 - 0.5f };
-					simd_float2	uv2 = { u2, v2 - 0.5f };
-					simd_float2	uv3 = { u3, v3 - 0.5f };
-					simd_float2	uv4 = { u4, v4 - 0.5f };
-
-					//
-
-					//
-
-					pVertexMTL->coord.x = dx1;
-					pVertexMTL->coord.y = dy1;
-					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->uv = uv1;
-					pVertexMTL->tintOfs = m_tintOfs;
-					pVertexMTL++;
-
-					pVertexMTL->coord.x = dx2;
-					pVertexMTL->coord.y = dy1;
-					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->uv = uv2;
-					pVertexMTL->tintOfs = m_tintOfs;
-					pVertexMTL++;
-
-					pVertexMTL->coord.x = dx2;
-					pVertexMTL->coord.y = dy2;
-					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->uv = uv3;
-					pVertexMTL->tintOfs = m_tintOfs;
-					pVertexMTL++;
-
-					pVertexMTL->coord.x = dx1;
-					pVertexMTL->coord.y = dy1;
-					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->uv = uv1;
-					pVertexMTL->tintOfs = m_tintOfs;
-					pVertexMTL++;
-
-					pVertexMTL->coord.x = dx2;
-					pVertexMTL->coord.y = dy2;
-					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->uv = uv3;
-					pVertexMTL->tintOfs = m_tintOfs;
-					pVertexMTL++;
-
-					pVertexMTL->coord.x = dx1;
-					pVertexMTL->coord.y = dy2;
-					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->uv = uv4;
-					pVertexMTL->tintOfs = m_tintOfs;
-					pVertexMTL++;
-				}
-
-				// Setup extras data
-
-				*pExtrasMTL++ = float(pEdgemap->_flatColorsOfs());		// Flat segment colors in edgemap buffer.
-				*pExtrasMTL++ = float(pEdgemap->_tintTableOfs());		// Table of segment tint block offsets in edgemap buffer.
-				*pExtrasMTL++ = float(pEdgemap->m_nbSegments - 1);	// Edgemap pitch (edges stored per column)
-				*pExtrasMTL++ = 0;			// Dummy
-
-				// Size of the edgemap when tiled, in columns and pixels, which the shader wraps
-				// positions outside of it by. Zero when not.
-
-				*pExtrasMTL++ = bTile ? float(pEdgemap->m_size.w) : 0.f;
-				*pExtrasMTL++ = bTile ? float(pEdgemap->m_size.h) : 0.f;
-				*pExtrasMTL++ = 0;
-				*pExtrasMTL++ = 0;
-
-
-
-				//
-
-				[m_renderEncoder setFragmentBuffer:pEdgemap->m_bufferId offset:0 atIndex:(unsigned) FragmentInputIndex::Edgemap];
-
-				if( m_segmentsPipelines[nSegments-1][m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
-					m_segmentsPipelines[nSegments-1][m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileSegmentsPipeline(nSegments-1, m_tintOfs >= 0, m_activeBlendMode, m_activeCanvasFormat);
-
-				[m_renderEncoder setRenderPipelineState:m_segmentsPipelines[nSegments-1][m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
-				[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRects*6];
-
-				break;
-			}
-
-			case Command::Blit:
-			case Command::ClipBlit:
-			case Command::Tile:
-			case Command::Blur:
-			{
-				int32_t nRects = *p++;
-
-				//
-
-				int tintColorOfs = m_tintColorOfs >= 0 ? m_tintColorOfs : 0;
-				int vertexOfs = int(pVertexMTL - m_pVertexBuffer);
-
-				for (int i = 0; i < nRects; i++)
-				{
-					int	dx1 = (pRects->x) >> 6;
-					int	dy1 = (pRects->y) >> 6;
-					int dx2 = dx1 + ((pRects->w) >> 6);
-					int dy2 = dy1 + ((pRects->h) >> 6);
-					pRects++;
-
-
-					int extrasOfs = int(pExtrasMTL - m_pExtrasBuffer) / 4;
-
-					pVertexMTL->coord.x = dx1;
-					pVertexMTL->coord.y = dy1;
-					pVertexMTL->colorsOfs = tintColorOfs;
-					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintOfs = m_tintOfs;
-					pVertexMTL++;
-
-					pVertexMTL->coord.x = dx2;
-					pVertexMTL->coord.y = dy1;
-					pVertexMTL->colorsOfs = tintColorOfs;
-					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintOfs = m_tintOfs;
-					pVertexMTL++;
-
-					pVertexMTL->coord.x = dx2;
-					pVertexMTL->coord.y = dy2;
-					pVertexMTL->colorsOfs = tintColorOfs;
-					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintOfs = m_tintOfs;
-					pVertexMTL++;
-
-					pVertexMTL->coord.x = dx1;
-					pVertexMTL->coord.y = dy1;
-					pVertexMTL->colorsOfs = tintColorOfs;
-					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintOfs = m_tintOfs;
-					pVertexMTL++;
-
-					pVertexMTL->coord.x = dx2;
-					pVertexMTL->coord.y = dy2;
-					pVertexMTL->colorsOfs = tintColorOfs;
-					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintOfs = m_tintOfs;
-					pVertexMTL++;
-
-					pVertexMTL->coord.x = dx1;
-					pVertexMTL->coord.y = dy2;
-					pVertexMTL->colorsOfs = tintColorOfs;
-					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintOfs = m_tintOfs;
-					pVertexMTL++;
-
-					//
-
-					auto p32 = (const spx *) p;
-					int srcX = *p32++;
-					int srcY = *p32++;
-					spx dstX = *p32++;
-					spx dstY = *p32++;
-					p = (const uint16_t*) p32;
-
-
-					int32_t transform = *p++;
-					p++;						// padding
-
-					auto& mtx = transform < customTransformStart ? s_standardTransforms[transform] : m_pTransformsBeg[transform - customTransformStart];
-
-					// The source coordinate is where the corner of the first destination pixel lands.
-					// Standard transforms (blits, tiles and blurs, possibly flipped) map pixels 1:1,
-					// so they sample the center of each source pixel, half a pixel along the
-					// transformed axes, whichever way those point. Other transforms sample bilinear
-					// sources at the center of the texel, but nearest ones at the corner, so that
-					// stretched pixels are evenly distributed. A corner on a texel edge belongs to
-					// the texel after it, but rounding could tip it into the one before. Corners land
-					// exactly on texel edges when an axis aligned stretch has a simple ratio, so those
-					// are nudged forward by a fraction of a texel. Rotated ones practically never do,
-					// and a nudge would only move samples that weren't on an edge. Blurs always sample
-					// the center, so their fractional sample offsets round to the nearest pixel either way.
-
-					float srcOfsX, srcOfsY;
-
-					if (transform < customTransformStart)
-					{
-						srcOfsX = (mtx.xx + mtx.yx) * 0.5f;
-						srcOfsY = (mtx.xy + mtx.yy) * 0.5f;
-					}
-					else if (m_pActiveBlitSource->sampleMethod() == SampleMethod::Bilinear || cmd == Command::Blur)
-						srcOfsX = srcOfsY = 0.5f;
-					else if ((mtx.xy == 0.f && mtx.yx == 0.f) || (mtx.xx == 0.f && mtx.yy == 0.f))
-						srcOfsX = srcOfsY = 1.f / 4096;
-					else
-						srcOfsX = srcOfsY = 0.f;
-
-					*pExtrasMTL++ = srcX / 1024.f + srcOfsX;
-					*pExtrasMTL++ = srcY / 1024.f + srcOfsY;
-					*pExtrasMTL++ = float(dstX >> 6) + 0.5f;
-					*pExtrasMTL++ = float(dstY >> 6) + 0.5f;
-
-					*pExtrasMTL++ = mtx.xx;
-					*pExtrasMTL++ = mtx.xy;
-					*pExtrasMTL++ = mtx.yx;
-					*pExtrasMTL++ = mtx.yy;
-				}
-
-
-
-				// Draw
-
-				{
-					MetalSurface* pSurf = m_pActiveBlitSource;
-
-					_setSampler(pSurf, pSurf->isTiling() ? SamplerEdge::Tile : cmd == Command::ClipBlit ? SamplerEdge::Clip : SamplerEdge::Clamp);
-
-					BlitFragShader shader = BlitFragShader::Normal;
-
-					if(pSurf->m_pPixelDescription->type == PixelType::Index)
-					{
-						if( pSurf->sampleMethod() == SampleMethod::Bilinear )
-							shader = BlitFragShader::PaletteInterpolated;
-						else
-							shader = BlitFragShader::PaletteNearest;
-					}
-					else if(pSurf->m_pixelFormat == PixelFormat::Alpha_8)
-						shader = BlitFragShader::A8Source;
-					else if(pSurf->m_pPixelDescription->A_mask == 0)
-						shader = BlitFragShader::RGBXSource;
-
-					if( cmd == Command::Blur )
-					{
-						// Offsets are added to texture coordinates that are normalized against the blit
-						// source, so they are normalized against its size as well.
-
-						GpuTools::blurOffsets(m_activeBlurRadius, pSurf->pixelSize(), (float(*)[2]) m_blurUniform.offset);
-
-						[m_renderEncoder setFragmentBytes:&m_blurUniform length:sizeof(BlurUniform) atIndex: (unsigned) FragmentInputIndex::BlurUniform];
-
-						// Same source kinds as for blits, except that a palette based source always
-						// is looked up tap by tap.
-
-						BlurFragShader blurShader = BlurFragShader::Normal;
-
-						if( shader == BlitFragShader::PaletteNearest || shader == BlitFragShader::PaletteInterpolated )
-							blurShader = BlurFragShader::Palette;
-						else if( shader == BlitFragShader::A8Source )
-							blurShader = BlurFragShader::A8Source;
-						else if( shader == BlitFragShader::RGBXSource )
-							blurShader = BlurFragShader::RGBXSource;
-
-						auto& pipeline = m_blurPipelines[(int)blurShader][m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat];
-
-						if( pipeline == nil )
-							pipeline = _compileBlurPipeline( blurShader, m_tintOfs >= 0, m_activeBlendMode, m_activeCanvasFormat );
-
-						[m_renderEncoder setRenderPipelineState:pipeline ];
-					}
-					else
-					{
-						// The sampler returns zero outside a non-tiling source, which clips a
-						// ClipBlit, but for a palette based source zero is palette index 0.
-						// The palette shaders clip their taps themselves when told to.
-
-						if( shader == BlitFragShader::PaletteNearest || shader == BlitFragShader::PaletteInterpolated )
-						{
-							int clipToSource = (cmd == Command::ClipBlit && !pSurf->isTiling()) ? 1 : 0;
-							[m_renderEncoder setFragmentBytes:&clipToSource length:sizeof(int) atIndex: (unsigned) FragmentInputIndex::ClipToSource];
-						}
-
-						// A source without alpha (RGBX) reads as opaque also where the sampler returns
-						// zero, so the RGBX shaders work out the alpha themselves when clipping.
-
-						if( shader == BlitFragShader::RGBXSource )
-						{
-							int clipFlags = (cmd == Command::ClipBlit && !pSurf->isTiling()) ? 1 : 0;
-							if( pSurf->sampleMethod() == SampleMethod::Bilinear )
-								clipFlags |= 2;
-							[m_renderEncoder setFragmentBytes:&clipFlags length:sizeof(int) atIndex: (unsigned) FragmentInputIndex::ClipToSource];
-						}
-
-						if(m_blitPipelines[(int)shader][m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
-							m_blitPipelines[(int)shader][m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileBlitPipeline( shader, m_tintOfs >= 0, m_activeBlendMode, m_activeCanvasFormat );
-
-						[m_renderEncoder setRenderPipelineState:m_blitPipelines[(int)shader][m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
-					}
-
-					[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRects*6];
-					vertexOfs += nRects*6;
-				}
-
-				break;
-			}
-
-
-			default:
-				break;
-		}
-	}
-
-	// Save progress.
-
-	m_pRectsPtr = pRects;
-	m_pColorsPtr = pColors;
-
-	m_nVertices			= int(pVertexMTL - m_pVertexBuffer);
-	m_nColors			= int(pColorMTL	- m_pColorBuffer);
-	m_extrasBufferSize	= int(pExtrasMTL - m_pExtrasBuffer);
-
-	//		_executeBuffer();
-
-}
-
-
-
 
 //____ autopresent() ________________________________________________
 
@@ -2079,94 +278,848 @@ void MetalBackend::autopresent( id<MTLDrawable> drawable )
 	m_drawableToAutoPresent = drawable;
 }
 
+//____ _isRecording() ________________________________________________________
+//
+// Each session records into a command buffer of its own, so all we need is a device.
 
-//____ _setCanvas() ___________________________________________________________
-
-id<MTLRenderCommandEncoder> MetalBackend::_setCanvas( MetalSurface * pCanvas, int width, int height )
+bool MetalBackend::_isRecording() const
 {
-	id<MTLRenderCommandEncoder> renderEncoder;
-
-	DestFormat destFormat = DestFormat::BGRA8_sRGB;
-	bool bValidFormat = true;
-
-	if (pCanvas)
-	{
-		MTLRenderPassDescriptor* pDescriptor = [MTLRenderPassDescriptor new];
-
-		pDescriptor.colorAttachments[0].texture = pCanvas->getTexture();
-		pDescriptor.colorAttachments[0].storeAction = MTLStoreActionStore;
-		//		pDescriptor.colorAttachments[0].loadAction = m_bFullCanvasSession ? MTLLoadActionDontCare : MTLLoadActionLoade;
-		pDescriptor.colorAttachments[0].loadAction = MTLLoadActionLoad;
-
-		renderEncoder = [m_metalCommandBuffer renderCommandEncoderWithDescriptor:pDescriptor];
-		renderEncoder.label = @"MetalBackend Render to Surface Pass";
-		[pDescriptor release];
-
-		bValidFormat = _toDestFormat(pCanvas->pixelFormat(), pCanvas->colorSpace(), destFormat);
-	}
-	else
-	{
-
-		renderEncoder = [m_metalCommandBuffer renderCommandEncoderWithDescriptor:m_defaultCanvasRenderPassDesc];
-		renderEncoder.label = @"MetalBackend Render Pass";
-
-		destFormat = m_defaultCanvasDestFormat;
-	}
-
-	[renderEncoder setViewport:(MTLViewport){0.0, 0.0, (double) width, (double) height, 0.0, 1.0 }];
-	[renderEncoder setFragmentBytes:&m_activeMorphFactor length:sizeof(float) atIndex:(unsigned) FragmentInputIndex::MorphFactor];
-
-
-	// Updating canvas info for our shaders
-
-	m_uniform.canvasDimX = (float) width;
-	m_uniform.canvasDimY = (float) height;
-	m_uniform.canvasYOfs = height;
-	m_uniform.canvasYMul = -1;
-
-	[renderEncoder setVertexBytes:&m_uniform length:sizeof(Uniform) atIndex: (unsigned) VertexInputIndex::Uniform];
-
-	// Set vertex and extras buffer
-
-	[renderEncoder setVertexBuffer:m_vertexBufferId offset:0 atIndex:(unsigned) VertexInputIndex::VertexBuffer];
-	[renderEncoder setVertexBuffer:m_colorBufferId offset:0 atIndex:(unsigned) VertexInputIndex::ColorBuffer];
-	[renderEncoder setVertexBuffer:m_extrasBufferId offset:0 atIndex:(unsigned) VertexInputIndex::ExtrasBuffer];
-
-	//
-
-	[renderEncoder setFragmentBuffer:m_colorBufferId offset:0 atIndex:(unsigned) FragmentInputIndex::ColorBuffer];
-	[renderEncoder setFragmentBuffer:m_extrasBufferId offset:0 atIndex:(unsigned) FragmentInputIndex::ExtrasBuffer];
-
-	//
-
-	m_pActiveCanvas = pCanvas;
-	m_activeCanvasSize = {width,height};
-
-	m_activeCanvasFormat = destFormat;
-
-	if( !bValidFormat )
-		Base::throwError(ErrorLevel::Error, ErrorCode::Internal, "Canvas format is neither ARGB_8, XRGB_8 or Alpha_8", this, &TYPEINFO, __func__, __FILE__, __LINE__ );
-
-
-	return renderEncoder;
+	return s_metalDevice != nil && s_metalCommandQueue != nil;
 }
 
+//____ _isNativeSurface() ____________________________________________________
 
-//____ _setSampler() __________________________________________________________
-//
-// Palette based sources are read through a nearest sampler, so that the taps don't
-// blend indexes.
-
-void MetalBackend::_setSampler( MetalSurface * pSurf, SamplerEdge edge )
+bool MetalBackend::_isNativeSurface( const Object * pObject ) const
 {
-	id<MTLSamplerState> sampler;
+	return pObject && _isOfType(pObject->typeInfo(), MetalSurface::TYPEINFO);
+}
 
-	if( pSurf->pixelDescription()->type == PixelType::Index )
-		sampler = m_samplers[0][0][(int)edge];
+//____ _isNativeEdgemap() ____________________________________________________
+
+bool MetalBackend::_isNativeEdgemap( const Object * pObject ) const
+{
+	return pObject && _isOfType(pObject->typeInfo(), MetalEdgemap::TYPEINFO);
+}
+
+//____ _isNativeWarpmap() ____________________________________________________
+
+bool MetalBackend::_isNativeWarpmap( const Object * pObject ) const
+{
+	return pObject && _isOfType(pObject->typeInfo(), MetalWarpmap::TYPEINFO);
+}
+
+//____ _beginSessionOnDevice() _______________________________________________
+
+void MetalBackend::_beginSessionOnDevice( Surface * pCanvas )
+{
+	// The command buffer and encoders we get from Metal are autoreleased and the
+	// command buffer keeps our buffers alive. If no autorelease pool is drained
+	// between sessions, as when rendering from a loop of our own, they would pile
+	// up until Metal runs out of memory, so we give each session a pool of its own.
+
+	m_pSessionPool = [[NSAutoreleasePool alloc] init];
+
+	m_commandBuffer = [s_metalCommandQueue commandBuffer];
+	m_commandBuffer.label = @"MetalBackend";
+
+	m_pCanvasSurface = nullptr;
+	m_bDefaultCanvasLoaded = false;
+	m_targetFormat = MTLPixelFormatInvalid;
+	m_targetSize = SizeI();
+}
+
+//____ _endSessionOnDevice() _________________________________________________
+
+void MetalBackend::_endSessionOnDevice()
+{
+	_endEncoding();
+
+	if( m_commandBuffer )
+	{
+		m_flushesInProgress++;
+
+		// Schedule a present once the framebuffer is complete using the current drawable.
+
+		if( m_drawableToAutoPresent != nil )
+		{
+			[m_commandBuffer presentDrawable:m_drawableToAutoPresent];
+			m_drawableToAutoPresent = nil;
+		}
+
+		[m_commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> cb) {
+			m_flushesInProgress--;
+		}];
+
+		[m_commandBuffer commit];
+		[m_commandBuffer waitUntilScheduled];
+	}
+
+	m_commandBuffer = nil;			// Autoreleased, Metal keeps it until it is done.
+
+	// The command buffer keeps the buffers it reads until it is done with them.
+
+	[m_vertexBuffer release];
+	[m_colorBuffer release];
+	[m_extrasBuffer release];
+	m_vertexBuffer = nil;
+	m_colorBuffer = nil;
+	m_extrasBuffer = nil;
+	m_buffers = FrameBuffers();
+
+	// What we rendered isn't in the CPU side buffers of the canvases. Set once the session is
+	// committed, so that syncing them comes after it in the queue.
+
+	for( auto& pCanvas : m_sessionCanvases )
+		pCanvas->m_bBufferNeedsSync = true;
+
+	m_sessionCanvases.clear();
+
+	m_pCanvasSurface = nullptr;
+	m_targetSize = SizeI();
+	m_targetFormat = MTLPixelFormatInvalid;
+	m_activePipeline = nil;
+	m_boundTexture = nil;
+	m_boundSampler = nil;
+	m_boundEdgemapOrPalette = nil;
+
+	[m_pSessionPool drain];
+	m_pSessionPool = nil;
+}
+
+//____ _reserveFrameBuffers() ________________________________________________
+//
+// Each session gets buffers of its own, as big as it needs. Its command buffer keeps them until
+// the GPU is done with them, so nothing in flight is ever written to.
+
+bool MetalBackend::_reserveFrameBuffers( int nVertices, int nColors, int nExtras, int nObjects )
+{
+	auto create = [](id<MTLBuffer>& buffer, auto*& pBeg, auto*& pPtr, auto*& pEnd, int needed) -> bool
+	{
+		typedef typename std::remove_reference<decltype(*pBeg)>::type Entry;
+
+		if( needed < 1 )
+			needed = 1;
+
+		[buffer release];
+		buffer = [s_metalDevice newBufferWithLength:size_t(needed) * sizeof(Entry) options:MTLResourceStorageModeShared];
+
+		if( buffer == nil )
+		{
+			pBeg = pPtr = pEnd = nullptr;
+			return false;
+		}
+
+		pBeg = (Entry*) [buffer contents];
+		pPtr = pBeg;
+		pEnd = pBeg + needed;
+		return true;
+	};
+
+	bool bOK = create(m_vertexBuffer, m_buffers.pVertexBeg, m_buffers.pVertexPtr, m_buffers.pVertexEnd, nVertices);
+	bOK = create(m_colorBuffer, m_buffers.pColorBeg, m_buffers.pColorPtr, m_buffers.pColorEnd, nColors) && bOK;
+	bOK = create(m_extrasBuffer, m_buffers.pExtrasBeg, m_buffers.pExtrasPtr, m_buffers.pExtrasEnd, nExtras) && bOK;
+
+	if( m_renderEncoder )
+		_bindEncoderState();
+
+	return bOK;
+}
+
+//____ _bindCanvas() _________________________________________________________
+
+bool MetalBackend::_bindCanvas( Surface * pCanvas, SizeI& size, CanvasKind& kind )
+{
+	if( !m_commandBuffer )
+		return false;
+
+	auto pSurface = static_cast<MetalSurface*>(pCanvas);
+
+	if( pSurface && (pSurface->m_texture == nil || (pSurface->m_texture.usage & MTLTextureUsageRenderTarget) == 0) )
+	{
+		Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Surface can not be used as canvas, rendering to default canvas instead.",
+			this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		pSurface = nullptr;
+	}
+
+	// A render pass per canvas. What was bound belongs to the one that ends.
+
+	_endEncoding();
+
+	m_pCanvasSurface = pSurface;
+	m_activePipeline = nil;
+	m_boundTexture = nil;
+	m_boundSampler = nil;
+	m_boundEdgemapOrPalette = nil;
+
+	if( pSurface )
+	{
+		m_targetFormat = pSurface->m_texture.pixelFormat;
+		m_targetSize = pSurface->pixelSize();
+		kind = _canvasKind(pSurface);
+
+		// Its mip levels no longer match what we draw into level 0.
+
+		pSurface->m_bMipmapStale = pSurface->m_bMipmapped;
+
+		auto isCanvas = [pSurface](const MetalSurface_p& p) { return p.rawPtr() == pSurface; };
+
+		if( std::none_of(m_sessionCanvases.begin(), m_sessionCanvases.end(), isCanvas) )
+			m_sessionCanvases.push_back(pSurface);
+	}
 	else
-		sampler = m_samplers[pSurf->isMipmapped()][pSurf->sampleMethod() == SampleMethod::Bilinear][(int)edge];
+	{
+		if( m_defaultCanvasRenderPassDesc == nil )
+		{
+			m_targetSize = SizeI();
+			return false;
+		}
 
-	[m_renderEncoder setFragmentSamplerState:sampler atIndex:0];
+		// The pipelines must match the texture the render pass draws into.
+
+		id<MTLTexture> texture = m_defaultCanvasRenderPassDesc.colorAttachments[0].texture;
+
+		m_targetFormat = texture ? texture.pixelFormat : m_defaultCanvasFormat;
+		m_targetSize = { m_defaultCanvas.size.w / 64, m_defaultCanvas.size.h / 64 };
+
+		if( m_defaultCanvas.format == PixelFormat::Alpha_8 )
+			kind = CanvasKind::AlphaOnly;
+		else if( m_defaultCanvas.format == PixelFormat::XRGB_8 )
+			kind = CanvasKind::WithoutAlpha;
+		else
+			kind = CanvasKind::WithAlpha;
+	}
+
+	m_scissor = { 0, 0, NSUInteger(m_targetSize.w), NSUInteger(m_targetSize.h) };
+	m_bScissorEmpty = (m_targetSize.w <= 0 || m_targetSize.h <= 0);
+
+	if( !_beginEncoding() )
+		return false;
+
+	size = m_targetSize;
+	return true;
+}
+
+//____ _beginEncoding() ______________________________________________________
+//
+// Begins a render pass on the canvas, keeping what is in it already. The descriptor of the
+// default canvas is the one we were given for the first pass of a session, which may clear it.
+
+bool MetalBackend::_beginEncoding()
+{
+	if( !m_commandBuffer )
+		return false;
+
+	MTLRenderPassDescriptor * pDescriptor;
+
+	if( m_pCanvasSurface )
+	{
+		pDescriptor = [MTLRenderPassDescriptor renderPassDescriptor];		// Autoreleased.
+		pDescriptor.colorAttachments[0].texture = m_pCanvasSurface->m_texture;
+		pDescriptor.colorAttachments[0].loadAction = MTLLoadActionLoad;
+		pDescriptor.colorAttachments[0].storeAction = MTLStoreActionStore;
+	}
+	else
+	{
+		if( m_defaultCanvasRenderPassDesc == nil )
+			return false;
+
+		if( m_bDefaultCanvasLoaded )
+		{
+			pDescriptor = [[m_defaultCanvasRenderPassDesc copy] autorelease];
+			pDescriptor.colorAttachments[0].loadAction = MTLLoadActionLoad;
+		}
+		else
+			pDescriptor = m_defaultCanvasRenderPassDesc;
+
+		m_bDefaultCanvasLoaded = true;
+	}
+
+	m_renderEncoder = [m_commandBuffer renderCommandEncoderWithDescriptor:pDescriptor];		// Autoreleased.
+
+	if( m_renderEncoder == nil )
+	{
+		Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to begin a render pass.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		return false;
+	}
+
+	m_renderEncoder.label = m_pCanvasSurface ? @"MetalBackend Render to Surface Pass" : @"MetalBackend Render Pass";
+
+	_bindEncoderState();
+	return true;
+}
+
+//____ _endEncoding() ________________________________________________________
+
+void MetalBackend::_endEncoding()
+{
+	if( m_renderEncoder )
+	{
+		[m_renderEncoder endEncoding];
+		m_renderEncoder = nil;
+	}
+}
+
+//____ _bindEncoderState() ___________________________________________________
+//
+// Binds everything to a new render encoder: the buffers of the session and whatever was bound
+// to the one before it on the same canvas.
+
+void MetalBackend::_bindEncoderState()
+{
+	[m_renderEncoder setViewport:(MTLViewport){ 0.0, 0.0, double(m_targetSize.w), double(m_targetSize.h), 0.0, 1.0 }];
+
+	if( !m_bScissorEmpty )
+		[m_renderEncoder setScissorRect:m_scissor];
+
+	[m_renderEncoder setVertexBuffer:m_vertexBuffer offset:0 atIndex:BufferIndex::Vertices];
+	[m_renderEncoder setVertexBuffer:m_colorBuffer offset:0 atIndex:BufferIndex::Colors];
+	[m_renderEncoder setVertexBuffer:m_extrasBuffer offset:0 atIndex:BufferIndex::Extras];
+	[m_renderEncoder setFragmentBuffer:m_colorBuffer offset:0 atIndex:BufferIndex::Colors];
+	[m_renderEncoder setFragmentBuffer:m_extrasBuffer offset:0 atIndex:BufferIndex::Extras];
+
+	if( m_activePipeline )
+		[m_renderEncoder setRenderPipelineState:m_activePipeline];
+
+	if( m_boundTexture )
+		[m_renderEncoder setFragmentTexture:m_boundTexture atIndex:c_blitSourceTexture];
+
+	if( m_boundSampler )
+		[m_renderEncoder setFragmentSamplerState:m_boundSampler atIndex:c_blitSampler];
+
+	if( m_boundEdgemapOrPalette )
+		[m_renderEncoder setFragmentBuffer:m_boundEdgemapOrPalette offset:0 atIndex:BufferIndex::EdgemapOrPalette];
+
+	m_bConstantsDirty = true;
+}
+
+//____ _setPipeline() ________________________________________________________
+
+bool MetalBackend::_setPipeline( PipelineKind kind )
+{
+	if( !m_renderEncoder )
+		return false;
+
+	id<MTLRenderPipelineState> pipeline = _pipeline(kind, m_activeBlendMode);
+	if( pipeline == nil )
+		return false;
+
+	if( pipeline != m_activePipeline )
+	{
+		[m_renderEncoder setRenderPipelineState:pipeline];
+		m_activePipeline = pipeline;
+	}
+
+	return true;
+}
+
+//____ _pipeline() ___________________________________________________________
+//
+// The pipeline for the given kind and blend mode on the canvas we are rendering into, created
+// the first time a combination shows up.
+
+id<MTLRenderPipelineState> MetalBackend::_pipeline( PipelineKind kind, BlendMode blendMode )
+{
+	if( blendMode == BlendMode::Ignore )
+		return nil;							// Nothing should be drawn.
+
+	BlendMode mode = _normalizeBlendMode(blendMode);
+
+	uint64_t key = (uint64_t(m_targetFormat) << 24) | (uint64_t(m_activeCanvasKind) << 16) | (uint64_t(kind) << 8) | uint64_t(mode);
+
+	auto it = m_pipelines.find(key);
+	if( it != m_pipelines.end() )
+		return it->second;					// May be nil, if creation failed before.
+
+	id<MTLRenderPipelineState> pipeline = _createPipeline(kind, mode, m_targetFormat, m_activeCanvasKind);
+	m_pipelines[key] = pipeline;
+	return pipeline;
+}
+
+//____ _createPipeline() _____________________________________________________
+/*
+	Blending as DX12Backend::_createPipeline() and VulkanBackend::_createPipeline() have it, see
+	there for why. Canvases with alpha hold premultiplied colors. The pixel shaders pass what they
+	draw to the blender as the mode needs it, see output.hlsl, Replace, Morph and Multiply keeping
+	the uncovered part of the pixel by the second color of dual-source blending.
+
+	An alpha only canvas is R8 here, as in VulkanBackend. The shaders write the value to all
+	channels for it, so the factors of alpha are those of color. Canvases without alpha are
+	opaque, their alpha is left alone.
+*/
+
+id<MTLRenderPipelineState> MetalBackend::_createPipeline( PipelineKind kind, BlendMode blendMode, MTLPixelFormat format, CanvasKind canvasKind )
+{
+	bool bAlphaOnly = (canvasKind == CanvasKind::AlphaOnly);
+	bool bNoAlpha = (canvasKind == CanvasKind::WithoutAlpha);
+	bool bPartialCoverage = _hasPartialCoverage(kind);
+
+	BOOL				bBlend = YES;
+	MTLBlendOperation	op = MTLBlendOperationAdd;
+	MTLBlendFactor		srcBlend = MTLBlendFactorOne;
+	MTLBlendFactor		destBlend = MTLBlendFactorZero;
+	bool				bKeepAlpha = false;
+	bool				bInvertAlpha = false;
+
+	switch( blendMode )
+	{
+		case BlendMode::Replace:
+			srcBlend = MTLBlendFactorOne;
+			destBlend = MTLBlendFactorOneMinusSource1Alpha;
+			bBlend = bPartialCoverage ? YES : NO;
+			break;
+
+		case BlendMode::Blend:
+			srcBlend = MTLBlendFactorOne;
+			destBlend = MTLBlendFactorOneMinusSourceAlpha;
+			break;
+
+		case BlendMode::Morph:
+			srcBlend = MTLBlendFactorOne;
+			destBlend = MTLBlendFactorOneMinusSource1Alpha;
+			break;
+
+		case BlendMode::Add:
+		case BlendMode::Subtract:
+			op = (blendMode == BlendMode::Add) ? MTLBlendOperationAdd : MTLBlendOperationReverseSubtract;
+			srcBlend = MTLBlendFactorOne;
+			destBlend = MTLBlendFactorOne;
+			bKeepAlpha = (blendMode == BlendMode::Subtract);
+			break;
+
+		case BlendMode::Multiply:
+			srcBlend = bAlphaOnly ? MTLBlendFactorDestinationAlpha : MTLBlendFactorDestinationColor;
+			destBlend = MTLBlendFactorOneMinusSource1Alpha;
+			bKeepAlpha = true;
+			break;
+
+		case BlendMode::Invert:
+			srcBlend = bAlphaOnly ? MTLBlendFactorOneMinusDestinationAlpha : MTLBlendFactorOneMinusDestinationColor;
+			destBlend = bAlphaOnly ? MTLBlendFactorOneMinusSourceAlpha : MTLBlendFactorOneMinusSourceColor;
+			bInvertAlpha = !bAlphaOnly;
+			break;
+
+		case BlendMode::Min:
+		case BlendMode::Max:
+			op = (blendMode == BlendMode::Min) ? MTLBlendOperationMin : MTLBlendOperationMax;
+			srcBlend = MTLBlendFactorOne;
+			destBlend = MTLBlendFactorOne;
+			bKeepAlpha = (blendMode == BlendMode::Min);
+			break;
+
+		default:
+		{
+			char buffer[128];
+			snprintf(buffer, sizeof(buffer), "BlendMode %d is unknown, using Blend.", (int) blendMode);
+			Base::throwError(ErrorLevel::Warning, ErrorCode::Other, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+
+			srcBlend = MTLBlendFactorOne;
+			destBlend = MTLBlendFactorOneMinusSourceAlpha;
+			break;
+		}
+	}
+
+	// The value of an alpha only canvas is in R, as are the alphas the shaders output for it.
+
+	if( bAlphaOnly )
+	{
+		auto toColor = [](MTLBlendFactor factor)
+		{
+			switch( factor )
+			{
+				case MTLBlendFactorSourceAlpha:					return MTLBlendFactorSourceColor;
+				case MTLBlendFactorOneMinusSourceAlpha:			return MTLBlendFactorOneMinusSourceColor;
+				case MTLBlendFactorDestinationAlpha:			return MTLBlendFactorDestinationColor;
+				case MTLBlendFactorOneMinusDestinationAlpha:	return MTLBlendFactorOneMinusDestinationColor;
+				case MTLBlendFactorSource1Alpha:				return MTLBlendFactorSource1Color;
+				case MTLBlendFactorOneMinusSource1Alpha:		return MTLBlendFactorOneMinusSource1Color;
+				default:										return factor;
+			}
+		};
+
+		srcBlend = toColor(srcBlend);
+		destBlend = toColor(destBlend);
+		bKeepAlpha = false;
+	}
+
+	bool bDualSource = bBlend && (destBlend == MTLBlendFactorOneMinusSource1Alpha || destBlend == MTLBlendFactorOneMinusSource1Color);
+
+	MTLRenderPipelineDescriptor * pDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
+	MTLRenderPipelineColorAttachmentDescriptor * pAttachment = pDescriptor.colorAttachments[0];
+
+	pAttachment.pixelFormat = format;
+	pAttachment.blendingEnabled = bBlend;
+	pAttachment.rgbBlendOperation = op;
+	pAttachment.sourceRGBBlendFactor = srcBlend;
+	pAttachment.destinationRGBBlendFactor = destBlend;
+
+	if( bKeepAlpha )
+	{
+		pAttachment.alphaBlendOperation = MTLBlendOperationAdd;
+		pAttachment.sourceAlphaBlendFactor = MTLBlendFactorZero;
+		pAttachment.destinationAlphaBlendFactor = MTLBlendFactorOne;
+	}
+	else if( bInvertAlpha )
+	{
+		pAttachment.alphaBlendOperation = MTLBlendOperationAdd;
+		pAttachment.sourceAlphaBlendFactor = MTLBlendFactorOneMinusDestinationAlpha;
+		pAttachment.destinationAlphaBlendFactor = MTLBlendFactorOne;
+	}
+	else
+	{
+		// Alpha can't take color factors, but none of these is one, except on an alpha only
+		// canvas, which has no alpha.
+
+		auto toAlpha = [](MTLBlendFactor factor)
+		{
+			switch( factor )
+			{
+				case MTLBlendFactorSourceColor:					return MTLBlendFactorSourceAlpha;
+				case MTLBlendFactorOneMinusSourceColor:			return MTLBlendFactorOneMinusSourceAlpha;
+				case MTLBlendFactorDestinationColor:			return MTLBlendFactorDestinationAlpha;
+				case MTLBlendFactorOneMinusDestinationColor:	return MTLBlendFactorOneMinusDestinationAlpha;
+				case MTLBlendFactorSource1Color:				return MTLBlendFactorSource1Alpha;
+				case MTLBlendFactorOneMinusSource1Color:		return MTLBlendFactorOneMinusSource1Alpha;
+				default:										return factor;
+			}
+		};
+
+		pAttachment.alphaBlendOperation = op;
+		pAttachment.sourceAlphaBlendFactor = toAlpha(srcBlend);
+		pAttachment.destinationAlphaBlendFactor = toAlpha(destBlend);
+	}
+
+	// A canvas without alpha has an alpha channel here, which is left alone. Reading it as a blit
+	// source gives alpha 1 regardless, see MetalSurface::sampleTexture().
+
+	if( bNoAlpha )
+		pAttachment.writeMask = MTLColorWriteMaskRed | MTLColorWriteMaskGreen | MTLColorWriteMaskBlue;
+
+	// Shaders, see compile_shaders.py. Kinds with the same geometry share a vertex shader.
+
+	static const char * const vertexShaders[int(PipelineKind::Size)] = {
+		"fillVS", "fillAAVS", "blitVS", "blitVS", "blitVS", "blitVS",
+		"lineVS", "segmentsVS", "shapeVS", "warpVS", "warpVS", "warpVS" };
+
+	static const char * const pixelShaders[int(PipelineKind::Size)][2] = {
+		{ "fillPS", "fillPSDual" },
+		{ "fillAAPS", "fillAAPSDual" },
+		{ "blitPS", "blitPSDual" },
+		{ "blurPS", "blurPSDual" },
+		{ "paletteBlitPS", "paletteBlitPSDual" },
+		{ "paletteBlurPS", "paletteBlurPSDual" },
+		{ "linePS", "linePSDual" },
+		{ "segmentsPS", "segmentsPSDual" },
+		{ "shapePS", "shapePSDual" },
+		{ "warpEdgemapPS", "warpEdgemapPSDual" },
+		{ "warpBlitPS", "warpBlitPSDual" },
+		{ "warpPaletteBlitPS", "warpPaletteBlitPSDual" } };
+
+	pDescriptor.vertexFunction = _function(vertexShaders[int(kind)]);
+	pDescriptor.fragmentFunction = _function(pixelShaders[int(kind)][bDualSource ? 1 : 0]);
+
+	// One vertex layout for all but warps, whose vertex shader reads the vertices of the Warpmap
+	// itself. Only the attributes the vertex shader reads, see ../hlsl/README.md.
+
+	MTLVertexDescriptor * pVertexDescriptor = nil;
+
+	if( !_isWarp(kind) )
+	{
+		pVertexDescriptor = [[MTLVertexDescriptor alloc] init];
+
+		int nAttributes;
+
+		switch( kind )
+		{
+			case PipelineKind::Fill:		nAttributes = 2; break;
+			case PipelineKind::Segments:	nAttributes = 4; break;
+			default:						nAttributes = 3; break;
+		}
+
+		const MTLVertexFormat formats[4] = { MTLVertexFormatFloat2, MTLVertexFormatUInt, MTLVertexFormatUInt, MTLVertexFormatFloat2 };
+		const NSUInteger offsets[4] = { offsetof(Vertex, x), offsetof(Vertex, colorOfs), offsetof(Vertex, extrasOfs), offsetof(Vertex, u) };
+
+		for( int i = 0 ; i < nAttributes ; i++ )
+		{
+			pVertexDescriptor.attributes[i].format = formats[i];
+			pVertexDescriptor.attributes[i].offset = offsets[i];
+			pVertexDescriptor.attributes[i].bufferIndex = BufferIndex::Vertices;
+		}
+
+		pVertexDescriptor.layouts[BufferIndex::Vertices].stride = sizeof(Vertex);
+		pVertexDescriptor.layouts[BufferIndex::Vertices].stepFunction = MTLVertexStepFunctionPerVertex;
+
+		pDescriptor.vertexDescriptor = pVertexDescriptor;
+	}
+
+	NSError * pError = nil;			// Autoreleased.
+	id<MTLRenderPipelineState> pipeline = nil;
+
+	if( pDescriptor.vertexFunction != nil && pDescriptor.fragmentFunction != nil )
+		pipeline = [s_metalDevice newRenderPipelineStateWithDescriptor:pDescriptor error:&pError];
+
+	if( pipeline == nil )
+	{
+		NSString * pMessage = [NSString stringWithFormat:@"Failed to create pipeline %s/%s: %@", vertexShaders[int(kind)], pixelShaders[int(kind)][bDualSource ? 1 : 0],
+							   pError ? pError.localizedDescription : @"shader function missing"];
+		Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, pMessage.UTF8String, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+	}
+
+	[pVertexDescriptor release];
+	[pDescriptor release];
+
+	return pipeline;
+}
+
+//____ _function() ___________________________________________________________
+//
+// A shader of wax_metalshaders.mm, compiled the first time it is asked for. Each is a library of
+// its own, as the shaders declare the same types. Math is kept as precise as in DX12 and Vulkan,
+// not Metal's default fast math, which the shaders aren't written for.
+
+id<MTLFunction> MetalBackend::_function( const char * pName )
+{
+	auto it = m_functions.find(pName);
+	if( it != m_functions.end() )
+		return it->second;
+
+	const char * pSource = nullptr;
+
+	for( int i = 0 ; i < s_nbShaderSources ; i++ )
+	{
+		if( std::strcmp(s_shaderSources[i].pName, pName) == 0 )
+		{
+			pSource = s_shaderSources[i].pSource;
+			break;
+		}
+	}
+
+	id<MTLFunction> function = nil;
+
+	if( pSource )
+	{
+		MTLCompileOptions * pOptions = [[MTLCompileOptions alloc] init];
+		pOptions.languageVersion = MTLLanguageVersion2_3;
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+		pOptions.fastMathEnabled = NO;
+#pragma clang diagnostic pop
+
+		NSString * pString = [[NSString alloc] initWithUTF8String:pSource];
+		NSError * pError = nil;		// Autoreleased.
+
+		id<MTLLibrary> library = [s_metalDevice newLibraryWithSource:pString options:pOptions error:&pError];
+
+		[pString release];
+		[pOptions release];
+
+		if( library != nil )
+		{
+			m_libraries.push_back(library);
+
+			NSString * pFunctionName = [[NSString alloc] initWithUTF8String:pName];
+			function = [library newFunctionWithName:pFunctionName];
+			[pFunctionName release];
+		}
+
+		if( function == nil )
+		{
+			NSString * pMessage = [NSString stringWithFormat:@"Failed to compile shader %s: %@", pName, pError ? pError.localizedDescription : @"function missing"];
+			Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, pMessage.UTF8String, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		}
+	}
+	else
+	{
+		char buffer[128];
+		snprintf(buffer, sizeof(buffer), "Shader %s is missing, run compile_shaders.py.", pName);
+		Base::throwError(ErrorLevel::Error, ErrorCode::Internal, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+	}
+
+	m_functions[pName] = function;			// Kept also when nil, so we don't try again and again.
+	return function;
+}
+
+//____ _setConstants() _______________________________________________________
+//
+// The shaders have the three blocks as one, see ShaderConstants, which is sent with the next draw.
+
+void MetalBackend::_setConstants( ConstantBlock block )
+{
+	static_assert(sizeof(CanvasConstants) == 32 && sizeof(PixelConstants) == 16 && sizeof(WarpConstants) == 32, "Constant blocks must match constants.hlsl");
+	static_assert(offsetof(ShaderConstants, pixel) == 32 && offsetof(ShaderConstants, warp) == 48, "Constant blocks must be where constants.hlsl has them");
+
+	switch( block )
+	{
+		case ConstantBlock::Canvas:
+			m_constants.canvas = m_canvasConstants;
+			break;
+
+		case ConstantBlock::Pixel:
+			m_constants.pixel = m_pixelConstants;
+			break;
+
+		case ConstantBlock::Warp:
+			m_constants.warp = m_warpConstants;
+			break;
+	}
+
+	m_bConstantsDirty = true;
+}
+
+//____ _flushConstants() _____________________________________________________
+
+void MetalBackend::_flushConstants()
+{
+	if( !m_bConstantsDirty || !m_renderEncoder )
+		return;
+
+	[m_renderEncoder setVertexBytes:&m_constants length:sizeof(ShaderConstants) atIndex:BufferIndex::Constants];
+	[m_renderEncoder setFragmentBytes:&m_constants length:sizeof(ShaderConstants) atIndex:BufferIndex::Constants];
+
+	m_bConstantsDirty = false;
+}
+
+//____ _draw() _______________________________________________________________
+
+void MetalBackend::_draw( int firstVertex, int nVertices )
+{
+	if( !m_renderEncoder || nVertices <= 0 || m_bScissorEmpty )
+		return;
+
+	_flushConstants();
+	[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:NSUInteger(firstVertex) vertexCount:NSUInteger(nVertices)];
+}
+
+//____ _setScissor() _________________________________________________________
+//
+// Metal takes no scissor rect reaching outside the canvas, nor an empty one, so for one that is
+// empty nothing is drawn instead.
+
+void MetalBackend::_setScissor( const RectI& rect )
+{
+	int x1 = std::max(rect.x, 0);
+	int y1 = std::max(rect.y, 0);
+	int x2 = std::min(rect.x + rect.w, m_targetSize.w);
+	int y2 = std::min(rect.y + rect.h, m_targetSize.h);
+
+	m_bScissorEmpty = (x2 <= x1 || y2 <= y1);
+
+	if( m_bScissorEmpty )
+		return;
+
+	m_scissor = { NSUInteger(x1), NSUInteger(y1), NSUInteger(x2 - x1), NSUInteger(y2 - y1) };
+
+	if( m_renderEncoder )
+		[m_renderEncoder setScissorRect:m_scissor];
+}
+
+//____ _resetScissor() _______________________________________________________
+
+void MetalBackend::_resetScissor()
+{
+	_setScissor( RectI(0, 0, m_targetSize.w, m_targetSize.h) );
+}
+
+//____ _prepareBlitSource() __________________________________________________
+//
+// MetalSurface copies what is written to its pixels to the texture right away.
+
+void MetalBackend::_prepareBlitSource( Surface * pSurface )
+{
+}
+
+//____ _bindBlitTexture() ____________________________________________________
+
+bool MetalBackend::_bindBlitTexture( Surface * pSurface )
+{
+	auto pSource = static_cast<MetalSurface*>(pSurface);
+
+	if( !m_renderEncoder || pSource->m_texture == nil )
+		return false;
+
+	// Mip levels that no longer match level 0 are drawn before anything reads them, between
+	// render passes on the canvas.
+
+	if( pSource->m_bMipmapStale )
+	{
+		_endEncoding();
+		_generateMipmaps(pSource);
+
+		if( !_beginEncoding() )
+			return false;
+	}
+
+	id<MTLTexture> texture = pSource->sampleTexture();
+
+	[m_renderEncoder setFragmentTexture:texture atIndex:c_blitSourceTexture];
+	m_boundTexture = texture;
+
+	// A palette based source has its palette where edgemaps go, which is free while we blit.
+	// Drawing an edgemap clears m_bBlitSourceBound, so it is put back afterwards.
+
+	if( pSource->pixelDescription()->type == PixelType::Index )
+	{
+		id<MTLBuffer> palette = pSource->paletteColors();
+
+		if( palette == nil )
+			return false;
+
+		[m_renderEncoder setFragmentBuffer:palette offset:0 atIndex:BufferIndex::EdgemapOrPalette];
+		m_boundEdgemapOrPalette = palette;
+	}
+
+	return true;
+}
+
+//____ _bindBlitSampler() ____________________________________________________
+
+void MetalBackend::_bindBlitSampler( Surface * pSurface, bool bClip )
+{
+	if( !m_renderEncoder )
+		return;
+
+	int index = (bClip ? 4 : 0) + (pSurface->isTiling() ? 2 : 0) + (pSurface->sampleMethod() == SampleMethod::Bilinear ? 1 : 0);
+
+	[m_renderEncoder setFragmentSamplerState:m_samplers[index] atIndex:c_blitSampler];
+	m_boundSampler = m_samplers[index];
+}
+
+//____ _bindEdgemap() ________________________________________________________
+
+bool MetalBackend::_bindEdgemap( GpuEdgemap * pEdgemap )
+{
+	auto pMetalEdgemap = static_cast<MetalEdgemap*>(pEdgemap);
+
+	if( !m_renderEncoder || pMetalEdgemap->m_buffer == nil )
+		return false;
+
+	[m_renderEncoder setFragmentBuffer:pMetalEdgemap->m_buffer offset:0 atIndex:BufferIndex::EdgemapOrPalette];
+	m_boundEdgemapOrPalette = pMetalEdgemap->m_buffer;
+	return true;
+}
+
+//____ _drawWarpmap() ________________________________________________________
+
+void MetalBackend::_drawWarpmap( Warpmap * pWarpmap, const RectI * pPatches, int nPatches )
+{
+	auto pMetalWarpmap = static_cast<MetalWarpmap*>(pWarpmap);
+
+	if( !m_renderEncoder || pMetalWarpmap->m_bufferId == nil || pWarpmap->triangleCount() == 0 )
+		return;
+
+	[m_renderEncoder setVertexBuffer:pMetalWarpmap->m_bufferId offset:0 atIndex:BufferIndex::WarpVertices];
+	_flushConstants();
+
+	for( int i = 0 ; i < nPatches ; i++ )
+	{
+		_setScissor(pPatches[i]);
+
+		if( !m_bScissorEmpty )
+			[m_renderEncoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle indexCount:NSUInteger(pWarpmap->triangleCount()) * 3
+										 indexType:MTLIndexTypeUInt16 indexBuffer:pMetalWarpmap->m_bufferId indexBufferOffset:pMetalWarpmap->m_indexOffset];
+	}
+
+	_resetScissor();
 }
 
 //____ _generateMipmaps() _____________________________________________________
@@ -2179,8 +1132,13 @@ void MetalBackend::_setSampler( MetalSurface * pSurf, SamplerEdge edge )
 
 void MetalBackend::_generateMipmaps( MetalSurface * pSurface )
 {
+	pSurface->m_bMipmapStale = false;
+
 	id<MTLTexture> texture = pSurface->m_texture;
 	int nLevels = (int) texture.mipmapLevelCount;
+
+	if( nLevels < 2 || !m_commandBuffer )
+		return;
 
 	id<MTLRenderPipelineState> pipeline = _mipmapPipeline(texture.pixelFormat);
 
@@ -2201,12 +1159,13 @@ void MetalBackend::_generateMipmaps( MetalSurface * pSurface )
 		pDescriptor.colorAttachments[0].loadAction = MTLLoadActionDontCare;
 		pDescriptor.colorAttachments[0].storeAction = MTLStoreActionStore;
 
-		id<MTLRenderCommandEncoder> renderEncoder = [m_metalCommandBuffer renderCommandEncoderWithDescriptor:pDescriptor];
+		id<MTLRenderCommandEncoder> renderEncoder = [m_commandBuffer renderCommandEncoderWithDescriptor:pDescriptor];
 		renderEncoder.label = @"MetalBackend Mipmap Pass";
 		[pDescriptor release];
 
 		[renderEncoder setRenderPipelineState:pipeline];
-		[renderEncoder setFragmentTexture:source atIndex:0];
+		[renderEncoder setFragmentTexture:source atIndex:c_blitSourceTexture];
+		[renderEncoder setFragmentSamplerState:m_samplers[1] atIndex:c_blitSampler];		// Bilinear, clamped.
 		[renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:3];
 		[renderEncoder endEncoding];
 
@@ -2229,219 +1188,26 @@ id<MTLRenderPipelineState> MetalBackend::_mipmapPipeline( MTLPixelFormat format 
 	MTLRenderPipelineDescriptor *descriptor = [[MTLRenderPipelineDescriptor alloc] init];
 
 	descriptor.label = @"Mipmap Pipeline";
-	descriptor.vertexFunction = [m_library newFunctionWithName:@"mipmapVertexShader"];
-	descriptor.fragmentFunction = [m_library newFunctionWithName:@"mipmapFragmentShader"];
+	descriptor.vertexFunction = _function("mipmapVS");
+	descriptor.fragmentFunction = _function("mipmapPS");
 	descriptor.colorAttachments[0].pixelFormat = format;
 	descriptor.colorAttachments[0].blendingEnabled = NO;
 
-	id<MTLRenderPipelineState> pipelineState = [s_metalDevice newRenderPipelineStateWithDescriptor:descriptor error:&error];
+	id<MTLRenderPipelineState> pipelineState = nil;
+
+	if( descriptor.vertexFunction != nil && descriptor.fragmentFunction != nil )
+		pipelineState = [s_metalDevice newRenderPipelineStateWithDescriptor:descriptor error:&error];
 
 	if( pipelineState == nil )
 	{
-		NSString * pMessage = [NSString stringWithFormat:@"Failed to create Mipmap Pipeline: %@", error ? error.localizedDescription : @"unknown error"];
+		NSString * pMessage = [NSString stringWithFormat:@"Failed to create Mipmap Pipeline: %@", error ? error.localizedDescription : @"shader function missing"];
 		Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, pMessage.UTF8String, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
-	[descriptor.vertexFunction release];
-	[descriptor.fragmentFunction release];
 	[descriptor release];
 
 	m_mipmapPipelines[format] = pipelineState;		// Kept also when nil, so we don't try again and again.
 	return pipelineState;
 }
 
-//____ _compileRenderPipeline() _______________________________________________
-/*
-	Canvases with alpha hold premultiplied colors, which lets fixed-function blending follow the
-	blend rules exactly: Blend is Porter-Duff over, Morph a premultiplied cross-fade and a partly
-	covered pixel gets the average of the blend result and the canvas. The fragment shader is
-	specialized to pass what it draws to the blender as the mode needs it, see writeColor() in
-	the shaders:
-
-	- Replace and Morph keep the uncovered part of the pixel by the second color of dual-source
-	  blending. Replace only blends in pipelines that can cover pixels partly (bPartialCoverage).
-	- Effect modes work on the premultiplied colors of the canvas, as the blend rules define them,
-	  with the source as its light (pc) and partial coverage fading it. Add, Invert and Max raise
-	  the alpha of the canvas by the strongest channel of pc, which the fragment shaders output as
-	  alpha for them. Subtract, Multiply and Min keep it.
-	- On Alpha_8 canvases, effect modes use the alpha of the source as the value.
-	- Canvases without alpha are opaque. Their alpha bytes are undefined and left alone.
-*/
-
-id<MTLRenderPipelineState> MetalBackend::_compileRenderPipeline( NSString* label, NSString* vertexShader,
-																NSString* fragmentShader, BlendMode blendMode, DestFormat destFormat, bool bPartialCoverage )
-{
-	bool bNoAlpha = ( destFormat == DestFormat::BGRX8_linear || destFormat == DestFormat::BGRX8_sRGB );
-	bool bAlphaOnly = (destFormat == DestFormat::Alpha_8);
-
-	// Function constants of the fragment shader, see writeColor() and writeAlpha() in the shaders.
-
-	int		outputMode = 0;
-	bool	bMorph = (blendMode == BlendMode::Morph);
-
-	if( blendMode == BlendMode::Replace || blendMode == BlendMode::Morph || (blendMode == BlendMode::Multiply && bAlphaOnly) )
-		outputMode = 1;
-	else if( blendMode == BlendMode::Min )
-		outputMode = 2;
-	else if( (blendMode == BlendMode::Add || blendMode == BlendMode::Invert || blendMode == BlendMode::Max) && !bAlphaOnly )
-		outputMode = 3;
-
-	MTLFunctionConstantValues * pConstants = [[MTLFunctionConstantValues alloc] init];
-	[pConstants setConstantValue:&outputMode type:MTLDataTypeInt atIndex:0];
-	[pConstants setConstantValue:&bNoAlpha type:MTLDataTypeBool atIndex:1];
-	[pConstants setConstantValue:&bMorph type:MTLDataTypeBool atIndex:2];
-
-	NSError * pError = nil;			// Autoreleased.
-	MTLRenderPipelineDescriptor *descriptor = [[MTLRenderPipelineDescriptor alloc] init];
-
-	descriptor.label = label;
-	descriptor.vertexFunction = [m_library newFunctionWithName:vertexShader];
-	descriptor.fragmentFunction = [m_library newFunctionWithName:fragmentShader constantValues:pConstants error:&pError];
-
-	[pConstants release];
-
-	MTLRenderPipelineColorAttachmentDescriptor * pAttachment = descriptor.colorAttachments[0];
-
-	// Set pixelFormat
-
-	switch(destFormat)
-	{
-		case DestFormat::BGRA8_linear:
-		case DestFormat::BGRX8_linear:
-			pAttachment.pixelFormat = MTLPixelFormatBGRA8Unorm;
-			break;
-
-		case DestFormat::BGRA8_sRGB:
-		case DestFormat::BGRX8_sRGB:
-			pAttachment.pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
-			break;
-
-		case DestFormat::Alpha_8:
-			pAttachment.pixelFormat = MTLPixelFormatR8Unorm;
-			break;
-
-		default:
-			assert(false);
-	}
-
-	// Blend operation and factors, for colors and alpha alike unless the alpha of the canvas is kept
-	// or inverted.
-
-	BOOL				bBlending = YES;
-	MTLBlendOperation	operation = MTLBlendOperationAdd;
-	MTLBlendFactor		srcFactor = MTLBlendFactorOne;
-	MTLBlendFactor		dstFactor = MTLBlendFactorZero;
-	bool				bKeepAlpha = false;
-	bool				bInvertAlpha = false;
-
-	switch( blendMode )
-	{
-		case BlendMode::Replace:
-			srcFactor = MTLBlendFactorOne;
-			dstFactor = MTLBlendFactorOneMinusSource1Alpha;
-			bBlending = bPartialCoverage;
-			break;
-
-		case BlendMode::Undefined:
-		case BlendMode::Blend:
-		case BlendMode::BlendFixedColor:		// Drawn as Blend, which gives the same result.
-			srcFactor = MTLBlendFactorOne;
-			dstFactor = MTLBlendFactorOneMinusSourceAlpha;
-			break;
-
-		case BlendMode::Morph:
-			srcFactor = MTLBlendFactorOne;
-			dstFactor = MTLBlendFactorOneMinusSource1Alpha;
-			break;
-
-		case BlendMode::Add:
-		case BlendMode::Subtract:
-			// The source is added to or subtracted from the premultiplied colors of the canvas. Add
-			// also adds the alpha the fragment shader outputs to that of the canvas, Subtract keeps it.
-
-			operation = (blendMode == BlendMode::Add) ? MTLBlendOperationAdd : MTLBlendOperationReverseSubtract;
-			srcFactor = MTLBlendFactorOne;
-			dstFactor = MTLBlendFactorOne;
-			bKeepAlpha = (blendMode == BlendMode::Subtract);
-			break;
-
-		case BlendMode::Multiply:
-			srcFactor = MTLBlendFactorDestinationColor;
-			dstFactor = MTLBlendFactorOneMinusSource1Alpha;
-			bKeepAlpha = true;
-			break;
-
-		case BlendMode::Invert:
-			// The alpha the fragment shader outputs is put over that of the canvas.
-
-			srcFactor = MTLBlendFactorOneMinusDestinationColor;
-			dstFactor = MTLBlendFactorOneMinusSourceColor;
-			bInvertAlpha = !bAlphaOnly;
-			break;
-
-		case BlendMode::Min:
-		case BlendMode::Max:
-			// Max also takes the larger of the alpha the fragment shader outputs and that of the
-			// canvas, Min keeps it.
-
-			operation = (blendMode == BlendMode::Min) ? MTLBlendOperationMin : MTLBlendOperationMax;
-			srcFactor = MTLBlendFactorOne;
-			dstFactor = MTLBlendFactorOne;
-			bKeepAlpha = (blendMode == BlendMode::Min);
-			break;
-
-		case BlendMode::Ignore:
-			srcFactor = MTLBlendFactorZero;
-			dstFactor = MTLBlendFactorOne;
-			break;
-
-		default:
-			assert(false);
-			break;
-	}
-
-	pAttachment.blendingEnabled = bBlending;
-	pAttachment.rgbBlendOperation = operation;
-	pAttachment.sourceRGBBlendFactor = srcFactor;
-	pAttachment.destinationRGBBlendFactor = dstFactor;
-
-	if( bKeepAlpha && !bAlphaOnly )
-	{
-		pAttachment.alphaBlendOperation = MTLBlendOperationAdd;
-		pAttachment.sourceAlphaBlendFactor = MTLBlendFactorZero;
-		pAttachment.destinationAlphaBlendFactor = MTLBlendFactorOne;
-	}
-	else if( bInvertAlpha )
-	{
-		pAttachment.alphaBlendOperation = MTLBlendOperationAdd;
-		pAttachment.sourceAlphaBlendFactor = MTLBlendFactorOneMinusDestinationAlpha;
-		pAttachment.destinationAlphaBlendFactor = MTLBlendFactorOne;
-	}
-	else
-	{
-		pAttachment.alphaBlendOperation = operation;
-		pAttachment.sourceAlphaBlendFactor = srcFactor;
-		pAttachment.destinationAlphaBlendFactor = dstFactor;
-	}
-
-	if( bNoAlpha )
-		pAttachment.writeMask = MTLColorWriteMaskRed | MTLColorWriteMaskGreen | MTLColorWriteMaskBlue;
-
-	id<MTLRenderPipelineState> pipelineState = nil;
-
-	if( descriptor.vertexFunction != nil && descriptor.fragmentFunction != nil )
-		pipelineState = [s_metalDevice newRenderPipelineStateWithDescriptor:descriptor error:&pError];
-
-	if( pipelineState == nil )
-	{
-		NSString * pMessage = [NSString stringWithFormat:@"Failed to create %@: %@", label, pError ? pError.localizedDescription : @"shader function missing"];
-		Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, pMessage.UTF8String, this, &TYPEINFO, __func__, __FILE__, __LINE__);
-	}
-
-	[descriptor.vertexFunction release];
-	[descriptor.fragmentFunction release];
-	[descriptor release];
-
-	return pipelineState;
-}
 } //namespace wax

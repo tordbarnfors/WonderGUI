@@ -88,7 +88,13 @@ namespace wax
 		//.____ Misc __________________________________________________________
 
 		inline	id<MTLTexture>	getTexture() const { return m_texture; }
-		inline	id<MTLTexture>	getPaletteTexture() const { return m_paletteTexture; }
+
+		// What the shaders read: the texture, through a view that reads Alpha_8 from red into
+		// alpha and gives XRGB_8 alpha 1, and for palette based surfaces their palette, see
+		// _updatePaletteColors().
+
+		inline	id<MTLTexture>	sampleTexture() const { return m_sampleTexture ? m_sampleTexture : m_texture; }
+		inline	id<MTLBuffer>	paletteColors() const { return m_paletteColors; }
 
 	private:
 
@@ -105,15 +111,12 @@ namespace wax
 		void 			_setupMetalTexture(const void * pPixels, int pitch, const PixelDescription * pSrcPixelDesc,
 										   const Color8 * pSrcPalette, int srcPaletteSize, const Color8 * pDstPalette );
 
-		int				_paletteTextureWidth() const;
-		int				_paletteTextureHeight() const;
-		void			_syncPalette();
+		void			_updatePaletteColors();
 
         void            _createAndSyncTextures( bool bHasTextureData );
 
 		bool			_isPremultiplied() const { return m_pixelFormat == PixelFormat::ARGB_8; }		// Texture holds premultiplied colors.
 		id<MTLBuffer>	_encodeTextureUpload( id<MTLBlitCommandEncoder> encoder, RectI region );
-		id<MTLBuffer>	_encodePaletteUpload( id<MTLBlitCommandEncoder> encoder );
 		void			_convertAlpha( uint8_t * pPixels, int pitch, int width, int height, bool bPremultiply ) const;
         
         void            _syncBufferAndWait();
@@ -126,10 +129,11 @@ namespace wax
         std::atomic<bool>  m_bTextureSyncInProgress;           // Texture is being updated with changes from buffer.
 
 
-		id<MTLTexture>	m_paletteTexture = nil;	    // Private texture with palette data, only accessed by GPU.
-        id<MTLBuffer>   m_paletteBuffer = nil;         // Shared buffer, containing palette data accessible to CPU.
+        id<MTLBuffer>   m_paletteBuffer = nil;         // Shared buffer holding the palette, m_pPalette points into it.
+        id<MTLBuffer>   m_paletteColors = nil;         // The palette as the shaders read it, see _updatePaletteColors().
         
 		id<MTLTexture>	m_texture = nil;			// Private texture, only accessed by GPU.
+		id<MTLTexture>	m_sampleTexture = nil;		// Swizzled view of it for the shaders, nil if they read it as it is.
         id<MTLBuffer>   m_textureBuffer = nil;      // Shared buffer, containing texture data accessible to CPU.
         
         MTLPixelFormat  m_internalFormat;

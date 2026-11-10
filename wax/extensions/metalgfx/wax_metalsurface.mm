@@ -247,12 +247,10 @@ namespace wax
 		
 		if( m_paletteCapacity > 0 )
 		{
-			// Create the palette buffer and copy data. It is laid out like the palette texture,
-			// which might have room for more entries than the capacity.
+			// Create the palette buffer and copy data. The source palette only has m_paletteSize
+			// entries, the rest is cleared.
 
-			// The source palette only has m_paletteSize entries, the rest is cleared.
-
-			int paletteBufferLength = _paletteTextureWidth() * _paletteTextureHeight() * 4;
+			int paletteBufferLength = m_paletteCapacity * 4;
 
 			m_paletteBuffer = [MetalBackend::s_metalDevice newBufferWithLength:paletteBufferLength options:MTLResourceStorageModeShared];
 			m_pPalette = (Color8*) [m_paletteBuffer contents];
@@ -284,23 +282,6 @@ namespace wax
 	//        setScaleMode(m_scaleMode);
 	}
 
-	//____ _paletteTextureWidth() ______________________________________________
-
-	int MetalSurface::_paletteTextureWidth() const
-	{
-		// Index_16 can have 65536 entries, which is more than the widest texture.
-
-		return std::min(m_paletteCapacity, 256);
-	}
-
-	//____ _paletteTextureHeight() _____________________________________________
-
-	int MetalSurface::_paletteTextureHeight() const
-	{
-		int width = _paletteTextureWidth();
-		return width == 0 ? 0 : (m_paletteCapacity + width - 1) / width;
-	}
-
     //____ _createAndSyncTextures() __________________________________________________
 
     void MetalSurface::_createAndSyncTextures( bool bHasTextureData )
@@ -314,6 +295,12 @@ namespace wax
         textureDescriptor.height        = m_size.h;
         textureDescriptor.storageMode   = MTLStorageModePrivate;
         textureDescriptor.usage         = m_bCanvas ? (MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead) : MTLTextureUsageShaderRead;
+
+        // The shaders read alpha from Alpha_8 and need alpha 1 from XRGB_8, see sampleTexture().
+        // Neither is what Metal reads from the texture, so they get a swizzled view, which a
+        // render target can't be itself.
+
+        bool bSwizzled = (m_pixelFormat == PixelFormat::Alpha_8 || m_pixelFormat == PixelFormat::XRGB_8);
         
         // A mipmapped texture gets levels all the way down to 1x1. MetalBackend
         // draws them, so it has to be a render target even when not a canvas.
@@ -329,44 +316,48 @@ namespace wax
             textureDescriptor.usage = MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead;
         }
 
+        if( bSwizzled )
+            textureDescriptor.usage |= MTLTextureUsagePixelFormatView;
+
         m_texture = [MetalBackend::s_metalDevice newTextureWithDescriptor:textureDescriptor];
         [textureDescriptor release];
-        
-        // Create the palette texture
-        
-        if( m_pPalette )
+
+        if( bSwizzled )
         {
-            MTLTextureDescriptor *paletteDescriptor = [[MTLTextureDescriptor alloc] init];
+            MTLTextureSwizzleChannels swizzle;
 
-            // Palette entries are in the color space of the surface.
+            if( m_pixelFormat == PixelFormat::Alpha_8 )
+                swizzle = MTLTextureSwizzleChannelsMake(MTLTextureSwizzleZero, MTLTextureSwizzleZero, MTLTextureSwizzleZero, MTLTextureSwizzleRed);
+            else
+                swizzle = MTLTextureSwizzleChannelsMake(MTLTextureSwizzleRed, MTLTextureSwizzleGreen, MTLTextureSwizzleBlue, MTLTextureSwizzleOne);
 
-            paletteDescriptor.pixelFormat   = m_colorSpace == ColorSpace::Linear ? MTLPixelFormatBGRA8Unorm : MTLPixelFormatBGRA8Unorm_sRGB;
-            paletteDescriptor.width         = _paletteTextureWidth();
-            paletteDescriptor.height        = _paletteTextureHeight();
-            paletteDescriptor.storageMode   = MTLStorageModePrivate;
-
-            m_paletteTexture = [MetalBackend::s_metalDevice newTextureWithDescriptor:paletteDescriptor];
-
-            [paletteDescriptor release];
+            m_sampleTexture = [m_texture newTextureViewWithPixelFormat:m_internalFormat
+                                                            textureType:MTLTextureType2D
+                                                                 levels:NSMakeRange(0, m_texture.mipmapLevelCount)
+                                                                 slices:NSMakeRange(0, 1)
+                                                                swizzle:swizzle];
         }
 
-        // Copy from buffers to textures (pixels and palettes)
-        
-		if( bHasTextureData || m_pPalette )
+        // The palette as the shaders read it.
+
+        if( m_pPalette )
+        {
+            if( m_paletteColors == nil )
+                m_paletteColors = [MetalBackend::s_metalDevice newBufferWithLength:size_t(m_paletteCapacity + 1) * 4 * sizeof(float) options:MTLResourceStorageModeShared];
+
+            _updatePaletteColors();
+        }
+
+        // Copy pixels from the buffer to the texture.
+
+		if( bHasTextureData )
 		{
 			@autoreleasepool {
 				id<MTLCommandBuffer> commandBuffer = [MetalBackend::s_metalCommandQueue commandBuffer];
 				id<MTLBlitCommandEncoder> blitCommandEncoder = [commandBuffer blitCommandEncoder];
 				commandBuffer.label = @"_createAndSyncTextures Command Buffer";
 
-				id<MTLBuffer> pixelUpload = nil;
-				id<MTLBuffer> paletteUpload = nil;
-
-				if( bHasTextureData )
-					pixelUpload = _encodeTextureUpload(blitCommandEncoder, RectI(0, 0, m_size.w, m_size.h));
-
-				if( m_pPalette )
-					paletteUpload = _encodePaletteUpload(blitCommandEncoder);
+				id<MTLBuffer> pixelUpload = _encodeTextureUpload(blitCommandEncoder, RectI(0, 0, m_size.w, m_size.h));
 
 				// MetalBackend draws the mip levels before the texture is first read,
 				// see MetalBackend::_generateMipmaps().
@@ -392,7 +383,6 @@ namespace wax
 				commandBuffer = nil;
 
 				[pixelUpload release];
-				[paletteUpload release];
 			}
 		}
     }
@@ -432,11 +422,11 @@ namespace wax
 				break;
 
 			case PixelFormat::Index_8:
-				m_internalFormat = MTLPixelFormatR8Unorm;
+				m_internalFormat = MTLPixelFormatR8Uint;			// Read as integers, see ps_blit_palette.hlsl.
 				break;
 
 			case PixelFormat::Index_16:
-				m_internalFormat = MTLPixelFormatRG8Unorm;			// Low byte in red, high byte in green, see paletteLookup() in the shaders.
+				m_internalFormat = MTLPixelFormatR16Uint;			// In native byte order, as the buffer is.
 				break;
 
 			case PixelFormat::Alpha_8:
@@ -461,11 +451,12 @@ namespace wax
 	{
 		// Free the stuff
 
+        [m_sampleTexture release];
         [m_texture release];
         [m_textureBuffer release];
-        
-        [m_paletteTexture release];
+
         [m_paletteBuffer release];
+        [m_paletteColors release];
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -519,8 +510,8 @@ namespace wax
 
         // Colors might have been added to or changed in the palette.
 
-        if( m_paletteTexture )
-            _syncPalette();
+        if( m_paletteColors )
+            _updatePaletteColors();
 
 		Surface::pullPixels(buffer, bufferRect, bAutoNotify);
     }
@@ -551,8 +542,10 @@ namespace wax
 		if( m_texture == 0 )
 			return true;
 
+		[m_sampleTexture release];
+		m_sampleTexture = nil;
+		[m_texture release];
 		m_texture = nil;
-        m_paletteTexture = nil;
 
 		return true;
 	}
@@ -648,26 +641,6 @@ namespace wax
     }
 
 
-    //____ _syncPalette() _______________________________________________
-
-    void MetalSurface::_syncPalette()
-    {
-        @autoreleasepool {
-	        id<MTLCommandBuffer> commandBuffer = [MetalBackend::s_metalCommandQueue commandBuffer];
-	        commandBuffer.label = @"_syncPalette Command Buffer";
-
-	        id<MTLBlitCommandEncoder> blitCommandEncoder = [commandBuffer blitCommandEncoder];
-	        id<MTLBuffer> upload = _encodePaletteUpload(blitCommandEncoder);
-	        [blitCommandEncoder endEncoding];
-	        blitCommandEncoder = nil;
-
-	        [commandBuffer commit];
-	        [commandBuffer waitUntilCompleted];
-	        commandBuffer = nil;
-	        [upload release];
-        }
-    }
-
     //____ _encodeTextureUpload() _______________________________________________
     //
     // Encodes a copy of a region of our shared buffer to the texture. Surfaces with alpha
@@ -721,45 +694,52 @@ namespace wax
         return premultiplied;
     }
 
-    //____ _encodePaletteUpload() _______________________________________________
+    //____ _updatePaletteColors() _____________________________________________
     //
-    // Encodes a copy of the palette to the palette texture. Entries are premultiplied, like
-    // the pixels of surfaces with alpha, so that interpolating between them interpolates
-    // premultiplied colors. That is done in a buffer of its own, which is returned for the
-    // caller to release once copied.
+    // The palette goes to the GPU converted to linear, the same way SoftSurface unpacks it, and
+    // premultiplied, like the pixels of surfaces with alpha, so the shaders can use the colors as
+    // they are and interpolate between them. One float4 per entry, plus one in front holding the
+    // capacity, which the shaders keep indexes below. Done as DX12Surface does it.
+    //
+    // The buffer is read by the GPU where it is. Should the palette change while a frame using it
+    // is still in flight, that frame may see the new colors.
 
-    id<MTLBuffer> MetalSurface::_encodePaletteUpload( id<MTLBlitCommandEncoder> encoder )
+    void MetalSurface::_updatePaletteColors()
     {
-        int nEntries = _paletteTextureWidth() * _paletteTextureHeight();
+        if( !m_paletteColors || !m_pPalette )
+            return;
 
-        id<MTLBuffer> premultiplied = [MetalBackend::s_metalDevice newBufferWithBytes:m_pPalette length:nEntries * 4 options:MTLResourceStorageModeShared];
+        float * p = (float *) [m_paletteColors contents];
 
-        bool bSRGB = (m_colorSpace == ColorSpace::sRGB);
-        auto pEntries = (Color8*) [premultiplied contents];
+        p[0] = float(m_paletteCapacity);		// Exact, far below where floats lose integers.
+        p[1] = 0.f;
+        p[2] = 0.f;
+        p[3] = 0.f;
+        p += 4;
 
-        for( int i = 0 ; i < nEntries ; i++ )
+        // Palette entries are in the color space of the surface.
+
+        bool bLinear = (m_colorSpace == ColorSpace::Linear);
+
+        for( int i = 0 ; i < m_paletteCapacity ; i++ )
         {
-            Color8& c = pEntries[i];
-            if( c.a == 0 )
-                c.argb = 0;
-            else if( c.a < 255 )
-                _premultiply(c.b, c.g, c.r, c.a, bSRGB);
+            HiColor col = m_pPalette[i];		// Same color space, just more bits.
+
+            if( bLinear )
+            {
+                p[0] = col.r / 4096.f;
+                p[1] = col.g / 4096.f;
+                p[2] = col.b / 4096.f;
+                p[3] = col.a / 4096.f;
+            }
+            else
+                col.toLinearFloat(p);
+
+            p[0] *= p[3];
+            p[1] *= p[3];
+            p[2] *= p[3];
+            p += 4;
         }
-
-        MTLSize paletteSize = { (unsigned long) _paletteTextureWidth(), (unsigned long) _paletteTextureHeight(), 1 };
-        MTLOrigin paletteOrigin = {0,0,0};
-
-        [encoder copyFromBuffer:     premultiplied
-                    sourceOffset:       0
-               sourceBytesPerRow:  _paletteTextureWidth()*4
-             sourceBytesPerImage:0
-                      sourceSize:         paletteSize
-                       toTexture:          m_paletteTexture
-                destinationSlice:   0
-                destinationLevel:   0
-               destinationOrigin:  paletteOrigin];
-
-        return premultiplied;
     }
 
     //____ _convertAlpha() ______________________________________________________
