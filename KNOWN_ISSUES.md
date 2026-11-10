@@ -140,17 +140,13 @@ The UTF-8 text system was built and tested on Linux (SDL2 software and OpenGL) a
 been run on Win32/DX12. The macOS frameworks (Cocoa software/Metal, SDL2 Metal) haven't
 been built with it yet.
 
-### DX12Backend and MetalBackend since the GPU backends were streamlined
+### MetalBackend since the GPU backends were streamlined
 
-Both were changed on a machine without Windows or macOS, so neither has been compiled since:
+Changed on a machine without macOS, so it hasn't been compiled since. It uses the shared helpers in
+`wax_gputools.h` (state changes, lines without caps, blur taps). The changes are mechanical, and
+GlBackend and DX12Backend give the same gfxdevicetester results with the same changes.
 
-- They use the shared helpers in `wax_gputools.h` (state changes, lines without caps, blur taps).
-  The changes are mechanical and GlBackend gives the same gfxdevicetester results with them.
-- DX12Backend's shaders moved to `wax/extensions/hlsl`, with the constants declared once in
-  `constants.hlsl` rather than in each shader, and `wax_dx12shaders.cpp` was generated anew. All
-  shaders compile with DXC to DXIL, but DX12Backend compiles them with `D3DCompile()`.
-
-Build both and run gfxdevicetester before relying on them.
+Build it and run gfxdevicetester before relying on it.
 
 ### VulkanBackend on Windows and on other GPUs
 
