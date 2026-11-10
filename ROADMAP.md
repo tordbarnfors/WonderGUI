@@ -25,14 +25,16 @@ stream into GPU work in their own way, so every feature was written four times. 
 (`wax/source/wax_gpubackend.h`) now does what doesn't need the graphics API, and DX12Backend,
 MetalBackend and VulkanBackend are built on it. Next steps, in order:
 
-1. **Done, builds:** DX12Backend onto GpuBackend and GpuEdgemap. What is left in it is its root
+1. **Done:** DX12Backend onto GpuBackend and GpuEdgemap. What is left in it is its root
    signature, descriptor heaps, resource states, device loss and the hooks GpuBackend calls.
-2. **Done, untested:** MetalBackend onto GpuBackend and GpuEdgemap. Decided with Tord: its shaders
+2. **Done:** MetalBackend onto GpuBackend and GpuEdgemap. Decided with Tord: its shaders
    are the HLSL, turned into MSL by DXC and SPIRV-Cross (`metalgfx/compile_shaders.py`) and
    checked in, as MoltenVK does it, rather than MSL of our own adapted to GpuBackend. The MSL is
    unreadable, but nobody edits it, and there is one shader source for three backends. Costs:
    macOS 11 (MSL 2.3, for discard to work as in D3D), and pipelines branch on constants like
-   DX12 and Vulkan instead of Metal function constants.
+   DX12 and Vulkan instead of Metal function constants. Each shader is compiled the first time a
+   pipeline needs it, with fast math off as the shaders are written for. Both tested by Tord with
+   gfxdevicetester on 2026-11-10.
 3. **GlBackend onto GpuBackend,** its hooks queueing commands for endSession() as it does now,
    since GL uploads the buffers once per session. Its GLSL stays its own, GL 3.3 has no storage
    buffers for the HLSL to be cross-compiled to.
