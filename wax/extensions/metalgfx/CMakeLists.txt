@@ -6,7 +6,6 @@ set(SOURCES
 	wax_metaldevicefactory.h
 	wax_metaldevicefactory.mm
 	wax_metalshaders.mm
-	wax_metalshaders.mm.template
 	wax_metalsurface.h
 	wax_metalsurface.mm
 	wax_metalsurfacefactory.h
@@ -19,10 +18,10 @@ set(SOURCES
 	wax_metalwarpmap.mm
 	wax_metalwarpmapfactory.h
 	wax_metalwarpmapfactory.mm
-	wax_shadercontent.mm
+	compile_shaders.py
 )
 
-set_source_files_properties(wax_metalshaders.mm.template wax_shadercontent.mm PROPERTIES HEADER_FILE_ONLY YES)
+set_source_files_properties(compile_shaders.py PROPERTIES HEADER_FILE_ONLY YES)
 
 
 set(INCDIRS

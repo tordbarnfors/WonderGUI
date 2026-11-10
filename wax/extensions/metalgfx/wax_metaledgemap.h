@@ -25,7 +25,7 @@
 
 #import "MetalKit/MetalKit.h"
 
-#include <wax_edgemap.h>
+#include <wax_gpuedgemap.h>
 
 
 namespace wax
@@ -35,19 +35,27 @@ namespace wax
 	typedef StrongPtr<MetalEdgemap> MetalEdgemap_p;
 	typedef WeakPtr<MetalEdgemap> MetalEdgemap_wp;
 
-	class MetalEdgemap : public Edgemap
+	//____ MetalEdgemap ________________________________________________________
+	/**
+	 * @brief Edgemap for MetalBackend.
+	 *
+	 * GpuEdgemap fills in the buffer the shaders read, this class only creates it, as a shared
+	 * buffer the CPU writes to directly.
+	 */
+
+	class MetalEdgemap : public GpuEdgemap
 	{
 		friend class MetalBackend;
 	public:
 
 		//.____ Creation __________________________________________
-		
+
 		static MetalEdgemap_p	create( const Blueprint& blueprint );
 		static MetalEdgemap_p	create( const Edgemap::Blueprint& blueprint, SampleOrigo origo, const float * pSamples, int edges, int edgePitch = 0, int samplePitch = 0);
 		static MetalEdgemap_p	create( const Edgemap::Blueprint& blueprint, SampleOrigo origo, const spx * pSamples, int edges, int edgePitch = 0, int samplePitch = 0);
 
 
-    	//.____ Identification __________________________________________
+		//.____ Identification __________________________________________
 
 		const TypeInfo&     typeInfo(void) const override;
 		const static TypeInfo   TYPEINFO;
@@ -58,37 +66,11 @@ namespace wax
 		MetalEdgemap(const Blueprint& bp);
 		~MetalEdgemap();
 
-		void	_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd) override;
-		void	_colorsUpdated(int beginColor, int endColor) override;
+		float *	_allocBuffer( size_t bytes ) override;
+		void	_commitBuffer() override;
 
-		// Buffer layout, in float4 entries:
-		//
-		//   Edge strips, one per pixel column.
-		//   Raw samples, the left and right side of each column and edge in pixels, for warps.
-		//   Flat colors, one per segment.
-		//   Tint table, one per segment. X is the offset of the segment's tint
-		//   block, -1 for a flat colored segment.
-		//   Tint blocks, a slot per segment big enough for any tint. Only there
-		//   once a segment has had a tint, most edgemaps never do.
-
-		int		_rawSamplesOfs() const { return m_samplesSize / 2; }
-		int		_flatColorsOfs() const { return m_samplesSize; }
-		int		_tintTableOfs() const { return m_samplesSize + m_nbSegments; }
-		int		_tintSlotOfs(int segment) const { return m_samplesSize + m_nbSegments * 2 + segment * c_tintSlotSize; }
-
-		void	_createBuffer(bool bWithTintSlots);
-		void	_writeColors(int beginSegment, int endSegment);
-
-		static const int c_tintSlotSize;		// In float4 entries.
-
-	protected:
-
-		id<MTLBuffer>   m_bufferId = nil;
-		float *      	m_pBuffer = nullptr;
-
-		int			m_samplesSize = 0;			// Size of the edge strips and raw samples, in float4 entries.
-		bool		m_bHasTintSlots = false;
-
+		id<MTLBuffer>   m_buffer = nil;			// What the shaders read.
+		id<MTLBuffer>   m_newBuffer = nil;		// Made by _allocBuffer(), until _commitBuffer().
 	};
 
 

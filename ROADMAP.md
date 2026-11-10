@@ -22,19 +22,29 @@ in someone's memory or an old chat. Add to it when you decide something, move it
 
 The GPU backends (GlBackend, DX12Backend, MetalBackend, VulkanBackend) each turned the command
 stream into GPU work in their own way, so every feature was written four times. GpuBackend
-(`wax/source/wax_gpubackend.h`) now does what doesn't need the graphics API, and DX12Backend and
-VulkanBackend are built on it. Next steps, in order:
+(`wax/source/wax_gpubackend.h`) now does what doesn't need the graphics API, and DX12Backend,
+MetalBackend and VulkanBackend are built on it. Next steps, in order:
 
-1. **Done, untested:** DX12Backend onto GpuBackend and GpuEdgemap. What is left in it is its root
+1. **Done, builds:** DX12Backend onto GpuBackend and GpuEdgemap. What is left in it is its root
    signature, descriptor heaps, resource states, device loss and the hooks GpuBackend calls.
-2. **MetalBackend onto GpuBackend,** with its own shaders adapted to the buffers and constants
-   of GpuBackend (its layout is where DX12Backend's came from), or with MSL generated from the
-   HLSL by SPIRV-Cross, if that turns out readable and fast enough. Needs macOS.
+2. **Done, untested:** MetalBackend onto GpuBackend and GpuEdgemap. Decided with Tord: its shaders
+   are the HLSL, turned into MSL by DXC and SPIRV-Cross (`metalgfx/compile_shaders.py`) and
+   checked in, as MoltenVK does it, rather than MSL of our own adapted to GpuBackend. The MSL is
+   unreadable, but nobody edits it, and there is one shader source for three backends. Costs:
+   macOS 11 (MSL 2.3, for discard to work as in D3D), and pipelines branch on constants like
+   DX12 and Vulkan instead of Metal function constants.
 3. **GlBackend onto GpuBackend,** its hooks queueing commands for endSession() as it does now,
    since GL uploads the buffers once per session. Its GLSL stays its own, GL 3.3 has no storage
    buffers for the HLSL to be cross-compiled to.
-4. **Shaders:** if Metal keeps MSL, give MSL and GLSL the file split and names of the HLSL, so a
-   change can be made side by side.
+4. **Shaders:** give the GLSL the file split and names of the HLSL, so a change can be made side
+   by side.
+
+For MetalBackend, still to do:
+
+- **Reusing buffers.** Each session creates its vertex, color and extras buffers anew, as
+  MetalBackend did before, and lets its command buffer keep them until the GPU is done.
+- **Smaller MSL, if compiling it at startup turns out slow.** DXC unrolls the loops of the
+  shaders at -O3, which makes the MSL about 1 MB. Metal would optimize -Od SPIR-V as well.
 
 For VulkanBackend, still to do:
 
