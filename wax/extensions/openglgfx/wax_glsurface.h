@@ -105,9 +105,7 @@ namespace wax
 		//.____ Misc __________________________________________________________
 
 		inline	GLuint	getTexture() const { return m_texture; }
-		inline	GLuint	getPaletteTexture() const { return m_paletteTexture; }
-		int				paletteTextureWidth() const;
-		int				paletteTextureHeight() const;
+		inline	GLuint	getPaletteTexture() const { return m_paletteTexture; }		// Buffer texture of float4, see _uploadPalette().
 
         static unsigned int totalTexturePixels() { return g_texturePixels; }
         static unsigned int totalBackingPixels() { return g_backingPixels; }
@@ -125,6 +123,7 @@ namespace wax
 		bool		_needsBackingBuffer() const;
 		void		_setPixelDetails();
 		void		_uploadPalette();
+		void		_setSwizzle();
 		void		_setupGlTexture(void * pPixelsToUpload, int pitch);
 		void		_updateAlphaMap(const PixelBuffer& buffer, const RectI& bufferRect);
 
@@ -139,7 +138,8 @@ namespace wax
 		void		_readBackTexture( void * pDest, int pitch );
 
 
-		GLuint 		m_paletteTexture = 0;	// GL palette texture handle.
+		GLuint 		m_paletteTexture = 0;	// Buffer texture of the palette, see _uploadPalette().
+		GLuint		m_paletteBuffer = 0;	// The buffer it reads.
 
 		GLuint		m_framebufferId;		// Initialized and used when m_bCanvas is set.
 

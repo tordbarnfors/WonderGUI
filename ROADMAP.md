@@ -22,8 +22,8 @@ in someone's memory or an old chat. Add to it when you decide something, move it
 
 The GPU backends (GlBackend, DX12Backend, MetalBackend, VulkanBackend) each turned the command
 stream into GPU work in their own way, so every feature was written four times. GpuBackend
-(`wax/source/wax_gpubackend.h`) now does what doesn't need the graphics API, and DX12Backend,
-MetalBackend and VulkanBackend are built on it. Next steps, in order:
+(`wax/source/wax_gpubackend.h`) now does what doesn't need the graphics API, and all four are
+built on it and draw with the same HLSL shaders (`wax/extensions/hlsl`). The steps were:
 
 1. **Done:** DX12Backend onto GpuBackend and GpuEdgemap. What is left in it is its root
    signature, descriptor heaps, resource states, device loss and the hooks GpuBackend calls.
@@ -35,11 +35,24 @@ MetalBackend and VulkanBackend are built on it. Next steps, in order:
    DX12 and Vulkan instead of Metal function constants. Each shader is compiled the first time a
    pipeline needs it, with fast math off as the shaders are written for. Both tested by Tord with
    gfxdevicetester on 2026-11-10.
-3. **GlBackend onto GpuBackend,** its hooks queueing commands for endSession() as it does now,
-   since GL uploads the buffers once per session. Its GLSL stays its own, GL 3.3 has no storage
-   buffers for the HLSL to be cross-compiled to.
-4. **Shaders:** give the GLSL the file split and names of the HLSL, so a change can be made side
-   by side.
+3. **Done:** GlBackend onto GpuBackend and GpuEdgemap. Its hooks record what to do, and
+   endSession() uploads the buffers once and plays the recording back, as GL did it before. The
+   constants are plain uniforms, set per program when they change: one uniform buffer for all
+   draws of a session, bound a range per draw, made llvmpipe copy the whole buffer for every draw.
+   Decided with Tord: its shaders are
+   the HLSL too, turned into GLSL 3.3 by DXC and SPIRV-Cross (`openglgfx/compile_shaders.py`),
+   which also fixes up what GLSL 3.3 lacks: storage buffers become buffer textures, varyings get
+   names, and y is flipped for surfaces. GL stays at 3.3, and with that on macOS. GL 4.3 would have
+   needed no fixing up, but has no macOS. Code only for GL goes inside `#ifdef WAX_GLSL` in the
+   HLSL, so far the vertex input of `vs_warp.hlsl`.
+4. **Dropped:** giving GLSL and MSL the file split of the HLSL, as both are generated from it.
+
+For GlBackend, still to do:
+
+- **GL on macOS and on Windows,** only run with llvmpipe on Linux so far. The old GLSL read
+  palettes with texture() rather than texelFetch(), as texelFetch() gave random black pixels on a
+  2013 Mac Pro (AMD, OpenGL 4.1). The generated GLSL reads indexes with texelFetch(), see
+  KNOWN_ISSUES.md.
 
 For MetalBackend, still to do:
 
@@ -343,8 +356,7 @@ For VulkanBackend, still to do:
   a border. SoftBackend has positions in steps of 1/65536 of a pixel, so a larger bias moves
   those it has just before a border: 1/1024 made GlBackend differ in more pixels than none,
   1/65536 to 1/32768 in the fewest (gfxdevicetester's Nearest tests from 139, 19 and 19 to 13, 7
-  and 1). GlBackend through a uniform, DX12Backend and MetalBackend in the fourth value of the
-  third extra.
+  and 1). The GPU backends have it in the fourth value of the third extra, see GpuBackend.
 - **Pieces are at least two pixels across.** Narrower ones are only needed where the source is
   squeezed into each pixel (the rims of a cylinder seen almost to its sides at fine precision, a
   steep falloff of a lens), where they don't show, as the source is still sampled once per

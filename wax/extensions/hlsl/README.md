@@ -1,7 +1,8 @@
 # HLSL shaders
 
-The shaders of DX12Backend (`../dx12gfx`), MetalBackend (`../metalgfx`) and VulkanBackend
-(`../vulkangfx`). All three draw with the same shaders, so a change here changes them all.
+The shaders of DX12Backend (`../dx12gfx`), GlBackend (`../openglgfx`), MetalBackend
+(`../metalgfx`) and VulkanBackend (`../vulkangfx`). All four draw with the same shaders, so a
+change here changes them all.
 
 ## How they are put together
 
@@ -30,9 +31,15 @@ which is checked in:
 
     python3 wax/extensions/metalgfx/compile_shaders.py --dxc path/to/dxc
 
+GlBackend gets them as GLSL 3.3, which `openglgfx/compile_shaders.py` makes the same way, fixing
+up what GLSL 3.3 lacks (see the top of the script), into `openglgfx/wax_glshaders.cpp`, which is
+checked in. It checks the GLSL with glslangValidator if there is one:
+
+    python3 wax/extensions/openglgfx/compile_shaders.py --dxc path/to/dxc
+
 The list of DX12Backend and that of VulkanBackend have to be kept in step when a shader is added.
 
-## Rules that keep them working on all three
+## Rules that keep them working on all four
 
 - **Constants** come from `constants.hlsl`. DX12 has them as three cbuffers of root constants,
   Vulkan and Metal as one block of push constants, whose members get their usual names with
@@ -50,8 +57,11 @@ The list of DX12Backend and that of VulkanBackend have to be kept in step when a
   the same order as the `VS_OUTPUT` of its vertex shader.
 - **Dual-source blending** needs the second output as index 1 of location 0 in Vulkan, see
   `PS_OUTPUT` in `output.hlsl`.
-- Code only for Vulkan and Metal goes inside `#ifdef __spirv__`, which DXC defines when it
-  compiles to SPIR-V.
+- Code only for Vulkan, Metal and GL goes inside `#ifdef __spirv__`, which DXC defines when it
+  compiles to SPIR-V, and code only for GL inside `#ifdef WAX_GLSL`.
+- **Storage buffers** must be `StructuredBuffer`s of `float4`, `int4` or `uint4` read by index for
+  GL, which has them as buffer textures. Others need a `WAX_GLSL` path, as the vertices in
+  `vs_warp.hlsl` have.
 
 All shaders should compile with DXC both ways, which can be checked without Windows: as DXIL
 (`dxc -T ps_6_0 ...`), the closest we get to DX12's `D3DCompile()`, and as SPIR-V.

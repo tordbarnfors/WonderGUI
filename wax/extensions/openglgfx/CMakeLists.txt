@@ -3,7 +3,8 @@ set(SOURCES
 
 	wax_glbackend.cpp
 	wax_glbackend.h
-	wax_glbackendshaders.cpp
+	wax_glshaders.cpp
+	compile_shaders.py
 	wax_gldevicefactory.cpp
 	wax_gldevicefactory.h
 	wax_glsurface.cpp
@@ -19,6 +20,8 @@ set(SOURCES
 	wax_glwarpmapfactory.cpp
 	wax_glwarpmapfactory.h
 )
+
+set_source_files_properties(compile_shaders.py PROPERTIES HEADER_FILE_ONLY YES)
 
 set(INCDIRS
 	${CMAKE_CURRENT_LIST_DIR}

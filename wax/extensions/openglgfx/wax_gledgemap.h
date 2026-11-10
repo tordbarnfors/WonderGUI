@@ -23,8 +23,8 @@
 #define WAX_GLEDGEMAP_DOT_H
 #pragma once
 
-#include <wax_edgemap.h>
-#include <wax_tinttools.h>
+#include <wax_gpuedgemap.h>
+#include <vector>
 
 #ifdef WIN32
 #	include <GL/glew.h>
@@ -44,49 +44,48 @@ namespace wax
 	typedef StrongPtr<GlEdgemap> GlEdgemap_p;
 	typedef WeakPtr<GlEdgemap> GlEdgemap_wp;
 
-	class GlEdgemap : public Edgemap
+	//____ GlEdgemap __________________________________________________________
+	/**
+	 * @brief Edgemap for GlBackend.
+	 *
+	 * GpuEdgemap fills in what the shaders read in memory of ours, which is uploaded to a buffer
+	 * texture when a draw that reads it is rendered, see _upload().
+	 */
+
+	class GlEdgemap : public GpuEdgemap
 	{
-		friend class GlGfxDevice;
 		friend class GlBackend;
 	public:
 
 		//.____ Creation __________________________________________
-		
+
 		static GlEdgemap_p	create( const Blueprint& blueprint );
 		static GlEdgemap_p	create( const Edgemap::Blueprint& blueprint, SampleOrigo origo, const float * pSamples, int edges, int edgePitch = 0, int samplePitch = 0);
 		static GlEdgemap_p	create( const Edgemap::Blueprint& blueprint, SampleOrigo origo, const spx * pSamples, int edges, int edgePitch = 0, int samplePitch = 0);
 
-
-    	//.____ Identification __________________________________________
+		//.____ Identification __________________________________________
 
 		const TypeInfo&     typeInfo(void) const override;
 		const static TypeInfo   TYPEINFO;
 
-
 	protected:
-
 		GlEdgemap(const Blueprint& bp);
 		~GlEdgemap();
+
+		float *	_allocBuffer( size_t bytes ) override;
+		void	_commitBuffer() override;
 
 		void	_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd) override;
 		void	_colorsUpdated(int beginSegment, int endSegment) override;
 
-		// Buffer layout, in float4 entries: samples prepared for drawing (one entry per column
-		// and edge), raw samples (left and right side of each column and edge, in pixels, for
-		// warps), flat colors (one per segment), tint table (x is offset of tint block for
-		// segment, -1 if flat) and tint blocks.
+		void	_upload();				// Uploads our content to the buffer if it has changed.
 
-		int		_rawSamplesOfs() const { return m_size.w * (m_nbSegments - 1); }
-		int		_flatColorsOfs() const { return m_paletteOfs / 16; }
-		int		_tintTableOfs() const { return m_paletteOfs / 16 + m_nbSegments; }
-
-		GLuint		m_bufferId;
-		GLuint		m_textureId;
-		int			m_paletteOfs;			// Offset to flat colors in buffer, measured in bytes.
-		int			m_bufferSize = 0;		// Size of buffer in bytes.
-   };
-
-
+		GLuint				m_bufferId = 0;
+		GLuint				m_textureId = 0;		// Buffer texture of float4 reading m_bufferId.
+		std::vector<float>	m_content;				// What GpuEdgemap fills in.
+		std::vector<float>	m_newContent;			// Made by _allocBuffer(), until _commitBuffer().
+		bool				m_bChanged = true;		// m_content has changed since uploaded.
+	};
 
 } // namespace wax
 #endif // WAX_GLEDGEMAP_DOT_H

@@ -37,11 +37,10 @@
 #	endif
 #endif
 
-#include <wax_backend.h>
-#include <wax_gpushapes.h>
-#include <wax_gputools.h>
-#include <wax_tinttools.h>
+#include <wax_gpubackend.h>
 #include <wax_glsurface.h>
+
+#include <vector>
 
 namespace wax
 {
@@ -50,7 +49,21 @@ namespace wax
 	typedef	StrongPtr<GlBackend> GlBackend_p;
 	typedef	WeakPtr<GlBackend>	GlBackend_wp;
 
-	class GlBackend : public Backend
+	//____ GlBackend ___________________________________________________________
+	/**
+	 * @brief Backend that renders with OpenGL 3.3.
+	 *
+	 * Built on GpuBackend, which turns the commands into what the shaders read. The shaders are
+	 * the HLSL of wax/extensions/hlsl, turned into GLSL 3.3 by compile_shaders.py, see
+	 * wax_glshaders.cpp.
+	 *
+	 * GL takes the vertices, colors and extras of a session best in one upload each, so the hooks
+	 * GpuBackend calls only record what to do, and endSession() uploads the buffers and plays the
+	 * recording back, see _execute(). The constants of each draw are recorded the same way and set
+	 * as uniforms when they have changed for the program in use, see compile_shaders.py.
+	 */
+
+	class GlBackend : public GpuBackend
 	{
 		friend class GlSurface;
 
@@ -58,7 +71,7 @@ namespace wax
 
 		//.____ Creation __________________________________________
 
-		static GlBackend_p	create(int uboBindingPoint = 0 );
+		static GlBackend_p	create(int uboBindingPoint = 0 );		// uboBindingPoint isn't used, we have no uniform buffers.
 
 		//.____ Identification __________________________________________
 
@@ -70,21 +83,6 @@ namespace wax
 		void	beginRender() override;
 		void	endRender() override;
 
-		void	beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo = nullptr ) override;
-		void	endSession() override;
-
-		void	setCanvas(Surface* pSurface) override;
-		void	setCanvas(CanvasRef ref) override;
-
-		void	setObjects(Object* const * pBeg, Object* const * pEnd) override;
-
-		void	setRects(const RectSPX* pBeg, const RectSPX* pEnd) override;
-		void	setColors(const HiColor* pBeg, const HiColor* pEnd) override;
-		void	setTransforms(const Transform* pBeg, const Transform* pEnd) override;
-
-		void	processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int version) override;
-
-
 		//.____ Misc _________________________________________________________
 
 		bool	setDefaultCanvas(SizeSPX size, int scale, ColorSpace colorSpace = ColorSpace::sRGB);
@@ -94,8 +92,6 @@ namespace wax
 		SurfaceFactory_p	surfaceFactory() override;
 		EdgemapFactory_p	edgemapFactory() override;
 		WarpmapFactory_p	warpmapFactory() override;
-
-		int		maxEdges() const override;
 
 		bool	canBeBlitSource(const TypeInfo& type) const override;
 		bool	canBeCanvas(const TypeInfo& type) const override;
@@ -109,155 +105,173 @@ namespace wax
 		GlBackend(int uboBindingPoint);
 		~GlBackend();
 
-		const static int	c_maxSegments = 16;
-		static const int	c_segmentsTintTexMapSize = 64 * 10;				// Number of segments tint palettes that fit into segmentsTintTexMap.
+		//.____ GpuBackend ____________________________________________________
 
-		static const int 	s_flipCornerOrder[GfxFlip_size][4];
+		bool	_isRecording() const override;
 
-		void	_loadPrograms(int uboBindingPoint);
+		bool	_isNativeSurface( const Object * pObject ) const override;
+		bool	_isNativeEdgemap( const Object * pObject ) const override;
+		bool	_isNativeWarpmap( const Object * pObject ) const override;
+
+		void	_beginSessionOnDevice( Surface * pCanvas ) override;
+		void	_endSessionOnDevice() override;
+
+		bool	_reserveFrameBuffers( int nVertices, int nColors, int nExtras, int nObjects ) override;
+
+		bool	_bindCanvas( Surface * pCanvas, SizeI& size, CanvasKind& kind ) override;
+		bool	_setPipeline( PipelineKind kind ) override;
+		void	_setConstants( ConstantBlock block ) override;
+		void	_draw( int firstVertex, int nVertices ) override;
+		void	_setScissor( const RectI& rect ) override;
+		void	_resetScissor() override;
+
+		void	_prepareBlitSource( Surface * pSurface ) override;
+		bool	_bindBlitTexture( Surface * pSurface ) override;
+		void	_bindBlitSampler( Surface * pSurface, bool bClip ) override;
+		bool	_bindEdgemap( GpuEdgemap * pEdgemap ) override;
+		void	_drawWarpmap( Warpmap * pWarpmap, const RectI * pPatches, int nPatches ) override;
+
+		//.____ Internal ______________________________________________________
+
+		// Texture units of what the shaders read, see compile_shaders.py.
+
+		enum TextureUnit
+		{
+			BlitSourceUnit = 0,				// waxBlitSource, sampler2D or usampler2D.
+			ColorsUnit = 1,					// waxBuffer0, register t0.
+			ExtrasUnit = 2,					// waxBuffer1, register t1.
+			EdgemapOrPaletteUnit = 3		// waxBuffer3, register t3: the edgemap drawn or the palette of the blit source.
+		};
+
+		// The constants as the shaders have them, the three blocks of GpuBackend one after the other,
+		// see constants.hlsl, and glCanvas, which compile_shaders.py adds: how y is flipped. Set as
+		// uvec4 waxConstants[6].
+
+		struct ShaderConstants
+		{
+			CanvasConstants	canvas;
+			PixelConstants	pixel;
+			WarpConstants	warp;
+			float			glCanvas[4];		// Flip of clip space y, y of gl_FragCoord at 0, its multiplier, unused.
+		};
+
+		// What the hooks record, played back by _execute().
+
+		enum class Op : uint8_t
+		{
+			BindCanvas,				// pObject: the surface, null for the default canvas.
+			SetPipeline,			// a: PipelineKind, b: blend mode.
+			SetConstants,			// a: index in m_constantSnapshots.
+			Draw,					// a: first vertex, b: vertices.
+			SetScissor,				// rect, in canvas pixels from the top.
+			BindBlitTexture,		// pObject: the surface.
+			BindSampler,			// a: index in m_samplers.
+			BindEdgemap,			// pObject: the edgemap.
+			DrawWarpmap				// pObject: the Warpmap, a: first patch in m_patches, b: patches.
+		};
+
+		struct Op_t
+		{
+			Op			op;
+			int			a;
+			int			b;
+			Object *	pObject;		// Kept alive by m_sessionObjects.
+			RectI		rect;
+		};
+
+		void	_record( Op op, int a = 0, int b = 0, Object * pObject = nullptr, const RectI& rect = RectI() );
+		void	_holdForSession( Object * pObject );
+		void	_pushConstants();
+
+		void	_execute();
+		void	_executeBindCanvas( GlSurface * pCanvas );
+		void	_executeSetPipeline( PipelineKind kind, BlendMode blendMode );
+		void	_executeScissor( const RectI& rect );
+		void	_executeConstants();
+
+		void	_loadPrograms();
 		Blob_p	_generateProgramBlob();
 		GLuint  _loadOrCompileProgram(int programNb, const char* pVertexShaderSource, const char* pFragmentShaderSource);
+		void	_setUniforms(GLuint progId);
 
-		void	_setUniforms(GLuint progId, int uboBindingPoint);
+		static const char *	_shaderSource( const char * pName );
 
-		void	_setBlendMode(BlendMode mode);
-		void	_setBlitSource(GlSurface* pSurf);
-		void	_setPartialCoverage(bool bPartialCoverage);
-		void	_resetCommandStates();
-		void	_uploadCanvasUBO();
-
-
-
-		void	_setCanvas(Surface* pSurface);
-		void	_setPaletteInfo(GLuint prog, GlSurface* pSurf);
-		void	_setRgbxClip(GLuint prog, GlSurface* pSurf, bool bClipBlit);
-
-		enum CommandGL
-		{
-			SetCanvas,
-			StateChange,
-			Lines,
-			CappedLines,	// Lines with caps, drawn by the shape shader.
-			StraightFill,
-			SubpixelFill,
-			Blit,
-			ClipBlit,		// A Blit that leaves everything outside the source alone.
-			Blur,
-			Edgemap,
-			Shape,
-			WarpEdgemap,
-			WarpBlit
-		};
-
-		enum BlurSource			// Kind of blit source, selects the blur shader.
-		{
-			Normal,
-			Alpha,				// Alpha_8, read as white with alpha.
-			Palette				// Palette based, each tap looked up in the palette.
-		};
-
-
-		SurfaceFactory_p	m_pSurfaceFactory = nullptr;
-		EdgemapFactory_p	m_pEdgemapFactory = nullptr;
+		SurfaceFactory_p	m_pSurfaceFactory;
+		EdgemapFactory_p	m_pEdgemapFactory;
 		WarpmapFactory_p	m_pWarpmapFactory;
 
-		Object* const * m_pObjectsBeg = nullptr;		// Object table, commands refer to objects by index.
-		Object* const * m_pObjectsEnd = nullptr;
-
-		const RectSPX* m_pRectsBeg = nullptr;
-		const RectSPX* m_pRectsEnd = nullptr;
-		const RectSPX* m_pRectsPtr = nullptr;
-
-		const HiColor* m_pColorsBeg = nullptr;
-		const HiColor* m_pColorsEnd = nullptr;
-		const HiColor* m_pColorsPtr = nullptr;
-
-		const Transform* m_pTransformsBeg = nullptr;
-		const Transform* m_pTransformsEnd = nullptr;
-
-
-
-		//
-
-		bool	m_bProgramBinariesSupported = false;
-
-
-
-		GLuint			m_framebufferId;
-		int				m_nSegments;								// Number of segments for current segment command.
-
-		GLsync          m_idleSync = 0;
-
 		bool			m_bFullyInitialized = false;
+		bool			m_bRendering = false;			// Between beginRender() and endRender(), ready to render.
 
-		CoordF			m_blitSourceSize;
-		SampleMethod	m_blitSourceSampleMethod;
+		// Recording, see the class description.
 
-		// "Active" members are updated and used in the rendering loop in endSession.
+		std::vector<Op_t>			m_ops;
+		std::vector<RectI>			m_patches;				// Of DrawWarpmap.
+		std::vector<Object_p>		m_sessionObjects;		// Objects the recording points at.
+		std::vector<ShaderConstants>	m_constantSnapshots;	// What the draws have.
 
-		bool			m_bActiveCanvasIsA8 = false;
-		bool			m_bActiveCanvasHasAlpha = true;									// False for canvases that don't store alpha, like XRGB_8.
-		bool			m_bReplaceBlending = false;										// Blending enabled for Replace, see _setPartialCoverage().
-		GlSurface_p		m_pActiveCanvas = nullptr;                                      // Currently active canvas in OpenGL, not to confuse with m_pCanvas which might not be active yet.
-		SizeI			m_activeCanvasSize;                                             // Currently active canvas size in OpenGL, " -
-		bool			m_bMipmappedActiveCanvas = false;                               // Set if currently active canvas is a surface that is mipmapped.
-		BlendMode		m_activeBlendMode = BlendMode::Blend;
+		ShaderConstants				m_constants;			// As set by the hooks.
+		bool						m_bConstantsChanged = true;
 
-		GlSurface_p		m_pActiveBlitSource = nullptr;									// Currently active blit source in OpenGL, not to confuse with m_pBlitSource which might not be active yet.
-		bool			m_bTintIsActive = false;
+		bool						m_bCanvasBound = false;	// A canvas has been bound in the recording.
+		SizeI						m_targetSize;			// Of the canvas being recorded for, in pixels.
+		CanvasKind					m_targetKind = CanvasKind::WithAlpha;
 
-		GLfloat			m_activeMorphFactor = 0.5f;
+		std::vector<Vertex>			m_vertices;				// GpuBackend's buffers, see _reserveFrameBuffers().
+		std::vector<Color>			m_colors;
+		std::vector<Extras>			m_extras;
 
-		// Device programs
+		// Playing back.
 
-		GLuint  m_fillProg[2];									// [RGB/A_8 dest]
-		GLuint  m_fillTintmapProg[2];							// [RGB/A_8 dest]
+		GlSurface *		m_pExecCanvas = nullptr;
+		bool			m_bExecDefaultCanvas = false;
+		bool			m_bExecCanvasOK = false;			// Framebuffer complete, draws go through.
+		SizeI			m_execTargetSize;
+		CanvasKind		m_execTargetKind = CanvasKind::WithAlpha;
+		GLuint			m_execProgram = 0;
+		int				m_execProgramIndex = -1;			// kind * 2 + dual source, of m_execProgram.
+		int				m_execConstants = -1;				// What the draws get, in m_constantSnapshots.
+		int				m_execBlendKey = -1;				// Blend state last set, see _executeSetPipeline().
 
-		GLuint  m_aaFillProg[2];								// [RGB/A_8 dest]
-		GLuint  m_aaFillTintmapProg[2];							// [RGB/A_8 dest]
+		// GL objects
 
-		GLuint  m_blurProg[3][2][2];							// [BlurSource][tint][RGB/A_8 dest]
-		GLuint  m_blitProg[2];									// [RGB/A_8 dest]
-		GLuint  m_blitTintmapProg[2];							// [RGB/A_8 dest]
+		GLuint			m_programs[int(PipelineKind::Size)][2] = {};	// [kind][dual source]
+		GLint			m_constantsLocations[int(PipelineKind::Size) * 2] = {};	// Of waxConstants, [kind * 2 + dual source].
+		int				m_programConstants[int(PipelineKind::Size) * 2] = {};	// What each program has been given this session, -1 for nothing.
+		GLuint			m_samplers[16] = {};				// [mipmapped*8 + clip*4 + tiling*2 + bilinear]
 
-		GLuint  m_alphaBlitProg[2];								// [RGB/A_8 dest]
-		GLuint  m_alphaBlitTintmapProg[2];						// [RGB/A_8 dest]
+		GLuint			m_framebufferId = 0;
+		GLuint			m_vertexArrayId = 0;
+		GLuint			m_vertexBufferId = 0;
+		GLuint			m_colorBufferId = 0;
+		GLuint			m_colorBufferTex = 0;
+		GLuint			m_extrasBufferId = 0;
+		GLuint			m_extrasBufferTex = 0;
 
-		GLuint  m_paletteBlitNearestProg[2];						// [RGB/A_8 dest]
-		GLuint  m_paletteBlitNearestTintmapProg[2];				// [RGB/A_8 dest]
+		bool			m_bProgramBinariesSupported = false;
 
-		GLuint  m_paletteBlitInterpolateProg[2];					// [RGB/A_8 dest]
-		GLuint  m_paletteBlitInterpolateTintmapProg[2];			// [RGB/A_8 dest]
+		CanvasInfo		m_defaultCanvas;
+		CanvasInfo		m_dummyCanvas;
+		bool			m_bDefaultCanvasHasAlpha = true;	// The default framebuffer might not have alpha.
 
-		GLuint  m_lineFromToProg[2];							// [RGB/A_8 dest]
+		// GL states saved between beginRender() and endRender().
 
-		GLuint	m_segmentsProg[c_maxSegments][2];			// [nb segments][RGB/A_8 dest]
+		GLboolean	m_glDepthTest;
+		GLboolean   m_glScissorTest;
+		GLboolean	m_glBlendEnabled;
+		GLboolean	m_glSRGBEnabled;
+		GLboolean	m_glCullFace;
+		GLint		m_glBlendSrc;
+		GLint		m_glBlendDst;
+		GLint		m_glViewport[4];
+		GLint		m_glScissorBox[4];
+		GLint		m_glReadFrameBuffer;
+		GLint		m_glDrawFrameBuffer;
 
-		GLuint	m_shapeProg[2];									// [RGB/A_8 dest]
-		GLuint	m_warpEdgemapProg[2];							// [RGB/A_8 dest]
-		GLuint	m_warpBlitProg[2];								// [RGB/A_8 dest]
+		// Program binaries
 
-		struct WarpUniforms
-		{
-			GLint	clampInset;
-			GLint	nearestBias;
-			GLint	colorsOfs;
-			GLint	dest;
-			GLint	extrasOfs;
-			GLint	ref;
-			GLint	sourceKind;
-			GLint	tintOfs;
-		};
-
-		WarpUniforms	m_warpEdgemapUniforms[2];				// [RGB/A_8 dest]
-		WarpUniforms	m_warpBlitUniforms[2];					// [RGB/A_8 dest]
-
-		GLuint	m_blitProgMatrix[PixelFormat_size][2][2][2];	// [source format][interpolation][tintgradient][RGB/A_8 dest]
-
-		//
-
-		const static int c_nbPrograms = 44 + (c_maxSegments-1) * 2;
-		const static int c_versionNb = 122;		// 104: Tints replaced Tintmaps. 105: Tint color applied together with tint. 106: Palette ClipBlit clipping. 107: Palette read by index, capacity wide. 108: Blur for Alpha_8 sources and canvases. 109: Alpha of sources without alpha in ClipBlits. 110: Bilinear palette taps and weights from the same value. 111: Palette sampled with texture(), not texelFetch(). 112: Shape programs. 113: Premultiplied canvases, output by blend mode, tinted lines. 114: Tiled edgemaps. 115: Edgemap segments where edges cross and on canvases without alpha. 116: Effect modes on premultiplied colors in one pass. 117: Warps. 118: Warps through triangles. 119: Warps through the mesh as it is. 120: Three extras for warps. 121: Coverage of warp vertices. 122: Bias of warp positions for Nearest sampling.
+		const static int c_nbPrograms = int(PipelineKind::Size) * 2;
+		const static int c_versionNb = 123;		// ... 122: Bias of warp positions for Nearest sampling. 123: GLSL generated from the HLSL, on GpuBackend.
 
 		struct ProgramBlobEntry
 		{
@@ -273,192 +287,21 @@ namespace wax
 			ProgramBlobEntry	programs[c_nbPrograms];
 		};
 
-
-		//
-
-		struct VertexGL
-		{
-			CoordI	coord;
-			CoordF	uv;								// Actually contains blitSourceSize in most cases.
-			int		colorsOfs;						// Offset into colorBuffer for color incl flat tint.
-			int		extrasOfs;						// Offset into extrasBuffer for extra data needed by shader.
-			CoordF	tintmapOfs;						// x is offset of tint block in colorBuffer, -1 for none.
-			CoordF	colorstripOfs;					// Not used.
-		};
-
-		struct ColorGL
-		{
-			float	r, g, b, a;
-		};
-
-
-		//
-
-		CanvasInfo			m_defaultCanvas;
-		CanvasInfo			m_dummyCanvas;
-		
-		//
-
-		struct BlurUniform
-		{
-			float   colorMtx[9][4];
-			float   offset[9][2];
-		};
-
-		struct CanvasUBO
-		{
-			float	width;
-			float	height;
-			float	yOfs;
-			float	yMul;
-			float	blendInfo[4];		// How fragment shaders output to the blender, see WAX_GL_OUTPUT.
-		};
-
-
-		BlurUniform	m_activeBlurInfo;
-		spx			m_activeBlurRadius = 64;
-		Blurbrush_p	m_pActiveBlurbrush;
-
-		GLint		m_blurUniformLocation[3][2][2][2];				// [BlurSource][tint][RGB/A_8 dest][colorMtx/offset]
-
-
-
-		// Buffers
-
-		CanvasUBO	m_canvasUBO;
-		GLuint		m_canvasUBOId;				// Binds to binding point 1
-
-
-		GLuint  m_vertexArrayId;
-		GLuint  m_vertexBufferId;
-
-		GLuint	m_colorBufferTex;
-		GLuint	m_colorBufferId;
-
-
-		GLuint	m_extrasBufferTex;
-		GLuint	m_extrasBufferId;
-
-
-		// GL states saved between BeginRender() and EndRender().
-
-		GLboolean	m_glDepthTest;
-		GLboolean   m_glScissorTest;
-		GLboolean	m_glBlendEnabled;
-		GLboolean	m_glSRGBEnabled;
-		GLint		m_glBlendSrc;
-		GLint		m_glBlendDst;
-		GLint		m_glViewport[4];
-		GLint		m_glScissorBox[4];
-		GLint		m_glReadFrameBuffer;
-		GLint		m_glDrawFrameBuffer;
-
-		//
-
 		static Blob_p	s_pShaderPrograms;
 
-		static int s_bindingPointCanvasUBO;
+		// Shaders, see wax_glshaders.cpp.
 
-		//
+		struct ShaderSource
+		{
+			const char *	pName;
+			const char *	pSource;
+		};
 
-		static const char fillVertexShader[];
-		static const char fillTintmapVertexShader[];
-		static const char fillFragmentShader[];
-		static const char fillFragmentShader_A8[];
-		static const char fillFragmentShaderTintmap[];
-		static const char fillFragmentShaderTintmap_A8[];
-
-		static const char blitVertexShader[];
-		static const char blitTintmapVertexShader[];
-		static const char blitFragmentShader[];
-		static const char blitFragmentShader_A8[];
-		static const char blitFragmentShaderTintmap[];
-		static const char blitFragmentShaderTintmap_A8[];
-		static const char * const blurFragmentShaders[3][2][2];		// [BlurSource][tint][RGB/A_8 dest]
-		static const char lineFromToVertexShader[];
-		static const char lineFromToFragmentShader[];
-		static const char lineFromToFragmentShader_A8[];
-		static const char aaFillVertexShader[];
-		static const char aaFillTintmapVertexShader[];
-
-		static const char aaFillFragmentShader[];
-		static const char aaFillFragmentShader_A8[];
-		static const char aaFillFragmentShaderTintmap[];
-		static const char aaFillFragmentShaderTintmap_A8[];
-
-
-		static const char segmentsVertexShader[];
-		static const char segmentsFragmentShader[];
-		static const char segmentsFragmentShader_A8[];
-
-		static const char shapeVertexShader[];
-		static const char shapeFragmentShader[];
-		static const char shapeFragmentShader_A8[];
-		static const char warpVertexShader[];
-		static const char warpEdgemapFragmentShader[];
-		static const char warpEdgemapFragmentShader_A8[];
-		static const char warpBlitFragmentShader[];
-		static const char warpBlitFragmentShader_A8[];
-
-		static const char alphaBlitFragmentShader[];
-		static const char alphaBlitFragmentShader_A8[];
-		static const char alphaBlitFragmentShaderTintmap[];
-		static const char alphaBlitFragmentShaderTintmap_A8[];
-
-		static const char paletteBlitNearestVertexShader[];
-		static const char paletteBlitNearestTintmapVertexShader[];
-
-		static const char paletteBlitNearestFragmentShader[];
-		static const char paletteBlitNearestFragmentShader_A8[];
-		static const char paletteBlitNearestFragmentShaderTintmap[];
-		static const char paletteBlitNearestFragmentShaderTintmap_A8[];
-
-
-		static const char paletteBlitInterpolateVertexShader[];
-		static const char paletteBlitInterpolateTintmapVertexShader[];
-
-		static const char paletteBlitInterpolateFragmentShader[];
-		static const char paletteBlitInterpolateFragmentShader_A8[];
-		static const char paletteBlitInterpolateFragmentShaderTintmap[];
-		static const char paletteBlitInterpolateFragmentShaderTintmap_A8[];
-
-
-		//
+		static const ShaderSource	s_shaderSources[];
+		static const int			s_nbShaderSources;
 
 		static void onGlError(GLenum errorCode, const Object * pObject, const TypeInfo* pClassType, const char * func, const char * file, int line);
-
-		//
-
-		VertexGL*	m_pVertexBuffer = nullptr;
-		int			m_nVertices = 0;
-
-		ColorGL*	m_pColorBuffer = nullptr;
-		int			m_nColors = 0;
-
-		GLfloat*	m_pExtrasBuffer = nullptr;
-		int			m_extrasBufferSize = 0;
-
-		int*		m_pCommandQueue = nullptr;
-		int			m_commandQueueSize = 0;
-
-		std::vector<Object*> m_objects;
-
-		int			m_tintColorOfs = -1;		// Offset in m_pColorBuffer for tintColor if flat tint active.
-
-		int			m_tintOfs = -1;				// Offset in m_pColorBuffer for tint block (see TintTools) if Tint is active.
-
-		int			m_colorBufferCapacity = 0;	// Entries allocated in m_pColorBuffer.
-		int			m_sessionColors = 0;		// Colors in session according to SessionInfo, reserve for tint blocks growing the buffer.
-
-		void		_reserveColors(int used, int extra);
-
-		std::vector<GpuShapes::Segment>	m_shapeSegments;		// Segments of shape being processed.
-
-		std::vector<GpuTools::CappedLine>	m_cappedLines;		// Lines with caps of line command being processed.
-
-
 	};
 
 } // namespace wax
-#endif //WAX_GLDEVICE_DOT_H
-
+#endif //WAX_GLBACKEND_DOT_H
