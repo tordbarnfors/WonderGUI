@@ -22,16 +22,14 @@
 
 #include <wax_metaledgemap.h>
 #include <wax_metalbackend.h>
-#include <wax_tinttools.h>
+#include <wax_base.h>
 
 #include <cstring>
 
 namespace wax
 {
 
-const TypeInfo MetalEdgemap::TYPEINFO = { "MetalEdgemap", &Edgemap::TYPEINFO };
-
-const int MetalEdgemap::c_tintSlotSize = TintTools::gpuTintBlockMaxSize(Tint::c_maxMixComponents, Tint::c_maxMixComponents * Tint::c_maxStops);
+const TypeInfo MetalEdgemap::TYPEINFO = { "MetalEdgemap", &GpuEdgemap::TYPEINFO };
 
 
 //____ create() ______________________________________________________________
@@ -78,20 +76,27 @@ MetalEdgemap_p MetalEdgemap::create( const Edgemap::Blueprint& blueprint, Sample
 
 //____ constructor ___________________________________________________________
 
-MetalEdgemap::MetalEdgemap(const Blueprint& bp) : Edgemap(bp)
+MetalEdgemap::MetalEdgemap(const Blueprint& bp) : GpuEdgemap(bp)
 {
-	m_samplesSize = bp.size.w * (bp.segments - 1) * 2;			// Edge strips and raw samples.
+	// Without a buffer MetalBackend draws nothing for the edgemap.
 
-	_createBuffer(m_nbTints > 0);
-	_writeColors(0, m_nbSegments);
+	if( MetalBackend::s_metalDevice == nil )
+	{
+		Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
+			"No Metal device set. MetalBackend::setMetalDevice() must be called before any edgemap is created.",
+			this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		return;
+	}
+
+	_createContent();
 }
 
 //____ destructor ____________________________________________________________
 
 MetalEdgemap::~MetalEdgemap()
 {
-	[m_bufferId release];
-	m_bufferId = nil;
+	[m_buffer release];
+	[m_newBuffer release];
 }
 
 //____ typeInfo() ____________________________________________________________
@@ -101,177 +106,25 @@ const TypeInfo& MetalEdgemap::typeInfo(void) const
 	return TYPEINFO;
 }
 
-//____ _samplesUpdated() ______________________________________________________
+//____ _allocBuffer() ________________________________________________________
 
-void MetalEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd)
+float * MetalEdgemap::_allocBuffer( size_t bytes )
 {
-	// We need to update columns left and right of first/last sample.
+	[m_newBuffer release];
+	m_newBuffer = [MetalBackend::s_metalDevice newBufferWithLength:bytes options:MTLResourceStorageModeShared];
 
-	int columnBegin = sampleBegin == 0 ? 0 : sampleBegin - 1;
-	int columnEnd = sampleEnd > m_size.w ? m_size.w : sampleEnd;
-
-	int nPixelColumns = columnEnd - columnBegin;
-
-	int edgeStripPitch = m_nbSegments - 1;
-
-	const spx* pEdges = m_pSamples + edgeStripPitch * columnBegin;
-	int outColumnSkip = ((m_nbSegments - 1) - (edgeEnd - edgeBegin)) * 4;
-
-	// Raw samples for warps, the left and right side of each column in pixels.
-
-	auto pRaw = m_pBuffer + (_rawSamplesOfs() + columnBegin * edgeStripPitch + edgeBegin) * 4;
-
-	for (int i = 0; i < nPixelColumns; i++)
-	{
-		for (int j = edgeBegin; j < edgeEnd; j++)
-		{
-			*pRaw++ = pEdges[i * edgeStripPitch + j] / 64.f;
-			*pRaw++ = pEdges[(i + 1) * edgeStripPitch + j] / 64.f;
-			*pRaw++ = 0.f;
-			*pRaw++ = 0.f;
-		}
-
-		pRaw += outColumnSkip;
-	}
-
-	// Edge strips
-
-	auto pOut = m_pBuffer + columnBegin * edgeStripPitch * 4 + edgeBegin * 4;
-
-	for (int i = 0; i < nPixelColumns; i++)
-	{
-		for (int j = edgeBegin; j < edgeEnd; j++)
-		{
-			int edgeIn = pEdges[j];
-			int edgeOut = pEdges[edgeStripPitch + j];
-
-			if (edgeIn > edgeOut)
-				std::swap(edgeIn, edgeOut);
-
-			float increment = edgeOut == edgeIn ? 100.f : 64.f / (edgeOut - edgeIn);
-			float beginAdder;
-			float endAdder;
-
-			if ((edgeOut & 0xFFFFFFC0) == (edgeIn & 0xFFFFFFC0))
-			{
-				float firstPixelCoverage = ((64 - (edgeOut & 0x3F)) + (edgeOut - edgeIn) / 2) / 64.f;
-
-				beginAdder = increment * (edgeIn & 0x3F) / 64.f + firstPixelCoverage;
-				endAdder = beginAdder;
-			}
-			else
-			{
-				int height = 64 - (edgeIn & 0x3F);
-				int width = (int)(increment * height);
-				float firstPixelCoverage = (height * width) / (2 * 4096.f);
-				float lastPixelCoverage = 1.f - (edgeOut & 0x3F) * increment * (edgeOut & 0x3F) / (2 * 4096.f);
-
-				beginAdder = increment * (edgeIn & 0x3F) / 64.f + firstPixelCoverage;
-				endAdder = lastPixelCoverage - (1.f - (edgeOut & 0x3F) * increment / 64.f);
-			}
-
-			*pOut++ = edgeIn / 64.f;				// Segment begin pixel
-			*pOut++ = increment;					// Segment increment
-			*pOut++ = beginAdder;					// Segment begin adder
-			*pOut++ = endAdder;						// Segment end adder
-		}
-
-		pEdges += edgeStripPitch;
-		pOut += outColumnSkip;
-	}
+	return m_newBuffer ? (float *) [m_newBuffer contents] : nullptr;
 }
 
-
-//____ _colorsUpdated() ____________________________________________________
-
-void MetalEdgemap::_colorsUpdated(int beginSegment, int endSegment)
-{
-	// First tint on an edgemap that had none needs a bigger buffer. Command
-	// buffers already encoded keep the old one alive until they are done.
-
-	if( m_nbTints > 0 && !m_bHasTintSlots )
-	{
-		_createBuffer(true);
-		beginSegment = 0;
-		endSegment = m_nbSegments;
-	}
-
-	_writeColors(beginSegment, endSegment);
-}
-
-//____ _createBuffer() _____________________________________________________
+//____ _commitBuffer() _______________________________________________________
 //
-// Creates the buffer, with or without room for tint blocks, and carries over
-// the edge strips of the one it replaces. Colors are left for _writeColors().
+// Command buffers that have encoded the old buffer keep it until they are done with it.
 
-void MetalEdgemap::_createBuffer(bool bWithTintSlots)
+void MetalEdgemap::_commitBuffer()
 {
-	int entries = m_samplesSize + m_nbSegments * 2;
-
-	if( bWithTintSlots )
-		entries += m_nbSegments * c_tintSlotSize;
-
-	size_t bytes = size_t(entries) * 4 * sizeof(float);
-
-	id<MTLBuffer> bufferId = [MetalBackend::s_metalDevice newBufferWithLength:bytes options:MTLResourceStorageModeShared];
-	float * pBuffer = (float *)[bufferId contents];
-
-	std::memset( pBuffer, 0, bytes );
-
-	if( m_pBuffer )
-		std::memcpy( pBuffer, m_pBuffer, size_t(m_samplesSize) * 4 * sizeof(float) );
-
-	[m_bufferId release];
-
-	m_bufferId = bufferId;
-	m_pBuffer = pBuffer;
-	m_bHasTintSlots = bWithTintSlots;
+	[m_buffer release];
+	m_buffer = m_newBuffer;
+	m_newBuffer = nil;
 }
-
-//____ _writeColors() ______________________________________________________
-//
-// Flat colors, tint table entries and tint blocks of the given segments.
-
-void MetalEdgemap::_writeColors(int beginSegment, int endSegment)
-{
-	RectSPX rect(0, 0, m_size.w * 64, m_size.h * 64);
-
-	for (int seg = beginSegment; seg < endSegment; seg++)
-	{
-		float * pFlat = m_pBuffer + (_flatColorsOfs() + seg) * 4;
-		float * pTable = m_pBuffer + (_tintTableOfs() + seg) * 4;
-
-		m_pFlatColors[seg].toLinearFloat(pFlat);		// Colors are sRGB, but we blend in linear.
-
-		int blockOfs = -1;
-
-		if( m_pTints[seg] && m_bHasTintSlots )
-		{
-			uint16_t	words[TintTools::c_maxEncodedTintWords];
-			HiColor		colors[TintTools::c_maxEncodedTintColors];
-			int			nColors;
-
-			TintTools::encodeTint(m_pTints[seg], rect, words, colors, nColors);
-
-			const HiColor* pColors = colors;
-			TintTools::DecodedTint decoded;
-			TintTools::decodeTint(words, pColors, decoded);
-
-			if( decoded.nLayers > 0 )
-			{
-				blockOfs = _tintSlotOfs(seg);
-				TintTools::writeGpuTintBlock(decoded, m_pBuffer + blockOfs * 4);
-			}
-		}
-
-		pTable[0] = float(blockOfs);
-		pTable[1] = 0.f;
-		pTable[2] = 0.f;
-		pTable[3] = 0.f;
-	}
-}
-
-
 
 } // namespace wax
-

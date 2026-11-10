@@ -1,7 +1,7 @@
 # HLSL shaders
 
-The shaders of DX12Backend (`../dx12gfx`) and VulkanBackend (`../vulkangfx`). Both backends draw
-with the same shaders, so a change here changes both.
+The shaders of DX12Backend (`../dx12gfx`), MetalBackend (`../metalgfx`) and VulkanBackend
+(`../vulkangfx`). All three draw with the same shaders, so a change here changes them all.
 
 ## How they are put together
 
@@ -24,15 +24,24 @@ VulkanBackend gets them as SPIR-V, compiled by DXC into `vulkangfx/spirv`, which
 
     python3 wax/extensions/vulkangfx/compile_shaders.py --dxc path/to/dxc
 
-Both lists have to be kept in step when a shader is added.
+MetalBackend gets them as MSL, which `metalgfx/compile_shaders.py` makes from them with DXC and
+SPIRV-Cross, using the list of `vulkangfx/compile_shaders.py`, into `metalgfx/wax_metalshaders.mm`,
+which is checked in:
 
-## Rules that keep them working on both
+    python3 wax/extensions/metalgfx/compile_shaders.py --dxc path/to/dxc
+
+The list of DX12Backend and that of VulkanBackend have to be kept in step when a shader is added.
+
+## Rules that keep them working on all three
 
 - **Constants** come from `constants.hlsl`. DX12 has them as three cbuffers of root constants,
-  Vulkan as one block of push constants, whose members get their usual names with `#define`s.
+  Vulkan and Metal as one block of push constants, whose members get their usual names with
+  `#define`s.
   So no local variable or parameter may be named like a constant (`flags`, `tintOfs`...).
 - **Registers** become Vulkan bindings with the same number, in one descriptor set: `t0`-`t4`
-  are bindings 0-4, and `s0` is binding 5 (compiled with `-fvk-s-shift 5 0`).
+  are bindings 0-4, and `s0` is binding 5 (compiled with `-fvk-s-shift 5 0`). For Metal, `t0`-`t4`
+  are shifted by one (`-fvk-t-shift 1 0`), which makes them buffers 1-5 and the blit source
+  texture 3, with the constants in buffer 0 and `s0` sampler 0.
 - **Vertex inputs** get their locations in the order they are declared, so they are always
   declared in the order `POSITION`, `COLOROFS`, `EXTRASOFS`, `TEXCOORD0`, leaving out the ones not
   needed from the end only.
@@ -41,8 +50,8 @@ Both lists have to be kept in step when a shader is added.
   the same order as the `VS_OUTPUT` of its vertex shader.
 - **Dual-source blending** needs the second output as index 1 of location 0 in Vulkan, see
   `PS_OUTPUT` in `output.hlsl`.
-- Code only for Vulkan goes inside `#ifdef __spirv__`, which DXC defines when it compiles to
-  SPIR-V.
+- Code only for Vulkan and Metal goes inside `#ifdef __spirv__`, which DXC defines when it
+  compiles to SPIR-V.
 
 All shaders should compile with DXC both ways, which can be checked without Windows: as DXIL
 (`dxc -T ps_6_0 ...`), the closest we get to DX12's `D3DCompile()`, and as SPIR-V.
