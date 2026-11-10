@@ -1763,6 +1763,7 @@ void GfxDeviceTester::warm_up_testee(int test)
 
 int GfxDeviceTester::calibrate_test(Test* pTest, double& baseline)
 {
+
 	// A first run includes any first time setup (caches, shaders, buffers), making
 	// it slower than later ones. That gives us a low first guess.
 
@@ -1844,16 +1845,22 @@ double GfxDeviceTester::time_test(Test* pTest, int loops)
 
 //____ sync_testee() __________________________________________________________
 /*
-	Reads back a pixel from the testee canvas, which forces it to finish rendering.
+	Waits for the testee to finish rendering. Reading back a pixel doesn't always do
+	that: GlSurface can only read back whole textures and does nothing for a single
+	pixel of a canvas without a backing buffer. So we also ask the backend.
 */
 
 void GfxDeviceTester::sync_testee()
 {
 	Surface* pCanvas = m_backends[TESTEE].pCanvas;
+	GfxDevice* pDevice = m_backends[TESTEE].pDevice;
 
 	auto buffer = pCanvas->allocPixelBuffer(RectI(0, 0, 1, 1));
 	pCanvas->pushPixels(buffer);
 	pCanvas->freePixelBuffer(buffer);
+
+	if (pDevice->isInstanceOf(GfxDeviceGen2::TYPEINFO))
+		static_cast<GfxDeviceGen2*>(pDevice)->backend()->waitForCompletion();
 }
 
 //____ refresh_performance_row() ______________________________________________
