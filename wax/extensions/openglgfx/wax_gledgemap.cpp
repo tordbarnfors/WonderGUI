@@ -27,7 +27,7 @@
 namespace wax
 {
 
-	const TypeInfo GlEdgemap::TYPEINFO = { "GlEdgemap", &Edgemap::TYPEINFO };
+	const TypeInfo GlEdgemap::TYPEINFO = { "GlEdgemap", &GpuEdgemap::TYPEINFO };
 
 
 	//____ create() ______________________________________________________________
@@ -74,26 +74,24 @@ namespace wax
 
 	//____ constructor ___________________________________________________________
 
-	GlEdgemap::GlEdgemap(const Blueprint& bp) : Edgemap(bp)
+	GlEdgemap::GlEdgemap(const Blueprint& bp) : GpuEdgemap(bp)
 	{
-		// Create OpenGL buffer
-
-		// Samples prepared for drawing straight and as they are, for warps.
-
-		int samplesSize = bp.size.w * (bp.segments - 1) * 4 * sizeof(GLfloat);
-
-		m_paletteOfs = samplesSize * 2;
+		GLint oldTexture;
+		glGetIntegerv(GL_TEXTURE_BINDING_BUFFER, &oldTexture);
 
 		glGenBuffers(1, &m_bufferId);
-		glBindBuffer(GL_TEXTURE_BUFFER, m_bufferId);
-
 		glGenTextures(1, &m_textureId);
+
+		// A buffer only exists once it has been bound.
+
+		glBindBuffer(GL_TEXTURE_BUFFER, m_bufferId);
+		glBindBuffer(GL_TEXTURE_BUFFER, 0);
+
 		glBindTexture(GL_TEXTURE_BUFFER, m_textureId);
 		glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, m_bufferId);
+		glBindTexture(GL_TEXTURE_BUFFER, GLuint(oldTexture));
 
-		// Buffer is allocated when colors are uploaded, since tints decide its size.
-
-		_colorsUpdated(0, m_nbSegments);
+		_createContent();
 	}
 
 	//____ destructor ____________________________________________________________
@@ -111,181 +109,55 @@ namespace wax
 		return TYPEINFO;
 	}
 
-	//____ _samplesUpdated() ___________________________________________________
+	//____ _allocBuffer() ________________________________________________________
+
+	float * GlEdgemap::_allocBuffer( size_t bytes )
+	{
+		m_newContent.assign(bytes / sizeof(float), 0.f);
+		return m_newContent.data();
+	}
+
+	//____ _commitBuffer() _______________________________________________________
+
+	void GlEdgemap::_commitBuffer()
+	{
+		m_content.swap(m_newContent);		// Keeps where the content is, which GpuEdgemap points at.
+		m_newContent.clear();
+		m_newContent.shrink_to_fit();
+		m_bChanged = true;
+	}
+
+	//____ _samplesUpdated() _____________________________________________________
 
 	void GlEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd)
 	{
-		int columnBegin = sampleBegin == 0 ? 0 : sampleBegin - 1;
-		int columnEnd = sampleEnd > m_size.w ? m_size.w : sampleEnd;
-
-		int nPixelColumns = columnEnd - columnBegin;
-
-		int edgeStripPitch = m_nbSegments - 1;
-
-		const spx* pEdges = m_pSamples + edgeStripPitch * columnBegin;
-
-		int outBytes = nPixelColumns * (m_nbSegments - 1) * 4 * sizeof(GLfloat);
-
-		auto pBuffer = (GLfloat*)Base::memStackAlloc(outBytes);
-
-		auto pOut = pBuffer;
-
-		for (int i = 0; i < nPixelColumns; i++)
-		{
-			for (int j = 0; j < m_nbSegments - 1; j++)
-			{
-				int edgeIn = pEdges[j];
-				int edgeOut = pEdges[edgeStripPitch + j];
-
-				if (edgeIn > edgeOut)
-					std::swap(edgeIn, edgeOut);
-
-				float increment = edgeOut == edgeIn ? 100.f : 64.f / (edgeOut - edgeIn);
-				float beginAdder;
-				float endAdder;
-
-				if ((edgeOut & 0xFFFFFFC0) == (edgeIn & 0xFFFFFFC0))
-				{
-					float firstPixelCoverage = ((64 - (edgeOut & 0x3F)) + (edgeOut - edgeIn) / 2) / 64.f;
-
-					beginAdder = increment * (edgeIn & 0x3F) / 64.f + firstPixelCoverage;
-					endAdder = beginAdder;
-				}
-				else
-				{
-					int height = 64 - (edgeIn & 0x3F);
-					int width = (int)(increment * height);
-					float firstPixelCoverage = (height * width) / (2 * 4096.f);
-					float lastPixelCoverage = 1.f - (edgeOut & 0x3F) * increment * (edgeOut & 0x3F) / (2 * 4096.f);
-
-					beginAdder = increment * (edgeIn & 0x3F) / 64.f + firstPixelCoverage;
-					endAdder = lastPixelCoverage - (1.f - (edgeOut & 0x3F) * increment / 64.f);
-				}
-
-				*pOut++ = edgeIn / 64.f;				// Segment begin pixel
-				*pOut++ = increment;					// Segment increment
-				*pOut++ = beginAdder;					// Segment begin adder
-				*pOut++ = endAdder;						// Segment end adder
-			}
-
-			pEdges += edgeStripPitch;
-
-		}
-
-		// Upload buffer
-
-		int ofs = columnBegin * edgeStripPitch * 4 * sizeof(GLfloat);
-
-		glBindBuffer(GL_TEXTURE_BUFFER, m_bufferId);
-		glBufferSubData(GL_TEXTURE_BUFFER, ofs, outBytes, pBuffer);
-
-		// Samples as they are, at the left and right side of each column, in pixels.
-
-		pEdges = m_pSamples + edgeStripPitch * columnBegin;
-		pOut = pBuffer;
-
-		for (int i = 0; i < nPixelColumns; i++)
-		{
-			for (int j = 0; j < m_nbSegments - 1; j++)
-			{
-				*pOut++ = pEdges[j] / 64.f;
-				*pOut++ = pEdges[edgeStripPitch + j] / 64.f;
-				*pOut++ = 0.f;
-				*pOut++ = 0.f;
-			}
-
-			pEdges += edgeStripPitch;
-		}
-
-		glBufferSubData(GL_TEXTURE_BUFFER, _rawSamplesOfs() * 4 * sizeof(GLfloat) + ofs, outBytes, pBuffer);
-		glBindBuffer(GL_TEXTURE_BUFFER, 0);
-
-		// Release temp buffer
-
-		Base::memStackFree(outBytes);
+		GpuEdgemap::_samplesUpdated(edgeBegin, edgeEnd, sampleBegin, sampleEnd);
+		m_bChanged = true;
 	}
 
-	//____ _colorsUpdated() ____________________________________________________
-	/*
-		Rebuilds and uploads flat colors, tint table and tint blocks for all segments,
-		since tint blocks can change size. Grows the buffer if needed.
-	*/
+	//____ _colorsUpdated() ______________________________________________________
 
 	void GlEdgemap::_colorsUpdated(int beginSegment, int endSegment)
 	{
-		RectSPX rect(0, 0, m_size.w * 64, m_size.h * 64);
+		GpuEdgemap::_colorsUpdated(beginSegment, endSegment);
+		m_bChanged = true;
+	}
 
-		TintTools::DecodedTint	decoded[maxSegments];
-		int						blockOfs[maxSegments];
+	//____ _upload() _____________________________________________________________
+	//
+	// Called by GlBackend when it renders a draw that reads the edgemap, which is when the content
+	// should be read, see the Wax design. The whole of it, as most changes touch most of it.
 
-		int nEntries = m_nbSegments * 2;					// Flat colors and tint table.
-
-		for (int seg = 0; seg < m_nbSegments; seg++)
-		{
-			if (m_pTints[seg])
-			{
-				uint16_t	words[TintTools::c_maxEncodedTintWords];
-				HiColor		colors[TintTools::c_maxEncodedTintColors];
-				int			nColors;
-
-				TintTools::encodeTint(m_pTints[seg], rect, words, colors, nColors);
-				const HiColor* pColors = colors;
-				TintTools::decodeTint(words, pColors, decoded[seg]);
-
-				blockOfs[seg] = m_paletteOfs / 16 + nEntries;
-				nEntries += TintTools::gpuTintBlockSize(decoded[seg]);
-			}
-			else
-				blockOfs[seg] = -1;
-		}
-
-		int paletteBytes = nEntries * 4 * sizeof(GLfloat);
-
-		auto pBuffer = (GLfloat*)Base::memStackAlloc(paletteBytes);
-		auto pOut = pBuffer;
-
-		for (int seg = 0; seg < m_nbSegments; seg++)
-		{
-			m_pFlatColors[seg].toLinearFloat(pOut);		// Colors are sRGB, but we blend in linear.
-			pOut += 4;
-		}
-
-		for (int seg = 0; seg < m_nbSegments; seg++)
-		{
-			*pOut++ = float(blockOfs[seg]);
-			*pOut++ = 0.f;
-			*pOut++ = 0.f;
-			*pOut++ = 0.f;
-		}
-
-		for (int seg = 0; seg < m_nbSegments; seg++)
-		{
-			if (blockOfs[seg] >= 0)
-			{
-				TintTools::writeGpuTintBlock(decoded[seg], pOut);
-				pOut += TintTools::gpuTintBlockSize(decoded[seg]) * 4;
-			}
-		}
+	void GlEdgemap::_upload()
+	{
+		if (!m_bChanged)
+			return;
 
 		glBindBuffer(GL_TEXTURE_BUFFER, m_bufferId);
-
-		bool bReallocated = false;
-		if (m_paletteOfs + paletteBytes > m_bufferSize)
-		{
-			m_bufferSize = m_paletteOfs + paletteBytes;
-			glBufferData(GL_TEXTURE_BUFFER, m_bufferSize, nullptr, GL_DYNAMIC_DRAW);
-			bReallocated = true;
-		}
-
-		glBufferSubData(GL_TEXTURE_BUFFER, m_paletteOfs, paletteBytes, pBuffer);
+		glBufferData(GL_TEXTURE_BUFFER, GLsizeiptr(m_content.size() * sizeof(float)), m_content.data(), GL_DYNAMIC_DRAW);
 		glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
-		Base::memStackFree(paletteBytes);
-
-		// A reallocated buffer has lost its samples.
-
-		if (bReallocated && m_nbSegments > 1)
-			_samplesUpdated(0, m_nbSegments - 1, 0, m_size.w + 1);
+		m_bChanged = false;
 	}
 
 } // namespace wax
