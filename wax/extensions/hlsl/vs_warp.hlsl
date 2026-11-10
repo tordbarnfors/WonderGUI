@@ -6,6 +6,22 @@ StructuredBuffer<float4> colors : register(t0);
 
 // The vertices of the Warpmap as they are, see DX12Warpmap. It is drawn with its triangles
 // as index buffer, which makes SV_VertexID the index of the vertex.
+//
+// GL 3.3 has no storage buffers, so for GlBackend (WAX_GLSL, see openglgfx/compile_shaders.py)
+// they are vertex attributes instead, from the vertex array of GlWarpmap, which has them in this
+// order.
+
+#ifdef WAX_GLSL
+
+struct WarpVertex
+{
+    int2 pos : POSITION;    // Position in spx of the Warpmap.
+    int2 uv : TEXCOORD0;    // Position in spx of the source.
+    int w : WEIGHT;         // Weight, 65536 for 1.0.
+    int coverage : COVERAGE;    // Coverage, 65536 for full.
+};
+
+#else
 
 struct WarpVertex
 {
@@ -16,6 +32,8 @@ struct WarpVertex
 };
 
 StructuredBuffer<WarpVertex> vertices : register(t4);
+
+#endif
 
 
 struct VS_OUTPUT
@@ -32,11 +50,17 @@ struct VS_OUTPUT
 // canvas, see warp.hlsl. u and v are relative to the first vertex, to keep the precision of
 // floats, and the weight is brought down to 1.0 for 65536.
 
+#ifdef WAX_GLSL
+VS_OUTPUT main(WarpVertex v)
+{
+    VS_OUTPUT output;
+#else
 VS_OUTPUT main(uint id : SV_VertexID)
 {
     VS_OUTPUT output;
 
     WarpVertex v = vertices[id];
+#endif
     float2 p = float2(v.pos) / 64.0f + warpDest;
 
     // Canvas pixels to clip space. Y is flipped, in clip space it points up.

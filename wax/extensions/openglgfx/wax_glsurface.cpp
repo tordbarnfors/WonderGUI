@@ -397,24 +397,31 @@ namespace wax
 
 		//
 
+		_setSwizzle();
+
 		if (m_pPalette)
 		{
+			// Indexes are integers the shaders read with texelFetch(), see ps_blit_palette.hlsl.
+
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-
 
 			HANDLE_GLERROR(glGetError());
 
+			GLint oldBuffer;
+			glGetIntegerv(GL_TEXTURE_BINDING_BUFFER, &oldBuffer);
+
+			glGenBuffers(1, &m_paletteBuffer);
 			glGenTextures(1, &m_paletteTexture);
-			glBindTexture(GL_TEXTURE_2D, m_paletteTexture);
 
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glBindBuffer(GL_TEXTURE_BUFFER, m_paletteBuffer);
+			glBufferData(GL_TEXTURE_BUFFER, GLsizeiptr(m_paletteCapacity + 1) * 4 * sizeof(GLfloat), nullptr, GL_DYNAMIC_DRAW);
+			glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+			glBindTexture(GL_TEXTURE_BUFFER, m_paletteTexture);
+			glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, m_paletteBuffer);
+			glBindTexture(GL_TEXTURE_BUFFER, GLuint(oldBuffer));
 
 			_uploadPalette();
 
@@ -526,15 +533,15 @@ namespace wax
 				break;
 
 			case PixelFormat::Index_8:
-				m_internalFormat = GL_R8;
-				m_accessFormat = GL_RED;
+				m_internalFormat = GL_R8UI;							// Read as integers, see ps_blit_palette.hlsl.
+				m_accessFormat = GL_RED_INTEGER;
 				m_pixelDataType = GL_UNSIGNED_BYTE;
 				m_pixelSize = 1;
 				break;
 
 			case PixelFormat::Index_16:
-				m_internalFormat = GL_R16;
-				m_accessFormat = GL_RED;
+				m_internalFormat = GL_R16UI;
+				m_accessFormat = GL_RED_INTEGER;
 				m_pixelDataType = GL_UNSIGNED_SHORT;
 				m_pixelSize = 2;
 				break;
@@ -552,57 +559,68 @@ namespace wax
 		}
 	}
 
+	//____ _setSwizzle() ________________________________________________________
+	/*
+		The shaders read the alpha of Alpha_8 sources, which GL keeps in red. Reading through a
+		swizzle doesn't change what is rendered into the texture as a canvas. XRGB_8 and the 565
+		formats have textures without alpha, which read alpha 1.
+	*/
+
+	void GlSurface::_setSwizzle()
+	{
+		if (m_pixelFormat == PixelFormat::Alpha_8)
+		{
+			GLint swizzle[4] = { GL_ZERO, GL_ZERO, GL_ZERO, GL_RED };
+			glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+		}
+	}
+
 	//____ _uploadPalette() ______________________________________________________
 	/*
-		The palette texture is up to 256 texels wide with as many rows as needed for
-		paletteCapacity() entries, see WAX_GL_PALETTE_FUNC. Entries beyond m_paletteSize are cleared.
+		The palette goes to the GPU converted to linear, the same way SoftSurface unpacks it, and
+		premultiplied, like the pixels of surfaces with alpha, so the shaders can use the colors as
+		they are and interpolate between them. One float4 per entry, plus one in front holding the
+		capacity, which the shaders keep indexes below. Done as DX12Surface does it.
 	*/
 
 	void GlSurface::_uploadPalette()
 	{
-		int width = paletteTextureWidth();
-		int height = paletteTextureHeight();
+		if (!m_pPalette || m_paletteBuffer == 0)
+			return;
 
-		std::vector<Color8> palette(width*height);
-		memcpy(palette.data(), m_pPalette, m_paletteSize*sizeof(Color8));
+		std::vector<GLfloat> colors(size_t(m_paletteCapacity + 1) * 4, 0.f);
 
-		// Entries are premultiplied, like the pixels of other surfaces with alpha, so that
-		// interpolating between them interpolates premultiplied colors.
-
-		bool bSRGB = (m_colorSpace == ColorSpace::sRGB);
-		for (int i = 0; i < m_paletteSize; i++)
-		{
-			Color8& c = palette[i];
-			if (c.a == 0)
-				c.argb = 0;
-			else if (c.a < 255)
-				_premultiply(c.b, c.g, c.r, c.a, bSRGB);
-		}
-
-		GLint oldBinding;
-		glGetIntegerv(GL_TEXTURE_BINDING_2D, &oldBinding);
-		glBindTexture(GL_TEXTURE_2D, m_paletteTexture);
+		colors[0] = GLfloat(m_paletteCapacity);		// Exact, far below where floats lose integers.
 
 		// Palette entries are in the color space of the surface.
 
-		glTexImage2D(GL_TEXTURE_2D, 0, m_colorSpace == ColorSpace::sRGB ? GL_SRGB8_ALPHA8 : GL_RGBA8, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, palette.data());
+		bool bLinear = (m_colorSpace == ColorSpace::Linear);
 
-		glBindTexture(GL_TEXTURE_2D, oldBinding);
-	}
+		float * p = colors.data() + 4;
 
-	//____ paletteTextureWidth() _________________________________________________
+		for (int i = 0; i < m_paletteCapacity; i++)
+		{
+			HiColor col = m_pPalette[i];		// Same color space, just more bits.
 
-	int GlSurface::paletteTextureWidth() const
-	{
-		return std::min(m_paletteCapacity, 256);
-	}
+			if (bLinear)
+			{
+				p[0] = col.r / 4096.f;
+				p[1] = col.g / 4096.f;
+				p[2] = col.b / 4096.f;
+				p[3] = col.a / 4096.f;
+			}
+			else
+				col.toLinearFloat(p);
 
-	//____ paletteTextureHeight() ________________________________________________
+			p[0] *= p[3];
+			p[1] *= p[3];
+			p[2] *= p[3];
+			p += 4;
+		}
 
-	int GlSurface::paletteTextureHeight() const
-	{
-		int width = paletteTextureWidth();
-		return width == 0 ? 0 : (m_paletteCapacity + width - 1) / width;
+		glBindBuffer(GL_TEXTURE_BUFFER, m_paletteBuffer);
+		glBufferSubData(GL_TEXTURE_BUFFER, 0, GLsizeiptr(colors.size() * sizeof(GLfloat)), colors.data());
+		glBindBuffer(GL_TEXTURE_BUFFER, 0);
 	}
 
 	//____ Destructor ______________________________________________________________
@@ -625,6 +643,7 @@ namespace wax
 		if (m_pPalette)
 		{
 			glDeleteTextures(1, &m_paletteTexture);
+			glDeleteBuffers(1, &m_paletteBuffer);
 			if (!m_pBlob)
 				delete[] m_pPalette;		// Palette is not part of the blob.
 		}
@@ -855,6 +874,8 @@ namespace wax
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapMode);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapMode);
+
+		_setSwizzle();
 
 		if (m_pPalette)
 		{

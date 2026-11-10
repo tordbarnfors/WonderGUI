@@ -19,8 +19,6 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <cmath>
-#include <cstdlib>
 #include <cstdio>
 #include <cstring>
 #include <algorithm>
@@ -32,40 +30,189 @@
 #include <wax_gledgemapfactory.h>
 #include <wax_glwarpmap.h>
 #include <wax_glwarpmapfactory.h>
-#include <wax_gpushapes.h>
 #include <wax_base.h>
-#include <wax_util.h>
-
-using namespace std;
-using namespace wax::Util;
 
 namespace wax
 {
-const TypeInfo GlBackend::TYPEINFO = { "GlBackend", &Backend::TYPEINFO };
+const TypeInfo GlBackend::TYPEINFO = { "GlBackend", &GpuBackend::TYPEINFO };
 
 Blob_p			GlBackend::s_pShaderPrograms = nullptr;
-
 
 #define LOG_GLERROR(check) { GLenum err = check; if(err != 0) onGlError(err, this, &TYPEINFO, __func__, __FILE__, __LINE__ ); }
 
 #define LOG_INIT_GLERROR(check) { GLenum err = check; if(err != 0) { onGlError(err, this, &TYPEINFO, __func__, __FILE__, __LINE__ ); m_bFullyInitialized = false; } }
 
 
-const int GlBackend::s_flipCornerOrder[GfxFlip_size][4] = {
-	{ 0,1,2,3 },			// Normal
-	{ 1,0,3,2 },			// FlipX
-	{ 3,2,1,0 },			// FlipY
-	{ 3,0,1,2 },			// Rot90
-	{ 0,3,2,1 },			// Rot90FlipX
-	{ 2,1,0,3 },			// Rot90FlipY
-	{ 2,3,0,1 },			// Rot180
-	{ 3,2,1,0 },			// Rot180FlipX
-	{ 1,0,3,2 },			// Rot180FlipY
-	{ 1,2,3,0 },			// Rot270
-	{ 2,1,0,3 },			// Rot270FlipX
-	{ 0,3,2,1 }				// Rot270FlipY
-};
+//____ Blending _______________________________________________________________
+/*
+	Blending as DX12Backend::_createPipeline() and VulkanBackend::_createPipeline() have it, see
+	there for why. Canvases with alpha hold premultiplied colors. The pixel shaders pass what they
+	draw to the blender as the mode needs it, see output.hlsl, Replace, Morph and Multiply keeping
+	the uncovered part of the pixel by the second color of dual-source blending.
 
+	An alpha only canvas is GL_R8, as in VulkanBackend. The shaders write the value to all
+	channels for it, so the factors of alpha are those of color. Canvases without alpha are
+	opaque, their alpha is left alone.
+*/
+
+namespace
+{
+	struct GlBlend
+	{
+		bool	bEnable = true;
+		GLenum	op = GL_FUNC_ADD;
+		GLenum	src = GL_ONE;
+		GLenum	dst = GL_ZERO;
+		GLenum	opAlpha = GL_FUNC_ADD;
+		GLenum	srcAlpha = GL_ONE;
+		GLenum	dstAlpha = GL_ZERO;
+		bool	bDualSource = false;
+		bool	bWriteAlpha = true;
+	};
+
+	GLenum toColorFactor( GLenum factor )
+	{
+		switch( factor )
+		{
+			case GL_SRC_ALPHA:				return GL_SRC_COLOR;
+			case GL_ONE_MINUS_SRC_ALPHA:	return GL_ONE_MINUS_SRC_COLOR;
+			case GL_DST_ALPHA:				return GL_DST_COLOR;
+			case GL_ONE_MINUS_DST_ALPHA:	return GL_ONE_MINUS_DST_COLOR;
+			case GL_SRC1_ALPHA:				return GL_SRC1_COLOR;
+			case GL_ONE_MINUS_SRC1_ALPHA:	return GL_ONE_MINUS_SRC1_COLOR;
+			default:						return factor;
+		}
+	}
+
+	GLenum toAlphaFactor( GLenum factor )
+	{
+		switch( factor )
+		{
+			case GL_SRC_COLOR:				return GL_SRC_ALPHA;
+			case GL_ONE_MINUS_SRC_COLOR:	return GL_ONE_MINUS_SRC_ALPHA;
+			case GL_DST_COLOR:				return GL_DST_ALPHA;
+			case GL_ONE_MINUS_DST_COLOR:	return GL_ONE_MINUS_DST_ALPHA;
+			case GL_SRC1_COLOR:				return GL_SRC1_ALPHA;
+			case GL_ONE_MINUS_SRC1_COLOR:	return GL_ONE_MINUS_SRC1_ALPHA;
+			default:						return factor;
+		}
+	}
+
+	GlBlend blendFor( BlendMode blendMode, bool bAlphaOnly, bool bNoAlpha, bool bPartialCoverage )
+	{
+		GlBlend b;
+		bool bKeepAlpha = false;
+		bool bInvertAlpha = false;
+
+		switch( blendMode )
+		{
+			case BlendMode::Replace:
+				b.src = GL_ONE;
+				b.dst = GL_ONE_MINUS_SRC1_ALPHA;
+				b.bEnable = bPartialCoverage;
+				break;
+
+			case BlendMode::Morph:
+				b.src = GL_ONE;
+				b.dst = GL_ONE_MINUS_SRC1_ALPHA;
+				break;
+
+			case BlendMode::Add:
+			case BlendMode::Subtract:
+				b.op = (blendMode == BlendMode::Add) ? GL_FUNC_ADD : GL_FUNC_REVERSE_SUBTRACT;
+				b.src = GL_ONE;
+				b.dst = GL_ONE;
+				bKeepAlpha = (blendMode == BlendMode::Subtract);
+				break;
+
+			case BlendMode::Multiply:
+				b.src = bAlphaOnly ? GL_DST_ALPHA : GL_DST_COLOR;
+				b.dst = GL_ONE_MINUS_SRC1_ALPHA;
+				bKeepAlpha = true;
+				break;
+
+			case BlendMode::Invert:
+				b.src = bAlphaOnly ? GL_ONE_MINUS_DST_ALPHA : GL_ONE_MINUS_DST_COLOR;
+				b.dst = bAlphaOnly ? GL_ONE_MINUS_SRC_ALPHA : GL_ONE_MINUS_SRC_COLOR;
+				bInvertAlpha = !bAlphaOnly;
+				break;
+
+			case BlendMode::Min:
+			case BlendMode::Max:
+				b.op = (blendMode == BlendMode::Min) ? GL_MIN : GL_MAX;
+				b.src = GL_ONE;
+				b.dst = GL_ONE;
+				bKeepAlpha = (blendMode == BlendMode::Min);
+				break;
+
+			case BlendMode::Blend:
+			default:						// GpuBackend has normalized the blend mode, see _pipeline() of the others.
+				b.src = GL_ONE;
+				b.dst = GL_ONE_MINUS_SRC_ALPHA;
+				break;
+		}
+
+		// The value of an alpha only canvas is in R, as are the alphas the shaders output for it.
+
+		if( bAlphaOnly )
+		{
+			b.src = toColorFactor(b.src);
+			b.dst = toColorFactor(b.dst);
+			bKeepAlpha = false;
+		}
+
+		b.bDualSource = b.bEnable && (b.dst == GL_ONE_MINUS_SRC1_ALPHA || b.dst == GL_ONE_MINUS_SRC1_COLOR);
+
+		if( bKeepAlpha )
+		{
+			b.opAlpha = GL_FUNC_ADD;
+			b.srcAlpha = GL_ZERO;
+			b.dstAlpha = GL_ONE;
+		}
+		else if( bInvertAlpha )
+		{
+			b.opAlpha = GL_FUNC_ADD;
+			b.srcAlpha = GL_ONE_MINUS_DST_ALPHA;
+			b.dstAlpha = GL_ONE;
+		}
+		else
+		{
+			// Alpha can't take color factors, but none of these is one, except on an alpha only
+			// canvas, which has no alpha.
+
+			b.opAlpha = b.op;
+			b.srcAlpha = toAlphaFactor(b.src);
+			b.dstAlpha = toAlphaFactor(b.dst);
+		}
+
+		// A canvas without alpha may have an alpha channel, which is left alone. Reading it as a
+		// blit source gives alpha 1 regardless.
+
+		b.bWriteAlpha = !bNoAlpha;
+		return b;
+	}
+
+	// Shaders of the kinds of pipelines, see compile_shaders.py. Kinds with the same geometry
+	// share a vertex shader.
+
+	const char * const c_vertexShaders[] = {
+		"fillVS", "fillAAVS", "blitVS", "blitVS", "blitVS", "blitVS",
+		"lineVS", "segmentsVS", "shapeVS", "warpVS", "warpVS", "warpVS" };
+
+	const char * const c_pixelShaders[][2] = {
+		{ "fillPS", "fillPSDual" },
+		{ "fillAAPS", "fillAAPSDual" },
+		{ "blitPS", "blitPSDual" },
+		{ "blurPS", "blurPSDual" },
+		{ "paletteBlitPS", "paletteBlitPSDual" },
+		{ "paletteBlurPS", "paletteBlurPSDual" },
+		{ "linePS", "linePSDual" },
+		{ "segmentsPS", "segmentsPSDual" },
+		{ "shapePS", "shapePSDual" },
+		{ "warpEdgemapPS", "warpEdgemapPSDual" },
+		{ "warpBlitPS", "warpBlitPSDual" },
+		{ "warpPaletteBlitPS", "warpPaletteBlitPSDual" } };
+}
 
 //____ onGlError() _______________________________________________________________
 
@@ -100,25 +247,15 @@ void GlBackend::onGlError(GLenum errorCode, const Object * pObject, const TypeIn
 		case GL_OUT_OF_MEMORY:
 			pErrorName = "GL_OUT_OF_MEMORY";
 			break;
-/*
-		case GL_STACK_UNDERFLOW:
-			pErrorName = "GL_STACK_UNDERFLOW";
-			break;
 
-		case GL_STACK_OVERFLOW:
-			pErrorName = "GL_STACK_OVERFLOW";
-			break;
-*/
 		default:
 			pErrorName = "UNKNOWN GL ERROR! (should not happen)";
 			break;
 	}
 
-
 	snprintf( buffer, 1024, "OpenGL error 0x%x: %s", errorCode, pErrorName );
 	Base::throwError(ErrorLevel::SilentError, ErrorCode::OpenGL, buffer, pObject, pClassType, func, file, line);
 }
-
 
 //____ create() _______________________________________________________________
 
@@ -132,1318 +269,12 @@ GlBackend_p GlBackend::create( int uboBindingPoint)
 	return p;
 }
 
-//____ setCanvas() _________________________________________________________
-
-void GlBackend::setCanvas(CanvasRef ref)
-{
-	if (ref == CanvasRef::Default)
-	{
-		m_pCommandQueue[m_commandQueueSize++] = (int)CommandGL::SetCanvas;
-		m_objects.push_back(nullptr);
-		_resetCommandStates();
-	}
-	else
-	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "GlBackend::setCanvas(CanvasRef) only supports CanvasRef::Default.",
-			this, &TYPEINFO, __func__, __FILE__, __LINE__);
-	}
-}
-
-void GlBackend::setCanvas(Surface* pSurface)
-{
-	m_pCommandQueue[m_commandQueueSize++] = (int) CommandGL::SetCanvas;
-	m_objects.push_back(pSurface);
-	_resetCommandStates();
-}
-
-//____ _resetCommandStates() __________________________________________________
-/*
-	States kept while processing commands start over with each canvas, as the device sets
-	them again for the new canvas. Tint and tint color are written into the vertices.
-*/
-
-void GlBackend::_resetCommandStates()
-{
-	m_tintOfs = -1;
-	m_tintColorOfs = -1;
-}
-
-
-//____ _setRgbxClip() _________________________________________________________
-/*
-	Tells the generic blit shaders whether to work out the alpha of a source without alpha
-	from the position, which they need to do for a ClipBlit (see WAX_GL_SOURCE_SAMPLE).
-	The uniform stays with the program, so it's set for every blit.
-*/
-
-void GlBackend::_setPaletteInfo(GLuint prog, GlSurface* pSurf)
-{
-	// Tells WAX_GL_PALETTE_FUNC how to find a palette entry, see GlSurface::_uploadPalette().
-
-	GLint loc = glGetUniformLocation(prog, "paletteInfo");
-	if (loc != -1)
-		glUniform4f(loc, pSurf->pixelFormat() == PixelFormat::Index_16 ? 65535.f : 255.f,
-					float(pSurf->paletteTextureWidth()), float(pSurf->paletteTextureHeight()), float(pSurf->paletteCapacity()));
-}
-
-void GlBackend::_setRgbxClip(GLuint prog, GlSurface* pSurf, bool bClipBlit)
-{
-	GLint loc = glGetUniformLocation(prog, "rgbxClip");
-	if (loc == -1)
-		return;
-
-	auto pDesc = pSurf->pixelDescription();
-	bool bNoAlpha = pDesc->type != PixelType::Index && pDesc->A_mask == 0 && pSurf->pixelFormat() != PixelFormat::Alpha_8;
-
-	int flags = 0;
-	if (bClipBlit && bNoAlpha && !pSurf->isTiling())
-		flags = pSurf->sampleMethod() == SampleMethod::Bilinear ? 3 : 1;
-
-	glUniform1i(loc, flags);
-}
-
-void GlBackend::_setCanvas(Surface* pSurface)
-{
-	GlSurface* pCanvas = static_cast<GlSurface*>(pSurface);
-
-	LOG_GLERROR(glGetError());
-
-	bool bWasAlphaOnly = m_bActiveCanvasIsA8;
-
-	SizeI size;
-
-	if (pCanvas)
-	{
-		size = pCanvas->pixelSize();
-
-		// An sRGB canvas has an sRGB texture, which GL blends in linear and writes as sRGB.
-
-		if (pCanvas->colorSpace() == ColorSpace::sRGB)
-			glEnable(GL_FRAMEBUFFER_SRGB);
-		else
-			glDisable(GL_FRAMEBUFFER_SRGB);
-
-		glBindFramebuffer(GL_FRAMEBUFFER, m_framebufferId);
-		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, pCanvas->getTexture(), 0);
-
-		GLenum drawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
-		glDrawBuffers(1, drawBuffers);
-
-		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		{
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			m_pActiveCanvas = nullptr;
-			m_activeCanvasSize = { size.w, size.h };
-			m_bMipmappedActiveCanvas = false;
-
-			//TODO: Signal error that we could not set the specified canvas.
-
-			return;
-		}
-	}
-	else
-	{
-		size = m_defaultCanvas.size / 64;
-
-		// The default framebuffer needs to be sRGB-capable for this to have any effect.
-
-		if (m_defaultCanvas.colorSpace == ColorSpace::sRGB)
-			glEnable(GL_FRAMEBUFFER_SRGB);
-		else
-			glDisable(GL_FRAMEBUFFER_SRGB);
-
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-		// The default framebuffer might not have alpha.
-
-		GLint drawBuffer = GL_BACK;
-		glGetIntegerv(GL_DRAW_BUFFER, &drawBuffer);
-
-		GLint alphaBits = 8;
-		glGetFramebufferAttachmentParameteriv(GL_DRAW_FRAMEBUFFER, (drawBuffer == GL_FRONT || drawBuffer == GL_FRONT_LEFT) ? GL_FRONT_LEFT : GL_BACK_LEFT,
-											  GL_FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE, &alphaBits);
-		if (glGetError() != GL_NO_ERROR)
-			alphaBits = 8;
-
-		m_bActiveCanvasHasAlpha = (alphaBits > 0);
-	}
-
-	glViewport(0, 0, size.w, size.h);
-	glScissor(0, 0, size.w, size.h);
-
-
-	// Updating canvas info for our shaders
-
-	m_canvasUBO.width = size.w;
-	m_canvasUBO.height = size.h;
-	m_canvasUBO.yOfs = pCanvas ? 0 : size.h;
-	m_canvasUBO.yMul = pCanvas ? 1 : -1;
-
-	// Uploaded by _setBlendMode() below.
-
-	LOG_GLERROR(glGetError());
-
-	// A canvas with a backing buffer gets it refreshed from the texture next time it is read.
-
-	if (pCanvas && pCanvas->m_pBlob)
-		pCanvas->m_bBackingBufferStale = true;
-
-	m_pActiveCanvas = pCanvas;
-	m_activeCanvasSize = { size.w, size.h };
-	m_bMipmappedActiveCanvas = m_pActiveCanvas ? m_pActiveCanvas->m_bMipmapped : false;
-
-	m_bActiveCanvasIsA8 = m_pActiveCanvas ? m_pActiveCanvas->pixelFormat() == PixelFormat::Alpha_8 : false;
-
-	if (m_pActiveCanvas)
-	{
-		PixelFormat format = m_pActiveCanvas->pixelFormat();
-		m_bActiveCanvasHasAlpha = (format != PixelFormat::XRGB_8 && format != PixelFormat::RGB_565 && format != PixelFormat::BGR_565);
-	}
-
-	m_canvasUBO.blendInfo[2] = m_bActiveCanvasHasAlpha ? 0.f : 1.f;
-
-//	if (m_bActiveCanvasIsA8 != bWasAlphaOnly)
-//		_setBlendMode(m_activeBlendMode);
-
-	// Reset states
-
-	m_activeBlendMode = BlendMode::Blend;
-	_setBlendMode(m_activeBlendMode);
-
-	m_tintOfs = -1;
-
-	m_activeMorphFactor = 0.5f;
-	m_bTintIsActive = false;
-	m_tintColorOfs = -1;
-
-/*
-	m_colTrans.mode = TintMode::None;
-	m_colTrans.flatTintColor = HiColor::White;
-	m_colTrans.bTintOpaque = true;
-	m_colTrans.tintRect.clear();
-	m_colTrans.pTintAxisX = nullptr;
-	m_colTrans.pTintAxisY = nullptr;
-	m_colTrans.morphFactor = 2048;
-	m_colTrans.fixedBlendColor = HiColor::White;
-
-*/
-
-}
-
-//____ setObjects() ________________________________________________________
-
-void GlBackend::setObjects(Object* const * pBeg, Object* const * pEnd)
-{
-	m_pObjectsBeg = pBeg;
-	m_pObjectsEnd = pEnd;
-}
-
-//____ setRects() _________________________________________________________
-
-void GlBackend::setRects(const RectSPX* pBeg, const RectSPX* pEnd)
-{
-	m_pRectsBeg = pBeg;
-	m_pRectsEnd = pEnd;
-	m_pRectsPtr = pBeg;
-}
-
-//____ setColors() _________________________________________________________
-
-void GlBackend::setColors(const HiColor* pBeg, const HiColor* pEnd)
-{
-	m_pColorsBeg = pBeg;
-	m_pColorsEnd = pEnd;
-	m_pColorsPtr = pBeg;
-}
-
-//____ setTransforms() _____________________________________________________
-
-void GlBackend::setTransforms(const Transform* pBeg, const Transform* pEnd)
-{
-	m_pTransformsBeg = pBeg;
-	m_pTransformsEnd = pEnd;
-}
-
-//____ processCommands() _________________________________________________
-
-void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int version)
-{
-	const RectSPX* 	pRects = m_pRectsPtr;
-	const HiColor* 	pColors = m_pColorsPtr;
-
-
-	VertexGL *	pVertexGL	= m_pVertexBuffer + m_nVertices;
-	ColorGL*	pColorGL	= m_pColorBuffer + m_nColors;
-	GLfloat*	pExtrasGL	= m_pExtrasBuffer + m_extrasBufferSize;
-	int*		pCommandGL	= m_pCommandQueue + m_commandQueueSize;
-
-	int 		customTransformStart = version == 1 ? GfxFlip_size : NbStandardTransforms;
-
-	auto p = pBeg;
-	while (p < pEnd)
-	{
-		auto cmd = Command(*p++);
-		switch (cmd)
-		{
-		case Command::None:
-			break;
-
-		case Command::StateChange:
-		{
-			GpuTools::StateChangeParams state;
-			p = GpuTools::decodeStateChange(p, pColors, state);
-
-			* pCommandGL++ = (int) CommandGL::StateChange;
-			* pCommandGL++ = state.changed;
-
-			if (GpuTools::hasChanged(state, StateChange::BlitSource))
-			{
-				auto pSource = static_cast<GlSurface*>(m_pObjectsBeg[state.blitSource]);
-
-				// Save size and sampleMethod for blit-command processing
-
-				m_blitSourceSize = CoordF(pSource->pixelSize().w, pSource->pixelSize().h);
-				m_blitSourceSampleMethod = pSource->sampleMethod();
-
-				// Save pointer for later processing, needs to be applied between draw calls.
-
-				m_objects.push_back(pSource);
-			}
-
-			if (GpuTools::hasChanged(state, StateChange::TintColor))
-			{
-				// Process right away, tint color ofs is stored in vertex data
-
-				HiColor tintColor = state.tintColor;
-
-				if (tintColor == HiColor::White || tintColor == HiColor::Undefined)
-				{
-					m_tintColorOfs = -1;
-				}
-				else
-				{
-					m_tintColorOfs = int(pColorGL - m_pColorBuffer);
-
-					tintColor.toLinearFloat(&pColorGL->r);		// Colors are sRGB, but we blend in linear.
-					pColorGL++;
-	 			}
-			}
-
-			if (GpuTools::hasChanged(state, StateChange::Tint))
-			{
-				// Tint block is written to color buffer, its offset stored in vertex data.
-
-				if (state.tint.nLayers == 0)
-					m_tintOfs = -1;
-				else
-				{
-					int blockSize = TintTools::gpuTintBlockSize(state.tint);
-
-					int used = int(pColorGL - m_pColorBuffer);
-					_reserveColors(used, blockSize);
-					pColorGL = m_pColorBuffer + used;
-
-					m_tintOfs = used;
-					TintTools::writeGpuTintBlock(state.tint, (float*) pColorGL);
-					pColorGL += blockSize;
-				}
-
-				// Tell execution if tint programs are needed.
-
-				*pCommandGL++ = (m_tintOfs >= 0) ? 1 : 0;
-			}
-
-			// Blend mode, morph factor and blur need to be applied between draw calls, so they
-			// are saved for later processing. We use BlendMode::Blend in place of
-			// BlendMode::BlendFixedColor, so the fixed blend color is of no use to us.
-
-			if (GpuTools::hasChanged(state, StateChange::BlendMode))
-				* pCommandGL++ = int(state.blendMode);
-
-			if (GpuTools::hasChanged(state, StateChange::MorphFactor))
-				*pCommandGL++ = state.morphFactor;
-
-			if (GpuTools::hasChanged(state, StateChange::Blur))
-			{
-				*pCommandGL++ = state.blurRadius;
-
-				for( int i = 0 ; i < 27 ; i++ )
-					*pCommandGL++ = int(state.pBlurWeights[i]);
-			}
-
-			break;
-		}
-		case Command::Fill:
-		{
-			int32_t nRects = *p++;
-
-			const HiColor& col = *pColors++;
-
-			bool	bStraightFill = true;
-			int		nRectsWritten = 0;
-			int		extrasOfs = 0;
-
-			// Setup Tintmap
-
-
-
-			// Add rects to vertex buffer
-
-			for (int i = 0; i < nRects; i++)
-			{
-	
-				int	dx1 = pRects->x;
-				int	dy1 = pRects->y;
-				int dx2 = dx1 + pRects->w;
-				int dy2 = dy1 + pRects->h;
-				pRects++;
-
-
-				if (((dx1 | dy1 | dx2 | dy2) & 63) == 0)
-				{
-					// Straight fill
-
-					if (!bStraightFill)
-					{
-						if( nRectsWritten > 0 )
-						{
-							*pCommandGL++ = (int)CommandGL::SubpixelFill;
-							*pCommandGL++ = nRectsWritten * 6;
-							nRectsWritten = 0;
-							extrasOfs = 0;
-						}
-						bStraightFill = true;
-					}
-				}
-				else
-				{
-					// Subpixel fill
-
-					if(bStraightFill)
-					{
-						if (nRectsWritten > 0)
-						{
-							*pCommandGL++ = (int)CommandGL::StraightFill;
-							*pCommandGL++ = nRectsWritten * 6;
-							nRectsWritten = 0;
-						}
-						bStraightFill = false;
-					}
-
-					extrasOfs = int(pExtrasGL - m_pExtrasBuffer)/4;
-
-					// Provide rectangle center and radius as extras
-
-					RectSPX rect(dx1, dy1, dx2 - dx1, dy2 - dy1);
-
-					SizeF    radius(rect.w / (2.f * 64), rect.h / (2.f * 64));
-					CoordF    center((rect.x / 64.f) + radius.w, (rect.y / 64.f) + radius.h);
-
-					* pExtrasGL++ = center.x;
-					* pExtrasGL++ = center.y;
-					* pExtrasGL++ = radius.w;
-					* pExtrasGL++ = radius.h;
-
-					dx2 += 63;
-					dy2 += 63;
-				}
-
-				dx1 >>= 6;
-				dy1 >>= 6;
-				dx2 >>= 6;
-				dy2 >>= 6;
-
-
-
-
-				int colOfs = int(pColorGL - m_pColorBuffer);
-				
-				pVertexGL->coord.x = dx1;
-				pVertexGL->coord.y = dy1;
-				pVertexGL->colorsOfs = colOfs;
-				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
-				pVertexGL++;
-
-				pVertexGL->coord.x = dx2;
-				pVertexGL->coord.y = dy1;
-				pVertexGL->colorsOfs = colOfs;
-				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
-				pVertexGL++;
-
-				pVertexGL->coord.x = dx2;
-				pVertexGL->coord.y = dy2;
-				pVertexGL->colorsOfs = colOfs;
-				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
-				pVertexGL++;
-
-				pVertexGL->coord.x = dx1;
-				pVertexGL->coord.y = dy1;
-				pVertexGL->colorsOfs = colOfs;
-				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
-				pVertexGL++;
-
-				pVertexGL->coord.x = dx2;
-				pVertexGL->coord.y = dy2;
-				pVertexGL->colorsOfs = colOfs;
-				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
-				pVertexGL++;
-
-				pVertexGL->coord.x = dx1;
-				pVertexGL->coord.y = dy2;
-				pVertexGL->colorsOfs = colOfs;
-				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
-				pVertexGL++;
-
-				nRectsWritten++;
-			}
-
-			// Add colors to buffer
-
-			col.toLinearFloat(&pColorGL->r);
-
-			if (m_tintColorOfs >= 0)
-			{
-				ColorGL& tint = m_pColorBuffer[m_tintColorOfs];
-
-				pColorGL->r *= tint.r;
-				pColorGL->g *= tint.g;
-				pColorGL->b *= tint.b;
-				pColorGL->a *= tint.a;
-			}
-
-			pColorGL++;
-
-			// Store command
-
-			* pCommandGL++ = (int) bStraightFill ? CommandGL::StraightFill : CommandGL::SubpixelFill;
-			* pCommandGL++ = nRectsWritten * 6;
-
-			break;
-		}
-
-		case Command::Line:
-		{
-			int32_t nClipRects = *p++;
-			int32_t nLines = *p++;
-			p++;
-
-			// Calculate and store vertices
-
-			int nLinesWritten = 0;
-
-			for (int i = 0; i < nLines; i++)
-			{
-				HiColor col = *pColors++;
-
-				CoordSPX begin, end;
-
-				auto p32 = (const spx *) p;
-				begin.x = *p32++;
-				begin.y = *p32++;
-				end.x = *p32++;
-				end.y = *p32++;
-				p = (const uint16_t*) p32;
-
-				spx thicknessSPX = *p++;
-				uint16_t capsWord = *p++;
-
-				if (capsWord != 0)
-				{
-					m_cappedLines.push_back({ begin, end, thicknessSPX, capsWord, col });
-					continue;
-				}
-
-				GpuTools::LineQuad quad;
-				if (!GpuTools::lineQuad(begin, end, thicknessSPX, quad))
-					continue;
-
-				// The default canvas is drawn upside down, which the offset of the line has to
-				// follow.
-
-				float s;
-
-				if (!quad.bSteep)
-				{
-					if( m_pActiveCanvas )
-						s = quad.offset;
-					else
-						s = m_defaultCanvas.size.h / 64 - quad.offset;
-				}
-				else
-					s = (quad.begin.x + 0.5f) - (m_canvasUBO.yOfs * m_canvasUBO.yMul + (quad.begin.y + 0.5f)) * quad.slope;
-
-				const CoordI& c1 = quad.corners[0];
-				const CoordI& c2 = quad.corners[1];
-				const CoordI& c3 = quad.corners[2];
-				const CoordI& c4 = quad.corners[3];
-
-				int extrasOfs = int(pExtrasGL - m_pExtrasBuffer) / 4;
-				int colorsOfs = int(pColorGL - m_pColorBuffer);
-
-				for (const CoordI& corner : { c1, c2, c3, c1, c3, c4 })
-				{
-					pVertexGL->coord = corner;
-					pVertexGL->uv = { 0.f, 0.f };
-					pVertexGL->colorsOfs = colorsOfs;
-					pVertexGL->extrasOfs = extrasOfs;
-					pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
-					pVertexGL->colorstripOfs = { 0.f, 0.f };
-					pVertexGL++;
-				}
-
-				*pExtrasGL++ = s;
-				*pExtrasGL++ = quad.w;
-				*pExtrasGL++ = quad.slope;
-				*pExtrasGL++ = quad.bSteep;
-
-				// Add colors to buffer
-
-				col.toLinearFloat(&pColorGL->r);
-
-				if (m_tintColorOfs >= 0)
-				{
-					ColorGL& tint = m_pColorBuffer[m_tintColorOfs];
-
-					pColorGL->r *= tint.r;
-					pColorGL->g *= tint.g;
-					pColorGL->b *= tint.b;
-					pColorGL->a *= tint.a;
-				}
-
-				pColorGL++;
-
-				//
-
-				nLinesWritten++;
-			}
-
-			// Store command, with clip rects
-
-			auto storeCommand = [&](CommandGL command, int nVertices)
-			{
-				*pCommandGL++ = command;
-				*pCommandGL++ = nClipRects;
-				*pCommandGL++ = nVertices;
-
-				for (int i = 0; i < nClipRects; i++)
-				{
-					RectSPX r = pRects[i];
-					*pCommandGL++ = r.x >> 6;
-					*pCommandGL++ = r.y >> 6;
-					*pCommandGL++ = r.w >> 6;
-					*pCommandGL++ = r.h >> 6;
-				}
-			};
-
-			if (nLinesWritten > 0)
-				storeCommand(CommandGL::Lines, nLinesWritten * 6);
-
-			// Lines with caps, as shapes in a quad around each, see GpuShapes::writeLine().
-			// The shader applies tint color and tint.
-
-			int nCappedWritten = 0;
-			int flatTintOfs = m_tintColorOfs >= 0 ? m_tintColorOfs : 0;		// Entry 0 is white.
-
-			for (const GpuTools::CappedLine& line : m_cappedLines)
-			{
-				CoordF quad[4];
-				int nEntries = GpuShapes::writeLine(line.begin, line.end, line.thickness, decodeLineCaps(line.caps), pExtrasGL, quad);
-				if (nEntries == 0)
-					continue;
-
-				pExtrasGL[3] = GLfloat(pColorGL - m_pColorBuffer);
-				line.color.toLinearFloat(&pColorGL->r);
-				pColorGL++;
-
-				int extrasOfs = int(pExtrasGL - m_pExtrasBuffer) / 4;
-				pExtrasGL += nEntries * 4;
-
-				for (int corner : { 0, 1, 2, 0, 2, 3 })
-				{
-					pVertexGL->coord = { int(std::lround(quad[corner].x)), int(std::lround(quad[corner].y)) };
-					pVertexGL->uv = { 0.f, 0.f };
-					pVertexGL->colorsOfs = flatTintOfs;
-					pVertexGL->extrasOfs = extrasOfs;
-					pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
-					pVertexGL->colorstripOfs = { 0.f, 0.f };
-					pVertexGL++;
-				}
-
-				nCappedWritten++;
-			}
-
-			m_cappedLines.clear();
-
-			if (nCappedWritten > 0)
-				storeCommand(CommandGL::CappedLines, nCappedWritten * 6);
-
-			pRects += nClipRects;
-			break;
-		}
-
-		case Command::DrawShape:
-		{
-			auto kind = ShapeKind(p[0]);
-			int nRects = p[1];
-			int nColors = p[2];
-			int nWords = p[3];
-			const uint16_t* pPayload = p + c_drawShapeHeaderWords - 1;
-			p = pPayload + nWords;
-
-			const RectSPX* pShapeRects = pRects;
-			const HiColor* pShapeColors = pColors;
-			pRects += nRects;
-			pColors += nColors;
-
-			int maxEntries, nSegments;
-			GpuShapes::measure(kind, pPayload, maxEntries, nSegments);
-
-			if (maxEntries == 0)
-			{
-				Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, "Failed DrawShape operation. Unsupported kind of shape.",
-					this, &TYPEINFO, __func__, __FILE__, __LINE__);
-				break;
-			}
-
-			// Shape data in extras buffer, read by the shader.
-
-			if ((int)m_shapeSegments.size() < nSegments)
-				m_shapeSegments.resize(nSegments);
-
-			int extrasOfs = int(pExtrasGL - m_pExtrasBuffer) / 4;
-			int nEntries = GpuShapes::write(kind, pPayload, pShapeColors, pExtrasGL, m_shapeSegments.data());
-
-			// Colors and tint blocks of drawn segments in color buffer, their offsets in the
-			// entries of the segments. Flat tint and tint are applied by the shader.
-
-			for (int i = 0; i < nSegments; i++)
-			{
-				const GpuShapes::Segment& seg = m_shapeSegments[i];
-
-				if (!seg.bDrawn)
-					continue;
-
-				TintTools::DecodedTint tint;
-				int blockSize = 0;
-
-				if (seg.pTint)
-				{
-					const HiColor* pTintColors = seg.pTintColors;
-					TintTools::decodeTint(seg.pTint, pTintColors, tint);
-					blockSize = TintTools::gpuTintBlockSize(tint);
-				}
-
-				int used = int(pColorGL - m_pColorBuffer);
-				_reserveColors(used, 1 + blockSize);
-				pColorGL = m_pColorBuffer + used;
-
-				GLfloat* pEntry = pExtrasGL + seg.entry * 4;
-
-				pEntry[0] = GLfloat(used);
-				seg.color.toLinearFloat(&pColorGL->r);
-				pColorGL++;
-
-				if (seg.pTint)
-				{
-					pEntry[1] = GLfloat(used + 1);
-					TintTools::writeGpuTintBlock(tint, (float*) pColorGL);
-					pColorGL += blockSize;
-				}
-			}
-
-			pExtrasGL += nEntries * 4;
-
-			// Vertices, a quad for each clip rectangle.
-
-			int flatTintOfs = m_tintColorOfs >= 0 ? m_tintColorOfs : 0;		// Entry 0 is white.
-
-			for (int i = 0; i < nRects; i++)
-			{
-				RectI patch = pShapeRects[i] / 64;
-
-				CoordI corners[6] = {	{ patch.x, patch.y }, { patch.x + patch.w, patch.y }, { patch.x + patch.w, patch.y + patch.h },
-										{ patch.x, patch.y }, { patch.x + patch.w, patch.y + patch.h }, { patch.x, patch.y + patch.h } };
-
-				for (auto& corner : corners)
-				{
-					pVertexGL->coord = corner;
-					pVertexGL->uv = { 0.f, 0.f };
-					pVertexGL->colorsOfs = flatTintOfs;
-					pVertexGL->extrasOfs = extrasOfs;
-					pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
-					pVertexGL->colorstripOfs = { 0.f, 0.f };
-					pVertexGL++;
-				}
-			}
-
-			*pCommandGL++ = CommandGL::Shape;
-			*pCommandGL++ = nRects * 6;
-			break;
-		}
-
-		case Command::WarpBlit:
-		case Command::WarpDrawEdgemap:
-		{
-			WarpParams params;
-			p = decodeWarp(cmd, p, params);
-
-			auto pWarpmap = static_cast<GlWarpmap*>(m_pObjectsBeg[params.warpmap]);
-			auto pEdgemap = (cmd == Command::WarpDrawEdgemap) ? static_cast<GlEdgemap*>(m_pObjectsBeg[params.edgemap]) : nullptr;
-
-			const RectSPX* pWarpRects = pRects;
-			pRects += params.nRects;
-
-			// Extras, see warpVertexShader.
-
-			CoordI dest = roundToPixels(params.dest);
-			SizeI warpSize = pWarpmap->pixelSize();
-
-			float srcW, srcH;
-
-			if (pEdgemap)
-			{
-				srcW = float(pEdgemap->m_size.w);
-				srcH = float(pEdgemap->m_size.h);
-			}
-			else
-			{
-				srcW = params.source.w / 64.f;
-				srcH = params.source.h / 64.f;
-			}
-
-			// u and v are taken relative to the first vertex by the vertex shader, which is added
-			// back to the source offset, brought into the periods.
-
-			CoordSPX ref;
-			if (pWarpmap->vertexCount() > 0)
-				ref = { pWarpmap->vertexData()[0].u, pWarpmap->vertexData()[0].v };
-
-			spx uPeriod = pWarpmap->uPeriod(), vPeriod = pWarpmap->vPeriod();
-			spx refU = uPeriod > 0 ? ((ref.x % uPeriod) + uPeriod) % uPeriod : ref.x;
-			spx refV = vPeriod > 0 ? ((ref.y % vPeriod) + vPeriod) % vPeriod : ref.y;
-
-			int extrasOfs = int(pExtrasGL - m_pExtrasBuffer) / 4;
-
-			*pExtrasGL++ = srcW;
-			*pExtrasGL++ = srcH;
-			*pExtrasGL++ = pEdgemap ? GLfloat(pEdgemap->m_nbRenderSegments - 1) : 0.f;
-			*pExtrasGL++ = 0.f;
-
-			*pExtrasGL++ = (params.sourceOffset.x + refU) / 64.f;
-			*pExtrasGL++ = (params.sourceOffset.y + refV) / 64.f;
-			*pExtrasGL++ = uPeriod / 64.f;
-			*pExtrasGL++ = vPeriod / 64.f;
-
-			if (pEdgemap)
-			{
-				*pExtrasGL++ = GLfloat(pEdgemap->m_nbSegments - 1);
-				*pExtrasGL++ = GLfloat(pEdgemap->_flatColorsOfs());
-				*pExtrasGL++ = GLfloat(pEdgemap->_tintTableOfs());
-				*pExtrasGL++ = GLfloat(pEdgemap->_rawSamplesOfs());
-			}
-			else
-			{
-				*pExtrasGL++ = params.source.x / 64.f;
-				*pExtrasGL++ = params.source.y / 64.f;
-				*pExtrasGL++ = 0.f;
-				*pExtrasGL++ = 0.f;
-			}
-
-			// The mesh of the Warpmap is in its own vertex and index buffers, see GlWarpmap, drawn once
-			// for each part of a clip rectangle covered by the Warpmap, with that as scissor. The
-			// command is followed by offsets into the extras and colors, the tint, dest, u and v of
-			// the first vertex and the number of rectangles, then x, y, w, h of each.
-
-			int flatTintOfs = m_tintColorOfs >= 0 ? m_tintColorOfs : 0;		// Entry 0 is white.
-
-			m_objects.push_back(pWarpmap);
-			if (pEdgemap)
-				m_objects.push_back(pEdgemap);
-
-			*pCommandGL++ = pEdgemap ? CommandGL::WarpEdgemap : CommandGL::WarpBlit;
-			*pCommandGL++ = extrasOfs;
-			*pCommandGL++ = flatTintOfs;
-			*pCommandGL++ = m_tintOfs;
-			*pCommandGL++ = dest.x;
-			*pCommandGL++ = dest.y;
-			*pCommandGL++ = ref.x;
-			*pCommandGL++ = ref.y;
-
-			int* pNbPatches = pCommandGL++;
-			*pNbPatches = 0;
-
-			for (int i = 0; i < params.nRects; i++)
-			{
-				RectI patch = RectI::overlap(roundToPixels(pWarpRects[i]), RectI(dest, warpSize));
-
-				if (patch.w <= 0 || patch.h <= 0)
-					continue;
-
-				*pCommandGL++ = patch.x;
-				*pCommandGL++ = patch.y;
-				*pCommandGL++ = patch.w;
-				*pCommandGL++ = patch.h;
-				(*pNbPatches)++;
-			}
-			break;
-		}
-
-		case Command::DrawEdgemap:
-		case Command::TileEdgemap:
-		{
-			bool bTile = (cmd == Command::TileEdgemap);		// Origo is for one of the copies, rects give area to fill.
-
-			int32_t nRects = *p++;
-			int32_t	flip = *p++;
-			
-			p++;					// padding
-
-			auto pEdgemap = static_cast<GlEdgemap*>(m_pObjectsBeg[readObjectIndex(p)]);
-
-			auto p32 = (const spx *) p;
-			int32_t	destX = *p32++;
-			int32_t	destY = *p32++;
-			p = (const uint16_t*) p32;
-
-
-			//
-
-			auto& mtx = s_standardTransforms[flip];
-
-			RectSPX _destIn = {
-				destX,
-				destY,
-				pEdgemap->m_size.w * 64 * int(abs(mtx.xx)) + pEdgemap->m_size.h * 64 * int(abs(mtx.yx)),
-				pEdgemap->m_size.w * 64 * int(abs(mtx.xy)) + pEdgemap->m_size.h * 64 * int(abs(mtx.yy)),
-			};
-
-
-			int nSegments = pEdgemap->m_nbRenderSegments;
-			int nEdgeStrips = pEdgemap->m_size.w + 1;
-	
-			// Do transformations
-
-			RectI dest = roundToPixels(_destIn);
-
-			int uIncX = mtx.xx;
-			int vIncX = mtx.xy;
-			int uIncY = mtx.yx;
-			int vIncY = mtx.yy;
-
-			// Possibly clip the destination rectangle if we have space for more columns than we have
-
-			int maxCol = (nEdgeStrips - 1);
-			if (uIncX != 0)								// Columns are aligned horizontally
-			{
-				if (dest.w > maxCol)
-				{
-					if (uIncX < 0)
-						dest.x += dest.w - maxCol;
-					dest.w = maxCol;
-				}
-			}
-			else										// Columns are aligned vertically
-			{
-				if (dest.h > maxCol)
-				{
-					if (uIncY < 0)
-						dest.y += dest.h - maxCol;
-					dest.h = maxCol;
-				}
-			}
-
-			// Calc topLeft UV values
-
-			int uTopLeft = 0;
-			int vTopLeft = 0;
-
-			if (uIncX + uIncY < 0)
-				uTopLeft = maxCol;
-
-			if (vIncX < 0)
-				vTopLeft = dest.w;
-			else if (vIncY < 0)
-				vTopLeft = dest.h;
-
-			//
-
-			int extrasOfs = int(pExtrasGL - m_pExtrasBuffer) / 4;
-
-			int segTintColorOfs = m_tintColorOfs >= 0 ? m_tintColorOfs : 0;		// Entry 0 is white.
-
-			// Setup vertices
-
-			for (int i = 0; i < nRects; i++)
-			{
-				RectI patch = roundToPixels(*pRects++);		// Rounded like the position of the edgemap.
-
-				int		dx1 = patch.x;
-				int		dx2 = patch.x + patch.w;
-				int		dy1 = patch.y;
-				int		dy2 = patch.y + patch.h;
-
-				//
-
-
-
-				//
-
-
-				// Calc UV-coordinates. U is edge offset, V is pixel offset from begin in column.
-
-				float	u1 = (float)(uTopLeft + (patch.x - dest.x) * mtx.xx + (patch.y - dest.y) * mtx.yx);
-				float	v1 = (float)(vTopLeft + (patch.x - dest.x) * mtx.xy + (patch.y - dest.y) * mtx.yy);
-
-				float	u2 = (float)(uTopLeft + (patch.x + patch.w - dest.x) * mtx.xx + (patch.y - dest.y) * mtx.yx);
-				float	v2 = (float)(vTopLeft + (patch.x + patch.w - dest.x) * mtx.xy + (patch.y - dest.y) * mtx.yy);
-
-				float	u3 = (float)(uTopLeft + (patch.x + patch.w - dest.x) * mtx.xx + (patch.y + patch.h - dest.y) * mtx.yx);
-				float	v3 = (float)(vTopLeft + (patch.x + patch.w - dest.x) * mtx.xy + (patch.y + patch.h - dest.y) * mtx.yy);
-
-				float	u4 = (float)(uTopLeft + (patch.x - dest.x) * mtx.xx + (patch.y + patch.h - dest.y) * mtx.yx);
-				float	v4 = (float)(vTopLeft + (patch.x - dest.x) * mtx.xy + (patch.y + patch.h - dest.y) * mtx.yy);
-
-				CoordF	uv1 = { u1, v1 - 0.5f };
-				CoordF	uv2 = { u2, v2 - 0.5f };
-				CoordF	uv3 = { u3, v3 - 0.5f };
-				CoordF	uv4 = { u4, v4 - 0.5f };
-
-				//
-
-				//
-
-				pVertexGL->coord.x = dx1;
-				pVertexGL->coord.y = dy1;
-				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->uv = uv1;
-				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
-				pVertexGL->colorstripOfs = { 0.f, 0.f };
-				pVertexGL->colorsOfs = segTintColorOfs;
-				pVertexGL++;
-
-				pVertexGL->coord.x = dx2;
-				pVertexGL->coord.y = dy1;
-				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->uv = uv2;
-				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
-				pVertexGL->colorstripOfs = { 0.f, 0.f };
-				pVertexGL->colorsOfs = segTintColorOfs;
-				pVertexGL++;
-
-				pVertexGL->coord.x = dx2;
-				pVertexGL->coord.y = dy2;
-				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->uv = uv3;
-				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
-				pVertexGL->colorstripOfs = { 0.f, 0.f };
-				pVertexGL->colorsOfs = segTintColorOfs;
-				pVertexGL++;
-
-				pVertexGL->coord.x = dx1;
-				pVertexGL->coord.y = dy1;
-				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->uv = uv1;
-				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
-				pVertexGL->colorstripOfs = { 0.f, 0.f };
-				pVertexGL->colorsOfs = segTintColorOfs;
-				pVertexGL++;
-
-				pVertexGL->coord.x = dx2;
-				pVertexGL->coord.y = dy2;
-				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->uv = uv3;
-				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
-				pVertexGL->colorstripOfs = { 0.f, 0.f };
-				pVertexGL->colorsOfs = segTintColorOfs;
-				pVertexGL++;
-
-				pVertexGL->coord.x = dx1;
-				pVertexGL->coord.y = dy2;
-				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->uv = uv4;
-				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
-				pVertexGL->colorstripOfs = { 0.f, 0.f };
-				pVertexGL->colorsOfs = segTintColorOfs;
-				pVertexGL++;
-			}
-
-			// Setup extras data
-
-			*pExtrasGL++ = (GLfloat)(pEdgemap->m_nbSegments - 1);	// Edgemap pitch (edges stored per column)
-			*pExtrasGL++ = (GLfloat) pEdgemap->_flatColorsOfs();		// Offset of flat colors in edgemap buffer.
-			*pExtrasGL++ = (GLfloat) pEdgemap->_tintTableOfs();		// Offset of table with offsets of tint blocks for segments.
-			*pExtrasGL++ = 0;										// Unused.
-
-			// Size of the edgemap when tiled, in columns and pixels, which the shader wraps
-			// positions outside of it by. Zero when not.
-
-			*pExtrasGL++ = bTile ? (GLfloat) pEdgemap->m_size.w : 0.f;
-			*pExtrasGL++ = bTile ? (GLfloat) pEdgemap->m_size.h : 0.f;
-			*pExtrasGL++ = 0;
-			*pExtrasGL++ = 0;
-
-			//
-
-			m_objects.push_back(pEdgemap);
-
-			*pCommandGL++ = CommandGL::Edgemap;
-			*pCommandGL++ = nSegments-1;
-			*pCommandGL++ = nRects*6;
-
-			break;
-		}
-
-		case Command::Blit:
-		case Command::ClipBlit:
-		case Command::Tile:
-		case Command::Blur:
-		{
-			int32_t nRects = *p++;
-
-			//
-
-			int tintColorOfs = m_tintColorOfs >= 0 ? m_tintColorOfs : 0;
-
-			for (int i = 0; i < nRects; i++)
-			{
-				int extrasOfs = int(pExtrasGL - m_pExtrasBuffer) / 4;
-
-				auto p32 = (const spx*)p;
-				int srcX = *p32++;
-				int srcY = *p32++;
-				spx dstX = *p32++;
-				spx dstY = *p32++;
-				p = (const uint16_t*)p32;
-
-				int32_t transform = *p++;
-				p++;						// padding
-
-
-
-				int	dx1 = (pRects->x) >> 6;
-				int	dy1 = (pRects->y) >> 6;
-				int dx2 = dx1 + ((pRects->w) >> 6);
-				int dy2 = dy1 + ((pRects->h) >> 6);
-				pRects++;
-
-
-
-
-				pVertexGL->coord.x = dx1;
-				pVertexGL->coord.y = dy1;
-				pVertexGL->uv = m_blitSourceSize;
-				pVertexGL->colorsOfs = tintColorOfs;
-				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
-				pVertexGL++;
-
-				pVertexGL->coord.x = dx2;
-				pVertexGL->coord.y = dy1;
-				pVertexGL->uv = m_blitSourceSize;
-				pVertexGL->colorsOfs = tintColorOfs;
-				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
-				pVertexGL++;
-
-				pVertexGL->coord.x = dx2;
-				pVertexGL->coord.y = dy2;
-				pVertexGL->uv = m_blitSourceSize;
-				pVertexGL->colorsOfs = tintColorOfs;
-				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
-				pVertexGL++;
-
-				pVertexGL->coord.x = dx1;
-				pVertexGL->coord.y = dy1;
-				pVertexGL->uv = m_blitSourceSize;
-				pVertexGL->colorsOfs = tintColorOfs;
-				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
-				pVertexGL++;
-
-				pVertexGL->coord.x = dx2;
-				pVertexGL->coord.y = dy2;
-				pVertexGL->uv = m_blitSourceSize;
-				pVertexGL->colorsOfs = tintColorOfs;
-				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
-				pVertexGL++;
-
-				pVertexGL->coord.x = dx1;
-				pVertexGL->coord.y = dy2;
-				pVertexGL->uv = m_blitSourceSize;
-				pVertexGL->colorsOfs = tintColorOfs;
-				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
-				pVertexGL++;
-
-				auto& mtx = transform < customTransformStart ? s_standardTransforms[transform] : m_pTransformsBeg[transform - customTransformStart];
-
-				// The source coordinate is where the corner of the first destination pixel lands.
-				// Standard transforms (blits, tiles and blurs, possibly flipped) map pixels 1:1,
-				// so they sample the center of each source pixel, half a pixel along the
-				// transformed axes, whichever way those point. Other transforms sample bilinear
-				// sources at the center of the texel, but nearest ones at the corner, so that
-				// stretched pixels are evenly distributed. A corner on a texel edge belongs to
-				// the texel after it, but rounding could tip it into the one before. Corners land
-				// exactly on texel edges when an axis aligned stretch has a simple ratio, so those
-				// are nudged forward by a fraction of a texel. Rotated ones practically never do,
-				// and a nudge would only move samples that weren't on an edge. Blurs always sample
-				// the center, so their fractional sample offsets round to the nearest pixel either way.
-
-				float srcOfsX, srcOfsY;
-
-				if (transform < customTransformStart)
-				{
-					srcOfsX = (mtx.xx + mtx.yx) * 0.5f;
-					srcOfsY = (mtx.xy + mtx.yy) * 0.5f;
-				}
-				else if (m_blitSourceSampleMethod == SampleMethod::Bilinear || cmd == Command::Blur)
-					srcOfsX = srcOfsY = 0.5f;
-				else if ((mtx.xy == 0.f && mtx.yx == 0.f) || (mtx.xx == 0.f && mtx.yy == 0.f))
-					srcOfsX = srcOfsY = 1.f / 4096;
-				else
-					srcOfsX = srcOfsY = 0.f;
-
-				*pExtrasGL++ = srcX / 1024.f + srcOfsX;
-				*pExtrasGL++ = srcY / 1024.f + srcOfsY;
-				*pExtrasGL++ = GLfloat(dstX >> 6) + 0.5f;
-				*pExtrasGL++ = GLfloat(dstY >> 6) + 0.5f;
-
-
-				*pExtrasGL++ = mtx.xx;
-				*pExtrasGL++ = mtx.xy;
-				*pExtrasGL++ = mtx.yx;
-				*pExtrasGL++ = mtx.yy;
-			}
-
-
-			// Store command
-
-			CommandGL commandGL = cmd == Command::Blur ? CommandGL::Blur : cmd == Command::ClipBlit ? CommandGL::ClipBlit : CommandGL::Blit;
-
-			*pCommandGL++ = (int) commandGL;
-			*pCommandGL++ = nRects * 6;
-
-			break;
-		}
-
-
-		default:
-			break;
-		} 
-	} 
-
-	// Save progress.
-
-	m_pRectsPtr = pRects;
-	m_pColorsPtr = pColors;
-
-	m_nVertices			= int(pVertexGL - m_pVertexBuffer);
-	m_nColors			= int(pColorGL	- m_pColorBuffer);
-	m_extrasBufferSize	= int(pExtrasGL - m_pExtrasBuffer);
-	m_commandQueueSize	= int(pCommandGL- m_pCommandQueue);
-}
-
-
-//____ _reserveColors() ______________________________________________________
-/*
-	Makes sure there is room for extra entries in color buffer on top of the ones used,
-	and still room for all colors in session. Tint blocks need more room than the
-	colors they are made from.
-*/
-
-void GlBackend::_reserveColors(int used, int extra)
-{
-	int needed = used + extra + m_sessionColors;
-
-	if (needed <= m_colorBufferCapacity)
-		return;
-
-	int newCapacity = std::max(needed, m_colorBufferCapacity * 2);
-
-	auto pNew = new ColorGL[newCapacity];
-	std::memcpy(pNew, m_pColorBuffer, used * sizeof(ColorGL));
-	delete[] m_pColorBuffer;
-
-	m_pColorBuffer = pNew;
-	m_colorBufferCapacity = newCapacity;
-}
-
-//____ _setUniforms() __________________________________________________
-
-void GlBackend::_setUniforms(GLuint progId, int uboBindingPoint)
-{
-	LOG_GLERROR(glGetError());
-
-	glUseProgram(progId);
-
-	LOG_GLERROR(glGetError());
-
-	GLint texIdLoc = glGetUniformLocation(progId, "texId");
-
-	if (texIdLoc != -1)
-	{
-		glUniform1i(texIdLoc, 0);			// Needs to be set. Texture unit 0 is used for textures.
-	}
-
-	GLint colorBufferIdLoc = glGetUniformLocation(progId, "colorBufferId");
-
-	LOG_GLERROR(glGetError());
-
-	if (colorBufferIdLoc != -1)
-	{
-		glUniform1i(colorBufferIdLoc, 1);		// Needs to be set. Texture unit 1 is used for color buffer.
-	}
-
-	GLint tintmapBufferIdLoc = glGetUniformLocation(progId, "tintmapBufferId");
-
-	LOG_GLERROR(glGetError());
-
-	if (tintmapBufferIdLoc != -1)
-	{
-		glUniform1i(tintmapBufferIdLoc, 1);		// Needs to be set. Texture unit 1 is used for color buffer.
-	}
-
-
-	LOG_GLERROR(glGetError());
-
-	GLint extrasBufferIdLoc = glGetUniformLocation(progId, "extrasBufferId");
-
-	LOG_GLERROR(glGetError());
-
-	if (extrasBufferIdLoc != -1)
-	{
-		glUniform1i(extrasBufferIdLoc, 2);		// Needs to be set. Texture unit 2 is used for extras.
-	}
-
-	LOG_GLERROR(glGetError());
-
-	GLint paletteIdLoc = glGetUniformLocation(progId, "paletteId");
-
-	if (paletteIdLoc != -1)
-	{
-		glUniform1i(paletteIdLoc, 3);			// Needs to be set. Texture unit 3 is used for palette.
-	}
-
-	GLuint canvasIndex = glGetUniformBlockIndex(progId, "Canvas");
-
-	if( canvasIndex != GL_INVALID_INDEX)
-		glUniformBlockBinding(progId, canvasIndex, 0);
-
-	LOG_GLERROR(glGetError());
-}
-
 //____ constructor _____________________________________________________________________
 
 GlBackend::GlBackend( int uboBindingPoint )
 {
+	m_constants = ShaderConstants();
+
 	// Get version number, set flags
 
 	GLint major, minor;
@@ -1456,159 +287,87 @@ GlBackend::GlBackend( int uboBindingPoint )
 		glGetIntegerv(GL_NUM_PROGRAM_BINARY_FORMATS, &formats);
 		m_bProgramBinariesSupported = (formats >= 1);
 	}
-		
-	//
 
 	m_bFullyInitialized = true;
 
+	_loadPrograms();
 
-	_loadPrograms(uboBindingPoint);
-
-	if (!s_pShaderPrograms && m_bProgramBinariesSupported)
+	if (!s_pShaderPrograms && m_bProgramBinariesSupported && m_bFullyInitialized)
 		s_pShaderPrograms = _generateProgramBlob();
-
-
-	// Fill in our m_blitProgMatrix
-
-
-	for (int i = 0; i < PixelFormat_size; i++)
-	{
-		for (int j = 0; j < 2; j++)
-		{
-			m_blitProgMatrix[i][0][0][j] = m_blitProg[j];
-			m_blitProgMatrix[i][1][0][j] = m_blitProg[j];
-			m_blitProgMatrix[i][0][1][j] = m_blitTintmapProg[j];
-			m_blitProgMatrix[i][1][1][j] = m_blitTintmapProg[j];
-		}
-	}
-
-
-	for (int j = 0; j < 2; j++)
-	{
-		m_blitProgMatrix[(int)PixelFormat::Alpha_8][0][0][j] = m_alphaBlitProg[j];
-		m_blitProgMatrix[(int)PixelFormat::Alpha_8][1][0][j] = m_alphaBlitProg[j];
-
-		m_blitProgMatrix[(int)PixelFormat::Alpha_8][0][1][j] = m_alphaBlitTintmapProg[j];
-		m_blitProgMatrix[(int)PixelFormat::Alpha_8][1][1][j] = m_alphaBlitTintmapProg[j];
-
-		for (PixelFormat indexed : { PixelFormat::Index_8, PixelFormat::Index_16 })
-		{
-			m_blitProgMatrix[(int)indexed][0][0][j] = m_paletteBlitNearestProg[j];
-			m_blitProgMatrix[(int)indexed][1][0][j] = m_paletteBlitInterpolateProg[j];
-
-			m_blitProgMatrix[(int)indexed][0][1][j] = m_paletteBlitNearestTintmapProg[j];
-			m_blitProgMatrix[(int)indexed][1][1][j] = m_paletteBlitInterpolateTintmapProg[j];
-		}
-	}
 
 	LOG_INIT_GLERROR(glGetError());
 
-	// Create the buffers we need for FrameBuffer and Vertices
+	// Framebuffer for rendering into surfaces, vertex buffer and its vertex array. The vertex array
+	// has the layout of GpuBackend::Vertex, which the vertex shaders read as the inputs of
+	// ../hlsl/README.md, in the order they are declared.
 
 	glGenFramebuffers(1, &m_framebufferId);
 
 	glGenBuffers(1, &m_vertexBufferId);
+	glGenVertexArrays(1, &m_vertexArrayId);
+
+	glBindVertexArray(m_vertexArrayId);
 	glBindBuffer(GL_ARRAY_BUFFER, m_vertexBufferId);
 
-	// Create and initialize our VertexArray
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*) offsetof(Vertex, x));
+	glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, sizeof(Vertex), (void*) offsetof(Vertex, colorOfs));
+	glVertexAttribIPointer(2, 1, GL_UNSIGNED_INT, sizeof(Vertex), (void*) offsetof(Vertex, extrasOfs));
+	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*) offsetof(Vertex, u));
 
-	glGenVertexArrays(1, &m_vertexArrayId);
-	glBindVertexArray(m_vertexArrayId);
+	for( int i = 0 ; i < 4 ; i++ )
+		glEnableVertexAttribArray(i);
 
-	glVertexAttribIPointer(		// Attribute: Coord
-		0,						// attribute number, must match the layout in the shader.
-		2,						// size
-		GL_INT,					// type
-		sizeof(VertexGL),		// stride
-		(void*)0				// array buffer offset
-	);
-
-	glVertexAttribPointer(		// Attribute: uv
-		1,						// attribute number, must match the layout in the shader.
-		2,						// size
-		GL_FLOAT,				// type
-		GL_TRUE,				// normalized?
-		sizeof(VertexGL),		// stride
-		(void*)(sizeof(CoordI))  // array buffer offset
-	);
-
-	glVertexAttribIPointer(		// Attribute: colorOfs
-		2,						// attribute number, must match the layout in the shader.
-		1,						// size
-		GL_INT,					// type
-		sizeof(VertexGL),			// stride
-		(void*)(sizeof(CoordI) + sizeof(CoordF))  // array buffer offset
-	);
-
-	glVertexAttribIPointer(		// Attribute: extrasOfs
-		3,						// attribute number, must match the layout in the shader.
-		1,						// size
-		GL_INT,					// type
-		sizeof(VertexGL),			// stride
-		(void*)(sizeof(CoordI) + sizeof(CoordF) + sizeof(int))  // array buffer offset
-	);
-
-	glVertexAttribPointer(		// Attribute: tintmapOfs
-		4,						// attribute number, must match the layout in the shader.
-		2,						// size
-		GL_FLOAT,				// type
-		GL_TRUE,				// normalized?
-		sizeof(VertexGL),			// stride
-		(void*)(sizeof(CoordI) + sizeof(CoordF) + sizeof(int)*2)  // array buffer offset
-	);
-
-	glVertexAttribPointer(		// Attribute: colorstripOfs
-		5,						// attribute number, must match the layout in the shader.
-		2,						// size
-		GL_FLOAT,				// type
-		GL_TRUE,				// normalized?
-		sizeof(VertexGL),			// stride
-		(void*)(sizeof(CoordI) + sizeof(CoordF) * 2 + sizeof(int) * 2)  // array buffer offset
-	);
-
-
+	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	LOG_INIT_GLERROR(glGetError());
 
-	// Create a buffer for our CanvasUBO
-
-	glGenBuffers(1, &m_canvasUBOId);
-	glBindBuffer(GL_UNIFORM_BUFFER, m_canvasUBOId);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(CanvasUBO), NULL, GL_STATIC_DRAW); 
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-	glBindBufferBase(GL_UNIFORM_BUFFER, 0, m_canvasUBOId);
-
-	LOG_INIT_GLERROR(glGetError());
-
-	// Create a TextureBufferObject for providing extra data to our shaders
-
-	glGenBuffers(1, &m_extrasBufferId);
-	glBindBuffer(GL_TEXTURE_BUFFER, m_extrasBufferId);
-
-	LOG_INIT_GLERROR(glGetError());
-
-	glGenTextures(1, &m_extrasBufferTex);
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_BUFFER, m_extrasBufferTex);
-	glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, m_extrasBufferId);
-	glActiveTexture(GL_TEXTURE0);
-
-	LOG_INIT_GLERROR(glGetError());
+	// Colors and extras, read by the shaders as buffer textures.
 
 	glGenBuffers(1, &m_colorBufferId);
+	glGenTextures(1, &m_colorBufferTex);
+	glGenBuffers(1, &m_extrasBufferId);
+	glGenTextures(1, &m_extrasBufferTex);
+
 	glBindBuffer(GL_TEXTURE_BUFFER, m_colorBufferId);
+	glBufferData(GL_TEXTURE_BUFFER, sizeof(Color), nullptr, GL_STREAM_DRAW);
+	glBindBuffer(GL_TEXTURE_BUFFER, m_extrasBufferId);
+	glBufferData(GL_TEXTURE_BUFFER, sizeof(Extras), nullptr, GL_STREAM_DRAW);
+	glBindBuffer(GL_TEXTURE_BUFFER, 0);
+
+	glBindTexture(GL_TEXTURE_BUFFER, m_colorBufferTex);
+	glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, m_colorBufferId);
+	glBindTexture(GL_TEXTURE_BUFFER, m_extrasBufferTex);
+	glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, m_extrasBufferId);
+	glBindTexture(GL_TEXTURE_BUFFER, 0);
 
 	LOG_INIT_GLERROR(glGetError());
 
-	glGenTextures(1, &m_colorBufferTex);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_BUFFER, m_colorBufferTex);
-	glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, m_colorBufferId);
-	glActiveTexture(GL_TEXTURE0);
+	// Samplers, as those of DX12Backend and VulkanBackend: tiling sources repeat, ClipBlit reads
+	// transparent black outside the source and everything else, including Blur, reads the edge
+	// pixels. A mipmap filter on a texture without mipmaps leaves it incomplete, so the mipmapped
+	// ones are only used for mipmapped surfaces.
 
+	glGenSamplers(16, m_samplers);
 
+	for( int i = 0 ; i < 16 ; i++ )
+	{
+		bool bMipmapped = (i & 8) != 0;
+		bool bClip = (i & 4) != 0;
+		bool bTiling = (i & 2) != 0;
+		bool bBilinear = (i & 1) != 0;
+
+		GLint wrap = bTiling ? GL_REPEAT : bClip ? GL_CLAMP_TO_BORDER : GL_CLAMP_TO_EDGE;
+		GLint minFilter = bBilinear ? (bMipmapped ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR) : GL_NEAREST;
+
+		glSamplerParameteri(m_samplers[i], GL_TEXTURE_WRAP_S, wrap);
+		glSamplerParameteri(m_samplers[i], GL_TEXTURE_WRAP_T, wrap);
+		glSamplerParameteri(m_samplers[i], GL_TEXTURE_MIN_FILTER, minFilter);
+		glSamplerParameteri(m_samplers[i], GL_TEXTURE_MAG_FILTER, bBilinear ? GL_LINEAR : GL_NEAREST);
+
+		const GLfloat transparent[4] = { 0.f, 0.f, 0.f, 0.f };
+		glSamplerParameterfv(m_samplers[i], GL_TEXTURE_BORDER_COLOR, transparent);
+	}
 
 	LOG_INIT_GLERROR(glGetError());
 }
@@ -1619,60 +378,26 @@ GlBackend::~GlBackend()
 {
 	LOG_GLERROR(glGetError());
 
-	glDeleteProgram(m_fillProg[0]);
-	glDeleteProgram(m_fillProg[1]);
-	glDeleteProgram(m_fillTintmapProg[0]);
-	glDeleteProgram(m_fillTintmapProg[1]);
-	glDeleteProgram(m_aaFillProg[0]);
-	glDeleteProgram(m_aaFillProg[1]);
-	glDeleteProgram(m_aaFillTintmapProg[0]);
-	glDeleteProgram(m_aaFillTintmapProg[1]);
-
-	for (int src = 0; src < 3; src++)
-		for (int tint = 0; tint < 2; tint++)
-			for (int canvas = 0; canvas < 2; canvas++)
-				glDeleteProgram(m_blurProg[src][tint][canvas]);
-
-	glDeleteProgram(m_blitProg[0]);
-	glDeleteProgram(m_blitProg[1]);
-	glDeleteProgram(m_blitTintmapProg[0]);
-	glDeleteProgram(m_blitTintmapProg[1]);
-	glDeleteProgram(m_alphaBlitProg[0]);
-	glDeleteProgram(m_alphaBlitProg[1]);
-	glDeleteProgram(m_alphaBlitTintmapProg[0]);
-	glDeleteProgram(m_alphaBlitTintmapProg[1]);
-	glDeleteProgram(m_paletteBlitNearestProg[0]);
-	glDeleteProgram(m_paletteBlitNearestProg[1]);
-	glDeleteProgram(m_paletteBlitNearestTintmapProg[0]);
-	glDeleteProgram(m_paletteBlitNearestTintmapProg[1]);
-	glDeleteProgram(m_paletteBlitInterpolateProg[0]);
-	glDeleteProgram(m_paletteBlitInterpolateProg[1]);
-	glDeleteProgram(m_paletteBlitInterpolateTintmapProg[0]);
-	glDeleteProgram(m_paletteBlitInterpolateTintmapProg[1]);
-
-	glDeleteProgram(m_lineFromToProg[0]);
-	glDeleteProgram(m_lineFromToProg[1]);
-
-	for (int i = 1; i < c_maxSegments; i++)
+	for( auto& programs : m_programs )
 	{
-		glDeleteProgram(m_segmentsProg[i][0]);
-		glDeleteProgram(m_segmentsProg[i][1]);
+		for( GLuint program : programs )
+		{
+			if( program != 0 )
+				glDeleteProgram(program);
+		}
 	}
 
-	glDeleteProgram(m_shapeProg[0]);
-	glDeleteProgram(m_shapeProg[1]);
+	glDeleteSamplers(16, m_samplers);
 
 	glDeleteFramebuffers(1, &m_framebufferId);
-	glDeleteTextures(1, &m_extrasBufferTex);
-//	glDeleteTextures(1, &m_segmentsTintTexId);
-
-	glDeleteBuffers(1, &m_vertexBufferId);
-	glDeleteBuffers(1, &m_extrasBufferId);
-
 	glDeleteVertexArrays(1, &m_vertexArrayId);
 
-	if( m_idleSync != 0 )
-		glDeleteSync(m_idleSync);
+	glDeleteTextures(1, &m_colorBufferTex);
+	glDeleteTextures(1, &m_extrasBufferTex);
+
+	glDeleteBuffers(1, &m_vertexBufferId);
+	glDeleteBuffers(1, &m_colorBufferId);
+	glDeleteBuffers(1, &m_extrasBufferId);
 
 	LOG_GLERROR(glGetError());
 }
@@ -1682,13 +407,6 @@ GlBackend::~GlBackend()
 const TypeInfo& GlBackend::typeInfo(void) const
 {
 	return TYPEINFO;
-}
-
-//____ maxEdges() _____________________________________________
-
-int GlBackend::maxEdges() const
-{
-	return c_maxSegments - 1;
 }
 
 //____ canBeBlitSource() _____________________________________________
@@ -1742,7 +460,6 @@ WarpmapFactory_p GlBackend::warpmapFactory()
 	return m_pWarpmapFactory;
 }
 
-
 //____ setDefaultCanvas() ___________________________________________
 
 bool GlBackend::setDefaultCanvas(SizeSPX size, int scale, ColorSpace colorSpace)
@@ -1754,7 +471,7 @@ bool GlBackend::setDefaultCanvas(SizeSPX size, int scale, ColorSpace colorSpace)
 	return true;
 }
 
-//____ canvas() ___________________________________________________________
+//____ canvasInfo() ___________________________________________________________
 
 const CanvasInfo * GlBackend::canvasInfo(CanvasRef ref) const
 {
@@ -1773,15 +490,11 @@ void GlBackend::beginRender()
 {
 	LOG_GLERROR(glGetError());
 
-//		if( m_bRendering == true )
-//			return false;
-
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Framebuffer is not complete.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
-
 
 	// Remember GL states so we can restore in EndRender()
 
@@ -1789,6 +502,7 @@ void GlBackend::beginRender()
 	m_glScissorTest 	= glIsEnabled(GL_SCISSOR_TEST);
 	m_glBlendEnabled  	= glIsEnabled(GL_BLEND);
 	m_glSRGBEnabled		= glIsEnabled(GL_FRAMEBUFFER_SRGB);
+	m_glCullFace		= glIsEnabled(GL_CULL_FACE);
 	glGetIntegerv(GL_BLEND_SRC, &m_glBlendSrc);
 	glGetIntegerv(GL_BLEND_DST, &m_glBlendDst);
 	glGetIntegerv(GL_VIEWPORT, m_glViewport);
@@ -1796,42 +510,31 @@ void GlBackend::beginRender()
 	glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &m_glReadFrameBuffer);
 	glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &m_glDrawFrameBuffer);
 
-	//  Modify states
+	//  Modify states. Surfaces are drawn upside down to the window, so triangles turn the other
+	//  way there, and must not be culled.
 
 	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
 	glEnable(GL_SCISSOR_TEST);
 
+	// The default framebuffer might not have alpha.
 
-	//
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
-//		m_bRendering = true;
-		
-	// Set our extras buffer and segments palette textures.
-/*
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_BUFFER, m_extrasBufferTex);
-	glActiveTexture(GL_TEXTURE3);
-	glBindTexture(GL_TEXTURE_2D, m_segmentsTintTexId);
-	glActiveTexture(GL_TEXTURE0);
-*/
+	GLint drawBuffer = GL_BACK;
+	glGetIntegerv(GL_DRAW_BUFFER, &drawBuffer);
 
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_BUFFER, m_colorBufferTex);
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_BUFFER, m_extrasBufferTex);
+	GLint alphaBits = 8;
+	glGetFramebufferAttachmentParameteriv(GL_DRAW_FRAMEBUFFER, (drawBuffer == GL_FRONT || drawBuffer == GL_FRONT_LEFT) ? GL_FRONT_LEFT : GL_BACK_LEFT,
+										  GL_FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE, &alphaBits);
+	if (glGetError() != GL_NO_ERROR)
+		alphaBits = 8;
 
-	glActiveTexture(GL_TEXTURE0);
+	m_bDefaultCanvasHasAlpha = (alphaBits > 0);
 
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, GLuint(m_glDrawFrameBuffer));
 
-	// Prepare for rendering
-
-	glBindVertexArray(m_vertexArrayId);
-
-
-//		glFinish();  //TODO: Remove.
-
-	//
-
+	m_bRendering = true;
 
 	LOG_GLERROR(glGetError());
 }
@@ -1841,17 +544,17 @@ void GlBackend::beginRender()
 void GlBackend::endRender()
 {
 	LOG_GLERROR(glGetError());
-//		if( m_bRendering == false )
-//			return false;
 
-	//
-
- 	//glFinish(); //TODO: Remove.
+	if( !m_bRendering )
+		return;
 
 	// Restore render states from before beginRender()
 
 	if( m_glDepthTest )
 		glEnable(GL_DEPTH_TEST);
+
+	if( m_glCullFace )
+		glEnable(GL_CULL_FACE);
 
 	if( !m_glScissorTest )
 		glDisable(GL_SCISSOR_TEST);
@@ -1866,945 +569,704 @@ void GlBackend::endRender()
 	else
 		glDisable(GL_FRAMEBUFFER_SRGB);
 
+	glBlendEquation(GL_FUNC_ADD);
 	glBlendFunc( m_glBlendSrc, m_glBlendDst );
 	glViewport(m_glViewport[0], m_glViewport[1], m_glViewport[2], m_glViewport[3]);
 	glScissor(m_glScissorBox[0], m_glScissorBox[1], m_glScissorBox[2], m_glScissorBox[3]);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_glReadFrameBuffer);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_glDrawFrameBuffer);
 
-	glBindVertexArray(0);
-
-	//TODO: Reenable
-
-	//if( m_idleSync != 0 )
-	//	glDeleteSync(m_idleSync);
-
-	//m_idleSync = glFenceSync( GL_SYNC_GPU_COMMANDS_COMPLETE, 0 );
-
 	glFlush();
 
-//
+	m_bRendering = false;
 
 	LOG_GLERROR(glGetError());
-//		m_bRendering = false;
 }
 
-//____ _beginSession() _______________________________________________________
+//____ _isRecording() ________________________________________________________
 
-void GlBackend::beginSession( CanvasRef canvasRef, Surface * pCanvasSurface, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
+bool GlBackend::_isRecording() const
 {
-	if( !pCanvasSurface && canvasRef != CanvasRef::Default )
+	return m_bRendering;
+}
+
+//____ _isNativeSurface() ____________________________________________________
+
+bool GlBackend::_isNativeSurface( const Object * pObject ) const
+{
+	return pObject && _isOfType(pObject->typeInfo(), GlSurface::TYPEINFO);
+}
+
+//____ _isNativeEdgemap() ____________________________________________________
+
+bool GlBackend::_isNativeEdgemap( const Object * pObject ) const
+{
+	return pObject && _isOfType(pObject->typeInfo(), GlEdgemap::TYPEINFO);
+}
+
+//____ _isNativeWarpmap() ____________________________________________________
+
+bool GlBackend::_isNativeWarpmap( const Object * pObject ) const
+{
+	return pObject && _isOfType(pObject->typeInfo(), GlWarpmap::TYPEINFO);
+}
+
+//____ _beginSessionOnDevice() _______________________________________________
+
+void GlBackend::_beginSessionOnDevice( Surface * pCanvas )
+{
+	m_ops.clear();
+	m_patches.clear();
+	m_sessionObjects.clear();
+	m_constantSnapshots.clear();
+
+	m_bConstantsChanged = true;
+	m_bCanvasBound = false;
+	m_targetSize = SizeI();
+}
+
+//____ _endSessionOnDevice() _________________________________________________
+
+void GlBackend::_endSessionOnDevice()
+{
+	_execute();
+
+	m_ops.clear();
+	m_patches.clear();
+	m_sessionObjects.clear();
+	m_constantSnapshots.clear();
+
+	m_buffers = FrameBuffers();
+	m_bCanvasBound = false;
+}
+
+//____ _reserveFrameBuffers() ________________________________________________
+//
+// The buffers are ours, in memory, uploaded when the session ends. They only grow, so a frame
+// settles on a size and isn't cleared for every session.
+
+bool GlBackend::_reserveFrameBuffers( int nVertices, int nColors, int nExtras, int nObjects )
+{
+	auto reserve = [](auto& buffer, auto*& pBeg, auto*& pPtr, auto*& pEnd, int needed)
+	{
+		if( needed < 1 )
+			needed = 1;
+
+		if( int(buffer.size()) < needed )
+			buffer.resize(needed);
+
+		pBeg = buffer.data();
+		pPtr = pBeg;
+		pEnd = pBeg + buffer.size();
+	};
+
+	reserve(m_vertices, m_buffers.pVertexBeg, m_buffers.pVertexPtr, m_buffers.pVertexEnd, nVertices);
+	reserve(m_colors, m_buffers.pColorBeg, m_buffers.pColorPtr, m_buffers.pColorEnd, nColors);
+	reserve(m_extras, m_buffers.pExtrasBeg, m_buffers.pExtrasPtr, m_buffers.pExtrasEnd, nExtras);
+	return true;
+}
+
+//____ _record() _____________________________________________________________
+
+void GlBackend::_record( Op op, int a, int b, Object * pObject, const RectI& rect )
+{
+	m_ops.push_back( { op, a, b, pObject, rect } );
+}
+
+//____ _holdForSession() _____________________________________________________
+//
+// Keeps an object the recording points at until it has been played back.
+
+void GlBackend::_holdForSession( Object * pObject )
+{
+	if( pObject && (m_sessionObjects.empty() || m_sessionObjects.back().rawPtr() != pObject) )
+		m_sessionObjects.push_back(pObject);
+}
+
+//____ _bindCanvas() _________________________________________________________
+
+bool GlBackend::_bindCanvas( Surface * pCanvas, SizeI& size, CanvasKind& kind )
+{
+	if( !m_bRendering )
+		return false;
+
+	auto pSurface = static_cast<GlSurface*>(pCanvas);
+
+	if( pSurface && (!pSurface->m_bCanvas || pSurface->getTexture() == 0) )
+	{
+		Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Surface can not be used as canvas, rendering to default canvas instead.",
+			this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		pSurface = nullptr;
+	}
+
+	// How y is flipped, see compile_shaders.py. Surfaces are drawn upside down to GL, so their
+	// first row is at the top as on the other backends. In the window gl_FragCoord is upside down.
+
+	if( pSurface )
+	{
+		size = pSurface->pixelSize();
+		kind = _canvasKind(pSurface);
+
+		m_constants.glCanvas[0] = -1.f;
+		m_constants.glCanvas[1] = 0.f;
+		m_constants.glCanvas[2] = 1.f;
+	}
+	else
+	{
+		size = { m_defaultCanvas.size.w / 64, m_defaultCanvas.size.h / 64 };
+		kind = m_bDefaultCanvasHasAlpha ? CanvasKind::WithAlpha : CanvasKind::WithoutAlpha;
+
+		m_constants.glCanvas[0] = 1.f;
+		m_constants.glCanvas[1] = float(size.h);
+		m_constants.glCanvas[2] = -1.f;
+	}
+
+	m_constants.glCanvas[3] = 0.f;
+	m_bConstantsChanged = true;
+
+	_holdForSession(pSurface);
+	_record(Op::BindCanvas, 0, 0, pSurface);
+
+	m_bCanvasBound = true;
+	m_targetSize = size;
+	m_targetKind = kind;
+	return true;
+}
+
+//____ _setPipeline() ________________________________________________________
+
+bool GlBackend::_setPipeline( PipelineKind kind )
+{
+	if( !m_bCanvasBound || m_activeBlendMode == BlendMode::Ignore )
+		return false;							// Ignore draws nothing.
+
+	BlendMode mode = _normalizeBlendMode(m_activeBlendMode);
+
+	GlBlend blend = blendFor(mode, m_targetKind == CanvasKind::AlphaOnly, m_targetKind == CanvasKind::WithoutAlpha, _hasPartialCoverage(kind));
+
+	if( m_programs[int(kind)][blend.bDualSource ? 1 : 0] == 0 )
+		return false;
+
+	_record(Op::SetPipeline, int(kind), int(mode));
+	return true;
+}
+
+//____ _setConstants() _______________________________________________________
+//
+// The shaders have the three blocks as one, see ShaderConstants, a copy of which goes with the
+// next draw.
+
+void GlBackend::_setConstants( ConstantBlock block )
+{
+	static_assert(sizeof(CanvasConstants) == 32 && sizeof(PixelConstants) == 16 && sizeof(WarpConstants) == 32, "Constant blocks must match constants.hlsl");
+	static_assert(offsetof(ShaderConstants, pixel) == 32 && offsetof(ShaderConstants, warp) == 48 && offsetof(ShaderConstants, glCanvas) == 80
+				  && sizeof(ShaderConstants) == 6 * 16, "Constant blocks must be where constants.hlsl and compile_shaders.py have them");
+
+	switch( block )
+	{
+		case ConstantBlock::Canvas:
+			m_constants.canvas = m_canvasConstants;
+			break;
+
+		case ConstantBlock::Pixel:
+			m_constants.pixel = m_pixelConstants;
+			break;
+
+		case ConstantBlock::Warp:
+			m_constants.warp = m_warpConstants;
+			break;
+	}
+
+	m_bConstantsChanged = true;
+}
+
+//____ _pushConstants() ______________________________________________________
+
+void GlBackend::_pushConstants()
+{
+	if( !m_bConstantsChanged )
 		return;
 
-	// Reserve buffer for coordinates
-
-	int nCoords = pInfo->nRects * 6 + pInfo->nLineCoords/2 * 6;
-
-	m_pVertexBuffer = new VertexGL[nCoords];
-	m_nVertices = 0;
-
-	// Reserve buffer for colors
-
-	m_sessionColors = pInfo->nColors + 1;
-	m_colorBufferCapacity = m_sessionColors;
-	m_pColorBuffer = new ColorGL[m_colorBufferCapacity];
-
-	// Always present white color used as default tint for blits.
-
-	m_pColorBuffer[0].r = 1.f;	
-	m_pColorBuffer[0].g = 1.f;
-	m_pColorBuffer[0].b = 1.f;
-	m_pColorBuffer[0].a = 1.f;
-	
-	m_nColors = 1;
-
-	// Reserve buffer for extras
-
-	int nExtrasFloats = 
-		+ pInfo->nBlur * 8
-		+ pInfo->nLineCoords/2 * GpuShapes::c_lineEntries * 4		// Lines with caps take the most.
-		+ pInfo->nRects * 8			// This is margin for blits (+8) and  subpixel fills (+4).
-		+ pInfo->nEdgemapDraws * 8
-		+ pInfo->nWarpDraws * 12
-		+ GpuShapes::maxSessionEntries(*pInfo) * 4;
-
-	m_pExtrasBuffer = new GLfloat[nExtrasFloats];
-	m_extrasBufferSize = 0;
-
-	// Reserve buffer for commands
-
-	m_pCommandQueue = new int[
-		pInfo->nStateChanges * (15+28)	//TODO: Check exactly size needed
-		+ pInfo->nFill * 2 
-		+ pInfo->nBlit * 2
-		+ pInfo->nBlur * 2
-		+ (pInfo->nLines * 3 + pInfo->nLineClipRects * 4) * 2		// Lines with and without caps in separate commands.
-		+ pInfo->nEdgemapDraws * 3
-		+ pInfo->nShapeDraws * 2
-		+ pInfo->nWarpDraws * 10 + pInfo->nRects * 4		// Warps with their clip rectangles.
-		+ pInfo->nSetCanvas];
-
-	m_commandQueueSize = 0;
-
-	_setCanvas(pCanvasSurface);
+	m_constantSnapshots.push_back(m_constants);
+	_record(Op::SetConstants, int(m_constantSnapshots.size()) - 1);
+	m_bConstantsChanged = false;
 }
 
-//____ _endSession() _______________________________________________________
+//____ _draw() _______________________________________________________________
 
-void GlBackend::endSession()
+void GlBackend::_draw( int firstVertex, int nVertices )
 {
+	if( !m_bCanvasBound || nVertices <= 0 )
+		return;
+
+	_pushConstants();
+	_record(Op::Draw, firstVertex, nVertices);
+}
+
+//____ _setScissor() _________________________________________________________
+
+void GlBackend::_setScissor( const RectI& rect )
+{
+	if( m_bCanvasBound )
+		_record(Op::SetScissor, 0, 0, nullptr, rect);
+}
+
+//____ _resetScissor() _______________________________________________________
+
+void GlBackend::_resetScissor()
+{
+	_setScissor( RectI(0, 0, m_targetSize.w, m_targetSize.h) );
+}
+
+//____ _prepareBlitSource() __________________________________________________
+//
+// GlSurface copies what is written to its pixels to the texture right away.
+
+void GlBackend::_prepareBlitSource( Surface * pSurface )
+{
+}
+
+//____ _bindBlitTexture() ____________________________________________________
+
+bool GlBackend::_bindBlitTexture( Surface * pSurface )
+{
+	auto pSource = static_cast<GlSurface*>(pSurface);
+
+	if( !m_bCanvasBound || pSource->getTexture() == 0 )
+		return false;
+
+	if( pSource->pixelDescription()->type == PixelType::Index && pSource->getPaletteTexture() == 0 )
+		return false;
+
+	_holdForSession(pSource);
+	_record(Op::BindBlitTexture, 0, 0, pSource);
+	return true;
+}
+
+//____ _bindBlitSampler() ____________________________________________________
+//
+// Palette based sources are read with texelFetch(), but an integer texture must have a nearest
+// filter to be complete.
+
+void GlBackend::_bindBlitSampler( Surface * pSurface, bool bClip )
+{
+	if( !m_bCanvasBound )
+		return;
+
+	bool bIndexed = pSurface->pixelDescription()->type == PixelType::Index;
+	bool bBilinear = !bIndexed && pSurface->sampleMethod() == SampleMethod::Bilinear;
+	bool bMipmapped = bBilinear && pSurface->isMipmapped();
+
+	int index = (bMipmapped ? 8 : 0) + (bClip ? 4 : 0) + (pSurface->isTiling() ? 2 : 0) + (bBilinear ? 1 : 0);
+
+	_record(Op::BindSampler, index);
+}
+
+//____ _bindEdgemap() ________________________________________________________
+
+bool GlBackend::_bindEdgemap( GpuEdgemap * pEdgemap )
+{
+	auto pGlEdgemap = static_cast<GlEdgemap*>(pEdgemap);
+
+	if( !m_bCanvasBound || pGlEdgemap->m_content.empty() )
+		return false;
+
+	_holdForSession(pGlEdgemap);
+	_record(Op::BindEdgemap, 0, 0, pGlEdgemap);
+	return true;
+}
+
+//____ _drawWarpmap() ________________________________________________________
+
+void GlBackend::_drawWarpmap( Warpmap * pWarpmap, const RectI * pPatches, int nPatches )
+{
+	if( !m_bCanvasBound || pWarpmap->triangleCount() == 0 || nPatches <= 0 )
+		return;
+
+	_pushConstants();
+	_holdForSession(pWarpmap);
+
+	int first = int(m_patches.size());
+	m_patches.insert(m_patches.end(), pPatches, pPatches + nPatches);
+
+	_record(Op::DrawWarpmap, first, nPatches, pWarpmap);
+	_resetScissor();
+}
+
+//____ _execute() ____________________________________________________________
+//
+// Uploads what the session has written and plays back the recording. Called by endSession().
+
+void GlBackend::_execute()
+{
+	if( m_ops.empty() )
+		return;
+
 	LOG_GLERROR(glGetError());
 
+	glBindVertexArray(m_vertexArrayId);
 
-	// Send vertices to GPU
+	// Uploads. Each replaces the storage of its buffer, so draws of the previous session still in
+	// flight keep what they read.
+
+	size_t nVertices = m_buffers.pVertexBeg ? size_t(m_buffers.pVertexPtr - m_buffers.pVertexBeg) : 0;
+	size_t nColors = m_buffers.pColorBeg ? size_t(m_buffers.pColorPtr - m_buffers.pColorBeg) : 0;
+	size_t nExtras = m_buffers.pExtrasBeg ? size_t(m_buffers.pExtrasPtr - m_buffers.pExtrasBeg) : 0;
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_vertexBufferId);
-	glBufferData(GL_ARRAY_BUFFER, m_nVertices * sizeof(VertexGL), m_pVertexBuffer, GL_DYNAMIC_DRAW);		// Orphan current buffer if still in use and create new.
-	//	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	LOG_GLERROR(glGetError());
-
-	// Send colors to GPU
+	glBufferData(GL_ARRAY_BUFFER, GLsizeiptr(std::max(nVertices, size_t(1)) * sizeof(Vertex)), m_vertices.data(), GL_STREAM_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glBindBuffer(GL_TEXTURE_BUFFER, m_colorBufferId);
-	glBufferData(GL_TEXTURE_BUFFER, m_nColors * sizeof(ColorGL), m_pColorBuffer, GL_DYNAMIC_DRAW);
-	//	glBindBuffer(GL_TEXTURE_BUFFER, 0);
-
-	LOG_GLERROR(glGetError());
-
-	// Send extras to GPU
-
+	glBufferData(GL_TEXTURE_BUFFER, GLsizeiptr(std::max(nColors, size_t(1)) * sizeof(Color)), m_colors.data(), GL_STREAM_DRAW);
 	glBindBuffer(GL_TEXTURE_BUFFER, m_extrasBufferId);
-	glBufferData(GL_TEXTURE_BUFFER, m_extrasBufferSize * sizeof(GLfloat), m_pExtrasBuffer, GL_DYNAMIC_DRAW);
+	glBufferData(GL_TEXTURE_BUFFER, GLsizeiptr(std::max(nExtras, size_t(1)) * sizeof(Extras)), m_extras.data(), GL_STREAM_DRAW);
 	glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
-	LOG_GLERROR(glGetError());
-
-
-	// Process command queue
-
-	glEnableVertexAttribArray(0);	// Vertices
-	glEnableVertexAttribArray(1);	// UV
-	glEnableVertexAttribArray(2);	// Colors
-	glEnableVertexAttribArray(3);	// Extras
-	glEnableVertexAttribArray(4);	// Tintmap ofs
-	glEnableVertexAttribArray(5);	// Colorstrip ofs
+	glActiveTexture(GL_TEXTURE0 + ColorsUnit);
+	glBindTexture(GL_TEXTURE_BUFFER, m_colorBufferTex);
+	glActiveTexture(GL_TEXTURE0 + ExtrasUnit);
+	glBindTexture(GL_TEXTURE_BUFFER, m_extrasBufferTex);
+	glActiveTexture(GL_TEXTURE0 + BlitSourceUnit);
 
 	LOG_GLERROR(glGetError());
 
-	int* pCmd = m_pCommandQueue;
-	int* pEnd = m_pCommandQueue + m_commandQueueSize;
+	m_pExecCanvas = nullptr;
+	m_bExecCanvasOK = false;
+	m_execProgram = 0;
+	m_execProgramIndex = -1;
+	m_execConstants = -1;
+	m_execBlendKey = -1;
 
-	int vertexOfs = 0;
-	int objectOfs = 0;
+	for( int& constants : m_programConstants )
+		constants = -1;
 
-	while (pCmd < pEnd)
+	for( const Op_t& op : m_ops )
 	{
-		CommandGL cmd = (CommandGL)*pCmd++;
-
-		switch (cmd)
+		switch( op.op )
 		{
-			case CommandGL::SetCanvas:
-			{
-				_setCanvas( static_cast<Surface*>(m_objects[objectOfs++]) );
-				break;
-			}
-
-			case CommandGL::StateChange:
-			{
-				int32_t statesChanged = *pCmd++;
-
-				if (statesChanged & uint8_t(StateChange::BlitSource))
-				{
-					_setBlitSource(static_cast<GlSurface*>(m_objects[objectOfs++]));
-				}
-
-				if (statesChanged & uint8_t(StateChange::Tint))
-				{
-					m_bTintIsActive = (*pCmd++ != 0);
-				}
-
-				if (statesChanged & uint8_t(StateChange::BlendMode))
-				{
-					m_activeBlendMode = (BlendMode)*pCmd++;
-				}
-
-				if (statesChanged & uint8_t(StateChange::MorphFactor))
-				{
-					m_activeMorphFactor = *pCmd++ / 4096.f;
-				}
-
-				if (statesChanged & uint8_t(StateChange::FixedBlendColor))
-				{
-				}
-
-				if (statesChanged & uint8_t(StateChange::Blur))
-				{
-					m_activeBlurRadius = *pCmd++;
-
-					GpuTools::blurColorMatrix(pCmd, m_activeBlurInfo.colorMtx);
-					pCmd += 27;
-
-					// The offsets are in texture coordinates of the blit source, so they are
-					// calculated at draw time, from whatever blit source is active then.
-				}
-
-				// We postpone setting blend mode after having retrieved active morphFactor and fixedBlendColor
-
-				if (statesChanged & (uint8_t(StateChange::BlendMode) | uint8_t(StateChange::MorphFactor)) )
-				{
-					_setBlendMode(m_activeBlendMode);
-				}
-
-
+			case Op::BindCanvas:
+				_executeBindCanvas( static_cast<GlSurface*>(op.pObject) );
 				break;
 
-			}
-
-			case CommandGL::StraightFill:
-			{
-				int nVertices = *pCmd++;
-
-				if (m_bTintIsActive)
-					glUseProgram(m_fillTintmapProg[m_bActiveCanvasIsA8]);
-				else
-					glUseProgram(m_fillProg[m_bActiveCanvasIsA8]);
-
-				_setPartialCoverage(false);
-
-				glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
-				vertexOfs += nVertices;
+			case Op::SetPipeline:
+				_executeSetPipeline( PipelineKind(op.a), BlendMode(op.b) );
 				break;
-			}
 
-			case CommandGL::SubpixelFill:
-			{
-				int nVertices = *pCmd++;
-
-				if (m_bTintIsActive)
-					glUseProgram(m_aaFillTintmapProg[m_bActiveCanvasIsA8]);
-				else
-					glUseProgram(m_aaFillProg[m_bActiveCanvasIsA8]);
-
-				_setPartialCoverage(true);
-
-				glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
-				vertexOfs += nVertices;
+			case Op::SetConstants:
+				m_execConstants = op.a;
 				break;
-			}
 
-			case CommandGL::Lines:
-			case CommandGL::CappedLines:
-			{
-				int clipListLen = *pCmd++;
-				int nVertices = *pCmd++;
-
-				glUseProgram(cmd == CommandGL::Lines ? m_lineFromToProg[m_bActiveCanvasIsA8] : m_shapeProg[m_bActiveCanvasIsA8]);
-				_setPartialCoverage(true);
-
-				for (int i = 0; i < clipListLen; i++)
+			case Op::Draw:
+				if( m_bExecCanvasOK && m_execProgram != 0 )
 				{
-					int x = *pCmd++;
-					int y = *pCmd++;
-					int w = *pCmd++;
-					int h = *pCmd++;
+					_executeConstants();
+					glDrawArrays(GL_TRIANGLES, op.a, op.b);
+				}
+				break;
 
-					glScissor(x, y, w, h);
-					glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
+			case Op::SetScissor:
+				_executeScissor(op.rect);
+				break;
+
+			case Op::BindBlitTexture:
+			{
+				auto pSource = static_cast<GlSurface*>(op.pObject);
+
+				glBindTexture(GL_TEXTURE_2D, pSource->getTexture());
+
+				if( pSource->m_bMipmapStale )
+				{
+					glGenerateMipmap(GL_TEXTURE_2D);
+					pSource->m_bMipmapStale = false;
 				}
 
-				glScissor(0, 0, m_activeCanvasSize.w, m_activeCanvasSize.h);
+				// A palette based source has its palette where edgemaps go, which is free while we blit.
 
-				vertexOfs += nVertices;
-				break;
-			}
-
-			case CommandGL::Blit:
-			{
-				int nVertices = *pCmd++;
-
-				GlSurface* pSurf = m_pActiveBlitSource;
-				GLuint prog = m_blitProgMatrix[(int)pSurf->m_pixelFormat][(int)pSurf->sampleMethod()][m_bTintIsActive][m_bActiveCanvasIsA8];
-				glUseProgram(prog);
-
-				if (pSurf->pixelDescription()->type == PixelType::Index)
+				if( pSource->getPaletteTexture() != 0 )
 				{
-					GLint clipLoc = glGetUniformLocation(prog, "clipToSource");
-					if (clipLoc != -1)
-						glUniform1i(clipLoc, 0);
-
-					_setPaletteInfo(prog, pSurf);
-				}
-
-				_setRgbxClip(prog, pSurf, false);
-				_setPartialCoverage(false);
-
-				glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
-				vertexOfs += nVertices;
-
-				break;
-			}
-
-			case CommandGL::ClipBlit:
-			{
-				int nVertices = *pCmd++;
-
-				GlSurface* pSurf = m_pActiveBlitSource;
-				GLuint prog = m_blitProgMatrix[(int)pSurf->m_pixelFormat][(int)pSurf->sampleMethod()][m_bTintIsActive][m_bActiveCanvasIsA8];
-				glUseProgram(prog);
-
-				// Nothing outside the source may be read, so a non-tiling source has
-				// its texture clamped to a transparent border for the draw, then put
-				// back to clamping to its edge. A tiling source wraps either way, as
-				// in the other backends, and its wrap mode must be left alone, or it
-				// would stop tiling for every blit after this one.
-
-				bool bClip = !pSurf->isTiling();
-				bool bIndexed = pSurf->pixelDescription()->type == PixelType::Index;
-
-				if (bIndexed)
-				{
-					GLint clipLoc = glGetUniformLocation(prog, "clipToSource");
-					if (clipLoc != -1)
-						glUniform1i(clipLoc, bClip ? 1 : 0);
-
-					_setPaletteInfo(prog, pSurf);
-				}
-				else
-				{
-					if (bClip)
-					{
-						static const GLfloat transparent[4] = { 0.f, 0.f, 0.f, 0.f };
-
-						glActiveTexture(GL_TEXTURE0);
-						glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, transparent);
-						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-					}
-
-					_setRgbxClip(prog, pSurf, true);
-				}
-
-				_setPartialCoverage(false);
-				glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
-				vertexOfs += nVertices;
-
-				if (bClip && !bIndexed)
-				{
-					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+					glActiveTexture(GL_TEXTURE0 + EdgemapOrPaletteUnit);
+					glBindTexture(GL_TEXTURE_BUFFER, pSource->getPaletteTexture());
+					glActiveTexture(GL_TEXTURE0 + BlitSourceUnit);
 				}
 				break;
 			}
 
-
-			case CommandGL::Blur:
-			{
-				int nVertices = *pCmd++;
-
-				// Palette based and Alpha_8 sources need their own shaders, as does an Alpha_8 canvas.
-
-				BlurSource blurSource = BlurSource::Normal;
-				if (m_pActiveBlitSource->pixelDescription()->type == PixelType::Index)
-					blurSource = BlurSource::Palette;
-				else if (m_pActiveBlitSource->pixelFormat() == PixelFormat::Alpha_8)
-					blurSource = BlurSource::Alpha;
-
-				GLuint blurProg = m_blurProg[blurSource][m_bTintIsActive][m_bActiveCanvasIsA8];
-				glUseProgram(blurProg);
-
-				if (blurSource == BlurSource::Palette)
-					_setPaletteInfo(blurProg, m_pActiveBlitSource);
-
-				auto size = m_pActiveBlitSource->pixelSize();
-
-				// Offsets are added to texture coordinates normalized against the blit source,
-				// so they are normalized against its size as well.
-
-				GpuTools::blurOffsets(m_activeBlurRadius, size, m_activeBlurInfo.offset);
-
-				auto& uniformLocation = m_blurUniformLocation[blurSource][m_bTintIsActive][m_bActiveCanvasIsA8];
-
-				glUniform2fv(uniformLocation[1], 9, (GLfloat*)m_activeBlurInfo.offset);
-				glUniform4fv(uniformLocation[0], 9, (GLfloat*)m_activeBlurInfo.colorMtx);
-
-				_setPartialCoverage(false);
-
-				glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
-
-				vertexOfs += nVertices;
+			case Op::BindSampler:
+				glBindSampler(BlitSourceUnit, m_samplers[op.a]);
 				break;
-			}
 
-			case CommandGL::Edgemap:
+			case Op::BindEdgemap:
 			{
-				auto pEdgemap = static_cast<GlEdgemap*>(m_objects[objectOfs++]);
+				auto pEdgemap = static_cast<GlEdgemap*>(op.pObject);
 
-				glActiveTexture(GL_TEXTURE4);
+				pEdgemap->_upload();
+
+				glActiveTexture(GL_TEXTURE0 + EdgemapOrPaletteUnit);
 				glBindTexture(GL_TEXTURE_BUFFER, pEdgemap->m_textureId);
-				glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, pEdgemap->m_bufferId);
-				glActiveTexture(GL_TEXTURE0);
-
-				int nEdges = *pCmd++;
-				int nVertices = *pCmd++;
-				glUseProgram(m_segmentsProg[nEdges][m_bActiveCanvasIsA8]);
-				_setPartialCoverage(false);
-
-				glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
-				vertexOfs += nVertices;
+				glActiveTexture(GL_TEXTURE0 + BlitSourceUnit);
 				break;
 			}
 
-			case CommandGL::Shape:
+			case Op::DrawWarpmap:
 			{
-				int nVertices = *pCmd++;
-				glUseProgram(m_shapeProg[m_bActiveCanvasIsA8]);
-				_setPartialCoverage(true);
+				if( !m_bExecCanvasOK || m_execProgram == 0 )
+					break;
 
-				glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
-				vertexOfs += nVertices;
-				break;
-			}
+				auto pWarpmap = static_cast<GlWarpmap*>(op.pObject);
 
-			case CommandGL::WarpEdgemap:
-			case CommandGL::WarpBlit:
-			{
-				auto pWarpmap = static_cast<GlWarpmap*>(m_objects[objectOfs++]);
-
-				GLuint prog;
-				const WarpUniforms* pUniforms;
-
-				if (cmd == CommandGL::WarpEdgemap)
-				{
-					auto pEdgemap = static_cast<GlEdgemap*>(m_objects[objectOfs++]);
-
-					glActiveTexture(GL_TEXTURE4);
-					glBindTexture(GL_TEXTURE_BUFFER, pEdgemap->m_textureId);
-					glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, pEdgemap->m_bufferId);
-
-					prog = m_warpEdgemapProg[m_bActiveCanvasIsA8];
-					pUniforms = &m_warpEdgemapUniforms[m_bActiveCanvasIsA8];
-					glUseProgram(prog);
-				}
-				else
-				{
-					GlSurface* pSurf = m_pActiveBlitSource;
-
-					prog = m_warpBlitProg[m_bActiveCanvasIsA8];
-					pUniforms = &m_warpBlitUniforms[m_bActiveCanvasIsA8];
-					glUseProgram(prog);
-
-					int sourceKind = 0;
-					if (pSurf->pixelDescription()->type == PixelType::Index)
-					{
-						sourceKind = pSurf->sampleMethod() == SampleMethod::Bilinear ? 3 : 2;
-						_setPaletteInfo(prog, pSurf);
-					}
-					else if (pSurf->pixelFormat() == PixelFormat::Alpha_8)
-						sourceKind = 1;
-
-					glUniform1i(pUniforms->sourceKind, sourceKind);
-
-					// A surface that isn't tiling is read as if the edge pixels of the source rectangle
-					// continued outside it, see WAX_GL_WARP_SAMPLE.
-
-					float clampInset = pSurf->isTiling() ? 0.f : pSurf->sampleMethod() == SampleMethod::Bilinear ? 0.5f : 1.f / 256;
-					glUniform1f(pUniforms->clampInset, clampInset);
-
-					// Positions exactly on a border between texels take the texel after it, as in
-					// SoftBackend, rather than either one by how floats round, see WAX_GL_WARP_SAMPLE.
-
-					glUniform1f(pUniforms->nearestBias, pSurf->sampleMethod() == SampleMethod::Nearest ? 1.f / 32768 : 0.f);
-				}
-
-				glActiveTexture(GL_TEXTURE0);
-
-				int extrasOfs = *pCmd++;
-				int colorsOfs = *pCmd++;
-				int tintOfs = *pCmd++;
-				int destX = *pCmd++;
-				int destY = *pCmd++;
-				int refU = *pCmd++;
-				int refV = *pCmd++;
-				int nPatches = *pCmd++;
-
-				glUniform2f(pUniforms->dest, GLfloat(destX), GLfloat(destY));
-				glUniform1i(pUniforms->extrasOfs, extrasOfs);
-				glUniform1i(pUniforms->colorsOfs, colorsOfs);
-				glUniform1i(pUniforms->tintOfs, tintOfs);
-				glUniform2i(pUniforms->ref, refU, refV);
-
-				_setPartialCoverage(true);
+				_executeConstants();
 				glBindVertexArray(pWarpmap->m_vertexArrayId);
 
-				for (int i = 0; i < nPatches; i++)
+				for( int i = 0 ; i < op.b ; i++ )
 				{
-					int x = *pCmd++;
-					int y = *pCmd++;
-					int w = *pCmd++;
-					int h = *pCmd++;
-
-					// Scissor is in rows from the bottom, which the default canvas is drawn upside down to.
-
-					if (m_canvasUBO.yMul < 0)
-						y = m_activeCanvasSize.h - (y + h);
-
-					glScissor(x, y, w, h);
+					_executeScissor(m_patches[op.a + i]);
 					glDrawElements(GL_TRIANGLES, pWarpmap->triangleCount() * 3, GL_UNSIGNED_SHORT, nullptr);
 				}
 
-				glScissor(0, 0, m_activeCanvasSize.w, m_activeCanvasSize.h);
 				glBindVertexArray(m_vertexArrayId);
 				break;
 			}
-
-			default:
-			{
-				assert(false);
-			}
-
 		}
 	}
+
+	// Leave GL as the application may expect it, see also endRender().
+
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	glBindSampler(BlitSourceUnit, 0);
+	glBindVertexArray(0);
+	glUseProgram(0);
 
 	glFlush();
 
+	m_pExecCanvas = nullptr;
+
 	LOG_GLERROR(glGetError());
-
-
-	// Release temporary buffers
-
-	delete[] m_pVertexBuffer;
-	m_pVertexBuffer = nullptr;
-
-	delete[] m_pColorBuffer;
-	m_pColorBuffer = nullptr;
-
-	delete[] m_pExtrasBuffer;
-	m_pExtrasBuffer = nullptr;
-
-	delete[] m_pCommandQueue;
-	m_pCommandQueue = nullptr;
-
-	m_objects.clear();
 }
 
+//____ _executeBindCanvas() __________________________________________________
 
-//____ _setBlendMode() _______________________________________________________
-/*
-	Canvases with alpha hold premultiplied colors, which lets fixed-function blending follow the
-	blend rules exactly: Blend is Porter-Duff over, Morph a premultiplied cross-fade and a partly
-	covered pixel gets the average of the blend result and the canvas. The fragment shaders pass
-	what they draw to the blender as the mode needs it (see WAX_GL_OUTPUT), told by blendInfo:
-
-	- Replace and Morph keep the uncovered part of the pixel by the second color of dual-source
-	  blending. Replace is only blended where pixels are partly covered, see _setPartialCoverage().
-	- Effect modes work on the premultiplied color of the canvas, as the blend rules define them,
-	  with the source as its light (pc) and partial coverage fading it. Add, Invert and Max raise
-	  the alpha of the canvas by the strongest channel of pc, which the shaders output as alpha
-	  for them. Subtract, Multiply and Min keep it.
-	- On Alpha_8 canvases, effect modes use the alpha of the source as the value.
-*/
-
-void GlBackend::_setBlendMode(BlendMode mode)
+void GlBackend::_executeBindCanvas( GlSurface * pCanvas )
 {
-	LOG_GLERROR(glGetError());
+	SizeI size;
 
-	bool bAlphaOnly = m_bActiveCanvasIsA8;
+	m_bExecCanvasOK = true;
 
-	float output = 0.f;							// blendInfo.x, see WAX_GL_OUTPUT.
-	float morph = 1.f;
-
-	glBlendEquation(GL_FUNC_ADD);
-	glEnable(GL_BLEND);
-	m_bReplaceBlending = true;
-
-	switch (mode)
+	if (pCanvas)
 	{
-	case BlendMode::Replace:
-		output = 1.f;
-		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC1_ALPHA);
-		glDisable(GL_BLEND);
-		m_bReplaceBlending = false;
-		break;
+		size = pCanvas->pixelSize();
 
-	case BlendMode::Undefined:
-	case BlendMode::BlendFixedColor:		// Drawn as Blend, which gives the same result.
-	case BlendMode::Blend:
-		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-		break;
+		// An sRGB canvas has an sRGB texture, which GL blends in linear and writes as sRGB.
 
-	case BlendMode::Morph:
-		output = 1.f;
-		morph = m_activeMorphFactor;
-		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC1_ALPHA);
-		break;
-
-	case BlendMode::Add:
-		if (!bAlphaOnly)
-			output = 3.f;
-		glBlendFunc(GL_ONE, GL_ONE);
-		break;
-
-	case BlendMode::Subtract:
-		if (bAlphaOnly)
-		{
-			glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-			glBlendFunc(GL_ONE, GL_ONE);
-		}
+		if (pCanvas->colorSpace() == ColorSpace::sRGB)
+			glEnable(GL_FRAMEBUFFER_SRGB);
 		else
-		{
-			glBlendEquationSeparate(GL_FUNC_REVERSE_SUBTRACT, GL_FUNC_ADD);
-			glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ZERO, GL_ONE);
-		}
-		break;
+			glDisable(GL_FRAMEBUFFER_SRGB);
 
-	case BlendMode::Multiply:
-		if (bAlphaOnly)
+		glBindFramebuffer(GL_FRAMEBUFFER, m_framebufferId);
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, pCanvas->getTexture(), 0);
+
+		GLenum drawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
+		glDrawBuffers(1, drawBuffers);
+
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
-			output = 1.f;
-			glBlendFunc(GL_DST_COLOR, GL_ONE_MINUS_SRC1_ALPHA);
+			Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Surface could not be bound as canvas, nothing is drawn into it.",
+				this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			m_bExecCanvasOK = false;
 		}
+
+		// What we draw isn't in its backing buffer or mip levels.
+
+		if (pCanvas->m_pBlob)
+			pCanvas->m_bBackingBufferStale = true;
+
+		pCanvas->m_bMipmapStale = pCanvas->m_bMipmapped;
+
+		m_execTargetKind = _canvasKind(pCanvas);
+	}
+	else
+	{
+		size = { m_defaultCanvas.size.w / 64, m_defaultCanvas.size.h / 64 };
+
+		// The default framebuffer needs to be sRGB-capable for this to have any effect.
+
+		if (m_defaultCanvas.colorSpace == ColorSpace::sRGB)
+			glEnable(GL_FRAMEBUFFER_SRGB);
 		else
-			glBlendFuncSeparate(GL_DST_COLOR, GL_ONE_MINUS_SRC1_ALPHA, GL_ZERO, GL_ONE);
-		break;
+			glDisable(GL_FRAMEBUFFER_SRGB);
 
-	case BlendMode::Invert:
-		if (bAlphaOnly)
-			glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ONE_MINUS_SRC_COLOR);
-		else
-		{
-			output = 3.f;
-			glBlendFuncSeparate(GL_ONE_MINUS_DST_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
-		}
-		break;
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	case BlendMode::Min:
-		output = 2.f;
-		if (bAlphaOnly)
-		{
-			glBlendEquation(GL_MIN);
-			glBlendFunc(GL_ONE, GL_ONE);
-		}
-		else
-		{
-			glBlendEquationSeparate(GL_MIN, GL_FUNC_ADD);
-			glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ZERO, GL_ONE);
-		}
-		break;
-
-	case BlendMode::Max:
-		if (!bAlphaOnly)
-			output = 3.f;
-		glBlendEquation(GL_MAX);
-		glBlendFunc(GL_ONE, GL_ONE);
-		break;
-
-	case BlendMode::Ignore:
-		glBlendFunc(GL_ZERO, GL_ONE);
-		break;
-
-	default:
-		assert(false);
-		break;
+		m_execTargetKind = m_bDefaultCanvasHasAlpha ? CanvasKind::WithAlpha : CanvasKind::WithoutAlpha;
 	}
 
-	m_canvasUBO.blendInfo[0] = output;
-	m_canvasUBO.blendInfo[1] = morph;
-	_uploadCanvasUBO();
+	m_pExecCanvas = pCanvas;
+	m_bExecDefaultCanvas = (pCanvas == nullptr);
+	m_execTargetSize = size;
+	m_execBlendKey = -1;			// The canvas decides how we blend.
 
-	LOG_GLERROR(glGetError());
+	glViewport(0, 0, size.w, size.h);
+	glScissor(0, 0, size.w, size.h);
 }
 
-//____ _setPartialCoverage() __________________________________________________
-/*
-	Replace only needs blending where pixels are partly covered, which saves reading the canvas
-	when filling or blitting whole pixels. Called before each draw with whether it can cover
-	pixels partly.
-*/
+//____ _executeSetPipeline() _________________________________________________
 
-void GlBackend::_setPartialCoverage(bool bPartialCoverage)
+void GlBackend::_executeSetPipeline( PipelineKind kind, BlendMode blendMode )
 {
-	if (m_activeBlendMode != BlendMode::Replace || bPartialCoverage == m_bReplaceBlending)
+	bool bAlphaOnly = (m_execTargetKind == CanvasKind::AlphaOnly);
+	bool bNoAlpha = (m_execTargetKind == CanvasKind::WithoutAlpha);
+	bool bPartial = _hasPartialCoverage(kind);
+
+	GlBlend blend = blendFor(blendMode, bAlphaOnly, bNoAlpha, bPartial);
+
+	GLuint program = m_programs[int(kind)][blend.bDualSource ? 1 : 0];
+
+	if( program != m_execProgram )
+	{
+		glUseProgram(program);
+		m_execProgram = program;
+		m_execProgramIndex = int(kind) * 2 + (blend.bDualSource ? 1 : 0);
+	}
+
+	int key = (int(blendMode) << 8) | (int(m_execTargetKind) << 4) | (bPartial ? 1 : 0);
+
+	if( key == m_execBlendKey )
 		return;
 
-	if (bPartialCoverage)
+	m_execBlendKey = key;
+
+	if( blend.bEnable )
+	{
 		glEnable(GL_BLEND);
+		glBlendEquationSeparate(blend.op, blend.opAlpha);
+		glBlendFuncSeparate(blend.src, blend.dst, blend.srcAlpha, blend.dstAlpha);
+	}
 	else
 		glDisable(GL_BLEND);
 
-	m_bReplaceBlending = bPartialCoverage;
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, blend.bWriteAlpha ? GL_TRUE : GL_FALSE);
 }
 
-//____ _uploadCanvasUBO() _____________________________________________________
+//____ _executeConstants() ___________________________________________________
+//
+// Uniforms belong to the program, so each program is given the constants of a draw when it hasn't
+// got them yet.
 
-void GlBackend::_uploadCanvasUBO()
+void GlBackend::_executeConstants()
 {
-	glBindBuffer(GL_UNIFORM_BUFFER, m_canvasUBOId);
-	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(CanvasUBO), &m_canvasUBO);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	if( m_execConstants < 0 || m_execProgramIndex < 0 || m_programConstants[m_execProgramIndex] == m_execConstants )
+		return;
+
+	glUniform4uiv(m_constantsLocations[m_execProgramIndex], 6, (const GLuint *) &m_constantSnapshots[m_execConstants]);
+	m_programConstants[m_execProgramIndex] = m_execConstants;
 }
 
-//____ _setBlitSource() _______________________________________________________
+//____ _executeScissor() _____________________________________________________
+//
+// GL counts rows from the bottom, which is where surfaces have their first row, as they are drawn
+// upside down to GL. The window has its first row at the top.
 
-void GlBackend::_setBlitSource(GlSurface* pSurf)
+void GlBackend::_executeScissor( const RectI& rect )
 {
-	LOG_GLERROR(glGetError());
+	int x1 = std::max(rect.x, 0);
+	int y1 = std::max(rect.y, 0);
+	int x2 = std::min(rect.x + rect.w, m_execTargetSize.w);
+	int y2 = std::min(rect.y + rect.h, m_execTargetSize.h);
 
-	glActiveTexture(GL_TEXTURE0);
+	int w = std::max(x2 - x1, 0);
+	int h = std::max(y2 - y1, 0);
 
-	if (pSurf)
+	if( m_bExecDefaultCanvas )
+		y1 = m_execTargetSize.h - (y1 + h);
+
+	glScissor(x1, y1, w, h);
+}
+
+//____ _shaderSource() _______________________________________________________
+
+const char * GlBackend::_shaderSource( const char * pName )
+{
+	for( int i = 0 ; i < s_nbShaderSources ; i++ )
 	{
-		glBindTexture(GL_TEXTURE_2D, pSurf->getTexture());
-
-		if( pSurf->m_bMipmapStale )
-		{
-			glGenerateMipmap(GL_TEXTURE_2D);
-			pSurf->m_bMipmapStale = false;
-		}
-
-		m_pActiveBlitSource = pSurf;
-
-		if (pSurf->m_pPalette)
-		{
-			glActiveTexture(GL_TEXTURE3);
-			GLuint paletteTex = pSurf->getPaletteTexture();
-			glBindTexture(GL_TEXTURE_2D, paletteTex);
-			glActiveTexture(GL_TEXTURE0);
-
-			assert(glGetError() == 0);
-		}
+		if( std::strcmp(s_shaderSources[i].pName, pName) == 0 )
+			return s_shaderSources[i].pSource;
 	}
-	else
-	{
-		glBindTexture(GL_TEXTURE_2D, 0);
-		m_pActiveBlitSource = nullptr;
-	}
-	LOG_GLERROR(glGetError());
+
+	return nullptr;
 }
 
 //____ _loadPrograms() ______________________________________________________________
+//
+// A program per kind of pipeline, and one more for those that blend with a second color.
 
-void GlBackend::_loadPrograms(int uboBindingPoint)
+void GlBackend::_loadPrograms()
 {
-	int programNb = 0;
-
-	// Create and init Fill shader
-
-	for (int i = 0; i < 2; i++)
+	for( int kind = 0 ; kind < int(PipelineKind::Size) ; kind++ )
 	{
-		GLuint progId = _loadOrCompileProgram(programNb++, fillVertexShader, i == 0 ? fillFragmentShader : fillFragmentShader_A8);
-		_setUniforms(progId, uboBindingPoint);
-		m_fillProg[i] = progId;
-		LOG_INIT_GLERROR(glGetError());
-	}
-
-	// Create and init Fill Tintmap shader
-
-	for (int i = 0; i < 2; i++)
-	{
-		GLuint progId = _loadOrCompileProgram(programNb++, fillTintmapVertexShader, i == 0 ? fillFragmentShaderTintmap : fillFragmentShaderTintmap_A8);
-		_setUniforms(progId, uboBindingPoint);
-		m_fillTintmapProg[i] = progId;
-		LOG_INIT_GLERROR(glGetError());
-	}
-
-	// Create and init AA-Fill shader
-
-	for (int i = 0; i < 2; i++)
-	{
-		GLuint progId = _loadOrCompileProgram(programNb++, aaFillVertexShader, i == 0 ? aaFillFragmentShader : aaFillFragmentShader_A8);
-		_setUniforms(progId, uboBindingPoint);
-		m_aaFillProg[i] = progId;
-		LOG_INIT_GLERROR(glGetError());
-	}
-
-	// Create and init AA-Fill Tintmap shader
-
-	for (int i = 0; i < 2; i++)
-	{
-		GLuint progId = _loadOrCompileProgram(programNb++, aaFillTintmapVertexShader, i == 0 ? aaFillFragmentShaderTintmap : aaFillFragmentShaderTintmap_A8);
-		_setUniforms(progId, uboBindingPoint);
-		m_aaFillTintmapProg[i] = progId;
-		LOG_INIT_GLERROR(glGetError());
-	}
-
-	// Create and init Blur shader
-
-	for (int src = 0; src < 3; src++)
-	{
-		for (int tint = 0; tint < 2; tint++)
+		for( int dual = 0 ; dual < 2 ; dual++ )
 		{
-			for (int canvas = 0; canvas < 2; canvas++)
+			const char * pVertexShader = _shaderSource(c_vertexShaders[kind]);
+			const char * pPixelShader = _shaderSource(c_pixelShaders[kind][dual]);
+
+			if( !pVertexShader || !pPixelShader )
 			{
-				GLuint progId = _loadOrCompileProgram(programNb++, tint == 0 ? blitVertexShader : blitTintmapVertexShader, blurFragmentShaders[src][tint][canvas]);
-				_setUniforms(progId, uboBindingPoint);
-
-				m_blurUniformLocation[src][tint][canvas][0] = glGetUniformLocation(progId, "blurInfo.colorMtx");
-				m_blurUniformLocation[src][tint][canvas][1] = glGetUniformLocation(progId, "blurInfo.offset");
-
-				m_blurProg[src][tint][canvas] = progId;
-				LOG_INIT_GLERROR(glGetError());
+				char buffer[128];
+				snprintf(buffer, sizeof(buffer), "Shader %s or %s is missing, run compile_shaders.py.", c_vertexShaders[kind], c_pixelShaders[kind][dual]);
+				Base::throwError(ErrorLevel::Error, ErrorCode::Internal, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				m_bFullyInitialized = false;
+				continue;
 			}
+
+			GLuint progId = _loadOrCompileProgram(kind * 2 + dual, pVertexShader, pPixelShader);
+
+			GLint linkStatus = 0;
+			glGetProgramiv(progId, GL_LINK_STATUS, &linkStatus);
+
+			if( linkStatus != GL_TRUE )
+			{
+				glDeleteProgram(progId);
+				m_bFullyInitialized = false;
+				continue;
+			}
+
+			_setUniforms(progId);
+			m_programs[kind][dual] = progId;
+			m_constantsLocations[kind * 2 + dual] = glGetUniformLocation(progId, "waxConstants");
 		}
-	}
-
-
-	// Create and init Blit shader
-
-	for (int i = 0; i < 2; i++)
-	{
-		GLuint progId = _loadOrCompileProgram(programNb++, blitVertexShader, i == 0 ? blitFragmentShader : blitFragmentShader_A8);
-		_setUniforms(progId, uboBindingPoint);
-		m_blitProg[i] = progId;
-		LOG_INIT_GLERROR(glGetError());
-	}
-
-	// Create and init tintmap Blit shader
-
-	for (int i = 0; i < 2; i++)
-	{
-		GLuint progId = _loadOrCompileProgram(programNb++, blitTintmapVertexShader, i == 0 ? blitFragmentShaderTintmap : blitFragmentShaderTintmap_A8);
-		_setUniforms(progId, uboBindingPoint);
-		m_blitTintmapProg[i] = progId;
-		LOG_INIT_GLERROR(glGetError());
-	}
-
-	// Create and init AlphaBlit shader (shader program for blitting from alpha-only texture)
-
-	for (int i = 0; i < 2; i++)
-	{
-		GLuint progId = _loadOrCompileProgram(programNb++, blitVertexShader, i == 0 ? alphaBlitFragmentShader : alphaBlitFragmentShader_A8);
-		_setUniforms(progId, uboBindingPoint);
-		m_alphaBlitProg[i] = progId;
-		LOG_INIT_GLERROR(glGetError());
-	}
-
-	// Create and init AlphaBlit tintmap shader (shader program for blitting from alpha-only texture)
-
-	for (int i = 0; i < 2; i++)
-	{
-		GLuint progId = _loadOrCompileProgram(programNb++, blitTintmapVertexShader, i == 0 ? alphaBlitFragmentShaderTintmap: alphaBlitFragmentShaderTintmap_A8);
-		_setUniforms(progId, uboBindingPoint);
-		m_alphaBlitTintmapProg[i] = progId;
-		LOG_INIT_GLERROR(glGetError());
-	}
-
-	// Create and init Palette Blit shaders
-
-	for (int i = 0; i < 2; i++)
-	{
-		GLuint progId = _loadOrCompileProgram(programNb++, paletteBlitNearestVertexShader, i == 0 ? paletteBlitNearestFragmentShader : paletteBlitNearestFragmentShader_A8);
-		_setUniforms(progId, uboBindingPoint);
-		m_paletteBlitNearestProg[i] = progId;
-		LOG_INIT_GLERROR(glGetError());
-	}
-
-	for (int i = 0; i < 2; i++)
-	{
-		GLuint progId = _loadOrCompileProgram(programNb++, paletteBlitInterpolateVertexShader, i == 0 ? paletteBlitInterpolateFragmentShader : paletteBlitInterpolateFragmentShader_A8);
-		_setUniforms(progId, uboBindingPoint);
-		m_paletteBlitInterpolateProg[i] = progId;
-		LOG_INIT_GLERROR(glGetError());
-	}
-
-	// Create and init Palette Blit tintmap shaders
-
-	for (int i = 0; i < 2; i++)
-	{
-		GLuint progId = _loadOrCompileProgram(programNb++, paletteBlitNearestTintmapVertexShader, i == 0 ? paletteBlitNearestFragmentShaderTintmap : paletteBlitNearestFragmentShaderTintmap_A8);
-		_setUniforms(progId, uboBindingPoint);
-		m_paletteBlitNearestTintmapProg[i] = progId;
-		LOG_INIT_GLERROR(glGetError());
-	}
-
-	for (int i = 0; i < 2; i++)
-	{
-		GLuint progId = _loadOrCompileProgram(programNb++, paletteBlitInterpolateTintmapVertexShader, i == 0 ? paletteBlitInterpolateFragmentShaderTintmap : paletteBlitInterpolateFragmentShaderTintmap_A8);
-		_setUniforms(progId, uboBindingPoint);
-		m_paletteBlitInterpolateTintmapProg[i] = progId;
-		LOG_INIT_GLERROR(glGetError());
-	}
-
-	// Create and init Line shader
-
-	for (int i = 0; i < 2; i++)
-	{
-		GLuint progId = _loadOrCompileProgram(programNb++, lineFromToVertexShader, i == 0 ? lineFromToFragmentShader : lineFromToFragmentShader_A8);
-		_setUniforms(progId, uboBindingPoint);
-		m_lineFromToProg[i] = progId;
-		LOG_INIT_GLERROR(glGetError());
-	}
-
-	// Create and init Segment shaders
-
-	for (int i = 1; i < c_maxSegments; i++)
-	{
-		for (int canvType = 0; canvType < 2; canvType++)
-		{
-			std::string fragShader = canvType == 0 ? segmentsFragmentShader : segmentsFragmentShader_A8;
-			for (auto edgesPos = fragShader.find("$EDGES"); edgesPos != std::string::npos; edgesPos = fragShader.find("$EDGES"))
-				fragShader.replace(edgesPos, 6, std::to_string(i));
-
-			GLuint prog = _loadOrCompileProgram(programNb++, segmentsVertexShader, fragShader.c_str());
-			m_segmentsProg[i][canvType] = prog;
-
-			GLint extrasIdLoc = glGetUniformLocation(prog, "extrasBufferId");
-			GLint edgemapIdLoc = glGetUniformLocation(prog, "edgemapId");
-			GLint tintmapIdLoc = glGetUniformLocation(prog, "tintmapBufferId");
-			GLint colorIdLoc = glGetUniformLocation(prog, "colorBufferId");
-
-			glUseProgram(prog);
-			glUniform1i(tintmapIdLoc, 1);		// Needs to be set. Texture unit 1 is used for colors buffer.
-			glUniform1i(colorIdLoc, 1);			// Same buffer, for the tint color.
-			glUniform1i(extrasIdLoc, 2);		// Needs to be set. Texture unit 2 is used for extras buffer.
-			glUniform1i(edgemapIdLoc, 4);		// Needs to be set. Texture unit 4 is used for segment stripes buffer.
-		}
-	}
-
-	// Create and init Shape shaders
-
-	for (int i = 0; i < 2; i++)
-	{
-		GLuint progId = _loadOrCompileProgram(programNb++, shapeVertexShader, i == 0 ? shapeFragmentShader : shapeFragmentShader_A8);
-		_setUniforms(progId, uboBindingPoint);
-		m_shapeProg[i] = progId;
-		LOG_INIT_GLERROR(glGetError());
-	}
-
-	// Create and init Warp shaders. Texture unit 4 is used for the edgemap buffer.
-
-	auto warpUniforms = [](GLuint progId, WarpUniforms& uniforms)
-	{
-		uniforms.clampInset = glGetUniformLocation(progId, "clampInset");
-		uniforms.nearestBias = glGetUniformLocation(progId, "nearestBias");
-		uniforms.colorsOfs = glGetUniformLocation(progId, "warpColorsOfs");
-		uniforms.dest = glGetUniformLocation(progId, "warpDest");
-		uniforms.extrasOfs = glGetUniformLocation(progId, "warpExtrasOfs");
-		uniforms.ref = glGetUniformLocation(progId, "warpRef");
-		uniforms.sourceKind = glGetUniformLocation(progId, "sourceKind");
-		uniforms.tintOfs = glGetUniformLocation(progId, "warpTintOfs");
-	};
-
-	for (int i = 0; i < 2; i++)
-	{
-		GLuint progId = _loadOrCompileProgram(programNb++, warpVertexShader, i == 0 ? warpEdgemapFragmentShader : warpEdgemapFragmentShader_A8);
-		_setUniforms(progId, uboBindingPoint);
-		glUniform1i(glGetUniformLocation(progId, "edgemapId"), 4);
-		warpUniforms(progId, m_warpEdgemapUniforms[i]);
-		m_warpEdgemapProg[i] = progId;
-		LOG_INIT_GLERROR(glGetError());
-	}
-
-	for (int i = 0; i < 2; i++)
-	{
-		GLuint progId = _loadOrCompileProgram(programNb++, warpVertexShader, i == 0 ? warpBlitFragmentShader : warpBlitFragmentShader_A8);
-		_setUniforms(progId, uboBindingPoint);
-		warpUniforms(progId, m_warpBlitUniforms[i]);
-		m_warpBlitProg[i] = progId;
-		LOG_INIT_GLERROR(glGetError());
 	}
 
 	LOG_INIT_GLERROR(glGetError());
+}
+
+//____ _setUniforms() __________________________________________________
+//
+// Points the samplers at the texture units we bind to, see compile_shaders.py. GL 3.3 can't have
+// it in the shaders.
+
+void GlBackend::_setUniforms(GLuint progId)
+{
+	glUseProgram(progId);
+
+	const struct { const char * pName; int unit; } samplers[] = {
+		{ "waxBlitSource", BlitSourceUnit },
+		{ "waxBlitSource1", BlitSourceUnit },
+		{ "waxBlitSource2", BlitSourceUnit },
+		{ "waxBuffer0", ColorsUnit },
+		{ "waxBuffer1", ExtrasUnit },
+		{ "waxBuffer3", EdgemapOrPaletteUnit } };
+
+	for( auto& sampler : samplers )
+	{
+		GLint location = glGetUniformLocation(progId, sampler.pName);
+		if( location != -1 )
+			glUniform1i(location, sampler.unit);
+	}
+
+	glUseProgram(0);
+
+	LOG_GLERROR(glGetError());
 }
 
 //____ _loadOrCompileProgram() __________________________________________________________
@@ -2888,72 +1350,11 @@ Blob_p GlBackend::_generateProgramBlob()
 {
 	GLuint	programs[c_nbPrograms];
 
-	// Collect the programs
-
-	int prg = 0;
-
-	programs[prg++] = m_fillProg[0];
-	programs[prg++] = m_fillProg[1];
-
-	programs[prg++] = m_fillTintmapProg[0];
-	programs[prg++] = m_fillTintmapProg[1];
-
-	programs[prg++] = m_aaFillProg[0];
-	programs[prg++] = m_aaFillProg[1];
-
-	programs[prg++] = m_aaFillTintmapProg[0];
-	programs[prg++] = m_aaFillTintmapProg[1];
-
-	for (int src = 0; src < 3; src++)
-		for (int tint = 0; tint < 2; tint++)
-			for (int canvas = 0; canvas < 2; canvas++)
-				programs[prg++] = m_blurProg[src][tint][canvas];
-
-	programs[prg++] = m_blitProg[0];
-	programs[prg++] = m_blitProg[1];
-
-	programs[prg++] = m_blitTintmapProg[0];
-	programs[prg++] = m_blitTintmapProg[1];
-
-	programs[prg++] = m_alphaBlitProg[0];
-	programs[prg++] = m_alphaBlitProg[1];
-
-	programs[prg++] = m_alphaBlitTintmapProg[0];
-	programs[prg++] = m_alphaBlitTintmapProg[1];
-
-	programs[prg++] = m_paletteBlitNearestProg[0];
-	programs[prg++] = m_paletteBlitNearestProg[1];
-
-	programs[prg++] = m_paletteBlitInterpolateProg[0];
-	programs[prg++] = m_paletteBlitInterpolateProg[1];
-
-	programs[prg++] = m_paletteBlitNearestTintmapProg[0];
-	programs[prg++] = m_paletteBlitNearestTintmapProg[1];
-
-	programs[prg++] = m_paletteBlitInterpolateTintmapProg[0];
-	programs[prg++] = m_paletteBlitInterpolateTintmapProg[1];
-
-	programs[prg++] = m_lineFromToProg[0];
-	programs[prg++] = m_lineFromToProg[1];
-
-	for (int i = 1; i < c_maxSegments; i++)
+	for( int kind = 0 ; kind < int(PipelineKind::Size) ; kind++ )
 	{
-		for (int canvType = 0; canvType < 2; canvType++)
-		{
-			programs[prg++] = m_segmentsProg[i][canvType];
-		}
+		programs[kind * 2] = m_programs[kind][0];
+		programs[kind * 2 + 1] = m_programs[kind][1];
 	}
-
-	programs[prg++] = m_shapeProg[0];
-	programs[prg++] = m_shapeProg[1];
-
-	programs[prg++] = m_warpEdgemapProg[0];
-	programs[prg++] = m_warpEdgemapProg[1];
-
-	programs[prg++] = m_warpBlitProg[0];
-	programs[prg++] = m_warpBlitProg[1];
-
-	assert(prg == c_nbPrograms);
 
 	// Store sizes and calculate space needed
 
@@ -2981,7 +1382,6 @@ Blob_p GlBackend::_generateProgramBlob()
 
 	// Get our program binaries
 
-	char* wpBinary = pBuffer + sizeof(ProgramBlobHeader);
 	int offset = sizeof(ProgramBlobHeader);
 	for (int i = 0; i < c_nbPrograms; i++)
 	{
@@ -2990,10 +1390,7 @@ Blob_p GlBackend::_generateProgramBlob()
 		offset += pHeader->programs[i].size;
 	}
 
-	assert(wpBinary = pBuffer + sizeof(ProgramBlobHeader) + totalSize);
-
 	return pBlob;
 }
 
 } // namespace wax
-

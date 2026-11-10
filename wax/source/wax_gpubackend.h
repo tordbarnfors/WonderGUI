@@ -48,7 +48,7 @@ namespace wax
 	 * needs the API: render targets, pipelines, binding resources and recording draws, through the
 	 * protected virtual methods below, which this class calls between draws, never per vertex.
 	 *
-	 * Taken from DX12Backend. DX12Backend, MetalBackend and VulkanBackend are built on it.
+	 * Taken from DX12Backend. DX12Backend, GlBackend, MetalBackend and VulkanBackend are built on it.
 	 *
 	 * What the shaders get, see wax/extensions/hlsl:
 	 *
