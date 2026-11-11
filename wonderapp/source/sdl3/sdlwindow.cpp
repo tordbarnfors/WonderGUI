@@ -158,6 +158,17 @@ CoordF SDLWindow::pointsToWindowCoord( Coord points )
 	return CoordF( points.x * scale / pixelDensity, points.y * scale / pixelDensity );
 }
 
+//____ onExposed() ____________________________________________________________
+
+void SDLWindow::onExposed()
+{
+	if (!m_pRootPanel)
+		return;
+
+	SizeI canvas = m_pRootPanel->canvasSize();		// In spx.
+	m_pRootPanel->addDirtyPatch( RectSPX(0, 0, canvas.w, canvas.h) );
+}
+
 //____ _notifyUserWindowOfResize() ____________________________________________
 
 void SDLWindow::_notifyUserWindowOfResize()

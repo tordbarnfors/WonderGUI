@@ -51,6 +51,7 @@ public:
 
 	void	render() override;
 	void 	onWindowSizeUpdated() override;
+	void	onExposed() override { m_bPresentPending = true; }		// The canvas still has it all.
 
 private:
 

@@ -659,6 +659,17 @@ bool process_system_events(WonderApp * pApp)
 			break;
 		}
 
+		// On Wayland the decorations SDL draws for us only change when the window commits
+		// a frame, so a configure that changes nothing else still needs one. Until then the
+		// border of a resizable window catches all pointer input.
+
+		case SDL_EVENT_WINDOW_EXPOSED:
+		{
+			if (pWindow)
+				pWindow->onExposed();
+			break;
+		}
+
 		case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
 		{
 			if (pWindow == nullptr)

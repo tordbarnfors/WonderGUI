@@ -53,6 +53,10 @@ public:
 
 	virtual void    	onWindowSizeUpdated() = 0;
 
+	// Called when the window needs to be presented again, which on Wayland is also what
+	// applies changes to the decorations. Redraws all of it unless overridden.
+	virtual void		onExposed();
+
 	wapp::Window*		userWindow() const { return m_pUserWindow; }
 	wg::RootPanel_p		rootPanel() const { return m_pRootPanel; }
 
