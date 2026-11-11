@@ -1,0 +1,88 @@
+{
+    // Launch/debug configurations for WonderGUI tools and examples.
+    //
+    // Requires the "CMake Tools" and "C/C++" extensions. Select the target to
+    // run in CMake Tools ("CMake: Set Launch/Debug Target") and pick the
+    // configuration matching your platform below. CMake Tools resolves the
+    // executable path, so these work regardless of build directory, generator
+    // or build type.
+    //
+    // Most tools and examples need files in resources/ and must therefore run
+    // from the WonderGUI root (matches target_working_directory() in the
+    // CMakeLists). embeddedworkbench is the exception and runs from its own
+    // source directory.
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug target (Windows)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${command:cmake.launchTargetPath}",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Debug target (Linux, gdb)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${command:cmake.launchTargetPath}",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "Debug target (macOS, lldb)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${command:cmake.launchTargetPath}",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb"
+        },
+        {
+            "name": "embeddedworkbench (Windows)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${command:cmake.launchTargetPath}",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/tools/embeddedworkbench",
+            "environment": [],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "embeddedworkbench (Linux, gdb)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${command:cmake.launchTargetPath}",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/tools/embeddedworkbench",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb"
+        },
+        {
+            "name": "embeddedworkbench (macOS, lldb)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${command:cmake.launchTargetPath}",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/tools/embeddedworkbench",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb"
+        }
+    ]
+}

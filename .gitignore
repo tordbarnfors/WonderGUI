@@ -38,4 +38,6 @@ tuxbuild/
 freetype/include
 freetype/lib
 
-.vscode/
+.vscode/*
+!.vscode/launch.json
+!.vscode/settings.json

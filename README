@@ -126,9 +126,12 @@ locate CMakeLists.txt which is located in src/. After this, VSCode gets stuck on
 configuration will continue and complete.
 
 After that, everything should be setup for you and you should be able to build
-all included projects. In order to run/debug the tools and examples you will
-need to setup a launch.json file. If you are using VSCode you should know how
-to do that.
+all included projects. The repository includes .vscode/settings.json (points
+CMake Tools at src/ and build/) and .vscode/launch.json. To run/debug a tool or
+example, select it with "CMake: Set Launch/Debug Target" and start the launch
+configuration for your platform. Working directory is the WonderGUI root
+(embeddedworkbench has its own configurations since it runs from its source
+directory).
 
 
 Linux Console (Makefiles, Ninja etc.)
