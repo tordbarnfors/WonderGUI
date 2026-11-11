@@ -140,29 +140,21 @@ The UTF-8 text system was built and tested on Linux (SDL2 software and OpenGL) a
 been run on Win32/DX12. The macOS frameworks (Cocoa software/Metal, SDL2 Metal) haven't
 been built with it yet.
 
-### GlBackend on GpuBackend only run with llvmpipe
+### GlBackend on GpuBackend: palettes on the 2013 Mac Pro and speed on GPUs
 
-GlBackend was moved onto GpuBackend and the generated GLSL, and gfxdevicetester gives the same
-results as before or better, but only with Mesa's llvmpipe under Xvfb. The old GLSL read palettes
-with texture(), as texelFetch() gave random groups of black pixels on a 2013 Mac Pro (AMD, macOS
-OpenGL 4.1). The generated GLSL reads the indexes of palette based surfaces with texelFetch() from
-an integer texture, and the palette from a buffer texture, as colors and extras always were. Run
-PaletteBlitTests on macOS OpenGL before relying on it there. If it shows, a `WAX_GLSL` path in
-`ps_blit_palette.hlsl` can sample instead.
-
-On the AMD GPU of a Mac (macOS OpenGL), SegmentTests Circles, the first test drawing a shape,
-crashed in the driver, in `ppil_handle_continue`, while Windows ran all tests. The shape shader
-then had a `continue` at the end of almost every loop and a `do { } while (false)` for every
-early return, nested in loops. Neither is there anymore, and the shader is a third shorter, but
-it hasn't been run on that Mac again. If it still crashes, a backtrace would show whether the
-driver recurses (a stack overflow at the start of a function would fit a crash at its label).
+GlBackend on GpuBackend and the generated GLSL runs gfxdevicetester on Windows, on macOS with an
+AMD GPU and on Mesa's llvmpipe. The old GLSL read palettes with texture(), as texelFetch() gave
+random groups of black pixels on a 2013 Mac Pro (AMD, macOS OpenGL 4.1). The generated GLSL reads
+the indexes of palette based surfaces with texelFetch() from an integer texture, and the palette
+from a buffer texture, as colors and extras always were. Run PaletteBlitTests on that Mac before
+relying on it there. If it shows, a `WAX_GLSL` path in `ps_blit_palette.hlsl` can sample instead.
 
 Timed with gfxdevicetester on llvmpipe, which runs shaders on the CPU and so shows every
 instruction, it is faster overall than the old GlBackend (483 ms against 518 ms for one run of
 each test), but blurs are about 20% slower, tiled blits 20%, palette blits up to 35% and rounded
 boxes 15%: the shared shaders branch on constants where the old GLSL had a program for each case,
 and the GLSL from SPIRV-Cross reads a buffer element again wherever it is used, which llvmpipe
-doesn't merge, see `openglgfx/compile_shaders.py`. Not timed on a real GPU yet.
+doesn't merge, see `openglgfx/compile_shaders.py`. Not timed on a GPU yet.
 
 ### VulkanBackend on Windows and on other GPUs
 
