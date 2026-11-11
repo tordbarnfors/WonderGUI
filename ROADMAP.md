@@ -452,6 +452,9 @@ For VulkanBackend, still to do:
   rendered into without touching alpha, as Vulkan has no BGRX.
 - **Windows render into an image of their own,** copied to the swap chain when something was
   drawn, as Wax only draws what changed and swap chain images don't keep their content.
+  wappsdl3gl does the same with a GlSurface per window, flipped into the back buffer and
+  swapped in, since what is drawn into the front buffer never shows on Wayland. The bytes are
+  copied as they are, as the window of an EGL context isn't sRGB-capable.
 - **Mipmaps are made with linear blits** in Vulkan, rather than the shaders DX12Backend draws them
   with, which average the same four texels.
 
