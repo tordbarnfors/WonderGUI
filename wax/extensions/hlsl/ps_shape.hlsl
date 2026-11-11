@@ -127,21 +127,24 @@ float roundedRectCoverage(float4 r, float4 radii, float2 p)
 
 void addSegment(uint seg, float c, float2 p, inout float4 acc, inout float covered)
 {
-    if (c <= 0.0f)
-        return;
-
-    float4 s = extras[seg];
-    if (s.x < 0.0f)
-        return;
-
-    float4 col = colors[uint(s.x)];
-
     [branch]
-    if (s.y >= 0.0f)
-        col *= evalTintBlock(colors, uint(max(s.y, 0.0f)), p);
+    if (c > 0.0f)
+    {
+        float4 s = extras[seg];
 
-    acc += float4(col.rgb * col.a, col.a) * c;
-    covered += c;
+        [branch]
+        if (s.x >= 0.0f)
+        {
+            float4 col = colors[uint(s.x)];
+
+            [branch]
+            if (s.y >= 0.0f)
+                col *= evalTintBlock(colors, uint(max(s.y, 0.0f)), p);
+
+            acc += float4(col.rgb * col.a, col.a) * c;
+            covered += c;
+        }
+    }
 }
 
 
@@ -217,35 +220,10 @@ float squareSweep(float2 v, float position)
 }
 
 
-// Splits band, the coverage of the slice area, between the elements: those whose
-// boundaries pass through the pixel get the part between them, the element at the
-// pixel center the rest. If the center of the ring is inside the pixel, all elements
-// get the part of the pixel within their angle.
+// The elements around the pixel when the center of the ring is outside of it, by angle.
 
-void ringElements(uint ofs, int n, uint base, float band, float2 p, float2 v, float d, inout float4 acc, inout float covered)
+void ringElementsAround(uint ofs, int n, uint base, float band, float2 p, float2 v, float d, inout float4 acc, inout float covered)
 {
-    if (n == 1)
-    {
-        addSegment(ofs + uint(extras[base].y), band, p, acc, covered);
-        return;
-    }
-
-    [branch]
-    if (abs(v.x) < 0.5f && abs(v.y) < 0.5f)
-    {
-        float firstSweep = squareSweep(v, extras[base].x);
-        float sweep = firstSweep;
-
-        [loop]
-        for (int e = 0; e < n; e++)
-        {
-            float nextSweep = e + 1 < n ? squareSweep(v, extras[base + uint(e + 1)].x) : firstSweep + 1.0f;
-            addSegment(ofs + uint(extras[base + uint(e)].y), band * max(nextSweep - sweep, 0.0f), p, acc, covered);
-            sweep = nextSweep;
-        }
-        return;
-    }
-
     float theta = d > 0.0001f ? turnsFromTop(v) : 0.0f;
 
     uint lo = 0;                                        // Unsigned, FXC warns of slow signed divides.
@@ -301,6 +279,34 @@ void ringElements(uint ofs, int n, uint base, float band, float2 p, float2 v, fl
         k = next;
         element = nextElement;
     }
+}
+
+
+// Splits band, the coverage of the slice area, between the elements: those whose
+// boundaries pass through the pixel get the part between them, the element at the
+// pixel center the rest. If the center of the ring is inside the pixel, all elements
+// get the part of the pixel within their angle.
+
+void ringElements(uint ofs, int n, uint base, float band, float2 p, float2 v, float d, inout float4 acc, inout float covered)
+{
+    [branch]
+    if (n == 1)
+        addSegment(ofs + uint(extras[base].y), band, p, acc, covered);
+    else if (abs(v.x) < 0.5f && abs(v.y) < 0.5f)
+    {
+        float firstSweep = squareSweep(v, extras[base].x);
+        float sweep = firstSweep;
+
+        [loop]
+        for (int e = 0; e < n; e++)
+        {
+            float nextSweep = e + 1 < n ? squareSweep(v, extras[base + uint(e + 1)].x) : firstSweep + 1.0f;
+            addSegment(ofs + uint(extras[base + uint(e)].y), band * max(nextSweep - sweep, 0.0f), p, acc, covered);
+            sweep = nextSweep;
+        }
+    }
+    else
+        ringElementsAround(ofs, n, base, band, p, v, d, acc, covered);
 }
 
 
