@@ -150,11 +150,19 @@ an integer texture, and the palette from a buffer texture, as colors and extras 
 PaletteBlitTests on macOS OpenGL before relying on it there. If it shows, a `WAX_GLSL` path in
 `ps_blit_palette.hlsl` can sample instead.
 
+On the AMD GPU of a Mac (macOS OpenGL), SegmentTests Circles, the first test drawing a shape,
+crashed in the driver, in `ppil_handle_continue`, while Windows ran all tests. The shape shader
+then had a `continue` at the end of almost every loop and a `do { } while (false)` for every
+early return, nested in loops. Neither is there anymore, and the shader is a third shorter, but
+it hasn't been run on that Mac again. If it still crashes, a backtrace would show whether the
+driver recurses (a stack overflow at the start of a function would fit a crash at its label).
+
 Timed with gfxdevicetester on llvmpipe, which runs shaders on the CPU and so shows every
-instruction, it is faster overall than the old GlBackend (487 ms against 518 ms for one run of
-each test), but blurs are about 20% slower, tiled blits 20% and palette blits up to 35%: the
-shared shaders branch on constants where the old GLSL had a program for each case. Not timed on a
-real GPU yet.
+instruction, it is faster overall than the old GlBackend (483 ms against 518 ms for one run of
+each test), but blurs are about 20% slower, tiled blits 20%, palette blits up to 35% and rounded
+boxes 15%: the shared shaders branch on constants where the old GLSL had a program for each case,
+and the GLSL from SPIRV-Cross reads a buffer element again wherever it is used, which llvmpipe
+doesn't merge, see `openglgfx/compile_shaders.py`. Not timed on a real GPU yet.
 
 ### VulkanBackend on Windows and on other GPUs
 

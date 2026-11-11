@@ -36,6 +36,13 @@
 #                   to GL: the vertex shaders flip y by glCanvas.x for them. In the window it is
 #                   gl_FragCoord that is upside down to the shaders, so they get the position as
 #                   glCanvas.y + glCanvas.z * gl_FragCoord.y instead, and dFdy() times glCanvas.z.
+#   Loops           A continue at the end of a loop is removed, see remove_redundant_continues().
+#
+# SPIRV-Cross writes its usual GLSL, which old drivers are most likely to take. With
+# --force-temporary it would read each buffer element once rather than wherever it is used, which
+# llvmpipe runs rounded boxes 25% faster with, but it writes almost every loop as for (;;) with a
+# break and the shaders get half as long again. That was the GLSL the AMD driver of macOS crashed
+# on.
 
 import argparse
 import importlib.util
@@ -60,7 +67,7 @@ VERTEX_SHADERS = vulkan_shaders.VERTEX_SHADERS
 PIXEL_SHADERS = vulkan_shaders.PIXEL_SHADERS
 
 DXC_OPTIONS = ['-nologo', '-spirv', '-fspv-target-env=vulkan1.1', '-O3', '-E', 'main', '-D', 'WAX_GLSL=1']
-SPIRV_CROSS_OPTIONS = ['--version', '330', '--no-es', '--glsl-emit-push-constant-as-ubo', '--force-temporary']
+SPIRV_CROSS_OPTIONS = ['--version', '330', '--no-es', '--glsl-emit-push-constant-as-ubo']
 
 LICENSE_FROM = os.path.join(HERE, '..', 'vulkangfx', 'wax_vulkanshaders.h')
 
@@ -109,6 +116,77 @@ def replace_buffer_reads(name, glsl, old, new):
 		pos = i
 	out.append(glsl[pos:])
 	return ''.join(out)
+
+
+# Removes each continue that only ends the body of its loop, which SPIRV-Cross puts at the end of
+# most loops, often in an if whose else breaks. Such a continue is followed by nothing but the ends
+# of ifs and elses up to the end of the loop. The AMD driver of macOS crashed in a function named
+# ppil_handle_continue on the shape shader, which had dozens of them.
+
+def remove_redundant_continues(glsl):
+	match = {}
+	stack = []
+	for i, c in enumerate(glsl):
+		if c == '{':
+			stack.append(i)
+		elif c == '}':
+			open = stack.pop()
+			match[i] = open
+			match[open] = i
+
+	def header(open):
+		# The kind of statement the block opened at open belongs to.
+		text = glsl[:open].rstrip()
+		if text.endswith('else'):
+			return 'else'
+		if text.endswith('do'):
+			return 'do'
+		if text.endswith(')'):
+			depth = 0
+			for i in range(len(text) - 1, -1, -1):
+				if text[i] == ')':
+					depth += 1
+				elif text[i] == '(':
+					depth -= 1
+					if depth == 0:
+						m = re.search(r'(\w+)\s*$', text[:i])
+						return m.group(1) if m else ''
+		return ''
+
+	def skip_space(pos):
+		while pos < len(glsl) and glsl[pos].isspace():
+			pos += 1
+		return pos
+
+	def ends_loop(pos):
+		# True if only ends of ifs and elses come from pos up to the end of a loop.
+		while True:
+			pos = skip_space(pos)
+			if pos >= len(glsl) or glsl[pos] != '}':
+				return False
+			kind = header(match[pos])
+			if kind in ('for', 'while', 'do'):
+				return True
+			if kind not in ('if', 'else'):
+				return False
+			pos = skip_space(pos + 1)
+			while glsl.startswith('else', pos) and not (glsl[pos + 4].isalnum() or glsl[pos + 4] == '_'):
+				pos = skip_space(pos + 4)
+				if glsl.startswith('if', pos):
+					pos = glsl.index('{', pos)
+				if glsl[pos] != '{':
+					return False
+				pos = skip_space(match[pos] + 1)
+
+	removed = []
+	for m in re.finditer(r'\n[ \t]*continue;', glsl):
+		if ends_loop(m.end()):
+			removed.append(m)
+
+	for m in reversed(removed):
+		glsl = glsl[:m.start()] + glsl[m.end():]
+
+	return glsl
 
 
 def fix_up(name, glsl, bVertex):
@@ -188,7 +266,7 @@ def fix_up(name, glsl, bVertex):
 			pos = glsl.find('} waxConstants;\n') + len('} waxConstants;\n')
 			glsl = glsl[:pos] + '\n' + ''.join(helpers) + glsl[pos:]
 
-	return constants_to_array(name, glsl)
+	return constants_to_array(name, remove_redundant_continues(glsl))
 
 
 # The uniform block of constants to uvec4 waxConstants[], see the top of this file.
