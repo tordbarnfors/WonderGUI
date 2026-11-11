@@ -59,6 +59,11 @@ The list of DX12Backend and that of VulkanBackend have to be kept in step when a
   `PS_OUTPUT` in `output.hlsl`.
 - Code only for Vulkan, Metal and GL goes inside `#ifdef __spirv__`, which DXC defines when it
   compiles to SPIR-V, and code only for GL inside `#ifdef WAX_GLSL`.
+- **Functions return once, at their end.** FXC can take an early return as leaving the result
+  uninitialized, and in the generated GLSL an early return turns into a `do { } while (false)`
+  around the inlined function, a construct old drivers handle badly. The AMD driver of macOS
+  crashed on the shape shader when it was full of them, together with a `continue` at the end
+  of every loop (which `openglgfx/compile_shaders.py` now removes).
 - **Storage buffers** must be `StructuredBuffer`s of `float4`, `int4` or `uint4` read by index for
   GL, which has them as buffer textures. Others need a `WAX_GLSL` path, as the vertices in
   `vs_warp.hlsl` have.
