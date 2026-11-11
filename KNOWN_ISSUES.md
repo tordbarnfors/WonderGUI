@@ -140,14 +140,11 @@ The UTF-8 text system was built and tested on Linux (SDL2 software and OpenGL) a
 been run on Win32/DX12. The macOS frameworks (Cocoa software/Metal, SDL2 Metal) haven't
 been built with it yet.
 
-### GlBackend on GpuBackend: palettes on the 2013 Mac Pro and speed on GPUs
+### GlBackend on GpuBackend not timed on GPUs
 
-GlBackend on GpuBackend and the generated GLSL runs gfxdevicetester on Windows, on macOS with an
-AMD GPU and on Mesa's llvmpipe. The old GLSL read palettes with texture(), as texelFetch() gave
-random groups of black pixels on a 2013 Mac Pro (AMD, macOS OpenGL 4.1). The generated GLSL reads
-the indexes of palette based surfaces with texelFetch() from an integer texture, and the palette
-from a buffer texture, as colors and extras always were. Run PaletteBlitTests on that Mac before
-relying on it there. If it shows, a `WAX_GLSL` path in `ps_blit_palette.hlsl` can sample instead.
+GlBackend on GpuBackend and the generated GLSL runs gfxdevicetester on Windows, on a 2013 Mac Pro
+(AMD, macOS OpenGL 4.1) and on Mesa's llvmpipe, with PaletteBlitTests passing on the Mac Pro too,
+where texelFetch() of palettes once gave black pixels.
 
 Timed with gfxdevicetester on llvmpipe, which runs shaders on the CPU and so shows every
 instruction, it is faster overall than the old GlBackend (483 ms against 518 ms for one run of

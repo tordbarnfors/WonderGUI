@@ -49,10 +49,8 @@ built on it and draw with the same HLSL shaders (`wax/extensions/hlsl`). The ste
 
 For GlBackend, still to do:
 
-- **GL on macOS and on Windows,** only run with llvmpipe on Linux so far. The old GLSL read
-  palettes with texture() rather than texelFetch(), as texelFetch() gave random black pixels on a
-  2013 Mac Pro (AMD, OpenGL 4.1). The generated GLSL reads indexes with texelFetch(), see
-  KNOWN_ISSUES.md.
+- **Timing on GPUs.** gfxdevicetester passes on Windows, on a 2013 Mac Pro and on llvmpipe, but
+  has only been timed on llvmpipe, see KNOWN_ISSUES.md.
 
 For MetalBackend, still to do:
 
