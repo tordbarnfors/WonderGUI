@@ -159,7 +159,8 @@ instruction, it is faster overall than the old GlBackend (483 ms against 518 ms 
 each test), but blurs are about 20% slower, tiled blits 20%, palette blits up to 35% and rounded
 boxes 15%: the shared shaders branch on constants where the old GLSL had a program for each case,
 and the GLSL from SPIRV-Cross reads a buffer element again wherever it is used, which llvmpipe
-doesn't merge, see `openglgfx/compile_shaders.py`. Not timed on a GPU yet.
+doesn't merge, see `openglgfx/compile_shaders.py`. Only timed on one GPU since, see "GlBackend:
+drawn shapes are slow on Windows" below.
 
 ### VulkanBackend on Windows and on other GPUs
 
@@ -187,6 +188,29 @@ and after copying pixels to a texture. Fine for surfaces filled while loading, s
 updated every frame.
 
 `syncTexture()` in `wax_dx12surface.cpp` and `wax_vulkansurface.cpp`
+
+### DX12Surface: reading pixels is slow, 16 ms to read back a 512x512 canvas
+
+The pixels of a DX12Surface live in its mapped upload buffer, which is write-combined memory:
+fast to write, around 60 ns per pixel to read. After a canvas has been rendered to, any read
+(`pushPixels()`, `alpha()`) copies the whole texture back and un-premultiplies it in place in that
+buffer, which is where the 16 ms go (the GPU copy and the wait for it take 0.5 ms). Whoever reads
+the pixels afterwards reads the same memory. Un-premultiplying while copying from the readback
+buffer would get rid of most of it, reading back only the lines asked for of the rest.
+
+`_syncBufferAndWait()` and `_convertAlpha()` in `wax/extensions/dx12gfx/wax_dx12surface.cpp`
+
+### GlBackend: drawn shapes are slow on Windows, and come at two speeds
+
+Timed with gfxdevicetester on an Arc B580 (driver 32.0.101.9033, wappsdl3gl), the tests drawing
+pie charts, rings, rounded boxes, line caps, circles and ellipses take 3-11 times as long as on
+DX12Backend on the same GPU, where all tests taken together are level (median ratio 1.01). The
+thread calling us mostly waits during them, no core is loaded more than 20%.
+
+They also come out at one of two or three speeds for a whole run of the tester, the same in all
+its passes (PieChartTests 126, 167 or 187 us per run), which makes them the tests that still
+differ by 25-40% between two runs. Running on fewer cores doesn't change it. Not looked into what
+makes the driver wait.
 
 ### Edgemaps and Warpmaps of GPU backends have one buffer for two frames in flight
 

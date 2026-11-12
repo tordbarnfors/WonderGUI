@@ -1608,7 +1608,7 @@ void GfxDeviceTester::run_batch_performance()
 
 	FastCoresScope fastCores;
 
-	warm_up_testee(tests.front());
+	warm_up_testee();
 
 	for (int pass = 0; pass < m_performancePasses; pass++)
 		for (int test : tests)
@@ -1630,8 +1630,8 @@ void GfxDeviceTester::run_batch_performance()
 		}
 
 		total += result.secondsPerRun;
-		printf("%-24s %-36s %12.1f us  spread %5.1f%%\n", m_suites[entry.suite].name.c_str(), entry.name.c_str(),
-			   result.secondsPerRun * 1000000.0, result.spread() * 100.0);
+		printf("%-24s %-36s %12.3f us  spread %5.1f%%  runs %6d x %d  baseline %7.3f ms\n", m_suites[entry.suite].name.c_str(), entry.name.c_str(),
+			   result.secondsPerRun * 1000000.0, result.spread() * 100.0, result.loops, result.frames, result.baseline * 1000.0);
 	}
 
 	printf("%d tests timed in %d passes, one run of each adds up to %s.%s\n", int(tests.size()) - nbFailed, m_performancePasses,
@@ -1684,7 +1684,7 @@ void GfxDeviceTester::continue_performance_run()
 		int test = m_performanceQueue[m_performanceNext];
 
 		if (m_performancePass == 0 && m_performanceNext == 0)
-			warm_up_testee(test);
+			warm_up_testee();
 
 		m_performanceNext++;
 		run_performance_pass(test);
@@ -1751,17 +1751,26 @@ void GfxDeviceTester::continue_performance_run()
 /*
 	Times a test on the testee, once per pass.
 
-	Each measurement times a number of calls to run() including the endRender()
-	and a read back of a pixel, which makes sure the backend has finished its work,
-	also when it is done asynchronously, as by a GPU. The same without any calls
-	to run() is measured as a baseline and subtracted. That way neither init(),
-	exit() nor the overhead of a render pass are included.
+	Each measurement times a few frames with a number of calls to run() in each
+	(see time_test()), including the endRender() and a wait for the backend to
+	finish its work (see sync_testee()), as a GPU does it asynchronously. The same
+	without any calls to run() is measured as a baseline and subtracted. That way
+	neither init(), exit() nor the overhead of a render pass are included.
 
-	The first pass calibrates the number of calls to run() so that a measurement
-	takes long enough to be accurate. Each pass then warms up by running the test
-	for a while, so caches and clock speeds have settled, and keeps the fastest
-	of a number of measurements, as it is the one least disturbed by anything else
-	going on.
+	The time per run we get is how much longer a frame takes to get through for
+	each call to run(), which for a GPU is the time of the call or the time the
+	GPU needs for it, whichever is longer.
+
+	A GPU lowers its clocks when it isn't kept busy and takes a while to get them
+	up again, so anything that leaves it waiting during a measurement makes the
+	test itself slower, by a factor that depends on what ran before. That goes
+	for a slow baseline too.
+
+	The first pass calibrates the number of frames and calls to run() so that a
+	measurement takes long enough to be accurate. Each pass then warms up by
+	running the test for a while, so caches and clock speeds have settled, and
+	keeps the fastest of a number of measurements, as it is the one least
+	disturbed by anything else going on.
 
 	Timings are noisy in bursts, from other processes, power management, moves
 	between cores of different speeds (see FastCoresScope) and such, which can make
@@ -1783,19 +1792,21 @@ void GfxDeviceTester::run_performance_pass(int test)
 
 	Test* pTest = m_tests[test].pTests[TESTEE];
 
+	heat_testee();
+
 	if (r.loops == 0)
 	{
 		r.baseline = std::numeric_limits<double>::max();
-		r.loops = calibrate_test(pTest, r.baseline);
+		r.loops = calibrate_test(pTest, r.baseline, r.frames);
 	}
 
 	// Warm up.
 
-	double fastest = time_test(pTest, r.loops);
+	double fastest = time_test(pTest, r.loops, r.frames);
 
 	auto start = Clock::now();
 	while (std::chrono::duration<double>(Clock::now() - start).count() < c_perfWarmupTime)
-		fastest = std::min(fastest, time_test(pTest, r.loops));
+		fastest = std::min(fastest, time_test(pTest, r.loops, r.frames));
 
 	// Measure. Tests that are slow even without looping get fewer rounds,
 	// noise is small in comparison and we don't want to wait forever.
@@ -1804,70 +1815,194 @@ void GfxDeviceTester::run_performance_pass(int test)
 
 	for (int round = 0; round < rounds; round++)
 	{
-		r.baseline = std::min(r.baseline, time_test(pTest, 0));
-		fastest = std::min(fastest, time_test(pTest, r.loops));
+		r.baseline = std::min(r.baseline, time_test(pTest, 0, r.frames));
+		fastest = std::min(fastest, time_test(pTest, r.loops, r.frames));
 	}
 
 	r.passes.push_back(fastest);
 
-	r.secondsPerRun = std::max(0.0, *std::min_element(r.passes.begin(), r.passes.end()) - r.baseline) / r.loops;
+	r.secondsPerRun = std::max(0.0, *std::min_element(r.passes.begin(), r.passes.end()) - r.baseline) / (double(r.loops) * r.frames);
 	r.bDone = true;
 }
 
 //____ warm_up_testee() _______________________________________________________
 /*
-	Keeps the testee busy with a test for c_perfRunWarmupTime, so a GPU has its
-	clocks up before we calibrate and time anything.
+	Keeps the testee busy with the heater for c_perfRunWarmupTime before a run, so
+	clocks are up before we calibrate and time anything, and sets the heater up
+	for heat_testee().
+
+	The heater is a number of blended fills of the whole canvas, which is next to
+	no work to record and all the more for a GPU to draw, so the time it takes
+	tells us how fast the GPU is running. We double the fills until the heater
+	takes c_perfHeaterTime and keep the fastest time we get for that.
 */
 
-void GfxDeviceTester::warm_up_testee(int test)
+void GfxDeviceTester::warm_up_testee()
 {
-	if (!m_suites[m_tests[test].suite].bWorking)
-		return;
+	GfxDevice* pDevice = m_backends[TESTEE].pDevice;
 
-	Test* pTest = m_tests[test].pTests[TESTEE];
+	m_bHeatTestee = pDevice->isInstanceOf(GfxDeviceGen2::TYPEINFO) &&
+					static_cast<GfxDeviceGen2*>(pDevice)->backend()->isInstanceOf(GpuBackend::TYPEINFO);
 
-	double baseline = std::numeric_limits<double>::max();
-	int loops = calibrate_test(pTest, baseline);
+	m_heaterLoops = 1;
+	m_heaterBest = std::numeric_limits<double>::max();
 
 	auto start = Clock::now();
 	while (std::chrono::duration<double>(Clock::now() - start).count() < c_perfRunWarmupTime)
-		time_test(pTest, loops);
+	{
+		double time = time_heater();
+
+		if (time < c_perfHeaterTime && m_heaterLoops < c_perfMaxLoops)
+		{
+			m_heaterLoops *= 2;
+			m_heaterBest = std::numeric_limits<double>::max();
+		}
+		else
+			m_heaterBest = std::min(m_heaterBest, time);
+	}
+}
+
+//____ heat_testee() __________________________________________________________
+/*
+	Gets the clocks of a GPU back up before a test is timed, by running the heater
+	until it is as fast as we have seen it, or c_perfMaxHeatTime has passed.
+
+	A GPU lowers its clocks as soon as it has less to do, as during a test where
+	recording the calls takes longer than drawing them, and needs hundreds of
+	milliseconds of work to get them up again. Tests coming after such a test
+	took up to 9 times as long on DX12Backend (Arc B580), in all their
+	measurements of a pass. Running the test itself for a while doesn't tell us
+	when the clocks are up, since we don't know how fast it should be. We do
+	for the heater.
+*/
+
+void GfxDeviceTester::heat_testee()
+{
+	if (!m_bHeatTestee)
+		return;
+
+	auto start = Clock::now();
+
+	do
+	{
+		double time = time_heater();
+		m_heaterBest = std::min(m_heaterBest, time);
+
+		if (time <= m_heaterBest * (1.0 + c_perfHotTolerance))
+			return;
+	}
+	while (std::chrono::duration<double>(Clock::now() - start).count() < c_perfMaxHeatTime);
+}
+
+//____ time_heater() __________________________________________________________
+/*
+	Seconds for rendering the heater: frames sent off as by time_test(), each
+	with m_heaterLoops blended fills of the canvas.
+*/
+
+double GfxDeviceTester::time_heater()
+{
+	auto& backend = m_backends[TESTEE];
+	GfxDevice* pDevice = backend.pDevice;
+
+	RectSPX canvas = { 0, 0, m_canvasSize.w * 64, m_canvasSize.h * 64 };
+
+	auto start = Clock::now();
+
+	for (int frame = 0; frame < c_perfFrames; frame++)
+	{
+		pDevice->beginRender();
+		pDevice->beginCanvasUpdate(backend.pCanvas);
+
+		pDevice->setBlendMode(BlendMode::Blend);
+
+		for (int i = 0; i < m_heaterLoops; i++)
+			pDevice->fill(canvas, Color8(128, 128, 128, 128));
+
+		pDevice->endCanvasUpdate();
+		pDevice->endRender();
+	}
+
+	sync_testee();
+
+	return std::chrono::duration<double>(Clock::now() - start).count();
 }
 
 //____ calibrate_test() _______________________________________________________
 /*
-	Returns the number of calls to run() needed for a measurement to take at least
-	c_perfTargetTime. Lowers baseline to the fastest measurement without calls.
+	Decides how a test is measured: the number of frames in a measurement and the
+	calls to run() in each of them, so that the calls of a measurement take at
+	least c_perfTargetTime. Returns the calls per frame and lowers baseline to
+	the fastest measurement without calls.
+
+	A measurement has c_perfFrames frames, see time_test(), halved until they fit
+	in c_perfMaxFramesTime for tests where a single run() takes milliseconds.
+
+	The time per run we end up with changes with the number of calls, by 10-20%
+	from 10 times as many on DX12Backend, so two runs of the tester need to settle
+	for the same numbers to be comparable. That is why frames are only halved, the
+	calls are rounded to a few values per decade, and we only work out the calls
+	from measurements long enough to be trusted. Going by the time of a single
+	call, which is mostly noise for a fast test, gave anything from 12 to 100
+	calls for the same test.
 */
 
-int GfxDeviceTester::calibrate_test(Test* pTest, double& baseline)
+int GfxDeviceTester::calibrate_test(Test* pTest, double& baseline, int& frames)
 {
-
 	// A first run includes any first time setup (caches, shaders, buffers), making
-	// it slower than later ones. That gives us a low first guess.
+	// it slower than later ones, so we go by the ones after it.
 
-	double first = time_test(pTest, 1);
-	baseline = std::min({ baseline, time_test(pTest, 0), time_test(pTest, 0) });
+	time_test(pTest, 1, 1);
+	double frameTime = std::min(time_test(pTest, 1, 1), time_test(pTest, 1, 1));
+
+	frames = c_perfFrames;
+	while (frames > 1 && frames * frameTime > c_perfMaxFramesTime)
+		frames /= 2;
+
+	baseline = std::min({ baseline, time_test(pTest, 0, frames), time_test(pTest, 0, frames), time_test(pTest, 0, frames) });
+
+	// What we time shouldn't be less than what we subtract from it, for tests
+	// with an init() or exit() that takes its time.
+
+	double target = std::max(c_perfTargetTime, baseline);
+
+	// Grow in fixed steps until the calls take a good part of the time we are
+	// aiming for, then work out the rest from that.
 
 	int loops = 1;
-	if (first - baseline > 0)
-		loops = (int) std::clamp(std::floor(c_perfTargetTime / (first - baseline)), 1.0, double(c_perfMaxLoops));
 
 	while (true)
 	{
-		double time = time_test(pTest, loops) - baseline;
+		double time = std::min(time_test(pTest, loops, frames), time_test(pTest, loops, frames)) - baseline;
+		baseline = std::min(baseline, time_test(pTest, 0, frames));
 
-		if (time >= c_perfTargetTime || loops >= c_perfMaxLoops)
-			return loops;
+		if (time >= target || loops >= c_perfMaxLoops)
+			break;
 
-		// Aim a bit over the target, but grow at least 2x and at most 100x each step.
+		if (time >= target / 4)
+		{
+			loops = (int) std::min(double(c_perfMaxLoops), std::ceil(loops * target / time));
+			break;
+		}
 
-		double factor = time > 0 ? c_perfTargetTime * 1.25 / time : 100.0;
-		factor = std::clamp(factor, 2.0, 100.0);
+		loops = std::min(int(c_perfMaxLoops), loops * 4);
+	}
 
-		loops = (int) std::min(double(c_perfMaxLoops), std::ceil(loops * factor));
-		baseline = std::min(baseline, time_test(pTest, 0));
+	// Round up to 1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50, 60, 80, 100, 120...
+
+	if (loops <= 6)
+		return loops;
+
+	if (loops <= 8)
+		return 8;
+
+	for (int scale = 1; ; scale *= 10)
+	{
+		for (int step : { 10, 12, 15, 20, 25, 30, 40, 50, 60, 80 })
+		{
+			if (step * scale >= loops)
+				return std::min(int(c_perfMaxLoops), step * scale);
+		}
 	}
 }
 
@@ -1886,35 +2021,51 @@ double GfxDeviceTester::PerformanceResult::spread() const
 
 //____ time_test() ____________________________________________________________
 /*
-	Seconds from just before the first call to run() until the testee has finished
-	rendering. See run_performance_pass().
+	Seconds for rendering a number of frames, each with the given number of calls to
+	run(), until the testee has finished the last of them. See run_performance_pass().
+
+	Frames are sent off back to back and only the last one is waited for, as when
+	an application renders, so the GPU works on one frame while we record the next.
+	Waiting for each frame instead leaves the GPU idle while the next one is
+	recorded. It then lowers its clocks, by how much changes from one measurement
+	to the next, and the time we get is that of the calls plus that of a GPU at some
+	unknown speed: the same measurement repeated back to back came out anywhere
+	from 7 to 12 ms on DX12Backend (Arc B580).
+
+	What we time this way is how fast frames get through: the time of the calls or
+	that of the GPU, whichever is longer, not their sum. A GPU that is the slower
+	of them is kept busy and so keeps its clocks up, and when it isn't, its speed
+	doesn't matter.
 */
 
-double GfxDeviceTester::time_test(Test* pTest, int loops)
+double GfxDeviceTester::time_test(Test* pTest, int loops, int frames)
 {
 	auto& backend = m_backends[TESTEE];
 	GfxDevice* pDevice = backend.pDevice;
 
 	RectSPX canvas = { 0, 0, m_canvasSize.w * 64, m_canvasSize.h * 64 };
 
-	pDevice->beginRender();
-	pDevice->beginCanvasUpdate(backend.pCanvas);
-
-	fill_background(pDevice, Background::Black);
-
-	if (pTest->init)
-		pTest->init(pDevice, canvas);
-
 	auto start = Clock::now();
 
-	for (int i = 0; i < loops; i++)
-		pTest->run(pDevice, canvas);
+	for (int frame = 0; frame < frames; frame++)
+	{
+		pDevice->beginRender();
+		pDevice->beginCanvasUpdate(backend.pCanvas);
 
-	if (pTest->exit)
-		pTest->exit(pDevice, canvas);
+		fill_background(pDevice, Background::Black);
 
-	pDevice->endCanvasUpdate();
-	pDevice->endRender();
+		if (pTest->init)
+			pTest->init(pDevice, canvas);
+
+		for (int i = 0; i < loops; i++)
+			pTest->run(pDevice, canvas);
+
+		if (pTest->exit)
+			pTest->exit(pDevice, canvas);
+
+		pDevice->endCanvasUpdate();
+		pDevice->endRender();
+	}
 
 	sync_testee();
 
@@ -1925,9 +2076,13 @@ double GfxDeviceTester::time_test(Test* pTest, int loops)
 
 //____ sync_testee() __________________________________________________________
 /*
-	Waits for the testee to finish rendering. Reading back a pixel doesn't always do
-	that: GlSurface can only read back whole textures and does nothing for a single
-	pixel of a canvas without a backing buffer. So we also ask the backend.
+	Waits for the testee to finish rendering, by asking its backend.
+
+	Never by reading back pixels when there is a backend to ask: the GPU backends
+	read back the whole canvas for a single pixel, which took 16-17 ms on
+	DX12Backend. That was more than the test being timed and left the GPU idle
+	most of the time, so it lowered its clocks and the same test took anything
+	from 1x to 6x as long, depending on what had been running before it.
 */
 
 void GfxDeviceTester::sync_testee()
@@ -1935,12 +2090,15 @@ void GfxDeviceTester::sync_testee()
 	Surface* pCanvas = m_backends[TESTEE].pCanvas;
 	GfxDevice* pDevice = m_backends[TESTEE].pDevice;
 
+	if (pDevice->isInstanceOf(GfxDeviceGen2::TYPEINFO))
+	{
+		static_cast<GfxDeviceGen2*>(pDevice)->backend()->waitForCompletion();
+		return;
+	}
+
 	auto buffer = pCanvas->allocPixelBuffer(RectI(0, 0, 1, 1));
 	pCanvas->pushPixels(buffer);
 	pCanvas->freePixelBuffer(buffer);
-
-	if (pDevice->isInstanceOf(GfxDeviceGen2::TYPEINFO))
-		static_cast<GfxDeviceGen2*>(pDevice)->backend()->waitForCompletion();
 }
 
 //____ refresh_performance_row() ______________________________________________
@@ -2024,7 +2182,7 @@ void GfxDeviceTester::refresh_performance_details()
 			snprintf(spread, sizeof(spread), ", passes within %.1f %%", r.spread() * 100.0);
 
 		details = "Time per run: " + format_time(r.secondsPerRun) + " (best of " + std::to_string(r.passes.size())
-			+ (r.passes.size() == 1 ? " pass" : " passes") + spread + ")\nLoops per measurement: " + std::to_string(r.loops);
+			+ (r.passes.size() == 1 ? " pass" : " passes") + spread + ")\nRuns per measurement: " + std::to_string(r.loops) + " in each of " + std::to_string(r.frames) + (r.frames == 1 ? " frame" : " frames");
 	}
 
 	if (test.loadedSecondsPerRun >= 0)
@@ -2043,7 +2201,7 @@ void GfxDeviceTester::refresh_performance_details()
 /*
 	Saves the results as text, one test per line:
 
-		<suite> TAB <test> TAB <seconds per run> TAB <loops>
+		<suite> TAB <test> TAB <seconds per run> TAB <runs per measurement>
 
 	Lines starting with '#' are comments. Tests are identified by suite and
 	name, so results can be compared after tests have been added or removed.
@@ -2088,7 +2246,7 @@ void GfxDeviceTester::save_performance_results()
 	file << "# GfxDeviceTester performance results\n";
 	file << "# Testee: " << m_backends[TESTEE].name << "\n";
 	file << "# Saved: " << date << "\n";
-	file << "# Suite\tTest\tSeconds per run\tLoops\n";
+	file << "# Suite\tTest\tSeconds per run\tRuns\n";
 
 	char seconds[64];
 	for (auto& test : m_tests)
@@ -2097,7 +2255,7 @@ void GfxDeviceTester::save_performance_results()
 		if (r.bDone && !r.bFailed)
 		{
 			snprintf(seconds, sizeof(seconds), "%.9g", r.secondsPerRun);
-			file << m_suites[test.suite].name << '\t' << test.name << '\t' << seconds << '\t' << r.loops << '\n';
+			file << m_suites[test.suite].name << '\t' << test.name << '\t' << seconds << '\t' << r.loops * r.frames << '\n';
 		}
 	}
 
