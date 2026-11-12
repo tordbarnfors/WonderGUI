@@ -68,5 +68,12 @@ The list of DX12Backend and that of VulkanBackend have to be kept in step when a
   GL, which has them as buffer textures. Others need a `WAX_GLSL` path, as the vertices in
   `vs_warp.hlsl` have.
 
+- **No short-circuiting.** DXC compiles them as HLSL 2018 (`-HV 2018`), where `&&`, `||` and
+  `?:` evaluate both sides, as FXC does for DX12Backend. HLSL 2021, the default of DXC, makes each
+  of them a branch, and drivers don't flatten a branch that reads a buffer, so the corner tests of
+  the rounded boxes were a chain of branches each waiting for a read: 1.5-1.7 times as slow on Intel
+  (Mesa). So nothing may rely on the second operand not being evaluated, which FXC never allowed
+  anyway.
+
 All shaders should compile with DXC both ways, which can be checked without Windows: as DXIL
 (`dxc -T ps_6_0 ...`), the closest we get to DX12's `D3DCompile()`, and as SPIR-V.
