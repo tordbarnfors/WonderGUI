@@ -555,3 +555,30 @@ there, see KNOWN_ISSUES.md.
   tens of seconds is spent, which halved the P-core clock of an i5-1245U after about half a
   minute of runs, at falling temperatures. Runs back to back don't let it recover. For comparable
   results, turn turbo off (`intel_pstate/no_turbo`) or cap the clock while timing.
+
+### Shape shaders on GPUs (2026-11)
+
+On GlBackend, rounded boxes took 1.8 times as long as on the old GlBackend with its own GLSL, on
+Intel UHD 770 (Mesa). Rings and pie charts took 1.1 times as long, on Windows (Arc B580) all shapes
+3-11 times as long. The shaders work the same, the time went to how the HLSL is turned into GLSL.
+Now rounded boxes take 0.7 times as long as on the old GlBackend, rings, pie charts and line caps
+0.8-0.95 times, and VulkanBackend gains about the same.
+
+- **DXC compiles as HLSL 2018** (`-HV 2018`, all three compile_shaders.py). The default, HLSL
+  2021, short-circuits `&&`, `||` and `?:`, so each became a branch, and a branch that reads a
+  buffer isn't flattened by the drivers: the corner tests of a rounded box were a chain of
+  branches each waiting for a read. FXC, which DX12Backend compiles with, never short-circuits, so
+  the shaders already had to work without it. Rounded boxes 1.5 times as fast.
+- **A pixel shader for each kind of shape** (`shape.hlsl` and `ps_shape_box.hlsl`,
+  `ps_shape_ring.hlsl`, `ps_shape_line.hlsl`, `PipelineKind::ShapeBox`, `ShapeRing` and
+  `ShapeLine`), as warps already had. With all three in one, rounded boxes, which need the least,
+  took 1.6 times as long, rings and lines 5-10% longer: the driver gives a shader registers and
+  threads by its largest part. Drawn boxes alone also get SIMD16 on Intel, all three together
+  only SIMD8.
+- **Plain min() and max() in the GLSL** (`plain_min_max()` in `openglgfx/compile_shaders.py`). DXC
+  makes HLSL's min() and max() NMin and NMax, which SPIRV-Cross can only write in GLSL as two
+  isnan() and two selects around each. About 10% for rings and rounded boxes.
+
+Not yet timed on Windows, where the shapes were slowest, nor with DX12Backend and MetalBackend.
+MetalBackend gets all but the plain min() and max(), which MSL has, DX12Backend only the shader
+per kind, as FXC doesn't short-circuit.

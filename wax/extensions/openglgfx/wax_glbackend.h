@@ -271,7 +271,7 @@ namespace wax
 		// Program binaries
 
 		const static int c_nbPrograms = int(PipelineKind::Size) * 2;
-		const static int c_versionNb = 123;		// ... 122: Bias of warp positions for Nearest sampling. 123: GLSL generated from the HLSL, on GpuBackend.
+		const static int c_versionNb = 124;		// ... 122: Bias of warp positions for Nearest sampling. 123: GLSL generated from the HLSL, on GpuBackend. 124: A shape shader per kind, plain min() and max().
 
 		struct ProgramBlobEntry
 		{

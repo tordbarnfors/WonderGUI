@@ -134,12 +134,31 @@ const char DX12Backend::g_shapeVS[] =
 @INSERTLINEQUOTED <../hlsl/vs_shape.hlsl>
 ;
 
-const char DX12Backend::g_shapePS[] =
+const char DX12Backend::g_shapeBoxPS[] =
 
 @INSERTLINEQUOTED <../hlsl/constants.hlsl>
 @INSERTLINEQUOTED <../hlsl/output.hlsl>
 @INSERTLINEQUOTED <../hlsl/tint.hlsl>
-@INSERTLINEQUOTED <../hlsl/ps_shape.hlsl>
+@INSERTLINEQUOTED <../hlsl/shape.hlsl>
+@INSERTLINEQUOTED <../hlsl/ps_shape_box.hlsl>
+;
+
+const char DX12Backend::g_shapeRingPS[] =
+
+@INSERTLINEQUOTED <../hlsl/constants.hlsl>
+@INSERTLINEQUOTED <../hlsl/output.hlsl>
+@INSERTLINEQUOTED <../hlsl/tint.hlsl>
+@INSERTLINEQUOTED <../hlsl/shape.hlsl>
+@INSERTLINEQUOTED <../hlsl/ps_shape_ring.hlsl>
+;
+
+const char DX12Backend::g_shapeLinePS[] =
+
+@INSERTLINEQUOTED <../hlsl/constants.hlsl>
+@INSERTLINEQUOTED <../hlsl/output.hlsl>
+@INSERTLINEQUOTED <../hlsl/tint.hlsl>
+@INSERTLINEQUOTED <../hlsl/shape.hlsl>
+@INSERTLINEQUOTED <../hlsl/ps_shape_line.hlsl>
 ;
 
 const char DX12Backend::g_warpVS[] =

@@ -36,10 +36,13 @@ set(SHADERS
 	../hlsl/ps_line.hlsl
 	../hlsl/ps_mipmap.hlsl
 	../hlsl/ps_segments.hlsl
-	../hlsl/ps_shape.hlsl
+	../hlsl/ps_shape_box.hlsl
+	../hlsl/ps_shape_line.hlsl
+	../hlsl/ps_shape_ring.hlsl
 	../hlsl/ps_warp_blit.hlsl
 	../hlsl/ps_warp_blit_palette.hlsl
 	../hlsl/ps_warp_edgemap.hlsl
+	../hlsl/shape.hlsl
 	../hlsl/tint.hlsl
 	../hlsl/vs_blit.hlsl
 	../hlsl/vs_fill.hlsl
