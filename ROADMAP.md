@@ -508,3 +508,14 @@ For VulkanBackend, still to do:
 - **SDL3 windows present again when exposed.** The decorations SDL draws with libdecor only change
   when the window commits a frame, so without that the border of a resizable window keeps an input
   region over all of it and catches the pointer.
+
+### gfxdevicetester timing (2026-11)
+
+- **Performance runs keep to the fastest cores** (`FastCoresScope` in `gfxdevicetester.cpp`, Linux
+  only so far). On a hybrid Intel CPU the scheduler moved the timing thread between performance and
+  efficiency cores every second or so, which made tests bound by the CPU, like those generating
+  Warpmaps, 20-70% slower for seconds at a time.
+- **Clocks are left to the user.** Laptops lower their clocks once a power budget averaged over
+  tens of seconds is spent, which halved the P-core clock of an i5-1245U after about half a
+  minute of runs, at falling temperatures. Runs back to back don't let it recover. For comparable
+  results, turn turbo off (`intel_pstate/no_turbo`) or cap the clock while timing.

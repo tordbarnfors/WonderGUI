@@ -7,6 +7,10 @@
 #include <map>
 #include <sstream>
 
+#ifdef __linux__
+#	include <sched.h>
+#endif
+
 #include <wax.h>
 #include <wax_referencebackend.h>
 #include <wax_softsurface.h>
@@ -1507,6 +1511,77 @@ void GfxDeviceTester::select_accuracy_row(int test)
 		show_test(m_accuracyViewer, test);
 }
 
+//____ FastCoresScope __________________________________________________________
+/*
+	Keeps the calling thread on the fastest cores of the CPU while it exists.
+
+	On CPUs with cores of different kinds, like the performance and efficiency cores
+	of Intel's hybrid CPUs, the scheduler moves the thread between them every second
+	or so. Tests bound by the CPU, like those generating Warpmaps, then take 20-70%
+	longer for seconds at a time, which is longer than all measurements of a test in
+	a pass take. On other CPUs we keep to the cores that turbo the highest.
+
+	Only done on Linux so far, where it is needed most, since the scheduler doesn't
+	prefer the performance cores for a busy thread.
+*/
+
+namespace
+{
+	class FastCoresScope
+	{
+	public:
+		FastCoresScope()
+		{
+#ifdef __linux__
+			if (sched_getaffinity(0, sizeof(m_original), &m_original) != 0)
+				return;
+
+			cpu_set_t fastest;
+			CPU_ZERO(&fastest);
+			long best = 0;
+
+			for (int cpu = 0; cpu < CPU_SETSIZE; cpu++)
+			{
+				if (!CPU_ISSET(cpu, &m_original))
+					continue;
+
+				// Without the frequency of every core we leave it to the scheduler.
+
+				long maxFreq = 0;
+				std::ifstream file("/sys/devices/system/cpu/cpu" + std::to_string(cpu) + "/cpufreq/cpuinfo_max_freq");
+				if (!(file >> maxFreq))
+					return;
+
+				if (maxFreq > best)
+				{
+					best = maxFreq;
+					CPU_ZERO(&fastest);
+				}
+
+				if (maxFreq == best)
+					CPU_SET(cpu, &fastest);
+			}
+
+			m_bPinned = CPU_COUNT(&fastest) > 0 && sched_setaffinity(0, sizeof(fastest), &fastest) == 0;
+#endif
+		}
+
+		~FastCoresScope()
+		{
+#ifdef __linux__
+			if (m_bPinned)
+				sched_setaffinity(0, sizeof(m_original), &m_original);
+#endif
+		}
+
+	private:
+#ifdef __linux__
+		cpu_set_t	m_original;
+		bool		m_bPinned = false;
+#endif
+	};
+}
+
 //____ run_batch_performance() ________________________________________________
 /*
 	Times the tests of the suites asked for on the command line, in as many passes as the
@@ -1530,6 +1605,8 @@ void GfxDeviceTester::run_batch_performance()
 
 	if (tests.empty())
 		return;
+
+	FastCoresScope fastCores;
 
 	warm_up_testee(tests.front());
 
@@ -1597,6 +1674,8 @@ void GfxDeviceTester::start_performance_run(const vector<int>& tests)
 void GfxDeviceTester::continue_performance_run()
 {
 	int nbTests = (int)m_performanceQueue.size();
+
+	FastCoresScope fastCores;
 
 	auto start = Clock::now();
 
@@ -1684,8 +1763,9 @@ void GfxDeviceTester::continue_performance_run()
 	of a number of measurements, as it is the one least disturbed by anything else
 	going on.
 
-	Timings are noisy in bursts, from other processes, power management and such,
-	which can make all measurements of one pass slow. Making several passes through
+	Timings are noisy in bursts, from other processes, power management, moves
+	between cores of different speeds (see FastCoresScope) and such, which can make
+	all measurements of one pass slow. Making several passes through
 	all tests spreads the measurements of each test over time, so the fastest of
 	them is much more likely to be undisturbed.
 */
