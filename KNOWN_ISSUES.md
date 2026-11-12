@@ -163,3 +163,14 @@ hundred vertices along the outline. It takes 818 bytes rather than 19, 5% of the
 balls are caught by the windows. Only sent when tilt or roll changes, not when spinning.
 
 `MeshCompressor::compress()` in `wax/source/compression/wax_meshcompression.cpp`
+
+## C API
+
+### `wax_getFreeTypeFontBitmapCache()` returns a retained cache
+
+The other C API getters, such as `wax_getBitmapFontSurface()` and `wax_getDeviceSurfaceFactory()`,
+return a borrowed object, but this one retains the cache, so a caller that treats it like the
+others leaks a reference. The header doesn't say which is meant. Dropping the retain is a change
+of contract for callers that already release it, so it is left until someone decides.
+
+`wax/extensions/freetypefont/wax_c_freetypefont.cpp`

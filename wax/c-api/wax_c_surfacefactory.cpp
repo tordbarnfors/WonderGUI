@@ -45,6 +45,9 @@ wax_obj wax_createSurface(wax_obj factory, const wax_surfaceBP* blueprint)
 	convertSurfaceBlueprint(&bp, blueprint);
 	
 	auto p = getPtr(factory)->createSurface(bp);
+	if( !p )
+		return nullptr;
+
 	p->retain();
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
@@ -55,6 +58,9 @@ wax_obj wax_createSurfaceFromBlob(wax_obj factory, const wax_surfaceBP* blueprin
 	Surface::Blueprint	bp;
 	convertSurfaceBlueprint(&bp, blueprint);
 	auto p = getPtr(factory)->createSurface(bp, static_cast<Blob*>(reinterpret_cast<Object*>(blob)), pitch );
+	if( !p )
+		return nullptr;
+
 	p->retain();
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
@@ -65,6 +71,9 @@ wax_obj	wax_createSurfaceFromBitmap(wax_obj factory, const wax_surfaceBP* bluepr
 	Surface::Blueprint	bp;
 	convertSurfaceBlueprint(&bp, blueprint);
 	auto p = getPtr(factory)->createSurface(bp, pPixels, (PixelFormat) pixelFormat, pitch, (Color8*) pPalette, paletteSize);
+	if( !p )
+		return nullptr;
+
 	p->retain();
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
@@ -75,6 +84,9 @@ wax_obj	wax_createSurfaceFromRawData(wax_obj factory, const wax_surfaceBP* bluep
 	Surface::Blueprint	bp;
 	convertSurfaceBlueprint(&bp, blueprint);
 	auto p = getPtr(factory)->createSurface(bp, pPixels, *(PixelDescription*)pPixelDescription, pitch, (Color8*) pPalette, paletteSize);
+	if( !p )
+		return nullptr;
+
 	p->retain();
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }

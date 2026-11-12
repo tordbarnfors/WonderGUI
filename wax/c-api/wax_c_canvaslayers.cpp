@@ -91,6 +91,9 @@ wax_obj wax_createCanvasLayers(const wax_canvasLayersBP* pBP)
 	}
 
 	auto p = CanvasLayers::create(bp);
+	if( !p )
+		return nullptr;
+
 	p->retain();
 	return static_cast<Object*>(p);
 }

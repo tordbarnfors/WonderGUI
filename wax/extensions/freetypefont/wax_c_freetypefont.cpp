@@ -42,6 +42,9 @@ wax_obj wax_createFreeTypeFont( wax_freeTypeFontBP blueprint )
 	bp.yDPI			= blueprint.yDPI;
 
 	auto pFont = FreeTypeFont::create(bp);
+	if( !pFont )
+		return nullptr;
+
 	pFont->retain();
 	return static_cast<Object*>(pFont);
 }
@@ -50,6 +53,9 @@ wax_obj wax_createFreeTypeFont( wax_freeTypeFontBP blueprint )
 wax_obj wax_getFreeTypeFontBitmapCache( wax_obj font )
 {
 	auto pCache = getPtr(font)->bitmapCache();
+	if( !pCache )
+		return nullptr;
+
 	pCache->retain();
 	return static_cast<Object*>(pCache.rawPtr());
 }

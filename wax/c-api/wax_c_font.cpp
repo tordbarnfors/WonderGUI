@@ -160,6 +160,9 @@ wax_obj wax_createSurfaceFromGlyph(wax_obj font, uint32_t chr, const wax_surface
 	convertSurfaceBlueprint(&bp, blueprint);
 
 	auto p = getPtr(font)->getGlyphAsSurface(chr, bp, static_cast<SurfaceFactory*>(reinterpret_cast<Object*>(surfaceFactory)));
+	if( !p )
+		return nullptr;
+
 	p->retain();
 	return static_cast<Object*>(p.rawPtr());
 }
