@@ -427,6 +427,42 @@ in someone's memory or an old chat. Add to it when you decide something, move it
 
 ### gfxdevicetester timing (2026-11)
 
+Three runs of all 294 tests on DX12Backend (Arc B580, `gfxdevicetester --performance`) are within
+10% of each other for every test and within 5% for 289 of them, median 0.6%, after the first four
+changes below. Before them two saved results differed by -83% to +90%. On GlBackend two runs are
+within 10% for 250 of 257 tests, leaving out four suites drawing shapes that come at two speeds
+there, see KNOWN_ISSUES.md.
+
+- **A measurement ends with `Backend::waitForCompletion()`, not with reading back a pixel**
+  (`sync_testee()`). The GPU backends read back the whole canvas for one pixel, which took 16-17 ms
+  on DX12Backend (Arc B580) against 10 ms for the calls being timed and 0.2 ms for an empty render
+  pass. Subtracting it as baseline wasn't the problem, leaving the GPU idle for 2/3 of the time
+  was: it lowered its clocks, by how much depended on what had run before, and the same test came
+  out anywhere from 1x to 6x its real time (Tile 2.7 us, measured as 7.6-17 us), differing by -83%
+  to +90% between two saved results. Whatever is added to a measurement that isn't the test has to
+  stay far below `c_perfTargetTime`.
+- **A measurement is several frames sent off back to back, waiting only for the last**
+  (`time_test()`, `c_perfFrames`). Waiting for every frame left the GPU idle while the next one
+  was recorded, and its clocks went up and down in a sawtooth: the same measurement repeated back
+  to back took anywhere from 7 to 12 ms. Sent off as an application would, the GPU works on one
+  frame while the next is recorded. The time per run is therefore how much longer a frame takes to
+  get through, the time of the calls or that of the GPU, whichever is longer, and not their sum
+  as before. Results from before this can't be compared with new ones. A change on the side that
+  isn't the bottleneck of a test doesn't show, timing the calls and the GPU separately would be
+  the way to get at that.
+- **A GPU gets a heater before each test** (`heat_testee()`): blended fills of the whole canvas,
+  next to nothing to record and a lot to draw, run until they are as fast as we have seen them.
+  A test that leaves the GPU with less to do lets it lower its clocks, be it one where recording
+  takes longer than drawing or one with a slow `init()` or `exit()`, and the tests after it then
+  took up to 9 times as long in all their measurements of a pass (PatchBlitTests, which come
+  after CanvasFormatTests). Running the test itself for longer was no way out, since we don't
+  know how fast it should be and the clocks come up in steps with plateaus of half a second. The
+  heater is the same every time, so its time tells us where the clocks are.
+- **Calibration settles for the same number of calls every time** (`calibrate_test()`). The time
+  per run changes with the number of calls in a frame (BlitGridInter 180 us with 12 calls, 220 us
+  with 100), and the number came from the time of a single call, which is mostly noise for a fast
+  test, so it differed by up to 10 times between two runs of the tester. Now it only goes by
+  measurements long enough to trust and is rounded to a few values per decade.
 - **Performance runs keep to the fastest cores** (`FastCoresScope` in `gfxdevicetester.cpp`, Linux
   only so far). On a hybrid Intel CPU the scheduler moved the timing thread between performance and
   efficiency cores every second or so, which made tests bound by the CPU, like those generating

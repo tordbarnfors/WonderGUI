@@ -141,6 +141,17 @@ been built with it yet.
 
 ## Graphics
 
+### DX12Surface: reading pixels is slow, 16 ms to read back a 512x512 canvas
+
+The pixels of a DX12Surface live in its mapped upload buffer, which is write-combined memory:
+fast to write, around 60 ns per pixel to read. After a canvas has been rendered to, any read
+(`pushPixels()`, `alpha()`) copies the whole texture back and un-premultiplies it in place in that
+buffer, which is where the 16 ms go (the GPU copy and the wait for it take 0.5 ms). Whoever reads
+the pixels afterwards reads the same memory. Un-premultiplying while copying from the readback
+buffer would get rid of most of it, reading back only the lines asked for of the rest.
+
+`_syncBufferAndWait()` and `_convertAlpha()` in `wax/extensions/dx12gfx/wax_dx12surface.cpp`
+
 ### SoftBackend draws thick rings slower than the grid of nodes did
 
 Linear triangles follow a ring less closely than the bilinear cells of the grid of nodes did, so
