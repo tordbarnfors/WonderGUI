@@ -167,6 +167,10 @@ protected:
 	// A GPU lowers its clocks when idle and needs a while to get them up again, so
 	// a run starts by keeping the testee busy for c_perfRunWarmupTime, and tests are
 	// timed back to back for c_perfUpdateBudget before letting the window update.
+	//
+	// Laptops also lower their clocks after half a minute or so of load, for as long
+	// again or more, which no number of passes gets around. Turn turbo off or cap the
+	// clock to get results that can be compared between runs.
 
 	static constexpr double	c_perfTargetTime = 0.01;
 	static constexpr double	c_perfWarmupTime = 0.02;
