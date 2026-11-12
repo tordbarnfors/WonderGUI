@@ -1,0 +1,56 @@
+{
+	"version": 3,
+	"configurePresets": [
+		{
+			"name": "base",
+			"hidden": true,
+			"binaryDir": "${sourceDir}/build"
+		},
+		{
+			"name": "linux",
+			"hidden": true,
+			"inherits": "base",
+			"generator": "Ninja",
+			"cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" },
+			"condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux" }
+		},
+		{
+			"name": "linux-release",
+			"hidden": true,
+			"inherits": "linux",
+			"cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+		},
+		{
+			"name": "windows",
+			"hidden": true,
+			"inherits": "base",
+			"condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
+		},
+		{
+			"name": "macos",
+			"hidden": true,
+			"inherits": "base",
+			"generator": "Xcode",
+			"condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Darwin" }
+		},
+
+		{ "name": "linux-wappsdl3gl", "displayName": "SDL3, OpenGL (Debug)", "inherits": "linux", "cacheVariables": { "WAPPLIB": "wappsdl3gl" } },
+		{ "name": "linux-wappsdl3gl-release", "displayName": "SDL3, OpenGL (Release)", "inherits": "linux-release", "cacheVariables": { "WAPPLIB": "wappsdl3gl" } },
+		{ "name": "linux-wappsdl3sw", "displayName": "SDL3, software (Debug)", "inherits": "linux", "cacheVariables": { "WAPPLIB": "wappsdl3sw" } },
+		{ "name": "linux-wappsdl3sw-release", "displayName": "SDL3, software (Release)", "inherits": "linux-release", "cacheVariables": { "WAPPLIB": "wappsdl3sw" } },
+		{ "name": "linux-wappsdl2gl", "displayName": "SDL2, OpenGL (Debug)", "inherits": "linux", "cacheVariables": { "WAPPLIB": "wappsdl2gl" } },
+		{ "name": "linux-wappsdl2gl-release", "displayName": "SDL2, OpenGL (Release)", "inherits": "linux-release", "cacheVariables": { "WAPPLIB": "wappsdl2gl" } },
+		{ "name": "linux-wappsdl2sw", "displayName": "SDL2, software (Debug)", "inherits": "linux", "cacheVariables": { "WAPPLIB": "wappsdl2sw" } },
+		{ "name": "linux-wappsdl2sw-release", "displayName": "SDL2, software (Release)", "inherits": "linux-release", "cacheVariables": { "WAPPLIB": "wappsdl2sw" } },
+
+		{ "name": "windows-wappwin32dx12", "displayName": "Win32, DirectX 12", "inherits": "windows", "cacheVariables": { "WAPPLIB": "wappwin32dx12" } },
+		{ "name": "windows-wappwin32sw", "displayName": "Win32, software", "inherits": "windows", "cacheVariables": { "WAPPLIB": "wappwin32sw" } },
+		{ "name": "windows-wappsdl3dx12", "displayName": "SDL3, DirectX 12", "inherits": "windows", "cacheVariables": { "WAPPLIB": "wappsdl3dx12" } },
+		{ "name": "windows-wappsdl3gl", "displayName": "SDL3, OpenGL", "inherits": "windows", "cacheVariables": { "WAPPLIB": "wappsdl3gl" } },
+
+		{ "name": "macos-wappcocoametal", "displayName": "Cocoa, Metal", "inherits": "macos", "cacheVariables": { "WAPPLIB": "wappcocoametal" } },
+		{ "name": "macos-wappcocoasw", "displayName": "Cocoa, software", "inherits": "macos", "cacheVariables": { "WAPPLIB": "wappcocoasw" } },
+		{ "name": "macos-wappsdl3metal", "displayName": "SDL3, Metal", "inherits": "macos", "cacheVariables": { "WAPPLIB": "wappsdl3metal" } },
+		{ "name": "macos-wappsdl3gl", "displayName": "SDL3, OpenGL", "inherits": "macos", "cacheVariables": { "WAPPLIB": "wappsdl3gl" } }
+	]
+}

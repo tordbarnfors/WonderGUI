@@ -13,8 +13,8 @@ that was verified against engine source, and the traps. Read it before touching
 
 ## Where things are
 
-Repo: `/home/tord/Workspace/WonderGUI`. Build dir: `tuxbuild/` (CMake + ninja,
-already configured). `cd tuxbuild && ninja` builds everything; `ninja widgetbench`
+Repo: `/home/tord/Workspace/WonderGUI`. Build dir: `build/` (CMake + ninja,
+configured with a preset, see `README`). `cd build && ninja` builds everything; `ninja widgetbench`
 builds the widget gallery, which is the main visual test harness.
 
 The kit's source of truth is `wondergui/widgetkit-src/`, **not** the generated headers:

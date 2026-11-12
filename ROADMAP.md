@@ -401,3 +401,16 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   handful of 64-bit divisions per line remain, one set for the direction and slope and one per
   Vertical or Horizontal cap and per round cap, and lines allocate nothing once buffers have grown.
   Output is the same as before, down to the rounding.
+
+### Build setup (2026-11)
+
+- **`CMakePresets.json` is the shared build setup,** with a configure preset per WonderApp
+  framework and platform, read by VS Code, Visual Studio, CLion and `cmake --preset`. All of
+  them build in `build/`, as the folder per platform (`tuxbuild/`, `vsbuild/`) was an accident of
+  history. Linux builds with Ninja, in Debug or, with the `-release` presets, Release. Windows
+  builds with Visual Studio and macOS with Xcode, both multi-config.
+  Personal presets go in `CMakeUserPresets.json`, which is git-ignored.
+- **`.vscode/` stays out of git.** Developers use different IDEs, and VS Code needs little: one
+  launch configuration for the launch target picked in CMake Tools, run from the repository root,
+  covers every tool, see `README`. CMake has no target property for a VS Code debugger, as it has
+  for Visual Studio and Xcode in `target_working_directory()`.

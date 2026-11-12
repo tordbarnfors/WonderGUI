@@ -28,9 +28,13 @@ SDL2.framework/
 SDL3.framework/
 
 build/
-vsbuild/
 68build/
+
+# Build folders from before CMakePresets.json, still around on some machines.
+
+vsbuild/
 tuxbuild/
 
 
 .vscode/
+CMakeUserPresets.json

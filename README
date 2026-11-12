@@ -8,16 +8,20 @@ development environment.
 
 The base CMakeLists.txt is located in the WonderGUI directory.
 
-To create project files for your environment, create your binary directory,
-step into it and run cmake, like this:
+CMakePresets.json in the WonderGUI directory has a configure preset for each
+WonderApp framework on each platform. List those for your platform and
+configure one of them from the WonderGUI directory:
 
-mkdir build
-cd build
-cmake ..
+cmake --list-presets
+cmake --preset linux-wappsdl3gl
+cmake --build build
 
-This will generate the project files for your IDE (if not, use the -G switch
-and specify your generator, cmake --help will display all generators available
-on your system).
+The presets all build in build/: with Ninja on Linux (Debug, or Release with
+the -release presets), with Visual Studio on Windows and with Xcode on macOS. Put presets of your own in CMakeUserPresets.json, which is not
+checked in.
+
+You can also run cmake yourself, picking the framework with -DWAPPLIB=<name>
+(see the list in CMakeLists.txt) and the generator with -G.
 
 The WonderGUI CMake files have been tested on Linux, Windows and OSX with 
 several IDEs and development environments, see sections below for instructions
@@ -96,10 +100,11 @@ Visual Studio (not VSCode)
 
 Visual Studio can be used in two ways:
 
-1. You generate WonderGUI.sln using CMake and use that project.
+1. You generate WonderGUI.sln using CMake and use that project, for example
+   with "cmake --preset windows-wappwin32dx12", which puts it in build/.
 
 2. You open the WonderGUI directory in Visual Studio. Visual Studio will
-   notice it is a CMake project and set it up as such.
+   notice it is a CMake project with presets and set it up as such.
 
 I recommend you use #1, since that will setup your debugger working directory
 correctly so that you can run (and debug) the example files and tools from
@@ -110,23 +115,28 @@ Visual Studio. Both ways works for just building stuff though.
 Visual Studio Code (VSCode)
 ===========================
 
-Have the CMake module installed.
+Have the CMake Tools and C/C++ extensions installed.
 
-Open the WonderGUI directory in Visual Studio code. You should be asked to
-locate CMakeLists.txt which is located in the WonderGUI directory. After this, VSCode gets stuck on
-"Saving open files" on my machines for unknown reason. Just restart VSCode and
-configuration will continue and complete.
+Open the WonderGUI directory in Visual Studio Code and pick a configure preset
+when CMake Tools asks for one (or with "CMake: Select Configure Preset").
+Building works from then on.
 
-After that, everything should be setup for you and you should be able to build
-all included projects. In order to run/debug the tools and examples you will
-need to setup a launch.json file. If you are using VSCode you should know how
-to do that.
+To run and debug, pick the tool or example in the status bar as the launch
+target. CMake Tools' own debug and run buttons need the working directory set
+in .vscode/settings.json:
+
+    "cmake.debugConfig": { "cwd": "${workspaceFolder}" }
+
+For F5, a single configuration in .vscode/launch.json covers all of them, with
+"program" set to "${command:cmake.launchTargetPath}" and "cwd" to
+"${workspaceFolder}". The .vscode directory is not checked in.
 
 
 Linux Console (Makefiles, Ninja etc.)
 =====================================
 
-No special instructions needed. Keep in mind that most tools and example files 
+Configure with one of the linux- presets, see the top of this file, and build
+with "cmake --build build" or "ninja -C build". Keep in mind that most tools and example files
 needs to be run from the WonderGUI directory since they need files in the
 resources/ directory. Failing to find them, some might print an understandable
 error message while others will just crash.
@@ -135,8 +145,11 @@ error message while others will just crash.
 XCode
 =====
 
-Download, install and use CMake to generate the XCode project file. If you are 
-unfamiliar with CMake, this is how I recommend you to do it:
+Download, install and use CMake to generate the XCode project file. The quickest
+way is one of the macos- presets from the WonderGUI directory, for example
+"cmake --preset macos-wappcocoametal", which puts the project in WonderGUI/build.
+
+Or with the CMake GUI:
 
 1. Make sure to satisfy the dependencies as described above.
 2. Click "Browse Source..." and navigate to WonderGUI.
