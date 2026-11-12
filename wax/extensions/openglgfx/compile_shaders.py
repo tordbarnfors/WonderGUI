@@ -37,6 +37,11 @@
 #                   gl_FragCoord that is upside down to the shaders, so they get the position as
 #                   glCanvas.y + glCanvas.z * gl_FragCoord.y instead, and dFdy() times glCanvas.z.
 #   Loops           A continue at the end of a loop is removed, see remove_redundant_continues().
+#   min() and max() DXC makes them NMin and NMax, which return the other operand for a NaN, as
+#                   D3D does. GLSL has no such min() and max(), so SPIRV-Cross writes each as two
+#                   isnan() and two selects around it, which made rings and rounded boxes about
+#                   10% slower on Intel (Mesa). The SPIR-V is changed to FMin and FMax before
+#                   SPIRV-Cross, see plain_min_max(). The shaders don't depend on NaN.
 #
 # SPIRV-Cross writes its usual GLSL, which old drivers are most likely to take. With
 # --force-temporary it would read each buffer element once rather than wherever it is used, which
@@ -316,6 +321,37 @@ def constants_to_array(name, glsl):
 	return glsl
 
 
+# Changes NMin, NMax and NClamp of GLSL.std.450 in a SPIR-V file to FMin, FMax and FClamp, which
+# SPIRV-Cross writes as plain min(), max() and clamp().
+
+def plain_min_max(path):
+	with open(path, 'rb') as f:
+		data = bytearray(f.read())
+
+	words = memoryview(data).cast('I')
+	if words[0] != 0x07230203:
+		fail(path, 'not SPIR-V in host byte order')
+
+	glslSet = None
+	changed = { 79: 37, 80: 40, 81: 43 }				# NMin -> FMin, NMax -> FMax, NClamp -> FClamp.
+
+	i = 5
+	while i < len(words):
+		count = words[i] >> 16
+		opcode = words[i] & 0xffff
+		if count == 0:
+			fail(path, 'bad instruction in SPIR-V')
+		if opcode == 11 and bytes(words[i + 2:i + count]).rstrip(b'\0') == b'GLSL.std.450':
+			glslSet = words[i + 1]					# OpExtInstImport
+		elif opcode == 12 and words[i + 3] == glslSet and words[i + 4] in changed:
+			words[i + 4] = changed[words[i + 4]]	# OpExtInst
+		i += count
+
+	words.release()
+	with open(path, 'wb') as f:
+		f.write(data)
+
+
 def compile_shader(args, tmpdir, name, files, profile, extra):
 	source = os.path.join(tmpdir, name + '.hlsl')
 	spirv = os.path.join(tmpdir, name + '.spv')
@@ -330,6 +366,7 @@ def compile_shader(args, tmpdir, name, files, profile, extra):
 				f.write('\n')
 
 	run([args.dxc] + DXC_OPTIONS + ['-T', profile] + extra + [source, '-Fo', spirv], 'Compiling ' + name)
+	plain_min_max(spirv)
 	glsl = run([args.spirv_cross] + SPIRV_CROSS_OPTIONS + [spirv], 'Cross-compiling ' + name)
 	glsl = fix_up(name, glsl, stage == 'vert')
 
