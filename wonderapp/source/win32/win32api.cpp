@@ -47,8 +47,12 @@ extern std::wstring _stringToWString(const std::string& str);
 
 std::vector<std::string> Win32API::programArguments() const
 {
-	//TODO: Implement!!!
-	return std::vector<std::string>();
+	std::vector<std::string>	args;
+
+	for (int i = 1; i < __argc; i++)
+		args.push_back(__argv[i]);
+
+	return args;
 }
 
 //____ time() _________________________________________________________________
