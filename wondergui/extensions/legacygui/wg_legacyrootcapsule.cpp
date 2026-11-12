@@ -523,7 +523,8 @@ namespace wg
 
 	bool LegacyRootCapsule::ReleaseAllChildren()
 	{
-		return SetChild(0);
+		SetChild(0);
+		return true;
 	}
 
 	//____ CastToRoot() __________________________________________________________
@@ -549,12 +550,15 @@ namespace wg
 
 	bool LegacyRootCapsule::SetChild( WgWidget * pWidget )
 	{
-		if( !pWidget && m_hook.Widget() )
+		if( !pWidget )
 		{
-			m_hook._releaseWidget();
+			if( m_hook.Widget() )
+			{
+				m_hook._releaseWidget();
 
-			_requestRender();
-			_requestResize();
+				_requestRender();
+				_requestResize();
+			}
 			return false;
 		}
 
