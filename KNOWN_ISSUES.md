@@ -102,6 +102,14 @@ its geometry while `size()` reports the new one.
 
 `wonderapp/source/wappwindow.cpp`
 
+### wappsdl2gl draws into the front buffer of its windows
+
+It never swaps, which shows nothing on Wayland, where a window isn't mapped until it has swapped
+in a buffer. SDL2 uses X11 by default, so this only hits with `SDL_VIDEODRIVER=wayland`.
+wappsdl3gl renders into a surface per window and swaps it in, which wappsdl2gl could copy.
+
+`wonderapp/source/sdl2/backend_opengl.cpp`
+
 ## Documentation and scripts
 
 ### The guide doesn't build with Hugo 0.169

@@ -414,3 +414,13 @@ in someone's memory or an old chat. Add to it when you decide something, move it
   launch configuration for the launch target picked in CMake Tools, run from the repository root,
   covers every tool, see `README`. CMake has no target property for a VS Code debugger, as it has
   for Visual Studio and Xcode in `target_working_directory()`.
+
+### WonderApp on Wayland (2026-11)
+
+- **wappsdl3gl windows render into a GlSurface of their own,** flipped into the back buffer and
+  swapped in when something was drawn, as Wax only draws what changed and the back buffer doesn't
+  keep its content. What is drawn into the front buffer never shows on Wayland. The bytes are
+  copied as they are, as the window of an EGL context isn't sRGB-capable.
+- **SDL3 windows present again when exposed.** The decorations SDL draws with libdecor only change
+  when the window commits a frame, so without that the border of a resizable window keeps an input
+  region over all of it and catches the pointer.

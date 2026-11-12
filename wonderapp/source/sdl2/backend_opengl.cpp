@@ -71,9 +71,12 @@ bool backend_specific_init()
 	g_glContext = SDL_GL_CreateContext(g_pDummyWindow);
 
 #if defined(_WIN32) || defined(__linux__)
+	// A GLEW built for GLX fails with GLEW_ERROR_NO_GLX_DISPLAY under Wayland, but only
+	// after the OpenGL entry points are loaded, so that error is fine.
+
 	glewExperimental = GL_TRUE;
 	GLenum err = glewInit();
-	if (GLEW_OK != err)
+	if (GLEW_OK != err && GLEW_ERROR_NO_GLX_DISPLAY != err)
 	{
 		auto* pError = glewGetErrorString(err);
 		return false;

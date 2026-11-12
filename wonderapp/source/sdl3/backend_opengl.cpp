@@ -35,6 +35,14 @@ using namespace wg;
 using namespace wax;
 
 
+//____ SDLWindowGL ____________________________________________________________
+//
+// Wax renders into a surface of our own, which keeps what was rendered between
+// frames, as only the dirty rects are drawn. Each frame that rendered anything is
+// copied to the back buffer of the window and swapped in. Drawing directly into
+// the front buffer of the window shows nothing on Wayland, where a window isn't
+// even mapped until it has swapped in a buffer.
+
 class SDLWindowGL : public SDLWindow
 {
 public:
@@ -43,15 +51,21 @@ public:
 
 	void	render() override;
 	void 	onWindowSizeUpdated() override;
+	void	onExposed() override { m_bPresentPending = true; }		// The canvas still has it all.
 
 private:
 
-	void	_setDefaultCanvas();
+	void	_createCanvas();
+	void	_present();
+
+	GlSurface_p	m_pCanvas;
+	bool		m_bPresentPending = false;		// Rendered while hidden, so not yet swapped in.
 };
 
 
 static SDL_Window*		g_pDummyWindow = nullptr;
 static SDL_GLContext	g_glContext = nullptr;
+static GLuint			g_readFramebuffer = 0;		// Reads the canvas of a window when presenting it.
 
 static GlBackend_p		g_pBackend;
 
@@ -63,7 +77,7 @@ bool backend_specific_init()
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 0);
+	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
 	// The context is created on a hidden window, so it outlives the app's windows.
 
@@ -82,14 +96,19 @@ bool backend_specific_init()
 	}
 
 #if defined(_WIN32) || defined(__linux__)
+	// A GLEW built for GLX fails with GLEW_ERROR_NO_GLX_DISPLAY under Wayland, but only
+	// after the OpenGL entry points are loaded, so that error is fine.
+
 	glewExperimental = GL_TRUE;
 	GLenum err = glewInit();
-	if (GLEW_OK != err)
+	if (GLEW_OK != err && GLEW_ERROR_NO_GLX_DISPLAY != err)
 	{
 		printf("Unable to initialize GLEW: %s\n", (const char*) glewGetErrorString(err));
 		return false;
 	}
 #endif
+
+	glGenFramebuffers(1, &g_readFramebuffer);
 
 	g_pBackend = GlBackend::create();
 
@@ -113,6 +132,8 @@ bool backend_specific_init()
 void backend_specific_exit()
 {
 	g_pBackend = nullptr;
+
+	glDeleteFramebuffers(1, &g_readFramebuffer);
 
 	SDL_GL_DestroyContext(g_glContext);
 	SDL_DestroyWindow(g_pDummyWindow);
@@ -142,8 +163,12 @@ SDLWindowGL::SDLWindowGL(wapp::Window* pUserWindow, wg::Placement origin, wg::Co
 
 	SDL_GL_MakeCurrent(m_pSDLWindow, g_glContext);
 
-	_setDefaultCanvas();
-	m_pRootPanel = RootPanel::create(CanvasRef::Default);
+	// Swapping doesn't wait for the display, the main loop sets the pace.
+
+	SDL_GL_SetSwapInterval(0);
+
+	_createCanvas();
+	m_pRootPanel = RootPanel::create(m_pCanvas);
 
 	//TODO: This is ugly. It should be handled when windows gets focused.
 
@@ -157,14 +182,20 @@ void SDLWindowGL::render()
 	if (!m_pRootPanel)
 		return;
 
-	int nRects = m_pRootPanel->nbDirtyRects();
-	if (nRects == 0)
-		return;
+	if (m_pRootPanel->nbDirtyRects() > 0)
+	{
+		SDL_GL_MakeCurrent(m_pSDLWindow, g_glContext);
+		m_pRootPanel->render();
+		m_bPresentPending = true;
+	}
 
-	SDL_GL_MakeCurrent(m_pSDLWindow, g_glContext);
+	// A hidden window can't be swapped in, so what was rendered waits until it is shown.
 
-	g_pBackend->setDefaultCanvas( m_pRootPanel->canvasSize(), m_pRootPanel->scale() );
-	m_pRootPanel->render();
+	if (m_bPresentPending && !(SDL_GetWindowFlags(m_pSDLWindow) & SDL_WINDOW_HIDDEN))
+	{
+		_present();
+		m_bPresentPending = false;
+	}
 }
 
 //____ onWindowSizeUpdated() __________________________________________________
@@ -174,17 +205,48 @@ void SDLWindowGL::onWindowSizeUpdated()
 	if (!m_pRootPanel)
 		return;
 
-	_setDefaultCanvas();
+	_createCanvas();
 
-	m_pRootPanel->setCanvas(CanvasRef::Default);
+	m_pRootPanel->setCanvas(m_pCanvas);
 	_notifyUserWindowOfResize();
     render();
 }
 
-//____ _setDefaultCanvas() ____________________________________________________
+//____ _createCanvas() ________________________________________________________
 
-void SDLWindowGL::_setDefaultCanvas()
+void SDLWindowGL::_createCanvas()
 {
-	SizeI pixels = _sizeInPixels();
-	g_pBackend->setDefaultCanvas({ spx(pixels.w * 64), spx(pixels.h * 64) }, _scale());
+	m_pCanvas = GlSurface::create( WGBP(Surface, _.canvas = true, _.format = PixelFormat::ARGB_8, _.scale = _scale(), _.size = _sizeInPixels() ) );
+}
+
+//____ _present() _____________________________________________________________
+//
+// Surfaces are upside down to GL, so the canvas is flipped when copied. The bytes
+// are copied as they are, so the window gets sRGB whether it is sRGB-capable or not,
+// and is made opaque.
+
+void SDLWindowGL::_present()
+{
+	SDL_GL_MakeCurrent(m_pSDLWindow, g_glContext);
+
+	SizeI size = m_pCanvas->pixelSize();
+
+	glDisable(GL_SCISSOR_TEST);
+	glDisable(GL_FRAMEBUFFER_SRGB);
+
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, g_readFramebuffer);
+	glFramebufferTexture(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_pCanvas->getTexture(), 0);
+	glReadBuffer(GL_COLOR_ATTACHMENT0);
+
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	glBlitFramebuffer(0, 0, size.w, size.h, 0, size.h, size.w, 0, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+	glClearColor(0.f, 0.f, 0.f, 1.f);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+
+	SDL_GL_SwapWindow(m_pSDLWindow);
 }
