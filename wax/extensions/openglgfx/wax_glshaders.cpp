@@ -6686,7 +6686,7 @@ void main()
 }
 )glsl" },
 
-	{ "shapePS", R"glsl(#version 330
+	{ "shapeBoxPS", R"glsl(#version 330
 #if defined(GL_EXT_control_flow_attributes)
 #extension GL_EXT_control_flow_attributes : require
 #define SPIRV_CROSS_FLATTEN [[flatten]]
@@ -6714,2898 +6714,788 @@ layout(location = 0) out vec4 out_var_SV_Target0;
 
 void main()
 {
-    int _118 = int(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x);
-    vec4 _3478;
-    float _3479;
-    if (_118 == 1)
+    uint _75 = wax_TEXCOORD1 + 1u;
+    uint _78 = wax_TEXCOORD1 + 2u;
+    float _85 = texelFetch(waxBuffer1, int(_75)).x + texelFetch(waxBuffer1, int(_78)).x;
+    float _90 = texelFetch(waxBuffer1, int(_75)).y + texelFetch(waxBuffer1, int(_78)).x;
+    float _143;
+    vec2 _144;
+    bool _145;
+    if (((texelFetch(waxBuffer1, int(_78)).x > 0.0) && (waxFragCoord().x < _85)) && (waxFragCoord().y < _90))
     {
-        uint _123 = wax_TEXCOORD1 + 1u;
-        uint _126 = wax_TEXCOORD1 + 2u;
-        float _133 = texelFetch(waxBuffer1, int(_123)).x + texelFetch(waxBuffer1, int(_126)).x;
-        float _138 = texelFetch(waxBuffer1, int(_123)).y + texelFetch(waxBuffer1, int(_126)).x;
-        float _191;
-        vec2 _192;
-        bool _193;
-        if (((texelFetch(waxBuffer1, int(_126)).x > 0.0) && (waxFragCoord().x < _133)) && (waxFragCoord().y < _138))
-        {
-            _191 = texelFetch(waxBuffer1, int(_126)).x;
-            _192 = vec2(_133, _138);
-            _193 = true;
-        }
-        else
-        {
-            float _148 = texelFetch(waxBuffer1, int(_123)).z - texelFetch(waxBuffer1, int(_126)).y;
-            float _151 = texelFetch(waxBuffer1, int(_123)).y + texelFetch(waxBuffer1, int(_126)).y;
-            float _188;
-            vec2 _189;
-            bool _190;
-            if (((texelFetch(waxBuffer1, int(_126)).y > 0.0) && (waxFragCoord().x > _148)) && (waxFragCoord().y < _151))
-            {
-                _188 = texelFetch(waxBuffer1, int(_126)).y;
-                _189 = vec2(_148, _151);
-                _190 = true;
-            }
-            else
-            {
-                float _160 = texelFetch(waxBuffer1, int(_123)).z - texelFetch(waxBuffer1, int(_126)).z;
-                float _164 = texelFetch(waxBuffer1, int(_123)).w - texelFetch(waxBuffer1, int(_126)).z;
-                float _185;
-                vec2 _186;
-                bool _187;
-                if (((texelFetch(waxBuffer1, int(_126)).z > 0.0) && (waxFragCoord().x > _160)) && (waxFragCoord().y > _164))
-                {
-                    _185 = texelFetch(waxBuffer1, int(_126)).z;
-                    _186 = vec2(_160, _164);
-                    _187 = true;
-                }
-                else
-                {
-                    float _173 = texelFetch(waxBuffer1, int(_123)).x + texelFetch(waxBuffer1, int(_126)).w;
-                    float _176 = texelFetch(waxBuffer1, int(_123)).w - texelFetch(waxBuffer1, int(_126)).w;
-                    bool _178 = ((texelFetch(waxBuffer1, int(_126)).w > 0.0) && (waxFragCoord().x < _173)) && (waxFragCoord().y > _176);
-                    vec2 _183;
-                    if (_178)
-                    {
-                        _183 = vec2(_173, _176);
-                    }
-                    else
-                    {
-                        _183 = vec2(0.0);
-                    }
-                    _185 = _178 ? texelFetch(waxBuffer1, int(_126)).w : 0.0;
-                    _186 = _183;
-                    _187 = _178;
-                }
-                _188 = _185;
-                _189 = _186;
-                _190 = _187;
-            }
-            _191 = _188;
-            _192 = _189;
-            _193 = _190;
-        }
-        float _195 = waxFragCoord().x + 0.5;
-        float _197 = waxFragCoord().x - 0.5;
-        float _202 = waxFragCoord().y + 0.5;
-        float _204 = waxFragCoord().y - 0.5;
-        float _208 = clamp(min(_195, texelFetch(waxBuffer1, int(_123)).z) - max(_197, texelFetch(waxBuffer1, int(_123)).x), 0.0, 1.0) * clamp(min(_202, texelFetch(waxBuffer1, int(_123)).w) - max(_204, texelFetch(waxBuffer1, int(_123)).y), 0.0, 1.0);
-        float _272;
-        if (_193)
-        {
-            vec2 _211 = waxFragCoord().xy - _192;
-            float _212 = length(_211);
-            float _270;
-            if (_191 > 0.0)
-            {
-                float _217 = _191 - _212;
-                vec2 _220 = abs(_211 / vec2(_212));
-                float _221 = _220.x;
-                float _222 = _220.y;
-                float _223 = max(_221, _222);
-                float _224 = min(_221, _222);
-                float _225 = _223 + _224;
-                float _227 = _217 + (0.5 * _225);
-                float _266;
-                if (_224 < 0.001000000047497451305389404296875)
-                {
-                    _266 = clamp(_217 + 0.5, 0.0, 1.0);
-                }
-                else
-                {
-                    float _265;
-                    if (_227 >= _225)
-                    {
-                        _265 = 1.0;
-                    }
-                    else
-                    {
-                        float _264;
-                        if (_227 > 0.0)
-                        {
-                            float _263;
-                            if (_227 < _224)
-                            {
-                                _263 = (_227 * _227) / ((2.0 * _223) * _224);
-                            }
-                            else
-                            {
-                                float _262;
-                                if (_227 > _223)
-                                {
-                                    float _253 = _225 - _227;
-                                    _262 = 1.0 - ((_253 * _253) / ((2.0 * _223) * _224));
-                                }
-                                else
-                                {
-                                    _262 = (_227 - (0.5 * _224)) / _223;
-                                }
-                                _263 = _262;
-                            }
-                            _264 = _263;
-                        }
-                        else
-                        {
-                            _264 = 0.0;
-                        }
-                        _265 = _264;
-                    }
-                    _266 = _265;
-                }
-                _270 = (_212 > 0.001000000047497451305389404296875) ? _266 : clamp(_191 + 0.5, 0.0, 1.0);
-            }
-            else
-            {
-                _270 = 0.0;
-            }
-            _272 = min(_208, _270);
-        }
-        else
-        {
-            _272 = _208;
-        }
-        float _425;
-        if ((int(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y) & 1) != 0)
-        {
-            uint _280 = wax_TEXCOORD1 + 3u;
-            uint _283 = wax_TEXCOORD1 + 4u;
-            float _289 = texelFetch(waxBuffer1, int(_280)).x + texelFetch(waxBuffer1, int(_283)).x;
-            float _293 = texelFetch(waxBuffer1, int(_280)).y + texelFetch(waxBuffer1, int(_283)).x;
-            float _346;
-            vec2 _347;
-            bool _348;
-            if (((texelFetch(waxBuffer1, int(_283)).x > 0.0) && (waxFragCoord().x < _289)) && (waxFragCoord().y < _293))
-            {
-                _346 = texelFetch(waxBuffer1, int(_283)).x;
-                _347 = vec2(_289, _293);
-                _348 = true;
-            }
-            else
-            {
-                float _303 = texelFetch(waxBuffer1, int(_280)).z - texelFetch(waxBuffer1, int(_283)).y;
-                float _306 = texelFetch(waxBuffer1, int(_280)).y + texelFetch(waxBuffer1, int(_283)).y;
-                float _343;
-                vec2 _344;
-                bool _345;
-                if (((texelFetch(waxBuffer1, int(_283)).y > 0.0) && (waxFragCoord().x > _303)) && (waxFragCoord().y < _306))
-                {
-                    _343 = texelFetch(waxBuffer1, int(_283)).y;
-                    _344 = vec2(_303, _306);
-                    _345 = true;
-                }
-                else
-                {
-                    float _315 = texelFetch(waxBuffer1, int(_280)).z - texelFetch(waxBuffer1, int(_283)).z;
-                    float _319 = texelFetch(waxBuffer1, int(_280)).w - texelFetch(waxBuffer1, int(_283)).z;
-                    float _340;
-                    vec2 _341;
-                    bool _342;
-                    if (((texelFetch(waxBuffer1, int(_283)).z > 0.0) && (waxFragCoord().x > _315)) && (waxFragCoord().y > _319))
-                    {
-                        _340 = texelFetch(waxBuffer1, int(_283)).z;
-                        _341 = vec2(_315, _319);
-                        _342 = true;
-                    }
-                    else
-                    {
-                        float _328 = texelFetch(waxBuffer1, int(_280)).x + texelFetch(waxBuffer1, int(_283)).w;
-                        float _331 = texelFetch(waxBuffer1, int(_280)).w - texelFetch(waxBuffer1, int(_283)).w;
-                        bool _333 = ((texelFetch(waxBuffer1, int(_283)).w > 0.0) && (waxFragCoord().x < _328)) && (waxFragCoord().y > _331);
-                        vec2 _338;
-                        if (_333)
-                        {
-                            _338 = vec2(_328, _331);
-                        }
-                        else
-                        {
-                            _338 = vec2(0.0);
-                        }
-                        _340 = _333 ? texelFetch(waxBuffer1, int(_283)).w : 0.0;
-                        _341 = _338;
-                        _342 = _333;
-                    }
-                    _343 = _340;
-                    _344 = _341;
-                    _345 = _342;
-                }
-                _346 = _343;
-                _347 = _344;
-                _348 = _345;
-            }
-            float _359 = clamp(min(_195, texelFetch(waxBuffer1, int(_280)).z) - max(_197, texelFetch(waxBuffer1, int(_280)).x), 0.0, 1.0) * clamp(min(_202, texelFetch(waxBuffer1, int(_280)).w) - max(_204, texelFetch(waxBuffer1, int(_280)).y), 0.0, 1.0);
-            float _423;
-            if (_348)
-            {
-                vec2 _362 = waxFragCoord().xy - _347;
-                float _363 = length(_362);
-                float _421;
-                if (_346 > 0.0)
-                {
-                    float _368 = _346 - _363;
-                    vec2 _371 = abs(_362 / vec2(_363));
-                    float _372 = _371.x;
-                    float _373 = _371.y;
-                    float _374 = max(_372, _373);
-                    float _375 = min(_372, _373);
-                    float _376 = _374 + _375;
-                    float _378 = _368 + (0.5 * _376);
-                    float _417;
-                    if (_375 < 0.001000000047497451305389404296875)
-                    {
-                        _417 = clamp(_368 + 0.5, 0.0, 1.0);
-                    }
-                    else
-                    {
-                        float _416;
-                        if (_378 >= _376)
-                        {
-                            _416 = 1.0;
-                        }
-                        else
-                        {
-                            float _415;
-                            if (_378 > 0.0)
-                            {
-                                float _414;
-                                if (_378 < _375)
-                                {
-                                    _414 = (_378 * _378) / ((2.0 * _374) * _375);
-                                }
-                                else
-                                {
-                                    float _413;
-                                    if (_378 > _374)
-                                    {
-                                        float _404 = _376 - _378;
-                                        _413 = 1.0 - ((_404 * _404) / ((2.0 * _374) * _375));
-                                    }
-                                    else
-                                    {
-                                        _413 = (_378 - (0.5 * _375)) / _374;
-                                    }
-                                    _414 = _413;
-                                }
-                                _415 = _414;
-                            }
-                            else
-                            {
-                                _415 = 0.0;
-                            }
-                            _416 = _415;
-                        }
-                        _417 = _416;
-                    }
-                    _421 = (_363 > 0.001000000047497451305389404296875) ? _417 : clamp(_346 + 0.5, 0.0, 1.0);
-                }
-                else
-                {
-                    _421 = 0.0;
-                }
-                _423 = min(_359, _421);
-            }
-            else
-            {
-                _423 = _359;
-            }
-            _425 = min(_272, _423);
-        }
-        else
-        {
-            _425 = _272;
-        }
-        uint _426 = wax_TEXCOORD1 + 5u;
-        float _633;
-        vec4 _634;
-        SPIRV_CROSS_BRANCH
-        if (_425 > 0.0)
-        {
-            float _631;
-            vec4 _632;
-            SPIRV_CROSS_BRANCH
-            if (texelFetch(waxBuffer1, int(_426)).x >= 0.0)
-            {
-                uint _436 = uint(texelFetch(waxBuffer1, int(_426)).x);
-                vec4 _622;
-                SPIRV_CROSS_BRANCH
-                if (texelFetch(waxBuffer1, int(_426)).y >= 0.0)
-                {
-                    uint _444 = uint(max(texelFetch(waxBuffer1, int(_426)).y, 0.0));
-                    uint _447 = uint(texelFetch(waxBuffer0, int(_444)).x);
-                    uint _448 = _444 + 1u;
-                    vec4 _453;
-                    _453 = vec4(0.0);
-                    uint _451;
-                    vec4 _454;
-                    SPIRV_CROSS_LOOP
-                    for (uint _450 = _448, _455 = 0u; _455 < _447; _450 = _451, _453 = _454, _455++)
-                    {
-                        uint _462 = _450 + 1u;
-                        uint _469 = uint(texelFetch(waxBuffer0, int(_450)).z);
-                        uint _470 = _450 + 3u;
-                        uint _473 = _470 + ((_469 + 3u) >> 2u);
-                        SPIRV_CROSS_BRANCH
-                        if (_469 > 0u)
-                        {
-                            float _494;
-                            if (texelFetch(waxBuffer0, int(_450)).x < 0.5)
-                            {
-                                _494 = ((texelFetch(waxBuffer0, int(_462)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_462)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_462)).z;
-                            }
-                            else
-                            {
-                                _494 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_462)).xy) * texelFetch(waxBuffer0, int(_462)).zw);
-                            }
-                            float _495 = clamp(_494, -10000000.0, 10000000.0);
-                            uint _497 = uint(texelFetch(waxBuffer0, int(_450)).y);
-                            float _517;
-                            if (_497 == 0u)
-                            {
-                                _517 = clamp(_495, 0.0, 1.0);
-                            }
-                            else
-                            {
-                                float _516;
-                                if (_497 == 1u)
-                                {
-                                    _516 = _495 - floor(_495);
-                                }
-                                else
-                                {
-                                    float _512 = _495 - (2.0 * floor(_495 * 0.5));
-                                    _516 = (_512 > 1.0) ? (2.0 - _512) : _512;
-                                }
-                                _517 = _516;
-                            }
-                            int _519;
-                            _519 = -1;
-                            int _520;
-                            SPIRV_CROSS_LOOP
-                            for (uint _522 = 0u; _522 < _469; _519 = _520, _522++)
-                            {
-                                uint _528 = _470 + (_522 >> 2u);
-                                uint _531 = _522 & 3u;
-                                if (((_531 == 0u) ? texelFetch(waxBuffer0, int(_528)).x : ((_531 == 1u) ? texelFetch(waxBuffer0, int(_528)).y : ((_531 == 2u) ? texelFetch(waxBuffer0, int(_528)).z : texelFetch(waxBuffer0, int(_528)).w))) <= _517)
-                                {
-                                    _520 = int(_522);
-                                }
-                                else
-                                {
-                                    _520 = _519;
-                                }
-                            }
-                            vec4 _604;
-                            if (_519 < 0)
-                            {
-                                _604 = texelFetch(waxBuffer0, int(_473));
-                            }
-                            else
-                            {
-                                uint _552 = uint(_519);
-                                vec4 _603;
-                                if (_552 == (_469 - 1u))
-                                {
-                                    _603 = texelFetch(waxBuffer0, int(_473 + _552));
-                                }
-                                else
-                                {
-                                    uint _562 = _470 + (_552 >> 2u);
-                                    uint _565 = _552 & 3u;
-                                    float _575 = (_565 == 0u) ? texelFetch(waxBuffer0, int(_562)).x : ((_565 == 1u) ? texelFetch(waxBuffer0, int(_562)).y : ((_565 == 2u) ? texelFetch(waxBuffer0, int(_562)).z : texelFetch(waxBuffer0, int(_562)).w));
-                                    uint _576 = _552 + 1u;
-                                    uint _578 = _470 + (_576 >> 2u);
-                                    uint _581 = _576 & 3u;
-                                    uint _592 = _473 + _552;
-                                    _603 = mix(texelFetch(waxBuffer0, int(_592)), texelFetch(waxBuffer0, int(_592 + 1u)), vec4((_517 - _575) / (((_581 == 0u) ? texelFetch(waxBuffer0, int(_578)).x : ((_581 == 1u) ? texelFetch(waxBuffer0, int(_578)).y : ((_581 == 2u) ? texelFetch(waxBuffer0, int(_578)).z : texelFetch(waxBuffer0, int(_578)).w))) - _575)));
-                                }
-                                _604 = _603;
-                            }
-                            vec4 _617;
-                            if (texelFetch(waxBuffer0, int(_450 + 2u)).x > 0.5)
-                            {
-                                vec3 _615 = mix(pow(abs((_604.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _604.xyz * vec3(0.077399380505084991455078125), step(_604.xyz, vec3(0.040449999272823333740234375)));
-                                _617 = vec4(_615.x, _615.y, _615.z, _604.w);
-                            }
-                            else
-                            {
-                                _617 = _604;
-                            }
-                            _454 = _453 + (_617 * texelFetch(waxBuffer0, int(_450)).w);
-                        }
-                        else
-                        {
-                            _454 = _453;
-                        }
-                        _451 = _473 + _469;
-                    }
-                    _622 = texelFetch(waxBuffer0, int(_436)) * _453;
-                }
-                else
-                {
-                    _622 = texelFetch(waxBuffer0, int(_436));
-                }
-                _631 = _425;
-                _632 = vec4(_622.xyz * _622.w, _622.w) * _425;
-            }
-            else
-            {
-                _631 = 0.0;
-                _632 = vec4(0.0);
-            }
-            _633 = _631;
-            _634 = _632;
-        }
-        else
-        {
-            _633 = 0.0;
-            _634 = vec4(0.0);
-        }
-        uint _635 = wax_TEXCOORD1 + 6u;
-        float _636 = _272 - _425;
-        vec4 _845;
-        float _846;
-        SPIRV_CROSS_BRANCH
-        if (_636 > 0.0)
-        {
-            vec4 _843;
-            float _844;
-            SPIRV_CROSS_BRANCH
-            if (texelFetch(waxBuffer1, int(_635)).x >= 0.0)
-            {
-                uint _646 = uint(texelFetch(waxBuffer1, int(_635)).x);
-                vec4 _832;
-                SPIRV_CROSS_BRANCH
-                if (texelFetch(waxBuffer1, int(_635)).y >= 0.0)
-                {
-                    uint _654 = uint(max(texelFetch(waxBuffer1, int(_635)).y, 0.0));
-                    uint _657 = uint(texelFetch(waxBuffer0, int(_654)).x);
-                    uint _658 = _654 + 1u;
-                    vec4 _663;
-                    _663 = vec4(0.0);
-                    uint _661;
-                    vec4 _664;
-                    SPIRV_CROSS_LOOP
-                    for (uint _660 = _658, _665 = 0u; _665 < _657; _660 = _661, _663 = _664, _665++)
-                    {
-                        uint _672 = _660 + 1u;
-                        uint _679 = uint(texelFetch(waxBuffer0, int(_660)).z);
-                        uint _680 = _660 + 3u;
-                        uint _683 = _680 + ((_679 + 3u) >> 2u);
-                        SPIRV_CROSS_BRANCH
-                        if (_679 > 0u)
-                        {
-                            float _704;
-                            if (texelFetch(waxBuffer0, int(_660)).x < 0.5)
-                            {
-                                _704 = ((texelFetch(waxBuffer0, int(_672)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_672)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_672)).z;
-                            }
-                            else
-                            {
-                                _704 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_672)).xy) * texelFetch(waxBuffer0, int(_672)).zw);
-                            }
-                            float _705 = clamp(_704, -10000000.0, 10000000.0);
-                            uint _707 = uint(texelFetch(waxBuffer0, int(_660)).y);
-                            float _727;
-                            if (_707 == 0u)
-                            {
-                                _727 = clamp(_705, 0.0, 1.0);
-                            }
-                            else
-                            {
-                                float _726;
-                                if (_707 == 1u)
-                                {
-                                    _726 = _705 - floor(_705);
-                                }
-                                else
-                                {
-                                    float _722 = _705 - (2.0 * floor(_705 * 0.5));
-                                    _726 = (_722 > 1.0) ? (2.0 - _722) : _722;
-                                }
-                                _727 = _726;
-                            }
-                            int _729;
-                            _729 = -1;
-                            int _730;
-                            SPIRV_CROSS_LOOP
-                            for (uint _732 = 0u; _732 < _679; _729 = _730, _732++)
-                            {
-                                uint _738 = _680 + (_732 >> 2u);
-                                uint _741 = _732 & 3u;
-                                if (((_741 == 0u) ? texelFetch(waxBuffer0, int(_738)).x : ((_741 == 1u) ? texelFetch(waxBuffer0, int(_738)).y : ((_741 == 2u) ? texelFetch(waxBuffer0, int(_738)).z : texelFetch(waxBuffer0, int(_738)).w))) <= _727)
-                                {
-                                    _730 = int(_732);
-                                }
-                                else
-                                {
-                                    _730 = _729;
-                                }
-                            }
-                            vec4 _814;
-                            if (_729 < 0)
-                            {
-                                _814 = texelFetch(waxBuffer0, int(_683));
-                            }
-                            else
-                            {
-                                uint _762 = uint(_729);
-                                vec4 _813;
-                                if (_762 == (_679 - 1u))
-                                {
-                                    _813 = texelFetch(waxBuffer0, int(_683 + _762));
-                                }
-                                else
-                                {
-                                    uint _772 = _680 + (_762 >> 2u);
-                                    uint _775 = _762 & 3u;
-                                    float _785 = (_775 == 0u) ? texelFetch(waxBuffer0, int(_772)).x : ((_775 == 1u) ? texelFetch(waxBuffer0, int(_772)).y : ((_775 == 2u) ? texelFetch(waxBuffer0, int(_772)).z : texelFetch(waxBuffer0, int(_772)).w));
-                                    uint _786 = _762 + 1u;
-                                    uint _788 = _680 + (_786 >> 2u);
-                                    uint _791 = _786 & 3u;
-                                    uint _802 = _683 + _762;
-                                    _813 = mix(texelFetch(waxBuffer0, int(_802)), texelFetch(waxBuffer0, int(_802 + 1u)), vec4((_727 - _785) / (((_791 == 0u) ? texelFetch(waxBuffer0, int(_788)).x : ((_791 == 1u) ? texelFetch(waxBuffer0, int(_788)).y : ((_791 == 2u) ? texelFetch(waxBuffer0, int(_788)).z : texelFetch(waxBuffer0, int(_788)).w))) - _785)));
-                                }
-                                _814 = _813;
-                            }
-                            vec4 _827;
-                            if (texelFetch(waxBuffer0, int(_660 + 2u)).x > 0.5)
-                            {
-                                vec3 _825 = mix(pow(abs((_814.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _814.xyz * vec3(0.077399380505084991455078125), step(_814.xyz, vec3(0.040449999272823333740234375)));
-                                _827 = vec4(_825.x, _825.y, _825.z, _814.w);
-                            }
-                            else
-                            {
-                                _827 = _814;
-                            }
-                            _664 = _663 + (_827 * texelFetch(waxBuffer0, int(_660)).w);
-                        }
-                        else
-                        {
-                            _664 = _663;
-                        }
-                        _661 = _683 + _679;
-                    }
-                    _832 = texelFetch(waxBuffer0, int(_646)) * _663;
-                }
-                else
-                {
-                    _832 = texelFetch(waxBuffer0, int(_646));
-                }
-                _843 = _634 + (vec4(_832.xyz * _832.w, _832.w) * _636);
-                _844 = _633 + _636;
-            }
-            else
-            {
-                _843 = _634;
-                _844 = _633;
-            }
-            _845 = _843;
-            _846 = _844;
-        }
-        else
-        {
-            _845 = _634;
-            _846 = _633;
-        }
-        _3478 = _845;
-        _3479 = _846;
+        _143 = texelFetch(waxBuffer1, int(_78)).x;
+        _144 = vec2(_85, _90);
+        _145 = true;
     }
     else
     {
-        vec4 _3476;
-        float _3477;
-        if (_118 == 2)
+        float _100 = texelFetch(waxBuffer1, int(_75)).z - texelFetch(waxBuffer1, int(_78)).y;
+        float _103 = texelFetch(waxBuffer1, int(_75)).y + texelFetch(waxBuffer1, int(_78)).y;
+        float _140;
+        vec2 _141;
+        bool _142;
+        if (((texelFetch(waxBuffer1, int(_78)).y > 0.0) && (waxFragCoord().x > _100)) && (waxFragCoord().y < _103))
         {
-            int _854 = int(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y);
-            uint _855 = wax_TEXCOORD1 + 1u;
-            uint _858 = wax_TEXCOORD1 + 2u;
-            uint _861 = wax_TEXCOORD1 + 3u;
-            vec2 _865 = waxFragCoord().xy - texelFetch(waxBuffer1, int(_855)).xy;
-            float _866 = length(_865);
-            bool _868 = (_854 & 1) != 0;
-            float _872 = waxFragCoord().x + 0.5;
-            float _874 = waxFragCoord().x - 0.5;
-            float _881 = waxFragCoord().y + 0.5;
-            float _883 = waxFragCoord().y - 0.5;
-            float _887 = clamp(min(_872, texelFetch(waxBuffer1, int(_861)).z) - max(_874, texelFetch(waxBuffer1, int(_861)).x), 0.0, 1.0) * clamp(min(_881, texelFetch(waxBuffer1, int(_861)).w) - max(_883, texelFetch(waxBuffer1, int(_861)).y), 0.0, 1.0);
-            float _946;
-            if (texelFetch(waxBuffer1, int(_855)).z > 0.0)
-            {
-                float _893 = texelFetch(waxBuffer1, int(_855)).z - _866;
-                vec2 _896 = abs(_865 / vec2(_866));
-                float _897 = _896.x;
-                float _898 = _896.y;
-                float _899 = max(_897, _898);
-                float _900 = min(_897, _898);
-                float _901 = _899 + _900;
-                float _903 = _893 + (0.5 * _901);
-                float _942;
-                if (_900 < 0.001000000047497451305389404296875)
-                {
-                    _942 = clamp(_893 + 0.5, 0.0, 1.0);
-                }
-                else
-                {
-                    float _941;
-                    if (_903 >= _901)
-                    {
-                        _941 = 1.0;
-                    }
-                    else
-                    {
-                        float _940;
-                        if (_903 > 0.0)
-                        {
-                            float _939;
-                            if (_903 < _900)
-                            {
-                                _939 = (_903 * _903) / ((2.0 * _899) * _900);
-                            }
-                            else
-                            {
-                                float _938;
-                                if (_903 > _899)
-                                {
-                                    float _929 = _901 - _903;
-                                    _938 = 1.0 - ((_929 * _929) / ((2.0 * _899) * _900));
-                                }
-                                else
-                                {
-                                    _938 = (_903 - (0.5 * _900)) / _899;
-                                }
-                                _939 = _938;
-                            }
-                            _940 = _939;
-                        }
-                        else
-                        {
-                            _940 = 0.0;
-                        }
-                        _941 = _940;
-                    }
-                    _942 = _941;
-                }
-                _946 = (_866 > 0.001000000047497451305389404296875) ? _942 : clamp(texelFetch(waxBuffer1, int(_855)).z + 0.5, 0.0, 1.0);
-            }
-            else
-            {
-                _946 = 0.0;
-            }
-            float _947 = _868 ? _887 : _946;
-            uint _948 = wax_TEXCOORD1 + 4u;
-            float _1022;
-            if (texelFetch(waxBuffer1, int(_855)).w > 0.0)
-            {
-                float _969 = texelFetch(waxBuffer1, int(_855)).w - _866;
-                vec2 _972 = abs(_865 / vec2(_866));
-                float _973 = _972.x;
-                float _974 = _972.y;
-                float _975 = max(_973, _974);
-                float _976 = min(_973, _974);
-                float _977 = _975 + _976;
-                float _979 = _969 + (0.5 * _977);
-                float _1018;
-                if (_976 < 0.001000000047497451305389404296875)
-                {
-                    _1018 = clamp(_969 + 0.5, 0.0, 1.0);
-                }
-                else
-                {
-                    float _1017;
-                    if (_979 >= _977)
-                    {
-                        _1017 = 1.0;
-                    }
-                    else
-                    {
-                        float _1016;
-                        if (_979 > 0.0)
-                        {
-                            float _1015;
-                            if (_979 < _976)
-                            {
-                                _1015 = (_979 * _979) / ((2.0 * _975) * _976);
-                            }
-                            else
-                            {
-                                float _1014;
-                                if (_979 > _975)
-                                {
-                                    float _1005 = _977 - _979;
-                                    _1014 = 1.0 - ((_1005 * _1005) / ((2.0 * _975) * _976));
-                                }
-                                else
-                                {
-                                    _1014 = (_979 - (0.5 * _976)) / _975;
-                                }
-                                _1015 = _1014;
-                            }
-                            _1016 = _1015;
-                        }
-                        else
-                        {
-                            _1016 = 0.0;
-                        }
-                        _1017 = _1016;
-                    }
-                    _1018 = _1017;
-                }
-                _1022 = (_866 > 0.001000000047497451305389404296875) ? _1018 : clamp(texelFetch(waxBuffer1, int(_855)).w + 0.5, 0.0, 1.0);
-            }
-            else
-            {
-                _1022 = 0.0;
-            }
-            float _1024 = min(_868 ? (clamp(min(_872, texelFetch(waxBuffer1, int(_948)).z) - max(_874, texelFetch(waxBuffer1, int(_948)).x), 0.0, 1.0) * clamp(min(_881, texelFetch(waxBuffer1, int(_948)).w) - max(_883, texelFetch(waxBuffer1, int(_948)).y), 0.0, 1.0)) : _1022, _947);
-            float _1083;
-            if (texelFetch(waxBuffer1, int(_858)).x > 0.0)
-            {
-                float _1030 = texelFetch(waxBuffer1, int(_858)).x - _866;
-                vec2 _1033 = abs(_865 / vec2(_866));
-                float _1034 = _1033.x;
-                float _1035 = _1033.y;
-                float _1036 = max(_1034, _1035);
-                float _1037 = min(_1034, _1035);
-                float _1038 = _1036 + _1037;
-                float _1040 = _1030 + (0.5 * _1038);
-                float _1079;
-                if (_1037 < 0.001000000047497451305389404296875)
-                {
-                    _1079 = clamp(_1030 + 0.5, 0.0, 1.0);
-                }
-                else
-                {
-                    float _1078;
-                    if (_1040 >= _1038)
-                    {
-                        _1078 = 1.0;
-                    }
-                    else
-                    {
-                        float _1077;
-                        if (_1040 > 0.0)
-                        {
-                            float _1076;
-                            if (_1040 < _1037)
-                            {
-                                _1076 = (_1040 * _1040) / ((2.0 * _1036) * _1037);
-                            }
-                            else
-                            {
-                                float _1075;
-                                if (_1040 > _1036)
-                                {
-                                    float _1066 = _1038 - _1040;
-                                    _1075 = 1.0 - ((_1066 * _1066) / ((2.0 * _1036) * _1037));
-                                }
-                                else
-                                {
-                                    _1075 = (_1040 - (0.5 * _1037)) / _1036;
-                                }
-                                _1076 = _1075;
-                            }
-                            _1077 = _1076;
-                        }
-                        else
-                        {
-                            _1077 = 0.0;
-                        }
-                        _1078 = _1077;
-                    }
-                    _1079 = _1078;
-                }
-                _1083 = (_866 > 0.001000000047497451305389404296875) ? _1079 : clamp(texelFetch(waxBuffer1, int(_858)).x + 0.5, 0.0, 1.0);
-            }
-            else
-            {
-                _1083 = 0.0;
-            }
-            float _1084 = min(_1083, _1024);
-            float _1143;
-            if (texelFetch(waxBuffer1, int(_858)).y > 0.0)
-            {
-                float _1090 = texelFetch(waxBuffer1, int(_858)).y - _866;
-                vec2 _1093 = abs(_865 / vec2(_866));
-                float _1094 = _1093.x;
-                float _1095 = _1093.y;
-                float _1096 = max(_1094, _1095);
-                float _1097 = min(_1094, _1095);
-                float _1098 = _1096 + _1097;
-                float _1100 = _1090 + (0.5 * _1098);
-                float _1139;
-                if (_1097 < 0.001000000047497451305389404296875)
-                {
-                    _1139 = clamp(_1090 + 0.5, 0.0, 1.0);
-                }
-                else
-                {
-                    float _1138;
-                    if (_1100 >= _1098)
-                    {
-                        _1138 = 1.0;
-                    }
-                    else
-                    {
-                        float _1137;
-                        if (_1100 > 0.0)
-                        {
-                            float _1136;
-                            if (_1100 < _1097)
-                            {
-                                _1136 = (_1100 * _1100) / ((2.0 * _1096) * _1097);
-                            }
-                            else
-                            {
-                                float _1135;
-                                if (_1100 > _1096)
-                                {
-                                    float _1126 = _1098 - _1100;
-                                    _1135 = 1.0 - ((_1126 * _1126) / ((2.0 * _1096) * _1097));
-                                }
-                                else
-                                {
-                                    _1135 = (_1100 - (0.5 * _1097)) / _1096;
-                                }
-                                _1136 = _1135;
-                            }
-                            _1137 = _1136;
-                        }
-                        else
-                        {
-                            _1137 = 0.0;
-                        }
-                        _1138 = _1137;
-                    }
-                    _1139 = _1138;
-                }
-                _1143 = (_866 > 0.001000000047497451305389404296875) ? _1139 : clamp(texelFetch(waxBuffer1, int(_858)).y + 0.5, 0.0, 1.0);
-            }
-            else
-            {
-                _1143 = 0.0;
-            }
-            float _1144 = min(_1143, _1084);
-            float _1149 = ((_854 & 2) != 0) ? max(_887 - _947, 0.0) : 0.0;
-            float _1152 = ((_947 - _1024) + _1084) - _1144;
-            float _1153 = _1024 - _1084;
-            bool _1155 = (_854 & 16) == 0;
-            float _1159;
-            if (_1155)
-            {
-                _1159 = _1152 + _1153;
-            }
-            else
-            {
-                _1159 = _1152;
-            }
-            float _1160 = _1155 ? 0.0 : _1153;
-            uint _1161 = wax_TEXCOORD1 + 5u;
-            float _1368;
-            vec4 _1369;
-            SPIRV_CROSS_BRANCH
-            if (_1149 > 0.0)
-            {
-                float _1366;
-                vec4 _1367;
-                SPIRV_CROSS_BRANCH
-                if (texelFetch(waxBuffer1, int(_1161)).x >= 0.0)
-                {
-                    uint _1171 = uint(texelFetch(waxBuffer1, int(_1161)).x);
-                    vec4 _1357;
-                    SPIRV_CROSS_BRANCH
-                    if (texelFetch(waxBuffer1, int(_1161)).y >= 0.0)
-                    {
-                        uint _1179 = uint(max(texelFetch(waxBuffer1, int(_1161)).y, 0.0));
-                        uint _1182 = uint(texelFetch(waxBuffer0, int(_1179)).x);
-                        uint _1183 = _1179 + 1u;
-                        vec4 _1188;
-                        _1188 = vec4(0.0);
-                        uint _1186;
-                        vec4 _1189;
-                        SPIRV_CROSS_LOOP
-                        for (uint _1185 = _1183, _1190 = 0u; _1190 < _1182; _1185 = _1186, _1188 = _1189, _1190++)
-                        {
-                            uint _1197 = _1185 + 1u;
-                            uint _1204 = uint(texelFetch(waxBuffer0, int(_1185)).z);
-                            uint _1205 = _1185 + 3u;
-                            uint _1208 = _1205 + ((_1204 + 3u) >> 2u);
-                            SPIRV_CROSS_BRANCH
-                            if (_1204 > 0u)
-                            {
-                                float _1229;
-                                if (texelFetch(waxBuffer0, int(_1185)).x < 0.5)
-                                {
-                                    _1229 = ((texelFetch(waxBuffer0, int(_1197)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_1197)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_1197)).z;
-                                }
-                                else
-                                {
-                                    _1229 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_1197)).xy) * texelFetch(waxBuffer0, int(_1197)).zw);
-                                }
-                                float _1230 = clamp(_1229, -10000000.0, 10000000.0);
-                                uint _1232 = uint(texelFetch(waxBuffer0, int(_1185)).y);
-                                float _1252;
-                                if (_1232 == 0u)
-                                {
-                                    _1252 = clamp(_1230, 0.0, 1.0);
-                                }
-                                else
-                                {
-                                    float _1251;
-                                    if (_1232 == 1u)
-                                    {
-                                        _1251 = _1230 - floor(_1230);
-                                    }
-                                    else
-                                    {
-                                        float _1247 = _1230 - (2.0 * floor(_1230 * 0.5));
-                                        _1251 = (_1247 > 1.0) ? (2.0 - _1247) : _1247;
-                                    }
-                                    _1252 = _1251;
-                                }
-                                int _1254;
-                                _1254 = -1;
-                                int _1255;
-                                SPIRV_CROSS_LOOP
-                                for (uint _1257 = 0u; _1257 < _1204; _1254 = _1255, _1257++)
-                                {
-                                    uint _1263 = _1205 + (_1257 >> 2u);
-                                    uint _1266 = _1257 & 3u;
-                                    if (((_1266 == 0u) ? texelFetch(waxBuffer0, int(_1263)).x : ((_1266 == 1u) ? texelFetch(waxBuffer0, int(_1263)).y : ((_1266 == 2u) ? texelFetch(waxBuffer0, int(_1263)).z : texelFetch(waxBuffer0, int(_1263)).w))) <= _1252)
-                                    {
-                                        _1255 = int(_1257);
-                                    }
-                                    else
-                                    {
-                                        _1255 = _1254;
-                                    }
-                                }
-                                vec4 _1339;
-                                if (_1254 < 0)
-                                {
-                                    _1339 = texelFetch(waxBuffer0, int(_1208));
-                                }
-                                else
-                                {
-                                    uint _1287 = uint(_1254);
-                                    vec4 _1338;
-                                    if (_1287 == (_1204 - 1u))
-                                    {
-                                        _1338 = texelFetch(waxBuffer0, int(_1208 + _1287));
-                                    }
-                                    else
-                                    {
-                                        uint _1297 = _1205 + (_1287 >> 2u);
-                                        uint _1300 = _1287 & 3u;
-                                        float _1310 = (_1300 == 0u) ? texelFetch(waxBuffer0, int(_1297)).x : ((_1300 == 1u) ? texelFetch(waxBuffer0, int(_1297)).y : ((_1300 == 2u) ? texelFetch(waxBuffer0, int(_1297)).z : texelFetch(waxBuffer0, int(_1297)).w));
-                                        uint _1311 = _1287 + 1u;
-                                        uint _1313 = _1205 + (_1311 >> 2u);
-                                        uint _1316 = _1311 & 3u;
-                                        uint _1327 = _1208 + _1287;
-                                        _1338 = mix(texelFetch(waxBuffer0, int(_1327)), texelFetch(waxBuffer0, int(_1327 + 1u)), vec4((_1252 - _1310) / (((_1316 == 0u) ? texelFetch(waxBuffer0, int(_1313)).x : ((_1316 == 1u) ? texelFetch(waxBuffer0, int(_1313)).y : ((_1316 == 2u) ? texelFetch(waxBuffer0, int(_1313)).z : texelFetch(waxBuffer0, int(_1313)).w))) - _1310)));
-                                    }
-                                    _1339 = _1338;
-                                }
-                                vec4 _1352;
-                                if (texelFetch(waxBuffer0, int(_1185 + 2u)).x > 0.5)
-                                {
-                                    vec3 _1350 = mix(pow(abs((_1339.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _1339.xyz * vec3(0.077399380505084991455078125), step(_1339.xyz, vec3(0.040449999272823333740234375)));
-                                    _1352 = vec4(_1350.x, _1350.y, _1350.z, _1339.w);
-                                }
-                                else
-                                {
-                                    _1352 = _1339;
-                                }
-                                _1189 = _1188 + (_1352 * texelFetch(waxBuffer0, int(_1185)).w);
-                            }
-                            else
-                            {
-                                _1189 = _1188;
-                            }
-                            _1186 = _1208 + _1204;
-                        }
-                        _1357 = texelFetch(waxBuffer0, int(_1171)) * _1188;
-                    }
-                    else
-                    {
-                        _1357 = texelFetch(waxBuffer0, int(_1171));
-                    }
-                    _1366 = _1149;
-                    _1367 = vec4(_1357.xyz * _1357.w, _1357.w) * _1149;
-                }
-                else
-                {
-                    _1366 = 0.0;
-                    _1367 = vec4(0.0);
-                }
-                _1368 = _1366;
-                _1369 = _1367;
-            }
-            else
-            {
-                _1368 = 0.0;
-                _1369 = vec4(0.0);
-            }
-            uint _1370 = wax_TEXCOORD1 + 6u;
-            float _1579;
-            vec4 _1580;
-            SPIRV_CROSS_BRANCH
-            if (_1159 > 0.0)
-            {
-                float _1577;
-                vec4 _1578;
-                SPIRV_CROSS_BRANCH
-                if (texelFetch(waxBuffer1, int(_1370)).x >= 0.0)
-                {
-                    uint _1380 = uint(texelFetch(waxBuffer1, int(_1370)).x);
-                    vec4 _1566;
-                    SPIRV_CROSS_BRANCH
-                    if (texelFetch(waxBuffer1, int(_1370)).y >= 0.0)
-                    {
-                        uint _1388 = uint(max(texelFetch(waxBuffer1, int(_1370)).y, 0.0));
-                        uint _1391 = uint(texelFetch(waxBuffer0, int(_1388)).x);
-                        uint _1392 = _1388 + 1u;
-                        vec4 _1397;
-                        _1397 = vec4(0.0);
-                        uint _1395;
-                        vec4 _1398;
-                        SPIRV_CROSS_LOOP
-                        for (uint _1394 = _1392, _1399 = 0u; _1399 < _1391; _1394 = _1395, _1397 = _1398, _1399++)
-                        {
-                            uint _1406 = _1394 + 1u;
-                            uint _1413 = uint(texelFetch(waxBuffer0, int(_1394)).z);
-                            uint _1414 = _1394 + 3u;
-                            uint _1417 = _1414 + ((_1413 + 3u) >> 2u);
-                            SPIRV_CROSS_BRANCH
-                            if (_1413 > 0u)
-                            {
-                                float _1438;
-                                if (texelFetch(waxBuffer0, int(_1394)).x < 0.5)
-                                {
-                                    _1438 = ((texelFetch(waxBuffer0, int(_1406)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_1406)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_1406)).z;
-                                }
-                                else
-                                {
-                                    _1438 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_1406)).xy) * texelFetch(waxBuffer0, int(_1406)).zw);
-                                }
-                                float _1439 = clamp(_1438, -10000000.0, 10000000.0);
-                                uint _1441 = uint(texelFetch(waxBuffer0, int(_1394)).y);
-                                float _1461;
-                                if (_1441 == 0u)
-                                {
-                                    _1461 = clamp(_1439, 0.0, 1.0);
-                                }
-                                else
-                                {
-                                    float _1460;
-                                    if (_1441 == 1u)
-                                    {
-                                        _1460 = _1439 - floor(_1439);
-                                    }
-                                    else
-                                    {
-                                        float _1456 = _1439 - (2.0 * floor(_1439 * 0.5));
-                                        _1460 = (_1456 > 1.0) ? (2.0 - _1456) : _1456;
-                                    }
-                                    _1461 = _1460;
-                                }
-                                int _1463;
-                                _1463 = -1;
-                                int _1464;
-                                SPIRV_CROSS_LOOP
-                                for (uint _1466 = 0u; _1466 < _1413; _1463 = _1464, _1466++)
-                                {
-                                    uint _1472 = _1414 + (_1466 >> 2u);
-                                    uint _1475 = _1466 & 3u;
-                                    if (((_1475 == 0u) ? texelFetch(waxBuffer0, int(_1472)).x : ((_1475 == 1u) ? texelFetch(waxBuffer0, int(_1472)).y : ((_1475 == 2u) ? texelFetch(waxBuffer0, int(_1472)).z : texelFetch(waxBuffer0, int(_1472)).w))) <= _1461)
-                                    {
-                                        _1464 = int(_1466);
-                                    }
-                                    else
-                                    {
-                                        _1464 = _1463;
-                                    }
-                                }
-                                vec4 _1548;
-                                if (_1463 < 0)
-                                {
-                                    _1548 = texelFetch(waxBuffer0, int(_1417));
-                                }
-                                else
-                                {
-                                    uint _1496 = uint(_1463);
-                                    vec4 _1547;
-                                    if (_1496 == (_1413 - 1u))
-                                    {
-                                        _1547 = texelFetch(waxBuffer0, int(_1417 + _1496));
-                                    }
-                                    else
-                                    {
-                                        uint _1506 = _1414 + (_1496 >> 2u);
-                                        uint _1509 = _1496 & 3u;
-                                        float _1519 = (_1509 == 0u) ? texelFetch(waxBuffer0, int(_1506)).x : ((_1509 == 1u) ? texelFetch(waxBuffer0, int(_1506)).y : ((_1509 == 2u) ? texelFetch(waxBuffer0, int(_1506)).z : texelFetch(waxBuffer0, int(_1506)).w));
-                                        uint _1520 = _1496 + 1u;
-                                        uint _1522 = _1414 + (_1520 >> 2u);
-                                        uint _1525 = _1520 & 3u;
-                                        uint _1536 = _1417 + _1496;
-                                        _1547 = mix(texelFetch(waxBuffer0, int(_1536)), texelFetch(waxBuffer0, int(_1536 + 1u)), vec4((_1461 - _1519) / (((_1525 == 0u) ? texelFetch(waxBuffer0, int(_1522)).x : ((_1525 == 1u) ? texelFetch(waxBuffer0, int(_1522)).y : ((_1525 == 2u) ? texelFetch(waxBuffer0, int(_1522)).z : texelFetch(waxBuffer0, int(_1522)).w))) - _1519)));
-                                    }
-                                    _1548 = _1547;
-                                }
-                                vec4 _1561;
-                                if (texelFetch(waxBuffer0, int(_1394 + 2u)).x > 0.5)
-                                {
-                                    vec3 _1559 = mix(pow(abs((_1548.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _1548.xyz * vec3(0.077399380505084991455078125), step(_1548.xyz, vec3(0.040449999272823333740234375)));
-                                    _1561 = vec4(_1559.x, _1559.y, _1559.z, _1548.w);
-                                }
-                                else
-                                {
-                                    _1561 = _1548;
-                                }
-                                _1398 = _1397 + (_1561 * texelFetch(waxBuffer0, int(_1394)).w);
-                            }
-                            else
-                            {
-                                _1398 = _1397;
-                            }
-                            _1395 = _1417 + _1413;
-                        }
-                        _1566 = texelFetch(waxBuffer0, int(_1380)) * _1397;
-                    }
-                    else
-                    {
-                        _1566 = texelFetch(waxBuffer0, int(_1380));
-                    }
-                    _1577 = _1368 + _1159;
-                    _1578 = _1369 + (vec4(_1566.xyz * _1566.w, _1566.w) * _1159);
-                }
-                else
-                {
-                    _1577 = _1368;
-                    _1578 = _1369;
-                }
-                _1579 = _1577;
-                _1580 = _1578;
-            }
-            else
-            {
-                _1579 = _1368;
-                _1580 = _1369;
-            }
-            uint _1581 = wax_TEXCOORD1 + 7u;
-            float _1584 = ((_854 & 4) != 0) ? _1144 : 0.0;
-            float _1793;
-            vec4 _1794;
-            SPIRV_CROSS_BRANCH
-            if (_1584 > 0.0)
-            {
-                float _1791;
-                vec4 _1792;
-                SPIRV_CROSS_BRANCH
-                if (texelFetch(waxBuffer1, int(_1581)).x >= 0.0)
-                {
-                    uint _1594 = uint(texelFetch(waxBuffer1, int(_1581)).x);
-                    vec4 _1780;
-                    SPIRV_CROSS_BRANCH
-                    if (texelFetch(waxBuffer1, int(_1581)).y >= 0.0)
-                    {
-                        uint _1602 = uint(max(texelFetch(waxBuffer1, int(_1581)).y, 0.0));
-                        uint _1605 = uint(texelFetch(waxBuffer0, int(_1602)).x);
-                        uint _1606 = _1602 + 1u;
-                        vec4 _1611;
-                        _1611 = vec4(0.0);
-                        uint _1609;
-                        vec4 _1612;
-                        SPIRV_CROSS_LOOP
-                        for (uint _1608 = _1606, _1613 = 0u; _1613 < _1605; _1608 = _1609, _1611 = _1612, _1613++)
-                        {
-                            uint _1620 = _1608 + 1u;
-                            uint _1627 = uint(texelFetch(waxBuffer0, int(_1608)).z);
-                            uint _1628 = _1608 + 3u;
-                            uint _1631 = _1628 + ((_1627 + 3u) >> 2u);
-                            SPIRV_CROSS_BRANCH
-                            if (_1627 > 0u)
-                            {
-                                float _1652;
-                                if (texelFetch(waxBuffer0, int(_1608)).x < 0.5)
-                                {
-                                    _1652 = ((texelFetch(waxBuffer0, int(_1620)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_1620)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_1620)).z;
-                                }
-                                else
-                                {
-                                    _1652 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_1620)).xy) * texelFetch(waxBuffer0, int(_1620)).zw);
-                                }
-                                float _1653 = clamp(_1652, -10000000.0, 10000000.0);
-                                uint _1655 = uint(texelFetch(waxBuffer0, int(_1608)).y);
-                                float _1675;
-                                if (_1655 == 0u)
-                                {
-                                    _1675 = clamp(_1653, 0.0, 1.0);
-                                }
-                                else
-                                {
-                                    float _1674;
-                                    if (_1655 == 1u)
-                                    {
-                                        _1674 = _1653 - floor(_1653);
-                                    }
-                                    else
-                                    {
-                                        float _1670 = _1653 - (2.0 * floor(_1653 * 0.5));
-                                        _1674 = (_1670 > 1.0) ? (2.0 - _1670) : _1670;
-                                    }
-                                    _1675 = _1674;
-                                }
-                                int _1677;
-                                _1677 = -1;
-                                int _1678;
-                                SPIRV_CROSS_LOOP
-                                for (uint _1680 = 0u; _1680 < _1627; _1677 = _1678, _1680++)
-                                {
-                                    uint _1686 = _1628 + (_1680 >> 2u);
-                                    uint _1689 = _1680 & 3u;
-                                    if (((_1689 == 0u) ? texelFetch(waxBuffer0, int(_1686)).x : ((_1689 == 1u) ? texelFetch(waxBuffer0, int(_1686)).y : ((_1689 == 2u) ? texelFetch(waxBuffer0, int(_1686)).z : texelFetch(waxBuffer0, int(_1686)).w))) <= _1675)
-                                    {
-                                        _1678 = int(_1680);
-                                    }
-                                    else
-                                    {
-                                        _1678 = _1677;
-                                    }
-                                }
-                                vec4 _1762;
-                                if (_1677 < 0)
-                                {
-                                    _1762 = texelFetch(waxBuffer0, int(_1631));
-                                }
-                                else
-                                {
-                                    uint _1710 = uint(_1677);
-                                    vec4 _1761;
-                                    if (_1710 == (_1627 - 1u))
-                                    {
-                                        _1761 = texelFetch(waxBuffer0, int(_1631 + _1710));
-                                    }
-                                    else
-                                    {
-                                        uint _1720 = _1628 + (_1710 >> 2u);
-                                        uint _1723 = _1710 & 3u;
-                                        float _1733 = (_1723 == 0u) ? texelFetch(waxBuffer0, int(_1720)).x : ((_1723 == 1u) ? texelFetch(waxBuffer0, int(_1720)).y : ((_1723 == 2u) ? texelFetch(waxBuffer0, int(_1720)).z : texelFetch(waxBuffer0, int(_1720)).w));
-                                        uint _1734 = _1710 + 1u;
-                                        uint _1736 = _1628 + (_1734 >> 2u);
-                                        uint _1739 = _1734 & 3u;
-                                        uint _1750 = _1631 + _1710;
-                                        _1761 = mix(texelFetch(waxBuffer0, int(_1750)), texelFetch(waxBuffer0, int(_1750 + 1u)), vec4((_1675 - _1733) / (((_1739 == 0u) ? texelFetch(waxBuffer0, int(_1736)).x : ((_1739 == 1u) ? texelFetch(waxBuffer0, int(_1736)).y : ((_1739 == 2u) ? texelFetch(waxBuffer0, int(_1736)).z : texelFetch(waxBuffer0, int(_1736)).w))) - _1733)));
-                                    }
-                                    _1762 = _1761;
-                                }
-                                vec4 _1775;
-                                if (texelFetch(waxBuffer0, int(_1608 + 2u)).x > 0.5)
-                                {
-                                    vec3 _1773 = mix(pow(abs((_1762.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _1762.xyz * vec3(0.077399380505084991455078125), step(_1762.xyz, vec3(0.040449999272823333740234375)));
-                                    _1775 = vec4(_1773.x, _1773.y, _1773.z, _1762.w);
-                                }
-                                else
-                                {
-                                    _1775 = _1762;
-                                }
-                                _1612 = _1611 + (_1775 * texelFetch(waxBuffer0, int(_1608)).w);
-                            }
-                            else
-                            {
-                                _1612 = _1611;
-                            }
-                            _1609 = _1631 + _1627;
-                        }
-                        _1780 = texelFetch(waxBuffer0, int(_1594)) * _1611;
-                    }
-                    else
-                    {
-                        _1780 = texelFetch(waxBuffer0, int(_1594));
-                    }
-                    _1791 = _1579 + _1584;
-                    _1792 = _1580 + (vec4(_1780.xyz * _1780.w, _1780.w) * _1584);
-                }
-                else
-                {
-                    _1791 = _1579;
-                    _1792 = _1580;
-                }
-                _1793 = _1791;
-                _1794 = _1792;
-            }
-            else
-            {
-                _1793 = _1579;
-                _1794 = _1580;
-            }
-            bool _1795 = _1160 > 0.0;
-            vec4 _2800;
-            float _2801;
-            if (_1795)
-            {
-                int _1799 = int(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).z);
-                uint _1802 = wax_TEXCOORD1 + uint(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).w);
-                vec4 _2798;
-                float _2799;
-                SPIRV_CROSS_BRANCH
-                if (_1799 == 1)
-                {
-                    uint _1810 = wax_TEXCOORD1 + uint(texelFetch(waxBuffer1, int(_1802)).y);
-                    vec4 _2018;
-                    float _2019;
-                    SPIRV_CROSS_BRANCH
-                    if (_1795)
-                    {
-                        vec4 _2016;
-                        float _2017;
-                        SPIRV_CROSS_BRANCH
-                        if (texelFetch(waxBuffer1, int(_1810)).x >= 0.0)
-                        {
-                            uint _1819 = uint(texelFetch(waxBuffer1, int(_1810)).x);
-                            vec4 _2005;
-                            SPIRV_CROSS_BRANCH
-                            if (texelFetch(waxBuffer1, int(_1810)).y >= 0.0)
-                            {
-                                uint _1827 = uint(max(texelFetch(waxBuffer1, int(_1810)).y, 0.0));
-                                uint _1830 = uint(texelFetch(waxBuffer0, int(_1827)).x);
-                                uint _1831 = _1827 + 1u;
-                                vec4 _1836;
-                                _1836 = vec4(0.0);
-                                uint _1834;
-                                vec4 _1837;
-                                SPIRV_CROSS_LOOP
-                                for (uint _1833 = _1831, _1838 = 0u; _1838 < _1830; _1833 = _1834, _1836 = _1837, _1838++)
-                                {
-                                    uint _1845 = _1833 + 1u;
-                                    uint _1852 = uint(texelFetch(waxBuffer0, int(_1833)).z);
-                                    uint _1853 = _1833 + 3u;
-                                    uint _1856 = _1853 + ((_1852 + 3u) >> 2u);
-                                    SPIRV_CROSS_BRANCH
-                                    if (_1852 > 0u)
-                                    {
-                                        float _1877;
-                                        if (texelFetch(waxBuffer0, int(_1833)).x < 0.5)
-                                        {
-                                            _1877 = ((texelFetch(waxBuffer0, int(_1845)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_1845)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_1845)).z;
-                                        }
-                                        else
-                                        {
-                                            _1877 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_1845)).xy) * texelFetch(waxBuffer0, int(_1845)).zw);
-                                        }
-                                        float _1878 = clamp(_1877, -10000000.0, 10000000.0);
-                                        uint _1880 = uint(texelFetch(waxBuffer0, int(_1833)).y);
-                                        float _1900;
-                                        if (_1880 == 0u)
-                                        {
-                                            _1900 = clamp(_1878, 0.0, 1.0);
-                                        }
-                                        else
-                                        {
-                                            float _1899;
-                                            if (_1880 == 1u)
-                                            {
-                                                _1899 = _1878 - floor(_1878);
-                                            }
-                                            else
-                                            {
-                                                float _1895 = _1878 - (2.0 * floor(_1878 * 0.5));
-                                                _1899 = (_1895 > 1.0) ? (2.0 - _1895) : _1895;
-                                            }
-                                            _1900 = _1899;
-                                        }
-                                        int _1902;
-                                        _1902 = -1;
-                                        int _1903;
-                                        SPIRV_CROSS_LOOP
-                                        for (uint _1905 = 0u; _1905 < _1852; _1902 = _1903, _1905++)
-                                        {
-                                            uint _1911 = _1853 + (_1905 >> 2u);
-                                            uint _1914 = _1905 & 3u;
-                                            if (((_1914 == 0u) ? texelFetch(waxBuffer0, int(_1911)).x : ((_1914 == 1u) ? texelFetch(waxBuffer0, int(_1911)).y : ((_1914 == 2u) ? texelFetch(waxBuffer0, int(_1911)).z : texelFetch(waxBuffer0, int(_1911)).w))) <= _1900)
-                                            {
-                                                _1903 = int(_1905);
-                                            }
-                                            else
-                                            {
-                                                _1903 = _1902;
-                                            }
-                                        }
-                                        vec4 _1987;
-                                        if (_1902 < 0)
-                                        {
-                                            _1987 = texelFetch(waxBuffer0, int(_1856));
-                                        }
-                                        else
-                                        {
-                                            uint _1935 = uint(_1902);
-                                            vec4 _1986;
-                                            if (_1935 == (_1852 - 1u))
-                                            {
-                                                _1986 = texelFetch(waxBuffer0, int(_1856 + _1935));
-                                            }
-                                            else
-                                            {
-                                                uint _1945 = _1853 + (_1935 >> 2u);
-                                                uint _1948 = _1935 & 3u;
-                                                float _1958 = (_1948 == 0u) ? texelFetch(waxBuffer0, int(_1945)).x : ((_1948 == 1u) ? texelFetch(waxBuffer0, int(_1945)).y : ((_1948 == 2u) ? texelFetch(waxBuffer0, int(_1945)).z : texelFetch(waxBuffer0, int(_1945)).w));
-                                                uint _1959 = _1935 + 1u;
-                                                uint _1961 = _1853 + (_1959 >> 2u);
-                                                uint _1964 = _1959 & 3u;
-                                                uint _1975 = _1856 + _1935;
-                                                _1986 = mix(texelFetch(waxBuffer0, int(_1975)), texelFetch(waxBuffer0, int(_1975 + 1u)), vec4((_1900 - _1958) / (((_1964 == 0u) ? texelFetch(waxBuffer0, int(_1961)).x : ((_1964 == 1u) ? texelFetch(waxBuffer0, int(_1961)).y : ((_1964 == 2u) ? texelFetch(waxBuffer0, int(_1961)).z : texelFetch(waxBuffer0, int(_1961)).w))) - _1958)));
-                                            }
-                                            _1987 = _1986;
-                                        }
-                                        vec4 _2000;
-                                        if (texelFetch(waxBuffer0, int(_1833 + 2u)).x > 0.5)
-                                        {
-                                            vec3 _1998 = mix(pow(abs((_1987.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _1987.xyz * vec3(0.077399380505084991455078125), step(_1987.xyz, vec3(0.040449999272823333740234375)));
-                                            _2000 = vec4(_1998.x, _1998.y, _1998.z, _1987.w);
-                                        }
-                                        else
-                                        {
-                                            _2000 = _1987;
-                                        }
-                                        _1837 = _1836 + (_2000 * texelFetch(waxBuffer0, int(_1833)).w);
-                                    }
-                                    else
-                                    {
-                                        _1837 = _1836;
-                                    }
-                                    _1834 = _1856 + _1852;
-                                }
-                                _2005 = texelFetch(waxBuffer0, int(_1819)) * _1836;
-                            }
-                            else
-                            {
-                                _2005 = texelFetch(waxBuffer0, int(_1819));
-                            }
-                            _2016 = _1794 + (vec4(_2005.xyz * _2005.w, _2005.w) * _1160);
-                            _2017 = _1793 + _1160;
-                        }
-                        else
-                        {
-                            _2016 = _1794;
-                            _2017 = _1793;
-                        }
-                        _2018 = _2016;
-                        _2019 = _2017;
-                    }
-                    else
-                    {
-                        _2018 = _1794;
-                        _2019 = _1793;
-                    }
-                    _2798 = _2018;
-                    _2799 = _2019;
-                }
-                else
-                {
-                    float _2020 = _865.x;
-                    float _2023 = _865.y;
-                    vec4 _2796;
-                    float _2797;
-                    if ((abs(_2020) < 0.5) && (abs(_2023) < 0.5))
-                    {
-                        float _2032 = 6.283185482025146484375 * texelFetch(waxBuffer1, int(_1802)).x;
-                        float _2033 = sin(_2032);
-                        float _2035 = -cos(_2032);
-                        float _2037 = 0.5 - _2020;
-                        float _2038 = 0.5 + _2020;
-                        float _2039 = 0.5 - _2023;
-                        float _2040 = 0.5 + _2023;
-                        bool _2041 = _2033 > 0.0;
-                        float _2045 = (_2041 ? _2038 : _2037) / max(abs(_2033), 9.9999996826552253889678874634872e-21);
-                        bool _2046 = _2035 > 0.0;
-                        float _2050 = (_2046 ? _2040 : _2039) / max(abs(_2035), 9.9999996826552253889678874634872e-21);
-                        vec2 _2052 = vec2(_2033, _2035) * min(_2045, _2050);
-                        bool _2053 = _2050 <= _2045;
-                        float _2098;
-                        if ((_2053 && (_2035 < 0.0)) && (texelFetch(waxBuffer1, int(_1802)).x < 0.5))
-                        {
-                            _2098 = _2039 * _2052.x;
-                        }
-                        else
-                        {
-                            bool _2063 = _2045 < _2050;
-                            float _2097;
-                            if (_2063 && _2041)
-                            {
-                                _2097 = _2038 * (_2039 + (_2039 + _2052.y));
-                            }
-                            else
-                            {
-                                float _2096;
-                                if (_2053 && _2046)
-                                {
-                                    _2096 = (_2038 * (1.5 - _2023)) + (_2040 * (_2038 - _2052.x));
-                                }
-                                else
-                                {
-                                    float _2095;
-                                    if (_2063)
-                                    {
-                                        _2095 = ((_2038 * (1.5 - _2023)) + _2040) + (_2037 * (_2040 - _2052.y));
-                                    }
-                                    else
-                                    {
-                                        _2095 = 2.0 + (_2039 * _2052.x);
-                                    }
-                                    _2096 = _2095;
-                                }
-                                _2097 = _2096;
-                            }
-                            _2098 = _2097;
-                        }
-                        float _2099 = 0.5 * _2098;
-                        float _2101;
-                        vec4 _2104;
-                        _2101 = _1793;
-                        _2104 = _1794;
-                        float _2107;
-                        int _2109;
-                        float _2102;
-                        vec4 _2105;
-                        float _2106 = _2099;
-                        int _2108 = 0;
-                        SPIRV_CROSS_LOOP
-                        for (; _2108 < _1799; _2101 = _2102, _2104 = _2105, _2106 = _2107, _2108 = _2109)
-                        {
-                            _2109 = _2108 + 1;
-                            uint _2115 = _1802 + uint(_2109);
-                            float _2118 = 6.283185482025146484375 * texelFetch(waxBuffer1, int(_2115)).x;
-                            float _2119 = sin(_2118);
-                            float _2121 = -cos(_2118);
-                            bool _2123 = _2119 > 0.0;
-                            float _2127 = (_2123 ? _2038 : _2037) / max(abs(_2119), 9.9999996826552253889678874634872e-21);
-                            bool _2128 = _2121 > 0.0;
-                            float _2132 = (_2128 ? _2040 : _2039) / max(abs(_2121), 9.9999996826552253889678874634872e-21);
-                            vec2 _2134 = vec2(_2119, _2121) * min(_2127, _2132);
-                            bool _2135 = _2132 <= _2127;
-                            float _2180;
-                            if ((_2135 && (_2121 < 0.0)) && (texelFetch(waxBuffer1, int(_2115)).x < 0.5))
-                            {
-                                _2180 = _2039 * _2134.x;
-                            }
-                            else
-                            {
-                                bool _2145 = _2127 < _2132;
-                                float _2179;
-                                if (_2145 && _2123)
-                                {
-                                    _2179 = _2038 * (_2039 + (_2039 + _2134.y));
-                                }
-                                else
-                                {
-                                    float _2178;
-                                    if (_2135 && _2128)
-                                    {
-                                        _2178 = (_2038 * (1.5 - _2023)) + (_2040 * (_2038 - _2134.x));
-                                    }
-                                    else
-                                    {
-                                        float _2177;
-                                        if (_2145)
-                                        {
-                                            _2177 = ((_2038 * (1.5 - _2023)) + _2040) + (_2037 * (_2040 - _2134.y));
-                                        }
-                                        else
-                                        {
-                                            _2177 = 2.0 + (_2039 * _2134.x);
-                                        }
-                                        _2178 = _2177;
-                                    }
-                                    _2179 = _2178;
-                                }
-                                _2180 = _2179;
-                            }
-                            _2107 = (_2109 < _1799) ? (0.5 * _2180) : (_2099 + 1.0);
-                            uint _2188 = wax_TEXCOORD1 + uint(texelFetch(waxBuffer1, int(_1802 + uint(_2108))).y);
-                            float _2191 = _1160 * max(_2107 - _2106, 0.0);
-                            SPIRV_CROSS_BRANCH
-                            if (_2191 > 0.0)
-                            {
-                                float _2398;
-                                vec4 _2399;
-                                SPIRV_CROSS_BRANCH
-                                if (texelFetch(waxBuffer1, int(_2188)).x >= 0.0)
-                                {
-                                    uint _2201 = uint(texelFetch(waxBuffer1, int(_2188)).x);
-                                    vec4 _2387;
-                                    SPIRV_CROSS_BRANCH
-                                    if (texelFetch(waxBuffer1, int(_2188)).y >= 0.0)
-                                    {
-                                        uint _2209 = uint(max(texelFetch(waxBuffer1, int(_2188)).y, 0.0));
-                                        uint _2212 = uint(texelFetch(waxBuffer0, int(_2209)).x);
-                                        uint _2213 = _2209 + 1u;
-                                        vec4 _2218;
-                                        _2218 = vec4(0.0);
-                                        uint _2216;
-                                        vec4 _2219;
-                                        SPIRV_CROSS_LOOP
-                                        for (uint _2215 = _2213, _2220 = 0u; _2220 < _2212; _2215 = _2216, _2218 = _2219, _2220++)
-                                        {
-                                            uint _2227 = _2215 + 1u;
-                                            uint _2234 = uint(texelFetch(waxBuffer0, int(_2215)).z);
-                                            uint _2235 = _2215 + 3u;
-                                            uint _2238 = _2235 + ((_2234 + 3u) >> 2u);
-                                            SPIRV_CROSS_BRANCH
-                                            if (_2234 > 0u)
-                                            {
-                                                float _2259;
-                                                if (texelFetch(waxBuffer0, int(_2215)).x < 0.5)
-                                                {
-                                                    _2259 = ((texelFetch(waxBuffer0, int(_2227)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_2227)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_2227)).z;
-                                                }
-                                                else
-                                                {
-                                                    _2259 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_2227)).xy) * texelFetch(waxBuffer0, int(_2227)).zw);
-                                                }
-                                                float _2260 = clamp(_2259, -10000000.0, 10000000.0);
-                                                uint _2262 = uint(texelFetch(waxBuffer0, int(_2215)).y);
-                                                float _2282;
-                                                if (_2262 == 0u)
-                                                {
-                                                    _2282 = clamp(_2260, 0.0, 1.0);
-                                                }
-                                                else
-                                                {
-                                                    float _2281;
-                                                    if (_2262 == 1u)
-                                                    {
-                                                        _2281 = _2260 - floor(_2260);
-                                                    }
-                                                    else
-                                                    {
-                                                        float _2277 = _2260 - (2.0 * floor(_2260 * 0.5));
-                                                        _2281 = (_2277 > 1.0) ? (2.0 - _2277) : _2277;
-                                                    }
-                                                    _2282 = _2281;
-                                                }
-                                                int _2284;
-                                                _2284 = -1;
-                                                int _2285;
-                                                SPIRV_CROSS_LOOP
-                                                for (uint _2287 = 0u; _2287 < _2234; _2284 = _2285, _2287++)
-                                                {
-                                                    uint _2293 = _2235 + (_2287 >> 2u);
-                                                    uint _2296 = _2287 & 3u;
-                                                    if (((_2296 == 0u) ? texelFetch(waxBuffer0, int(_2293)).x : ((_2296 == 1u) ? texelFetch(waxBuffer0, int(_2293)).y : ((_2296 == 2u) ? texelFetch(waxBuffer0, int(_2293)).z : texelFetch(waxBuffer0, int(_2293)).w))) <= _2282)
-                                                    {
-                                                        _2285 = int(_2287);
-                                                    }
-                                                    else
-                                                    {
-                                                        _2285 = _2284;
-                                                    }
-                                                }
-                                                vec4 _2369;
-                                                if (_2284 < 0)
-                                                {
-                                                    _2369 = texelFetch(waxBuffer0, int(_2238));
-                                                }
-                                                else
-                                                {
-                                                    uint _2317 = uint(_2284);
-                                                    vec4 _2368;
-                                                    if (_2317 == (_2234 - 1u))
-                                                    {
-                                                        _2368 = texelFetch(waxBuffer0, int(_2238 + _2317));
-                                                    }
-                                                    else
-                                                    {
-                                                        uint _2327 = _2235 + (_2317 >> 2u);
-                                                        uint _2330 = _2317 & 3u;
-                                                        float _2340 = (_2330 == 0u) ? texelFetch(waxBuffer0, int(_2327)).x : ((_2330 == 1u) ? texelFetch(waxBuffer0, int(_2327)).y : ((_2330 == 2u) ? texelFetch(waxBuffer0, int(_2327)).z : texelFetch(waxBuffer0, int(_2327)).w));
-                                                        uint _2341 = _2317 + 1u;
-                                                        uint _2343 = _2235 + (_2341 >> 2u);
-                                                        uint _2346 = _2341 & 3u;
-                                                        uint _2357 = _2238 + _2317;
-                                                        _2368 = mix(texelFetch(waxBuffer0, int(_2357)), texelFetch(waxBuffer0, int(_2357 + 1u)), vec4((_2282 - _2340) / (((_2346 == 0u) ? texelFetch(waxBuffer0, int(_2343)).x : ((_2346 == 1u) ? texelFetch(waxBuffer0, int(_2343)).y : ((_2346 == 2u) ? texelFetch(waxBuffer0, int(_2343)).z : texelFetch(waxBuffer0, int(_2343)).w))) - _2340)));
-                                                    }
-                                                    _2369 = _2368;
-                                                }
-                                                vec4 _2382;
-                                                if (texelFetch(waxBuffer0, int(_2215 + 2u)).x > 0.5)
-                                                {
-                                                    vec3 _2380 = mix(pow(abs((_2369.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _2369.xyz * vec3(0.077399380505084991455078125), step(_2369.xyz, vec3(0.040449999272823333740234375)));
-                                                    _2382 = vec4(_2380.x, _2380.y, _2380.z, _2369.w);
-                                                }
-                                                else
-                                                {
-                                                    _2382 = _2369;
-                                                }
-                                                _2219 = _2218 + (_2382 * texelFetch(waxBuffer0, int(_2215)).w);
-                                            }
-                                            else
-                                            {
-                                                _2219 = _2218;
-                                            }
-                                            _2216 = _2238 + _2234;
-                                        }
-                                        _2387 = texelFetch(waxBuffer0, int(_2201)) * _2218;
-                                    }
-                                    else
-                                    {
-                                        _2387 = texelFetch(waxBuffer0, int(_2201));
-                                    }
-                                    _2398 = _2101 + _2191;
-                                    _2399 = _2104 + (vec4(_2387.xyz * _2387.w, _2387.w) * _2191);
-                                }
-                                else
-                                {
-                                    _2398 = _2101;
-                                    _2399 = _2104;
-                                }
-                                _2102 = _2398;
-                                _2105 = _2399;
-                            }
-                            else
-                            {
-                                _2102 = _2101;
-                                _2105 = _2104;
-                            }
-                        }
-                        _2796 = _2104;
-                        _2797 = _2101;
-                    }
-                    else
-                    {
-                        vec2 _2401 = abs(_865);
-                        float _2402 = _2401.x;
-                        float _2403 = _2401.y;
-                        float _2413 = ((_2402 <= _2403) ? atan(_2402 / max(_2403, 9.9999996826552253889678874634872e-21)) : (1.5707962512969970703125 - atan(_2403 / max(_2402, 9.9999996826552253889678874634872e-21)))) * 0.15915493667125701904296875;
-                        float _2418;
-                        if (_2023 >= 0.0)
-                        {
-                            _2418 = 0.5 - _2413;
-                        }
-                        else
-                        {
-                            _2418 = _2413;
-                        }
-                        float _2423;
-                        if (_2020 < 0.0)
-                        {
-                            _2423 = 1.0 - _2418;
-                        }
-                        else
-                        {
-                            _2423 = _2418;
-                        }
-                        float _2425 = (_866 > 9.9999997473787516355514526367188e-05) ? fract(_2423) : 0.0;
-                        uint _2426 = uint(_1799);
-                        uint _2431;
-                        _2431 = 0u;
-                        uint _2429;
-                        uint _2432;
-                        SPIRV_CROSS_LOOP
-                        for (uint _2428 = _2426; _2431 < _2428; _2428 = _2429, _2431 = _2432)
-                        {
-                            uint _2437 = (_2431 + _2428) / 2u;
-                            bool _2441 = texelFetch(waxBuffer1, int(_1802 + _2437)).x <= _2425;
-                            if (_2441)
-                            {
-                                _2432 = _2437 + 1u;
-                            }
-                            else
-                            {
-                                _2432 = _2431;
-                            }
-                            _2429 = _2441 ? _2428 : _2437;
-                        }
-                        int _2449 = _1799 - 1;
-                        int _2450 = (_2431 > 0u) ? (int(_2431) - 1) : _2449;
-                        float _2453 = min(0.25, 0.112539537250995635986328125 / max(_866, 9.9999997473787516355514526367188e-05));
-                        int _2461;
-                        float _2464;
-                        _2461 = _2450;
-                        _2464 = fract(_2425 - texelFetch(waxBuffer1, int(_1802 + uint(_2450))).x);
-                        SPIRV_CROSS_LOOP
-                        for (int _2466 = 0; (_2466 < _2449) && (_2464 < _2453); )
-                        {
-                            bool _2472 = _2461 > 0;
-                            int _2473 = _2461 - 1;
-                            int _2462 = _2472 ? _2473 : _2449;
-                            uint _2474 = uint(_2461);
-                            _2461 = _2462;
-                            _2464 += fract(texelFetch(waxBuffer1, int(_1802 + _2474)).x - texelFetch(waxBuffer1, int(_1802 + uint(_2462))).x);
-                            _2466++;
-                        }
-                        float _2484 = -_2464;
-                        vec4 _2490;
-                        vec4 _2495;
-                        _2490 = texelFetch(waxBuffer1, int(_1802 + uint(_2461)));
-                        _2495 = _1794;
-                        vec4 _2491;
-                        float _2500;
-                        int _2502;
-                        float _2494;
-                        vec4 _2496;
-                        float _2498;
-                        vec4 _2794;
-                        float _2795;
-                        float _2493 = _1793;
-                        float _2497 = 1.0;
-                        float _2499 = _2484;
-                        int _2501 = _2461;
-                        int _2503 = 0;
-                        SPIRV_CROSS_LOOP
-                        for (;;)
-                        {
-                            if (_2503 < _1799)
-                            {
-                                int _2508 = _2501 + 1;
-                                _2502 = (_2508 < _1799) ? _2508 : 0;
-                                _2491 = texelFetch(waxBuffer1, int(_1802 + uint(_2502)));
-                                _2500 = _2499 + fract(_2491.x - _2490.x);
-                                if ((_2503 < _2449) && (_2500 < _2453))
-                                {
-                                    float _2522 = 6.283185482025146484375 * _2491.x;
-                                    float _2526 = (-_866) * sin(6.283185482025146484375 * _2500);
-                                    vec2 _2530 = abs(vec2(cos(_2522), sin(_2522)));
-                                    float _2531 = _2530.x;
-                                    float _2532 = _2530.y;
-                                    float _2533 = max(_2531, _2532);
-                                    float _2534 = min(_2531, _2532);
-                                    float _2535 = _2533 + _2534;
-                                    float _2537 = _2526 + (0.5 * _2535);
-                                    float _2576;
-                                    if (_2534 < 0.001000000047497451305389404296875)
-                                    {
-                                        _2576 = clamp(_2526 + 0.5, 0.0, 1.0);
-                                    }
-                                    else
-                                    {
-                                        float _2575;
-                                        if (_2537 >= _2535)
-                                        {
-                                            _2575 = 1.0;
-                                        }
-                                        else
-                                        {
-                                            float _2574;
-                                            if (_2537 > 0.0)
-                                            {
-                                                float _2573;
-                                                if (_2537 < _2534)
-                                                {
-                                                    _2573 = (_2537 * _2537) / ((2.0 * _2533) * _2534);
-                                                }
-                                                else
-                                                {
-                                                    float _2572;
-                                                    if (_2537 > _2533)
-                                                    {
-                                                        float _2563 = _2535 - _2537;
-                                                        _2572 = 1.0 - ((_2563 * _2563) / ((2.0 * _2533) * _2534));
-                                                    }
-                                                    else
-                                                    {
-                                                        _2572 = (_2537 - (0.5 * _2534)) / _2533;
-                                                    }
-                                                    _2573 = _2572;
-                                                }
-                                                _2574 = _2573;
-                                            }
-                                            else
-                                            {
-                                                _2574 = 0.0;
-                                            }
-                                            _2575 = _2574;
-                                        }
-                                        _2576 = _2575;
-                                    }
-                                    _2498 = min(_2497, _2576);
-                                }
-                                else
-                                {
-                                    _2498 = 0.0;
-                                }
-                                uint _2580 = wax_TEXCOORD1 + uint(_2490.y);
-                                float _2582 = _1160 * (_2497 - _2498);
-                                SPIRV_CROSS_BRANCH
-                                if (_2582 > 0.0)
-                                {
-                                    vec4 _2789;
-                                    float _2790;
-                                    SPIRV_CROSS_BRANCH
-                                    if (texelFetch(waxBuffer1, int(_2580)).x >= 0.0)
-                                    {
-                                        uint _2592 = uint(texelFetch(waxBuffer1, int(_2580)).x);
-                                        vec4 _2778;
-                                        SPIRV_CROSS_BRANCH
-                                        if (texelFetch(waxBuffer1, int(_2580)).y >= 0.0)
-                                        {
-                                            uint _2600 = uint(max(texelFetch(waxBuffer1, int(_2580)).y, 0.0));
-                                            uint _2603 = uint(texelFetch(waxBuffer0, int(_2600)).x);
-                                            uint _2604 = _2600 + 1u;
-                                            vec4 _2609;
-                                            _2609 = vec4(0.0);
-                                            uint _2607;
-                                            vec4 _2610;
-                                            SPIRV_CROSS_LOOP
-                                            for (uint _2606 = _2604, _2611 = 0u; _2611 < _2603; _2606 = _2607, _2609 = _2610, _2611++)
-                                            {
-                                                uint _2618 = _2606 + 1u;
-                                                uint _2625 = uint(texelFetch(waxBuffer0, int(_2606)).z);
-                                                uint _2626 = _2606 + 3u;
-                                                uint _2629 = _2626 + ((_2625 + 3u) >> 2u);
-                                                SPIRV_CROSS_BRANCH
-                                                if (_2625 > 0u)
-                                                {
-                                                    float _2650;
-                                                    if (texelFetch(waxBuffer0, int(_2606)).x < 0.5)
-                                                    {
-                                                        _2650 = ((texelFetch(waxBuffer0, int(_2618)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_2618)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_2618)).z;
-                                                    }
-                                                    else
-                                                    {
-                                                        _2650 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_2618)).xy) * texelFetch(waxBuffer0, int(_2618)).zw);
-                                                    }
-                                                    float _2651 = clamp(_2650, -10000000.0, 10000000.0);
-                                                    uint _2653 = uint(texelFetch(waxBuffer0, int(_2606)).y);
-                                                    float _2673;
-                                                    if (_2653 == 0u)
-                                                    {
-                                                        _2673 = clamp(_2651, 0.0, 1.0);
-                                                    }
-                                                    else
-                                                    {
-                                                        float _2672;
-                                                        if (_2653 == 1u)
-                                                        {
-                                                            _2672 = _2651 - floor(_2651);
-                                                        }
-                                                        else
-                                                        {
-                                                            float _2668 = _2651 - (2.0 * floor(_2651 * 0.5));
-                                                            _2672 = (_2668 > 1.0) ? (2.0 - _2668) : _2668;
-                                                        }
-                                                        _2673 = _2672;
-                                                    }
-                                                    int _2675;
-                                                    _2675 = -1;
-                                                    int _2676;
-                                                    SPIRV_CROSS_LOOP
-                                                    for (uint _2678 = 0u; _2678 < _2625; _2675 = _2676, _2678++)
-                                                    {
-                                                        uint _2684 = _2626 + (_2678 >> 2u);
-                                                        uint _2687 = _2678 & 3u;
-                                                        if (((_2687 == 0u) ? texelFetch(waxBuffer0, int(_2684)).x : ((_2687 == 1u) ? texelFetch(waxBuffer0, int(_2684)).y : ((_2687 == 2u) ? texelFetch(waxBuffer0, int(_2684)).z : texelFetch(waxBuffer0, int(_2684)).w))) <= _2673)
-                                                        {
-                                                            _2676 = int(_2678);
-                                                        }
-                                                        else
-                                                        {
-                                                            _2676 = _2675;
-                                                        }
-                                                    }
-                                                    vec4 _2760;
-                                                    if (_2675 < 0)
-                                                    {
-                                                        _2760 = texelFetch(waxBuffer0, int(_2629));
-                                                    }
-                                                    else
-                                                    {
-                                                        uint _2708 = uint(_2675);
-                                                        vec4 _2759;
-                                                        if (_2708 == (_2625 - 1u))
-                                                        {
-                                                            _2759 = texelFetch(waxBuffer0, int(_2629 + _2708));
-                                                        }
-                                                        else
-                                                        {
-                                                            uint _2718 = _2626 + (_2708 >> 2u);
-                                                            uint _2721 = _2708 & 3u;
-                                                            float _2731 = (_2721 == 0u) ? texelFetch(waxBuffer0, int(_2718)).x : ((_2721 == 1u) ? texelFetch(waxBuffer0, int(_2718)).y : ((_2721 == 2u) ? texelFetch(waxBuffer0, int(_2718)).z : texelFetch(waxBuffer0, int(_2718)).w));
-                                                            uint _2732 = _2708 + 1u;
-                                                            uint _2734 = _2626 + (_2732 >> 2u);
-                                                            uint _2737 = _2732 & 3u;
-                                                            uint _2748 = _2629 + _2708;
-                                                            _2759 = mix(texelFetch(waxBuffer0, int(_2748)), texelFetch(waxBuffer0, int(_2748 + 1u)), vec4((_2673 - _2731) / (((_2737 == 0u) ? texelFetch(waxBuffer0, int(_2734)).x : ((_2737 == 1u) ? texelFetch(waxBuffer0, int(_2734)).y : ((_2737 == 2u) ? texelFetch(waxBuffer0, int(_2734)).z : texelFetch(waxBuffer0, int(_2734)).w))) - _2731)));
-                                                        }
-                                                        _2760 = _2759;
-                                                    }
-                                                    vec4 _2773;
-                                                    if (texelFetch(waxBuffer0, int(_2606 + 2u)).x > 0.5)
-                                                    {
-                                                        vec3 _2771 = mix(pow(abs((_2760.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _2760.xyz * vec3(0.077399380505084991455078125), step(_2760.xyz, vec3(0.040449999272823333740234375)));
-                                                        _2773 = vec4(_2771.x, _2771.y, _2771.z, _2760.w);
-                                                    }
-                                                    else
-                                                    {
-                                                        _2773 = _2760;
-                                                    }
-                                                    _2610 = _2609 + (_2773 * texelFetch(waxBuffer0, int(_2606)).w);
-                                                }
-                                                else
-                                                {
-                                                    _2610 = _2609;
-                                                }
-                                                _2607 = _2629 + _2625;
-                                            }
-                                            _2778 = texelFetch(waxBuffer0, int(_2592)) * _2609;
-                                        }
-                                        else
-                                        {
-                                            _2778 = texelFetch(waxBuffer0, int(_2592));
-                                        }
-                                        _2789 = _2495 + (vec4(_2778.xyz * _2778.w, _2778.w) * _2582);
-                                        _2790 = _2493 + _2582;
-                                    }
-                                    else
-                                    {
-                                        _2789 = _2495;
-                                        _2790 = _2493;
-                                    }
-                                    _2496 = _2789;
-                                    _2494 = _2790;
-                                }
-                                else
-                                {
-                                    _2496 = _2495;
-                                    _2494 = _2493;
-                                }
-                                if (_2498 <= 0.0)
-                                {
-                                    _2794 = _2496;
-                                    _2795 = _2494;
-                                    break;
-                                }
-                                _2490 = _2491;
-                                _2493 = _2494;
-                                _2495 = _2496;
-                                _2497 = _2498;
-                                _2499 = _2500;
-                                _2501 = _2502;
-                                _2503++;
-                            }
-                            else
-                            {
-                                _2794 = _2495;
-                                _2795 = _2493;
-                                break;
-                            }
-                        }
-                        _2796 = _2794;
-                        _2797 = _2795;
-                    }
-                    _2798 = _2796;
-                    _2799 = _2797;
-                }
-                _2800 = _2798;
-                _2801 = _2799;
-            }
-            else
-            {
-                _2800 = _1794;
-                _2801 = _1793;
-            }
-            _3476 = _2800;
-            _3477 = _2801;
+            _140 = texelFetch(waxBuffer1, int(_78)).y;
+            _141 = vec2(_100, _103);
+            _142 = true;
         }
         else
         {
-            vec4 _3474;
-            float _3475;
-            if (_118 == 3)
+            float _112 = texelFetch(waxBuffer1, int(_75)).z - texelFetch(waxBuffer1, int(_78)).z;
+            float _116 = texelFetch(waxBuffer1, int(_75)).w - texelFetch(waxBuffer1, int(_78)).z;
+            float _137;
+            vec2 _138;
+            bool _139;
+            if (((texelFetch(waxBuffer1, int(_78)).z > 0.0) && (waxFragCoord().x > _112)) && (waxFragCoord().y > _116))
             {
-                uint _2807 = wax_TEXCOORD1 + 1u;
-                uint _2810 = wax_TEXCOORD1 + 2u;
-                float _2815 = -texelFetch(waxBuffer1, int(_2810)).y;
-                vec2 _2817 = vec2(_2815, texelFetch(waxBuffer1, int(_2810)).x);
-                int _2820 = int(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y);
-                int _2822 = int(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).z);
-                vec2 _2824 = waxFragCoord().xy - texelFetch(waxBuffer1, int(_2807)).xy;
-                float _2825 = dot(_2824, _2817);
-                vec2 _2826 = -_2817;
-                vec3 _108[6];
-                _108[0] = vec3(_2826, texelFetch(waxBuffer1, int(_2810)).w - _2825);
-                _108[1] = vec3(_2815, texelFetch(waxBuffer1, int(_2810)).x, texelFetch(waxBuffer1, int(_2810)).w + _2825);
-                _108[2] = vec3(0.0);
-                _108[3] = vec3(0.0);
-                _108[4] = vec3(0.0);
-                _108[5] = vec3(0.0);
-                float _2839 = dot(_2824, texelFetch(waxBuffer1, int(_2810)).xy);
-                int _2840 = _2820 & 7;
-                bool _2842 = _2840 == 3;
-                int _2899;
-                if ((_2840 == 1) || _2842)
-                {
-                    _108[2] = vec3(texelFetch(waxBuffer1, int(_2810)).xy, _2839);
-                    _2899 = 3;
-                }
-                else
-                {
-                    int _2898;
-                    if (_2840 == 2)
-                    {
-                        _108[2] = vec3(texelFetch(waxBuffer1, int(_2810)).xy, _2839 + texelFetch(waxBuffer1, int(_2810)).w);
-                        _2898 = 3;
-                    }
-                    else
-                    {
-                        int _2897;
-                        if (_2840 == 4)
-                        {
-                            float _2859 = (texelFetch(waxBuffer1, int(_2810)).x > 0.0) ? 1.0 : (-1.0);
-                            _108[2] = vec3(_2859, 0.0, _2824.x * _2859);
-                            _2897 = 3;
-                        }
-                        else
-                        {
-                            bool _2863 = _2840 == 5;
-                            if (_2863)
-                            {
-                                float _2868 = (texelFetch(waxBuffer1, int(_2810)).y > 0.0) ? 1.0 : (-1.0);
-                                _108[2] = vec3(0.0, _2868, _2824.y * _2868);
-                            }
-                            else
-                            {
-                                float _2875 = (float(_2820 >> 3) * 0.5) * texelFetch(waxBuffer1, int(_2810)).w;
-                                vec2 _2876 = texelFetch(waxBuffer1, int(_2810)).xy * texelFetch(waxBuffer1, int(_2810)).w;
-                                vec2 _2877 = _2817 * _2875;
-                                vec2 _2878 = _2876 - _2877;
-                                float _2880 = length(_2878);
-                                vec2 _2881 = vec2(_2880);
-                                float _2883 = texelFetch(waxBuffer1, int(_2810)).w * _2839;
-                                float _2884 = _2875 * _2825;
-                                _108[2] = vec3(_2878 / _2881, (_2883 - _2884) / _2880);
-                                _108[3] = vec3((_2876 + _2877) / _2881, (_2883 + _2884) / _2880);
-                            }
-                            _2897 = _2863 ? 3 : 4;
-                        }
-                        _2898 = _2897;
-                    }
-                    _2899 = _2898;
-                }
-                vec2 _2901 = -texelFetch(waxBuffer1, int(_2810)).xy;
-                vec2 _2902 = waxFragCoord().xy - texelFetch(waxBuffer1, int(_2807)).zw;
-                float _2903 = dot(_2902, _2901);
-                int _2904 = _2822 & 7;
-                bool _2906 = _2904 == 3;
-                int _2982;
-                if ((_2904 == 1) || _2906)
-                {
-                    _108[_2899] = vec3(_2901, _2903);
-                    _2982 = _2899 + 1;
-                }
-                else
-                {
-                    int _2981;
-                    if (_2904 == 2)
-                    {
-                        _108[_2899] = vec3(_2901, _2903 + texelFetch(waxBuffer1, int(_2810)).w);
-                        _2981 = _2899 + 1;
-                    }
-                    else
-                    {
-                        int _2980;
-                        if (_2904 == 4)
-                        {
-                            float _2932 = (_2901.x > 0.0) ? 1.0 : (-1.0);
-                            _108[_2899] = vec3(_2932, 0.0, _2902.x * _2932);
-                            _2980 = _2899 + 1;
-                        }
-                        else
-                        {
-                            int _2979;
-                            if (_2904 == 5)
-                            {
-                                float _2944 = (_2901.y > 0.0) ? 1.0 : (-1.0);
-                                _108[_2899] = vec3(0.0, _2944, _2902.y * _2944);
-                                _2979 = _2899 + 1;
-                            }
-                            else
-                            {
-                                float _2953 = (float(_2822 >> 3) * 0.5) * texelFetch(waxBuffer1, int(_2810)).w;
-                                vec2 _2955 = _2901 * texelFetch(waxBuffer1, int(_2810)).w;
-                                vec2 _2956 = _2826 * _2953;
-                                vec2 _2957 = _2955 - _2956;
-                                float _2959 = length(_2957);
-                                vec2 _2960 = vec2(_2959);
-                                float _2962 = texelFetch(waxBuffer1, int(_2810)).w * _2903;
-                                float _2963 = _2953 * dot(_2902, _2826);
-                                _108[_2899] = vec3(_2957 / _2960, (_2962 - _2963) / _2959);
-                                _108[_2899 + 1] = vec3((_2955 + _2956) / _2960, (_2962 + _2963) / _2959);
-                                _2979 = _2899 + 2;
-                            }
-                            _2980 = _2979;
-                        }
-                        _2981 = _2980;
-                    }
-                    _2982 = _2981;
-                }
-                vec3 _109[6] = _108;
-                bool _2985;
-                bool _2988;
-                _2985 = true;
-                _2988 = false;
-                for (int _2990 = 0; _2990 < _2982; )
-                {
-                    _2985 = (_109[_2990].z < 0.707199990749359130859375) ? false : _2985;
-                    _2988 = (_109[_2990].z <= (-0.707199990749359130859375)) ? true : _2988;
-                    _2990++;
-                }
-                float _3097;
-                SPIRV_CROSS_BRANCH
-                if ((!_2988) && (!_2985))
-                {
-                    vec2 _106[10];
-                    _106[0] = vec2(-0.5);
-                    _106[1] = vec2(0.5, -0.5);
-                    _106[2] = vec2(0.5);
-                    _106[3] = vec2(-0.5, 0.5);
-                    int _3010;
-                    int _3013;
-                    _3010 = 4;
-                    _3013 = 0;
-                    vec2 _107[10];
-                    int _3011;
-                    bool _3016;
-                    SPIRV_CROSS_LOOP
-                    for (;;)
-                    {
-                        _3016 = _3010 >= 3;
-                        if ((_3013 < _2982) && _3016)
-                        {
-                            if (_109[_3013].z < 0.707199990749359130859375)
-                            {
-                                int _3027;
-                                _3027 = 0;
-                                int _3031;
-                                int _3028;
-                                SPIRV_CROSS_LOOP
-                                for (int _3030 = 0; _3030 < _3010; _3027 = _3028, _3030 = _3031)
-                                {
-                                    _3031 = _3030 + 1;
-                                    int _3038 = (_3031 < _3010) ? _3031 : 0;
-                                    float _3043 = _109[_3013].z + dot(_106[_3030], _109[_3013].xy);
-                                    float _3045 = _109[_3013].z + dot(_106[_3038], _109[_3013].xy);
-                                    bool _3046 = _3043 >= 0.0;
-                                    int _3051;
-                                    if (_3046)
-                                    {
-                                        _107[_3027] = _106[_3030];
-                                        _3051 = _3027 + 1;
-                                    }
-                                    else
-                                    {
-                                        _3051 = _3027;
-                                    }
-                                    if (_3046 != (_3045 >= 0.0))
-                                    {
-                                        _107[_3051] = _106[_3030] + ((_106[_3038] - _106[_3030]) * (_3043 / (_3043 - _3045)));
-                                        _3028 = _3051 + 1;
-                                    }
-                                    else
-                                    {
-                                        _3028 = _3051;
-                                    }
-                                }
-                                SPIRV_CROSS_LOOP
-                                for (int _3064 = 0; _3064 < _3027; )
-                                {
-                                    _106[_3064] = _107[_3064];
-                                    _3064++;
-                                }
-                                _3011 = _3027;
-                            }
-                            else
-                            {
-                                _3011 = _3010;
-                            }
-                            _3010 = _3011;
-                            _3013++;
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
-                    float _3073;
-                    _3073 = 0.0;
-                    SPIRV_CROSS_LOOP
-                    for (int _3076 = 0; (_3076 < _3010) && _3016; )
-                    {
-                        int _3077 = _3076 + 1;
-                        int _3084 = (_3077 < _3010) ? _3077 : 0;
-                        _3073 += ((_106[_3076].x * _106[_3084].y) - (_106[_3076].y * _106[_3084].x));
-                        _3076 = _3077;
-                    }
-                    _3097 = clamp(abs(_3073) * 0.5, 0.0, 1.0);
-                }
-                else
-                {
-                    _3097 = _2988 ? 0.0 : 1.0;
-                }
-                float _3456;
-                SPIRV_CROSS_BRANCH
-                if (_2842 || _2906)
-                {
-                    float _3101 = length(_2824);
-                    bool _3102 = texelFetch(waxBuffer1, int(_2810)).w > 0.0;
-                    float _3159;
-                    if (_3102)
-                    {
-                        float _3106 = texelFetch(waxBuffer1, int(_2810)).w - _3101;
-                        vec2 _3109 = abs(_2824 / vec2(_3101));
-                        float _3110 = _3109.x;
-                        float _3111 = _3109.y;
-                        float _3112 = max(_3110, _3111);
-                        float _3113 = min(_3110, _3111);
-                        float _3114 = _3112 + _3113;
-                        float _3116 = _3106 + (0.5 * _3114);
-                        float _3155;
-                        if (_3113 < 0.001000000047497451305389404296875)
-                        {
-                            _3155 = clamp(_3106 + 0.5, 0.0, 1.0);
-                        }
-                        else
-                        {
-                            float _3154;
-                            if (_3116 >= _3114)
-                            {
-                                _3154 = 1.0;
-                            }
-                            else
-                            {
-                                float _3153;
-                                if (_3116 > 0.0)
-                                {
-                                    float _3152;
-                                    if (_3116 < _3113)
-                                    {
-                                        _3152 = (_3116 * _3116) / ((2.0 * _3112) * _3113);
-                                    }
-                                    else
-                                    {
-                                        float _3151;
-                                        if (_3116 > _3112)
-                                        {
-                                            float _3142 = _3114 - _3116;
-                                            _3151 = 1.0 - ((_3142 * _3142) / ((2.0 * _3112) * _3113));
-                                        }
-                                        else
-                                        {
-                                            _3151 = (_3116 - (0.5 * _3113)) / _3112;
-                                        }
-                                        _3152 = _3151;
-                                    }
-                                    _3153 = _3152;
-                                }
-                                else
-                                {
-                                    _3153 = 0.0;
-                                }
-                                _3154 = _3153;
-                            }
-                            _3155 = _3154;
-                        }
-                        _3159 = (_3101 > 0.001000000047497451305389404296875) ? _3155 : clamp(texelFetch(waxBuffer1, int(_2810)).w + 0.5, 0.0, 1.0);
-                    }
-                    else
-                    {
-                        _3159 = 0.0;
-                    }
-                    float _3160 = _2842 ? _3159 : 0.0;
-                    float _3161 = length(_2902);
-                    float _3218;
-                    if (_3102)
-                    {
-                        float _3165 = texelFetch(waxBuffer1, int(_2810)).w - _3161;
-                        vec2 _3168 = abs(_2902 / vec2(_3161));
-                        float _3169 = _3168.x;
-                        float _3170 = _3168.y;
-                        float _3171 = max(_3169, _3170);
-                        float _3172 = min(_3169, _3170);
-                        float _3173 = _3171 + _3172;
-                        float _3175 = _3165 + (0.5 * _3173);
-                        float _3214;
-                        if (_3172 < 0.001000000047497451305389404296875)
-                        {
-                            _3214 = clamp(_3165 + 0.5, 0.0, 1.0);
-                        }
-                        else
-                        {
-                            float _3213;
-                            if (_3175 >= _3173)
-                            {
-                                _3213 = 1.0;
-                            }
-                            else
-                            {
-                                float _3212;
-                                if (_3175 > 0.0)
-                                {
-                                    float _3211;
-                                    if (_3175 < _3172)
-                                    {
-                                        _3211 = (_3175 * _3175) / ((2.0 * _3171) * _3172);
-                                    }
-                                    else
-                                    {
-                                        float _3210;
-                                        if (_3175 > _3171)
-                                        {
-                                            float _3201 = _3173 - _3175;
-                                            _3210 = 1.0 - ((_3201 * _3201) / ((2.0 * _3171) * _3172));
-                                        }
-                                        else
-                                        {
-                                            _3210 = (_3175 - (0.5 * _3172)) / _3171;
-                                        }
-                                        _3211 = _3210;
-                                    }
-                                    _3212 = _3211;
-                                }
-                                else
-                                {
-                                    _3212 = 0.0;
-                                }
-                                _3213 = _3212;
-                            }
-                            _3214 = _3213;
-                        }
-                        _3218 = (_3161 > 0.001000000047497451305389404296875) ? _3214 : clamp(texelFetch(waxBuffer1, int(_2810)).w + 0.5, 0.0, 1.0);
-                    }
-                    else
-                    {
-                        _3218 = 0.0;
-                    }
-                    float _3219 = _2906 ? _3218 : 0.0;
-                    vec3 _110[6] = _108;
-                    bool _3222;
-                    bool _3225;
-                    _3222 = true;
-                    _3225 = false;
-                    for (int _3227 = 2; _3227 < _2899; )
-                    {
-                        _3222 = (_110[_3227].z < 0.707199990749359130859375) ? false : _3222;
-                        _3225 = (_110[_3227].z <= (-0.707199990749359130859375)) ? true : _3225;
-                        _3227++;
-                    }
-                    float _3334;
-                    SPIRV_CROSS_BRANCH
-                    if ((!_3225) && (!_3222))
-                    {
-                        vec2 _104[10];
-                        _104[0] = vec2(-0.5);
-                        _104[1] = vec2(0.5, -0.5);
-                        _104[2] = vec2(0.5);
-                        _104[3] = vec2(-0.5, 0.5);
-                        int _3247;
-                        int _3250;
-                        _3247 = 4;
-                        _3250 = 2;
-                        vec2 _105[10];
-                        int _3248;
-                        bool _3253;
-                        SPIRV_CROSS_LOOP
-                        for (;;)
-                        {
-                            _3253 = _3247 >= 3;
-                            if ((_3250 < _2899) && _3253)
-                            {
-                                if (_110[_3250].z < 0.707199990749359130859375)
-                                {
-                                    int _3264;
-                                    _3264 = 0;
-                                    int _3268;
-                                    int _3265;
-                                    SPIRV_CROSS_LOOP
-                                    for (int _3267 = 0; _3267 < _3247; _3264 = _3265, _3267 = _3268)
-                                    {
-                                        _3268 = _3267 + 1;
-                                        int _3275 = (_3268 < _3247) ? _3268 : 0;
-                                        float _3280 = _110[_3250].z + dot(_104[_3267], _110[_3250].xy);
-                                        float _3282 = _110[_3250].z + dot(_104[_3275], _110[_3250].xy);
-                                        bool _3283 = _3280 >= 0.0;
-                                        int _3288;
-                                        if (_3283)
-                                        {
-                                            _105[_3264] = _104[_3267];
-                                            _3288 = _3264 + 1;
-                                        }
-                                        else
-                                        {
-                                            _3288 = _3264;
-                                        }
-                                        if (_3283 != (_3282 >= 0.0))
-                                        {
-                                            _105[_3288] = _104[_3267] + ((_104[_3275] - _104[_3267]) * (_3280 / (_3280 - _3282)));
-                                            _3265 = _3288 + 1;
-                                        }
-                                        else
-                                        {
-                                            _3265 = _3288;
-                                        }
-                                    }
-                                    SPIRV_CROSS_LOOP
-                                    for (int _3301 = 0; _3301 < _3264; )
-                                    {
-                                        _104[_3301] = _105[_3301];
-                                        _3301++;
-                                    }
-                                    _3248 = _3264;
-                                }
-                                else
-                                {
-                                    _3248 = _3247;
-                                }
-                                _3247 = _3248;
-                                _3250++;
-                            }
-                            else
-                            {
-                                break;
-                            }
-                        }
-                        float _3310;
-                        _3310 = 0.0;
-                        SPIRV_CROSS_LOOP
-                        for (int _3313 = 0; (_3313 < _3247) && _3253; )
-                        {
-                            int _3314 = _3313 + 1;
-                            int _3321 = (_3314 < _3247) ? _3314 : 0;
-                            _3310 += ((_104[_3313].x * _104[_3321].y) - (_104[_3313].y * _104[_3321].x));
-                            _3313 = _3314;
-                        }
-                        _3334 = clamp(abs(_3310) * 0.5, 0.0, 1.0);
-                    }
-                    else
-                    {
-                        _3334 = _3225 ? 0.0 : 1.0;
-                    }
-                    vec3 _111[6] = _108;
-                    bool _3338;
-                    bool _3341;
-                    _3338 = true;
-                    _3341 = false;
-                    for (int _3343 = _2899; _3343 < _2982; )
-                    {
-                        _3338 = (_111[_3343].z < 0.707199990749359130859375) ? false : _3338;
-                        _3341 = (_111[_3343].z <= (-0.707199990749359130859375)) ? true : _3341;
-                        _3343++;
-                    }
-                    float _3450;
-                    SPIRV_CROSS_BRANCH
-                    if ((!_3341) && (!_3338))
-                    {
-                        vec2 _102[10];
-                        _102[0] = vec2(-0.5);
-                        _102[1] = vec2(0.5, -0.5);
-                        _102[2] = vec2(0.5);
-                        _102[3] = vec2(-0.5, 0.5);
-                        int _3363;
-                        int _3366;
-                        _3363 = 4;
-                        _3366 = _2899;
-                        vec2 _103[10];
-                        int _3364;
-                        bool _3369;
-                        SPIRV_CROSS_LOOP
-                        for (;;)
-                        {
-                            _3369 = _3363 >= 3;
-                            if ((_3366 < _2982) && _3369)
-                            {
-                                if (_111[_3366].z < 0.707199990749359130859375)
-                                {
-                                    int _3380;
-                                    _3380 = 0;
-                                    int _3384;
-                                    int _3381;
-                                    SPIRV_CROSS_LOOP
-                                    for (int _3383 = 0; _3383 < _3363; _3380 = _3381, _3383 = _3384)
-                                    {
-                                        _3384 = _3383 + 1;
-                                        int _3391 = (_3384 < _3363) ? _3384 : 0;
-                                        float _3396 = _111[_3366].z + dot(_102[_3383], _111[_3366].xy);
-                                        float _3398 = _111[_3366].z + dot(_102[_3391], _111[_3366].xy);
-                                        bool _3399 = _3396 >= 0.0;
-                                        int _3404;
-                                        if (_3399)
-                                        {
-                                            _103[_3380] = _102[_3383];
-                                            _3404 = _3380 + 1;
-                                        }
-                                        else
-                                        {
-                                            _3404 = _3380;
-                                        }
-                                        if (_3399 != (_3398 >= 0.0))
-                                        {
-                                            _103[_3404] = _102[_3383] + ((_102[_3391] - _102[_3383]) * (_3396 / (_3396 - _3398)));
-                                            _3381 = _3404 + 1;
-                                        }
-                                        else
-                                        {
-                                            _3381 = _3404;
-                                        }
-                                    }
-                                    SPIRV_CROSS_LOOP
-                                    for (int _3417 = 0; _3417 < _3380; )
-                                    {
-                                        _102[_3417] = _103[_3417];
-                                        _3417++;
-                                    }
-                                    _3364 = _3380;
-                                }
-                                else
-                                {
-                                    _3364 = _3363;
-                                }
-                                _3363 = _3364;
-                                _3366++;
-                            }
-                            else
-                            {
-                                break;
-                            }
-                        }
-                        float _3426;
-                        _3426 = 0.0;
-                        SPIRV_CROSS_LOOP
-                        for (int _3429 = 0; (_3429 < _3363) && _3369; )
-                        {
-                            int _3430 = _3429 + 1;
-                            int _3437 = (_3430 < _3363) ? _3430 : 0;
-                            _3426 += ((_102[_3429].x * _102[_3437].y) - (_102[_3429].y * _102[_3437].x));
-                            _3429 = _3430;
-                        }
-                        _3450 = clamp(abs(_3426) * 0.5, 0.0, 1.0);
-                    }
-                    else
-                    {
-                        _3450 = _3341 ? 0.0 : 1.0;
-                    }
-                    _3456 = max(_3097, max(min(_3160, max(_3450, _3219)), min(_3219, max(_3334, _3160))));
-                }
-                else
-                {
-                    _3456 = _3097;
-                }
-                bool _3457 = _3456 > 0.0;
-                vec4 _3472;
-                if (_3457)
-                {
-                    uint _3461 = uint(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).w);
-                    _3472 = vec4(texelFetch(waxBuffer0, int(_3461)).xyz * texelFetch(waxBuffer0, int(_3461)).w, texelFetch(waxBuffer0, int(_3461)).w) * _3456;
-                }
-                else
-                {
-                    _3472 = vec4(0.0);
-                }
-                _3474 = _3472;
-                _3475 = _3457 ? _3456 : 0.0;
+                _137 = texelFetch(waxBuffer1, int(_78)).z;
+                _138 = vec2(_112, _116);
+                _139 = true;
             }
             else
             {
-                _3474 = vec4(0.0);
-                _3475 = 0.0;
+                float _125 = texelFetch(waxBuffer1, int(_75)).x + texelFetch(waxBuffer1, int(_78)).w;
+                float _128 = texelFetch(waxBuffer1, int(_75)).w - texelFetch(waxBuffer1, int(_78)).w;
+                bool _130 = ((texelFetch(waxBuffer1, int(_78)).w > 0.0) && (waxFragCoord().x < _125)) && (waxFragCoord().y > _128);
+                vec2 _135;
+                if (_130)
+                {
+                    _135 = vec2(_125, _128);
+                }
+                else
+                {
+                    _135 = vec2(0.0);
+                }
+                _137 = _130 ? texelFetch(waxBuffer1, int(_78)).w : 0.0;
+                _138 = _135;
+                _139 = _130;
             }
-            _3476 = _3474;
-            _3477 = _3475;
+            _140 = _137;
+            _141 = _138;
+            _142 = _139;
         }
-        _3478 = _3476;
-        _3479 = _3477;
+        _143 = _140;
+        _144 = _141;
+        _145 = _142;
     }
-    if (_3479 < 0.00390625)
+    float _147 = waxFragCoord().x + 0.5;
+    float _149 = waxFragCoord().x - 0.5;
+    float _154 = waxFragCoord().y + 0.5;
+    float _156 = waxFragCoord().y - 0.5;
+    float _160 = clamp(min(_147, texelFetch(waxBuffer1, int(_75)).z) - max(_149, texelFetch(waxBuffer1, int(_75)).x), 0.0, 1.0) * clamp(min(_154, texelFetch(waxBuffer1, int(_75)).w) - max(_156, texelFetch(waxBuffer1, int(_75)).y), 0.0, 1.0);
+    float _224;
+    if (_145)
+    {
+        vec2 _163 = waxFragCoord().xy - _144;
+        float _164 = length(_163);
+        float _222;
+        if (_143 > 0.0)
+        {
+            float _169 = _143 - _164;
+            vec2 _172 = abs(_163 / vec2(_164));
+            float _173 = _172.x;
+            float _174 = _172.y;
+            float _175 = max(_173, _174);
+            float _176 = min(_173, _174);
+            float _177 = _175 + _176;
+            float _179 = _169 + (0.5 * _177);
+            float _218;
+            if (_176 < 0.001000000047497451305389404296875)
+            {
+                _218 = clamp(_169 + 0.5, 0.0, 1.0);
+            }
+            else
+            {
+                float _217;
+                if (_179 >= _177)
+                {
+                    _217 = 1.0;
+                }
+                else
+                {
+                    float _216;
+                    if (_179 > 0.0)
+                    {
+                        float _215;
+                        if (_179 < _176)
+                        {
+                            _215 = (_179 * _179) / ((2.0 * _175) * _176);
+                        }
+                        else
+                        {
+                            float _214;
+                            if (_179 > _175)
+                            {
+                                float _205 = _177 - _179;
+                                _214 = 1.0 - ((_205 * _205) / ((2.0 * _175) * _176));
+                            }
+                            else
+                            {
+                                _214 = (_179 - (0.5 * _176)) / _175;
+                            }
+                            _215 = _214;
+                        }
+                        _216 = _215;
+                    }
+                    else
+                    {
+                        _216 = 0.0;
+                    }
+                    _217 = _216;
+                }
+                _218 = _217;
+            }
+            _222 = (_164 > 0.001000000047497451305389404296875) ? _218 : clamp(_143 + 0.5, 0.0, 1.0);
+        }
+        else
+        {
+            _222 = 0.0;
+        }
+        _224 = min(_160, _222);
+    }
+    else
+    {
+        _224 = _160;
+    }
+    float _377;
+    if ((int(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y) & 1) != 0)
+    {
+        uint _232 = wax_TEXCOORD1 + 3u;
+        uint _235 = wax_TEXCOORD1 + 4u;
+        float _241 = texelFetch(waxBuffer1, int(_232)).x + texelFetch(waxBuffer1, int(_235)).x;
+        float _245 = texelFetch(waxBuffer1, int(_232)).y + texelFetch(waxBuffer1, int(_235)).x;
+        float _298;
+        vec2 _299;
+        bool _300;
+        if (((texelFetch(waxBuffer1, int(_235)).x > 0.0) && (waxFragCoord().x < _241)) && (waxFragCoord().y < _245))
+        {
+            _298 = texelFetch(waxBuffer1, int(_235)).x;
+            _299 = vec2(_241, _245);
+            _300 = true;
+        }
+        else
+        {
+            float _255 = texelFetch(waxBuffer1, int(_232)).z - texelFetch(waxBuffer1, int(_235)).y;
+            float _258 = texelFetch(waxBuffer1, int(_232)).y + texelFetch(waxBuffer1, int(_235)).y;
+            float _295;
+            vec2 _296;
+            bool _297;
+            if (((texelFetch(waxBuffer1, int(_235)).y > 0.0) && (waxFragCoord().x > _255)) && (waxFragCoord().y < _258))
+            {
+                _295 = texelFetch(waxBuffer1, int(_235)).y;
+                _296 = vec2(_255, _258);
+                _297 = true;
+            }
+            else
+            {
+                float _267 = texelFetch(waxBuffer1, int(_232)).z - texelFetch(waxBuffer1, int(_235)).z;
+                float _271 = texelFetch(waxBuffer1, int(_232)).w - texelFetch(waxBuffer1, int(_235)).z;
+                float _292;
+                vec2 _293;
+                bool _294;
+                if (((texelFetch(waxBuffer1, int(_235)).z > 0.0) && (waxFragCoord().x > _267)) && (waxFragCoord().y > _271))
+                {
+                    _292 = texelFetch(waxBuffer1, int(_235)).z;
+                    _293 = vec2(_267, _271);
+                    _294 = true;
+                }
+                else
+                {
+                    float _280 = texelFetch(waxBuffer1, int(_232)).x + texelFetch(waxBuffer1, int(_235)).w;
+                    float _283 = texelFetch(waxBuffer1, int(_232)).w - texelFetch(waxBuffer1, int(_235)).w;
+                    bool _285 = ((texelFetch(waxBuffer1, int(_235)).w > 0.0) && (waxFragCoord().x < _280)) && (waxFragCoord().y > _283);
+                    vec2 _290;
+                    if (_285)
+                    {
+                        _290 = vec2(_280, _283);
+                    }
+                    else
+                    {
+                        _290 = vec2(0.0);
+                    }
+                    _292 = _285 ? texelFetch(waxBuffer1, int(_235)).w : 0.0;
+                    _293 = _290;
+                    _294 = _285;
+                }
+                _295 = _292;
+                _296 = _293;
+                _297 = _294;
+            }
+            _298 = _295;
+            _299 = _296;
+            _300 = _297;
+        }
+        float _311 = clamp(min(_147, texelFetch(waxBuffer1, int(_232)).z) - max(_149, texelFetch(waxBuffer1, int(_232)).x), 0.0, 1.0) * clamp(min(_154, texelFetch(waxBuffer1, int(_232)).w) - max(_156, texelFetch(waxBuffer1, int(_232)).y), 0.0, 1.0);
+        float _375;
+        if (_300)
+        {
+            vec2 _314 = waxFragCoord().xy - _299;
+            float _315 = length(_314);
+            float _373;
+            if (_298 > 0.0)
+            {
+                float _320 = _298 - _315;
+                vec2 _323 = abs(_314 / vec2(_315));
+                float _324 = _323.x;
+                float _325 = _323.y;
+                float _326 = max(_324, _325);
+                float _327 = min(_324, _325);
+                float _328 = _326 + _327;
+                float _330 = _320 + (0.5 * _328);
+                float _369;
+                if (_327 < 0.001000000047497451305389404296875)
+                {
+                    _369 = clamp(_320 + 0.5, 0.0, 1.0);
+                }
+                else
+                {
+                    float _368;
+                    if (_330 >= _328)
+                    {
+                        _368 = 1.0;
+                    }
+                    else
+                    {
+                        float _367;
+                        if (_330 > 0.0)
+                        {
+                            float _366;
+                            if (_330 < _327)
+                            {
+                                _366 = (_330 * _330) / ((2.0 * _326) * _327);
+                            }
+                            else
+                            {
+                                float _365;
+                                if (_330 > _326)
+                                {
+                                    float _356 = _328 - _330;
+                                    _365 = 1.0 - ((_356 * _356) / ((2.0 * _326) * _327));
+                                }
+                                else
+                                {
+                                    _365 = (_330 - (0.5 * _327)) / _326;
+                                }
+                                _366 = _365;
+                            }
+                            _367 = _366;
+                        }
+                        else
+                        {
+                            _367 = 0.0;
+                        }
+                        _368 = _367;
+                    }
+                    _369 = _368;
+                }
+                _373 = (_315 > 0.001000000047497451305389404296875) ? _369 : clamp(_298 + 0.5, 0.0, 1.0);
+            }
+            else
+            {
+                _373 = 0.0;
+            }
+            _375 = min(_311, _373);
+        }
+        else
+        {
+            _375 = _311;
+        }
+        _377 = min(_224, _375);
+    }
+    else
+    {
+        _377 = _224;
+    }
+    uint _378 = wax_TEXCOORD1 + 5u;
+    float _585;
+    vec4 _586;
+    SPIRV_CROSS_BRANCH
+    if (_377 > 0.0)
+    {
+        float _583;
+        vec4 _584;
+        SPIRV_CROSS_BRANCH
+        if (texelFetch(waxBuffer1, int(_378)).x >= 0.0)
+        {
+            uint _388 = uint(texelFetch(waxBuffer1, int(_378)).x);
+            vec4 _574;
+            SPIRV_CROSS_BRANCH
+            if (texelFetch(waxBuffer1, int(_378)).y >= 0.0)
+            {
+                uint _396 = uint(max(texelFetch(waxBuffer1, int(_378)).y, 0.0));
+                uint _399 = uint(texelFetch(waxBuffer0, int(_396)).x);
+                uint _400 = _396 + 1u;
+                vec4 _405;
+                _405 = vec4(0.0);
+                uint _403;
+                vec4 _406;
+                SPIRV_CROSS_LOOP
+                for (uint _402 = _400, _407 = 0u; _407 < _399; _402 = _403, _405 = _406, _407++)
+                {
+                    uint _414 = _402 + 1u;
+                    uint _421 = uint(texelFetch(waxBuffer0, int(_402)).z);
+                    uint _422 = _402 + 3u;
+                    uint _425 = _422 + ((_421 + 3u) >> 2u);
+                    SPIRV_CROSS_BRANCH
+                    if (_421 > 0u)
+                    {
+                        float _446;
+                        if (texelFetch(waxBuffer0, int(_402)).x < 0.5)
+                        {
+                            _446 = ((texelFetch(waxBuffer0, int(_414)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_414)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_414)).z;
+                        }
+                        else
+                        {
+                            _446 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_414)).xy) * texelFetch(waxBuffer0, int(_414)).zw);
+                        }
+                        float _447 = clamp(_446, -10000000.0, 10000000.0);
+                        uint _449 = uint(texelFetch(waxBuffer0, int(_402)).y);
+                        float _469;
+                        if (_449 == 0u)
+                        {
+                            _469 = clamp(_447, 0.0, 1.0);
+                        }
+                        else
+                        {
+                            float _468;
+                            if (_449 == 1u)
+                            {
+                                _468 = _447 - floor(_447);
+                            }
+                            else
+                            {
+                                float _464 = _447 - (2.0 * floor(_447 * 0.5));
+                                _468 = (_464 > 1.0) ? (2.0 - _464) : _464;
+                            }
+                            _469 = _468;
+                        }
+                        int _471;
+                        _471 = -1;
+                        int _472;
+                        SPIRV_CROSS_LOOP
+                        for (uint _474 = 0u; _474 < _421; _471 = _472, _474++)
+                        {
+                            uint _480 = _422 + (_474 >> 2u);
+                            uint _483 = _474 & 3u;
+                            if (((_483 == 0u) ? texelFetch(waxBuffer0, int(_480)).x : ((_483 == 1u) ? texelFetch(waxBuffer0, int(_480)).y : ((_483 == 2u) ? texelFetch(waxBuffer0, int(_480)).z : texelFetch(waxBuffer0, int(_480)).w))) <= _469)
+                            {
+                                _472 = int(_474);
+                            }
+                            else
+                            {
+                                _472 = _471;
+                            }
+                        }
+                        vec4 _556;
+                        if (_471 < 0)
+                        {
+                            _556 = texelFetch(waxBuffer0, int(_425));
+                        }
+                        else
+                        {
+                            uint _504 = uint(_471);
+                            vec4 _555;
+                            if (_504 == (_421 - 1u))
+                            {
+                                _555 = texelFetch(waxBuffer0, int(_425 + _504));
+                            }
+                            else
+                            {
+                                uint _514 = _422 + (_504 >> 2u);
+                                uint _517 = _504 & 3u;
+                                float _527 = (_517 == 0u) ? texelFetch(waxBuffer0, int(_514)).x : ((_517 == 1u) ? texelFetch(waxBuffer0, int(_514)).y : ((_517 == 2u) ? texelFetch(waxBuffer0, int(_514)).z : texelFetch(waxBuffer0, int(_514)).w));
+                                uint _528 = _504 + 1u;
+                                uint _530 = _422 + (_528 >> 2u);
+                                uint _533 = _528 & 3u;
+                                uint _544 = _425 + _504;
+                                _555 = mix(texelFetch(waxBuffer0, int(_544)), texelFetch(waxBuffer0, int(_544 + 1u)), vec4((_469 - _527) / (((_533 == 0u) ? texelFetch(waxBuffer0, int(_530)).x : ((_533 == 1u) ? texelFetch(waxBuffer0, int(_530)).y : ((_533 == 2u) ? texelFetch(waxBuffer0, int(_530)).z : texelFetch(waxBuffer0, int(_530)).w))) - _527)));
+                            }
+                            _556 = _555;
+                        }
+                        vec4 _569;
+                        if (texelFetch(waxBuffer0, int(_402 + 2u)).x > 0.5)
+                        {
+                            vec3 _567 = mix(pow(abs((_556.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _556.xyz * vec3(0.077399380505084991455078125), step(_556.xyz, vec3(0.040449999272823333740234375)));
+                            _569 = vec4(_567.x, _567.y, _567.z, _556.w);
+                        }
+                        else
+                        {
+                            _569 = _556;
+                        }
+                        _406 = _405 + (_569 * texelFetch(waxBuffer0, int(_402)).w);
+                    }
+                    else
+                    {
+                        _406 = _405;
+                    }
+                    _403 = _425 + _421;
+                }
+                _574 = texelFetch(waxBuffer0, int(_388)) * _405;
+            }
+            else
+            {
+                _574 = texelFetch(waxBuffer0, int(_388));
+            }
+            _583 = _377;
+            _584 = vec4(_574.xyz * _574.w, _574.w) * _377;
+        }
+        else
+        {
+            _583 = 0.0;
+            _584 = vec4(0.0);
+        }
+        _585 = _583;
+        _586 = _584;
+    }
+    else
+    {
+        _585 = 0.0;
+        _586 = vec4(0.0);
+    }
+    uint _587 = wax_TEXCOORD1 + 6u;
+    float _588 = _224 - _377;
+    float _797;
+    vec4 _798;
+    SPIRV_CROSS_BRANCH
+    if (_588 > 0.0)
+    {
+        float _795;
+        vec4 _796;
+        SPIRV_CROSS_BRANCH
+        if (texelFetch(waxBuffer1, int(_587)).x >= 0.0)
+        {
+            uint _598 = uint(texelFetch(waxBuffer1, int(_587)).x);
+            vec4 _784;
+            SPIRV_CROSS_BRANCH
+            if (texelFetch(waxBuffer1, int(_587)).y >= 0.0)
+            {
+                uint _606 = uint(max(texelFetch(waxBuffer1, int(_587)).y, 0.0));
+                uint _609 = uint(texelFetch(waxBuffer0, int(_606)).x);
+                uint _610 = _606 + 1u;
+                vec4 _615;
+                _615 = vec4(0.0);
+                uint _613;
+                vec4 _616;
+                SPIRV_CROSS_LOOP
+                for (uint _612 = _610, _617 = 0u; _617 < _609; _612 = _613, _615 = _616, _617++)
+                {
+                    uint _624 = _612 + 1u;
+                    uint _631 = uint(texelFetch(waxBuffer0, int(_612)).z);
+                    uint _632 = _612 + 3u;
+                    uint _635 = _632 + ((_631 + 3u) >> 2u);
+                    SPIRV_CROSS_BRANCH
+                    if (_631 > 0u)
+                    {
+                        float _656;
+                        if (texelFetch(waxBuffer0, int(_612)).x < 0.5)
+                        {
+                            _656 = ((texelFetch(waxBuffer0, int(_624)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_624)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_624)).z;
+                        }
+                        else
+                        {
+                            _656 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_624)).xy) * texelFetch(waxBuffer0, int(_624)).zw);
+                        }
+                        float _657 = clamp(_656, -10000000.0, 10000000.0);
+                        uint _659 = uint(texelFetch(waxBuffer0, int(_612)).y);
+                        float _679;
+                        if (_659 == 0u)
+                        {
+                            _679 = clamp(_657, 0.0, 1.0);
+                        }
+                        else
+                        {
+                            float _678;
+                            if (_659 == 1u)
+                            {
+                                _678 = _657 - floor(_657);
+                            }
+                            else
+                            {
+                                float _674 = _657 - (2.0 * floor(_657 * 0.5));
+                                _678 = (_674 > 1.0) ? (2.0 - _674) : _674;
+                            }
+                            _679 = _678;
+                        }
+                        int _681;
+                        _681 = -1;
+                        int _682;
+                        SPIRV_CROSS_LOOP
+                        for (uint _684 = 0u; _684 < _631; _681 = _682, _684++)
+                        {
+                            uint _690 = _632 + (_684 >> 2u);
+                            uint _693 = _684 & 3u;
+                            if (((_693 == 0u) ? texelFetch(waxBuffer0, int(_690)).x : ((_693 == 1u) ? texelFetch(waxBuffer0, int(_690)).y : ((_693 == 2u) ? texelFetch(waxBuffer0, int(_690)).z : texelFetch(waxBuffer0, int(_690)).w))) <= _679)
+                            {
+                                _682 = int(_684);
+                            }
+                            else
+                            {
+                                _682 = _681;
+                            }
+                        }
+                        vec4 _766;
+                        if (_681 < 0)
+                        {
+                            _766 = texelFetch(waxBuffer0, int(_635));
+                        }
+                        else
+                        {
+                            uint _714 = uint(_681);
+                            vec4 _765;
+                            if (_714 == (_631 - 1u))
+                            {
+                                _765 = texelFetch(waxBuffer0, int(_635 + _714));
+                            }
+                            else
+                            {
+                                uint _724 = _632 + (_714 >> 2u);
+                                uint _727 = _714 & 3u;
+                                float _737 = (_727 == 0u) ? texelFetch(waxBuffer0, int(_724)).x : ((_727 == 1u) ? texelFetch(waxBuffer0, int(_724)).y : ((_727 == 2u) ? texelFetch(waxBuffer0, int(_724)).z : texelFetch(waxBuffer0, int(_724)).w));
+                                uint _738 = _714 + 1u;
+                                uint _740 = _632 + (_738 >> 2u);
+                                uint _743 = _738 & 3u;
+                                uint _754 = _635 + _714;
+                                _765 = mix(texelFetch(waxBuffer0, int(_754)), texelFetch(waxBuffer0, int(_754 + 1u)), vec4((_679 - _737) / (((_743 == 0u) ? texelFetch(waxBuffer0, int(_740)).x : ((_743 == 1u) ? texelFetch(waxBuffer0, int(_740)).y : ((_743 == 2u) ? texelFetch(waxBuffer0, int(_740)).z : texelFetch(waxBuffer0, int(_740)).w))) - _737)));
+                            }
+                            _766 = _765;
+                        }
+                        vec4 _779;
+                        if (texelFetch(waxBuffer0, int(_612 + 2u)).x > 0.5)
+                        {
+                            vec3 _777 = mix(pow(abs((_766.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _766.xyz * vec3(0.077399380505084991455078125), step(_766.xyz, vec3(0.040449999272823333740234375)));
+                            _779 = vec4(_777.x, _777.y, _777.z, _766.w);
+                        }
+                        else
+                        {
+                            _779 = _766;
+                        }
+                        _616 = _615 + (_779 * texelFetch(waxBuffer0, int(_612)).w);
+                    }
+                    else
+                    {
+                        _616 = _615;
+                    }
+                    _613 = _635 + _631;
+                }
+                _784 = texelFetch(waxBuffer0, int(_598)) * _615;
+            }
+            else
+            {
+                _784 = texelFetch(waxBuffer0, int(_598));
+            }
+            _795 = _585 + _588;
+            _796 = _586 + (vec4(_784.xyz * _784.w, _784.w) * _588);
+        }
+        else
+        {
+            _795 = _585;
+            _796 = _586;
+        }
+        _797 = _795;
+        _798 = _796;
+    }
+    else
+    {
+        _797 = _585;
+        _798 = _586;
+    }
+    if (_797 < 0.00390625)
     {
         discard;
     }
-    vec4 _3668;
+    vec4 _985;
     SPIRV_CROSS_BRANCH
     if ((int(waxConstants[2].x)) >= 0)
     {
-        uint _3489 = uint(max((int(waxConstants[2].x)), 0));
-        uint _3492 = uint(texelFetch(waxBuffer0, int(_3489)).x);
-        uint _3493 = _3489 + 1u;
-        vec4 _3498;
-        _3498 = vec4(0.0);
-        uint _3496;
-        vec4 _3499;
+        uint _808 = uint(max((int(waxConstants[2].x)), 0));
+        uint _811 = uint(texelFetch(waxBuffer0, int(_808)).x);
+        uint _812 = _808 + 1u;
+        vec4 _817;
+        _817 = vec4(0.0);
+        uint _815;
+        vec4 _818;
         SPIRV_CROSS_LOOP
-        for (uint _3495 = _3493, _3500 = 0u; _3500 < _3492; _3495 = _3496, _3498 = _3499, _3500++)
+        for (uint _814 = _812, _819 = 0u; _819 < _811; _814 = _815, _817 = _818, _819++)
         {
-            uint _3507 = _3495 + 1u;
-            uint _3514 = uint(texelFetch(waxBuffer0, int(_3495)).z);
-            uint _3515 = _3495 + 3u;
-            uint _3518 = _3515 + ((_3514 + 3u) >> 2u);
+            uint _826 = _814 + 1u;
+            uint _833 = uint(texelFetch(waxBuffer0, int(_814)).z);
+            uint _834 = _814 + 3u;
+            uint _837 = _834 + ((_833 + 3u) >> 2u);
             SPIRV_CROSS_BRANCH
-            if (_3514 > 0u)
+            if (_833 > 0u)
             {
-                float _3541;
-                if (texelFetch(waxBuffer0, int(_3495)).x < 0.5)
+                float _858;
+                if (texelFetch(waxBuffer0, int(_814)).x < 0.5)
                 {
-                    _3541 = ((texelFetch(waxBuffer0, int(_3507)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_3507)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_3507)).z;
+                    _858 = ((texelFetch(waxBuffer0, int(_826)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_826)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_826)).z;
                 }
                 else
                 {
-                    _3541 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_3507)).xy) * texelFetch(waxBuffer0, int(_3507)).zw);
+                    _858 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_826)).xy) * texelFetch(waxBuffer0, int(_826)).zw);
                 }
-                float _3542 = clamp(_3541, -10000000.0, 10000000.0);
-                uint _3544 = uint(texelFetch(waxBuffer0, int(_3495)).y);
-                float _3564;
-                if (_3544 == 0u)
+                float _859 = clamp(_858, -10000000.0, 10000000.0);
+                uint _861 = uint(texelFetch(waxBuffer0, int(_814)).y);
+                float _881;
+                if (_861 == 0u)
                 {
-                    _3564 = clamp(_3542, 0.0, 1.0);
+                    _881 = clamp(_859, 0.0, 1.0);
                 }
                 else
                 {
-                    float _3563;
-                    if (_3544 == 1u)
+                    float _880;
+                    if (_861 == 1u)
                     {
-                        _3563 = _3542 - floor(_3542);
+                        _880 = _859 - floor(_859);
                     }
                     else
                     {
-                        float _3559 = _3542 - (2.0 * floor(_3542 * 0.5));
-                        _3563 = (_3559 > 1.0) ? (2.0 - _3559) : _3559;
+                        float _876 = _859 - (2.0 * floor(_859 * 0.5));
+                        _880 = (_876 > 1.0) ? (2.0 - _876) : _876;
                     }
-                    _3564 = _3563;
+                    _881 = _880;
                 }
-                int _3566;
-                _3566 = -1;
-                int _3567;
+                int _883;
+                _883 = -1;
+                int _884;
                 SPIRV_CROSS_LOOP
-                for (uint _3569 = 0u; _3569 < _3514; _3566 = _3567, _3569++)
+                for (uint _886 = 0u; _886 < _833; _883 = _884, _886++)
                 {
-                    uint _3575 = _3515 + (_3569 >> 2u);
-                    uint _3578 = _3569 & 3u;
-                    if (((_3578 == 0u) ? texelFetch(waxBuffer0, int(_3575)).x : ((_3578 == 1u) ? texelFetch(waxBuffer0, int(_3575)).y : ((_3578 == 2u) ? texelFetch(waxBuffer0, int(_3575)).z : texelFetch(waxBuffer0, int(_3575)).w))) <= _3564)
+                    uint _892 = _834 + (_886 >> 2u);
+                    uint _895 = _886 & 3u;
+                    if (((_895 == 0u) ? texelFetch(waxBuffer0, int(_892)).x : ((_895 == 1u) ? texelFetch(waxBuffer0, int(_892)).y : ((_895 == 2u) ? texelFetch(waxBuffer0, int(_892)).z : texelFetch(waxBuffer0, int(_892)).w))) <= _881)
                     {
-                        _3567 = int(_3569);
+                        _884 = int(_886);
                     }
                     else
                     {
-                        _3567 = _3566;
+                        _884 = _883;
                     }
                 }
-                vec4 _3651;
-                if (_3566 < 0)
+                vec4 _968;
+                if (_883 < 0)
                 {
-                    _3651 = texelFetch(waxBuffer0, int(_3518));
+                    _968 = texelFetch(waxBuffer0, int(_837));
                 }
                 else
                 {
-                    uint _3599 = uint(_3566);
-                    vec4 _3650;
-                    if (_3599 == (_3514 - 1u))
+                    uint _916 = uint(_883);
+                    vec4 _967;
+                    if (_916 == (_833 - 1u))
                     {
-                        _3650 = texelFetch(waxBuffer0, int(_3518 + _3599));
+                        _967 = texelFetch(waxBuffer0, int(_837 + _916));
                     }
                     else
                     {
-                        uint _3609 = _3515 + (_3599 >> 2u);
-                        uint _3612 = _3599 & 3u;
-                        float _3622 = (_3612 == 0u) ? texelFetch(waxBuffer0, int(_3609)).x : ((_3612 == 1u) ? texelFetch(waxBuffer0, int(_3609)).y : ((_3612 == 2u) ? texelFetch(waxBuffer0, int(_3609)).z : texelFetch(waxBuffer0, int(_3609)).w));
-                        uint _3623 = _3599 + 1u;
-                        uint _3625 = _3515 + (_3623 >> 2u);
-                        uint _3628 = _3623 & 3u;
-                        uint _3639 = _3518 + _3599;
-                        _3650 = mix(texelFetch(waxBuffer0, int(_3639)), texelFetch(waxBuffer0, int(_3639 + 1u)), vec4((_3564 - _3622) / (((_3628 == 0u) ? texelFetch(waxBuffer0, int(_3625)).x : ((_3628 == 1u) ? texelFetch(waxBuffer0, int(_3625)).y : ((_3628 == 2u) ? texelFetch(waxBuffer0, int(_3625)).z : texelFetch(waxBuffer0, int(_3625)).w))) - _3622)));
+                        uint _926 = _834 + (_916 >> 2u);
+                        uint _929 = _916 & 3u;
+                        float _939 = (_929 == 0u) ? texelFetch(waxBuffer0, int(_926)).x : ((_929 == 1u) ? texelFetch(waxBuffer0, int(_926)).y : ((_929 == 2u) ? texelFetch(waxBuffer0, int(_926)).z : texelFetch(waxBuffer0, int(_926)).w));
+                        uint _940 = _916 + 1u;
+                        uint _942 = _834 + (_940 >> 2u);
+                        uint _945 = _940 & 3u;
+                        uint _956 = _837 + _916;
+                        _967 = mix(texelFetch(waxBuffer0, int(_956)), texelFetch(waxBuffer0, int(_956 + 1u)), vec4((_881 - _939) / (((_945 == 0u) ? texelFetch(waxBuffer0, int(_942)).x : ((_945 == 1u) ? texelFetch(waxBuffer0, int(_942)).y : ((_945 == 2u) ? texelFetch(waxBuffer0, int(_942)).z : texelFetch(waxBuffer0, int(_942)).w))) - _939)));
                     }
-                    _3651 = _3650;
+                    _968 = _967;
                 }
-                vec4 _3664;
-                if (texelFetch(waxBuffer0, int(_3495 + 2u)).x > 0.5)
+                vec4 _981;
+                if (texelFetch(waxBuffer0, int(_814 + 2u)).x > 0.5)
                 {
-                    vec3 _3662 = mix(pow(abs((_3651.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _3651.xyz * vec3(0.077399380505084991455078125), step(_3651.xyz, vec3(0.040449999272823333740234375)));
-                    _3664 = vec4(_3662.x, _3662.y, _3662.z, _3651.w);
+                    vec3 _979 = mix(pow(abs((_968.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _968.xyz * vec3(0.077399380505084991455078125), step(_968.xyz, vec3(0.040449999272823333740234375)));
+                    _981 = vec4(_979.x, _979.y, _979.z, _968.w);
                 }
                 else
                 {
-                    _3664 = _3651;
+                    _981 = _968;
                 }
-                _3499 = _3498 + (_3664 * texelFetch(waxBuffer0, int(_3495)).w);
+                _818 = _817 + (_981 * texelFetch(waxBuffer0, int(_814)).w);
             }
             else
             {
-                _3499 = _3498;
+                _818 = _817;
             }
-            _3496 = _3518 + _3514;
+            _815 = _837 + _833;
         }
-        _3668 = _3498;
+        _985 = _817;
     }
     else
     {
-        _3668 = vec4(1.0);
+        _985 = vec4(1.0);
     }
-    vec4 _3669 = wax_COLOR * _3668;
-    float _3671 = _3669.w;
-    vec4 _3677 = _3478 * vec4(_3669.xyz * _3671, _3671);
-    vec4 _3755;
+    vec4 _986 = wax_COLOR * _985;
+    float _988 = _986.w;
+    vec4 _994 = _798 * vec4(_986.xyz * _988, _988);
+    vec4 _1072;
     if ((waxConstants[2].z) == 2u)
     {
-        float _3684 = _3677.w;
-        vec4 _3704;
+        float _1001 = _994.w;
+        vec4 _1021;
         if ((waxConstants[2].y) == 2u)
         {
-            _3704 = vec4((1.0 - _3479) + _3684);
+            _1021 = vec4((1.0 - _797) + _1001);
         }
         else
         {
-            vec4 _3703;
+            vec4 _1020;
             if ((waxConstants[2].y) == 1u)
             {
-                _3703 = vec4(_3684 * (uintBitsToFloat(waxConstants[2].w)));
+                _1020 = vec4(_1001 * (uintBitsToFloat(waxConstants[2].w)));
             }
             else
             {
-                _3703 = vec4(_3684);
+                _1020 = vec4(_1001);
             }
-            _3704 = _3703;
+            _1021 = _1020;
         }
-        _3755 = _3704;
+        _1072 = _1021;
     }
     else
     {
-        vec4 _3754;
+        vec4 _1071;
         if ((waxConstants[2].y) == 3u)
         {
-            float _3711 = _3677.x;
-            _3754 = vec4(_3711, _3677.yz, max(_3711, max(_3677.y, _3677.z)));
+            float _1028 = _994.x;
+            _1071 = vec4(_1028, _994.yz, max(_1028, max(_994.y, _994.z)));
         }
         else
         {
-            vec4 _3753;
+            vec4 _1070;
             if ((waxConstants[2].y) == 2u)
             {
-                _3753 = vec4(vec3(1.0 - _3677.w) + _3677.xyz, 1.0);
+                _1070 = vec4(vec3(1.0 - _994.w) + _994.xyz, 1.0);
             }
             else
             {
-                vec4 _3752;
+                vec4 _1069;
                 if ((waxConstants[2].y) == 1u)
                 {
-                    float _3749;
+                    float _1066;
                     if ((waxConstants[2].z) == 1u)
                     {
-                        float _3745 = (1.0 - (uintBitsToFloat(waxConstants[2].w))) + (((_3479 > 0.0) ? (_3677.w / _3479) : 0.0) * (uintBitsToFloat(waxConstants[2].w)));
-                        _3749 = (_3745 > 0.0) ? (1.0 / _3745) : 0.0;
+                        float _1062 = (1.0 - (uintBitsToFloat(waxConstants[2].w))) + (((_797 > 0.0) ? (_994.w / _797) : 0.0) * (uintBitsToFloat(waxConstants[2].w)));
+                        _1066 = (_1062 > 0.0) ? (1.0 / _1062) : 0.0;
                     }
                     else
                     {
-                        _3749 = 1.0;
+                        _1066 = 1.0;
                     }
-                    _3752 = _3677 * ((uintBitsToFloat(waxConstants[2].w)) * _3749);
+                    _1069 = _994 * ((uintBitsToFloat(waxConstants[2].w)) * _1066);
                 }
                 else
                 {
-                    _3752 = _3677;
+                    _1069 = _994;
                 }
-                _3753 = _3752;
+                _1070 = _1069;
             }
-            _3754 = _3753;
+            _1071 = _1070;
         }
-        _3755 = _3754;
+        _1072 = _1071;
     }
-    out_var_SV_Target0 = _3755;
+    out_var_SV_Target0 = _1072;
 }
 )glsl" },
 
-	{ "shapePSDual", R"glsl(#version 330
+	{ "shapeBoxPSDual", R"glsl(#version 330
 #if defined(GL_EXT_control_flow_attributes)
 #extension GL_EXT_control_flow_attributes : require
 #define SPIRV_CROSS_FLATTEN [[flatten]]
@@ -9634,2914 +7524,5886 @@ layout(location = 0, index = 1) out vec4 out_var_SV_Target1;
 
 void main()
 {
-    int _119 = int(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x);
-    vec4 _3479;
-    float _3480;
-    if (_119 == 1)
+    uint _76 = wax_TEXCOORD1 + 1u;
+    uint _79 = wax_TEXCOORD1 + 2u;
+    float _86 = texelFetch(waxBuffer1, int(_76)).x + texelFetch(waxBuffer1, int(_79)).x;
+    float _91 = texelFetch(waxBuffer1, int(_76)).y + texelFetch(waxBuffer1, int(_79)).x;
+    float _144;
+    vec2 _145;
+    bool _146;
+    if (((texelFetch(waxBuffer1, int(_79)).x > 0.0) && (waxFragCoord().x < _86)) && (waxFragCoord().y < _91))
     {
-        uint _124 = wax_TEXCOORD1 + 1u;
-        uint _127 = wax_TEXCOORD1 + 2u;
-        float _134 = texelFetch(waxBuffer1, int(_124)).x + texelFetch(waxBuffer1, int(_127)).x;
-        float _139 = texelFetch(waxBuffer1, int(_124)).y + texelFetch(waxBuffer1, int(_127)).x;
-        float _192;
-        vec2 _193;
-        bool _194;
-        if (((texelFetch(waxBuffer1, int(_127)).x > 0.0) && (waxFragCoord().x < _134)) && (waxFragCoord().y < _139))
-        {
-            _192 = texelFetch(waxBuffer1, int(_127)).x;
-            _193 = vec2(_134, _139);
-            _194 = true;
-        }
-        else
-        {
-            float _149 = texelFetch(waxBuffer1, int(_124)).z - texelFetch(waxBuffer1, int(_127)).y;
-            float _152 = texelFetch(waxBuffer1, int(_124)).y + texelFetch(waxBuffer1, int(_127)).y;
-            float _189;
-            vec2 _190;
-            bool _191;
-            if (((texelFetch(waxBuffer1, int(_127)).y > 0.0) && (waxFragCoord().x > _149)) && (waxFragCoord().y < _152))
-            {
-                _189 = texelFetch(waxBuffer1, int(_127)).y;
-                _190 = vec2(_149, _152);
-                _191 = true;
-            }
-            else
-            {
-                float _161 = texelFetch(waxBuffer1, int(_124)).z - texelFetch(waxBuffer1, int(_127)).z;
-                float _165 = texelFetch(waxBuffer1, int(_124)).w - texelFetch(waxBuffer1, int(_127)).z;
-                float _186;
-                vec2 _187;
-                bool _188;
-                if (((texelFetch(waxBuffer1, int(_127)).z > 0.0) && (waxFragCoord().x > _161)) && (waxFragCoord().y > _165))
-                {
-                    _186 = texelFetch(waxBuffer1, int(_127)).z;
-                    _187 = vec2(_161, _165);
-                    _188 = true;
-                }
-                else
-                {
-                    float _174 = texelFetch(waxBuffer1, int(_124)).x + texelFetch(waxBuffer1, int(_127)).w;
-                    float _177 = texelFetch(waxBuffer1, int(_124)).w - texelFetch(waxBuffer1, int(_127)).w;
-                    bool _179 = ((texelFetch(waxBuffer1, int(_127)).w > 0.0) && (waxFragCoord().x < _174)) && (waxFragCoord().y > _177);
-                    vec2 _184;
-                    if (_179)
-                    {
-                        _184 = vec2(_174, _177);
-                    }
-                    else
-                    {
-                        _184 = vec2(0.0);
-                    }
-                    _186 = _179 ? texelFetch(waxBuffer1, int(_127)).w : 0.0;
-                    _187 = _184;
-                    _188 = _179;
-                }
-                _189 = _186;
-                _190 = _187;
-                _191 = _188;
-            }
-            _192 = _189;
-            _193 = _190;
-            _194 = _191;
-        }
-        float _196 = waxFragCoord().x + 0.5;
-        float _198 = waxFragCoord().x - 0.5;
-        float _203 = waxFragCoord().y + 0.5;
-        float _205 = waxFragCoord().y - 0.5;
-        float _209 = clamp(min(_196, texelFetch(waxBuffer1, int(_124)).z) - max(_198, texelFetch(waxBuffer1, int(_124)).x), 0.0, 1.0) * clamp(min(_203, texelFetch(waxBuffer1, int(_124)).w) - max(_205, texelFetch(waxBuffer1, int(_124)).y), 0.0, 1.0);
-        float _273;
-        if (_194)
-        {
-            vec2 _212 = waxFragCoord().xy - _193;
-            float _213 = length(_212);
-            float _271;
-            if (_192 > 0.0)
-            {
-                float _218 = _192 - _213;
-                vec2 _221 = abs(_212 / vec2(_213));
-                float _222 = _221.x;
-                float _223 = _221.y;
-                float _224 = max(_222, _223);
-                float _225 = min(_222, _223);
-                float _226 = _224 + _225;
-                float _228 = _218 + (0.5 * _226);
-                float _267;
-                if (_225 < 0.001000000047497451305389404296875)
-                {
-                    _267 = clamp(_218 + 0.5, 0.0, 1.0);
-                }
-                else
-                {
-                    float _266;
-                    if (_228 >= _226)
-                    {
-                        _266 = 1.0;
-                    }
-                    else
-                    {
-                        float _265;
-                        if (_228 > 0.0)
-                        {
-                            float _264;
-                            if (_228 < _225)
-                            {
-                                _264 = (_228 * _228) / ((2.0 * _224) * _225);
-                            }
-                            else
-                            {
-                                float _263;
-                                if (_228 > _224)
-                                {
-                                    float _254 = _226 - _228;
-                                    _263 = 1.0 - ((_254 * _254) / ((2.0 * _224) * _225));
-                                }
-                                else
-                                {
-                                    _263 = (_228 - (0.5 * _225)) / _224;
-                                }
-                                _264 = _263;
-                            }
-                            _265 = _264;
-                        }
-                        else
-                        {
-                            _265 = 0.0;
-                        }
-                        _266 = _265;
-                    }
-                    _267 = _266;
-                }
-                _271 = (_213 > 0.001000000047497451305389404296875) ? _267 : clamp(_192 + 0.5, 0.0, 1.0);
-            }
-            else
-            {
-                _271 = 0.0;
-            }
-            _273 = min(_209, _271);
-        }
-        else
-        {
-            _273 = _209;
-        }
-        float _426;
-        if ((int(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y) & 1) != 0)
-        {
-            uint _281 = wax_TEXCOORD1 + 3u;
-            uint _284 = wax_TEXCOORD1 + 4u;
-            float _290 = texelFetch(waxBuffer1, int(_281)).x + texelFetch(waxBuffer1, int(_284)).x;
-            float _294 = texelFetch(waxBuffer1, int(_281)).y + texelFetch(waxBuffer1, int(_284)).x;
-            float _347;
-            vec2 _348;
-            bool _349;
-            if (((texelFetch(waxBuffer1, int(_284)).x > 0.0) && (waxFragCoord().x < _290)) && (waxFragCoord().y < _294))
-            {
-                _347 = texelFetch(waxBuffer1, int(_284)).x;
-                _348 = vec2(_290, _294);
-                _349 = true;
-            }
-            else
-            {
-                float _304 = texelFetch(waxBuffer1, int(_281)).z - texelFetch(waxBuffer1, int(_284)).y;
-                float _307 = texelFetch(waxBuffer1, int(_281)).y + texelFetch(waxBuffer1, int(_284)).y;
-                float _344;
-                vec2 _345;
-                bool _346;
-                if (((texelFetch(waxBuffer1, int(_284)).y > 0.0) && (waxFragCoord().x > _304)) && (waxFragCoord().y < _307))
-                {
-                    _344 = texelFetch(waxBuffer1, int(_284)).y;
-                    _345 = vec2(_304, _307);
-                    _346 = true;
-                }
-                else
-                {
-                    float _316 = texelFetch(waxBuffer1, int(_281)).z - texelFetch(waxBuffer1, int(_284)).z;
-                    float _320 = texelFetch(waxBuffer1, int(_281)).w - texelFetch(waxBuffer1, int(_284)).z;
-                    float _341;
-                    vec2 _342;
-                    bool _343;
-                    if (((texelFetch(waxBuffer1, int(_284)).z > 0.0) && (waxFragCoord().x > _316)) && (waxFragCoord().y > _320))
-                    {
-                        _341 = texelFetch(waxBuffer1, int(_284)).z;
-                        _342 = vec2(_316, _320);
-                        _343 = true;
-                    }
-                    else
-                    {
-                        float _329 = texelFetch(waxBuffer1, int(_281)).x + texelFetch(waxBuffer1, int(_284)).w;
-                        float _332 = texelFetch(waxBuffer1, int(_281)).w - texelFetch(waxBuffer1, int(_284)).w;
-                        bool _334 = ((texelFetch(waxBuffer1, int(_284)).w > 0.0) && (waxFragCoord().x < _329)) && (waxFragCoord().y > _332);
-                        vec2 _339;
-                        if (_334)
-                        {
-                            _339 = vec2(_329, _332);
-                        }
-                        else
-                        {
-                            _339 = vec2(0.0);
-                        }
-                        _341 = _334 ? texelFetch(waxBuffer1, int(_284)).w : 0.0;
-                        _342 = _339;
-                        _343 = _334;
-                    }
-                    _344 = _341;
-                    _345 = _342;
-                    _346 = _343;
-                }
-                _347 = _344;
-                _348 = _345;
-                _349 = _346;
-            }
-            float _360 = clamp(min(_196, texelFetch(waxBuffer1, int(_281)).z) - max(_198, texelFetch(waxBuffer1, int(_281)).x), 0.0, 1.0) * clamp(min(_203, texelFetch(waxBuffer1, int(_281)).w) - max(_205, texelFetch(waxBuffer1, int(_281)).y), 0.0, 1.0);
-            float _424;
-            if (_349)
-            {
-                vec2 _363 = waxFragCoord().xy - _348;
-                float _364 = length(_363);
-                float _422;
-                if (_347 > 0.0)
-                {
-                    float _369 = _347 - _364;
-                    vec2 _372 = abs(_363 / vec2(_364));
-                    float _373 = _372.x;
-                    float _374 = _372.y;
-                    float _375 = max(_373, _374);
-                    float _376 = min(_373, _374);
-                    float _377 = _375 + _376;
-                    float _379 = _369 + (0.5 * _377);
-                    float _418;
-                    if (_376 < 0.001000000047497451305389404296875)
-                    {
-                        _418 = clamp(_369 + 0.5, 0.0, 1.0);
-                    }
-                    else
-                    {
-                        float _417;
-                        if (_379 >= _377)
-                        {
-                            _417 = 1.0;
-                        }
-                        else
-                        {
-                            float _416;
-                            if (_379 > 0.0)
-                            {
-                                float _415;
-                                if (_379 < _376)
-                                {
-                                    _415 = (_379 * _379) / ((2.0 * _375) * _376);
-                                }
-                                else
-                                {
-                                    float _414;
-                                    if (_379 > _375)
-                                    {
-                                        float _405 = _377 - _379;
-                                        _414 = 1.0 - ((_405 * _405) / ((2.0 * _375) * _376));
-                                    }
-                                    else
-                                    {
-                                        _414 = (_379 - (0.5 * _376)) / _375;
-                                    }
-                                    _415 = _414;
-                                }
-                                _416 = _415;
-                            }
-                            else
-                            {
-                                _416 = 0.0;
-                            }
-                            _417 = _416;
-                        }
-                        _418 = _417;
-                    }
-                    _422 = (_364 > 0.001000000047497451305389404296875) ? _418 : clamp(_347 + 0.5, 0.0, 1.0);
-                }
-                else
-                {
-                    _422 = 0.0;
-                }
-                _424 = min(_360, _422);
-            }
-            else
-            {
-                _424 = _360;
-            }
-            _426 = min(_273, _424);
-        }
-        else
-        {
-            _426 = _273;
-        }
-        uint _427 = wax_TEXCOORD1 + 5u;
-        float _634;
-        vec4 _635;
-        SPIRV_CROSS_BRANCH
-        if (_426 > 0.0)
-        {
-            float _632;
-            vec4 _633;
-            SPIRV_CROSS_BRANCH
-            if (texelFetch(waxBuffer1, int(_427)).x >= 0.0)
-            {
-                uint _437 = uint(texelFetch(waxBuffer1, int(_427)).x);
-                vec4 _623;
-                SPIRV_CROSS_BRANCH
-                if (texelFetch(waxBuffer1, int(_427)).y >= 0.0)
-                {
-                    uint _445 = uint(max(texelFetch(waxBuffer1, int(_427)).y, 0.0));
-                    uint _448 = uint(texelFetch(waxBuffer0, int(_445)).x);
-                    uint _449 = _445 + 1u;
-                    vec4 _454;
-                    _454 = vec4(0.0);
-                    uint _452;
-                    vec4 _455;
-                    SPIRV_CROSS_LOOP
-                    for (uint _451 = _449, _456 = 0u; _456 < _448; _451 = _452, _454 = _455, _456++)
-                    {
-                        uint _463 = _451 + 1u;
-                        uint _470 = uint(texelFetch(waxBuffer0, int(_451)).z);
-                        uint _471 = _451 + 3u;
-                        uint _474 = _471 + ((_470 + 3u) >> 2u);
-                        SPIRV_CROSS_BRANCH
-                        if (_470 > 0u)
-                        {
-                            float _495;
-                            if (texelFetch(waxBuffer0, int(_451)).x < 0.5)
-                            {
-                                _495 = ((texelFetch(waxBuffer0, int(_463)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_463)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_463)).z;
-                            }
-                            else
-                            {
-                                _495 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_463)).xy) * texelFetch(waxBuffer0, int(_463)).zw);
-                            }
-                            float _496 = clamp(_495, -10000000.0, 10000000.0);
-                            uint _498 = uint(texelFetch(waxBuffer0, int(_451)).y);
-                            float _518;
-                            if (_498 == 0u)
-                            {
-                                _518 = clamp(_496, 0.0, 1.0);
-                            }
-                            else
-                            {
-                                float _517;
-                                if (_498 == 1u)
-                                {
-                                    _517 = _496 - floor(_496);
-                                }
-                                else
-                                {
-                                    float _513 = _496 - (2.0 * floor(_496 * 0.5));
-                                    _517 = (_513 > 1.0) ? (2.0 - _513) : _513;
-                                }
-                                _518 = _517;
-                            }
-                            int _520;
-                            _520 = -1;
-                            int _521;
-                            SPIRV_CROSS_LOOP
-                            for (uint _523 = 0u; _523 < _470; _520 = _521, _523++)
-                            {
-                                uint _529 = _471 + (_523 >> 2u);
-                                uint _532 = _523 & 3u;
-                                if (((_532 == 0u) ? texelFetch(waxBuffer0, int(_529)).x : ((_532 == 1u) ? texelFetch(waxBuffer0, int(_529)).y : ((_532 == 2u) ? texelFetch(waxBuffer0, int(_529)).z : texelFetch(waxBuffer0, int(_529)).w))) <= _518)
-                                {
-                                    _521 = int(_523);
-                                }
-                                else
-                                {
-                                    _521 = _520;
-                                }
-                            }
-                            vec4 _605;
-                            if (_520 < 0)
-                            {
-                                _605 = texelFetch(waxBuffer0, int(_474));
-                            }
-                            else
-                            {
-                                uint _553 = uint(_520);
-                                vec4 _604;
-                                if (_553 == (_470 - 1u))
-                                {
-                                    _604 = texelFetch(waxBuffer0, int(_474 + _553));
-                                }
-                                else
-                                {
-                                    uint _563 = _471 + (_553 >> 2u);
-                                    uint _566 = _553 & 3u;
-                                    float _576 = (_566 == 0u) ? texelFetch(waxBuffer0, int(_563)).x : ((_566 == 1u) ? texelFetch(waxBuffer0, int(_563)).y : ((_566 == 2u) ? texelFetch(waxBuffer0, int(_563)).z : texelFetch(waxBuffer0, int(_563)).w));
-                                    uint _577 = _553 + 1u;
-                                    uint _579 = _471 + (_577 >> 2u);
-                                    uint _582 = _577 & 3u;
-                                    uint _593 = _474 + _553;
-                                    _604 = mix(texelFetch(waxBuffer0, int(_593)), texelFetch(waxBuffer0, int(_593 + 1u)), vec4((_518 - _576) / (((_582 == 0u) ? texelFetch(waxBuffer0, int(_579)).x : ((_582 == 1u) ? texelFetch(waxBuffer0, int(_579)).y : ((_582 == 2u) ? texelFetch(waxBuffer0, int(_579)).z : texelFetch(waxBuffer0, int(_579)).w))) - _576)));
-                                }
-                                _605 = _604;
-                            }
-                            vec4 _618;
-                            if (texelFetch(waxBuffer0, int(_451 + 2u)).x > 0.5)
-                            {
-                                vec3 _616 = mix(pow(abs((_605.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _605.xyz * vec3(0.077399380505084991455078125), step(_605.xyz, vec3(0.040449999272823333740234375)));
-                                _618 = vec4(_616.x, _616.y, _616.z, _605.w);
-                            }
-                            else
-                            {
-                                _618 = _605;
-                            }
-                            _455 = _454 + (_618 * texelFetch(waxBuffer0, int(_451)).w);
-                        }
-                        else
-                        {
-                            _455 = _454;
-                        }
-                        _452 = _474 + _470;
-                    }
-                    _623 = texelFetch(waxBuffer0, int(_437)) * _454;
-                }
-                else
-                {
-                    _623 = texelFetch(waxBuffer0, int(_437));
-                }
-                _632 = _426;
-                _633 = vec4(_623.xyz * _623.w, _623.w) * _426;
-            }
-            else
-            {
-                _632 = 0.0;
-                _633 = vec4(0.0);
-            }
-            _634 = _632;
-            _635 = _633;
-        }
-        else
-        {
-            _634 = 0.0;
-            _635 = vec4(0.0);
-        }
-        uint _636 = wax_TEXCOORD1 + 6u;
-        float _637 = _273 - _426;
-        vec4 _846;
-        float _847;
-        SPIRV_CROSS_BRANCH
-        if (_637 > 0.0)
-        {
-            vec4 _844;
-            float _845;
-            SPIRV_CROSS_BRANCH
-            if (texelFetch(waxBuffer1, int(_636)).x >= 0.0)
-            {
-                uint _647 = uint(texelFetch(waxBuffer1, int(_636)).x);
-                vec4 _833;
-                SPIRV_CROSS_BRANCH
-                if (texelFetch(waxBuffer1, int(_636)).y >= 0.0)
-                {
-                    uint _655 = uint(max(texelFetch(waxBuffer1, int(_636)).y, 0.0));
-                    uint _658 = uint(texelFetch(waxBuffer0, int(_655)).x);
-                    uint _659 = _655 + 1u;
-                    vec4 _664;
-                    _664 = vec4(0.0);
-                    uint _662;
-                    vec4 _665;
-                    SPIRV_CROSS_LOOP
-                    for (uint _661 = _659, _666 = 0u; _666 < _658; _661 = _662, _664 = _665, _666++)
-                    {
-                        uint _673 = _661 + 1u;
-                        uint _680 = uint(texelFetch(waxBuffer0, int(_661)).z);
-                        uint _681 = _661 + 3u;
-                        uint _684 = _681 + ((_680 + 3u) >> 2u);
-                        SPIRV_CROSS_BRANCH
-                        if (_680 > 0u)
-                        {
-                            float _705;
-                            if (texelFetch(waxBuffer0, int(_661)).x < 0.5)
-                            {
-                                _705 = ((texelFetch(waxBuffer0, int(_673)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_673)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_673)).z;
-                            }
-                            else
-                            {
-                                _705 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_673)).xy) * texelFetch(waxBuffer0, int(_673)).zw);
-                            }
-                            float _706 = clamp(_705, -10000000.0, 10000000.0);
-                            uint _708 = uint(texelFetch(waxBuffer0, int(_661)).y);
-                            float _728;
-                            if (_708 == 0u)
-                            {
-                                _728 = clamp(_706, 0.0, 1.0);
-                            }
-                            else
-                            {
-                                float _727;
-                                if (_708 == 1u)
-                                {
-                                    _727 = _706 - floor(_706);
-                                }
-                                else
-                                {
-                                    float _723 = _706 - (2.0 * floor(_706 * 0.5));
-                                    _727 = (_723 > 1.0) ? (2.0 - _723) : _723;
-                                }
-                                _728 = _727;
-                            }
-                            int _730;
-                            _730 = -1;
-                            int _731;
-                            SPIRV_CROSS_LOOP
-                            for (uint _733 = 0u; _733 < _680; _730 = _731, _733++)
-                            {
-                                uint _739 = _681 + (_733 >> 2u);
-                                uint _742 = _733 & 3u;
-                                if (((_742 == 0u) ? texelFetch(waxBuffer0, int(_739)).x : ((_742 == 1u) ? texelFetch(waxBuffer0, int(_739)).y : ((_742 == 2u) ? texelFetch(waxBuffer0, int(_739)).z : texelFetch(waxBuffer0, int(_739)).w))) <= _728)
-                                {
-                                    _731 = int(_733);
-                                }
-                                else
-                                {
-                                    _731 = _730;
-                                }
-                            }
-                            vec4 _815;
-                            if (_730 < 0)
-                            {
-                                _815 = texelFetch(waxBuffer0, int(_684));
-                            }
-                            else
-                            {
-                                uint _763 = uint(_730);
-                                vec4 _814;
-                                if (_763 == (_680 - 1u))
-                                {
-                                    _814 = texelFetch(waxBuffer0, int(_684 + _763));
-                                }
-                                else
-                                {
-                                    uint _773 = _681 + (_763 >> 2u);
-                                    uint _776 = _763 & 3u;
-                                    float _786 = (_776 == 0u) ? texelFetch(waxBuffer0, int(_773)).x : ((_776 == 1u) ? texelFetch(waxBuffer0, int(_773)).y : ((_776 == 2u) ? texelFetch(waxBuffer0, int(_773)).z : texelFetch(waxBuffer0, int(_773)).w));
-                                    uint _787 = _763 + 1u;
-                                    uint _789 = _681 + (_787 >> 2u);
-                                    uint _792 = _787 & 3u;
-                                    uint _803 = _684 + _763;
-                                    _814 = mix(texelFetch(waxBuffer0, int(_803)), texelFetch(waxBuffer0, int(_803 + 1u)), vec4((_728 - _786) / (((_792 == 0u) ? texelFetch(waxBuffer0, int(_789)).x : ((_792 == 1u) ? texelFetch(waxBuffer0, int(_789)).y : ((_792 == 2u) ? texelFetch(waxBuffer0, int(_789)).z : texelFetch(waxBuffer0, int(_789)).w))) - _786)));
-                                }
-                                _815 = _814;
-                            }
-                            vec4 _828;
-                            if (texelFetch(waxBuffer0, int(_661 + 2u)).x > 0.5)
-                            {
-                                vec3 _826 = mix(pow(abs((_815.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _815.xyz * vec3(0.077399380505084991455078125), step(_815.xyz, vec3(0.040449999272823333740234375)));
-                                _828 = vec4(_826.x, _826.y, _826.z, _815.w);
-                            }
-                            else
-                            {
-                                _828 = _815;
-                            }
-                            _665 = _664 + (_828 * texelFetch(waxBuffer0, int(_661)).w);
-                        }
-                        else
-                        {
-                            _665 = _664;
-                        }
-                        _662 = _684 + _680;
-                    }
-                    _833 = texelFetch(waxBuffer0, int(_647)) * _664;
-                }
-                else
-                {
-                    _833 = texelFetch(waxBuffer0, int(_647));
-                }
-                _844 = _635 + (vec4(_833.xyz * _833.w, _833.w) * _637);
-                _845 = _634 + _637;
-            }
-            else
-            {
-                _844 = _635;
-                _845 = _634;
-            }
-            _846 = _844;
-            _847 = _845;
-        }
-        else
-        {
-            _846 = _635;
-            _847 = _634;
-        }
-        _3479 = _846;
-        _3480 = _847;
+        _144 = texelFetch(waxBuffer1, int(_79)).x;
+        _145 = vec2(_86, _91);
+        _146 = true;
     }
     else
     {
-        vec4 _3477;
-        float _3478;
-        if (_119 == 2)
+        float _101 = texelFetch(waxBuffer1, int(_76)).z - texelFetch(waxBuffer1, int(_79)).y;
+        float _104 = texelFetch(waxBuffer1, int(_76)).y + texelFetch(waxBuffer1, int(_79)).y;
+        float _141;
+        vec2 _142;
+        bool _143;
+        if (((texelFetch(waxBuffer1, int(_79)).y > 0.0) && (waxFragCoord().x > _101)) && (waxFragCoord().y < _104))
         {
-            int _855 = int(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y);
-            uint _856 = wax_TEXCOORD1 + 1u;
-            uint _859 = wax_TEXCOORD1 + 2u;
-            uint _862 = wax_TEXCOORD1 + 3u;
-            vec2 _866 = waxFragCoord().xy - texelFetch(waxBuffer1, int(_856)).xy;
-            float _867 = length(_866);
-            bool _869 = (_855 & 1) != 0;
-            float _873 = waxFragCoord().x + 0.5;
-            float _875 = waxFragCoord().x - 0.5;
-            float _882 = waxFragCoord().y + 0.5;
-            float _884 = waxFragCoord().y - 0.5;
-            float _888 = clamp(min(_873, texelFetch(waxBuffer1, int(_862)).z) - max(_875, texelFetch(waxBuffer1, int(_862)).x), 0.0, 1.0) * clamp(min(_882, texelFetch(waxBuffer1, int(_862)).w) - max(_884, texelFetch(waxBuffer1, int(_862)).y), 0.0, 1.0);
-            float _947;
-            if (texelFetch(waxBuffer1, int(_856)).z > 0.0)
-            {
-                float _894 = texelFetch(waxBuffer1, int(_856)).z - _867;
-                vec2 _897 = abs(_866 / vec2(_867));
-                float _898 = _897.x;
-                float _899 = _897.y;
-                float _900 = max(_898, _899);
-                float _901 = min(_898, _899);
-                float _902 = _900 + _901;
-                float _904 = _894 + (0.5 * _902);
-                float _943;
-                if (_901 < 0.001000000047497451305389404296875)
-                {
-                    _943 = clamp(_894 + 0.5, 0.0, 1.0);
-                }
-                else
-                {
-                    float _942;
-                    if (_904 >= _902)
-                    {
-                        _942 = 1.0;
-                    }
-                    else
-                    {
-                        float _941;
-                        if (_904 > 0.0)
-                        {
-                            float _940;
-                            if (_904 < _901)
-                            {
-                                _940 = (_904 * _904) / ((2.0 * _900) * _901);
-                            }
-                            else
-                            {
-                                float _939;
-                                if (_904 > _900)
-                                {
-                                    float _930 = _902 - _904;
-                                    _939 = 1.0 - ((_930 * _930) / ((2.0 * _900) * _901));
-                                }
-                                else
-                                {
-                                    _939 = (_904 - (0.5 * _901)) / _900;
-                                }
-                                _940 = _939;
-                            }
-                            _941 = _940;
-                        }
-                        else
-                        {
-                            _941 = 0.0;
-                        }
-                        _942 = _941;
-                    }
-                    _943 = _942;
-                }
-                _947 = (_867 > 0.001000000047497451305389404296875) ? _943 : clamp(texelFetch(waxBuffer1, int(_856)).z + 0.5, 0.0, 1.0);
-            }
-            else
-            {
-                _947 = 0.0;
-            }
-            float _948 = _869 ? _888 : _947;
-            uint _949 = wax_TEXCOORD1 + 4u;
-            float _1023;
-            if (texelFetch(waxBuffer1, int(_856)).w > 0.0)
-            {
-                float _970 = texelFetch(waxBuffer1, int(_856)).w - _867;
-                vec2 _973 = abs(_866 / vec2(_867));
-                float _974 = _973.x;
-                float _975 = _973.y;
-                float _976 = max(_974, _975);
-                float _977 = min(_974, _975);
-                float _978 = _976 + _977;
-                float _980 = _970 + (0.5 * _978);
-                float _1019;
-                if (_977 < 0.001000000047497451305389404296875)
-                {
-                    _1019 = clamp(_970 + 0.5, 0.0, 1.0);
-                }
-                else
-                {
-                    float _1018;
-                    if (_980 >= _978)
-                    {
-                        _1018 = 1.0;
-                    }
-                    else
-                    {
-                        float _1017;
-                        if (_980 > 0.0)
-                        {
-                            float _1016;
-                            if (_980 < _977)
-                            {
-                                _1016 = (_980 * _980) / ((2.0 * _976) * _977);
-                            }
-                            else
-                            {
-                                float _1015;
-                                if (_980 > _976)
-                                {
-                                    float _1006 = _978 - _980;
-                                    _1015 = 1.0 - ((_1006 * _1006) / ((2.0 * _976) * _977));
-                                }
-                                else
-                                {
-                                    _1015 = (_980 - (0.5 * _977)) / _976;
-                                }
-                                _1016 = _1015;
-                            }
-                            _1017 = _1016;
-                        }
-                        else
-                        {
-                            _1017 = 0.0;
-                        }
-                        _1018 = _1017;
-                    }
-                    _1019 = _1018;
-                }
-                _1023 = (_867 > 0.001000000047497451305389404296875) ? _1019 : clamp(texelFetch(waxBuffer1, int(_856)).w + 0.5, 0.0, 1.0);
-            }
-            else
-            {
-                _1023 = 0.0;
-            }
-            float _1025 = min(_869 ? (clamp(min(_873, texelFetch(waxBuffer1, int(_949)).z) - max(_875, texelFetch(waxBuffer1, int(_949)).x), 0.0, 1.0) * clamp(min(_882, texelFetch(waxBuffer1, int(_949)).w) - max(_884, texelFetch(waxBuffer1, int(_949)).y), 0.0, 1.0)) : _1023, _948);
-            float _1084;
-            if (texelFetch(waxBuffer1, int(_859)).x > 0.0)
-            {
-                float _1031 = texelFetch(waxBuffer1, int(_859)).x - _867;
-                vec2 _1034 = abs(_866 / vec2(_867));
-                float _1035 = _1034.x;
-                float _1036 = _1034.y;
-                float _1037 = max(_1035, _1036);
-                float _1038 = min(_1035, _1036);
-                float _1039 = _1037 + _1038;
-                float _1041 = _1031 + (0.5 * _1039);
-                float _1080;
-                if (_1038 < 0.001000000047497451305389404296875)
-                {
-                    _1080 = clamp(_1031 + 0.5, 0.0, 1.0);
-                }
-                else
-                {
-                    float _1079;
-                    if (_1041 >= _1039)
-                    {
-                        _1079 = 1.0;
-                    }
-                    else
-                    {
-                        float _1078;
-                        if (_1041 > 0.0)
-                        {
-                            float _1077;
-                            if (_1041 < _1038)
-                            {
-                                _1077 = (_1041 * _1041) / ((2.0 * _1037) * _1038);
-                            }
-                            else
-                            {
-                                float _1076;
-                                if (_1041 > _1037)
-                                {
-                                    float _1067 = _1039 - _1041;
-                                    _1076 = 1.0 - ((_1067 * _1067) / ((2.0 * _1037) * _1038));
-                                }
-                                else
-                                {
-                                    _1076 = (_1041 - (0.5 * _1038)) / _1037;
-                                }
-                                _1077 = _1076;
-                            }
-                            _1078 = _1077;
-                        }
-                        else
-                        {
-                            _1078 = 0.0;
-                        }
-                        _1079 = _1078;
-                    }
-                    _1080 = _1079;
-                }
-                _1084 = (_867 > 0.001000000047497451305389404296875) ? _1080 : clamp(texelFetch(waxBuffer1, int(_859)).x + 0.5, 0.0, 1.0);
-            }
-            else
-            {
-                _1084 = 0.0;
-            }
-            float _1085 = min(_1084, _1025);
-            float _1144;
-            if (texelFetch(waxBuffer1, int(_859)).y > 0.0)
-            {
-                float _1091 = texelFetch(waxBuffer1, int(_859)).y - _867;
-                vec2 _1094 = abs(_866 / vec2(_867));
-                float _1095 = _1094.x;
-                float _1096 = _1094.y;
-                float _1097 = max(_1095, _1096);
-                float _1098 = min(_1095, _1096);
-                float _1099 = _1097 + _1098;
-                float _1101 = _1091 + (0.5 * _1099);
-                float _1140;
-                if (_1098 < 0.001000000047497451305389404296875)
-                {
-                    _1140 = clamp(_1091 + 0.5, 0.0, 1.0);
-                }
-                else
-                {
-                    float _1139;
-                    if (_1101 >= _1099)
-                    {
-                        _1139 = 1.0;
-                    }
-                    else
-                    {
-                        float _1138;
-                        if (_1101 > 0.0)
-                        {
-                            float _1137;
-                            if (_1101 < _1098)
-                            {
-                                _1137 = (_1101 * _1101) / ((2.0 * _1097) * _1098);
-                            }
-                            else
-                            {
-                                float _1136;
-                                if (_1101 > _1097)
-                                {
-                                    float _1127 = _1099 - _1101;
-                                    _1136 = 1.0 - ((_1127 * _1127) / ((2.0 * _1097) * _1098));
-                                }
-                                else
-                                {
-                                    _1136 = (_1101 - (0.5 * _1098)) / _1097;
-                                }
-                                _1137 = _1136;
-                            }
-                            _1138 = _1137;
-                        }
-                        else
-                        {
-                            _1138 = 0.0;
-                        }
-                        _1139 = _1138;
-                    }
-                    _1140 = _1139;
-                }
-                _1144 = (_867 > 0.001000000047497451305389404296875) ? _1140 : clamp(texelFetch(waxBuffer1, int(_859)).y + 0.5, 0.0, 1.0);
-            }
-            else
-            {
-                _1144 = 0.0;
-            }
-            float _1145 = min(_1144, _1085);
-            float _1150 = ((_855 & 2) != 0) ? max(_888 - _948, 0.0) : 0.0;
-            float _1153 = ((_948 - _1025) + _1085) - _1145;
-            float _1154 = _1025 - _1085;
-            bool _1156 = (_855 & 16) == 0;
-            float _1160;
-            if (_1156)
-            {
-                _1160 = _1153 + _1154;
-            }
-            else
-            {
-                _1160 = _1153;
-            }
-            float _1161 = _1156 ? 0.0 : _1154;
-            uint _1162 = wax_TEXCOORD1 + 5u;
-            float _1369;
-            vec4 _1370;
-            SPIRV_CROSS_BRANCH
-            if (_1150 > 0.0)
-            {
-                float _1367;
-                vec4 _1368;
-                SPIRV_CROSS_BRANCH
-                if (texelFetch(waxBuffer1, int(_1162)).x >= 0.0)
-                {
-                    uint _1172 = uint(texelFetch(waxBuffer1, int(_1162)).x);
-                    vec4 _1358;
-                    SPIRV_CROSS_BRANCH
-                    if (texelFetch(waxBuffer1, int(_1162)).y >= 0.0)
-                    {
-                        uint _1180 = uint(max(texelFetch(waxBuffer1, int(_1162)).y, 0.0));
-                        uint _1183 = uint(texelFetch(waxBuffer0, int(_1180)).x);
-                        uint _1184 = _1180 + 1u;
-                        vec4 _1189;
-                        _1189 = vec4(0.0);
-                        uint _1187;
-                        vec4 _1190;
-                        SPIRV_CROSS_LOOP
-                        for (uint _1186 = _1184, _1191 = 0u; _1191 < _1183; _1186 = _1187, _1189 = _1190, _1191++)
-                        {
-                            uint _1198 = _1186 + 1u;
-                            uint _1205 = uint(texelFetch(waxBuffer0, int(_1186)).z);
-                            uint _1206 = _1186 + 3u;
-                            uint _1209 = _1206 + ((_1205 + 3u) >> 2u);
-                            SPIRV_CROSS_BRANCH
-                            if (_1205 > 0u)
-                            {
-                                float _1230;
-                                if (texelFetch(waxBuffer0, int(_1186)).x < 0.5)
-                                {
-                                    _1230 = ((texelFetch(waxBuffer0, int(_1198)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_1198)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_1198)).z;
-                                }
-                                else
-                                {
-                                    _1230 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_1198)).xy) * texelFetch(waxBuffer0, int(_1198)).zw);
-                                }
-                                float _1231 = clamp(_1230, -10000000.0, 10000000.0);
-                                uint _1233 = uint(texelFetch(waxBuffer0, int(_1186)).y);
-                                float _1253;
-                                if (_1233 == 0u)
-                                {
-                                    _1253 = clamp(_1231, 0.0, 1.0);
-                                }
-                                else
-                                {
-                                    float _1252;
-                                    if (_1233 == 1u)
-                                    {
-                                        _1252 = _1231 - floor(_1231);
-                                    }
-                                    else
-                                    {
-                                        float _1248 = _1231 - (2.0 * floor(_1231 * 0.5));
-                                        _1252 = (_1248 > 1.0) ? (2.0 - _1248) : _1248;
-                                    }
-                                    _1253 = _1252;
-                                }
-                                int _1255;
-                                _1255 = -1;
-                                int _1256;
-                                SPIRV_CROSS_LOOP
-                                for (uint _1258 = 0u; _1258 < _1205; _1255 = _1256, _1258++)
-                                {
-                                    uint _1264 = _1206 + (_1258 >> 2u);
-                                    uint _1267 = _1258 & 3u;
-                                    if (((_1267 == 0u) ? texelFetch(waxBuffer0, int(_1264)).x : ((_1267 == 1u) ? texelFetch(waxBuffer0, int(_1264)).y : ((_1267 == 2u) ? texelFetch(waxBuffer0, int(_1264)).z : texelFetch(waxBuffer0, int(_1264)).w))) <= _1253)
-                                    {
-                                        _1256 = int(_1258);
-                                    }
-                                    else
-                                    {
-                                        _1256 = _1255;
-                                    }
-                                }
-                                vec4 _1340;
-                                if (_1255 < 0)
-                                {
-                                    _1340 = texelFetch(waxBuffer0, int(_1209));
-                                }
-                                else
-                                {
-                                    uint _1288 = uint(_1255);
-                                    vec4 _1339;
-                                    if (_1288 == (_1205 - 1u))
-                                    {
-                                        _1339 = texelFetch(waxBuffer0, int(_1209 + _1288));
-                                    }
-                                    else
-                                    {
-                                        uint _1298 = _1206 + (_1288 >> 2u);
-                                        uint _1301 = _1288 & 3u;
-                                        float _1311 = (_1301 == 0u) ? texelFetch(waxBuffer0, int(_1298)).x : ((_1301 == 1u) ? texelFetch(waxBuffer0, int(_1298)).y : ((_1301 == 2u) ? texelFetch(waxBuffer0, int(_1298)).z : texelFetch(waxBuffer0, int(_1298)).w));
-                                        uint _1312 = _1288 + 1u;
-                                        uint _1314 = _1206 + (_1312 >> 2u);
-                                        uint _1317 = _1312 & 3u;
-                                        uint _1328 = _1209 + _1288;
-                                        _1339 = mix(texelFetch(waxBuffer0, int(_1328)), texelFetch(waxBuffer0, int(_1328 + 1u)), vec4((_1253 - _1311) / (((_1317 == 0u) ? texelFetch(waxBuffer0, int(_1314)).x : ((_1317 == 1u) ? texelFetch(waxBuffer0, int(_1314)).y : ((_1317 == 2u) ? texelFetch(waxBuffer0, int(_1314)).z : texelFetch(waxBuffer0, int(_1314)).w))) - _1311)));
-                                    }
-                                    _1340 = _1339;
-                                }
-                                vec4 _1353;
-                                if (texelFetch(waxBuffer0, int(_1186 + 2u)).x > 0.5)
-                                {
-                                    vec3 _1351 = mix(pow(abs((_1340.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _1340.xyz * vec3(0.077399380505084991455078125), step(_1340.xyz, vec3(0.040449999272823333740234375)));
-                                    _1353 = vec4(_1351.x, _1351.y, _1351.z, _1340.w);
-                                }
-                                else
-                                {
-                                    _1353 = _1340;
-                                }
-                                _1190 = _1189 + (_1353 * texelFetch(waxBuffer0, int(_1186)).w);
-                            }
-                            else
-                            {
-                                _1190 = _1189;
-                            }
-                            _1187 = _1209 + _1205;
-                        }
-                        _1358 = texelFetch(waxBuffer0, int(_1172)) * _1189;
-                    }
-                    else
-                    {
-                        _1358 = texelFetch(waxBuffer0, int(_1172));
-                    }
-                    _1367 = _1150;
-                    _1368 = vec4(_1358.xyz * _1358.w, _1358.w) * _1150;
-                }
-                else
-                {
-                    _1367 = 0.0;
-                    _1368 = vec4(0.0);
-                }
-                _1369 = _1367;
-                _1370 = _1368;
-            }
-            else
-            {
-                _1369 = 0.0;
-                _1370 = vec4(0.0);
-            }
-            uint _1371 = wax_TEXCOORD1 + 6u;
-            float _1580;
-            vec4 _1581;
-            SPIRV_CROSS_BRANCH
-            if (_1160 > 0.0)
-            {
-                float _1578;
-                vec4 _1579;
-                SPIRV_CROSS_BRANCH
-                if (texelFetch(waxBuffer1, int(_1371)).x >= 0.0)
-                {
-                    uint _1381 = uint(texelFetch(waxBuffer1, int(_1371)).x);
-                    vec4 _1567;
-                    SPIRV_CROSS_BRANCH
-                    if (texelFetch(waxBuffer1, int(_1371)).y >= 0.0)
-                    {
-                        uint _1389 = uint(max(texelFetch(waxBuffer1, int(_1371)).y, 0.0));
-                        uint _1392 = uint(texelFetch(waxBuffer0, int(_1389)).x);
-                        uint _1393 = _1389 + 1u;
-                        vec4 _1398;
-                        _1398 = vec4(0.0);
-                        uint _1396;
-                        vec4 _1399;
-                        SPIRV_CROSS_LOOP
-                        for (uint _1395 = _1393, _1400 = 0u; _1400 < _1392; _1395 = _1396, _1398 = _1399, _1400++)
-                        {
-                            uint _1407 = _1395 + 1u;
-                            uint _1414 = uint(texelFetch(waxBuffer0, int(_1395)).z);
-                            uint _1415 = _1395 + 3u;
-                            uint _1418 = _1415 + ((_1414 + 3u) >> 2u);
-                            SPIRV_CROSS_BRANCH
-                            if (_1414 > 0u)
-                            {
-                                float _1439;
-                                if (texelFetch(waxBuffer0, int(_1395)).x < 0.5)
-                                {
-                                    _1439 = ((texelFetch(waxBuffer0, int(_1407)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_1407)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_1407)).z;
-                                }
-                                else
-                                {
-                                    _1439 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_1407)).xy) * texelFetch(waxBuffer0, int(_1407)).zw);
-                                }
-                                float _1440 = clamp(_1439, -10000000.0, 10000000.0);
-                                uint _1442 = uint(texelFetch(waxBuffer0, int(_1395)).y);
-                                float _1462;
-                                if (_1442 == 0u)
-                                {
-                                    _1462 = clamp(_1440, 0.0, 1.0);
-                                }
-                                else
-                                {
-                                    float _1461;
-                                    if (_1442 == 1u)
-                                    {
-                                        _1461 = _1440 - floor(_1440);
-                                    }
-                                    else
-                                    {
-                                        float _1457 = _1440 - (2.0 * floor(_1440 * 0.5));
-                                        _1461 = (_1457 > 1.0) ? (2.0 - _1457) : _1457;
-                                    }
-                                    _1462 = _1461;
-                                }
-                                int _1464;
-                                _1464 = -1;
-                                int _1465;
-                                SPIRV_CROSS_LOOP
-                                for (uint _1467 = 0u; _1467 < _1414; _1464 = _1465, _1467++)
-                                {
-                                    uint _1473 = _1415 + (_1467 >> 2u);
-                                    uint _1476 = _1467 & 3u;
-                                    if (((_1476 == 0u) ? texelFetch(waxBuffer0, int(_1473)).x : ((_1476 == 1u) ? texelFetch(waxBuffer0, int(_1473)).y : ((_1476 == 2u) ? texelFetch(waxBuffer0, int(_1473)).z : texelFetch(waxBuffer0, int(_1473)).w))) <= _1462)
-                                    {
-                                        _1465 = int(_1467);
-                                    }
-                                    else
-                                    {
-                                        _1465 = _1464;
-                                    }
-                                }
-                                vec4 _1549;
-                                if (_1464 < 0)
-                                {
-                                    _1549 = texelFetch(waxBuffer0, int(_1418));
-                                }
-                                else
-                                {
-                                    uint _1497 = uint(_1464);
-                                    vec4 _1548;
-                                    if (_1497 == (_1414 - 1u))
-                                    {
-                                        _1548 = texelFetch(waxBuffer0, int(_1418 + _1497));
-                                    }
-                                    else
-                                    {
-                                        uint _1507 = _1415 + (_1497 >> 2u);
-                                        uint _1510 = _1497 & 3u;
-                                        float _1520 = (_1510 == 0u) ? texelFetch(waxBuffer0, int(_1507)).x : ((_1510 == 1u) ? texelFetch(waxBuffer0, int(_1507)).y : ((_1510 == 2u) ? texelFetch(waxBuffer0, int(_1507)).z : texelFetch(waxBuffer0, int(_1507)).w));
-                                        uint _1521 = _1497 + 1u;
-                                        uint _1523 = _1415 + (_1521 >> 2u);
-                                        uint _1526 = _1521 & 3u;
-                                        uint _1537 = _1418 + _1497;
-                                        _1548 = mix(texelFetch(waxBuffer0, int(_1537)), texelFetch(waxBuffer0, int(_1537 + 1u)), vec4((_1462 - _1520) / (((_1526 == 0u) ? texelFetch(waxBuffer0, int(_1523)).x : ((_1526 == 1u) ? texelFetch(waxBuffer0, int(_1523)).y : ((_1526 == 2u) ? texelFetch(waxBuffer0, int(_1523)).z : texelFetch(waxBuffer0, int(_1523)).w))) - _1520)));
-                                    }
-                                    _1549 = _1548;
-                                }
-                                vec4 _1562;
-                                if (texelFetch(waxBuffer0, int(_1395 + 2u)).x > 0.5)
-                                {
-                                    vec3 _1560 = mix(pow(abs((_1549.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _1549.xyz * vec3(0.077399380505084991455078125), step(_1549.xyz, vec3(0.040449999272823333740234375)));
-                                    _1562 = vec4(_1560.x, _1560.y, _1560.z, _1549.w);
-                                }
-                                else
-                                {
-                                    _1562 = _1549;
-                                }
-                                _1399 = _1398 + (_1562 * texelFetch(waxBuffer0, int(_1395)).w);
-                            }
-                            else
-                            {
-                                _1399 = _1398;
-                            }
-                            _1396 = _1418 + _1414;
-                        }
-                        _1567 = texelFetch(waxBuffer0, int(_1381)) * _1398;
-                    }
-                    else
-                    {
-                        _1567 = texelFetch(waxBuffer0, int(_1381));
-                    }
-                    _1578 = _1369 + _1160;
-                    _1579 = _1370 + (vec4(_1567.xyz * _1567.w, _1567.w) * _1160);
-                }
-                else
-                {
-                    _1578 = _1369;
-                    _1579 = _1370;
-                }
-                _1580 = _1578;
-                _1581 = _1579;
-            }
-            else
-            {
-                _1580 = _1369;
-                _1581 = _1370;
-            }
-            uint _1582 = wax_TEXCOORD1 + 7u;
-            float _1585 = ((_855 & 4) != 0) ? _1145 : 0.0;
-            float _1794;
-            vec4 _1795;
-            SPIRV_CROSS_BRANCH
-            if (_1585 > 0.0)
-            {
-                float _1792;
-                vec4 _1793;
-                SPIRV_CROSS_BRANCH
-                if (texelFetch(waxBuffer1, int(_1582)).x >= 0.0)
-                {
-                    uint _1595 = uint(texelFetch(waxBuffer1, int(_1582)).x);
-                    vec4 _1781;
-                    SPIRV_CROSS_BRANCH
-                    if (texelFetch(waxBuffer1, int(_1582)).y >= 0.0)
-                    {
-                        uint _1603 = uint(max(texelFetch(waxBuffer1, int(_1582)).y, 0.0));
-                        uint _1606 = uint(texelFetch(waxBuffer0, int(_1603)).x);
-                        uint _1607 = _1603 + 1u;
-                        vec4 _1612;
-                        _1612 = vec4(0.0);
-                        uint _1610;
-                        vec4 _1613;
-                        SPIRV_CROSS_LOOP
-                        for (uint _1609 = _1607, _1614 = 0u; _1614 < _1606; _1609 = _1610, _1612 = _1613, _1614++)
-                        {
-                            uint _1621 = _1609 + 1u;
-                            uint _1628 = uint(texelFetch(waxBuffer0, int(_1609)).z);
-                            uint _1629 = _1609 + 3u;
-                            uint _1632 = _1629 + ((_1628 + 3u) >> 2u);
-                            SPIRV_CROSS_BRANCH
-                            if (_1628 > 0u)
-                            {
-                                float _1653;
-                                if (texelFetch(waxBuffer0, int(_1609)).x < 0.5)
-                                {
-                                    _1653 = ((texelFetch(waxBuffer0, int(_1621)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_1621)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_1621)).z;
-                                }
-                                else
-                                {
-                                    _1653 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_1621)).xy) * texelFetch(waxBuffer0, int(_1621)).zw);
-                                }
-                                float _1654 = clamp(_1653, -10000000.0, 10000000.0);
-                                uint _1656 = uint(texelFetch(waxBuffer0, int(_1609)).y);
-                                float _1676;
-                                if (_1656 == 0u)
-                                {
-                                    _1676 = clamp(_1654, 0.0, 1.0);
-                                }
-                                else
-                                {
-                                    float _1675;
-                                    if (_1656 == 1u)
-                                    {
-                                        _1675 = _1654 - floor(_1654);
-                                    }
-                                    else
-                                    {
-                                        float _1671 = _1654 - (2.0 * floor(_1654 * 0.5));
-                                        _1675 = (_1671 > 1.0) ? (2.0 - _1671) : _1671;
-                                    }
-                                    _1676 = _1675;
-                                }
-                                int _1678;
-                                _1678 = -1;
-                                int _1679;
-                                SPIRV_CROSS_LOOP
-                                for (uint _1681 = 0u; _1681 < _1628; _1678 = _1679, _1681++)
-                                {
-                                    uint _1687 = _1629 + (_1681 >> 2u);
-                                    uint _1690 = _1681 & 3u;
-                                    if (((_1690 == 0u) ? texelFetch(waxBuffer0, int(_1687)).x : ((_1690 == 1u) ? texelFetch(waxBuffer0, int(_1687)).y : ((_1690 == 2u) ? texelFetch(waxBuffer0, int(_1687)).z : texelFetch(waxBuffer0, int(_1687)).w))) <= _1676)
-                                    {
-                                        _1679 = int(_1681);
-                                    }
-                                    else
-                                    {
-                                        _1679 = _1678;
-                                    }
-                                }
-                                vec4 _1763;
-                                if (_1678 < 0)
-                                {
-                                    _1763 = texelFetch(waxBuffer0, int(_1632));
-                                }
-                                else
-                                {
-                                    uint _1711 = uint(_1678);
-                                    vec4 _1762;
-                                    if (_1711 == (_1628 - 1u))
-                                    {
-                                        _1762 = texelFetch(waxBuffer0, int(_1632 + _1711));
-                                    }
-                                    else
-                                    {
-                                        uint _1721 = _1629 + (_1711 >> 2u);
-                                        uint _1724 = _1711 & 3u;
-                                        float _1734 = (_1724 == 0u) ? texelFetch(waxBuffer0, int(_1721)).x : ((_1724 == 1u) ? texelFetch(waxBuffer0, int(_1721)).y : ((_1724 == 2u) ? texelFetch(waxBuffer0, int(_1721)).z : texelFetch(waxBuffer0, int(_1721)).w));
-                                        uint _1735 = _1711 + 1u;
-                                        uint _1737 = _1629 + (_1735 >> 2u);
-                                        uint _1740 = _1735 & 3u;
-                                        uint _1751 = _1632 + _1711;
-                                        _1762 = mix(texelFetch(waxBuffer0, int(_1751)), texelFetch(waxBuffer0, int(_1751 + 1u)), vec4((_1676 - _1734) / (((_1740 == 0u) ? texelFetch(waxBuffer0, int(_1737)).x : ((_1740 == 1u) ? texelFetch(waxBuffer0, int(_1737)).y : ((_1740 == 2u) ? texelFetch(waxBuffer0, int(_1737)).z : texelFetch(waxBuffer0, int(_1737)).w))) - _1734)));
-                                    }
-                                    _1763 = _1762;
-                                }
-                                vec4 _1776;
-                                if (texelFetch(waxBuffer0, int(_1609 + 2u)).x > 0.5)
-                                {
-                                    vec3 _1774 = mix(pow(abs((_1763.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _1763.xyz * vec3(0.077399380505084991455078125), step(_1763.xyz, vec3(0.040449999272823333740234375)));
-                                    _1776 = vec4(_1774.x, _1774.y, _1774.z, _1763.w);
-                                }
-                                else
-                                {
-                                    _1776 = _1763;
-                                }
-                                _1613 = _1612 + (_1776 * texelFetch(waxBuffer0, int(_1609)).w);
-                            }
-                            else
-                            {
-                                _1613 = _1612;
-                            }
-                            _1610 = _1632 + _1628;
-                        }
-                        _1781 = texelFetch(waxBuffer0, int(_1595)) * _1612;
-                    }
-                    else
-                    {
-                        _1781 = texelFetch(waxBuffer0, int(_1595));
-                    }
-                    _1792 = _1580 + _1585;
-                    _1793 = _1581 + (vec4(_1781.xyz * _1781.w, _1781.w) * _1585);
-                }
-                else
-                {
-                    _1792 = _1580;
-                    _1793 = _1581;
-                }
-                _1794 = _1792;
-                _1795 = _1793;
-            }
-            else
-            {
-                _1794 = _1580;
-                _1795 = _1581;
-            }
-            bool _1796 = _1161 > 0.0;
-            vec4 _2801;
-            float _2802;
-            if (_1796)
-            {
-                int _1800 = int(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).z);
-                uint _1803 = wax_TEXCOORD1 + uint(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).w);
-                vec4 _2799;
-                float _2800;
-                SPIRV_CROSS_BRANCH
-                if (_1800 == 1)
-                {
-                    uint _1811 = wax_TEXCOORD1 + uint(texelFetch(waxBuffer1, int(_1803)).y);
-                    vec4 _2019;
-                    float _2020;
-                    SPIRV_CROSS_BRANCH
-                    if (_1796)
-                    {
-                        vec4 _2017;
-                        float _2018;
-                        SPIRV_CROSS_BRANCH
-                        if (texelFetch(waxBuffer1, int(_1811)).x >= 0.0)
-                        {
-                            uint _1820 = uint(texelFetch(waxBuffer1, int(_1811)).x);
-                            vec4 _2006;
-                            SPIRV_CROSS_BRANCH
-                            if (texelFetch(waxBuffer1, int(_1811)).y >= 0.0)
-                            {
-                                uint _1828 = uint(max(texelFetch(waxBuffer1, int(_1811)).y, 0.0));
-                                uint _1831 = uint(texelFetch(waxBuffer0, int(_1828)).x);
-                                uint _1832 = _1828 + 1u;
-                                vec4 _1837;
-                                _1837 = vec4(0.0);
-                                uint _1835;
-                                vec4 _1838;
-                                SPIRV_CROSS_LOOP
-                                for (uint _1834 = _1832, _1839 = 0u; _1839 < _1831; _1834 = _1835, _1837 = _1838, _1839++)
-                                {
-                                    uint _1846 = _1834 + 1u;
-                                    uint _1853 = uint(texelFetch(waxBuffer0, int(_1834)).z);
-                                    uint _1854 = _1834 + 3u;
-                                    uint _1857 = _1854 + ((_1853 + 3u) >> 2u);
-                                    SPIRV_CROSS_BRANCH
-                                    if (_1853 > 0u)
-                                    {
-                                        float _1878;
-                                        if (texelFetch(waxBuffer0, int(_1834)).x < 0.5)
-                                        {
-                                            _1878 = ((texelFetch(waxBuffer0, int(_1846)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_1846)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_1846)).z;
-                                        }
-                                        else
-                                        {
-                                            _1878 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_1846)).xy) * texelFetch(waxBuffer0, int(_1846)).zw);
-                                        }
-                                        float _1879 = clamp(_1878, -10000000.0, 10000000.0);
-                                        uint _1881 = uint(texelFetch(waxBuffer0, int(_1834)).y);
-                                        float _1901;
-                                        if (_1881 == 0u)
-                                        {
-                                            _1901 = clamp(_1879, 0.0, 1.0);
-                                        }
-                                        else
-                                        {
-                                            float _1900;
-                                            if (_1881 == 1u)
-                                            {
-                                                _1900 = _1879 - floor(_1879);
-                                            }
-                                            else
-                                            {
-                                                float _1896 = _1879 - (2.0 * floor(_1879 * 0.5));
-                                                _1900 = (_1896 > 1.0) ? (2.0 - _1896) : _1896;
-                                            }
-                                            _1901 = _1900;
-                                        }
-                                        int _1903;
-                                        _1903 = -1;
-                                        int _1904;
-                                        SPIRV_CROSS_LOOP
-                                        for (uint _1906 = 0u; _1906 < _1853; _1903 = _1904, _1906++)
-                                        {
-                                            uint _1912 = _1854 + (_1906 >> 2u);
-                                            uint _1915 = _1906 & 3u;
-                                            if (((_1915 == 0u) ? texelFetch(waxBuffer0, int(_1912)).x : ((_1915 == 1u) ? texelFetch(waxBuffer0, int(_1912)).y : ((_1915 == 2u) ? texelFetch(waxBuffer0, int(_1912)).z : texelFetch(waxBuffer0, int(_1912)).w))) <= _1901)
-                                            {
-                                                _1904 = int(_1906);
-                                            }
-                                            else
-                                            {
-                                                _1904 = _1903;
-                                            }
-                                        }
-                                        vec4 _1988;
-                                        if (_1903 < 0)
-                                        {
-                                            _1988 = texelFetch(waxBuffer0, int(_1857));
-                                        }
-                                        else
-                                        {
-                                            uint _1936 = uint(_1903);
-                                            vec4 _1987;
-                                            if (_1936 == (_1853 - 1u))
-                                            {
-                                                _1987 = texelFetch(waxBuffer0, int(_1857 + _1936));
-                                            }
-                                            else
-                                            {
-                                                uint _1946 = _1854 + (_1936 >> 2u);
-                                                uint _1949 = _1936 & 3u;
-                                                float _1959 = (_1949 == 0u) ? texelFetch(waxBuffer0, int(_1946)).x : ((_1949 == 1u) ? texelFetch(waxBuffer0, int(_1946)).y : ((_1949 == 2u) ? texelFetch(waxBuffer0, int(_1946)).z : texelFetch(waxBuffer0, int(_1946)).w));
-                                                uint _1960 = _1936 + 1u;
-                                                uint _1962 = _1854 + (_1960 >> 2u);
-                                                uint _1965 = _1960 & 3u;
-                                                uint _1976 = _1857 + _1936;
-                                                _1987 = mix(texelFetch(waxBuffer0, int(_1976)), texelFetch(waxBuffer0, int(_1976 + 1u)), vec4((_1901 - _1959) / (((_1965 == 0u) ? texelFetch(waxBuffer0, int(_1962)).x : ((_1965 == 1u) ? texelFetch(waxBuffer0, int(_1962)).y : ((_1965 == 2u) ? texelFetch(waxBuffer0, int(_1962)).z : texelFetch(waxBuffer0, int(_1962)).w))) - _1959)));
-                                            }
-                                            _1988 = _1987;
-                                        }
-                                        vec4 _2001;
-                                        if (texelFetch(waxBuffer0, int(_1834 + 2u)).x > 0.5)
-                                        {
-                                            vec3 _1999 = mix(pow(abs((_1988.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _1988.xyz * vec3(0.077399380505084991455078125), step(_1988.xyz, vec3(0.040449999272823333740234375)));
-                                            _2001 = vec4(_1999.x, _1999.y, _1999.z, _1988.w);
-                                        }
-                                        else
-                                        {
-                                            _2001 = _1988;
-                                        }
-                                        _1838 = _1837 + (_2001 * texelFetch(waxBuffer0, int(_1834)).w);
-                                    }
-                                    else
-                                    {
-                                        _1838 = _1837;
-                                    }
-                                    _1835 = _1857 + _1853;
-                                }
-                                _2006 = texelFetch(waxBuffer0, int(_1820)) * _1837;
-                            }
-                            else
-                            {
-                                _2006 = texelFetch(waxBuffer0, int(_1820));
-                            }
-                            _2017 = _1795 + (vec4(_2006.xyz * _2006.w, _2006.w) * _1161);
-                            _2018 = _1794 + _1161;
-                        }
-                        else
-                        {
-                            _2017 = _1795;
-                            _2018 = _1794;
-                        }
-                        _2019 = _2017;
-                        _2020 = _2018;
-                    }
-                    else
-                    {
-                        _2019 = _1795;
-                        _2020 = _1794;
-                    }
-                    _2799 = _2019;
-                    _2800 = _2020;
-                }
-                else
-                {
-                    float _2021 = _866.x;
-                    float _2024 = _866.y;
-                    vec4 _2797;
-                    float _2798;
-                    if ((abs(_2021) < 0.5) && (abs(_2024) < 0.5))
-                    {
-                        float _2033 = 6.283185482025146484375 * texelFetch(waxBuffer1, int(_1803)).x;
-                        float _2034 = sin(_2033);
-                        float _2036 = -cos(_2033);
-                        float _2038 = 0.5 - _2021;
-                        float _2039 = 0.5 + _2021;
-                        float _2040 = 0.5 - _2024;
-                        float _2041 = 0.5 + _2024;
-                        bool _2042 = _2034 > 0.0;
-                        float _2046 = (_2042 ? _2039 : _2038) / max(abs(_2034), 9.9999996826552253889678874634872e-21);
-                        bool _2047 = _2036 > 0.0;
-                        float _2051 = (_2047 ? _2041 : _2040) / max(abs(_2036), 9.9999996826552253889678874634872e-21);
-                        vec2 _2053 = vec2(_2034, _2036) * min(_2046, _2051);
-                        bool _2054 = _2051 <= _2046;
-                        float _2099;
-                        if ((_2054 && (_2036 < 0.0)) && (texelFetch(waxBuffer1, int(_1803)).x < 0.5))
-                        {
-                            _2099 = _2040 * _2053.x;
-                        }
-                        else
-                        {
-                            bool _2064 = _2046 < _2051;
-                            float _2098;
-                            if (_2064 && _2042)
-                            {
-                                _2098 = _2039 * (_2040 + (_2040 + _2053.y));
-                            }
-                            else
-                            {
-                                float _2097;
-                                if (_2054 && _2047)
-                                {
-                                    _2097 = (_2039 * (1.5 - _2024)) + (_2041 * (_2039 - _2053.x));
-                                }
-                                else
-                                {
-                                    float _2096;
-                                    if (_2064)
-                                    {
-                                        _2096 = ((_2039 * (1.5 - _2024)) + _2041) + (_2038 * (_2041 - _2053.y));
-                                    }
-                                    else
-                                    {
-                                        _2096 = 2.0 + (_2040 * _2053.x);
-                                    }
-                                    _2097 = _2096;
-                                }
-                                _2098 = _2097;
-                            }
-                            _2099 = _2098;
-                        }
-                        float _2100 = 0.5 * _2099;
-                        float _2102;
-                        vec4 _2105;
-                        _2102 = _1794;
-                        _2105 = _1795;
-                        float _2108;
-                        int _2110;
-                        float _2103;
-                        vec4 _2106;
-                        float _2107 = _2100;
-                        int _2109 = 0;
-                        SPIRV_CROSS_LOOP
-                        for (; _2109 < _1800; _2102 = _2103, _2105 = _2106, _2107 = _2108, _2109 = _2110)
-                        {
-                            _2110 = _2109 + 1;
-                            uint _2116 = _1803 + uint(_2110);
-                            float _2119 = 6.283185482025146484375 * texelFetch(waxBuffer1, int(_2116)).x;
-                            float _2120 = sin(_2119);
-                            float _2122 = -cos(_2119);
-                            bool _2124 = _2120 > 0.0;
-                            float _2128 = (_2124 ? _2039 : _2038) / max(abs(_2120), 9.9999996826552253889678874634872e-21);
-                            bool _2129 = _2122 > 0.0;
-                            float _2133 = (_2129 ? _2041 : _2040) / max(abs(_2122), 9.9999996826552253889678874634872e-21);
-                            vec2 _2135 = vec2(_2120, _2122) * min(_2128, _2133);
-                            bool _2136 = _2133 <= _2128;
-                            float _2181;
-                            if ((_2136 && (_2122 < 0.0)) && (texelFetch(waxBuffer1, int(_2116)).x < 0.5))
-                            {
-                                _2181 = _2040 * _2135.x;
-                            }
-                            else
-                            {
-                                bool _2146 = _2128 < _2133;
-                                float _2180;
-                                if (_2146 && _2124)
-                                {
-                                    _2180 = _2039 * (_2040 + (_2040 + _2135.y));
-                                }
-                                else
-                                {
-                                    float _2179;
-                                    if (_2136 && _2129)
-                                    {
-                                        _2179 = (_2039 * (1.5 - _2024)) + (_2041 * (_2039 - _2135.x));
-                                    }
-                                    else
-                                    {
-                                        float _2178;
-                                        if (_2146)
-                                        {
-                                            _2178 = ((_2039 * (1.5 - _2024)) + _2041) + (_2038 * (_2041 - _2135.y));
-                                        }
-                                        else
-                                        {
-                                            _2178 = 2.0 + (_2040 * _2135.x);
-                                        }
-                                        _2179 = _2178;
-                                    }
-                                    _2180 = _2179;
-                                }
-                                _2181 = _2180;
-                            }
-                            _2108 = (_2110 < _1800) ? (0.5 * _2181) : (_2100 + 1.0);
-                            uint _2189 = wax_TEXCOORD1 + uint(texelFetch(waxBuffer1, int(_1803 + uint(_2109))).y);
-                            float _2192 = _1161 * max(_2108 - _2107, 0.0);
-                            SPIRV_CROSS_BRANCH
-                            if (_2192 > 0.0)
-                            {
-                                float _2399;
-                                vec4 _2400;
-                                SPIRV_CROSS_BRANCH
-                                if (texelFetch(waxBuffer1, int(_2189)).x >= 0.0)
-                                {
-                                    uint _2202 = uint(texelFetch(waxBuffer1, int(_2189)).x);
-                                    vec4 _2388;
-                                    SPIRV_CROSS_BRANCH
-                                    if (texelFetch(waxBuffer1, int(_2189)).y >= 0.0)
-                                    {
-                                        uint _2210 = uint(max(texelFetch(waxBuffer1, int(_2189)).y, 0.0));
-                                        uint _2213 = uint(texelFetch(waxBuffer0, int(_2210)).x);
-                                        uint _2214 = _2210 + 1u;
-                                        vec4 _2219;
-                                        _2219 = vec4(0.0);
-                                        uint _2217;
-                                        vec4 _2220;
-                                        SPIRV_CROSS_LOOP
-                                        for (uint _2216 = _2214, _2221 = 0u; _2221 < _2213; _2216 = _2217, _2219 = _2220, _2221++)
-                                        {
-                                            uint _2228 = _2216 + 1u;
-                                            uint _2235 = uint(texelFetch(waxBuffer0, int(_2216)).z);
-                                            uint _2236 = _2216 + 3u;
-                                            uint _2239 = _2236 + ((_2235 + 3u) >> 2u);
-                                            SPIRV_CROSS_BRANCH
-                                            if (_2235 > 0u)
-                                            {
-                                                float _2260;
-                                                if (texelFetch(waxBuffer0, int(_2216)).x < 0.5)
-                                                {
-                                                    _2260 = ((texelFetch(waxBuffer0, int(_2228)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_2228)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_2228)).z;
-                                                }
-                                                else
-                                                {
-                                                    _2260 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_2228)).xy) * texelFetch(waxBuffer0, int(_2228)).zw);
-                                                }
-                                                float _2261 = clamp(_2260, -10000000.0, 10000000.0);
-                                                uint _2263 = uint(texelFetch(waxBuffer0, int(_2216)).y);
-                                                float _2283;
-                                                if (_2263 == 0u)
-                                                {
-                                                    _2283 = clamp(_2261, 0.0, 1.0);
-                                                }
-                                                else
-                                                {
-                                                    float _2282;
-                                                    if (_2263 == 1u)
-                                                    {
-                                                        _2282 = _2261 - floor(_2261);
-                                                    }
-                                                    else
-                                                    {
-                                                        float _2278 = _2261 - (2.0 * floor(_2261 * 0.5));
-                                                        _2282 = (_2278 > 1.0) ? (2.0 - _2278) : _2278;
-                                                    }
-                                                    _2283 = _2282;
-                                                }
-                                                int _2285;
-                                                _2285 = -1;
-                                                int _2286;
-                                                SPIRV_CROSS_LOOP
-                                                for (uint _2288 = 0u; _2288 < _2235; _2285 = _2286, _2288++)
-                                                {
-                                                    uint _2294 = _2236 + (_2288 >> 2u);
-                                                    uint _2297 = _2288 & 3u;
-                                                    if (((_2297 == 0u) ? texelFetch(waxBuffer0, int(_2294)).x : ((_2297 == 1u) ? texelFetch(waxBuffer0, int(_2294)).y : ((_2297 == 2u) ? texelFetch(waxBuffer0, int(_2294)).z : texelFetch(waxBuffer0, int(_2294)).w))) <= _2283)
-                                                    {
-                                                        _2286 = int(_2288);
-                                                    }
-                                                    else
-                                                    {
-                                                        _2286 = _2285;
-                                                    }
-                                                }
-                                                vec4 _2370;
-                                                if (_2285 < 0)
-                                                {
-                                                    _2370 = texelFetch(waxBuffer0, int(_2239));
-                                                }
-                                                else
-                                                {
-                                                    uint _2318 = uint(_2285);
-                                                    vec4 _2369;
-                                                    if (_2318 == (_2235 - 1u))
-                                                    {
-                                                        _2369 = texelFetch(waxBuffer0, int(_2239 + _2318));
-                                                    }
-                                                    else
-                                                    {
-                                                        uint _2328 = _2236 + (_2318 >> 2u);
-                                                        uint _2331 = _2318 & 3u;
-                                                        float _2341 = (_2331 == 0u) ? texelFetch(waxBuffer0, int(_2328)).x : ((_2331 == 1u) ? texelFetch(waxBuffer0, int(_2328)).y : ((_2331 == 2u) ? texelFetch(waxBuffer0, int(_2328)).z : texelFetch(waxBuffer0, int(_2328)).w));
-                                                        uint _2342 = _2318 + 1u;
-                                                        uint _2344 = _2236 + (_2342 >> 2u);
-                                                        uint _2347 = _2342 & 3u;
-                                                        uint _2358 = _2239 + _2318;
-                                                        _2369 = mix(texelFetch(waxBuffer0, int(_2358)), texelFetch(waxBuffer0, int(_2358 + 1u)), vec4((_2283 - _2341) / (((_2347 == 0u) ? texelFetch(waxBuffer0, int(_2344)).x : ((_2347 == 1u) ? texelFetch(waxBuffer0, int(_2344)).y : ((_2347 == 2u) ? texelFetch(waxBuffer0, int(_2344)).z : texelFetch(waxBuffer0, int(_2344)).w))) - _2341)));
-                                                    }
-                                                    _2370 = _2369;
-                                                }
-                                                vec4 _2383;
-                                                if (texelFetch(waxBuffer0, int(_2216 + 2u)).x > 0.5)
-                                                {
-                                                    vec3 _2381 = mix(pow(abs((_2370.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _2370.xyz * vec3(0.077399380505084991455078125), step(_2370.xyz, vec3(0.040449999272823333740234375)));
-                                                    _2383 = vec4(_2381.x, _2381.y, _2381.z, _2370.w);
-                                                }
-                                                else
-                                                {
-                                                    _2383 = _2370;
-                                                }
-                                                _2220 = _2219 + (_2383 * texelFetch(waxBuffer0, int(_2216)).w);
-                                            }
-                                            else
-                                            {
-                                                _2220 = _2219;
-                                            }
-                                            _2217 = _2239 + _2235;
-                                        }
-                                        _2388 = texelFetch(waxBuffer0, int(_2202)) * _2219;
-                                    }
-                                    else
-                                    {
-                                        _2388 = texelFetch(waxBuffer0, int(_2202));
-                                    }
-                                    _2399 = _2102 + _2192;
-                                    _2400 = _2105 + (vec4(_2388.xyz * _2388.w, _2388.w) * _2192);
-                                }
-                                else
-                                {
-                                    _2399 = _2102;
-                                    _2400 = _2105;
-                                }
-                                _2103 = _2399;
-                                _2106 = _2400;
-                            }
-                            else
-                            {
-                                _2103 = _2102;
-                                _2106 = _2105;
-                            }
-                        }
-                        _2797 = _2105;
-                        _2798 = _2102;
-                    }
-                    else
-                    {
-                        vec2 _2402 = abs(_866);
-                        float _2403 = _2402.x;
-                        float _2404 = _2402.y;
-                        float _2414 = ((_2403 <= _2404) ? atan(_2403 / max(_2404, 9.9999996826552253889678874634872e-21)) : (1.5707962512969970703125 - atan(_2404 / max(_2403, 9.9999996826552253889678874634872e-21)))) * 0.15915493667125701904296875;
-                        float _2419;
-                        if (_2024 >= 0.0)
-                        {
-                            _2419 = 0.5 - _2414;
-                        }
-                        else
-                        {
-                            _2419 = _2414;
-                        }
-                        float _2424;
-                        if (_2021 < 0.0)
-                        {
-                            _2424 = 1.0 - _2419;
-                        }
-                        else
-                        {
-                            _2424 = _2419;
-                        }
-                        float _2426 = (_867 > 9.9999997473787516355514526367188e-05) ? fract(_2424) : 0.0;
-                        uint _2427 = uint(_1800);
-                        uint _2432;
-                        _2432 = 0u;
-                        uint _2430;
-                        uint _2433;
-                        SPIRV_CROSS_LOOP
-                        for (uint _2429 = _2427; _2432 < _2429; _2429 = _2430, _2432 = _2433)
-                        {
-                            uint _2438 = (_2432 + _2429) / 2u;
-                            bool _2442 = texelFetch(waxBuffer1, int(_1803 + _2438)).x <= _2426;
-                            if (_2442)
-                            {
-                                _2433 = _2438 + 1u;
-                            }
-                            else
-                            {
-                                _2433 = _2432;
-                            }
-                            _2430 = _2442 ? _2429 : _2438;
-                        }
-                        int _2450 = _1800 - 1;
-                        int _2451 = (_2432 > 0u) ? (int(_2432) - 1) : _2450;
-                        float _2454 = min(0.25, 0.112539537250995635986328125 / max(_867, 9.9999997473787516355514526367188e-05));
-                        int _2462;
-                        float _2465;
-                        _2462 = _2451;
-                        _2465 = fract(_2426 - texelFetch(waxBuffer1, int(_1803 + uint(_2451))).x);
-                        SPIRV_CROSS_LOOP
-                        for (int _2467 = 0; (_2467 < _2450) && (_2465 < _2454); )
-                        {
-                            bool _2473 = _2462 > 0;
-                            int _2474 = _2462 - 1;
-                            int _2463 = _2473 ? _2474 : _2450;
-                            uint _2475 = uint(_2462);
-                            _2462 = _2463;
-                            _2465 += fract(texelFetch(waxBuffer1, int(_1803 + _2475)).x - texelFetch(waxBuffer1, int(_1803 + uint(_2463))).x);
-                            _2467++;
-                        }
-                        float _2485 = -_2465;
-                        vec4 _2491;
-                        vec4 _2496;
-                        _2491 = texelFetch(waxBuffer1, int(_1803 + uint(_2462)));
-                        _2496 = _1795;
-                        vec4 _2492;
-                        float _2501;
-                        int _2503;
-                        float _2495;
-                        vec4 _2497;
-                        float _2499;
-                        vec4 _2795;
-                        float _2796;
-                        float _2494 = _1794;
-                        float _2498 = 1.0;
-                        float _2500 = _2485;
-                        int _2502 = _2462;
-                        int _2504 = 0;
-                        SPIRV_CROSS_LOOP
-                        for (;;)
-                        {
-                            if (_2504 < _1800)
-                            {
-                                int _2509 = _2502 + 1;
-                                _2503 = (_2509 < _1800) ? _2509 : 0;
-                                _2492 = texelFetch(waxBuffer1, int(_1803 + uint(_2503)));
-                                _2501 = _2500 + fract(_2492.x - _2491.x);
-                                if ((_2504 < _2450) && (_2501 < _2454))
-                                {
-                                    float _2523 = 6.283185482025146484375 * _2492.x;
-                                    float _2527 = (-_867) * sin(6.283185482025146484375 * _2501);
-                                    vec2 _2531 = abs(vec2(cos(_2523), sin(_2523)));
-                                    float _2532 = _2531.x;
-                                    float _2533 = _2531.y;
-                                    float _2534 = max(_2532, _2533);
-                                    float _2535 = min(_2532, _2533);
-                                    float _2536 = _2534 + _2535;
-                                    float _2538 = _2527 + (0.5 * _2536);
-                                    float _2577;
-                                    if (_2535 < 0.001000000047497451305389404296875)
-                                    {
-                                        _2577 = clamp(_2527 + 0.5, 0.0, 1.0);
-                                    }
-                                    else
-                                    {
-                                        float _2576;
-                                        if (_2538 >= _2536)
-                                        {
-                                            _2576 = 1.0;
-                                        }
-                                        else
-                                        {
-                                            float _2575;
-                                            if (_2538 > 0.0)
-                                            {
-                                                float _2574;
-                                                if (_2538 < _2535)
-                                                {
-                                                    _2574 = (_2538 * _2538) / ((2.0 * _2534) * _2535);
-                                                }
-                                                else
-                                                {
-                                                    float _2573;
-                                                    if (_2538 > _2534)
-                                                    {
-                                                        float _2564 = _2536 - _2538;
-                                                        _2573 = 1.0 - ((_2564 * _2564) / ((2.0 * _2534) * _2535));
-                                                    }
-                                                    else
-                                                    {
-                                                        _2573 = (_2538 - (0.5 * _2535)) / _2534;
-                                                    }
-                                                    _2574 = _2573;
-                                                }
-                                                _2575 = _2574;
-                                            }
-                                            else
-                                            {
-                                                _2575 = 0.0;
-                                            }
-                                            _2576 = _2575;
-                                        }
-                                        _2577 = _2576;
-                                    }
-                                    _2499 = min(_2498, _2577);
-                                }
-                                else
-                                {
-                                    _2499 = 0.0;
-                                }
-                                uint _2581 = wax_TEXCOORD1 + uint(_2491.y);
-                                float _2583 = _1161 * (_2498 - _2499);
-                                SPIRV_CROSS_BRANCH
-                                if (_2583 > 0.0)
-                                {
-                                    vec4 _2790;
-                                    float _2791;
-                                    SPIRV_CROSS_BRANCH
-                                    if (texelFetch(waxBuffer1, int(_2581)).x >= 0.0)
-                                    {
-                                        uint _2593 = uint(texelFetch(waxBuffer1, int(_2581)).x);
-                                        vec4 _2779;
-                                        SPIRV_CROSS_BRANCH
-                                        if (texelFetch(waxBuffer1, int(_2581)).y >= 0.0)
-                                        {
-                                            uint _2601 = uint(max(texelFetch(waxBuffer1, int(_2581)).y, 0.0));
-                                            uint _2604 = uint(texelFetch(waxBuffer0, int(_2601)).x);
-                                            uint _2605 = _2601 + 1u;
-                                            vec4 _2610;
-                                            _2610 = vec4(0.0);
-                                            uint _2608;
-                                            vec4 _2611;
-                                            SPIRV_CROSS_LOOP
-                                            for (uint _2607 = _2605, _2612 = 0u; _2612 < _2604; _2607 = _2608, _2610 = _2611, _2612++)
-                                            {
-                                                uint _2619 = _2607 + 1u;
-                                                uint _2626 = uint(texelFetch(waxBuffer0, int(_2607)).z);
-                                                uint _2627 = _2607 + 3u;
-                                                uint _2630 = _2627 + ((_2626 + 3u) >> 2u);
-                                                SPIRV_CROSS_BRANCH
-                                                if (_2626 > 0u)
-                                                {
-                                                    float _2651;
-                                                    if (texelFetch(waxBuffer0, int(_2607)).x < 0.5)
-                                                    {
-                                                        _2651 = ((texelFetch(waxBuffer0, int(_2619)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_2619)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_2619)).z;
-                                                    }
-                                                    else
-                                                    {
-                                                        _2651 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_2619)).xy) * texelFetch(waxBuffer0, int(_2619)).zw);
-                                                    }
-                                                    float _2652 = clamp(_2651, -10000000.0, 10000000.0);
-                                                    uint _2654 = uint(texelFetch(waxBuffer0, int(_2607)).y);
-                                                    float _2674;
-                                                    if (_2654 == 0u)
-                                                    {
-                                                        _2674 = clamp(_2652, 0.0, 1.0);
-                                                    }
-                                                    else
-                                                    {
-                                                        float _2673;
-                                                        if (_2654 == 1u)
-                                                        {
-                                                            _2673 = _2652 - floor(_2652);
-                                                        }
-                                                        else
-                                                        {
-                                                            float _2669 = _2652 - (2.0 * floor(_2652 * 0.5));
-                                                            _2673 = (_2669 > 1.0) ? (2.0 - _2669) : _2669;
-                                                        }
-                                                        _2674 = _2673;
-                                                    }
-                                                    int _2676;
-                                                    _2676 = -1;
-                                                    int _2677;
-                                                    SPIRV_CROSS_LOOP
-                                                    for (uint _2679 = 0u; _2679 < _2626; _2676 = _2677, _2679++)
-                                                    {
-                                                        uint _2685 = _2627 + (_2679 >> 2u);
-                                                        uint _2688 = _2679 & 3u;
-                                                        if (((_2688 == 0u) ? texelFetch(waxBuffer0, int(_2685)).x : ((_2688 == 1u) ? texelFetch(waxBuffer0, int(_2685)).y : ((_2688 == 2u) ? texelFetch(waxBuffer0, int(_2685)).z : texelFetch(waxBuffer0, int(_2685)).w))) <= _2674)
-                                                        {
-                                                            _2677 = int(_2679);
-                                                        }
-                                                        else
-                                                        {
-                                                            _2677 = _2676;
-                                                        }
-                                                    }
-                                                    vec4 _2761;
-                                                    if (_2676 < 0)
-                                                    {
-                                                        _2761 = texelFetch(waxBuffer0, int(_2630));
-                                                    }
-                                                    else
-                                                    {
-                                                        uint _2709 = uint(_2676);
-                                                        vec4 _2760;
-                                                        if (_2709 == (_2626 - 1u))
-                                                        {
-                                                            _2760 = texelFetch(waxBuffer0, int(_2630 + _2709));
-                                                        }
-                                                        else
-                                                        {
-                                                            uint _2719 = _2627 + (_2709 >> 2u);
-                                                            uint _2722 = _2709 & 3u;
-                                                            float _2732 = (_2722 == 0u) ? texelFetch(waxBuffer0, int(_2719)).x : ((_2722 == 1u) ? texelFetch(waxBuffer0, int(_2719)).y : ((_2722 == 2u) ? texelFetch(waxBuffer0, int(_2719)).z : texelFetch(waxBuffer0, int(_2719)).w));
-                                                            uint _2733 = _2709 + 1u;
-                                                            uint _2735 = _2627 + (_2733 >> 2u);
-                                                            uint _2738 = _2733 & 3u;
-                                                            uint _2749 = _2630 + _2709;
-                                                            _2760 = mix(texelFetch(waxBuffer0, int(_2749)), texelFetch(waxBuffer0, int(_2749 + 1u)), vec4((_2674 - _2732) / (((_2738 == 0u) ? texelFetch(waxBuffer0, int(_2735)).x : ((_2738 == 1u) ? texelFetch(waxBuffer0, int(_2735)).y : ((_2738 == 2u) ? texelFetch(waxBuffer0, int(_2735)).z : texelFetch(waxBuffer0, int(_2735)).w))) - _2732)));
-                                                        }
-                                                        _2761 = _2760;
-                                                    }
-                                                    vec4 _2774;
-                                                    if (texelFetch(waxBuffer0, int(_2607 + 2u)).x > 0.5)
-                                                    {
-                                                        vec3 _2772 = mix(pow(abs((_2761.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _2761.xyz * vec3(0.077399380505084991455078125), step(_2761.xyz, vec3(0.040449999272823333740234375)));
-                                                        _2774 = vec4(_2772.x, _2772.y, _2772.z, _2761.w);
-                                                    }
-                                                    else
-                                                    {
-                                                        _2774 = _2761;
-                                                    }
-                                                    _2611 = _2610 + (_2774 * texelFetch(waxBuffer0, int(_2607)).w);
-                                                }
-                                                else
-                                                {
-                                                    _2611 = _2610;
-                                                }
-                                                _2608 = _2630 + _2626;
-                                            }
-                                            _2779 = texelFetch(waxBuffer0, int(_2593)) * _2610;
-                                        }
-                                        else
-                                        {
-                                            _2779 = texelFetch(waxBuffer0, int(_2593));
-                                        }
-                                        _2790 = _2496 + (vec4(_2779.xyz * _2779.w, _2779.w) * _2583);
-                                        _2791 = _2494 + _2583;
-                                    }
-                                    else
-                                    {
-                                        _2790 = _2496;
-                                        _2791 = _2494;
-                                    }
-                                    _2497 = _2790;
-                                    _2495 = _2791;
-                                }
-                                else
-                                {
-                                    _2497 = _2496;
-                                    _2495 = _2494;
-                                }
-                                if (_2499 <= 0.0)
-                                {
-                                    _2795 = _2497;
-                                    _2796 = _2495;
-                                    break;
-                                }
-                                _2491 = _2492;
-                                _2494 = _2495;
-                                _2496 = _2497;
-                                _2498 = _2499;
-                                _2500 = _2501;
-                                _2502 = _2503;
-                                _2504++;
-                            }
-                            else
-                            {
-                                _2795 = _2496;
-                                _2796 = _2494;
-                                break;
-                            }
-                        }
-                        _2797 = _2795;
-                        _2798 = _2796;
-                    }
-                    _2799 = _2797;
-                    _2800 = _2798;
-                }
-                _2801 = _2799;
-                _2802 = _2800;
-            }
-            else
-            {
-                _2801 = _1795;
-                _2802 = _1794;
-            }
-            _3477 = _2801;
-            _3478 = _2802;
+            _141 = texelFetch(waxBuffer1, int(_79)).y;
+            _142 = vec2(_101, _104);
+            _143 = true;
         }
         else
         {
-            vec4 _3475;
-            float _3476;
-            if (_119 == 3)
+            float _113 = texelFetch(waxBuffer1, int(_76)).z - texelFetch(waxBuffer1, int(_79)).z;
+            float _117 = texelFetch(waxBuffer1, int(_76)).w - texelFetch(waxBuffer1, int(_79)).z;
+            float _138;
+            vec2 _139;
+            bool _140;
+            if (((texelFetch(waxBuffer1, int(_79)).z > 0.0) && (waxFragCoord().x > _113)) && (waxFragCoord().y > _117))
             {
-                uint _2808 = wax_TEXCOORD1 + 1u;
-                uint _2811 = wax_TEXCOORD1 + 2u;
-                float _2816 = -texelFetch(waxBuffer1, int(_2811)).y;
-                vec2 _2818 = vec2(_2816, texelFetch(waxBuffer1, int(_2811)).x);
-                int _2821 = int(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y);
-                int _2823 = int(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).z);
-                vec2 _2825 = waxFragCoord().xy - texelFetch(waxBuffer1, int(_2808)).xy;
-                float _2826 = dot(_2825, _2818);
-                vec2 _2827 = -_2818;
-                vec3 _109[6];
-                _109[0] = vec3(_2827, texelFetch(waxBuffer1, int(_2811)).w - _2826);
-                _109[1] = vec3(_2816, texelFetch(waxBuffer1, int(_2811)).x, texelFetch(waxBuffer1, int(_2811)).w + _2826);
-                _109[2] = vec3(0.0);
-                _109[3] = vec3(0.0);
-                _109[4] = vec3(0.0);
-                _109[5] = vec3(0.0);
-                float _2840 = dot(_2825, texelFetch(waxBuffer1, int(_2811)).xy);
-                int _2841 = _2821 & 7;
-                bool _2843 = _2841 == 3;
-                int _2900;
-                if ((_2841 == 1) || _2843)
-                {
-                    _109[2] = vec3(texelFetch(waxBuffer1, int(_2811)).xy, _2840);
-                    _2900 = 3;
-                }
-                else
-                {
-                    int _2899;
-                    if (_2841 == 2)
-                    {
-                        _109[2] = vec3(texelFetch(waxBuffer1, int(_2811)).xy, _2840 + texelFetch(waxBuffer1, int(_2811)).w);
-                        _2899 = 3;
-                    }
-                    else
-                    {
-                        int _2898;
-                        if (_2841 == 4)
-                        {
-                            float _2860 = (texelFetch(waxBuffer1, int(_2811)).x > 0.0) ? 1.0 : (-1.0);
-                            _109[2] = vec3(_2860, 0.0, _2825.x * _2860);
-                            _2898 = 3;
-                        }
-                        else
-                        {
-                            bool _2864 = _2841 == 5;
-                            if (_2864)
-                            {
-                                float _2869 = (texelFetch(waxBuffer1, int(_2811)).y > 0.0) ? 1.0 : (-1.0);
-                                _109[2] = vec3(0.0, _2869, _2825.y * _2869);
-                            }
-                            else
-                            {
-                                float _2876 = (float(_2821 >> 3) * 0.5) * texelFetch(waxBuffer1, int(_2811)).w;
-                                vec2 _2877 = texelFetch(waxBuffer1, int(_2811)).xy * texelFetch(waxBuffer1, int(_2811)).w;
-                                vec2 _2878 = _2818 * _2876;
-                                vec2 _2879 = _2877 - _2878;
-                                float _2881 = length(_2879);
-                                vec2 _2882 = vec2(_2881);
-                                float _2884 = texelFetch(waxBuffer1, int(_2811)).w * _2840;
-                                float _2885 = _2876 * _2826;
-                                _109[2] = vec3(_2879 / _2882, (_2884 - _2885) / _2881);
-                                _109[3] = vec3((_2877 + _2878) / _2882, (_2884 + _2885) / _2881);
-                            }
-                            _2898 = _2864 ? 3 : 4;
-                        }
-                        _2899 = _2898;
-                    }
-                    _2900 = _2899;
-                }
-                vec2 _2902 = -texelFetch(waxBuffer1, int(_2811)).xy;
-                vec2 _2903 = waxFragCoord().xy - texelFetch(waxBuffer1, int(_2808)).zw;
-                float _2904 = dot(_2903, _2902);
-                int _2905 = _2823 & 7;
-                bool _2907 = _2905 == 3;
-                int _2983;
-                if ((_2905 == 1) || _2907)
-                {
-                    _109[_2900] = vec3(_2902, _2904);
-                    _2983 = _2900 + 1;
-                }
-                else
-                {
-                    int _2982;
-                    if (_2905 == 2)
-                    {
-                        _109[_2900] = vec3(_2902, _2904 + texelFetch(waxBuffer1, int(_2811)).w);
-                        _2982 = _2900 + 1;
-                    }
-                    else
-                    {
-                        int _2981;
-                        if (_2905 == 4)
-                        {
-                            float _2933 = (_2902.x > 0.0) ? 1.0 : (-1.0);
-                            _109[_2900] = vec3(_2933, 0.0, _2903.x * _2933);
-                            _2981 = _2900 + 1;
-                        }
-                        else
-                        {
-                            int _2980;
-                            if (_2905 == 5)
-                            {
-                                float _2945 = (_2902.y > 0.0) ? 1.0 : (-1.0);
-                                _109[_2900] = vec3(0.0, _2945, _2903.y * _2945);
-                                _2980 = _2900 + 1;
-                            }
-                            else
-                            {
-                                float _2954 = (float(_2823 >> 3) * 0.5) * texelFetch(waxBuffer1, int(_2811)).w;
-                                vec2 _2956 = _2902 * texelFetch(waxBuffer1, int(_2811)).w;
-                                vec2 _2957 = _2827 * _2954;
-                                vec2 _2958 = _2956 - _2957;
-                                float _2960 = length(_2958);
-                                vec2 _2961 = vec2(_2960);
-                                float _2963 = texelFetch(waxBuffer1, int(_2811)).w * _2904;
-                                float _2964 = _2954 * dot(_2903, _2827);
-                                _109[_2900] = vec3(_2958 / _2961, (_2963 - _2964) / _2960);
-                                _109[_2900 + 1] = vec3((_2956 + _2957) / _2961, (_2963 + _2964) / _2960);
-                                _2980 = _2900 + 2;
-                            }
-                            _2981 = _2980;
-                        }
-                        _2982 = _2981;
-                    }
-                    _2983 = _2982;
-                }
-                vec3 _110[6] = _109;
-                bool _2986;
-                bool _2989;
-                _2986 = true;
-                _2989 = false;
-                for (int _2991 = 0; _2991 < _2983; )
-                {
-                    _2986 = (_110[_2991].z < 0.707199990749359130859375) ? false : _2986;
-                    _2989 = (_110[_2991].z <= (-0.707199990749359130859375)) ? true : _2989;
-                    _2991++;
-                }
-                float _3098;
-                SPIRV_CROSS_BRANCH
-                if ((!_2989) && (!_2986))
-                {
-                    vec2 _107[10];
-                    _107[0] = vec2(-0.5);
-                    _107[1] = vec2(0.5, -0.5);
-                    _107[2] = vec2(0.5);
-                    _107[3] = vec2(-0.5, 0.5);
-                    int _3011;
-                    int _3014;
-                    _3011 = 4;
-                    _3014 = 0;
-                    vec2 _108[10];
-                    int _3012;
-                    bool _3017;
-                    SPIRV_CROSS_LOOP
-                    for (;;)
-                    {
-                        _3017 = _3011 >= 3;
-                        if ((_3014 < _2983) && _3017)
-                        {
-                            if (_110[_3014].z < 0.707199990749359130859375)
-                            {
-                                int _3028;
-                                _3028 = 0;
-                                int _3032;
-                                int _3029;
-                                SPIRV_CROSS_LOOP
-                                for (int _3031 = 0; _3031 < _3011; _3028 = _3029, _3031 = _3032)
-                                {
-                                    _3032 = _3031 + 1;
-                                    int _3039 = (_3032 < _3011) ? _3032 : 0;
-                                    float _3044 = _110[_3014].z + dot(_107[_3031], _110[_3014].xy);
-                                    float _3046 = _110[_3014].z + dot(_107[_3039], _110[_3014].xy);
-                                    bool _3047 = _3044 >= 0.0;
-                                    int _3052;
-                                    if (_3047)
-                                    {
-                                        _108[_3028] = _107[_3031];
-                                        _3052 = _3028 + 1;
-                                    }
-                                    else
-                                    {
-                                        _3052 = _3028;
-                                    }
-                                    if (_3047 != (_3046 >= 0.0))
-                                    {
-                                        _108[_3052] = _107[_3031] + ((_107[_3039] - _107[_3031]) * (_3044 / (_3044 - _3046)));
-                                        _3029 = _3052 + 1;
-                                    }
-                                    else
-                                    {
-                                        _3029 = _3052;
-                                    }
-                                }
-                                SPIRV_CROSS_LOOP
-                                for (int _3065 = 0; _3065 < _3028; )
-                                {
-                                    _107[_3065] = _108[_3065];
-                                    _3065++;
-                                }
-                                _3012 = _3028;
-                            }
-                            else
-                            {
-                                _3012 = _3011;
-                            }
-                            _3011 = _3012;
-                            _3014++;
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
-                    float _3074;
-                    _3074 = 0.0;
-                    SPIRV_CROSS_LOOP
-                    for (int _3077 = 0; (_3077 < _3011) && _3017; )
-                    {
-                        int _3078 = _3077 + 1;
-                        int _3085 = (_3078 < _3011) ? _3078 : 0;
-                        _3074 += ((_107[_3077].x * _107[_3085].y) - (_107[_3077].y * _107[_3085].x));
-                        _3077 = _3078;
-                    }
-                    _3098 = clamp(abs(_3074) * 0.5, 0.0, 1.0);
-                }
-                else
-                {
-                    _3098 = _2989 ? 0.0 : 1.0;
-                }
-                float _3457;
-                SPIRV_CROSS_BRANCH
-                if (_2843 || _2907)
-                {
-                    float _3102 = length(_2825);
-                    bool _3103 = texelFetch(waxBuffer1, int(_2811)).w > 0.0;
-                    float _3160;
-                    if (_3103)
-                    {
-                        float _3107 = texelFetch(waxBuffer1, int(_2811)).w - _3102;
-                        vec2 _3110 = abs(_2825 / vec2(_3102));
-                        float _3111 = _3110.x;
-                        float _3112 = _3110.y;
-                        float _3113 = max(_3111, _3112);
-                        float _3114 = min(_3111, _3112);
-                        float _3115 = _3113 + _3114;
-                        float _3117 = _3107 + (0.5 * _3115);
-                        float _3156;
-                        if (_3114 < 0.001000000047497451305389404296875)
-                        {
-                            _3156 = clamp(_3107 + 0.5, 0.0, 1.0);
-                        }
-                        else
-                        {
-                            float _3155;
-                            if (_3117 >= _3115)
-                            {
-                                _3155 = 1.0;
-                            }
-                            else
-                            {
-                                float _3154;
-                                if (_3117 > 0.0)
-                                {
-                                    float _3153;
-                                    if (_3117 < _3114)
-                                    {
-                                        _3153 = (_3117 * _3117) / ((2.0 * _3113) * _3114);
-                                    }
-                                    else
-                                    {
-                                        float _3152;
-                                        if (_3117 > _3113)
-                                        {
-                                            float _3143 = _3115 - _3117;
-                                            _3152 = 1.0 - ((_3143 * _3143) / ((2.0 * _3113) * _3114));
-                                        }
-                                        else
-                                        {
-                                            _3152 = (_3117 - (0.5 * _3114)) / _3113;
-                                        }
-                                        _3153 = _3152;
-                                    }
-                                    _3154 = _3153;
-                                }
-                                else
-                                {
-                                    _3154 = 0.0;
-                                }
-                                _3155 = _3154;
-                            }
-                            _3156 = _3155;
-                        }
-                        _3160 = (_3102 > 0.001000000047497451305389404296875) ? _3156 : clamp(texelFetch(waxBuffer1, int(_2811)).w + 0.5, 0.0, 1.0);
-                    }
-                    else
-                    {
-                        _3160 = 0.0;
-                    }
-                    float _3161 = _2843 ? _3160 : 0.0;
-                    float _3162 = length(_2903);
-                    float _3219;
-                    if (_3103)
-                    {
-                        float _3166 = texelFetch(waxBuffer1, int(_2811)).w - _3162;
-                        vec2 _3169 = abs(_2903 / vec2(_3162));
-                        float _3170 = _3169.x;
-                        float _3171 = _3169.y;
-                        float _3172 = max(_3170, _3171);
-                        float _3173 = min(_3170, _3171);
-                        float _3174 = _3172 + _3173;
-                        float _3176 = _3166 + (0.5 * _3174);
-                        float _3215;
-                        if (_3173 < 0.001000000047497451305389404296875)
-                        {
-                            _3215 = clamp(_3166 + 0.5, 0.0, 1.0);
-                        }
-                        else
-                        {
-                            float _3214;
-                            if (_3176 >= _3174)
-                            {
-                                _3214 = 1.0;
-                            }
-                            else
-                            {
-                                float _3213;
-                                if (_3176 > 0.0)
-                                {
-                                    float _3212;
-                                    if (_3176 < _3173)
-                                    {
-                                        _3212 = (_3176 * _3176) / ((2.0 * _3172) * _3173);
-                                    }
-                                    else
-                                    {
-                                        float _3211;
-                                        if (_3176 > _3172)
-                                        {
-                                            float _3202 = _3174 - _3176;
-                                            _3211 = 1.0 - ((_3202 * _3202) / ((2.0 * _3172) * _3173));
-                                        }
-                                        else
-                                        {
-                                            _3211 = (_3176 - (0.5 * _3173)) / _3172;
-                                        }
-                                        _3212 = _3211;
-                                    }
-                                    _3213 = _3212;
-                                }
-                                else
-                                {
-                                    _3213 = 0.0;
-                                }
-                                _3214 = _3213;
-                            }
-                            _3215 = _3214;
-                        }
-                        _3219 = (_3162 > 0.001000000047497451305389404296875) ? _3215 : clamp(texelFetch(waxBuffer1, int(_2811)).w + 0.5, 0.0, 1.0);
-                    }
-                    else
-                    {
-                        _3219 = 0.0;
-                    }
-                    float _3220 = _2907 ? _3219 : 0.0;
-                    vec3 _111[6] = _109;
-                    bool _3223;
-                    bool _3226;
-                    _3223 = true;
-                    _3226 = false;
-                    for (int _3228 = 2; _3228 < _2900; )
-                    {
-                        _3223 = (_111[_3228].z < 0.707199990749359130859375) ? false : _3223;
-                        _3226 = (_111[_3228].z <= (-0.707199990749359130859375)) ? true : _3226;
-                        _3228++;
-                    }
-                    float _3335;
-                    SPIRV_CROSS_BRANCH
-                    if ((!_3226) && (!_3223))
-                    {
-                        vec2 _105[10];
-                        _105[0] = vec2(-0.5);
-                        _105[1] = vec2(0.5, -0.5);
-                        _105[2] = vec2(0.5);
-                        _105[3] = vec2(-0.5, 0.5);
-                        int _3248;
-                        int _3251;
-                        _3248 = 4;
-                        _3251 = 2;
-                        vec2 _106[10];
-                        int _3249;
-                        bool _3254;
-                        SPIRV_CROSS_LOOP
-                        for (;;)
-                        {
-                            _3254 = _3248 >= 3;
-                            if ((_3251 < _2900) && _3254)
-                            {
-                                if (_111[_3251].z < 0.707199990749359130859375)
-                                {
-                                    int _3265;
-                                    _3265 = 0;
-                                    int _3269;
-                                    int _3266;
-                                    SPIRV_CROSS_LOOP
-                                    for (int _3268 = 0; _3268 < _3248; _3265 = _3266, _3268 = _3269)
-                                    {
-                                        _3269 = _3268 + 1;
-                                        int _3276 = (_3269 < _3248) ? _3269 : 0;
-                                        float _3281 = _111[_3251].z + dot(_105[_3268], _111[_3251].xy);
-                                        float _3283 = _111[_3251].z + dot(_105[_3276], _111[_3251].xy);
-                                        bool _3284 = _3281 >= 0.0;
-                                        int _3289;
-                                        if (_3284)
-                                        {
-                                            _106[_3265] = _105[_3268];
-                                            _3289 = _3265 + 1;
-                                        }
-                                        else
-                                        {
-                                            _3289 = _3265;
-                                        }
-                                        if (_3284 != (_3283 >= 0.0))
-                                        {
-                                            _106[_3289] = _105[_3268] + ((_105[_3276] - _105[_3268]) * (_3281 / (_3281 - _3283)));
-                                            _3266 = _3289 + 1;
-                                        }
-                                        else
-                                        {
-                                            _3266 = _3289;
-                                        }
-                                    }
-                                    SPIRV_CROSS_LOOP
-                                    for (int _3302 = 0; _3302 < _3265; )
-                                    {
-                                        _105[_3302] = _106[_3302];
-                                        _3302++;
-                                    }
-                                    _3249 = _3265;
-                                }
-                                else
-                                {
-                                    _3249 = _3248;
-                                }
-                                _3248 = _3249;
-                                _3251++;
-                            }
-                            else
-                            {
-                                break;
-                            }
-                        }
-                        float _3311;
-                        _3311 = 0.0;
-                        SPIRV_CROSS_LOOP
-                        for (int _3314 = 0; (_3314 < _3248) && _3254; )
-                        {
-                            int _3315 = _3314 + 1;
-                            int _3322 = (_3315 < _3248) ? _3315 : 0;
-                            _3311 += ((_105[_3314].x * _105[_3322].y) - (_105[_3314].y * _105[_3322].x));
-                            _3314 = _3315;
-                        }
-                        _3335 = clamp(abs(_3311) * 0.5, 0.0, 1.0);
-                    }
-                    else
-                    {
-                        _3335 = _3226 ? 0.0 : 1.0;
-                    }
-                    vec3 _112[6] = _109;
-                    bool _3339;
-                    bool _3342;
-                    _3339 = true;
-                    _3342 = false;
-                    for (int _3344 = _2900; _3344 < _2983; )
-                    {
-                        _3339 = (_112[_3344].z < 0.707199990749359130859375) ? false : _3339;
-                        _3342 = (_112[_3344].z <= (-0.707199990749359130859375)) ? true : _3342;
-                        _3344++;
-                    }
-                    float _3451;
-                    SPIRV_CROSS_BRANCH
-                    if ((!_3342) && (!_3339))
-                    {
-                        vec2 _103[10];
-                        _103[0] = vec2(-0.5);
-                        _103[1] = vec2(0.5, -0.5);
-                        _103[2] = vec2(0.5);
-                        _103[3] = vec2(-0.5, 0.5);
-                        int _3364;
-                        int _3367;
-                        _3364 = 4;
-                        _3367 = _2900;
-                        vec2 _104[10];
-                        int _3365;
-                        bool _3370;
-                        SPIRV_CROSS_LOOP
-                        for (;;)
-                        {
-                            _3370 = _3364 >= 3;
-                            if ((_3367 < _2983) && _3370)
-                            {
-                                if (_112[_3367].z < 0.707199990749359130859375)
-                                {
-                                    int _3381;
-                                    _3381 = 0;
-                                    int _3385;
-                                    int _3382;
-                                    SPIRV_CROSS_LOOP
-                                    for (int _3384 = 0; _3384 < _3364; _3381 = _3382, _3384 = _3385)
-                                    {
-                                        _3385 = _3384 + 1;
-                                        int _3392 = (_3385 < _3364) ? _3385 : 0;
-                                        float _3397 = _112[_3367].z + dot(_103[_3384], _112[_3367].xy);
-                                        float _3399 = _112[_3367].z + dot(_103[_3392], _112[_3367].xy);
-                                        bool _3400 = _3397 >= 0.0;
-                                        int _3405;
-                                        if (_3400)
-                                        {
-                                            _104[_3381] = _103[_3384];
-                                            _3405 = _3381 + 1;
-                                        }
-                                        else
-                                        {
-                                            _3405 = _3381;
-                                        }
-                                        if (_3400 != (_3399 >= 0.0))
-                                        {
-                                            _104[_3405] = _103[_3384] + ((_103[_3392] - _103[_3384]) * (_3397 / (_3397 - _3399)));
-                                            _3382 = _3405 + 1;
-                                        }
-                                        else
-                                        {
-                                            _3382 = _3405;
-                                        }
-                                    }
-                                    SPIRV_CROSS_LOOP
-                                    for (int _3418 = 0; _3418 < _3381; )
-                                    {
-                                        _103[_3418] = _104[_3418];
-                                        _3418++;
-                                    }
-                                    _3365 = _3381;
-                                }
-                                else
-                                {
-                                    _3365 = _3364;
-                                }
-                                _3364 = _3365;
-                                _3367++;
-                            }
-                            else
-                            {
-                                break;
-                            }
-                        }
-                        float _3427;
-                        _3427 = 0.0;
-                        SPIRV_CROSS_LOOP
-                        for (int _3430 = 0; (_3430 < _3364) && _3370; )
-                        {
-                            int _3431 = _3430 + 1;
-                            int _3438 = (_3431 < _3364) ? _3431 : 0;
-                            _3427 += ((_103[_3430].x * _103[_3438].y) - (_103[_3430].y * _103[_3438].x));
-                            _3430 = _3431;
-                        }
-                        _3451 = clamp(abs(_3427) * 0.5, 0.0, 1.0);
-                    }
-                    else
-                    {
-                        _3451 = _3342 ? 0.0 : 1.0;
-                    }
-                    _3457 = max(_3098, max(min(_3161, max(_3451, _3220)), min(_3220, max(_3335, _3161))));
-                }
-                else
-                {
-                    _3457 = _3098;
-                }
-                bool _3458 = _3457 > 0.0;
-                vec4 _3473;
-                if (_3458)
-                {
-                    uint _3462 = uint(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).w);
-                    _3473 = vec4(texelFetch(waxBuffer0, int(_3462)).xyz * texelFetch(waxBuffer0, int(_3462)).w, texelFetch(waxBuffer0, int(_3462)).w) * _3457;
-                }
-                else
-                {
-                    _3473 = vec4(0.0);
-                }
-                _3475 = _3473;
-                _3476 = _3458 ? _3457 : 0.0;
+                _138 = texelFetch(waxBuffer1, int(_79)).z;
+                _139 = vec2(_113, _117);
+                _140 = true;
             }
             else
             {
-                _3475 = vec4(0.0);
-                _3476 = 0.0;
+                float _126 = texelFetch(waxBuffer1, int(_76)).x + texelFetch(waxBuffer1, int(_79)).w;
+                float _129 = texelFetch(waxBuffer1, int(_76)).w - texelFetch(waxBuffer1, int(_79)).w;
+                bool _131 = ((texelFetch(waxBuffer1, int(_79)).w > 0.0) && (waxFragCoord().x < _126)) && (waxFragCoord().y > _129);
+                vec2 _136;
+                if (_131)
+                {
+                    _136 = vec2(_126, _129);
+                }
+                else
+                {
+                    _136 = vec2(0.0);
+                }
+                _138 = _131 ? texelFetch(waxBuffer1, int(_79)).w : 0.0;
+                _139 = _136;
+                _140 = _131;
             }
-            _3477 = _3475;
-            _3478 = _3476;
+            _141 = _138;
+            _142 = _139;
+            _143 = _140;
         }
-        _3479 = _3477;
-        _3480 = _3478;
+        _144 = _141;
+        _145 = _142;
+        _146 = _143;
     }
-    if (_3480 < 0.00390625)
+    float _148 = waxFragCoord().x + 0.5;
+    float _150 = waxFragCoord().x - 0.5;
+    float _155 = waxFragCoord().y + 0.5;
+    float _157 = waxFragCoord().y - 0.5;
+    float _161 = clamp(min(_148, texelFetch(waxBuffer1, int(_76)).z) - max(_150, texelFetch(waxBuffer1, int(_76)).x), 0.0, 1.0) * clamp(min(_155, texelFetch(waxBuffer1, int(_76)).w) - max(_157, texelFetch(waxBuffer1, int(_76)).y), 0.0, 1.0);
+    float _225;
+    if (_146)
+    {
+        vec2 _164 = waxFragCoord().xy - _145;
+        float _165 = length(_164);
+        float _223;
+        if (_144 > 0.0)
+        {
+            float _170 = _144 - _165;
+            vec2 _173 = abs(_164 / vec2(_165));
+            float _174 = _173.x;
+            float _175 = _173.y;
+            float _176 = max(_174, _175);
+            float _177 = min(_174, _175);
+            float _178 = _176 + _177;
+            float _180 = _170 + (0.5 * _178);
+            float _219;
+            if (_177 < 0.001000000047497451305389404296875)
+            {
+                _219 = clamp(_170 + 0.5, 0.0, 1.0);
+            }
+            else
+            {
+                float _218;
+                if (_180 >= _178)
+                {
+                    _218 = 1.0;
+                }
+                else
+                {
+                    float _217;
+                    if (_180 > 0.0)
+                    {
+                        float _216;
+                        if (_180 < _177)
+                        {
+                            _216 = (_180 * _180) / ((2.0 * _176) * _177);
+                        }
+                        else
+                        {
+                            float _215;
+                            if (_180 > _176)
+                            {
+                                float _206 = _178 - _180;
+                                _215 = 1.0 - ((_206 * _206) / ((2.0 * _176) * _177));
+                            }
+                            else
+                            {
+                                _215 = (_180 - (0.5 * _177)) / _176;
+                            }
+                            _216 = _215;
+                        }
+                        _217 = _216;
+                    }
+                    else
+                    {
+                        _217 = 0.0;
+                    }
+                    _218 = _217;
+                }
+                _219 = _218;
+            }
+            _223 = (_165 > 0.001000000047497451305389404296875) ? _219 : clamp(_144 + 0.5, 0.0, 1.0);
+        }
+        else
+        {
+            _223 = 0.0;
+        }
+        _225 = min(_161, _223);
+    }
+    else
+    {
+        _225 = _161;
+    }
+    float _378;
+    if ((int(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y) & 1) != 0)
+    {
+        uint _233 = wax_TEXCOORD1 + 3u;
+        uint _236 = wax_TEXCOORD1 + 4u;
+        float _242 = texelFetch(waxBuffer1, int(_233)).x + texelFetch(waxBuffer1, int(_236)).x;
+        float _246 = texelFetch(waxBuffer1, int(_233)).y + texelFetch(waxBuffer1, int(_236)).x;
+        float _299;
+        vec2 _300;
+        bool _301;
+        if (((texelFetch(waxBuffer1, int(_236)).x > 0.0) && (waxFragCoord().x < _242)) && (waxFragCoord().y < _246))
+        {
+            _299 = texelFetch(waxBuffer1, int(_236)).x;
+            _300 = vec2(_242, _246);
+            _301 = true;
+        }
+        else
+        {
+            float _256 = texelFetch(waxBuffer1, int(_233)).z - texelFetch(waxBuffer1, int(_236)).y;
+            float _259 = texelFetch(waxBuffer1, int(_233)).y + texelFetch(waxBuffer1, int(_236)).y;
+            float _296;
+            vec2 _297;
+            bool _298;
+            if (((texelFetch(waxBuffer1, int(_236)).y > 0.0) && (waxFragCoord().x > _256)) && (waxFragCoord().y < _259))
+            {
+                _296 = texelFetch(waxBuffer1, int(_236)).y;
+                _297 = vec2(_256, _259);
+                _298 = true;
+            }
+            else
+            {
+                float _268 = texelFetch(waxBuffer1, int(_233)).z - texelFetch(waxBuffer1, int(_236)).z;
+                float _272 = texelFetch(waxBuffer1, int(_233)).w - texelFetch(waxBuffer1, int(_236)).z;
+                float _293;
+                vec2 _294;
+                bool _295;
+                if (((texelFetch(waxBuffer1, int(_236)).z > 0.0) && (waxFragCoord().x > _268)) && (waxFragCoord().y > _272))
+                {
+                    _293 = texelFetch(waxBuffer1, int(_236)).z;
+                    _294 = vec2(_268, _272);
+                    _295 = true;
+                }
+                else
+                {
+                    float _281 = texelFetch(waxBuffer1, int(_233)).x + texelFetch(waxBuffer1, int(_236)).w;
+                    float _284 = texelFetch(waxBuffer1, int(_233)).w - texelFetch(waxBuffer1, int(_236)).w;
+                    bool _286 = ((texelFetch(waxBuffer1, int(_236)).w > 0.0) && (waxFragCoord().x < _281)) && (waxFragCoord().y > _284);
+                    vec2 _291;
+                    if (_286)
+                    {
+                        _291 = vec2(_281, _284);
+                    }
+                    else
+                    {
+                        _291 = vec2(0.0);
+                    }
+                    _293 = _286 ? texelFetch(waxBuffer1, int(_236)).w : 0.0;
+                    _294 = _291;
+                    _295 = _286;
+                }
+                _296 = _293;
+                _297 = _294;
+                _298 = _295;
+            }
+            _299 = _296;
+            _300 = _297;
+            _301 = _298;
+        }
+        float _312 = clamp(min(_148, texelFetch(waxBuffer1, int(_233)).z) - max(_150, texelFetch(waxBuffer1, int(_233)).x), 0.0, 1.0) * clamp(min(_155, texelFetch(waxBuffer1, int(_233)).w) - max(_157, texelFetch(waxBuffer1, int(_233)).y), 0.0, 1.0);
+        float _376;
+        if (_301)
+        {
+            vec2 _315 = waxFragCoord().xy - _300;
+            float _316 = length(_315);
+            float _374;
+            if (_299 > 0.0)
+            {
+                float _321 = _299 - _316;
+                vec2 _324 = abs(_315 / vec2(_316));
+                float _325 = _324.x;
+                float _326 = _324.y;
+                float _327 = max(_325, _326);
+                float _328 = min(_325, _326);
+                float _329 = _327 + _328;
+                float _331 = _321 + (0.5 * _329);
+                float _370;
+                if (_328 < 0.001000000047497451305389404296875)
+                {
+                    _370 = clamp(_321 + 0.5, 0.0, 1.0);
+                }
+                else
+                {
+                    float _369;
+                    if (_331 >= _329)
+                    {
+                        _369 = 1.0;
+                    }
+                    else
+                    {
+                        float _368;
+                        if (_331 > 0.0)
+                        {
+                            float _367;
+                            if (_331 < _328)
+                            {
+                                _367 = (_331 * _331) / ((2.0 * _327) * _328);
+                            }
+                            else
+                            {
+                                float _366;
+                                if (_331 > _327)
+                                {
+                                    float _357 = _329 - _331;
+                                    _366 = 1.0 - ((_357 * _357) / ((2.0 * _327) * _328));
+                                }
+                                else
+                                {
+                                    _366 = (_331 - (0.5 * _328)) / _327;
+                                }
+                                _367 = _366;
+                            }
+                            _368 = _367;
+                        }
+                        else
+                        {
+                            _368 = 0.0;
+                        }
+                        _369 = _368;
+                    }
+                    _370 = _369;
+                }
+                _374 = (_316 > 0.001000000047497451305389404296875) ? _370 : clamp(_299 + 0.5, 0.0, 1.0);
+            }
+            else
+            {
+                _374 = 0.0;
+            }
+            _376 = min(_312, _374);
+        }
+        else
+        {
+            _376 = _312;
+        }
+        _378 = min(_225, _376);
+    }
+    else
+    {
+        _378 = _225;
+    }
+    uint _379 = wax_TEXCOORD1 + 5u;
+    float _586;
+    vec4 _587;
+    SPIRV_CROSS_BRANCH
+    if (_378 > 0.0)
+    {
+        float _584;
+        vec4 _585;
+        SPIRV_CROSS_BRANCH
+        if (texelFetch(waxBuffer1, int(_379)).x >= 0.0)
+        {
+            uint _389 = uint(texelFetch(waxBuffer1, int(_379)).x);
+            vec4 _575;
+            SPIRV_CROSS_BRANCH
+            if (texelFetch(waxBuffer1, int(_379)).y >= 0.0)
+            {
+                uint _397 = uint(max(texelFetch(waxBuffer1, int(_379)).y, 0.0));
+                uint _400 = uint(texelFetch(waxBuffer0, int(_397)).x);
+                uint _401 = _397 + 1u;
+                vec4 _406;
+                _406 = vec4(0.0);
+                uint _404;
+                vec4 _407;
+                SPIRV_CROSS_LOOP
+                for (uint _403 = _401, _408 = 0u; _408 < _400; _403 = _404, _406 = _407, _408++)
+                {
+                    uint _415 = _403 + 1u;
+                    uint _422 = uint(texelFetch(waxBuffer0, int(_403)).z);
+                    uint _423 = _403 + 3u;
+                    uint _426 = _423 + ((_422 + 3u) >> 2u);
+                    SPIRV_CROSS_BRANCH
+                    if (_422 > 0u)
+                    {
+                        float _447;
+                        if (texelFetch(waxBuffer0, int(_403)).x < 0.5)
+                        {
+                            _447 = ((texelFetch(waxBuffer0, int(_415)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_415)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_415)).z;
+                        }
+                        else
+                        {
+                            _447 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_415)).xy) * texelFetch(waxBuffer0, int(_415)).zw);
+                        }
+                        float _448 = clamp(_447, -10000000.0, 10000000.0);
+                        uint _450 = uint(texelFetch(waxBuffer0, int(_403)).y);
+                        float _470;
+                        if (_450 == 0u)
+                        {
+                            _470 = clamp(_448, 0.0, 1.0);
+                        }
+                        else
+                        {
+                            float _469;
+                            if (_450 == 1u)
+                            {
+                                _469 = _448 - floor(_448);
+                            }
+                            else
+                            {
+                                float _465 = _448 - (2.0 * floor(_448 * 0.5));
+                                _469 = (_465 > 1.0) ? (2.0 - _465) : _465;
+                            }
+                            _470 = _469;
+                        }
+                        int _472;
+                        _472 = -1;
+                        int _473;
+                        SPIRV_CROSS_LOOP
+                        for (uint _475 = 0u; _475 < _422; _472 = _473, _475++)
+                        {
+                            uint _481 = _423 + (_475 >> 2u);
+                            uint _484 = _475 & 3u;
+                            if (((_484 == 0u) ? texelFetch(waxBuffer0, int(_481)).x : ((_484 == 1u) ? texelFetch(waxBuffer0, int(_481)).y : ((_484 == 2u) ? texelFetch(waxBuffer0, int(_481)).z : texelFetch(waxBuffer0, int(_481)).w))) <= _470)
+                            {
+                                _473 = int(_475);
+                            }
+                            else
+                            {
+                                _473 = _472;
+                            }
+                        }
+                        vec4 _557;
+                        if (_472 < 0)
+                        {
+                            _557 = texelFetch(waxBuffer0, int(_426));
+                        }
+                        else
+                        {
+                            uint _505 = uint(_472);
+                            vec4 _556;
+                            if (_505 == (_422 - 1u))
+                            {
+                                _556 = texelFetch(waxBuffer0, int(_426 + _505));
+                            }
+                            else
+                            {
+                                uint _515 = _423 + (_505 >> 2u);
+                                uint _518 = _505 & 3u;
+                                float _528 = (_518 == 0u) ? texelFetch(waxBuffer0, int(_515)).x : ((_518 == 1u) ? texelFetch(waxBuffer0, int(_515)).y : ((_518 == 2u) ? texelFetch(waxBuffer0, int(_515)).z : texelFetch(waxBuffer0, int(_515)).w));
+                                uint _529 = _505 + 1u;
+                                uint _531 = _423 + (_529 >> 2u);
+                                uint _534 = _529 & 3u;
+                                uint _545 = _426 + _505;
+                                _556 = mix(texelFetch(waxBuffer0, int(_545)), texelFetch(waxBuffer0, int(_545 + 1u)), vec4((_470 - _528) / (((_534 == 0u) ? texelFetch(waxBuffer0, int(_531)).x : ((_534 == 1u) ? texelFetch(waxBuffer0, int(_531)).y : ((_534 == 2u) ? texelFetch(waxBuffer0, int(_531)).z : texelFetch(waxBuffer0, int(_531)).w))) - _528)));
+                            }
+                            _557 = _556;
+                        }
+                        vec4 _570;
+                        if (texelFetch(waxBuffer0, int(_403 + 2u)).x > 0.5)
+                        {
+                            vec3 _568 = mix(pow(abs((_557.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _557.xyz * vec3(0.077399380505084991455078125), step(_557.xyz, vec3(0.040449999272823333740234375)));
+                            _570 = vec4(_568.x, _568.y, _568.z, _557.w);
+                        }
+                        else
+                        {
+                            _570 = _557;
+                        }
+                        _407 = _406 + (_570 * texelFetch(waxBuffer0, int(_403)).w);
+                    }
+                    else
+                    {
+                        _407 = _406;
+                    }
+                    _404 = _426 + _422;
+                }
+                _575 = texelFetch(waxBuffer0, int(_389)) * _406;
+            }
+            else
+            {
+                _575 = texelFetch(waxBuffer0, int(_389));
+            }
+            _584 = _378;
+            _585 = vec4(_575.xyz * _575.w, _575.w) * _378;
+        }
+        else
+        {
+            _584 = 0.0;
+            _585 = vec4(0.0);
+        }
+        _586 = _584;
+        _587 = _585;
+    }
+    else
+    {
+        _586 = 0.0;
+        _587 = vec4(0.0);
+    }
+    uint _588 = wax_TEXCOORD1 + 6u;
+    float _589 = _225 - _378;
+    float _798;
+    vec4 _799;
+    SPIRV_CROSS_BRANCH
+    if (_589 > 0.0)
+    {
+        float _796;
+        vec4 _797;
+        SPIRV_CROSS_BRANCH
+        if (texelFetch(waxBuffer1, int(_588)).x >= 0.0)
+        {
+            uint _599 = uint(texelFetch(waxBuffer1, int(_588)).x);
+            vec4 _785;
+            SPIRV_CROSS_BRANCH
+            if (texelFetch(waxBuffer1, int(_588)).y >= 0.0)
+            {
+                uint _607 = uint(max(texelFetch(waxBuffer1, int(_588)).y, 0.0));
+                uint _610 = uint(texelFetch(waxBuffer0, int(_607)).x);
+                uint _611 = _607 + 1u;
+                vec4 _616;
+                _616 = vec4(0.0);
+                uint _614;
+                vec4 _617;
+                SPIRV_CROSS_LOOP
+                for (uint _613 = _611, _618 = 0u; _618 < _610; _613 = _614, _616 = _617, _618++)
+                {
+                    uint _625 = _613 + 1u;
+                    uint _632 = uint(texelFetch(waxBuffer0, int(_613)).z);
+                    uint _633 = _613 + 3u;
+                    uint _636 = _633 + ((_632 + 3u) >> 2u);
+                    SPIRV_CROSS_BRANCH
+                    if (_632 > 0u)
+                    {
+                        float _657;
+                        if (texelFetch(waxBuffer0, int(_613)).x < 0.5)
+                        {
+                            _657 = ((texelFetch(waxBuffer0, int(_625)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_625)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_625)).z;
+                        }
+                        else
+                        {
+                            _657 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_625)).xy) * texelFetch(waxBuffer0, int(_625)).zw);
+                        }
+                        float _658 = clamp(_657, -10000000.0, 10000000.0);
+                        uint _660 = uint(texelFetch(waxBuffer0, int(_613)).y);
+                        float _680;
+                        if (_660 == 0u)
+                        {
+                            _680 = clamp(_658, 0.0, 1.0);
+                        }
+                        else
+                        {
+                            float _679;
+                            if (_660 == 1u)
+                            {
+                                _679 = _658 - floor(_658);
+                            }
+                            else
+                            {
+                                float _675 = _658 - (2.0 * floor(_658 * 0.5));
+                                _679 = (_675 > 1.0) ? (2.0 - _675) : _675;
+                            }
+                            _680 = _679;
+                        }
+                        int _682;
+                        _682 = -1;
+                        int _683;
+                        SPIRV_CROSS_LOOP
+                        for (uint _685 = 0u; _685 < _632; _682 = _683, _685++)
+                        {
+                            uint _691 = _633 + (_685 >> 2u);
+                            uint _694 = _685 & 3u;
+                            if (((_694 == 0u) ? texelFetch(waxBuffer0, int(_691)).x : ((_694 == 1u) ? texelFetch(waxBuffer0, int(_691)).y : ((_694 == 2u) ? texelFetch(waxBuffer0, int(_691)).z : texelFetch(waxBuffer0, int(_691)).w))) <= _680)
+                            {
+                                _683 = int(_685);
+                            }
+                            else
+                            {
+                                _683 = _682;
+                            }
+                        }
+                        vec4 _767;
+                        if (_682 < 0)
+                        {
+                            _767 = texelFetch(waxBuffer0, int(_636));
+                        }
+                        else
+                        {
+                            uint _715 = uint(_682);
+                            vec4 _766;
+                            if (_715 == (_632 - 1u))
+                            {
+                                _766 = texelFetch(waxBuffer0, int(_636 + _715));
+                            }
+                            else
+                            {
+                                uint _725 = _633 + (_715 >> 2u);
+                                uint _728 = _715 & 3u;
+                                float _738 = (_728 == 0u) ? texelFetch(waxBuffer0, int(_725)).x : ((_728 == 1u) ? texelFetch(waxBuffer0, int(_725)).y : ((_728 == 2u) ? texelFetch(waxBuffer0, int(_725)).z : texelFetch(waxBuffer0, int(_725)).w));
+                                uint _739 = _715 + 1u;
+                                uint _741 = _633 + (_739 >> 2u);
+                                uint _744 = _739 & 3u;
+                                uint _755 = _636 + _715;
+                                _766 = mix(texelFetch(waxBuffer0, int(_755)), texelFetch(waxBuffer0, int(_755 + 1u)), vec4((_680 - _738) / (((_744 == 0u) ? texelFetch(waxBuffer0, int(_741)).x : ((_744 == 1u) ? texelFetch(waxBuffer0, int(_741)).y : ((_744 == 2u) ? texelFetch(waxBuffer0, int(_741)).z : texelFetch(waxBuffer0, int(_741)).w))) - _738)));
+                            }
+                            _767 = _766;
+                        }
+                        vec4 _780;
+                        if (texelFetch(waxBuffer0, int(_613 + 2u)).x > 0.5)
+                        {
+                            vec3 _778 = mix(pow(abs((_767.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _767.xyz * vec3(0.077399380505084991455078125), step(_767.xyz, vec3(0.040449999272823333740234375)));
+                            _780 = vec4(_778.x, _778.y, _778.z, _767.w);
+                        }
+                        else
+                        {
+                            _780 = _767;
+                        }
+                        _617 = _616 + (_780 * texelFetch(waxBuffer0, int(_613)).w);
+                    }
+                    else
+                    {
+                        _617 = _616;
+                    }
+                    _614 = _636 + _632;
+                }
+                _785 = texelFetch(waxBuffer0, int(_599)) * _616;
+            }
+            else
+            {
+                _785 = texelFetch(waxBuffer0, int(_599));
+            }
+            _796 = _586 + _589;
+            _797 = _587 + (vec4(_785.xyz * _785.w, _785.w) * _589);
+        }
+        else
+        {
+            _796 = _586;
+            _797 = _587;
+        }
+        _798 = _796;
+        _799 = _797;
+    }
+    else
+    {
+        _798 = _586;
+        _799 = _587;
+    }
+    if (_798 < 0.00390625)
     {
         discard;
     }
-    vec4 _3669;
+    vec4 _986;
     SPIRV_CROSS_BRANCH
     if ((int(waxConstants[2].x)) >= 0)
     {
-        uint _3490 = uint(max((int(waxConstants[2].x)), 0));
-        uint _3493 = uint(texelFetch(waxBuffer0, int(_3490)).x);
-        uint _3494 = _3490 + 1u;
-        vec4 _3499;
-        _3499 = vec4(0.0);
-        uint _3497;
-        vec4 _3500;
+        uint _809 = uint(max((int(waxConstants[2].x)), 0));
+        uint _812 = uint(texelFetch(waxBuffer0, int(_809)).x);
+        uint _813 = _809 + 1u;
+        vec4 _818;
+        _818 = vec4(0.0);
+        uint _816;
+        vec4 _819;
         SPIRV_CROSS_LOOP
-        for (uint _3496 = _3494, _3501 = 0u; _3501 < _3493; _3496 = _3497, _3499 = _3500, _3501++)
+        for (uint _815 = _813, _820 = 0u; _820 < _812; _815 = _816, _818 = _819, _820++)
         {
-            uint _3508 = _3496 + 1u;
-            uint _3515 = uint(texelFetch(waxBuffer0, int(_3496)).z);
-            uint _3516 = _3496 + 3u;
-            uint _3519 = _3516 + ((_3515 + 3u) >> 2u);
+            uint _827 = _815 + 1u;
+            uint _834 = uint(texelFetch(waxBuffer0, int(_815)).z);
+            uint _835 = _815 + 3u;
+            uint _838 = _835 + ((_834 + 3u) >> 2u);
             SPIRV_CROSS_BRANCH
-            if (_3515 > 0u)
+            if (_834 > 0u)
             {
-                float _3542;
-                if (texelFetch(waxBuffer0, int(_3496)).x < 0.5)
+                float _859;
+                if (texelFetch(waxBuffer0, int(_815)).x < 0.5)
                 {
-                    _3542 = ((texelFetch(waxBuffer0, int(_3508)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_3508)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_3508)).z;
+                    _859 = ((texelFetch(waxBuffer0, int(_827)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_827)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_827)).z;
                 }
                 else
                 {
-                    _3542 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_3508)).xy) * texelFetch(waxBuffer0, int(_3508)).zw);
+                    _859 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_827)).xy) * texelFetch(waxBuffer0, int(_827)).zw);
                 }
-                float _3543 = clamp(_3542, -10000000.0, 10000000.0);
-                uint _3545 = uint(texelFetch(waxBuffer0, int(_3496)).y);
-                float _3565;
-                if (_3545 == 0u)
+                float _860 = clamp(_859, -10000000.0, 10000000.0);
+                uint _862 = uint(texelFetch(waxBuffer0, int(_815)).y);
+                float _882;
+                if (_862 == 0u)
                 {
-                    _3565 = clamp(_3543, 0.0, 1.0);
+                    _882 = clamp(_860, 0.0, 1.0);
                 }
                 else
                 {
-                    float _3564;
-                    if (_3545 == 1u)
+                    float _881;
+                    if (_862 == 1u)
                     {
-                        _3564 = _3543 - floor(_3543);
+                        _881 = _860 - floor(_860);
                     }
                     else
                     {
-                        float _3560 = _3543 - (2.0 * floor(_3543 * 0.5));
-                        _3564 = (_3560 > 1.0) ? (2.0 - _3560) : _3560;
+                        float _877 = _860 - (2.0 * floor(_860 * 0.5));
+                        _881 = (_877 > 1.0) ? (2.0 - _877) : _877;
                     }
-                    _3565 = _3564;
+                    _882 = _881;
                 }
-                int _3567;
-                _3567 = -1;
-                int _3568;
+                int _884;
+                _884 = -1;
+                int _885;
                 SPIRV_CROSS_LOOP
-                for (uint _3570 = 0u; _3570 < _3515; _3567 = _3568, _3570++)
+                for (uint _887 = 0u; _887 < _834; _884 = _885, _887++)
                 {
-                    uint _3576 = _3516 + (_3570 >> 2u);
-                    uint _3579 = _3570 & 3u;
-                    if (((_3579 == 0u) ? texelFetch(waxBuffer0, int(_3576)).x : ((_3579 == 1u) ? texelFetch(waxBuffer0, int(_3576)).y : ((_3579 == 2u) ? texelFetch(waxBuffer0, int(_3576)).z : texelFetch(waxBuffer0, int(_3576)).w))) <= _3565)
+                    uint _893 = _835 + (_887 >> 2u);
+                    uint _896 = _887 & 3u;
+                    if (((_896 == 0u) ? texelFetch(waxBuffer0, int(_893)).x : ((_896 == 1u) ? texelFetch(waxBuffer0, int(_893)).y : ((_896 == 2u) ? texelFetch(waxBuffer0, int(_893)).z : texelFetch(waxBuffer0, int(_893)).w))) <= _882)
                     {
-                        _3568 = int(_3570);
+                        _885 = int(_887);
                     }
                     else
                     {
-                        _3568 = _3567;
+                        _885 = _884;
                     }
                 }
-                vec4 _3652;
-                if (_3567 < 0)
+                vec4 _969;
+                if (_884 < 0)
                 {
-                    _3652 = texelFetch(waxBuffer0, int(_3519));
+                    _969 = texelFetch(waxBuffer0, int(_838));
                 }
                 else
                 {
-                    uint _3600 = uint(_3567);
-                    vec4 _3651;
-                    if (_3600 == (_3515 - 1u))
+                    uint _917 = uint(_884);
+                    vec4 _968;
+                    if (_917 == (_834 - 1u))
                     {
-                        _3651 = texelFetch(waxBuffer0, int(_3519 + _3600));
+                        _968 = texelFetch(waxBuffer0, int(_838 + _917));
                     }
                     else
                     {
-                        uint _3610 = _3516 + (_3600 >> 2u);
-                        uint _3613 = _3600 & 3u;
-                        float _3623 = (_3613 == 0u) ? texelFetch(waxBuffer0, int(_3610)).x : ((_3613 == 1u) ? texelFetch(waxBuffer0, int(_3610)).y : ((_3613 == 2u) ? texelFetch(waxBuffer0, int(_3610)).z : texelFetch(waxBuffer0, int(_3610)).w));
-                        uint _3624 = _3600 + 1u;
-                        uint _3626 = _3516 + (_3624 >> 2u);
-                        uint _3629 = _3624 & 3u;
-                        uint _3640 = _3519 + _3600;
-                        _3651 = mix(texelFetch(waxBuffer0, int(_3640)), texelFetch(waxBuffer0, int(_3640 + 1u)), vec4((_3565 - _3623) / (((_3629 == 0u) ? texelFetch(waxBuffer0, int(_3626)).x : ((_3629 == 1u) ? texelFetch(waxBuffer0, int(_3626)).y : ((_3629 == 2u) ? texelFetch(waxBuffer0, int(_3626)).z : texelFetch(waxBuffer0, int(_3626)).w))) - _3623)));
+                        uint _927 = _835 + (_917 >> 2u);
+                        uint _930 = _917 & 3u;
+                        float _940 = (_930 == 0u) ? texelFetch(waxBuffer0, int(_927)).x : ((_930 == 1u) ? texelFetch(waxBuffer0, int(_927)).y : ((_930 == 2u) ? texelFetch(waxBuffer0, int(_927)).z : texelFetch(waxBuffer0, int(_927)).w));
+                        uint _941 = _917 + 1u;
+                        uint _943 = _835 + (_941 >> 2u);
+                        uint _946 = _941 & 3u;
+                        uint _957 = _838 + _917;
+                        _968 = mix(texelFetch(waxBuffer0, int(_957)), texelFetch(waxBuffer0, int(_957 + 1u)), vec4((_882 - _940) / (((_946 == 0u) ? texelFetch(waxBuffer0, int(_943)).x : ((_946 == 1u) ? texelFetch(waxBuffer0, int(_943)).y : ((_946 == 2u) ? texelFetch(waxBuffer0, int(_943)).z : texelFetch(waxBuffer0, int(_943)).w))) - _940)));
                     }
-                    _3652 = _3651;
+                    _969 = _968;
                 }
-                vec4 _3665;
-                if (texelFetch(waxBuffer0, int(_3496 + 2u)).x > 0.5)
+                vec4 _982;
+                if (texelFetch(waxBuffer0, int(_815 + 2u)).x > 0.5)
                 {
-                    vec3 _3663 = mix(pow(abs((_3652.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _3652.xyz * vec3(0.077399380505084991455078125), step(_3652.xyz, vec3(0.040449999272823333740234375)));
-                    _3665 = vec4(_3663.x, _3663.y, _3663.z, _3652.w);
+                    vec3 _980 = mix(pow(abs((_969.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _969.xyz * vec3(0.077399380505084991455078125), step(_969.xyz, vec3(0.040449999272823333740234375)));
+                    _982 = vec4(_980.x, _980.y, _980.z, _969.w);
                 }
                 else
                 {
-                    _3665 = _3652;
+                    _982 = _969;
                 }
-                _3500 = _3499 + (_3665 * texelFetch(waxBuffer0, int(_3496)).w);
+                _819 = _818 + (_982 * texelFetch(waxBuffer0, int(_815)).w);
             }
             else
             {
-                _3500 = _3499;
+                _819 = _818;
             }
-            _3497 = _3519 + _3515;
+            _816 = _838 + _834;
         }
-        _3669 = _3499;
+        _986 = _818;
     }
     else
     {
-        _3669 = vec4(1.0);
+        _986 = vec4(1.0);
     }
-    vec4 _3670 = wax_COLOR * _3669;
-    float _3672 = _3670.w;
-    vec4 _3678 = _3479 * vec4(_3670.xyz * _3672, _3672);
-    vec4 _3770;
-    vec4 _3771;
+    vec4 _987 = wax_COLOR * _986;
+    float _989 = _987.w;
+    vec4 _995 = _799 * vec4(_987.xyz * _989, _989);
+    vec4 _1087;
+    vec4 _1088;
     if ((waxConstants[2].z) == 2u)
     {
-        float _3685 = _3678.w;
-        vec4 _3708;
-        vec4 _3709;
+        float _1002 = _995.w;
+        vec4 _1025;
+        vec4 _1026;
         if ((waxConstants[2].y) == 2u)
         {
-            _3708 = vec4(0.0);
-            _3709 = vec4((1.0 - _3480) + _3685);
+            _1025 = vec4(0.0);
+            _1026 = vec4((1.0 - _798) + _1002);
         }
         else
         {
-            vec4 _3706;
-            vec4 _3707;
+            vec4 _1023;
+            vec4 _1024;
             if ((waxConstants[2].y) == 1u)
             {
-                _3706 = vec4(_3480 * (uintBitsToFloat(waxConstants[2].w)));
-                _3707 = vec4(_3685 * (uintBitsToFloat(waxConstants[2].w)));
+                _1023 = vec4(_798 * (uintBitsToFloat(waxConstants[2].w)));
+                _1024 = vec4(_1002 * (uintBitsToFloat(waxConstants[2].w)));
             }
             else
             {
-                vec4 _3705 = vec4(_3685);
-                _3706 = _3705;
-                _3707 = _3705;
+                vec4 _1022 = vec4(_1002);
+                _1023 = _1022;
+                _1024 = _1022;
             }
-            _3708 = _3706;
-            _3709 = _3707;
+            _1025 = _1023;
+            _1026 = _1024;
         }
-        _3770 = _3708;
-        _3771 = _3709;
+        _1087 = _1025;
+        _1088 = _1026;
     }
     else
     {
-        vec4 _3768;
-        vec4 _3769;
+        vec4 _1085;
+        vec4 _1086;
         if ((waxConstants[2].y) == 3u)
         {
-            float _3716 = _3678.x;
-            _3768 = vec4(0.0);
-            _3769 = vec4(_3716, _3678.yz, max(_3716, max(_3678.y, _3678.z)));
+            float _1033 = _995.x;
+            _1085 = vec4(0.0);
+            _1086 = vec4(_1033, _995.yz, max(_1033, max(_995.y, _995.z)));
         }
         else
         {
-            vec4 _3766;
-            vec4 _3767;
+            vec4 _1083;
+            vec4 _1084;
             if ((waxConstants[2].y) == 2u)
             {
-                _3766 = vec4(0.0);
-                _3767 = vec4(vec3(1.0 - _3678.w) + _3678.xyz, 1.0);
+                _1083 = vec4(0.0);
+                _1084 = vec4(vec3(1.0 - _995.w) + _995.xyz, 1.0);
             }
             else
             {
-                vec4 _3764;
-                vec4 _3765;
+                vec4 _1081;
+                vec4 _1082;
                 if ((waxConstants[2].y) == 1u)
                 {
-                    float _3754;
+                    float _1071;
                     if ((waxConstants[2].z) == 1u)
                     {
-                        float _3750 = (1.0 - (uintBitsToFloat(waxConstants[2].w))) + (((_3480 > 0.0) ? (_3678.w / _3480) : 0.0) * (uintBitsToFloat(waxConstants[2].w)));
-                        _3754 = (_3750 > 0.0) ? (1.0 / _3750) : 0.0;
+                        float _1067 = (1.0 - (uintBitsToFloat(waxConstants[2].w))) + (((_798 > 0.0) ? (_995.w / _798) : 0.0) * (uintBitsToFloat(waxConstants[2].w)));
+                        _1071 = (_1067 > 0.0) ? (1.0 / _1067) : 0.0;
                     }
                     else
                     {
-                        _3754 = 1.0;
+                        _1071 = 1.0;
                     }
-                    _3764 = vec4(_3480 * (1.0 - ((1.0 - (uintBitsToFloat(waxConstants[2].w))) * _3754)));
-                    _3765 = _3678 * ((uintBitsToFloat(waxConstants[2].w)) * _3754);
+                    _1081 = vec4(_798 * (1.0 - ((1.0 - (uintBitsToFloat(waxConstants[2].w))) * _1071)));
+                    _1082 = _995 * ((uintBitsToFloat(waxConstants[2].w)) * _1071);
                 }
                 else
                 {
-                    _3764 = vec4(_3678.w);
-                    _3765 = _3678;
+                    _1081 = vec4(_995.w);
+                    _1082 = _995;
                 }
-                _3766 = _3764;
-                _3767 = _3765;
+                _1083 = _1081;
+                _1084 = _1082;
             }
-            _3768 = _3766;
-            _3769 = _3767;
+            _1085 = _1083;
+            _1086 = _1084;
         }
-        _3770 = _3768;
-        _3771 = _3769;
+        _1087 = _1085;
+        _1088 = _1086;
     }
-    out_var_SV_Target0 = _3771;
-    out_var_SV_Target1 = _3770;
+    out_var_SV_Target0 = _1088;
+    out_var_SV_Target1 = _1087;
+}
+)glsl" },
+
+	{ "shapeRingPS", R"glsl(#version 330
+#if defined(GL_EXT_control_flow_attributes)
+#extension GL_EXT_control_flow_attributes : require
+#define SPIRV_CROSS_FLATTEN [[flatten]]
+#define SPIRV_CROSS_BRANCH [[dont_flatten]]
+#define SPIRV_CROSS_UNROLL [[unroll]]
+#define SPIRV_CROSS_LOOP [[dont_unroll]]
+#else
+#define SPIRV_CROSS_FLATTEN
+#define SPIRV_CROSS_BRANCH
+#define SPIRV_CROSS_UNROLL
+#define SPIRV_CROSS_LOOP
+#endif
+
+uniform samplerBuffer waxBuffer0;
+
+uniform samplerBuffer waxBuffer1;
+
+uniform uvec4 waxConstants[6];
+
+vec4 waxFragCoord() { return vec4(gl_FragCoord.x, (uintBitsToFloat(waxConstants[5])).y + (uintBitsToFloat(waxConstants[5])).z * gl_FragCoord.y, gl_FragCoord.zw); }
+
+in vec4 wax_COLOR;
+flat in uint wax_TEXCOORD1;
+layout(location = 0) out vec4 out_var_SV_Target0;
+
+void main()
+{
+    int _87 = int(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y);
+    uint _88 = wax_TEXCOORD1 + 1u;
+    uint _91 = wax_TEXCOORD1 + 2u;
+    uint _94 = wax_TEXCOORD1 + 3u;
+    vec2 _98 = waxFragCoord().xy - texelFetch(waxBuffer1, int(_88)).xy;
+    float _99 = length(_98);
+    bool _101 = (_87 & 1) != 0;
+    float _105 = waxFragCoord().x + 0.5;
+    float _107 = waxFragCoord().x - 0.5;
+    float _114 = waxFragCoord().y + 0.5;
+    float _116 = waxFragCoord().y - 0.5;
+    float _120 = clamp(min(_105, texelFetch(waxBuffer1, int(_94)).z) - max(_107, texelFetch(waxBuffer1, int(_94)).x), 0.0, 1.0) * clamp(min(_114, texelFetch(waxBuffer1, int(_94)).w) - max(_116, texelFetch(waxBuffer1, int(_94)).y), 0.0, 1.0);
+    float _179;
+    if (texelFetch(waxBuffer1, int(_88)).z > 0.0)
+    {
+        float _126 = texelFetch(waxBuffer1, int(_88)).z - _99;
+        vec2 _129 = abs(_98 / vec2(_99));
+        float _130 = _129.x;
+        float _131 = _129.y;
+        float _132 = max(_130, _131);
+        float _133 = min(_130, _131);
+        float _134 = _132 + _133;
+        float _136 = _126 + (0.5 * _134);
+        float _175;
+        if (_133 < 0.001000000047497451305389404296875)
+        {
+            _175 = clamp(_126 + 0.5, 0.0, 1.0);
+        }
+        else
+        {
+            float _174;
+            if (_136 >= _134)
+            {
+                _174 = 1.0;
+            }
+            else
+            {
+                float _173;
+                if (_136 > 0.0)
+                {
+                    float _172;
+                    if (_136 < _133)
+                    {
+                        _172 = (_136 * _136) / ((2.0 * _132) * _133);
+                    }
+                    else
+                    {
+                        float _171;
+                        if (_136 > _132)
+                        {
+                            float _162 = _134 - _136;
+                            _171 = 1.0 - ((_162 * _162) / ((2.0 * _132) * _133));
+                        }
+                        else
+                        {
+                            _171 = (_136 - (0.5 * _133)) / _132;
+                        }
+                        _172 = _171;
+                    }
+                    _173 = _172;
+                }
+                else
+                {
+                    _173 = 0.0;
+                }
+                _174 = _173;
+            }
+            _175 = _174;
+        }
+        _179 = (_99 > 0.001000000047497451305389404296875) ? _175 : clamp(texelFetch(waxBuffer1, int(_88)).z + 0.5, 0.0, 1.0);
+    }
+    else
+    {
+        _179 = 0.0;
+    }
+    float _180 = _101 ? _120 : _179;
+    uint _181 = wax_TEXCOORD1 + 4u;
+    float _255;
+    if (texelFetch(waxBuffer1, int(_88)).w > 0.0)
+    {
+        float _202 = texelFetch(waxBuffer1, int(_88)).w - _99;
+        vec2 _205 = abs(_98 / vec2(_99));
+        float _206 = _205.x;
+        float _207 = _205.y;
+        float _208 = max(_206, _207);
+        float _209 = min(_206, _207);
+        float _210 = _208 + _209;
+        float _212 = _202 + (0.5 * _210);
+        float _251;
+        if (_209 < 0.001000000047497451305389404296875)
+        {
+            _251 = clamp(_202 + 0.5, 0.0, 1.0);
+        }
+        else
+        {
+            float _250;
+            if (_212 >= _210)
+            {
+                _250 = 1.0;
+            }
+            else
+            {
+                float _249;
+                if (_212 > 0.0)
+                {
+                    float _248;
+                    if (_212 < _209)
+                    {
+                        _248 = (_212 * _212) / ((2.0 * _208) * _209);
+                    }
+                    else
+                    {
+                        float _247;
+                        if (_212 > _208)
+                        {
+                            float _238 = _210 - _212;
+                            _247 = 1.0 - ((_238 * _238) / ((2.0 * _208) * _209));
+                        }
+                        else
+                        {
+                            _247 = (_212 - (0.5 * _209)) / _208;
+                        }
+                        _248 = _247;
+                    }
+                    _249 = _248;
+                }
+                else
+                {
+                    _249 = 0.0;
+                }
+                _250 = _249;
+            }
+            _251 = _250;
+        }
+        _255 = (_99 > 0.001000000047497451305389404296875) ? _251 : clamp(texelFetch(waxBuffer1, int(_88)).w + 0.5, 0.0, 1.0);
+    }
+    else
+    {
+        _255 = 0.0;
+    }
+    float _257 = min(_101 ? (clamp(min(_105, texelFetch(waxBuffer1, int(_181)).z) - max(_107, texelFetch(waxBuffer1, int(_181)).x), 0.0, 1.0) * clamp(min(_114, texelFetch(waxBuffer1, int(_181)).w) - max(_116, texelFetch(waxBuffer1, int(_181)).y), 0.0, 1.0)) : _255, _180);
+    float _316;
+    if (texelFetch(waxBuffer1, int(_91)).x > 0.0)
+    {
+        float _263 = texelFetch(waxBuffer1, int(_91)).x - _99;
+        vec2 _266 = abs(_98 / vec2(_99));
+        float _267 = _266.x;
+        float _268 = _266.y;
+        float _269 = max(_267, _268);
+        float _270 = min(_267, _268);
+        float _271 = _269 + _270;
+        float _273 = _263 + (0.5 * _271);
+        float _312;
+        if (_270 < 0.001000000047497451305389404296875)
+        {
+            _312 = clamp(_263 + 0.5, 0.0, 1.0);
+        }
+        else
+        {
+            float _311;
+            if (_273 >= _271)
+            {
+                _311 = 1.0;
+            }
+            else
+            {
+                float _310;
+                if (_273 > 0.0)
+                {
+                    float _309;
+                    if (_273 < _270)
+                    {
+                        _309 = (_273 * _273) / ((2.0 * _269) * _270);
+                    }
+                    else
+                    {
+                        float _308;
+                        if (_273 > _269)
+                        {
+                            float _299 = _271 - _273;
+                            _308 = 1.0 - ((_299 * _299) / ((2.0 * _269) * _270));
+                        }
+                        else
+                        {
+                            _308 = (_273 - (0.5 * _270)) / _269;
+                        }
+                        _309 = _308;
+                    }
+                    _310 = _309;
+                }
+                else
+                {
+                    _310 = 0.0;
+                }
+                _311 = _310;
+            }
+            _312 = _311;
+        }
+        _316 = (_99 > 0.001000000047497451305389404296875) ? _312 : clamp(texelFetch(waxBuffer1, int(_91)).x + 0.5, 0.0, 1.0);
+    }
+    else
+    {
+        _316 = 0.0;
+    }
+    float _317 = min(_316, _257);
+    float _376;
+    if (texelFetch(waxBuffer1, int(_91)).y > 0.0)
+    {
+        float _323 = texelFetch(waxBuffer1, int(_91)).y - _99;
+        vec2 _326 = abs(_98 / vec2(_99));
+        float _327 = _326.x;
+        float _328 = _326.y;
+        float _329 = max(_327, _328);
+        float _330 = min(_327, _328);
+        float _331 = _329 + _330;
+        float _333 = _323 + (0.5 * _331);
+        float _372;
+        if (_330 < 0.001000000047497451305389404296875)
+        {
+            _372 = clamp(_323 + 0.5, 0.0, 1.0);
+        }
+        else
+        {
+            float _371;
+            if (_333 >= _331)
+            {
+                _371 = 1.0;
+            }
+            else
+            {
+                float _370;
+                if (_333 > 0.0)
+                {
+                    float _369;
+                    if (_333 < _330)
+                    {
+                        _369 = (_333 * _333) / ((2.0 * _329) * _330);
+                    }
+                    else
+                    {
+                        float _368;
+                        if (_333 > _329)
+                        {
+                            float _359 = _331 - _333;
+                            _368 = 1.0 - ((_359 * _359) / ((2.0 * _329) * _330));
+                        }
+                        else
+                        {
+                            _368 = (_333 - (0.5 * _330)) / _329;
+                        }
+                        _369 = _368;
+                    }
+                    _370 = _369;
+                }
+                else
+                {
+                    _370 = 0.0;
+                }
+                _371 = _370;
+            }
+            _372 = _371;
+        }
+        _376 = (_99 > 0.001000000047497451305389404296875) ? _372 : clamp(texelFetch(waxBuffer1, int(_91)).y + 0.5, 0.0, 1.0);
+    }
+    else
+    {
+        _376 = 0.0;
+    }
+    float _377 = min(_376, _317);
+    float _382 = ((_87 & 2) != 0) ? max(_120 - _180, 0.0) : 0.0;
+    float _385 = ((_180 - _257) + _317) - _377;
+    float _386 = _257 - _317;
+    bool _388 = (_87 & 16) == 0;
+    float _392;
+    if (_388)
+    {
+        _392 = _385 + _386;
+    }
+    else
+    {
+        _392 = _385;
+    }
+    float _393 = _388 ? 0.0 : _386;
+    uint _394 = wax_TEXCOORD1 + 5u;
+    float _601;
+    vec4 _602;
+    SPIRV_CROSS_BRANCH
+    if (_382 > 0.0)
+    {
+        float _599;
+        vec4 _600;
+        SPIRV_CROSS_BRANCH
+        if (texelFetch(waxBuffer1, int(_394)).x >= 0.0)
+        {
+            uint _404 = uint(texelFetch(waxBuffer1, int(_394)).x);
+            vec4 _590;
+            SPIRV_CROSS_BRANCH
+            if (texelFetch(waxBuffer1, int(_394)).y >= 0.0)
+            {
+                uint _412 = uint(max(texelFetch(waxBuffer1, int(_394)).y, 0.0));
+                uint _415 = uint(texelFetch(waxBuffer0, int(_412)).x);
+                uint _416 = _412 + 1u;
+                vec4 _421;
+                _421 = vec4(0.0);
+                uint _419;
+                vec4 _422;
+                SPIRV_CROSS_LOOP
+                for (uint _418 = _416, _423 = 0u; _423 < _415; _418 = _419, _421 = _422, _423++)
+                {
+                    uint _430 = _418 + 1u;
+                    uint _437 = uint(texelFetch(waxBuffer0, int(_418)).z);
+                    uint _438 = _418 + 3u;
+                    uint _441 = _438 + ((_437 + 3u) >> 2u);
+                    SPIRV_CROSS_BRANCH
+                    if (_437 > 0u)
+                    {
+                        float _462;
+                        if (texelFetch(waxBuffer0, int(_418)).x < 0.5)
+                        {
+                            _462 = ((texelFetch(waxBuffer0, int(_430)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_430)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_430)).z;
+                        }
+                        else
+                        {
+                            _462 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_430)).xy) * texelFetch(waxBuffer0, int(_430)).zw);
+                        }
+                        float _463 = clamp(_462, -10000000.0, 10000000.0);
+                        uint _465 = uint(texelFetch(waxBuffer0, int(_418)).y);
+                        float _485;
+                        if (_465 == 0u)
+                        {
+                            _485 = clamp(_463, 0.0, 1.0);
+                        }
+                        else
+                        {
+                            float _484;
+                            if (_465 == 1u)
+                            {
+                                _484 = _463 - floor(_463);
+                            }
+                            else
+                            {
+                                float _480 = _463 - (2.0 * floor(_463 * 0.5));
+                                _484 = (_480 > 1.0) ? (2.0 - _480) : _480;
+                            }
+                            _485 = _484;
+                        }
+                        int _487;
+                        _487 = -1;
+                        int _488;
+                        SPIRV_CROSS_LOOP
+                        for (uint _490 = 0u; _490 < _437; _487 = _488, _490++)
+                        {
+                            uint _496 = _438 + (_490 >> 2u);
+                            uint _499 = _490 & 3u;
+                            if (((_499 == 0u) ? texelFetch(waxBuffer0, int(_496)).x : ((_499 == 1u) ? texelFetch(waxBuffer0, int(_496)).y : ((_499 == 2u) ? texelFetch(waxBuffer0, int(_496)).z : texelFetch(waxBuffer0, int(_496)).w))) <= _485)
+                            {
+                                _488 = int(_490);
+                            }
+                            else
+                            {
+                                _488 = _487;
+                            }
+                        }
+                        vec4 _572;
+                        if (_487 < 0)
+                        {
+                            _572 = texelFetch(waxBuffer0, int(_441));
+                        }
+                        else
+                        {
+                            uint _520 = uint(_487);
+                            vec4 _571;
+                            if (_520 == (_437 - 1u))
+                            {
+                                _571 = texelFetch(waxBuffer0, int(_441 + _520));
+                            }
+                            else
+                            {
+                                uint _530 = _438 + (_520 >> 2u);
+                                uint _533 = _520 & 3u;
+                                float _543 = (_533 == 0u) ? texelFetch(waxBuffer0, int(_530)).x : ((_533 == 1u) ? texelFetch(waxBuffer0, int(_530)).y : ((_533 == 2u) ? texelFetch(waxBuffer0, int(_530)).z : texelFetch(waxBuffer0, int(_530)).w));
+                                uint _544 = _520 + 1u;
+                                uint _546 = _438 + (_544 >> 2u);
+                                uint _549 = _544 & 3u;
+                                uint _560 = _441 + _520;
+                                _571 = mix(texelFetch(waxBuffer0, int(_560)), texelFetch(waxBuffer0, int(_560 + 1u)), vec4((_485 - _543) / (((_549 == 0u) ? texelFetch(waxBuffer0, int(_546)).x : ((_549 == 1u) ? texelFetch(waxBuffer0, int(_546)).y : ((_549 == 2u) ? texelFetch(waxBuffer0, int(_546)).z : texelFetch(waxBuffer0, int(_546)).w))) - _543)));
+                            }
+                            _572 = _571;
+                        }
+                        vec4 _585;
+                        if (texelFetch(waxBuffer0, int(_418 + 2u)).x > 0.5)
+                        {
+                            vec3 _583 = mix(pow(abs((_572.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _572.xyz * vec3(0.077399380505084991455078125), step(_572.xyz, vec3(0.040449999272823333740234375)));
+                            _585 = vec4(_583.x, _583.y, _583.z, _572.w);
+                        }
+                        else
+                        {
+                            _585 = _572;
+                        }
+                        _422 = _421 + (_585 * texelFetch(waxBuffer0, int(_418)).w);
+                    }
+                    else
+                    {
+                        _422 = _421;
+                    }
+                    _419 = _441 + _437;
+                }
+                _590 = texelFetch(waxBuffer0, int(_404)) * _421;
+            }
+            else
+            {
+                _590 = texelFetch(waxBuffer0, int(_404));
+            }
+            _599 = _382;
+            _600 = vec4(_590.xyz * _590.w, _590.w) * _382;
+        }
+        else
+        {
+            _599 = 0.0;
+            _600 = vec4(0.0);
+        }
+        _601 = _599;
+        _602 = _600;
+    }
+    else
+    {
+        _601 = 0.0;
+        _602 = vec4(0.0);
+    }
+    uint _603 = wax_TEXCOORD1 + 6u;
+    float _812;
+    vec4 _813;
+    SPIRV_CROSS_BRANCH
+    if (_392 > 0.0)
+    {
+        float _810;
+        vec4 _811;
+        SPIRV_CROSS_BRANCH
+        if (texelFetch(waxBuffer1, int(_603)).x >= 0.0)
+        {
+            uint _613 = uint(texelFetch(waxBuffer1, int(_603)).x);
+            vec4 _799;
+            SPIRV_CROSS_BRANCH
+            if (texelFetch(waxBuffer1, int(_603)).y >= 0.0)
+            {
+                uint _621 = uint(max(texelFetch(waxBuffer1, int(_603)).y, 0.0));
+                uint _624 = uint(texelFetch(waxBuffer0, int(_621)).x);
+                uint _625 = _621 + 1u;
+                vec4 _630;
+                _630 = vec4(0.0);
+                uint _628;
+                vec4 _631;
+                SPIRV_CROSS_LOOP
+                for (uint _627 = _625, _632 = 0u; _632 < _624; _627 = _628, _630 = _631, _632++)
+                {
+                    uint _639 = _627 + 1u;
+                    uint _646 = uint(texelFetch(waxBuffer0, int(_627)).z);
+                    uint _647 = _627 + 3u;
+                    uint _650 = _647 + ((_646 + 3u) >> 2u);
+                    SPIRV_CROSS_BRANCH
+                    if (_646 > 0u)
+                    {
+                        float _671;
+                        if (texelFetch(waxBuffer0, int(_627)).x < 0.5)
+                        {
+                            _671 = ((texelFetch(waxBuffer0, int(_639)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_639)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_639)).z;
+                        }
+                        else
+                        {
+                            _671 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_639)).xy) * texelFetch(waxBuffer0, int(_639)).zw);
+                        }
+                        float _672 = clamp(_671, -10000000.0, 10000000.0);
+                        uint _674 = uint(texelFetch(waxBuffer0, int(_627)).y);
+                        float _694;
+                        if (_674 == 0u)
+                        {
+                            _694 = clamp(_672, 0.0, 1.0);
+                        }
+                        else
+                        {
+                            float _693;
+                            if (_674 == 1u)
+                            {
+                                _693 = _672 - floor(_672);
+                            }
+                            else
+                            {
+                                float _689 = _672 - (2.0 * floor(_672 * 0.5));
+                                _693 = (_689 > 1.0) ? (2.0 - _689) : _689;
+                            }
+                            _694 = _693;
+                        }
+                        int _696;
+                        _696 = -1;
+                        int _697;
+                        SPIRV_CROSS_LOOP
+                        for (uint _699 = 0u; _699 < _646; _696 = _697, _699++)
+                        {
+                            uint _705 = _647 + (_699 >> 2u);
+                            uint _708 = _699 & 3u;
+                            if (((_708 == 0u) ? texelFetch(waxBuffer0, int(_705)).x : ((_708 == 1u) ? texelFetch(waxBuffer0, int(_705)).y : ((_708 == 2u) ? texelFetch(waxBuffer0, int(_705)).z : texelFetch(waxBuffer0, int(_705)).w))) <= _694)
+                            {
+                                _697 = int(_699);
+                            }
+                            else
+                            {
+                                _697 = _696;
+                            }
+                        }
+                        vec4 _781;
+                        if (_696 < 0)
+                        {
+                            _781 = texelFetch(waxBuffer0, int(_650));
+                        }
+                        else
+                        {
+                            uint _729 = uint(_696);
+                            vec4 _780;
+                            if (_729 == (_646 - 1u))
+                            {
+                                _780 = texelFetch(waxBuffer0, int(_650 + _729));
+                            }
+                            else
+                            {
+                                uint _739 = _647 + (_729 >> 2u);
+                                uint _742 = _729 & 3u;
+                                float _752 = (_742 == 0u) ? texelFetch(waxBuffer0, int(_739)).x : ((_742 == 1u) ? texelFetch(waxBuffer0, int(_739)).y : ((_742 == 2u) ? texelFetch(waxBuffer0, int(_739)).z : texelFetch(waxBuffer0, int(_739)).w));
+                                uint _753 = _729 + 1u;
+                                uint _755 = _647 + (_753 >> 2u);
+                                uint _758 = _753 & 3u;
+                                uint _769 = _650 + _729;
+                                _780 = mix(texelFetch(waxBuffer0, int(_769)), texelFetch(waxBuffer0, int(_769 + 1u)), vec4((_694 - _752) / (((_758 == 0u) ? texelFetch(waxBuffer0, int(_755)).x : ((_758 == 1u) ? texelFetch(waxBuffer0, int(_755)).y : ((_758 == 2u) ? texelFetch(waxBuffer0, int(_755)).z : texelFetch(waxBuffer0, int(_755)).w))) - _752)));
+                            }
+                            _781 = _780;
+                        }
+                        vec4 _794;
+                        if (texelFetch(waxBuffer0, int(_627 + 2u)).x > 0.5)
+                        {
+                            vec3 _792 = mix(pow(abs((_781.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _781.xyz * vec3(0.077399380505084991455078125), step(_781.xyz, vec3(0.040449999272823333740234375)));
+                            _794 = vec4(_792.x, _792.y, _792.z, _781.w);
+                        }
+                        else
+                        {
+                            _794 = _781;
+                        }
+                        _631 = _630 + (_794 * texelFetch(waxBuffer0, int(_627)).w);
+                    }
+                    else
+                    {
+                        _631 = _630;
+                    }
+                    _628 = _650 + _646;
+                }
+                _799 = texelFetch(waxBuffer0, int(_613)) * _630;
+            }
+            else
+            {
+                _799 = texelFetch(waxBuffer0, int(_613));
+            }
+            _810 = _601 + _392;
+            _811 = _602 + (vec4(_799.xyz * _799.w, _799.w) * _392);
+        }
+        else
+        {
+            _810 = _601;
+            _811 = _602;
+        }
+        _812 = _810;
+        _813 = _811;
+    }
+    else
+    {
+        _812 = _601;
+        _813 = _602;
+    }
+    uint _814 = wax_TEXCOORD1 + 7u;
+    float _817 = ((_87 & 4) != 0) ? _377 : 0.0;
+    float _1026;
+    vec4 _1027;
+    SPIRV_CROSS_BRANCH
+    if (_817 > 0.0)
+    {
+        float _1024;
+        vec4 _1025;
+        SPIRV_CROSS_BRANCH
+        if (texelFetch(waxBuffer1, int(_814)).x >= 0.0)
+        {
+            uint _827 = uint(texelFetch(waxBuffer1, int(_814)).x);
+            vec4 _1013;
+            SPIRV_CROSS_BRANCH
+            if (texelFetch(waxBuffer1, int(_814)).y >= 0.0)
+            {
+                uint _835 = uint(max(texelFetch(waxBuffer1, int(_814)).y, 0.0));
+                uint _838 = uint(texelFetch(waxBuffer0, int(_835)).x);
+                uint _839 = _835 + 1u;
+                vec4 _844;
+                _844 = vec4(0.0);
+                uint _842;
+                vec4 _845;
+                SPIRV_CROSS_LOOP
+                for (uint _841 = _839, _846 = 0u; _846 < _838; _841 = _842, _844 = _845, _846++)
+                {
+                    uint _853 = _841 + 1u;
+                    uint _860 = uint(texelFetch(waxBuffer0, int(_841)).z);
+                    uint _861 = _841 + 3u;
+                    uint _864 = _861 + ((_860 + 3u) >> 2u);
+                    SPIRV_CROSS_BRANCH
+                    if (_860 > 0u)
+                    {
+                        float _885;
+                        if (texelFetch(waxBuffer0, int(_841)).x < 0.5)
+                        {
+                            _885 = ((texelFetch(waxBuffer0, int(_853)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_853)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_853)).z;
+                        }
+                        else
+                        {
+                            _885 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_853)).xy) * texelFetch(waxBuffer0, int(_853)).zw);
+                        }
+                        float _886 = clamp(_885, -10000000.0, 10000000.0);
+                        uint _888 = uint(texelFetch(waxBuffer0, int(_841)).y);
+                        float _908;
+                        if (_888 == 0u)
+                        {
+                            _908 = clamp(_886, 0.0, 1.0);
+                        }
+                        else
+                        {
+                            float _907;
+                            if (_888 == 1u)
+                            {
+                                _907 = _886 - floor(_886);
+                            }
+                            else
+                            {
+                                float _903 = _886 - (2.0 * floor(_886 * 0.5));
+                                _907 = (_903 > 1.0) ? (2.0 - _903) : _903;
+                            }
+                            _908 = _907;
+                        }
+                        int _910;
+                        _910 = -1;
+                        int _911;
+                        SPIRV_CROSS_LOOP
+                        for (uint _913 = 0u; _913 < _860; _910 = _911, _913++)
+                        {
+                            uint _919 = _861 + (_913 >> 2u);
+                            uint _922 = _913 & 3u;
+                            if (((_922 == 0u) ? texelFetch(waxBuffer0, int(_919)).x : ((_922 == 1u) ? texelFetch(waxBuffer0, int(_919)).y : ((_922 == 2u) ? texelFetch(waxBuffer0, int(_919)).z : texelFetch(waxBuffer0, int(_919)).w))) <= _908)
+                            {
+                                _911 = int(_913);
+                            }
+                            else
+                            {
+                                _911 = _910;
+                            }
+                        }
+                        vec4 _995;
+                        if (_910 < 0)
+                        {
+                            _995 = texelFetch(waxBuffer0, int(_864));
+                        }
+                        else
+                        {
+                            uint _943 = uint(_910);
+                            vec4 _994;
+                            if (_943 == (_860 - 1u))
+                            {
+                                _994 = texelFetch(waxBuffer0, int(_864 + _943));
+                            }
+                            else
+                            {
+                                uint _953 = _861 + (_943 >> 2u);
+                                uint _956 = _943 & 3u;
+                                float _966 = (_956 == 0u) ? texelFetch(waxBuffer0, int(_953)).x : ((_956 == 1u) ? texelFetch(waxBuffer0, int(_953)).y : ((_956 == 2u) ? texelFetch(waxBuffer0, int(_953)).z : texelFetch(waxBuffer0, int(_953)).w));
+                                uint _967 = _943 + 1u;
+                                uint _969 = _861 + (_967 >> 2u);
+                                uint _972 = _967 & 3u;
+                                uint _983 = _864 + _943;
+                                _994 = mix(texelFetch(waxBuffer0, int(_983)), texelFetch(waxBuffer0, int(_983 + 1u)), vec4((_908 - _966) / (((_972 == 0u) ? texelFetch(waxBuffer0, int(_969)).x : ((_972 == 1u) ? texelFetch(waxBuffer0, int(_969)).y : ((_972 == 2u) ? texelFetch(waxBuffer0, int(_969)).z : texelFetch(waxBuffer0, int(_969)).w))) - _966)));
+                            }
+                            _995 = _994;
+                        }
+                        vec4 _1008;
+                        if (texelFetch(waxBuffer0, int(_841 + 2u)).x > 0.5)
+                        {
+                            vec3 _1006 = mix(pow(abs((_995.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _995.xyz * vec3(0.077399380505084991455078125), step(_995.xyz, vec3(0.040449999272823333740234375)));
+                            _1008 = vec4(_1006.x, _1006.y, _1006.z, _995.w);
+                        }
+                        else
+                        {
+                            _1008 = _995;
+                        }
+                        _845 = _844 + (_1008 * texelFetch(waxBuffer0, int(_841)).w);
+                    }
+                    else
+                    {
+                        _845 = _844;
+                    }
+                    _842 = _864 + _860;
+                }
+                _1013 = texelFetch(waxBuffer0, int(_827)) * _844;
+            }
+            else
+            {
+                _1013 = texelFetch(waxBuffer0, int(_827));
+            }
+            _1024 = _812 + _817;
+            _1025 = _813 + (vec4(_1013.xyz * _1013.w, _1013.w) * _817);
+        }
+        else
+        {
+            _1024 = _812;
+            _1025 = _813;
+        }
+        _1026 = _1024;
+        _1027 = _1025;
+    }
+    else
+    {
+        _1026 = _812;
+        _1027 = _813;
+    }
+    bool _1028 = _393 > 0.0;
+    float _2033;
+    vec4 _2034;
+    if (_1028)
+    {
+        int _1032 = int(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).z);
+        uint _1035 = wax_TEXCOORD1 + uint(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).w);
+        float _2031;
+        vec4 _2032;
+        SPIRV_CROSS_BRANCH
+        if (_1032 == 1)
+        {
+            uint _1043 = wax_TEXCOORD1 + uint(texelFetch(waxBuffer1, int(_1035)).y);
+            float _1251;
+            vec4 _1252;
+            SPIRV_CROSS_BRANCH
+            if (_1028)
+            {
+                float _1249;
+                vec4 _1250;
+                SPIRV_CROSS_BRANCH
+                if (texelFetch(waxBuffer1, int(_1043)).x >= 0.0)
+                {
+                    uint _1052 = uint(texelFetch(waxBuffer1, int(_1043)).x);
+                    vec4 _1238;
+                    SPIRV_CROSS_BRANCH
+                    if (texelFetch(waxBuffer1, int(_1043)).y >= 0.0)
+                    {
+                        uint _1060 = uint(max(texelFetch(waxBuffer1, int(_1043)).y, 0.0));
+                        uint _1063 = uint(texelFetch(waxBuffer0, int(_1060)).x);
+                        uint _1064 = _1060 + 1u;
+                        vec4 _1069;
+                        _1069 = vec4(0.0);
+                        uint _1067;
+                        vec4 _1070;
+                        SPIRV_CROSS_LOOP
+                        for (uint _1066 = _1064, _1071 = 0u; _1071 < _1063; _1066 = _1067, _1069 = _1070, _1071++)
+                        {
+                            uint _1078 = _1066 + 1u;
+                            uint _1085 = uint(texelFetch(waxBuffer0, int(_1066)).z);
+                            uint _1086 = _1066 + 3u;
+                            uint _1089 = _1086 + ((_1085 + 3u) >> 2u);
+                            SPIRV_CROSS_BRANCH
+                            if (_1085 > 0u)
+                            {
+                                float _1110;
+                                if (texelFetch(waxBuffer0, int(_1066)).x < 0.5)
+                                {
+                                    _1110 = ((texelFetch(waxBuffer0, int(_1078)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_1078)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_1078)).z;
+                                }
+                                else
+                                {
+                                    _1110 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_1078)).xy) * texelFetch(waxBuffer0, int(_1078)).zw);
+                                }
+                                float _1111 = clamp(_1110, -10000000.0, 10000000.0);
+                                uint _1113 = uint(texelFetch(waxBuffer0, int(_1066)).y);
+                                float _1133;
+                                if (_1113 == 0u)
+                                {
+                                    _1133 = clamp(_1111, 0.0, 1.0);
+                                }
+                                else
+                                {
+                                    float _1132;
+                                    if (_1113 == 1u)
+                                    {
+                                        _1132 = _1111 - floor(_1111);
+                                    }
+                                    else
+                                    {
+                                        float _1128 = _1111 - (2.0 * floor(_1111 * 0.5));
+                                        _1132 = (_1128 > 1.0) ? (2.0 - _1128) : _1128;
+                                    }
+                                    _1133 = _1132;
+                                }
+                                int _1135;
+                                _1135 = -1;
+                                int _1136;
+                                SPIRV_CROSS_LOOP
+                                for (uint _1138 = 0u; _1138 < _1085; _1135 = _1136, _1138++)
+                                {
+                                    uint _1144 = _1086 + (_1138 >> 2u);
+                                    uint _1147 = _1138 & 3u;
+                                    if (((_1147 == 0u) ? texelFetch(waxBuffer0, int(_1144)).x : ((_1147 == 1u) ? texelFetch(waxBuffer0, int(_1144)).y : ((_1147 == 2u) ? texelFetch(waxBuffer0, int(_1144)).z : texelFetch(waxBuffer0, int(_1144)).w))) <= _1133)
+                                    {
+                                        _1136 = int(_1138);
+                                    }
+                                    else
+                                    {
+                                        _1136 = _1135;
+                                    }
+                                }
+                                vec4 _1220;
+                                if (_1135 < 0)
+                                {
+                                    _1220 = texelFetch(waxBuffer0, int(_1089));
+                                }
+                                else
+                                {
+                                    uint _1168 = uint(_1135);
+                                    vec4 _1219;
+                                    if (_1168 == (_1085 - 1u))
+                                    {
+                                        _1219 = texelFetch(waxBuffer0, int(_1089 + _1168));
+                                    }
+                                    else
+                                    {
+                                        uint _1178 = _1086 + (_1168 >> 2u);
+                                        uint _1181 = _1168 & 3u;
+                                        float _1191 = (_1181 == 0u) ? texelFetch(waxBuffer0, int(_1178)).x : ((_1181 == 1u) ? texelFetch(waxBuffer0, int(_1178)).y : ((_1181 == 2u) ? texelFetch(waxBuffer0, int(_1178)).z : texelFetch(waxBuffer0, int(_1178)).w));
+                                        uint _1192 = _1168 + 1u;
+                                        uint _1194 = _1086 + (_1192 >> 2u);
+                                        uint _1197 = _1192 & 3u;
+                                        uint _1208 = _1089 + _1168;
+                                        _1219 = mix(texelFetch(waxBuffer0, int(_1208)), texelFetch(waxBuffer0, int(_1208 + 1u)), vec4((_1133 - _1191) / (((_1197 == 0u) ? texelFetch(waxBuffer0, int(_1194)).x : ((_1197 == 1u) ? texelFetch(waxBuffer0, int(_1194)).y : ((_1197 == 2u) ? texelFetch(waxBuffer0, int(_1194)).z : texelFetch(waxBuffer0, int(_1194)).w))) - _1191)));
+                                    }
+                                    _1220 = _1219;
+                                }
+                                vec4 _1233;
+                                if (texelFetch(waxBuffer0, int(_1066 + 2u)).x > 0.5)
+                                {
+                                    vec3 _1231 = mix(pow(abs((_1220.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _1220.xyz * vec3(0.077399380505084991455078125), step(_1220.xyz, vec3(0.040449999272823333740234375)));
+                                    _1233 = vec4(_1231.x, _1231.y, _1231.z, _1220.w);
+                                }
+                                else
+                                {
+                                    _1233 = _1220;
+                                }
+                                _1070 = _1069 + (_1233 * texelFetch(waxBuffer0, int(_1066)).w);
+                            }
+                            else
+                            {
+                                _1070 = _1069;
+                            }
+                            _1067 = _1089 + _1085;
+                        }
+                        _1238 = texelFetch(waxBuffer0, int(_1052)) * _1069;
+                    }
+                    else
+                    {
+                        _1238 = texelFetch(waxBuffer0, int(_1052));
+                    }
+                    _1249 = _1026 + _393;
+                    _1250 = _1027 + (vec4(_1238.xyz * _1238.w, _1238.w) * _393);
+                }
+                else
+                {
+                    _1249 = _1026;
+                    _1250 = _1027;
+                }
+                _1251 = _1249;
+                _1252 = _1250;
+            }
+            else
+            {
+                _1251 = _1026;
+                _1252 = _1027;
+            }
+            _2031 = _1251;
+            _2032 = _1252;
+        }
+        else
+        {
+            float _1253 = _98.x;
+            float _1256 = _98.y;
+            float _2029;
+            vec4 _2030;
+            if ((abs(_1253) < 0.5) && (abs(_1256) < 0.5))
+            {
+                float _1265 = 6.283185482025146484375 * texelFetch(waxBuffer1, int(_1035)).x;
+                float _1266 = sin(_1265);
+                float _1268 = -cos(_1265);
+                float _1270 = 0.5 - _1253;
+                float _1271 = 0.5 + _1253;
+                float _1272 = 0.5 - _1256;
+                float _1273 = 0.5 + _1256;
+                bool _1274 = _1266 > 0.0;
+                float _1278 = (_1274 ? _1271 : _1270) / max(abs(_1266), 9.9999996826552253889678874634872e-21);
+                bool _1279 = _1268 > 0.0;
+                float _1283 = (_1279 ? _1273 : _1272) / max(abs(_1268), 9.9999996826552253889678874634872e-21);
+                vec2 _1285 = vec2(_1266, _1268) * min(_1278, _1283);
+                bool _1286 = _1283 <= _1278;
+                float _1331;
+                if ((_1286 && (_1268 < 0.0)) && (texelFetch(waxBuffer1, int(_1035)).x < 0.5))
+                {
+                    _1331 = _1272 * _1285.x;
+                }
+                else
+                {
+                    bool _1296 = _1278 < _1283;
+                    float _1330;
+                    if (_1296 && _1274)
+                    {
+                        _1330 = _1271 * (_1272 + (_1272 + _1285.y));
+                    }
+                    else
+                    {
+                        float _1329;
+                        if (_1286 && _1279)
+                        {
+                            _1329 = (_1271 * (1.5 - _1256)) + (_1273 * (_1271 - _1285.x));
+                        }
+                        else
+                        {
+                            float _1328;
+                            if (_1296)
+                            {
+                                _1328 = ((_1271 * (1.5 - _1256)) + _1273) + (_1270 * (_1273 - _1285.y));
+                            }
+                            else
+                            {
+                                _1328 = 2.0 + (_1272 * _1285.x);
+                            }
+                            _1329 = _1328;
+                        }
+                        _1330 = _1329;
+                    }
+                    _1331 = _1330;
+                }
+                float _1332 = 0.5 * _1331;
+                float _1334;
+                vec4 _1337;
+                _1334 = _1026;
+                _1337 = _1027;
+                float _1340;
+                int _1342;
+                float _1335;
+                vec4 _1338;
+                float _1339 = _1332;
+                int _1341 = 0;
+                SPIRV_CROSS_LOOP
+                for (; _1341 < _1032; _1334 = _1335, _1337 = _1338, _1339 = _1340, _1341 = _1342)
+                {
+                    _1342 = _1341 + 1;
+                    uint _1348 = _1035 + uint(_1342);
+                    float _1351 = 6.283185482025146484375 * texelFetch(waxBuffer1, int(_1348)).x;
+                    float _1352 = sin(_1351);
+                    float _1354 = -cos(_1351);
+                    bool _1356 = _1352 > 0.0;
+                    float _1360 = (_1356 ? _1271 : _1270) / max(abs(_1352), 9.9999996826552253889678874634872e-21);
+                    bool _1361 = _1354 > 0.0;
+                    float _1365 = (_1361 ? _1273 : _1272) / max(abs(_1354), 9.9999996826552253889678874634872e-21);
+                    vec2 _1367 = vec2(_1352, _1354) * min(_1360, _1365);
+                    bool _1368 = _1365 <= _1360;
+                    float _1413;
+                    if ((_1368 && (_1354 < 0.0)) && (texelFetch(waxBuffer1, int(_1348)).x < 0.5))
+                    {
+                        _1413 = _1272 * _1367.x;
+                    }
+                    else
+                    {
+                        bool _1378 = _1360 < _1365;
+                        float _1412;
+                        if (_1378 && _1356)
+                        {
+                            _1412 = _1271 * (_1272 + (_1272 + _1367.y));
+                        }
+                        else
+                        {
+                            float _1411;
+                            if (_1368 && _1361)
+                            {
+                                _1411 = (_1271 * (1.5 - _1256)) + (_1273 * (_1271 - _1367.x));
+                            }
+                            else
+                            {
+                                float _1410;
+                                if (_1378)
+                                {
+                                    _1410 = ((_1271 * (1.5 - _1256)) + _1273) + (_1270 * (_1273 - _1367.y));
+                                }
+                                else
+                                {
+                                    _1410 = 2.0 + (_1272 * _1367.x);
+                                }
+                                _1411 = _1410;
+                            }
+                            _1412 = _1411;
+                        }
+                        _1413 = _1412;
+                    }
+                    _1340 = (_1342 < _1032) ? (0.5 * _1413) : (_1332 + 1.0);
+                    uint _1421 = wax_TEXCOORD1 + uint(texelFetch(waxBuffer1, int(_1035 + uint(_1341))).y);
+                    float _1424 = _393 * max(_1340 - _1339, 0.0);
+                    SPIRV_CROSS_BRANCH
+                    if (_1424 > 0.0)
+                    {
+                        float _1631;
+                        vec4 _1632;
+                        SPIRV_CROSS_BRANCH
+                        if (texelFetch(waxBuffer1, int(_1421)).x >= 0.0)
+                        {
+                            uint _1434 = uint(texelFetch(waxBuffer1, int(_1421)).x);
+                            vec4 _1620;
+                            SPIRV_CROSS_BRANCH
+                            if (texelFetch(waxBuffer1, int(_1421)).y >= 0.0)
+                            {
+                                uint _1442 = uint(max(texelFetch(waxBuffer1, int(_1421)).y, 0.0));
+                                uint _1445 = uint(texelFetch(waxBuffer0, int(_1442)).x);
+                                uint _1446 = _1442 + 1u;
+                                vec4 _1451;
+                                _1451 = vec4(0.0);
+                                uint _1449;
+                                vec4 _1452;
+                                SPIRV_CROSS_LOOP
+                                for (uint _1448 = _1446, _1453 = 0u; _1453 < _1445; _1448 = _1449, _1451 = _1452, _1453++)
+                                {
+                                    uint _1460 = _1448 + 1u;
+                                    uint _1467 = uint(texelFetch(waxBuffer0, int(_1448)).z);
+                                    uint _1468 = _1448 + 3u;
+                                    uint _1471 = _1468 + ((_1467 + 3u) >> 2u);
+                                    SPIRV_CROSS_BRANCH
+                                    if (_1467 > 0u)
+                                    {
+                                        float _1492;
+                                        if (texelFetch(waxBuffer0, int(_1448)).x < 0.5)
+                                        {
+                                            _1492 = ((texelFetch(waxBuffer0, int(_1460)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_1460)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_1460)).z;
+                                        }
+                                        else
+                                        {
+                                            _1492 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_1460)).xy) * texelFetch(waxBuffer0, int(_1460)).zw);
+                                        }
+                                        float _1493 = clamp(_1492, -10000000.0, 10000000.0);
+                                        uint _1495 = uint(texelFetch(waxBuffer0, int(_1448)).y);
+                                        float _1515;
+                                        if (_1495 == 0u)
+                                        {
+                                            _1515 = clamp(_1493, 0.0, 1.0);
+                                        }
+                                        else
+                                        {
+                                            float _1514;
+                                            if (_1495 == 1u)
+                                            {
+                                                _1514 = _1493 - floor(_1493);
+                                            }
+                                            else
+                                            {
+                                                float _1510 = _1493 - (2.0 * floor(_1493 * 0.5));
+                                                _1514 = (_1510 > 1.0) ? (2.0 - _1510) : _1510;
+                                            }
+                                            _1515 = _1514;
+                                        }
+                                        int _1517;
+                                        _1517 = -1;
+                                        int _1518;
+                                        SPIRV_CROSS_LOOP
+                                        for (uint _1520 = 0u; _1520 < _1467; _1517 = _1518, _1520++)
+                                        {
+                                            uint _1526 = _1468 + (_1520 >> 2u);
+                                            uint _1529 = _1520 & 3u;
+                                            if (((_1529 == 0u) ? texelFetch(waxBuffer0, int(_1526)).x : ((_1529 == 1u) ? texelFetch(waxBuffer0, int(_1526)).y : ((_1529 == 2u) ? texelFetch(waxBuffer0, int(_1526)).z : texelFetch(waxBuffer0, int(_1526)).w))) <= _1515)
+                                            {
+                                                _1518 = int(_1520);
+                                            }
+                                            else
+                                            {
+                                                _1518 = _1517;
+                                            }
+                                        }
+                                        vec4 _1602;
+                                        if (_1517 < 0)
+                                        {
+                                            _1602 = texelFetch(waxBuffer0, int(_1471));
+                                        }
+                                        else
+                                        {
+                                            uint _1550 = uint(_1517);
+                                            vec4 _1601;
+                                            if (_1550 == (_1467 - 1u))
+                                            {
+                                                _1601 = texelFetch(waxBuffer0, int(_1471 + _1550));
+                                            }
+                                            else
+                                            {
+                                                uint _1560 = _1468 + (_1550 >> 2u);
+                                                uint _1563 = _1550 & 3u;
+                                                float _1573 = (_1563 == 0u) ? texelFetch(waxBuffer0, int(_1560)).x : ((_1563 == 1u) ? texelFetch(waxBuffer0, int(_1560)).y : ((_1563 == 2u) ? texelFetch(waxBuffer0, int(_1560)).z : texelFetch(waxBuffer0, int(_1560)).w));
+                                                uint _1574 = _1550 + 1u;
+                                                uint _1576 = _1468 + (_1574 >> 2u);
+                                                uint _1579 = _1574 & 3u;
+                                                uint _1590 = _1471 + _1550;
+                                                _1601 = mix(texelFetch(waxBuffer0, int(_1590)), texelFetch(waxBuffer0, int(_1590 + 1u)), vec4((_1515 - _1573) / (((_1579 == 0u) ? texelFetch(waxBuffer0, int(_1576)).x : ((_1579 == 1u) ? texelFetch(waxBuffer0, int(_1576)).y : ((_1579 == 2u) ? texelFetch(waxBuffer0, int(_1576)).z : texelFetch(waxBuffer0, int(_1576)).w))) - _1573)));
+                                            }
+                                            _1602 = _1601;
+                                        }
+                                        vec4 _1615;
+                                        if (texelFetch(waxBuffer0, int(_1448 + 2u)).x > 0.5)
+                                        {
+                                            vec3 _1613 = mix(pow(abs((_1602.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _1602.xyz * vec3(0.077399380505084991455078125), step(_1602.xyz, vec3(0.040449999272823333740234375)));
+                                            _1615 = vec4(_1613.x, _1613.y, _1613.z, _1602.w);
+                                        }
+                                        else
+                                        {
+                                            _1615 = _1602;
+                                        }
+                                        _1452 = _1451 + (_1615 * texelFetch(waxBuffer0, int(_1448)).w);
+                                    }
+                                    else
+                                    {
+                                        _1452 = _1451;
+                                    }
+                                    _1449 = _1471 + _1467;
+                                }
+                                _1620 = texelFetch(waxBuffer0, int(_1434)) * _1451;
+                            }
+                            else
+                            {
+                                _1620 = texelFetch(waxBuffer0, int(_1434));
+                            }
+                            _1631 = _1334 + _1424;
+                            _1632 = _1337 + (vec4(_1620.xyz * _1620.w, _1620.w) * _1424);
+                        }
+                        else
+                        {
+                            _1631 = _1334;
+                            _1632 = _1337;
+                        }
+                        _1335 = _1631;
+                        _1338 = _1632;
+                    }
+                    else
+                    {
+                        _1335 = _1334;
+                        _1338 = _1337;
+                    }
+                }
+                _2029 = _1334;
+                _2030 = _1337;
+            }
+            else
+            {
+                vec2 _1634 = abs(_98);
+                float _1635 = _1634.x;
+                float _1636 = _1634.y;
+                float _1646 = ((_1635 <= _1636) ? atan(_1635 / max(_1636, 9.9999996826552253889678874634872e-21)) : (1.5707962512969970703125 - atan(_1636 / max(_1635, 9.9999996826552253889678874634872e-21)))) * 0.15915493667125701904296875;
+                float _1651;
+                if (_1256 >= 0.0)
+                {
+                    _1651 = 0.5 - _1646;
+                }
+                else
+                {
+                    _1651 = _1646;
+                }
+                float _1656;
+                if (_1253 < 0.0)
+                {
+                    _1656 = 1.0 - _1651;
+                }
+                else
+                {
+                    _1656 = _1651;
+                }
+                float _1658 = (_99 > 9.9999997473787516355514526367188e-05) ? fract(_1656) : 0.0;
+                uint _1659 = uint(_1032);
+                uint _1664;
+                _1664 = 0u;
+                uint _1662;
+                uint _1665;
+                SPIRV_CROSS_LOOP
+                for (uint _1661 = _1659; _1664 < _1661; _1661 = _1662, _1664 = _1665)
+                {
+                    uint _1670 = (_1664 + _1661) / 2u;
+                    bool _1674 = texelFetch(waxBuffer1, int(_1035 + _1670)).x <= _1658;
+                    if (_1674)
+                    {
+                        _1665 = _1670 + 1u;
+                    }
+                    else
+                    {
+                        _1665 = _1664;
+                    }
+                    _1662 = _1674 ? _1661 : _1670;
+                }
+                int _1682 = _1032 - 1;
+                int _1683 = (_1664 > 0u) ? (int(_1664) - 1) : _1682;
+                float _1686 = min(0.25, 0.112539537250995635986328125 / max(_99, 9.9999997473787516355514526367188e-05));
+                int _1694;
+                float _1697;
+                _1694 = _1683;
+                _1697 = fract(_1658 - texelFetch(waxBuffer1, int(_1035 + uint(_1683))).x);
+                SPIRV_CROSS_LOOP
+                for (int _1699 = 0; (_1699 < _1682) && (_1697 < _1686); )
+                {
+                    bool _1705 = _1694 > 0;
+                    int _1706 = _1694 - 1;
+                    int _1695 = _1705 ? _1706 : _1682;
+                    uint _1707 = uint(_1694);
+                    _1694 = _1695;
+                    _1697 += fract(texelFetch(waxBuffer1, int(_1035 + _1707)).x - texelFetch(waxBuffer1, int(_1035 + uint(_1695))).x);
+                    _1699++;
+                }
+                float _1717 = -_1697;
+                vec4 _1723;
+                vec4 _1728;
+                _1723 = texelFetch(waxBuffer1, int(_1035 + uint(_1694)));
+                _1728 = _1027;
+                vec4 _1724;
+                float _1733;
+                int _1735;
+                float _1727;
+                vec4 _1729;
+                float _1731;
+                float _2027;
+                vec4 _2028;
+                float _1726 = _1026;
+                float _1730 = 1.0;
+                float _1732 = _1717;
+                int _1734 = _1694;
+                int _1736 = 0;
+                SPIRV_CROSS_LOOP
+                for (;;)
+                {
+                    if (_1736 < _1032)
+                    {
+                        int _1741 = _1734 + 1;
+                        _1735 = (_1741 < _1032) ? _1741 : 0;
+                        _1724 = texelFetch(waxBuffer1, int(_1035 + uint(_1735)));
+                        _1733 = _1732 + fract(_1724.x - _1723.x);
+                        if ((_1736 < _1682) && (_1733 < _1686))
+                        {
+                            float _1755 = 6.283185482025146484375 * _1724.x;
+                            float _1759 = (-_99) * sin(6.283185482025146484375 * _1733);
+                            vec2 _1763 = abs(vec2(cos(_1755), sin(_1755)));
+                            float _1764 = _1763.x;
+                            float _1765 = _1763.y;
+                            float _1766 = max(_1764, _1765);
+                            float _1767 = min(_1764, _1765);
+                            float _1768 = _1766 + _1767;
+                            float _1770 = _1759 + (0.5 * _1768);
+                            float _1809;
+                            if (_1767 < 0.001000000047497451305389404296875)
+                            {
+                                _1809 = clamp(_1759 + 0.5, 0.0, 1.0);
+                            }
+                            else
+                            {
+                                float _1808;
+                                if (_1770 >= _1768)
+                                {
+                                    _1808 = 1.0;
+                                }
+                                else
+                                {
+                                    float _1807;
+                                    if (_1770 > 0.0)
+                                    {
+                                        float _1806;
+                                        if (_1770 < _1767)
+                                        {
+                                            _1806 = (_1770 * _1770) / ((2.0 * _1766) * _1767);
+                                        }
+                                        else
+                                        {
+                                            float _1805;
+                                            if (_1770 > _1766)
+                                            {
+                                                float _1796 = _1768 - _1770;
+                                                _1805 = 1.0 - ((_1796 * _1796) / ((2.0 * _1766) * _1767));
+                                            }
+                                            else
+                                            {
+                                                _1805 = (_1770 - (0.5 * _1767)) / _1766;
+                                            }
+                                            _1806 = _1805;
+                                        }
+                                        _1807 = _1806;
+                                    }
+                                    else
+                                    {
+                                        _1807 = 0.0;
+                                    }
+                                    _1808 = _1807;
+                                }
+                                _1809 = _1808;
+                            }
+                            _1731 = min(_1730, _1809);
+                        }
+                        else
+                        {
+                            _1731 = 0.0;
+                        }
+                        uint _1813 = wax_TEXCOORD1 + uint(_1723.y);
+                        float _1815 = _393 * (_1730 - _1731);
+                        SPIRV_CROSS_BRANCH
+                        if (_1815 > 0.0)
+                        {
+                            float _2022;
+                            vec4 _2023;
+                            SPIRV_CROSS_BRANCH
+                            if (texelFetch(waxBuffer1, int(_1813)).x >= 0.0)
+                            {
+                                uint _1825 = uint(texelFetch(waxBuffer1, int(_1813)).x);
+                                vec4 _2011;
+                                SPIRV_CROSS_BRANCH
+                                if (texelFetch(waxBuffer1, int(_1813)).y >= 0.0)
+                                {
+                                    uint _1833 = uint(max(texelFetch(waxBuffer1, int(_1813)).y, 0.0));
+                                    uint _1836 = uint(texelFetch(waxBuffer0, int(_1833)).x);
+                                    uint _1837 = _1833 + 1u;
+                                    vec4 _1842;
+                                    _1842 = vec4(0.0);
+                                    uint _1840;
+                                    vec4 _1843;
+                                    SPIRV_CROSS_LOOP
+                                    for (uint _1839 = _1837, _1844 = 0u; _1844 < _1836; _1839 = _1840, _1842 = _1843, _1844++)
+                                    {
+                                        uint _1851 = _1839 + 1u;
+                                        uint _1858 = uint(texelFetch(waxBuffer0, int(_1839)).z);
+                                        uint _1859 = _1839 + 3u;
+                                        uint _1862 = _1859 + ((_1858 + 3u) >> 2u);
+                                        SPIRV_CROSS_BRANCH
+                                        if (_1858 > 0u)
+                                        {
+                                            float _1883;
+                                            if (texelFetch(waxBuffer0, int(_1839)).x < 0.5)
+                                            {
+                                                _1883 = ((texelFetch(waxBuffer0, int(_1851)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_1851)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_1851)).z;
+                                            }
+                                            else
+                                            {
+                                                _1883 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_1851)).xy) * texelFetch(waxBuffer0, int(_1851)).zw);
+                                            }
+                                            float _1884 = clamp(_1883, -10000000.0, 10000000.0);
+                                            uint _1886 = uint(texelFetch(waxBuffer0, int(_1839)).y);
+                                            float _1906;
+                                            if (_1886 == 0u)
+                                            {
+                                                _1906 = clamp(_1884, 0.0, 1.0);
+                                            }
+                                            else
+                                            {
+                                                float _1905;
+                                                if (_1886 == 1u)
+                                                {
+                                                    _1905 = _1884 - floor(_1884);
+                                                }
+                                                else
+                                                {
+                                                    float _1901 = _1884 - (2.0 * floor(_1884 * 0.5));
+                                                    _1905 = (_1901 > 1.0) ? (2.0 - _1901) : _1901;
+                                                }
+                                                _1906 = _1905;
+                                            }
+                                            int _1908;
+                                            _1908 = -1;
+                                            int _1909;
+                                            SPIRV_CROSS_LOOP
+                                            for (uint _1911 = 0u; _1911 < _1858; _1908 = _1909, _1911++)
+                                            {
+                                                uint _1917 = _1859 + (_1911 >> 2u);
+                                                uint _1920 = _1911 & 3u;
+                                                if (((_1920 == 0u) ? texelFetch(waxBuffer0, int(_1917)).x : ((_1920 == 1u) ? texelFetch(waxBuffer0, int(_1917)).y : ((_1920 == 2u) ? texelFetch(waxBuffer0, int(_1917)).z : texelFetch(waxBuffer0, int(_1917)).w))) <= _1906)
+                                                {
+                                                    _1909 = int(_1911);
+                                                }
+                                                else
+                                                {
+                                                    _1909 = _1908;
+                                                }
+                                            }
+                                            vec4 _1993;
+                                            if (_1908 < 0)
+                                            {
+                                                _1993 = texelFetch(waxBuffer0, int(_1862));
+                                            }
+                                            else
+                                            {
+                                                uint _1941 = uint(_1908);
+                                                vec4 _1992;
+                                                if (_1941 == (_1858 - 1u))
+                                                {
+                                                    _1992 = texelFetch(waxBuffer0, int(_1862 + _1941));
+                                                }
+                                                else
+                                                {
+                                                    uint _1951 = _1859 + (_1941 >> 2u);
+                                                    uint _1954 = _1941 & 3u;
+                                                    float _1964 = (_1954 == 0u) ? texelFetch(waxBuffer0, int(_1951)).x : ((_1954 == 1u) ? texelFetch(waxBuffer0, int(_1951)).y : ((_1954 == 2u) ? texelFetch(waxBuffer0, int(_1951)).z : texelFetch(waxBuffer0, int(_1951)).w));
+                                                    uint _1965 = _1941 + 1u;
+                                                    uint _1967 = _1859 + (_1965 >> 2u);
+                                                    uint _1970 = _1965 & 3u;
+                                                    uint _1981 = _1862 + _1941;
+                                                    _1992 = mix(texelFetch(waxBuffer0, int(_1981)), texelFetch(waxBuffer0, int(_1981 + 1u)), vec4((_1906 - _1964) / (((_1970 == 0u) ? texelFetch(waxBuffer0, int(_1967)).x : ((_1970 == 1u) ? texelFetch(waxBuffer0, int(_1967)).y : ((_1970 == 2u) ? texelFetch(waxBuffer0, int(_1967)).z : texelFetch(waxBuffer0, int(_1967)).w))) - _1964)));
+                                                }
+                                                _1993 = _1992;
+                                            }
+                                            vec4 _2006;
+                                            if (texelFetch(waxBuffer0, int(_1839 + 2u)).x > 0.5)
+                                            {
+                                                vec3 _2004 = mix(pow(abs((_1993.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _1993.xyz * vec3(0.077399380505084991455078125), step(_1993.xyz, vec3(0.040449999272823333740234375)));
+                                                _2006 = vec4(_2004.x, _2004.y, _2004.z, _1993.w);
+                                            }
+                                            else
+                                            {
+                                                _2006 = _1993;
+                                            }
+                                            _1843 = _1842 + (_2006 * texelFetch(waxBuffer0, int(_1839)).w);
+                                        }
+                                        else
+                                        {
+                                            _1843 = _1842;
+                                        }
+                                        _1840 = _1862 + _1858;
+                                    }
+                                    _2011 = texelFetch(waxBuffer0, int(_1825)) * _1842;
+                                }
+                                else
+                                {
+                                    _2011 = texelFetch(waxBuffer0, int(_1825));
+                                }
+                                _2022 = _1726 + _1815;
+                                _2023 = _1728 + (vec4(_2011.xyz * _2011.w, _2011.w) * _1815);
+                            }
+                            else
+                            {
+                                _2022 = _1726;
+                                _2023 = _1728;
+                            }
+                            _1727 = _2022;
+                            _1729 = _2023;
+                        }
+                        else
+                        {
+                            _1727 = _1726;
+                            _1729 = _1728;
+                        }
+                        if (_1731 <= 0.0)
+                        {
+                            _2027 = _1727;
+                            _2028 = _1729;
+                            break;
+                        }
+                        _1723 = _1724;
+                        _1726 = _1727;
+                        _1728 = _1729;
+                        _1730 = _1731;
+                        _1732 = _1733;
+                        _1734 = _1735;
+                        _1736++;
+                    }
+                    else
+                    {
+                        _2027 = _1726;
+                        _2028 = _1728;
+                        break;
+                    }
+                }
+                _2029 = _2027;
+                _2030 = _2028;
+            }
+            _2031 = _2029;
+            _2032 = _2030;
+        }
+        _2033 = _2031;
+        _2034 = _2032;
+    }
+    else
+    {
+        _2033 = _1026;
+        _2034 = _1027;
+    }
+    if (_2033 < 0.00390625)
+    {
+        discard;
+    }
+    vec4 _2221;
+    SPIRV_CROSS_BRANCH
+    if ((int(waxConstants[2].x)) >= 0)
+    {
+        uint _2044 = uint(max((int(waxConstants[2].x)), 0));
+        uint _2047 = uint(texelFetch(waxBuffer0, int(_2044)).x);
+        uint _2048 = _2044 + 1u;
+        vec4 _2053;
+        _2053 = vec4(0.0);
+        uint _2051;
+        vec4 _2054;
+        SPIRV_CROSS_LOOP
+        for (uint _2050 = _2048, _2055 = 0u; _2055 < _2047; _2050 = _2051, _2053 = _2054, _2055++)
+        {
+            uint _2062 = _2050 + 1u;
+            uint _2069 = uint(texelFetch(waxBuffer0, int(_2050)).z);
+            uint _2070 = _2050 + 3u;
+            uint _2073 = _2070 + ((_2069 + 3u) >> 2u);
+            SPIRV_CROSS_BRANCH
+            if (_2069 > 0u)
+            {
+                float _2094;
+                if (texelFetch(waxBuffer0, int(_2050)).x < 0.5)
+                {
+                    _2094 = ((texelFetch(waxBuffer0, int(_2062)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_2062)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_2062)).z;
+                }
+                else
+                {
+                    _2094 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_2062)).xy) * texelFetch(waxBuffer0, int(_2062)).zw);
+                }
+                float _2095 = clamp(_2094, -10000000.0, 10000000.0);
+                uint _2097 = uint(texelFetch(waxBuffer0, int(_2050)).y);
+                float _2117;
+                if (_2097 == 0u)
+                {
+                    _2117 = clamp(_2095, 0.0, 1.0);
+                }
+                else
+                {
+                    float _2116;
+                    if (_2097 == 1u)
+                    {
+                        _2116 = _2095 - floor(_2095);
+                    }
+                    else
+                    {
+                        float _2112 = _2095 - (2.0 * floor(_2095 * 0.5));
+                        _2116 = (_2112 > 1.0) ? (2.0 - _2112) : _2112;
+                    }
+                    _2117 = _2116;
+                }
+                int _2119;
+                _2119 = -1;
+                int _2120;
+                SPIRV_CROSS_LOOP
+                for (uint _2122 = 0u; _2122 < _2069; _2119 = _2120, _2122++)
+                {
+                    uint _2128 = _2070 + (_2122 >> 2u);
+                    uint _2131 = _2122 & 3u;
+                    if (((_2131 == 0u) ? texelFetch(waxBuffer0, int(_2128)).x : ((_2131 == 1u) ? texelFetch(waxBuffer0, int(_2128)).y : ((_2131 == 2u) ? texelFetch(waxBuffer0, int(_2128)).z : texelFetch(waxBuffer0, int(_2128)).w))) <= _2117)
+                    {
+                        _2120 = int(_2122);
+                    }
+                    else
+                    {
+                        _2120 = _2119;
+                    }
+                }
+                vec4 _2204;
+                if (_2119 < 0)
+                {
+                    _2204 = texelFetch(waxBuffer0, int(_2073));
+                }
+                else
+                {
+                    uint _2152 = uint(_2119);
+                    vec4 _2203;
+                    if (_2152 == (_2069 - 1u))
+                    {
+                        _2203 = texelFetch(waxBuffer0, int(_2073 + _2152));
+                    }
+                    else
+                    {
+                        uint _2162 = _2070 + (_2152 >> 2u);
+                        uint _2165 = _2152 & 3u;
+                        float _2175 = (_2165 == 0u) ? texelFetch(waxBuffer0, int(_2162)).x : ((_2165 == 1u) ? texelFetch(waxBuffer0, int(_2162)).y : ((_2165 == 2u) ? texelFetch(waxBuffer0, int(_2162)).z : texelFetch(waxBuffer0, int(_2162)).w));
+                        uint _2176 = _2152 + 1u;
+                        uint _2178 = _2070 + (_2176 >> 2u);
+                        uint _2181 = _2176 & 3u;
+                        uint _2192 = _2073 + _2152;
+                        _2203 = mix(texelFetch(waxBuffer0, int(_2192)), texelFetch(waxBuffer0, int(_2192 + 1u)), vec4((_2117 - _2175) / (((_2181 == 0u) ? texelFetch(waxBuffer0, int(_2178)).x : ((_2181 == 1u) ? texelFetch(waxBuffer0, int(_2178)).y : ((_2181 == 2u) ? texelFetch(waxBuffer0, int(_2178)).z : texelFetch(waxBuffer0, int(_2178)).w))) - _2175)));
+                    }
+                    _2204 = _2203;
+                }
+                vec4 _2217;
+                if (texelFetch(waxBuffer0, int(_2050 + 2u)).x > 0.5)
+                {
+                    vec3 _2215 = mix(pow(abs((_2204.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _2204.xyz * vec3(0.077399380505084991455078125), step(_2204.xyz, vec3(0.040449999272823333740234375)));
+                    _2217 = vec4(_2215.x, _2215.y, _2215.z, _2204.w);
+                }
+                else
+                {
+                    _2217 = _2204;
+                }
+                _2054 = _2053 + (_2217 * texelFetch(waxBuffer0, int(_2050)).w);
+            }
+            else
+            {
+                _2054 = _2053;
+            }
+            _2051 = _2073 + _2069;
+        }
+        _2221 = _2053;
+    }
+    else
+    {
+        _2221 = vec4(1.0);
+    }
+    vec4 _2222 = wax_COLOR * _2221;
+    float _2224 = _2222.w;
+    vec4 _2230 = _2034 * vec4(_2222.xyz * _2224, _2224);
+    vec4 _2308;
+    if ((waxConstants[2].z) == 2u)
+    {
+        float _2237 = _2230.w;
+        vec4 _2257;
+        if ((waxConstants[2].y) == 2u)
+        {
+            _2257 = vec4((1.0 - _2033) + _2237);
+        }
+        else
+        {
+            vec4 _2256;
+            if ((waxConstants[2].y) == 1u)
+            {
+                _2256 = vec4(_2237 * (uintBitsToFloat(waxConstants[2].w)));
+            }
+            else
+            {
+                _2256 = vec4(_2237);
+            }
+            _2257 = _2256;
+        }
+        _2308 = _2257;
+    }
+    else
+    {
+        vec4 _2307;
+        if ((waxConstants[2].y) == 3u)
+        {
+            float _2264 = _2230.x;
+            _2307 = vec4(_2264, _2230.yz, max(_2264, max(_2230.y, _2230.z)));
+        }
+        else
+        {
+            vec4 _2306;
+            if ((waxConstants[2].y) == 2u)
+            {
+                _2306 = vec4(vec3(1.0 - _2230.w) + _2230.xyz, 1.0);
+            }
+            else
+            {
+                vec4 _2305;
+                if ((waxConstants[2].y) == 1u)
+                {
+                    float _2302;
+                    if ((waxConstants[2].z) == 1u)
+                    {
+                        float _2298 = (1.0 - (uintBitsToFloat(waxConstants[2].w))) + (((_2033 > 0.0) ? (_2230.w / _2033) : 0.0) * (uintBitsToFloat(waxConstants[2].w)));
+                        _2302 = (_2298 > 0.0) ? (1.0 / _2298) : 0.0;
+                    }
+                    else
+                    {
+                        _2302 = 1.0;
+                    }
+                    _2305 = _2230 * ((uintBitsToFloat(waxConstants[2].w)) * _2302);
+                }
+                else
+                {
+                    _2305 = _2230;
+                }
+                _2306 = _2305;
+            }
+            _2307 = _2306;
+        }
+        _2308 = _2307;
+    }
+    out_var_SV_Target0 = _2308;
+}
+)glsl" },
+
+	{ "shapeRingPSDual", R"glsl(#version 330
+#if defined(GL_EXT_control_flow_attributes)
+#extension GL_EXT_control_flow_attributes : require
+#define SPIRV_CROSS_FLATTEN [[flatten]]
+#define SPIRV_CROSS_BRANCH [[dont_flatten]]
+#define SPIRV_CROSS_UNROLL [[unroll]]
+#define SPIRV_CROSS_LOOP [[dont_unroll]]
+#else
+#define SPIRV_CROSS_FLATTEN
+#define SPIRV_CROSS_BRANCH
+#define SPIRV_CROSS_UNROLL
+#define SPIRV_CROSS_LOOP
+#endif
+
+uniform samplerBuffer waxBuffer0;
+
+uniform samplerBuffer waxBuffer1;
+
+uniform uvec4 waxConstants[6];
+
+vec4 waxFragCoord() { return vec4(gl_FragCoord.x, (uintBitsToFloat(waxConstants[5])).y + (uintBitsToFloat(waxConstants[5])).z * gl_FragCoord.y, gl_FragCoord.zw); }
+
+in vec4 wax_COLOR;
+flat in uint wax_TEXCOORD1;
+layout(location = 0) out vec4 out_var_SV_Target0;
+layout(location = 0, index = 1) out vec4 out_var_SV_Target1;
+
+void main()
+{
+    int _88 = int(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y);
+    uint _89 = wax_TEXCOORD1 + 1u;
+    uint _92 = wax_TEXCOORD1 + 2u;
+    uint _95 = wax_TEXCOORD1 + 3u;
+    vec2 _99 = waxFragCoord().xy - texelFetch(waxBuffer1, int(_89)).xy;
+    float _100 = length(_99);
+    bool _102 = (_88 & 1) != 0;
+    float _106 = waxFragCoord().x + 0.5;
+    float _108 = waxFragCoord().x - 0.5;
+    float _115 = waxFragCoord().y + 0.5;
+    float _117 = waxFragCoord().y - 0.5;
+    float _121 = clamp(min(_106, texelFetch(waxBuffer1, int(_95)).z) - max(_108, texelFetch(waxBuffer1, int(_95)).x), 0.0, 1.0) * clamp(min(_115, texelFetch(waxBuffer1, int(_95)).w) - max(_117, texelFetch(waxBuffer1, int(_95)).y), 0.0, 1.0);
+    float _180;
+    if (texelFetch(waxBuffer1, int(_89)).z > 0.0)
+    {
+        float _127 = texelFetch(waxBuffer1, int(_89)).z - _100;
+        vec2 _130 = abs(_99 / vec2(_100));
+        float _131 = _130.x;
+        float _132 = _130.y;
+        float _133 = max(_131, _132);
+        float _134 = min(_131, _132);
+        float _135 = _133 + _134;
+        float _137 = _127 + (0.5 * _135);
+        float _176;
+        if (_134 < 0.001000000047497451305389404296875)
+        {
+            _176 = clamp(_127 + 0.5, 0.0, 1.0);
+        }
+        else
+        {
+            float _175;
+            if (_137 >= _135)
+            {
+                _175 = 1.0;
+            }
+            else
+            {
+                float _174;
+                if (_137 > 0.0)
+                {
+                    float _173;
+                    if (_137 < _134)
+                    {
+                        _173 = (_137 * _137) / ((2.0 * _133) * _134);
+                    }
+                    else
+                    {
+                        float _172;
+                        if (_137 > _133)
+                        {
+                            float _163 = _135 - _137;
+                            _172 = 1.0 - ((_163 * _163) / ((2.0 * _133) * _134));
+                        }
+                        else
+                        {
+                            _172 = (_137 - (0.5 * _134)) / _133;
+                        }
+                        _173 = _172;
+                    }
+                    _174 = _173;
+                }
+                else
+                {
+                    _174 = 0.0;
+                }
+                _175 = _174;
+            }
+            _176 = _175;
+        }
+        _180 = (_100 > 0.001000000047497451305389404296875) ? _176 : clamp(texelFetch(waxBuffer1, int(_89)).z + 0.5, 0.0, 1.0);
+    }
+    else
+    {
+        _180 = 0.0;
+    }
+    float _181 = _102 ? _121 : _180;
+    uint _182 = wax_TEXCOORD1 + 4u;
+    float _256;
+    if (texelFetch(waxBuffer1, int(_89)).w > 0.0)
+    {
+        float _203 = texelFetch(waxBuffer1, int(_89)).w - _100;
+        vec2 _206 = abs(_99 / vec2(_100));
+        float _207 = _206.x;
+        float _208 = _206.y;
+        float _209 = max(_207, _208);
+        float _210 = min(_207, _208);
+        float _211 = _209 + _210;
+        float _213 = _203 + (0.5 * _211);
+        float _252;
+        if (_210 < 0.001000000047497451305389404296875)
+        {
+            _252 = clamp(_203 + 0.5, 0.0, 1.0);
+        }
+        else
+        {
+            float _251;
+            if (_213 >= _211)
+            {
+                _251 = 1.0;
+            }
+            else
+            {
+                float _250;
+                if (_213 > 0.0)
+                {
+                    float _249;
+                    if (_213 < _210)
+                    {
+                        _249 = (_213 * _213) / ((2.0 * _209) * _210);
+                    }
+                    else
+                    {
+                        float _248;
+                        if (_213 > _209)
+                        {
+                            float _239 = _211 - _213;
+                            _248 = 1.0 - ((_239 * _239) / ((2.0 * _209) * _210));
+                        }
+                        else
+                        {
+                            _248 = (_213 - (0.5 * _210)) / _209;
+                        }
+                        _249 = _248;
+                    }
+                    _250 = _249;
+                }
+                else
+                {
+                    _250 = 0.0;
+                }
+                _251 = _250;
+            }
+            _252 = _251;
+        }
+        _256 = (_100 > 0.001000000047497451305389404296875) ? _252 : clamp(texelFetch(waxBuffer1, int(_89)).w + 0.5, 0.0, 1.0);
+    }
+    else
+    {
+        _256 = 0.0;
+    }
+    float _258 = min(_102 ? (clamp(min(_106, texelFetch(waxBuffer1, int(_182)).z) - max(_108, texelFetch(waxBuffer1, int(_182)).x), 0.0, 1.0) * clamp(min(_115, texelFetch(waxBuffer1, int(_182)).w) - max(_117, texelFetch(waxBuffer1, int(_182)).y), 0.0, 1.0)) : _256, _181);
+    float _317;
+    if (texelFetch(waxBuffer1, int(_92)).x > 0.0)
+    {
+        float _264 = texelFetch(waxBuffer1, int(_92)).x - _100;
+        vec2 _267 = abs(_99 / vec2(_100));
+        float _268 = _267.x;
+        float _269 = _267.y;
+        float _270 = max(_268, _269);
+        float _271 = min(_268, _269);
+        float _272 = _270 + _271;
+        float _274 = _264 + (0.5 * _272);
+        float _313;
+        if (_271 < 0.001000000047497451305389404296875)
+        {
+            _313 = clamp(_264 + 0.5, 0.0, 1.0);
+        }
+        else
+        {
+            float _312;
+            if (_274 >= _272)
+            {
+                _312 = 1.0;
+            }
+            else
+            {
+                float _311;
+                if (_274 > 0.0)
+                {
+                    float _310;
+                    if (_274 < _271)
+                    {
+                        _310 = (_274 * _274) / ((2.0 * _270) * _271);
+                    }
+                    else
+                    {
+                        float _309;
+                        if (_274 > _270)
+                        {
+                            float _300 = _272 - _274;
+                            _309 = 1.0 - ((_300 * _300) / ((2.0 * _270) * _271));
+                        }
+                        else
+                        {
+                            _309 = (_274 - (0.5 * _271)) / _270;
+                        }
+                        _310 = _309;
+                    }
+                    _311 = _310;
+                }
+                else
+                {
+                    _311 = 0.0;
+                }
+                _312 = _311;
+            }
+            _313 = _312;
+        }
+        _317 = (_100 > 0.001000000047497451305389404296875) ? _313 : clamp(texelFetch(waxBuffer1, int(_92)).x + 0.5, 0.0, 1.0);
+    }
+    else
+    {
+        _317 = 0.0;
+    }
+    float _318 = min(_317, _258);
+    float _377;
+    if (texelFetch(waxBuffer1, int(_92)).y > 0.0)
+    {
+        float _324 = texelFetch(waxBuffer1, int(_92)).y - _100;
+        vec2 _327 = abs(_99 / vec2(_100));
+        float _328 = _327.x;
+        float _329 = _327.y;
+        float _330 = max(_328, _329);
+        float _331 = min(_328, _329);
+        float _332 = _330 + _331;
+        float _334 = _324 + (0.5 * _332);
+        float _373;
+        if (_331 < 0.001000000047497451305389404296875)
+        {
+            _373 = clamp(_324 + 0.5, 0.0, 1.0);
+        }
+        else
+        {
+            float _372;
+            if (_334 >= _332)
+            {
+                _372 = 1.0;
+            }
+            else
+            {
+                float _371;
+                if (_334 > 0.0)
+                {
+                    float _370;
+                    if (_334 < _331)
+                    {
+                        _370 = (_334 * _334) / ((2.0 * _330) * _331);
+                    }
+                    else
+                    {
+                        float _369;
+                        if (_334 > _330)
+                        {
+                            float _360 = _332 - _334;
+                            _369 = 1.0 - ((_360 * _360) / ((2.0 * _330) * _331));
+                        }
+                        else
+                        {
+                            _369 = (_334 - (0.5 * _331)) / _330;
+                        }
+                        _370 = _369;
+                    }
+                    _371 = _370;
+                }
+                else
+                {
+                    _371 = 0.0;
+                }
+                _372 = _371;
+            }
+            _373 = _372;
+        }
+        _377 = (_100 > 0.001000000047497451305389404296875) ? _373 : clamp(texelFetch(waxBuffer1, int(_92)).y + 0.5, 0.0, 1.0);
+    }
+    else
+    {
+        _377 = 0.0;
+    }
+    float _378 = min(_377, _318);
+    float _383 = ((_88 & 2) != 0) ? max(_121 - _181, 0.0) : 0.0;
+    float _386 = ((_181 - _258) + _318) - _378;
+    float _387 = _258 - _318;
+    bool _389 = (_88 & 16) == 0;
+    float _393;
+    if (_389)
+    {
+        _393 = _386 + _387;
+    }
+    else
+    {
+        _393 = _386;
+    }
+    float _394 = _389 ? 0.0 : _387;
+    uint _395 = wax_TEXCOORD1 + 5u;
+    float _602;
+    vec4 _603;
+    SPIRV_CROSS_BRANCH
+    if (_383 > 0.0)
+    {
+        float _600;
+        vec4 _601;
+        SPIRV_CROSS_BRANCH
+        if (texelFetch(waxBuffer1, int(_395)).x >= 0.0)
+        {
+            uint _405 = uint(texelFetch(waxBuffer1, int(_395)).x);
+            vec4 _591;
+            SPIRV_CROSS_BRANCH
+            if (texelFetch(waxBuffer1, int(_395)).y >= 0.0)
+            {
+                uint _413 = uint(max(texelFetch(waxBuffer1, int(_395)).y, 0.0));
+                uint _416 = uint(texelFetch(waxBuffer0, int(_413)).x);
+                uint _417 = _413 + 1u;
+                vec4 _422;
+                _422 = vec4(0.0);
+                uint _420;
+                vec4 _423;
+                SPIRV_CROSS_LOOP
+                for (uint _419 = _417, _424 = 0u; _424 < _416; _419 = _420, _422 = _423, _424++)
+                {
+                    uint _431 = _419 + 1u;
+                    uint _438 = uint(texelFetch(waxBuffer0, int(_419)).z);
+                    uint _439 = _419 + 3u;
+                    uint _442 = _439 + ((_438 + 3u) >> 2u);
+                    SPIRV_CROSS_BRANCH
+                    if (_438 > 0u)
+                    {
+                        float _463;
+                        if (texelFetch(waxBuffer0, int(_419)).x < 0.5)
+                        {
+                            _463 = ((texelFetch(waxBuffer0, int(_431)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_431)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_431)).z;
+                        }
+                        else
+                        {
+                            _463 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_431)).xy) * texelFetch(waxBuffer0, int(_431)).zw);
+                        }
+                        float _464 = clamp(_463, -10000000.0, 10000000.0);
+                        uint _466 = uint(texelFetch(waxBuffer0, int(_419)).y);
+                        float _486;
+                        if (_466 == 0u)
+                        {
+                            _486 = clamp(_464, 0.0, 1.0);
+                        }
+                        else
+                        {
+                            float _485;
+                            if (_466 == 1u)
+                            {
+                                _485 = _464 - floor(_464);
+                            }
+                            else
+                            {
+                                float _481 = _464 - (2.0 * floor(_464 * 0.5));
+                                _485 = (_481 > 1.0) ? (2.0 - _481) : _481;
+                            }
+                            _486 = _485;
+                        }
+                        int _488;
+                        _488 = -1;
+                        int _489;
+                        SPIRV_CROSS_LOOP
+                        for (uint _491 = 0u; _491 < _438; _488 = _489, _491++)
+                        {
+                            uint _497 = _439 + (_491 >> 2u);
+                            uint _500 = _491 & 3u;
+                            if (((_500 == 0u) ? texelFetch(waxBuffer0, int(_497)).x : ((_500 == 1u) ? texelFetch(waxBuffer0, int(_497)).y : ((_500 == 2u) ? texelFetch(waxBuffer0, int(_497)).z : texelFetch(waxBuffer0, int(_497)).w))) <= _486)
+                            {
+                                _489 = int(_491);
+                            }
+                            else
+                            {
+                                _489 = _488;
+                            }
+                        }
+                        vec4 _573;
+                        if (_488 < 0)
+                        {
+                            _573 = texelFetch(waxBuffer0, int(_442));
+                        }
+                        else
+                        {
+                            uint _521 = uint(_488);
+                            vec4 _572;
+                            if (_521 == (_438 - 1u))
+                            {
+                                _572 = texelFetch(waxBuffer0, int(_442 + _521));
+                            }
+                            else
+                            {
+                                uint _531 = _439 + (_521 >> 2u);
+                                uint _534 = _521 & 3u;
+                                float _544 = (_534 == 0u) ? texelFetch(waxBuffer0, int(_531)).x : ((_534 == 1u) ? texelFetch(waxBuffer0, int(_531)).y : ((_534 == 2u) ? texelFetch(waxBuffer0, int(_531)).z : texelFetch(waxBuffer0, int(_531)).w));
+                                uint _545 = _521 + 1u;
+                                uint _547 = _439 + (_545 >> 2u);
+                                uint _550 = _545 & 3u;
+                                uint _561 = _442 + _521;
+                                _572 = mix(texelFetch(waxBuffer0, int(_561)), texelFetch(waxBuffer0, int(_561 + 1u)), vec4((_486 - _544) / (((_550 == 0u) ? texelFetch(waxBuffer0, int(_547)).x : ((_550 == 1u) ? texelFetch(waxBuffer0, int(_547)).y : ((_550 == 2u) ? texelFetch(waxBuffer0, int(_547)).z : texelFetch(waxBuffer0, int(_547)).w))) - _544)));
+                            }
+                            _573 = _572;
+                        }
+                        vec4 _586;
+                        if (texelFetch(waxBuffer0, int(_419 + 2u)).x > 0.5)
+                        {
+                            vec3 _584 = mix(pow(abs((_573.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _573.xyz * vec3(0.077399380505084991455078125), step(_573.xyz, vec3(0.040449999272823333740234375)));
+                            _586 = vec4(_584.x, _584.y, _584.z, _573.w);
+                        }
+                        else
+                        {
+                            _586 = _573;
+                        }
+                        _423 = _422 + (_586 * texelFetch(waxBuffer0, int(_419)).w);
+                    }
+                    else
+                    {
+                        _423 = _422;
+                    }
+                    _420 = _442 + _438;
+                }
+                _591 = texelFetch(waxBuffer0, int(_405)) * _422;
+            }
+            else
+            {
+                _591 = texelFetch(waxBuffer0, int(_405));
+            }
+            _600 = _383;
+            _601 = vec4(_591.xyz * _591.w, _591.w) * _383;
+        }
+        else
+        {
+            _600 = 0.0;
+            _601 = vec4(0.0);
+        }
+        _602 = _600;
+        _603 = _601;
+    }
+    else
+    {
+        _602 = 0.0;
+        _603 = vec4(0.0);
+    }
+    uint _604 = wax_TEXCOORD1 + 6u;
+    float _813;
+    vec4 _814;
+    SPIRV_CROSS_BRANCH
+    if (_393 > 0.0)
+    {
+        float _811;
+        vec4 _812;
+        SPIRV_CROSS_BRANCH
+        if (texelFetch(waxBuffer1, int(_604)).x >= 0.0)
+        {
+            uint _614 = uint(texelFetch(waxBuffer1, int(_604)).x);
+            vec4 _800;
+            SPIRV_CROSS_BRANCH
+            if (texelFetch(waxBuffer1, int(_604)).y >= 0.0)
+            {
+                uint _622 = uint(max(texelFetch(waxBuffer1, int(_604)).y, 0.0));
+                uint _625 = uint(texelFetch(waxBuffer0, int(_622)).x);
+                uint _626 = _622 + 1u;
+                vec4 _631;
+                _631 = vec4(0.0);
+                uint _629;
+                vec4 _632;
+                SPIRV_CROSS_LOOP
+                for (uint _628 = _626, _633 = 0u; _633 < _625; _628 = _629, _631 = _632, _633++)
+                {
+                    uint _640 = _628 + 1u;
+                    uint _647 = uint(texelFetch(waxBuffer0, int(_628)).z);
+                    uint _648 = _628 + 3u;
+                    uint _651 = _648 + ((_647 + 3u) >> 2u);
+                    SPIRV_CROSS_BRANCH
+                    if (_647 > 0u)
+                    {
+                        float _672;
+                        if (texelFetch(waxBuffer0, int(_628)).x < 0.5)
+                        {
+                            _672 = ((texelFetch(waxBuffer0, int(_640)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_640)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_640)).z;
+                        }
+                        else
+                        {
+                            _672 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_640)).xy) * texelFetch(waxBuffer0, int(_640)).zw);
+                        }
+                        float _673 = clamp(_672, -10000000.0, 10000000.0);
+                        uint _675 = uint(texelFetch(waxBuffer0, int(_628)).y);
+                        float _695;
+                        if (_675 == 0u)
+                        {
+                            _695 = clamp(_673, 0.0, 1.0);
+                        }
+                        else
+                        {
+                            float _694;
+                            if (_675 == 1u)
+                            {
+                                _694 = _673 - floor(_673);
+                            }
+                            else
+                            {
+                                float _690 = _673 - (2.0 * floor(_673 * 0.5));
+                                _694 = (_690 > 1.0) ? (2.0 - _690) : _690;
+                            }
+                            _695 = _694;
+                        }
+                        int _697;
+                        _697 = -1;
+                        int _698;
+                        SPIRV_CROSS_LOOP
+                        for (uint _700 = 0u; _700 < _647; _697 = _698, _700++)
+                        {
+                            uint _706 = _648 + (_700 >> 2u);
+                            uint _709 = _700 & 3u;
+                            if (((_709 == 0u) ? texelFetch(waxBuffer0, int(_706)).x : ((_709 == 1u) ? texelFetch(waxBuffer0, int(_706)).y : ((_709 == 2u) ? texelFetch(waxBuffer0, int(_706)).z : texelFetch(waxBuffer0, int(_706)).w))) <= _695)
+                            {
+                                _698 = int(_700);
+                            }
+                            else
+                            {
+                                _698 = _697;
+                            }
+                        }
+                        vec4 _782;
+                        if (_697 < 0)
+                        {
+                            _782 = texelFetch(waxBuffer0, int(_651));
+                        }
+                        else
+                        {
+                            uint _730 = uint(_697);
+                            vec4 _781;
+                            if (_730 == (_647 - 1u))
+                            {
+                                _781 = texelFetch(waxBuffer0, int(_651 + _730));
+                            }
+                            else
+                            {
+                                uint _740 = _648 + (_730 >> 2u);
+                                uint _743 = _730 & 3u;
+                                float _753 = (_743 == 0u) ? texelFetch(waxBuffer0, int(_740)).x : ((_743 == 1u) ? texelFetch(waxBuffer0, int(_740)).y : ((_743 == 2u) ? texelFetch(waxBuffer0, int(_740)).z : texelFetch(waxBuffer0, int(_740)).w));
+                                uint _754 = _730 + 1u;
+                                uint _756 = _648 + (_754 >> 2u);
+                                uint _759 = _754 & 3u;
+                                uint _770 = _651 + _730;
+                                _781 = mix(texelFetch(waxBuffer0, int(_770)), texelFetch(waxBuffer0, int(_770 + 1u)), vec4((_695 - _753) / (((_759 == 0u) ? texelFetch(waxBuffer0, int(_756)).x : ((_759 == 1u) ? texelFetch(waxBuffer0, int(_756)).y : ((_759 == 2u) ? texelFetch(waxBuffer0, int(_756)).z : texelFetch(waxBuffer0, int(_756)).w))) - _753)));
+                            }
+                            _782 = _781;
+                        }
+                        vec4 _795;
+                        if (texelFetch(waxBuffer0, int(_628 + 2u)).x > 0.5)
+                        {
+                            vec3 _793 = mix(pow(abs((_782.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _782.xyz * vec3(0.077399380505084991455078125), step(_782.xyz, vec3(0.040449999272823333740234375)));
+                            _795 = vec4(_793.x, _793.y, _793.z, _782.w);
+                        }
+                        else
+                        {
+                            _795 = _782;
+                        }
+                        _632 = _631 + (_795 * texelFetch(waxBuffer0, int(_628)).w);
+                    }
+                    else
+                    {
+                        _632 = _631;
+                    }
+                    _629 = _651 + _647;
+                }
+                _800 = texelFetch(waxBuffer0, int(_614)) * _631;
+            }
+            else
+            {
+                _800 = texelFetch(waxBuffer0, int(_614));
+            }
+            _811 = _602 + _393;
+            _812 = _603 + (vec4(_800.xyz * _800.w, _800.w) * _393);
+        }
+        else
+        {
+            _811 = _602;
+            _812 = _603;
+        }
+        _813 = _811;
+        _814 = _812;
+    }
+    else
+    {
+        _813 = _602;
+        _814 = _603;
+    }
+    uint _815 = wax_TEXCOORD1 + 7u;
+    float _818 = ((_88 & 4) != 0) ? _378 : 0.0;
+    float _1027;
+    vec4 _1028;
+    SPIRV_CROSS_BRANCH
+    if (_818 > 0.0)
+    {
+        float _1025;
+        vec4 _1026;
+        SPIRV_CROSS_BRANCH
+        if (texelFetch(waxBuffer1, int(_815)).x >= 0.0)
+        {
+            uint _828 = uint(texelFetch(waxBuffer1, int(_815)).x);
+            vec4 _1014;
+            SPIRV_CROSS_BRANCH
+            if (texelFetch(waxBuffer1, int(_815)).y >= 0.0)
+            {
+                uint _836 = uint(max(texelFetch(waxBuffer1, int(_815)).y, 0.0));
+                uint _839 = uint(texelFetch(waxBuffer0, int(_836)).x);
+                uint _840 = _836 + 1u;
+                vec4 _845;
+                _845 = vec4(0.0);
+                uint _843;
+                vec4 _846;
+                SPIRV_CROSS_LOOP
+                for (uint _842 = _840, _847 = 0u; _847 < _839; _842 = _843, _845 = _846, _847++)
+                {
+                    uint _854 = _842 + 1u;
+                    uint _861 = uint(texelFetch(waxBuffer0, int(_842)).z);
+                    uint _862 = _842 + 3u;
+                    uint _865 = _862 + ((_861 + 3u) >> 2u);
+                    SPIRV_CROSS_BRANCH
+                    if (_861 > 0u)
+                    {
+                        float _886;
+                        if (texelFetch(waxBuffer0, int(_842)).x < 0.5)
+                        {
+                            _886 = ((texelFetch(waxBuffer0, int(_854)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_854)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_854)).z;
+                        }
+                        else
+                        {
+                            _886 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_854)).xy) * texelFetch(waxBuffer0, int(_854)).zw);
+                        }
+                        float _887 = clamp(_886, -10000000.0, 10000000.0);
+                        uint _889 = uint(texelFetch(waxBuffer0, int(_842)).y);
+                        float _909;
+                        if (_889 == 0u)
+                        {
+                            _909 = clamp(_887, 0.0, 1.0);
+                        }
+                        else
+                        {
+                            float _908;
+                            if (_889 == 1u)
+                            {
+                                _908 = _887 - floor(_887);
+                            }
+                            else
+                            {
+                                float _904 = _887 - (2.0 * floor(_887 * 0.5));
+                                _908 = (_904 > 1.0) ? (2.0 - _904) : _904;
+                            }
+                            _909 = _908;
+                        }
+                        int _911;
+                        _911 = -1;
+                        int _912;
+                        SPIRV_CROSS_LOOP
+                        for (uint _914 = 0u; _914 < _861; _911 = _912, _914++)
+                        {
+                            uint _920 = _862 + (_914 >> 2u);
+                            uint _923 = _914 & 3u;
+                            if (((_923 == 0u) ? texelFetch(waxBuffer0, int(_920)).x : ((_923 == 1u) ? texelFetch(waxBuffer0, int(_920)).y : ((_923 == 2u) ? texelFetch(waxBuffer0, int(_920)).z : texelFetch(waxBuffer0, int(_920)).w))) <= _909)
+                            {
+                                _912 = int(_914);
+                            }
+                            else
+                            {
+                                _912 = _911;
+                            }
+                        }
+                        vec4 _996;
+                        if (_911 < 0)
+                        {
+                            _996 = texelFetch(waxBuffer0, int(_865));
+                        }
+                        else
+                        {
+                            uint _944 = uint(_911);
+                            vec4 _995;
+                            if (_944 == (_861 - 1u))
+                            {
+                                _995 = texelFetch(waxBuffer0, int(_865 + _944));
+                            }
+                            else
+                            {
+                                uint _954 = _862 + (_944 >> 2u);
+                                uint _957 = _944 & 3u;
+                                float _967 = (_957 == 0u) ? texelFetch(waxBuffer0, int(_954)).x : ((_957 == 1u) ? texelFetch(waxBuffer0, int(_954)).y : ((_957 == 2u) ? texelFetch(waxBuffer0, int(_954)).z : texelFetch(waxBuffer0, int(_954)).w));
+                                uint _968 = _944 + 1u;
+                                uint _970 = _862 + (_968 >> 2u);
+                                uint _973 = _968 & 3u;
+                                uint _984 = _865 + _944;
+                                _995 = mix(texelFetch(waxBuffer0, int(_984)), texelFetch(waxBuffer0, int(_984 + 1u)), vec4((_909 - _967) / (((_973 == 0u) ? texelFetch(waxBuffer0, int(_970)).x : ((_973 == 1u) ? texelFetch(waxBuffer0, int(_970)).y : ((_973 == 2u) ? texelFetch(waxBuffer0, int(_970)).z : texelFetch(waxBuffer0, int(_970)).w))) - _967)));
+                            }
+                            _996 = _995;
+                        }
+                        vec4 _1009;
+                        if (texelFetch(waxBuffer0, int(_842 + 2u)).x > 0.5)
+                        {
+                            vec3 _1007 = mix(pow(abs((_996.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _996.xyz * vec3(0.077399380505084991455078125), step(_996.xyz, vec3(0.040449999272823333740234375)));
+                            _1009 = vec4(_1007.x, _1007.y, _1007.z, _996.w);
+                        }
+                        else
+                        {
+                            _1009 = _996;
+                        }
+                        _846 = _845 + (_1009 * texelFetch(waxBuffer0, int(_842)).w);
+                    }
+                    else
+                    {
+                        _846 = _845;
+                    }
+                    _843 = _865 + _861;
+                }
+                _1014 = texelFetch(waxBuffer0, int(_828)) * _845;
+            }
+            else
+            {
+                _1014 = texelFetch(waxBuffer0, int(_828));
+            }
+            _1025 = _813 + _818;
+            _1026 = _814 + (vec4(_1014.xyz * _1014.w, _1014.w) * _818);
+        }
+        else
+        {
+            _1025 = _813;
+            _1026 = _814;
+        }
+        _1027 = _1025;
+        _1028 = _1026;
+    }
+    else
+    {
+        _1027 = _813;
+        _1028 = _814;
+    }
+    bool _1029 = _394 > 0.0;
+    float _2034;
+    vec4 _2035;
+    if (_1029)
+    {
+        int _1033 = int(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).z);
+        uint _1036 = wax_TEXCOORD1 + uint(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).w);
+        float _2032;
+        vec4 _2033;
+        SPIRV_CROSS_BRANCH
+        if (_1033 == 1)
+        {
+            uint _1044 = wax_TEXCOORD1 + uint(texelFetch(waxBuffer1, int(_1036)).y);
+            float _1252;
+            vec4 _1253;
+            SPIRV_CROSS_BRANCH
+            if (_1029)
+            {
+                float _1250;
+                vec4 _1251;
+                SPIRV_CROSS_BRANCH
+                if (texelFetch(waxBuffer1, int(_1044)).x >= 0.0)
+                {
+                    uint _1053 = uint(texelFetch(waxBuffer1, int(_1044)).x);
+                    vec4 _1239;
+                    SPIRV_CROSS_BRANCH
+                    if (texelFetch(waxBuffer1, int(_1044)).y >= 0.0)
+                    {
+                        uint _1061 = uint(max(texelFetch(waxBuffer1, int(_1044)).y, 0.0));
+                        uint _1064 = uint(texelFetch(waxBuffer0, int(_1061)).x);
+                        uint _1065 = _1061 + 1u;
+                        vec4 _1070;
+                        _1070 = vec4(0.0);
+                        uint _1068;
+                        vec4 _1071;
+                        SPIRV_CROSS_LOOP
+                        for (uint _1067 = _1065, _1072 = 0u; _1072 < _1064; _1067 = _1068, _1070 = _1071, _1072++)
+                        {
+                            uint _1079 = _1067 + 1u;
+                            uint _1086 = uint(texelFetch(waxBuffer0, int(_1067)).z);
+                            uint _1087 = _1067 + 3u;
+                            uint _1090 = _1087 + ((_1086 + 3u) >> 2u);
+                            SPIRV_CROSS_BRANCH
+                            if (_1086 > 0u)
+                            {
+                                float _1111;
+                                if (texelFetch(waxBuffer0, int(_1067)).x < 0.5)
+                                {
+                                    _1111 = ((texelFetch(waxBuffer0, int(_1079)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_1079)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_1079)).z;
+                                }
+                                else
+                                {
+                                    _1111 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_1079)).xy) * texelFetch(waxBuffer0, int(_1079)).zw);
+                                }
+                                float _1112 = clamp(_1111, -10000000.0, 10000000.0);
+                                uint _1114 = uint(texelFetch(waxBuffer0, int(_1067)).y);
+                                float _1134;
+                                if (_1114 == 0u)
+                                {
+                                    _1134 = clamp(_1112, 0.0, 1.0);
+                                }
+                                else
+                                {
+                                    float _1133;
+                                    if (_1114 == 1u)
+                                    {
+                                        _1133 = _1112 - floor(_1112);
+                                    }
+                                    else
+                                    {
+                                        float _1129 = _1112 - (2.0 * floor(_1112 * 0.5));
+                                        _1133 = (_1129 > 1.0) ? (2.0 - _1129) : _1129;
+                                    }
+                                    _1134 = _1133;
+                                }
+                                int _1136;
+                                _1136 = -1;
+                                int _1137;
+                                SPIRV_CROSS_LOOP
+                                for (uint _1139 = 0u; _1139 < _1086; _1136 = _1137, _1139++)
+                                {
+                                    uint _1145 = _1087 + (_1139 >> 2u);
+                                    uint _1148 = _1139 & 3u;
+                                    if (((_1148 == 0u) ? texelFetch(waxBuffer0, int(_1145)).x : ((_1148 == 1u) ? texelFetch(waxBuffer0, int(_1145)).y : ((_1148 == 2u) ? texelFetch(waxBuffer0, int(_1145)).z : texelFetch(waxBuffer0, int(_1145)).w))) <= _1134)
+                                    {
+                                        _1137 = int(_1139);
+                                    }
+                                    else
+                                    {
+                                        _1137 = _1136;
+                                    }
+                                }
+                                vec4 _1221;
+                                if (_1136 < 0)
+                                {
+                                    _1221 = texelFetch(waxBuffer0, int(_1090));
+                                }
+                                else
+                                {
+                                    uint _1169 = uint(_1136);
+                                    vec4 _1220;
+                                    if (_1169 == (_1086 - 1u))
+                                    {
+                                        _1220 = texelFetch(waxBuffer0, int(_1090 + _1169));
+                                    }
+                                    else
+                                    {
+                                        uint _1179 = _1087 + (_1169 >> 2u);
+                                        uint _1182 = _1169 & 3u;
+                                        float _1192 = (_1182 == 0u) ? texelFetch(waxBuffer0, int(_1179)).x : ((_1182 == 1u) ? texelFetch(waxBuffer0, int(_1179)).y : ((_1182 == 2u) ? texelFetch(waxBuffer0, int(_1179)).z : texelFetch(waxBuffer0, int(_1179)).w));
+                                        uint _1193 = _1169 + 1u;
+                                        uint _1195 = _1087 + (_1193 >> 2u);
+                                        uint _1198 = _1193 & 3u;
+                                        uint _1209 = _1090 + _1169;
+                                        _1220 = mix(texelFetch(waxBuffer0, int(_1209)), texelFetch(waxBuffer0, int(_1209 + 1u)), vec4((_1134 - _1192) / (((_1198 == 0u) ? texelFetch(waxBuffer0, int(_1195)).x : ((_1198 == 1u) ? texelFetch(waxBuffer0, int(_1195)).y : ((_1198 == 2u) ? texelFetch(waxBuffer0, int(_1195)).z : texelFetch(waxBuffer0, int(_1195)).w))) - _1192)));
+                                    }
+                                    _1221 = _1220;
+                                }
+                                vec4 _1234;
+                                if (texelFetch(waxBuffer0, int(_1067 + 2u)).x > 0.5)
+                                {
+                                    vec3 _1232 = mix(pow(abs((_1221.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _1221.xyz * vec3(0.077399380505084991455078125), step(_1221.xyz, vec3(0.040449999272823333740234375)));
+                                    _1234 = vec4(_1232.x, _1232.y, _1232.z, _1221.w);
+                                }
+                                else
+                                {
+                                    _1234 = _1221;
+                                }
+                                _1071 = _1070 + (_1234 * texelFetch(waxBuffer0, int(_1067)).w);
+                            }
+                            else
+                            {
+                                _1071 = _1070;
+                            }
+                            _1068 = _1090 + _1086;
+                        }
+                        _1239 = texelFetch(waxBuffer0, int(_1053)) * _1070;
+                    }
+                    else
+                    {
+                        _1239 = texelFetch(waxBuffer0, int(_1053));
+                    }
+                    _1250 = _1027 + _394;
+                    _1251 = _1028 + (vec4(_1239.xyz * _1239.w, _1239.w) * _394);
+                }
+                else
+                {
+                    _1250 = _1027;
+                    _1251 = _1028;
+                }
+                _1252 = _1250;
+                _1253 = _1251;
+            }
+            else
+            {
+                _1252 = _1027;
+                _1253 = _1028;
+            }
+            _2032 = _1252;
+            _2033 = _1253;
+        }
+        else
+        {
+            float _1254 = _99.x;
+            float _1257 = _99.y;
+            float _2030;
+            vec4 _2031;
+            if ((abs(_1254) < 0.5) && (abs(_1257) < 0.5))
+            {
+                float _1266 = 6.283185482025146484375 * texelFetch(waxBuffer1, int(_1036)).x;
+                float _1267 = sin(_1266);
+                float _1269 = -cos(_1266);
+                float _1271 = 0.5 - _1254;
+                float _1272 = 0.5 + _1254;
+                float _1273 = 0.5 - _1257;
+                float _1274 = 0.5 + _1257;
+                bool _1275 = _1267 > 0.0;
+                float _1279 = (_1275 ? _1272 : _1271) / max(abs(_1267), 9.9999996826552253889678874634872e-21);
+                bool _1280 = _1269 > 0.0;
+                float _1284 = (_1280 ? _1274 : _1273) / max(abs(_1269), 9.9999996826552253889678874634872e-21);
+                vec2 _1286 = vec2(_1267, _1269) * min(_1279, _1284);
+                bool _1287 = _1284 <= _1279;
+                float _1332;
+                if ((_1287 && (_1269 < 0.0)) && (texelFetch(waxBuffer1, int(_1036)).x < 0.5))
+                {
+                    _1332 = _1273 * _1286.x;
+                }
+                else
+                {
+                    bool _1297 = _1279 < _1284;
+                    float _1331;
+                    if (_1297 && _1275)
+                    {
+                        _1331 = _1272 * (_1273 + (_1273 + _1286.y));
+                    }
+                    else
+                    {
+                        float _1330;
+                        if (_1287 && _1280)
+                        {
+                            _1330 = (_1272 * (1.5 - _1257)) + (_1274 * (_1272 - _1286.x));
+                        }
+                        else
+                        {
+                            float _1329;
+                            if (_1297)
+                            {
+                                _1329 = ((_1272 * (1.5 - _1257)) + _1274) + (_1271 * (_1274 - _1286.y));
+                            }
+                            else
+                            {
+                                _1329 = 2.0 + (_1273 * _1286.x);
+                            }
+                            _1330 = _1329;
+                        }
+                        _1331 = _1330;
+                    }
+                    _1332 = _1331;
+                }
+                float _1333 = 0.5 * _1332;
+                float _1335;
+                vec4 _1338;
+                _1335 = _1027;
+                _1338 = _1028;
+                float _1341;
+                int _1343;
+                float _1336;
+                vec4 _1339;
+                float _1340 = _1333;
+                int _1342 = 0;
+                SPIRV_CROSS_LOOP
+                for (; _1342 < _1033; _1335 = _1336, _1338 = _1339, _1340 = _1341, _1342 = _1343)
+                {
+                    _1343 = _1342 + 1;
+                    uint _1349 = _1036 + uint(_1343);
+                    float _1352 = 6.283185482025146484375 * texelFetch(waxBuffer1, int(_1349)).x;
+                    float _1353 = sin(_1352);
+                    float _1355 = -cos(_1352);
+                    bool _1357 = _1353 > 0.0;
+                    float _1361 = (_1357 ? _1272 : _1271) / max(abs(_1353), 9.9999996826552253889678874634872e-21);
+                    bool _1362 = _1355 > 0.0;
+                    float _1366 = (_1362 ? _1274 : _1273) / max(abs(_1355), 9.9999996826552253889678874634872e-21);
+                    vec2 _1368 = vec2(_1353, _1355) * min(_1361, _1366);
+                    bool _1369 = _1366 <= _1361;
+                    float _1414;
+                    if ((_1369 && (_1355 < 0.0)) && (texelFetch(waxBuffer1, int(_1349)).x < 0.5))
+                    {
+                        _1414 = _1273 * _1368.x;
+                    }
+                    else
+                    {
+                        bool _1379 = _1361 < _1366;
+                        float _1413;
+                        if (_1379 && _1357)
+                        {
+                            _1413 = _1272 * (_1273 + (_1273 + _1368.y));
+                        }
+                        else
+                        {
+                            float _1412;
+                            if (_1369 && _1362)
+                            {
+                                _1412 = (_1272 * (1.5 - _1257)) + (_1274 * (_1272 - _1368.x));
+                            }
+                            else
+                            {
+                                float _1411;
+                                if (_1379)
+                                {
+                                    _1411 = ((_1272 * (1.5 - _1257)) + _1274) + (_1271 * (_1274 - _1368.y));
+                                }
+                                else
+                                {
+                                    _1411 = 2.0 + (_1273 * _1368.x);
+                                }
+                                _1412 = _1411;
+                            }
+                            _1413 = _1412;
+                        }
+                        _1414 = _1413;
+                    }
+                    _1341 = (_1343 < _1033) ? (0.5 * _1414) : (_1333 + 1.0);
+                    uint _1422 = wax_TEXCOORD1 + uint(texelFetch(waxBuffer1, int(_1036 + uint(_1342))).y);
+                    float _1425 = _394 * max(_1341 - _1340, 0.0);
+                    SPIRV_CROSS_BRANCH
+                    if (_1425 > 0.0)
+                    {
+                        float _1632;
+                        vec4 _1633;
+                        SPIRV_CROSS_BRANCH
+                        if (texelFetch(waxBuffer1, int(_1422)).x >= 0.0)
+                        {
+                            uint _1435 = uint(texelFetch(waxBuffer1, int(_1422)).x);
+                            vec4 _1621;
+                            SPIRV_CROSS_BRANCH
+                            if (texelFetch(waxBuffer1, int(_1422)).y >= 0.0)
+                            {
+                                uint _1443 = uint(max(texelFetch(waxBuffer1, int(_1422)).y, 0.0));
+                                uint _1446 = uint(texelFetch(waxBuffer0, int(_1443)).x);
+                                uint _1447 = _1443 + 1u;
+                                vec4 _1452;
+                                _1452 = vec4(0.0);
+                                uint _1450;
+                                vec4 _1453;
+                                SPIRV_CROSS_LOOP
+                                for (uint _1449 = _1447, _1454 = 0u; _1454 < _1446; _1449 = _1450, _1452 = _1453, _1454++)
+                                {
+                                    uint _1461 = _1449 + 1u;
+                                    uint _1468 = uint(texelFetch(waxBuffer0, int(_1449)).z);
+                                    uint _1469 = _1449 + 3u;
+                                    uint _1472 = _1469 + ((_1468 + 3u) >> 2u);
+                                    SPIRV_CROSS_BRANCH
+                                    if (_1468 > 0u)
+                                    {
+                                        float _1493;
+                                        if (texelFetch(waxBuffer0, int(_1449)).x < 0.5)
+                                        {
+                                            _1493 = ((texelFetch(waxBuffer0, int(_1461)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_1461)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_1461)).z;
+                                        }
+                                        else
+                                        {
+                                            _1493 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_1461)).xy) * texelFetch(waxBuffer0, int(_1461)).zw);
+                                        }
+                                        float _1494 = clamp(_1493, -10000000.0, 10000000.0);
+                                        uint _1496 = uint(texelFetch(waxBuffer0, int(_1449)).y);
+                                        float _1516;
+                                        if (_1496 == 0u)
+                                        {
+                                            _1516 = clamp(_1494, 0.0, 1.0);
+                                        }
+                                        else
+                                        {
+                                            float _1515;
+                                            if (_1496 == 1u)
+                                            {
+                                                _1515 = _1494 - floor(_1494);
+                                            }
+                                            else
+                                            {
+                                                float _1511 = _1494 - (2.0 * floor(_1494 * 0.5));
+                                                _1515 = (_1511 > 1.0) ? (2.0 - _1511) : _1511;
+                                            }
+                                            _1516 = _1515;
+                                        }
+                                        int _1518;
+                                        _1518 = -1;
+                                        int _1519;
+                                        SPIRV_CROSS_LOOP
+                                        for (uint _1521 = 0u; _1521 < _1468; _1518 = _1519, _1521++)
+                                        {
+                                            uint _1527 = _1469 + (_1521 >> 2u);
+                                            uint _1530 = _1521 & 3u;
+                                            if (((_1530 == 0u) ? texelFetch(waxBuffer0, int(_1527)).x : ((_1530 == 1u) ? texelFetch(waxBuffer0, int(_1527)).y : ((_1530 == 2u) ? texelFetch(waxBuffer0, int(_1527)).z : texelFetch(waxBuffer0, int(_1527)).w))) <= _1516)
+                                            {
+                                                _1519 = int(_1521);
+                                            }
+                                            else
+                                            {
+                                                _1519 = _1518;
+                                            }
+                                        }
+                                        vec4 _1603;
+                                        if (_1518 < 0)
+                                        {
+                                            _1603 = texelFetch(waxBuffer0, int(_1472));
+                                        }
+                                        else
+                                        {
+                                            uint _1551 = uint(_1518);
+                                            vec4 _1602;
+                                            if (_1551 == (_1468 - 1u))
+                                            {
+                                                _1602 = texelFetch(waxBuffer0, int(_1472 + _1551));
+                                            }
+                                            else
+                                            {
+                                                uint _1561 = _1469 + (_1551 >> 2u);
+                                                uint _1564 = _1551 & 3u;
+                                                float _1574 = (_1564 == 0u) ? texelFetch(waxBuffer0, int(_1561)).x : ((_1564 == 1u) ? texelFetch(waxBuffer0, int(_1561)).y : ((_1564 == 2u) ? texelFetch(waxBuffer0, int(_1561)).z : texelFetch(waxBuffer0, int(_1561)).w));
+                                                uint _1575 = _1551 + 1u;
+                                                uint _1577 = _1469 + (_1575 >> 2u);
+                                                uint _1580 = _1575 & 3u;
+                                                uint _1591 = _1472 + _1551;
+                                                _1602 = mix(texelFetch(waxBuffer0, int(_1591)), texelFetch(waxBuffer0, int(_1591 + 1u)), vec4((_1516 - _1574) / (((_1580 == 0u) ? texelFetch(waxBuffer0, int(_1577)).x : ((_1580 == 1u) ? texelFetch(waxBuffer0, int(_1577)).y : ((_1580 == 2u) ? texelFetch(waxBuffer0, int(_1577)).z : texelFetch(waxBuffer0, int(_1577)).w))) - _1574)));
+                                            }
+                                            _1603 = _1602;
+                                        }
+                                        vec4 _1616;
+                                        if (texelFetch(waxBuffer0, int(_1449 + 2u)).x > 0.5)
+                                        {
+                                            vec3 _1614 = mix(pow(abs((_1603.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _1603.xyz * vec3(0.077399380505084991455078125), step(_1603.xyz, vec3(0.040449999272823333740234375)));
+                                            _1616 = vec4(_1614.x, _1614.y, _1614.z, _1603.w);
+                                        }
+                                        else
+                                        {
+                                            _1616 = _1603;
+                                        }
+                                        _1453 = _1452 + (_1616 * texelFetch(waxBuffer0, int(_1449)).w);
+                                    }
+                                    else
+                                    {
+                                        _1453 = _1452;
+                                    }
+                                    _1450 = _1472 + _1468;
+                                }
+                                _1621 = texelFetch(waxBuffer0, int(_1435)) * _1452;
+                            }
+                            else
+                            {
+                                _1621 = texelFetch(waxBuffer0, int(_1435));
+                            }
+                            _1632 = _1335 + _1425;
+                            _1633 = _1338 + (vec4(_1621.xyz * _1621.w, _1621.w) * _1425);
+                        }
+                        else
+                        {
+                            _1632 = _1335;
+                            _1633 = _1338;
+                        }
+                        _1336 = _1632;
+                        _1339 = _1633;
+                    }
+                    else
+                    {
+                        _1336 = _1335;
+                        _1339 = _1338;
+                    }
+                }
+                _2030 = _1335;
+                _2031 = _1338;
+            }
+            else
+            {
+                vec2 _1635 = abs(_99);
+                float _1636 = _1635.x;
+                float _1637 = _1635.y;
+                float _1647 = ((_1636 <= _1637) ? atan(_1636 / max(_1637, 9.9999996826552253889678874634872e-21)) : (1.5707962512969970703125 - atan(_1637 / max(_1636, 9.9999996826552253889678874634872e-21)))) * 0.15915493667125701904296875;
+                float _1652;
+                if (_1257 >= 0.0)
+                {
+                    _1652 = 0.5 - _1647;
+                }
+                else
+                {
+                    _1652 = _1647;
+                }
+                float _1657;
+                if (_1254 < 0.0)
+                {
+                    _1657 = 1.0 - _1652;
+                }
+                else
+                {
+                    _1657 = _1652;
+                }
+                float _1659 = (_100 > 9.9999997473787516355514526367188e-05) ? fract(_1657) : 0.0;
+                uint _1660 = uint(_1033);
+                uint _1665;
+                _1665 = 0u;
+                uint _1663;
+                uint _1666;
+                SPIRV_CROSS_LOOP
+                for (uint _1662 = _1660; _1665 < _1662; _1662 = _1663, _1665 = _1666)
+                {
+                    uint _1671 = (_1665 + _1662) / 2u;
+                    bool _1675 = texelFetch(waxBuffer1, int(_1036 + _1671)).x <= _1659;
+                    if (_1675)
+                    {
+                        _1666 = _1671 + 1u;
+                    }
+                    else
+                    {
+                        _1666 = _1665;
+                    }
+                    _1663 = _1675 ? _1662 : _1671;
+                }
+                int _1683 = _1033 - 1;
+                int _1684 = (_1665 > 0u) ? (int(_1665) - 1) : _1683;
+                float _1687 = min(0.25, 0.112539537250995635986328125 / max(_100, 9.9999997473787516355514526367188e-05));
+                int _1695;
+                float _1698;
+                _1695 = _1684;
+                _1698 = fract(_1659 - texelFetch(waxBuffer1, int(_1036 + uint(_1684))).x);
+                SPIRV_CROSS_LOOP
+                for (int _1700 = 0; (_1700 < _1683) && (_1698 < _1687); )
+                {
+                    bool _1706 = _1695 > 0;
+                    int _1707 = _1695 - 1;
+                    int _1696 = _1706 ? _1707 : _1683;
+                    uint _1708 = uint(_1695);
+                    _1695 = _1696;
+                    _1698 += fract(texelFetch(waxBuffer1, int(_1036 + _1708)).x - texelFetch(waxBuffer1, int(_1036 + uint(_1696))).x);
+                    _1700++;
+                }
+                float _1718 = -_1698;
+                vec4 _1724;
+                vec4 _1729;
+                _1724 = texelFetch(waxBuffer1, int(_1036 + uint(_1695)));
+                _1729 = _1028;
+                vec4 _1725;
+                float _1734;
+                int _1736;
+                float _1728;
+                vec4 _1730;
+                float _1732;
+                float _2028;
+                vec4 _2029;
+                float _1727 = _1027;
+                float _1731 = 1.0;
+                float _1733 = _1718;
+                int _1735 = _1695;
+                int _1737 = 0;
+                SPIRV_CROSS_LOOP
+                for (;;)
+                {
+                    if (_1737 < _1033)
+                    {
+                        int _1742 = _1735 + 1;
+                        _1736 = (_1742 < _1033) ? _1742 : 0;
+                        _1725 = texelFetch(waxBuffer1, int(_1036 + uint(_1736)));
+                        _1734 = _1733 + fract(_1725.x - _1724.x);
+                        if ((_1737 < _1683) && (_1734 < _1687))
+                        {
+                            float _1756 = 6.283185482025146484375 * _1725.x;
+                            float _1760 = (-_100) * sin(6.283185482025146484375 * _1734);
+                            vec2 _1764 = abs(vec2(cos(_1756), sin(_1756)));
+                            float _1765 = _1764.x;
+                            float _1766 = _1764.y;
+                            float _1767 = max(_1765, _1766);
+                            float _1768 = min(_1765, _1766);
+                            float _1769 = _1767 + _1768;
+                            float _1771 = _1760 + (0.5 * _1769);
+                            float _1810;
+                            if (_1768 < 0.001000000047497451305389404296875)
+                            {
+                                _1810 = clamp(_1760 + 0.5, 0.0, 1.0);
+                            }
+                            else
+                            {
+                                float _1809;
+                                if (_1771 >= _1769)
+                                {
+                                    _1809 = 1.0;
+                                }
+                                else
+                                {
+                                    float _1808;
+                                    if (_1771 > 0.0)
+                                    {
+                                        float _1807;
+                                        if (_1771 < _1768)
+                                        {
+                                            _1807 = (_1771 * _1771) / ((2.0 * _1767) * _1768);
+                                        }
+                                        else
+                                        {
+                                            float _1806;
+                                            if (_1771 > _1767)
+                                            {
+                                                float _1797 = _1769 - _1771;
+                                                _1806 = 1.0 - ((_1797 * _1797) / ((2.0 * _1767) * _1768));
+                                            }
+                                            else
+                                            {
+                                                _1806 = (_1771 - (0.5 * _1768)) / _1767;
+                                            }
+                                            _1807 = _1806;
+                                        }
+                                        _1808 = _1807;
+                                    }
+                                    else
+                                    {
+                                        _1808 = 0.0;
+                                    }
+                                    _1809 = _1808;
+                                }
+                                _1810 = _1809;
+                            }
+                            _1732 = min(_1731, _1810);
+                        }
+                        else
+                        {
+                            _1732 = 0.0;
+                        }
+                        uint _1814 = wax_TEXCOORD1 + uint(_1724.y);
+                        float _1816 = _394 * (_1731 - _1732);
+                        SPIRV_CROSS_BRANCH
+                        if (_1816 > 0.0)
+                        {
+                            float _2023;
+                            vec4 _2024;
+                            SPIRV_CROSS_BRANCH
+                            if (texelFetch(waxBuffer1, int(_1814)).x >= 0.0)
+                            {
+                                uint _1826 = uint(texelFetch(waxBuffer1, int(_1814)).x);
+                                vec4 _2012;
+                                SPIRV_CROSS_BRANCH
+                                if (texelFetch(waxBuffer1, int(_1814)).y >= 0.0)
+                                {
+                                    uint _1834 = uint(max(texelFetch(waxBuffer1, int(_1814)).y, 0.0));
+                                    uint _1837 = uint(texelFetch(waxBuffer0, int(_1834)).x);
+                                    uint _1838 = _1834 + 1u;
+                                    vec4 _1843;
+                                    _1843 = vec4(0.0);
+                                    uint _1841;
+                                    vec4 _1844;
+                                    SPIRV_CROSS_LOOP
+                                    for (uint _1840 = _1838, _1845 = 0u; _1845 < _1837; _1840 = _1841, _1843 = _1844, _1845++)
+                                    {
+                                        uint _1852 = _1840 + 1u;
+                                        uint _1859 = uint(texelFetch(waxBuffer0, int(_1840)).z);
+                                        uint _1860 = _1840 + 3u;
+                                        uint _1863 = _1860 + ((_1859 + 3u) >> 2u);
+                                        SPIRV_CROSS_BRANCH
+                                        if (_1859 > 0u)
+                                        {
+                                            float _1884;
+                                            if (texelFetch(waxBuffer0, int(_1840)).x < 0.5)
+                                            {
+                                                _1884 = ((texelFetch(waxBuffer0, int(_1852)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_1852)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_1852)).z;
+                                            }
+                                            else
+                                            {
+                                                _1884 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_1852)).xy) * texelFetch(waxBuffer0, int(_1852)).zw);
+                                            }
+                                            float _1885 = clamp(_1884, -10000000.0, 10000000.0);
+                                            uint _1887 = uint(texelFetch(waxBuffer0, int(_1840)).y);
+                                            float _1907;
+                                            if (_1887 == 0u)
+                                            {
+                                                _1907 = clamp(_1885, 0.0, 1.0);
+                                            }
+                                            else
+                                            {
+                                                float _1906;
+                                                if (_1887 == 1u)
+                                                {
+                                                    _1906 = _1885 - floor(_1885);
+                                                }
+                                                else
+                                                {
+                                                    float _1902 = _1885 - (2.0 * floor(_1885 * 0.5));
+                                                    _1906 = (_1902 > 1.0) ? (2.0 - _1902) : _1902;
+                                                }
+                                                _1907 = _1906;
+                                            }
+                                            int _1909;
+                                            _1909 = -1;
+                                            int _1910;
+                                            SPIRV_CROSS_LOOP
+                                            for (uint _1912 = 0u; _1912 < _1859; _1909 = _1910, _1912++)
+                                            {
+                                                uint _1918 = _1860 + (_1912 >> 2u);
+                                                uint _1921 = _1912 & 3u;
+                                                if (((_1921 == 0u) ? texelFetch(waxBuffer0, int(_1918)).x : ((_1921 == 1u) ? texelFetch(waxBuffer0, int(_1918)).y : ((_1921 == 2u) ? texelFetch(waxBuffer0, int(_1918)).z : texelFetch(waxBuffer0, int(_1918)).w))) <= _1907)
+                                                {
+                                                    _1910 = int(_1912);
+                                                }
+                                                else
+                                                {
+                                                    _1910 = _1909;
+                                                }
+                                            }
+                                            vec4 _1994;
+                                            if (_1909 < 0)
+                                            {
+                                                _1994 = texelFetch(waxBuffer0, int(_1863));
+                                            }
+                                            else
+                                            {
+                                                uint _1942 = uint(_1909);
+                                                vec4 _1993;
+                                                if (_1942 == (_1859 - 1u))
+                                                {
+                                                    _1993 = texelFetch(waxBuffer0, int(_1863 + _1942));
+                                                }
+                                                else
+                                                {
+                                                    uint _1952 = _1860 + (_1942 >> 2u);
+                                                    uint _1955 = _1942 & 3u;
+                                                    float _1965 = (_1955 == 0u) ? texelFetch(waxBuffer0, int(_1952)).x : ((_1955 == 1u) ? texelFetch(waxBuffer0, int(_1952)).y : ((_1955 == 2u) ? texelFetch(waxBuffer0, int(_1952)).z : texelFetch(waxBuffer0, int(_1952)).w));
+                                                    uint _1966 = _1942 + 1u;
+                                                    uint _1968 = _1860 + (_1966 >> 2u);
+                                                    uint _1971 = _1966 & 3u;
+                                                    uint _1982 = _1863 + _1942;
+                                                    _1993 = mix(texelFetch(waxBuffer0, int(_1982)), texelFetch(waxBuffer0, int(_1982 + 1u)), vec4((_1907 - _1965) / (((_1971 == 0u) ? texelFetch(waxBuffer0, int(_1968)).x : ((_1971 == 1u) ? texelFetch(waxBuffer0, int(_1968)).y : ((_1971 == 2u) ? texelFetch(waxBuffer0, int(_1968)).z : texelFetch(waxBuffer0, int(_1968)).w))) - _1965)));
+                                                }
+                                                _1994 = _1993;
+                                            }
+                                            vec4 _2007;
+                                            if (texelFetch(waxBuffer0, int(_1840 + 2u)).x > 0.5)
+                                            {
+                                                vec3 _2005 = mix(pow(abs((_1994.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _1994.xyz * vec3(0.077399380505084991455078125), step(_1994.xyz, vec3(0.040449999272823333740234375)));
+                                                _2007 = vec4(_2005.x, _2005.y, _2005.z, _1994.w);
+                                            }
+                                            else
+                                            {
+                                                _2007 = _1994;
+                                            }
+                                            _1844 = _1843 + (_2007 * texelFetch(waxBuffer0, int(_1840)).w);
+                                        }
+                                        else
+                                        {
+                                            _1844 = _1843;
+                                        }
+                                        _1841 = _1863 + _1859;
+                                    }
+                                    _2012 = texelFetch(waxBuffer0, int(_1826)) * _1843;
+                                }
+                                else
+                                {
+                                    _2012 = texelFetch(waxBuffer0, int(_1826));
+                                }
+                                _2023 = _1727 + _1816;
+                                _2024 = _1729 + (vec4(_2012.xyz * _2012.w, _2012.w) * _1816);
+                            }
+                            else
+                            {
+                                _2023 = _1727;
+                                _2024 = _1729;
+                            }
+                            _1728 = _2023;
+                            _1730 = _2024;
+                        }
+                        else
+                        {
+                            _1728 = _1727;
+                            _1730 = _1729;
+                        }
+                        if (_1732 <= 0.0)
+                        {
+                            _2028 = _1728;
+                            _2029 = _1730;
+                            break;
+                        }
+                        _1724 = _1725;
+                        _1727 = _1728;
+                        _1729 = _1730;
+                        _1731 = _1732;
+                        _1733 = _1734;
+                        _1735 = _1736;
+                        _1737++;
+                    }
+                    else
+                    {
+                        _2028 = _1727;
+                        _2029 = _1729;
+                        break;
+                    }
+                }
+                _2030 = _2028;
+                _2031 = _2029;
+            }
+            _2032 = _2030;
+            _2033 = _2031;
+        }
+        _2034 = _2032;
+        _2035 = _2033;
+    }
+    else
+    {
+        _2034 = _1027;
+        _2035 = _1028;
+    }
+    if (_2034 < 0.00390625)
+    {
+        discard;
+    }
+    vec4 _2222;
+    SPIRV_CROSS_BRANCH
+    if ((int(waxConstants[2].x)) >= 0)
+    {
+        uint _2045 = uint(max((int(waxConstants[2].x)), 0));
+        uint _2048 = uint(texelFetch(waxBuffer0, int(_2045)).x);
+        uint _2049 = _2045 + 1u;
+        vec4 _2054;
+        _2054 = vec4(0.0);
+        uint _2052;
+        vec4 _2055;
+        SPIRV_CROSS_LOOP
+        for (uint _2051 = _2049, _2056 = 0u; _2056 < _2048; _2051 = _2052, _2054 = _2055, _2056++)
+        {
+            uint _2063 = _2051 + 1u;
+            uint _2070 = uint(texelFetch(waxBuffer0, int(_2051)).z);
+            uint _2071 = _2051 + 3u;
+            uint _2074 = _2071 + ((_2070 + 3u) >> 2u);
+            SPIRV_CROSS_BRANCH
+            if (_2070 > 0u)
+            {
+                float _2095;
+                if (texelFetch(waxBuffer0, int(_2051)).x < 0.5)
+                {
+                    _2095 = ((texelFetch(waxBuffer0, int(_2063)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_2063)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_2063)).z;
+                }
+                else
+                {
+                    _2095 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_2063)).xy) * texelFetch(waxBuffer0, int(_2063)).zw);
+                }
+                float _2096 = clamp(_2095, -10000000.0, 10000000.0);
+                uint _2098 = uint(texelFetch(waxBuffer0, int(_2051)).y);
+                float _2118;
+                if (_2098 == 0u)
+                {
+                    _2118 = clamp(_2096, 0.0, 1.0);
+                }
+                else
+                {
+                    float _2117;
+                    if (_2098 == 1u)
+                    {
+                        _2117 = _2096 - floor(_2096);
+                    }
+                    else
+                    {
+                        float _2113 = _2096 - (2.0 * floor(_2096 * 0.5));
+                        _2117 = (_2113 > 1.0) ? (2.0 - _2113) : _2113;
+                    }
+                    _2118 = _2117;
+                }
+                int _2120;
+                _2120 = -1;
+                int _2121;
+                SPIRV_CROSS_LOOP
+                for (uint _2123 = 0u; _2123 < _2070; _2120 = _2121, _2123++)
+                {
+                    uint _2129 = _2071 + (_2123 >> 2u);
+                    uint _2132 = _2123 & 3u;
+                    if (((_2132 == 0u) ? texelFetch(waxBuffer0, int(_2129)).x : ((_2132 == 1u) ? texelFetch(waxBuffer0, int(_2129)).y : ((_2132 == 2u) ? texelFetch(waxBuffer0, int(_2129)).z : texelFetch(waxBuffer0, int(_2129)).w))) <= _2118)
+                    {
+                        _2121 = int(_2123);
+                    }
+                    else
+                    {
+                        _2121 = _2120;
+                    }
+                }
+                vec4 _2205;
+                if (_2120 < 0)
+                {
+                    _2205 = texelFetch(waxBuffer0, int(_2074));
+                }
+                else
+                {
+                    uint _2153 = uint(_2120);
+                    vec4 _2204;
+                    if (_2153 == (_2070 - 1u))
+                    {
+                        _2204 = texelFetch(waxBuffer0, int(_2074 + _2153));
+                    }
+                    else
+                    {
+                        uint _2163 = _2071 + (_2153 >> 2u);
+                        uint _2166 = _2153 & 3u;
+                        float _2176 = (_2166 == 0u) ? texelFetch(waxBuffer0, int(_2163)).x : ((_2166 == 1u) ? texelFetch(waxBuffer0, int(_2163)).y : ((_2166 == 2u) ? texelFetch(waxBuffer0, int(_2163)).z : texelFetch(waxBuffer0, int(_2163)).w));
+                        uint _2177 = _2153 + 1u;
+                        uint _2179 = _2071 + (_2177 >> 2u);
+                        uint _2182 = _2177 & 3u;
+                        uint _2193 = _2074 + _2153;
+                        _2204 = mix(texelFetch(waxBuffer0, int(_2193)), texelFetch(waxBuffer0, int(_2193 + 1u)), vec4((_2118 - _2176) / (((_2182 == 0u) ? texelFetch(waxBuffer0, int(_2179)).x : ((_2182 == 1u) ? texelFetch(waxBuffer0, int(_2179)).y : ((_2182 == 2u) ? texelFetch(waxBuffer0, int(_2179)).z : texelFetch(waxBuffer0, int(_2179)).w))) - _2176)));
+                    }
+                    _2205 = _2204;
+                }
+                vec4 _2218;
+                if (texelFetch(waxBuffer0, int(_2051 + 2u)).x > 0.5)
+                {
+                    vec3 _2216 = mix(pow(abs((_2205.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _2205.xyz * vec3(0.077399380505084991455078125), step(_2205.xyz, vec3(0.040449999272823333740234375)));
+                    _2218 = vec4(_2216.x, _2216.y, _2216.z, _2205.w);
+                }
+                else
+                {
+                    _2218 = _2205;
+                }
+                _2055 = _2054 + (_2218 * texelFetch(waxBuffer0, int(_2051)).w);
+            }
+            else
+            {
+                _2055 = _2054;
+            }
+            _2052 = _2074 + _2070;
+        }
+        _2222 = _2054;
+    }
+    else
+    {
+        _2222 = vec4(1.0);
+    }
+    vec4 _2223 = wax_COLOR * _2222;
+    float _2225 = _2223.w;
+    vec4 _2231 = _2035 * vec4(_2223.xyz * _2225, _2225);
+    vec4 _2323;
+    vec4 _2324;
+    if ((waxConstants[2].z) == 2u)
+    {
+        float _2238 = _2231.w;
+        vec4 _2261;
+        vec4 _2262;
+        if ((waxConstants[2].y) == 2u)
+        {
+            _2261 = vec4(0.0);
+            _2262 = vec4((1.0 - _2034) + _2238);
+        }
+        else
+        {
+            vec4 _2259;
+            vec4 _2260;
+            if ((waxConstants[2].y) == 1u)
+            {
+                _2259 = vec4(_2034 * (uintBitsToFloat(waxConstants[2].w)));
+                _2260 = vec4(_2238 * (uintBitsToFloat(waxConstants[2].w)));
+            }
+            else
+            {
+                vec4 _2258 = vec4(_2238);
+                _2259 = _2258;
+                _2260 = _2258;
+            }
+            _2261 = _2259;
+            _2262 = _2260;
+        }
+        _2323 = _2261;
+        _2324 = _2262;
+    }
+    else
+    {
+        vec4 _2321;
+        vec4 _2322;
+        if ((waxConstants[2].y) == 3u)
+        {
+            float _2269 = _2231.x;
+            _2321 = vec4(0.0);
+            _2322 = vec4(_2269, _2231.yz, max(_2269, max(_2231.y, _2231.z)));
+        }
+        else
+        {
+            vec4 _2319;
+            vec4 _2320;
+            if ((waxConstants[2].y) == 2u)
+            {
+                _2319 = vec4(0.0);
+                _2320 = vec4(vec3(1.0 - _2231.w) + _2231.xyz, 1.0);
+            }
+            else
+            {
+                vec4 _2317;
+                vec4 _2318;
+                if ((waxConstants[2].y) == 1u)
+                {
+                    float _2307;
+                    if ((waxConstants[2].z) == 1u)
+                    {
+                        float _2303 = (1.0 - (uintBitsToFloat(waxConstants[2].w))) + (((_2034 > 0.0) ? (_2231.w / _2034) : 0.0) * (uintBitsToFloat(waxConstants[2].w)));
+                        _2307 = (_2303 > 0.0) ? (1.0 / _2303) : 0.0;
+                    }
+                    else
+                    {
+                        _2307 = 1.0;
+                    }
+                    _2317 = vec4(_2034 * (1.0 - ((1.0 - (uintBitsToFloat(waxConstants[2].w))) * _2307)));
+                    _2318 = _2231 * ((uintBitsToFloat(waxConstants[2].w)) * _2307);
+                }
+                else
+                {
+                    _2317 = vec4(_2231.w);
+                    _2318 = _2231;
+                }
+                _2319 = _2317;
+                _2320 = _2318;
+            }
+            _2321 = _2319;
+            _2322 = _2320;
+        }
+        _2323 = _2321;
+        _2324 = _2322;
+    }
+    out_var_SV_Target0 = _2324;
+    out_var_SV_Target1 = _2323;
+}
+)glsl" },
+
+	{ "shapeLinePS", R"glsl(#version 330
+#if defined(GL_EXT_control_flow_attributes)
+#extension GL_EXT_control_flow_attributes : require
+#define SPIRV_CROSS_FLATTEN [[flatten]]
+#define SPIRV_CROSS_BRANCH [[dont_flatten]]
+#define SPIRV_CROSS_UNROLL [[unroll]]
+#define SPIRV_CROSS_LOOP [[dont_unroll]]
+#else
+#define SPIRV_CROSS_FLATTEN
+#define SPIRV_CROSS_BRANCH
+#define SPIRV_CROSS_UNROLL
+#define SPIRV_CROSS_LOOP
+#endif
+
+uniform samplerBuffer waxBuffer0;
+
+uniform samplerBuffer waxBuffer1;
+
+uniform uvec4 waxConstants[6];
+
+vec4 waxFragCoord() { return vec4(gl_FragCoord.x, (uintBitsToFloat(waxConstants[5])).y + (uintBitsToFloat(waxConstants[5])).z * gl_FragCoord.y, gl_FragCoord.zw); }
+
+in vec4 wax_COLOR;
+flat in uint wax_TEXCOORD1;
+layout(location = 0) out vec4 out_var_SV_Target0;
+
+void main()
+{
+    uint _105 = wax_TEXCOORD1 + 1u;
+    uint _108 = wax_TEXCOORD1 + 2u;
+    float _113 = -texelFetch(waxBuffer1, int(_108)).y;
+    vec2 _115 = vec2(_113, texelFetch(waxBuffer1, int(_108)).x);
+    int _118 = int(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y);
+    int _120 = int(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).z);
+    vec2 _122 = waxFragCoord().xy - texelFetch(waxBuffer1, int(_105)).xy;
+    float _123 = dot(_122, _115);
+    vec2 _124 = -_115;
+    vec3 _95[6];
+    _95[0] = vec3(_124, texelFetch(waxBuffer1, int(_108)).w - _123);
+    _95[1] = vec3(_113, texelFetch(waxBuffer1, int(_108)).x, texelFetch(waxBuffer1, int(_108)).w + _123);
+    _95[2] = vec3(0.0);
+    _95[3] = vec3(0.0);
+    _95[4] = vec3(0.0);
+    _95[5] = vec3(0.0);
+    float _137 = dot(_122, texelFetch(waxBuffer1, int(_108)).xy);
+    int _138 = _118 & 7;
+    bool _140 = _138 == 3;
+    int _197;
+    if ((_138 == 1) || _140)
+    {
+        _95[2] = vec3(texelFetch(waxBuffer1, int(_108)).xy, _137);
+        _197 = 3;
+    }
+    else
+    {
+        int _196;
+        if (_138 == 2)
+        {
+            _95[2] = vec3(texelFetch(waxBuffer1, int(_108)).xy, _137 + texelFetch(waxBuffer1, int(_108)).w);
+            _196 = 3;
+        }
+        else
+        {
+            int _195;
+            if (_138 == 4)
+            {
+                float _157 = (texelFetch(waxBuffer1, int(_108)).x > 0.0) ? 1.0 : (-1.0);
+                _95[2] = vec3(_157, 0.0, _122.x * _157);
+                _195 = 3;
+            }
+            else
+            {
+                bool _161 = _138 == 5;
+                if (_161)
+                {
+                    float _166 = (texelFetch(waxBuffer1, int(_108)).y > 0.0) ? 1.0 : (-1.0);
+                    _95[2] = vec3(0.0, _166, _122.y * _166);
+                }
+                else
+                {
+                    float _173 = (float(_118 >> 3) * 0.5) * texelFetch(waxBuffer1, int(_108)).w;
+                    vec2 _174 = texelFetch(waxBuffer1, int(_108)).xy * texelFetch(waxBuffer1, int(_108)).w;
+                    vec2 _175 = _115 * _173;
+                    vec2 _176 = _174 - _175;
+                    float _178 = length(_176);
+                    vec2 _179 = vec2(_178);
+                    float _181 = texelFetch(waxBuffer1, int(_108)).w * _137;
+                    float _182 = _173 * _123;
+                    _95[2] = vec3(_176 / _179, (_181 - _182) / _178);
+                    _95[3] = vec3((_174 + _175) / _179, (_181 + _182) / _178);
+                }
+                _195 = _161 ? 3 : 4;
+            }
+            _196 = _195;
+        }
+        _197 = _196;
+    }
+    vec2 _199 = -texelFetch(waxBuffer1, int(_108)).xy;
+    vec2 _200 = waxFragCoord().xy - texelFetch(waxBuffer1, int(_105)).zw;
+    float _201 = dot(_200, _199);
+    int _202 = _120 & 7;
+    bool _204 = _202 == 3;
+    int _280;
+    if ((_202 == 1) || _204)
+    {
+        _95[_197] = vec3(_199, _201);
+        _280 = _197 + 1;
+    }
+    else
+    {
+        int _279;
+        if (_202 == 2)
+        {
+            _95[_197] = vec3(_199, _201 + texelFetch(waxBuffer1, int(_108)).w);
+            _279 = _197 + 1;
+        }
+        else
+        {
+            int _278;
+            if (_202 == 4)
+            {
+                float _230 = (_199.x > 0.0) ? 1.0 : (-1.0);
+                _95[_197] = vec3(_230, 0.0, _200.x * _230);
+                _278 = _197 + 1;
+            }
+            else
+            {
+                int _277;
+                if (_202 == 5)
+                {
+                    float _242 = (_199.y > 0.0) ? 1.0 : (-1.0);
+                    _95[_197] = vec3(0.0, _242, _200.y * _242);
+                    _277 = _197 + 1;
+                }
+                else
+                {
+                    float _251 = (float(_120 >> 3) * 0.5) * texelFetch(waxBuffer1, int(_108)).w;
+                    vec2 _253 = _199 * texelFetch(waxBuffer1, int(_108)).w;
+                    vec2 _254 = _124 * _251;
+                    vec2 _255 = _253 - _254;
+                    float _257 = length(_255);
+                    vec2 _258 = vec2(_257);
+                    float _260 = texelFetch(waxBuffer1, int(_108)).w * _201;
+                    float _261 = _251 * dot(_200, _124);
+                    _95[_197] = vec3(_255 / _258, (_260 - _261) / _257);
+                    _95[_197 + 1] = vec3((_253 + _254) / _258, (_260 + _261) / _257);
+                    _277 = _197 + 2;
+                }
+                _278 = _277;
+            }
+            _279 = _278;
+        }
+        _280 = _279;
+    }
+    vec3 _96[6] = _95;
+    bool _283;
+    bool _286;
+    _283 = true;
+    _286 = false;
+    for (int _288 = 0; _288 < _280; )
+    {
+        _283 = (_96[_288].z < 0.707199990749359130859375) ? false : _283;
+        _286 = (_96[_288].z <= (-0.707199990749359130859375)) ? true : _286;
+        _288++;
+    }
+    float _395;
+    SPIRV_CROSS_BRANCH
+    if ((!_286) && (!_283))
+    {
+        vec2 _93[10];
+        _93[0] = vec2(-0.5);
+        _93[1] = vec2(0.5, -0.5);
+        _93[2] = vec2(0.5);
+        _93[3] = vec2(-0.5, 0.5);
+        int _308;
+        int _311;
+        _308 = 4;
+        _311 = 0;
+        vec2 _94[10];
+        int _309;
+        bool _314;
+        SPIRV_CROSS_LOOP
+        for (;;)
+        {
+            _314 = _308 >= 3;
+            if ((_311 < _280) && _314)
+            {
+                if (_96[_311].z < 0.707199990749359130859375)
+                {
+                    int _325;
+                    _325 = 0;
+                    int _329;
+                    int _326;
+                    SPIRV_CROSS_LOOP
+                    for (int _328 = 0; _328 < _308; _325 = _326, _328 = _329)
+                    {
+                        _329 = _328 + 1;
+                        int _336 = (_329 < _308) ? _329 : 0;
+                        float _341 = _96[_311].z + dot(_93[_328], _96[_311].xy);
+                        float _343 = _96[_311].z + dot(_93[_336], _96[_311].xy);
+                        bool _344 = _341 >= 0.0;
+                        int _349;
+                        if (_344)
+                        {
+                            _94[_325] = _93[_328];
+                            _349 = _325 + 1;
+                        }
+                        else
+                        {
+                            _349 = _325;
+                        }
+                        if (_344 != (_343 >= 0.0))
+                        {
+                            _94[_349] = _93[_328] + ((_93[_336] - _93[_328]) * (_341 / (_341 - _343)));
+                            _326 = _349 + 1;
+                        }
+                        else
+                        {
+                            _326 = _349;
+                        }
+                    }
+                    SPIRV_CROSS_LOOP
+                    for (int _362 = 0; _362 < _325; )
+                    {
+                        _93[_362] = _94[_362];
+                        _362++;
+                    }
+                    _309 = _325;
+                }
+                else
+                {
+                    _309 = _308;
+                }
+                _308 = _309;
+                _311++;
+            }
+            else
+            {
+                break;
+            }
+        }
+        float _371;
+        _371 = 0.0;
+        SPIRV_CROSS_LOOP
+        for (int _374 = 0; (_374 < _308) && _314; )
+        {
+            int _375 = _374 + 1;
+            int _382 = (_375 < _308) ? _375 : 0;
+            _371 += ((_93[_374].x * _93[_382].y) - (_93[_374].y * _93[_382].x));
+            _374 = _375;
+        }
+        _395 = clamp(abs(_371) * 0.5, 0.0, 1.0);
+    }
+    else
+    {
+        _395 = _286 ? 0.0 : 1.0;
+    }
+    float _754;
+    SPIRV_CROSS_BRANCH
+    if (_140 || _204)
+    {
+        float _399 = length(_122);
+        bool _400 = texelFetch(waxBuffer1, int(_108)).w > 0.0;
+        float _457;
+        if (_400)
+        {
+            float _404 = texelFetch(waxBuffer1, int(_108)).w - _399;
+            vec2 _407 = abs(_122 / vec2(_399));
+            float _408 = _407.x;
+            float _409 = _407.y;
+            float _410 = max(_408, _409);
+            float _411 = min(_408, _409);
+            float _412 = _410 + _411;
+            float _414 = _404 + (0.5 * _412);
+            float _453;
+            if (_411 < 0.001000000047497451305389404296875)
+            {
+                _453 = clamp(_404 + 0.5, 0.0, 1.0);
+            }
+            else
+            {
+                float _452;
+                if (_414 >= _412)
+                {
+                    _452 = 1.0;
+                }
+                else
+                {
+                    float _451;
+                    if (_414 > 0.0)
+                    {
+                        float _450;
+                        if (_414 < _411)
+                        {
+                            _450 = (_414 * _414) / ((2.0 * _410) * _411);
+                        }
+                        else
+                        {
+                            float _449;
+                            if (_414 > _410)
+                            {
+                                float _440 = _412 - _414;
+                                _449 = 1.0 - ((_440 * _440) / ((2.0 * _410) * _411));
+                            }
+                            else
+                            {
+                                _449 = (_414 - (0.5 * _411)) / _410;
+                            }
+                            _450 = _449;
+                        }
+                        _451 = _450;
+                    }
+                    else
+                    {
+                        _451 = 0.0;
+                    }
+                    _452 = _451;
+                }
+                _453 = _452;
+            }
+            _457 = (_399 > 0.001000000047497451305389404296875) ? _453 : clamp(texelFetch(waxBuffer1, int(_108)).w + 0.5, 0.0, 1.0);
+        }
+        else
+        {
+            _457 = 0.0;
+        }
+        float _458 = _140 ? _457 : 0.0;
+        float _459 = length(_200);
+        float _516;
+        if (_400)
+        {
+            float _463 = texelFetch(waxBuffer1, int(_108)).w - _459;
+            vec2 _466 = abs(_200 / vec2(_459));
+            float _467 = _466.x;
+            float _468 = _466.y;
+            float _469 = max(_467, _468);
+            float _470 = min(_467, _468);
+            float _471 = _469 + _470;
+            float _473 = _463 + (0.5 * _471);
+            float _512;
+            if (_470 < 0.001000000047497451305389404296875)
+            {
+                _512 = clamp(_463 + 0.5, 0.0, 1.0);
+            }
+            else
+            {
+                float _511;
+                if (_473 >= _471)
+                {
+                    _511 = 1.0;
+                }
+                else
+                {
+                    float _510;
+                    if (_473 > 0.0)
+                    {
+                        float _509;
+                        if (_473 < _470)
+                        {
+                            _509 = (_473 * _473) / ((2.0 * _469) * _470);
+                        }
+                        else
+                        {
+                            float _508;
+                            if (_473 > _469)
+                            {
+                                float _499 = _471 - _473;
+                                _508 = 1.0 - ((_499 * _499) / ((2.0 * _469) * _470));
+                            }
+                            else
+                            {
+                                _508 = (_473 - (0.5 * _470)) / _469;
+                            }
+                            _509 = _508;
+                        }
+                        _510 = _509;
+                    }
+                    else
+                    {
+                        _510 = 0.0;
+                    }
+                    _511 = _510;
+                }
+                _512 = _511;
+            }
+            _516 = (_459 > 0.001000000047497451305389404296875) ? _512 : clamp(texelFetch(waxBuffer1, int(_108)).w + 0.5, 0.0, 1.0);
+        }
+        else
+        {
+            _516 = 0.0;
+        }
+        float _517 = _204 ? _516 : 0.0;
+        vec3 _97[6] = _95;
+        bool _520;
+        bool _523;
+        _520 = true;
+        _523 = false;
+        for (int _525 = 2; _525 < _197; )
+        {
+            _520 = (_97[_525].z < 0.707199990749359130859375) ? false : _520;
+            _523 = (_97[_525].z <= (-0.707199990749359130859375)) ? true : _523;
+            _525++;
+        }
+        float _632;
+        SPIRV_CROSS_BRANCH
+        if ((!_523) && (!_520))
+        {
+            vec2 _91[10];
+            _91[0] = vec2(-0.5);
+            _91[1] = vec2(0.5, -0.5);
+            _91[2] = vec2(0.5);
+            _91[3] = vec2(-0.5, 0.5);
+            int _545;
+            int _548;
+            _545 = 4;
+            _548 = 2;
+            vec2 _92[10];
+            int _546;
+            bool _551;
+            SPIRV_CROSS_LOOP
+            for (;;)
+            {
+                _551 = _545 >= 3;
+                if ((_548 < _197) && _551)
+                {
+                    if (_97[_548].z < 0.707199990749359130859375)
+                    {
+                        int _562;
+                        _562 = 0;
+                        int _566;
+                        int _563;
+                        SPIRV_CROSS_LOOP
+                        for (int _565 = 0; _565 < _545; _562 = _563, _565 = _566)
+                        {
+                            _566 = _565 + 1;
+                            int _573 = (_566 < _545) ? _566 : 0;
+                            float _578 = _97[_548].z + dot(_91[_565], _97[_548].xy);
+                            float _580 = _97[_548].z + dot(_91[_573], _97[_548].xy);
+                            bool _581 = _578 >= 0.0;
+                            int _586;
+                            if (_581)
+                            {
+                                _92[_562] = _91[_565];
+                                _586 = _562 + 1;
+                            }
+                            else
+                            {
+                                _586 = _562;
+                            }
+                            if (_581 != (_580 >= 0.0))
+                            {
+                                _92[_586] = _91[_565] + ((_91[_573] - _91[_565]) * (_578 / (_578 - _580)));
+                                _563 = _586 + 1;
+                            }
+                            else
+                            {
+                                _563 = _586;
+                            }
+                        }
+                        SPIRV_CROSS_LOOP
+                        for (int _599 = 0; _599 < _562; )
+                        {
+                            _91[_599] = _92[_599];
+                            _599++;
+                        }
+                        _546 = _562;
+                    }
+                    else
+                    {
+                        _546 = _545;
+                    }
+                    _545 = _546;
+                    _548++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+            float _608;
+            _608 = 0.0;
+            SPIRV_CROSS_LOOP
+            for (int _611 = 0; (_611 < _545) && _551; )
+            {
+                int _612 = _611 + 1;
+                int _619 = (_612 < _545) ? _612 : 0;
+                _608 += ((_91[_611].x * _91[_619].y) - (_91[_611].y * _91[_619].x));
+                _611 = _612;
+            }
+            _632 = clamp(abs(_608) * 0.5, 0.0, 1.0);
+        }
+        else
+        {
+            _632 = _523 ? 0.0 : 1.0;
+        }
+        vec3 _98[6] = _95;
+        bool _636;
+        bool _639;
+        _636 = true;
+        _639 = false;
+        for (int _641 = _197; _641 < _280; )
+        {
+            _636 = (_98[_641].z < 0.707199990749359130859375) ? false : _636;
+            _639 = (_98[_641].z <= (-0.707199990749359130859375)) ? true : _639;
+            _641++;
+        }
+        float _748;
+        SPIRV_CROSS_BRANCH
+        if ((!_639) && (!_636))
+        {
+            vec2 _89[10];
+            _89[0] = vec2(-0.5);
+            _89[1] = vec2(0.5, -0.5);
+            _89[2] = vec2(0.5);
+            _89[3] = vec2(-0.5, 0.5);
+            int _661;
+            int _664;
+            _661 = 4;
+            _664 = _197;
+            vec2 _90[10];
+            int _662;
+            bool _667;
+            SPIRV_CROSS_LOOP
+            for (;;)
+            {
+                _667 = _661 >= 3;
+                if ((_664 < _280) && _667)
+                {
+                    if (_98[_664].z < 0.707199990749359130859375)
+                    {
+                        int _678;
+                        _678 = 0;
+                        int _682;
+                        int _679;
+                        SPIRV_CROSS_LOOP
+                        for (int _681 = 0; _681 < _661; _678 = _679, _681 = _682)
+                        {
+                            _682 = _681 + 1;
+                            int _689 = (_682 < _661) ? _682 : 0;
+                            float _694 = _98[_664].z + dot(_89[_681], _98[_664].xy);
+                            float _696 = _98[_664].z + dot(_89[_689], _98[_664].xy);
+                            bool _697 = _694 >= 0.0;
+                            int _702;
+                            if (_697)
+                            {
+                                _90[_678] = _89[_681];
+                                _702 = _678 + 1;
+                            }
+                            else
+                            {
+                                _702 = _678;
+                            }
+                            if (_697 != (_696 >= 0.0))
+                            {
+                                _90[_702] = _89[_681] + ((_89[_689] - _89[_681]) * (_694 / (_694 - _696)));
+                                _679 = _702 + 1;
+                            }
+                            else
+                            {
+                                _679 = _702;
+                            }
+                        }
+                        SPIRV_CROSS_LOOP
+                        for (int _715 = 0; _715 < _678; )
+                        {
+                            _89[_715] = _90[_715];
+                            _715++;
+                        }
+                        _662 = _678;
+                    }
+                    else
+                    {
+                        _662 = _661;
+                    }
+                    _661 = _662;
+                    _664++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+            float _724;
+            _724 = 0.0;
+            SPIRV_CROSS_LOOP
+            for (int _727 = 0; (_727 < _661) && _667; )
+            {
+                int _728 = _727 + 1;
+                int _735 = (_728 < _661) ? _728 : 0;
+                _724 += ((_89[_727].x * _89[_735].y) - (_89[_727].y * _89[_735].x));
+                _727 = _728;
+            }
+            _748 = clamp(abs(_724) * 0.5, 0.0, 1.0);
+        }
+        else
+        {
+            _748 = _639 ? 0.0 : 1.0;
+        }
+        _754 = max(_395, max(min(_458, max(_748, _517)), min(_517, max(_632, _458))));
+    }
+    else
+    {
+        _754 = _395;
+    }
+    bool _755 = _754 > 0.0;
+    vec4 _770;
+    if (_755)
+    {
+        uint _759 = uint(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).w);
+        _770 = vec4(texelFetch(waxBuffer0, int(_759)).xyz * texelFetch(waxBuffer0, int(_759)).w, texelFetch(waxBuffer0, int(_759)).w) * _754;
+    }
+    else
+    {
+        _770 = vec4(0.0);
+    }
+    float _771 = _755 ? _754 : 0.0;
+    if (_771 < 0.00390625)
+    {
+        discard;
+    }
+    vec4 _960;
+    SPIRV_CROSS_BRANCH
+    if ((int(waxConstants[2].x)) >= 0)
+    {
+        uint _781 = uint(max((int(waxConstants[2].x)), 0));
+        uint _784 = uint(texelFetch(waxBuffer0, int(_781)).x);
+        uint _785 = _781 + 1u;
+        vec4 _790;
+        _790 = vec4(0.0);
+        uint _788;
+        vec4 _791;
+        SPIRV_CROSS_LOOP
+        for (uint _787 = _785, _792 = 0u; _792 < _784; _787 = _788, _790 = _791, _792++)
+        {
+            uint _799 = _787 + 1u;
+            uint _806 = uint(texelFetch(waxBuffer0, int(_787)).z);
+            uint _807 = _787 + 3u;
+            uint _810 = _807 + ((_806 + 3u) >> 2u);
+            SPIRV_CROSS_BRANCH
+            if (_806 > 0u)
+            {
+                float _833;
+                if (texelFetch(waxBuffer0, int(_787)).x < 0.5)
+                {
+                    _833 = ((texelFetch(waxBuffer0, int(_799)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_799)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_799)).z;
+                }
+                else
+                {
+                    _833 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_799)).xy) * texelFetch(waxBuffer0, int(_799)).zw);
+                }
+                float _834 = clamp(_833, -10000000.0, 10000000.0);
+                uint _836 = uint(texelFetch(waxBuffer0, int(_787)).y);
+                float _856;
+                if (_836 == 0u)
+                {
+                    _856 = clamp(_834, 0.0, 1.0);
+                }
+                else
+                {
+                    float _855;
+                    if (_836 == 1u)
+                    {
+                        _855 = _834 - floor(_834);
+                    }
+                    else
+                    {
+                        float _851 = _834 - (2.0 * floor(_834 * 0.5));
+                        _855 = (_851 > 1.0) ? (2.0 - _851) : _851;
+                    }
+                    _856 = _855;
+                }
+                int _858;
+                _858 = -1;
+                int _859;
+                SPIRV_CROSS_LOOP
+                for (uint _861 = 0u; _861 < _806; _858 = _859, _861++)
+                {
+                    uint _867 = _807 + (_861 >> 2u);
+                    uint _870 = _861 & 3u;
+                    if (((_870 == 0u) ? texelFetch(waxBuffer0, int(_867)).x : ((_870 == 1u) ? texelFetch(waxBuffer0, int(_867)).y : ((_870 == 2u) ? texelFetch(waxBuffer0, int(_867)).z : texelFetch(waxBuffer0, int(_867)).w))) <= _856)
+                    {
+                        _859 = int(_861);
+                    }
+                    else
+                    {
+                        _859 = _858;
+                    }
+                }
+                vec4 _943;
+                if (_858 < 0)
+                {
+                    _943 = texelFetch(waxBuffer0, int(_810));
+                }
+                else
+                {
+                    uint _891 = uint(_858);
+                    vec4 _942;
+                    if (_891 == (_806 - 1u))
+                    {
+                        _942 = texelFetch(waxBuffer0, int(_810 + _891));
+                    }
+                    else
+                    {
+                        uint _901 = _807 + (_891 >> 2u);
+                        uint _904 = _891 & 3u;
+                        float _914 = (_904 == 0u) ? texelFetch(waxBuffer0, int(_901)).x : ((_904 == 1u) ? texelFetch(waxBuffer0, int(_901)).y : ((_904 == 2u) ? texelFetch(waxBuffer0, int(_901)).z : texelFetch(waxBuffer0, int(_901)).w));
+                        uint _915 = _891 + 1u;
+                        uint _917 = _807 + (_915 >> 2u);
+                        uint _920 = _915 & 3u;
+                        uint _931 = _810 + _891;
+                        _942 = mix(texelFetch(waxBuffer0, int(_931)), texelFetch(waxBuffer0, int(_931 + 1u)), vec4((_856 - _914) / (((_920 == 0u) ? texelFetch(waxBuffer0, int(_917)).x : ((_920 == 1u) ? texelFetch(waxBuffer0, int(_917)).y : ((_920 == 2u) ? texelFetch(waxBuffer0, int(_917)).z : texelFetch(waxBuffer0, int(_917)).w))) - _914)));
+                    }
+                    _943 = _942;
+                }
+                vec4 _956;
+                if (texelFetch(waxBuffer0, int(_787 + 2u)).x > 0.5)
+                {
+                    vec3 _954 = mix(pow(abs((_943.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _943.xyz * vec3(0.077399380505084991455078125), step(_943.xyz, vec3(0.040449999272823333740234375)));
+                    _956 = vec4(_954.x, _954.y, _954.z, _943.w);
+                }
+                else
+                {
+                    _956 = _943;
+                }
+                _791 = _790 + (_956 * texelFetch(waxBuffer0, int(_787)).w);
+            }
+            else
+            {
+                _791 = _790;
+            }
+            _788 = _810 + _806;
+        }
+        _960 = _790;
+    }
+    else
+    {
+        _960 = vec4(1.0);
+    }
+    vec4 _961 = wax_COLOR * _960;
+    float _963 = _961.w;
+    vec4 _969 = _770 * vec4(_961.xyz * _963, _963);
+    vec4 _1047;
+    if ((waxConstants[2].z) == 2u)
+    {
+        float _976 = _969.w;
+        vec4 _996;
+        if ((waxConstants[2].y) == 2u)
+        {
+            _996 = vec4((1.0 - _771) + _976);
+        }
+        else
+        {
+            vec4 _995;
+            if ((waxConstants[2].y) == 1u)
+            {
+                _995 = vec4(_976 * (uintBitsToFloat(waxConstants[2].w)));
+            }
+            else
+            {
+                _995 = vec4(_976);
+            }
+            _996 = _995;
+        }
+        _1047 = _996;
+    }
+    else
+    {
+        vec4 _1046;
+        if ((waxConstants[2].y) == 3u)
+        {
+            float _1003 = _969.x;
+            _1046 = vec4(_1003, _969.yz, max(_1003, max(_969.y, _969.z)));
+        }
+        else
+        {
+            vec4 _1045;
+            if ((waxConstants[2].y) == 2u)
+            {
+                _1045 = vec4(vec3(1.0 - _969.w) + _969.xyz, 1.0);
+            }
+            else
+            {
+                vec4 _1044;
+                if ((waxConstants[2].y) == 1u)
+                {
+                    float _1041;
+                    if ((waxConstants[2].z) == 1u)
+                    {
+                        float _1037 = (1.0 - (uintBitsToFloat(waxConstants[2].w))) + (((_771 > 0.0) ? (_969.w / _771) : 0.0) * (uintBitsToFloat(waxConstants[2].w)));
+                        _1041 = (_1037 > 0.0) ? (1.0 / _1037) : 0.0;
+                    }
+                    else
+                    {
+                        _1041 = 1.0;
+                    }
+                    _1044 = _969 * ((uintBitsToFloat(waxConstants[2].w)) * _1041);
+                }
+                else
+                {
+                    _1044 = _969;
+                }
+                _1045 = _1044;
+            }
+            _1046 = _1045;
+        }
+        _1047 = _1046;
+    }
+    out_var_SV_Target0 = _1047;
+}
+)glsl" },
+
+	{ "shapeLinePSDual", R"glsl(#version 330
+#if defined(GL_EXT_control_flow_attributes)
+#extension GL_EXT_control_flow_attributes : require
+#define SPIRV_CROSS_FLATTEN [[flatten]]
+#define SPIRV_CROSS_BRANCH [[dont_flatten]]
+#define SPIRV_CROSS_UNROLL [[unroll]]
+#define SPIRV_CROSS_LOOP [[dont_unroll]]
+#else
+#define SPIRV_CROSS_FLATTEN
+#define SPIRV_CROSS_BRANCH
+#define SPIRV_CROSS_UNROLL
+#define SPIRV_CROSS_LOOP
+#endif
+
+uniform samplerBuffer waxBuffer0;
+
+uniform samplerBuffer waxBuffer1;
+
+uniform uvec4 waxConstants[6];
+
+vec4 waxFragCoord() { return vec4(gl_FragCoord.x, (uintBitsToFloat(waxConstants[5])).y + (uintBitsToFloat(waxConstants[5])).z * gl_FragCoord.y, gl_FragCoord.zw); }
+
+in vec4 wax_COLOR;
+flat in uint wax_TEXCOORD1;
+layout(location = 0) out vec4 out_var_SV_Target0;
+layout(location = 0, index = 1) out vec4 out_var_SV_Target1;
+
+void main()
+{
+    uint _106 = wax_TEXCOORD1 + 1u;
+    uint _109 = wax_TEXCOORD1 + 2u;
+    float _114 = -texelFetch(waxBuffer1, int(_109)).y;
+    vec2 _116 = vec2(_114, texelFetch(waxBuffer1, int(_109)).x);
+    int _119 = int(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y);
+    int _121 = int(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).z);
+    vec2 _123 = waxFragCoord().xy - texelFetch(waxBuffer1, int(_106)).xy;
+    float _124 = dot(_123, _116);
+    vec2 _125 = -_116;
+    vec3 _96[6];
+    _96[0] = vec3(_125, texelFetch(waxBuffer1, int(_109)).w - _124);
+    _96[1] = vec3(_114, texelFetch(waxBuffer1, int(_109)).x, texelFetch(waxBuffer1, int(_109)).w + _124);
+    _96[2] = vec3(0.0);
+    _96[3] = vec3(0.0);
+    _96[4] = vec3(0.0);
+    _96[5] = vec3(0.0);
+    float _138 = dot(_123, texelFetch(waxBuffer1, int(_109)).xy);
+    int _139 = _119 & 7;
+    bool _141 = _139 == 3;
+    int _198;
+    if ((_139 == 1) || _141)
+    {
+        _96[2] = vec3(texelFetch(waxBuffer1, int(_109)).xy, _138);
+        _198 = 3;
+    }
+    else
+    {
+        int _197;
+        if (_139 == 2)
+        {
+            _96[2] = vec3(texelFetch(waxBuffer1, int(_109)).xy, _138 + texelFetch(waxBuffer1, int(_109)).w);
+            _197 = 3;
+        }
+        else
+        {
+            int _196;
+            if (_139 == 4)
+            {
+                float _158 = (texelFetch(waxBuffer1, int(_109)).x > 0.0) ? 1.0 : (-1.0);
+                _96[2] = vec3(_158, 0.0, _123.x * _158);
+                _196 = 3;
+            }
+            else
+            {
+                bool _162 = _139 == 5;
+                if (_162)
+                {
+                    float _167 = (texelFetch(waxBuffer1, int(_109)).y > 0.0) ? 1.0 : (-1.0);
+                    _96[2] = vec3(0.0, _167, _123.y * _167);
+                }
+                else
+                {
+                    float _174 = (float(_119 >> 3) * 0.5) * texelFetch(waxBuffer1, int(_109)).w;
+                    vec2 _175 = texelFetch(waxBuffer1, int(_109)).xy * texelFetch(waxBuffer1, int(_109)).w;
+                    vec2 _176 = _116 * _174;
+                    vec2 _177 = _175 - _176;
+                    float _179 = length(_177);
+                    vec2 _180 = vec2(_179);
+                    float _182 = texelFetch(waxBuffer1, int(_109)).w * _138;
+                    float _183 = _174 * _124;
+                    _96[2] = vec3(_177 / _180, (_182 - _183) / _179);
+                    _96[3] = vec3((_175 + _176) / _180, (_182 + _183) / _179);
+                }
+                _196 = _162 ? 3 : 4;
+            }
+            _197 = _196;
+        }
+        _198 = _197;
+    }
+    vec2 _200 = -texelFetch(waxBuffer1, int(_109)).xy;
+    vec2 _201 = waxFragCoord().xy - texelFetch(waxBuffer1, int(_106)).zw;
+    float _202 = dot(_201, _200);
+    int _203 = _121 & 7;
+    bool _205 = _203 == 3;
+    int _281;
+    if ((_203 == 1) || _205)
+    {
+        _96[_198] = vec3(_200, _202);
+        _281 = _198 + 1;
+    }
+    else
+    {
+        int _280;
+        if (_203 == 2)
+        {
+            _96[_198] = vec3(_200, _202 + texelFetch(waxBuffer1, int(_109)).w);
+            _280 = _198 + 1;
+        }
+        else
+        {
+            int _279;
+            if (_203 == 4)
+            {
+                float _231 = (_200.x > 0.0) ? 1.0 : (-1.0);
+                _96[_198] = vec3(_231, 0.0, _201.x * _231);
+                _279 = _198 + 1;
+            }
+            else
+            {
+                int _278;
+                if (_203 == 5)
+                {
+                    float _243 = (_200.y > 0.0) ? 1.0 : (-1.0);
+                    _96[_198] = vec3(0.0, _243, _201.y * _243);
+                    _278 = _198 + 1;
+                }
+                else
+                {
+                    float _252 = (float(_121 >> 3) * 0.5) * texelFetch(waxBuffer1, int(_109)).w;
+                    vec2 _254 = _200 * texelFetch(waxBuffer1, int(_109)).w;
+                    vec2 _255 = _125 * _252;
+                    vec2 _256 = _254 - _255;
+                    float _258 = length(_256);
+                    vec2 _259 = vec2(_258);
+                    float _261 = texelFetch(waxBuffer1, int(_109)).w * _202;
+                    float _262 = _252 * dot(_201, _125);
+                    _96[_198] = vec3(_256 / _259, (_261 - _262) / _258);
+                    _96[_198 + 1] = vec3((_254 + _255) / _259, (_261 + _262) / _258);
+                    _278 = _198 + 2;
+                }
+                _279 = _278;
+            }
+            _280 = _279;
+        }
+        _281 = _280;
+    }
+    vec3 _97[6] = _96;
+    bool _284;
+    bool _287;
+    _284 = true;
+    _287 = false;
+    for (int _289 = 0; _289 < _281; )
+    {
+        _284 = (_97[_289].z < 0.707199990749359130859375) ? false : _284;
+        _287 = (_97[_289].z <= (-0.707199990749359130859375)) ? true : _287;
+        _289++;
+    }
+    float _396;
+    SPIRV_CROSS_BRANCH
+    if ((!_287) && (!_284))
+    {
+        vec2 _94[10];
+        _94[0] = vec2(-0.5);
+        _94[1] = vec2(0.5, -0.5);
+        _94[2] = vec2(0.5);
+        _94[3] = vec2(-0.5, 0.5);
+        int _309;
+        int _312;
+        _309 = 4;
+        _312 = 0;
+        vec2 _95[10];
+        int _310;
+        bool _315;
+        SPIRV_CROSS_LOOP
+        for (;;)
+        {
+            _315 = _309 >= 3;
+            if ((_312 < _281) && _315)
+            {
+                if (_97[_312].z < 0.707199990749359130859375)
+                {
+                    int _326;
+                    _326 = 0;
+                    int _330;
+                    int _327;
+                    SPIRV_CROSS_LOOP
+                    for (int _329 = 0; _329 < _309; _326 = _327, _329 = _330)
+                    {
+                        _330 = _329 + 1;
+                        int _337 = (_330 < _309) ? _330 : 0;
+                        float _342 = _97[_312].z + dot(_94[_329], _97[_312].xy);
+                        float _344 = _97[_312].z + dot(_94[_337], _97[_312].xy);
+                        bool _345 = _342 >= 0.0;
+                        int _350;
+                        if (_345)
+                        {
+                            _95[_326] = _94[_329];
+                            _350 = _326 + 1;
+                        }
+                        else
+                        {
+                            _350 = _326;
+                        }
+                        if (_345 != (_344 >= 0.0))
+                        {
+                            _95[_350] = _94[_329] + ((_94[_337] - _94[_329]) * (_342 / (_342 - _344)));
+                            _327 = _350 + 1;
+                        }
+                        else
+                        {
+                            _327 = _350;
+                        }
+                    }
+                    SPIRV_CROSS_LOOP
+                    for (int _363 = 0; _363 < _326; )
+                    {
+                        _94[_363] = _95[_363];
+                        _363++;
+                    }
+                    _310 = _326;
+                }
+                else
+                {
+                    _310 = _309;
+                }
+                _309 = _310;
+                _312++;
+            }
+            else
+            {
+                break;
+            }
+        }
+        float _372;
+        _372 = 0.0;
+        SPIRV_CROSS_LOOP
+        for (int _375 = 0; (_375 < _309) && _315; )
+        {
+            int _376 = _375 + 1;
+            int _383 = (_376 < _309) ? _376 : 0;
+            _372 += ((_94[_375].x * _94[_383].y) - (_94[_375].y * _94[_383].x));
+            _375 = _376;
+        }
+        _396 = clamp(abs(_372) * 0.5, 0.0, 1.0);
+    }
+    else
+    {
+        _396 = _287 ? 0.0 : 1.0;
+    }
+    float _755;
+    SPIRV_CROSS_BRANCH
+    if (_141 || _205)
+    {
+        float _400 = length(_123);
+        bool _401 = texelFetch(waxBuffer1, int(_109)).w > 0.0;
+        float _458;
+        if (_401)
+        {
+            float _405 = texelFetch(waxBuffer1, int(_109)).w - _400;
+            vec2 _408 = abs(_123 / vec2(_400));
+            float _409 = _408.x;
+            float _410 = _408.y;
+            float _411 = max(_409, _410);
+            float _412 = min(_409, _410);
+            float _413 = _411 + _412;
+            float _415 = _405 + (0.5 * _413);
+            float _454;
+            if (_412 < 0.001000000047497451305389404296875)
+            {
+                _454 = clamp(_405 + 0.5, 0.0, 1.0);
+            }
+            else
+            {
+                float _453;
+                if (_415 >= _413)
+                {
+                    _453 = 1.0;
+                }
+                else
+                {
+                    float _452;
+                    if (_415 > 0.0)
+                    {
+                        float _451;
+                        if (_415 < _412)
+                        {
+                            _451 = (_415 * _415) / ((2.0 * _411) * _412);
+                        }
+                        else
+                        {
+                            float _450;
+                            if (_415 > _411)
+                            {
+                                float _441 = _413 - _415;
+                                _450 = 1.0 - ((_441 * _441) / ((2.0 * _411) * _412));
+                            }
+                            else
+                            {
+                                _450 = (_415 - (0.5 * _412)) / _411;
+                            }
+                            _451 = _450;
+                        }
+                        _452 = _451;
+                    }
+                    else
+                    {
+                        _452 = 0.0;
+                    }
+                    _453 = _452;
+                }
+                _454 = _453;
+            }
+            _458 = (_400 > 0.001000000047497451305389404296875) ? _454 : clamp(texelFetch(waxBuffer1, int(_109)).w + 0.5, 0.0, 1.0);
+        }
+        else
+        {
+            _458 = 0.0;
+        }
+        float _459 = _141 ? _458 : 0.0;
+        float _460 = length(_201);
+        float _517;
+        if (_401)
+        {
+            float _464 = texelFetch(waxBuffer1, int(_109)).w - _460;
+            vec2 _467 = abs(_201 / vec2(_460));
+            float _468 = _467.x;
+            float _469 = _467.y;
+            float _470 = max(_468, _469);
+            float _471 = min(_468, _469);
+            float _472 = _470 + _471;
+            float _474 = _464 + (0.5 * _472);
+            float _513;
+            if (_471 < 0.001000000047497451305389404296875)
+            {
+                _513 = clamp(_464 + 0.5, 0.0, 1.0);
+            }
+            else
+            {
+                float _512;
+                if (_474 >= _472)
+                {
+                    _512 = 1.0;
+                }
+                else
+                {
+                    float _511;
+                    if (_474 > 0.0)
+                    {
+                        float _510;
+                        if (_474 < _471)
+                        {
+                            _510 = (_474 * _474) / ((2.0 * _470) * _471);
+                        }
+                        else
+                        {
+                            float _509;
+                            if (_474 > _470)
+                            {
+                                float _500 = _472 - _474;
+                                _509 = 1.0 - ((_500 * _500) / ((2.0 * _470) * _471));
+                            }
+                            else
+                            {
+                                _509 = (_474 - (0.5 * _471)) / _470;
+                            }
+                            _510 = _509;
+                        }
+                        _511 = _510;
+                    }
+                    else
+                    {
+                        _511 = 0.0;
+                    }
+                    _512 = _511;
+                }
+                _513 = _512;
+            }
+            _517 = (_460 > 0.001000000047497451305389404296875) ? _513 : clamp(texelFetch(waxBuffer1, int(_109)).w + 0.5, 0.0, 1.0);
+        }
+        else
+        {
+            _517 = 0.0;
+        }
+        float _518 = _205 ? _517 : 0.0;
+        vec3 _98[6] = _96;
+        bool _521;
+        bool _524;
+        _521 = true;
+        _524 = false;
+        for (int _526 = 2; _526 < _198; )
+        {
+            _521 = (_98[_526].z < 0.707199990749359130859375) ? false : _521;
+            _524 = (_98[_526].z <= (-0.707199990749359130859375)) ? true : _524;
+            _526++;
+        }
+        float _633;
+        SPIRV_CROSS_BRANCH
+        if ((!_524) && (!_521))
+        {
+            vec2 _92[10];
+            _92[0] = vec2(-0.5);
+            _92[1] = vec2(0.5, -0.5);
+            _92[2] = vec2(0.5);
+            _92[3] = vec2(-0.5, 0.5);
+            int _546;
+            int _549;
+            _546 = 4;
+            _549 = 2;
+            vec2 _93[10];
+            int _547;
+            bool _552;
+            SPIRV_CROSS_LOOP
+            for (;;)
+            {
+                _552 = _546 >= 3;
+                if ((_549 < _198) && _552)
+                {
+                    if (_98[_549].z < 0.707199990749359130859375)
+                    {
+                        int _563;
+                        _563 = 0;
+                        int _567;
+                        int _564;
+                        SPIRV_CROSS_LOOP
+                        for (int _566 = 0; _566 < _546; _563 = _564, _566 = _567)
+                        {
+                            _567 = _566 + 1;
+                            int _574 = (_567 < _546) ? _567 : 0;
+                            float _579 = _98[_549].z + dot(_92[_566], _98[_549].xy);
+                            float _581 = _98[_549].z + dot(_92[_574], _98[_549].xy);
+                            bool _582 = _579 >= 0.0;
+                            int _587;
+                            if (_582)
+                            {
+                                _93[_563] = _92[_566];
+                                _587 = _563 + 1;
+                            }
+                            else
+                            {
+                                _587 = _563;
+                            }
+                            if (_582 != (_581 >= 0.0))
+                            {
+                                _93[_587] = _92[_566] + ((_92[_574] - _92[_566]) * (_579 / (_579 - _581)));
+                                _564 = _587 + 1;
+                            }
+                            else
+                            {
+                                _564 = _587;
+                            }
+                        }
+                        SPIRV_CROSS_LOOP
+                        for (int _600 = 0; _600 < _563; )
+                        {
+                            _92[_600] = _93[_600];
+                            _600++;
+                        }
+                        _547 = _563;
+                    }
+                    else
+                    {
+                        _547 = _546;
+                    }
+                    _546 = _547;
+                    _549++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+            float _609;
+            _609 = 0.0;
+            SPIRV_CROSS_LOOP
+            for (int _612 = 0; (_612 < _546) && _552; )
+            {
+                int _613 = _612 + 1;
+                int _620 = (_613 < _546) ? _613 : 0;
+                _609 += ((_92[_612].x * _92[_620].y) - (_92[_612].y * _92[_620].x));
+                _612 = _613;
+            }
+            _633 = clamp(abs(_609) * 0.5, 0.0, 1.0);
+        }
+        else
+        {
+            _633 = _524 ? 0.0 : 1.0;
+        }
+        vec3 _99[6] = _96;
+        bool _637;
+        bool _640;
+        _637 = true;
+        _640 = false;
+        for (int _642 = _198; _642 < _281; )
+        {
+            _637 = (_99[_642].z < 0.707199990749359130859375) ? false : _637;
+            _640 = (_99[_642].z <= (-0.707199990749359130859375)) ? true : _640;
+            _642++;
+        }
+        float _749;
+        SPIRV_CROSS_BRANCH
+        if ((!_640) && (!_637))
+        {
+            vec2 _90[10];
+            _90[0] = vec2(-0.5);
+            _90[1] = vec2(0.5, -0.5);
+            _90[2] = vec2(0.5);
+            _90[3] = vec2(-0.5, 0.5);
+            int _662;
+            int _665;
+            _662 = 4;
+            _665 = _198;
+            vec2 _91[10];
+            int _663;
+            bool _668;
+            SPIRV_CROSS_LOOP
+            for (;;)
+            {
+                _668 = _662 >= 3;
+                if ((_665 < _281) && _668)
+                {
+                    if (_99[_665].z < 0.707199990749359130859375)
+                    {
+                        int _679;
+                        _679 = 0;
+                        int _683;
+                        int _680;
+                        SPIRV_CROSS_LOOP
+                        for (int _682 = 0; _682 < _662; _679 = _680, _682 = _683)
+                        {
+                            _683 = _682 + 1;
+                            int _690 = (_683 < _662) ? _683 : 0;
+                            float _695 = _99[_665].z + dot(_90[_682], _99[_665].xy);
+                            float _697 = _99[_665].z + dot(_90[_690], _99[_665].xy);
+                            bool _698 = _695 >= 0.0;
+                            int _703;
+                            if (_698)
+                            {
+                                _91[_679] = _90[_682];
+                                _703 = _679 + 1;
+                            }
+                            else
+                            {
+                                _703 = _679;
+                            }
+                            if (_698 != (_697 >= 0.0))
+                            {
+                                _91[_703] = _90[_682] + ((_90[_690] - _90[_682]) * (_695 / (_695 - _697)));
+                                _680 = _703 + 1;
+                            }
+                            else
+                            {
+                                _680 = _703;
+                            }
+                        }
+                        SPIRV_CROSS_LOOP
+                        for (int _716 = 0; _716 < _679; )
+                        {
+                            _90[_716] = _91[_716];
+                            _716++;
+                        }
+                        _663 = _679;
+                    }
+                    else
+                    {
+                        _663 = _662;
+                    }
+                    _662 = _663;
+                    _665++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+            float _725;
+            _725 = 0.0;
+            SPIRV_CROSS_LOOP
+            for (int _728 = 0; (_728 < _662) && _668; )
+            {
+                int _729 = _728 + 1;
+                int _736 = (_729 < _662) ? _729 : 0;
+                _725 += ((_90[_728].x * _90[_736].y) - (_90[_728].y * _90[_736].x));
+                _728 = _729;
+            }
+            _749 = clamp(abs(_725) * 0.5, 0.0, 1.0);
+        }
+        else
+        {
+            _749 = _640 ? 0.0 : 1.0;
+        }
+        _755 = max(_396, max(min(_459, max(_749, _518)), min(_518, max(_633, _459))));
+    }
+    else
+    {
+        _755 = _396;
+    }
+    bool _756 = _755 > 0.0;
+    vec4 _771;
+    if (_756)
+    {
+        uint _760 = uint(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).w);
+        _771 = vec4(texelFetch(waxBuffer0, int(_760)).xyz * texelFetch(waxBuffer0, int(_760)).w, texelFetch(waxBuffer0, int(_760)).w) * _755;
+    }
+    else
+    {
+        _771 = vec4(0.0);
+    }
+    float _772 = _756 ? _755 : 0.0;
+    if (_772 < 0.00390625)
+    {
+        discard;
+    }
+    vec4 _961;
+    SPIRV_CROSS_BRANCH
+    if ((int(waxConstants[2].x)) >= 0)
+    {
+        uint _782 = uint(max((int(waxConstants[2].x)), 0));
+        uint _785 = uint(texelFetch(waxBuffer0, int(_782)).x);
+        uint _786 = _782 + 1u;
+        vec4 _791;
+        _791 = vec4(0.0);
+        uint _789;
+        vec4 _792;
+        SPIRV_CROSS_LOOP
+        for (uint _788 = _786, _793 = 0u; _793 < _785; _788 = _789, _791 = _792, _793++)
+        {
+            uint _800 = _788 + 1u;
+            uint _807 = uint(texelFetch(waxBuffer0, int(_788)).z);
+            uint _808 = _788 + 3u;
+            uint _811 = _808 + ((_807 + 3u) >> 2u);
+            SPIRV_CROSS_BRANCH
+            if (_807 > 0u)
+            {
+                float _834;
+                if (texelFetch(waxBuffer0, int(_788)).x < 0.5)
+                {
+                    _834 = ((texelFetch(waxBuffer0, int(_800)).x * waxFragCoord().x) + (texelFetch(waxBuffer0, int(_800)).y * waxFragCoord().y)) + texelFetch(waxBuffer0, int(_800)).z;
+                }
+                else
+                {
+                    _834 = length((waxFragCoord().xy - texelFetch(waxBuffer0, int(_800)).xy) * texelFetch(waxBuffer0, int(_800)).zw);
+                }
+                float _835 = clamp(_834, -10000000.0, 10000000.0);
+                uint _837 = uint(texelFetch(waxBuffer0, int(_788)).y);
+                float _857;
+                if (_837 == 0u)
+                {
+                    _857 = clamp(_835, 0.0, 1.0);
+                }
+                else
+                {
+                    float _856;
+                    if (_837 == 1u)
+                    {
+                        _856 = _835 - floor(_835);
+                    }
+                    else
+                    {
+                        float _852 = _835 - (2.0 * floor(_835 * 0.5));
+                        _856 = (_852 > 1.0) ? (2.0 - _852) : _852;
+                    }
+                    _857 = _856;
+                }
+                int _859;
+                _859 = -1;
+                int _860;
+                SPIRV_CROSS_LOOP
+                for (uint _862 = 0u; _862 < _807; _859 = _860, _862++)
+                {
+                    uint _868 = _808 + (_862 >> 2u);
+                    uint _871 = _862 & 3u;
+                    if (((_871 == 0u) ? texelFetch(waxBuffer0, int(_868)).x : ((_871 == 1u) ? texelFetch(waxBuffer0, int(_868)).y : ((_871 == 2u) ? texelFetch(waxBuffer0, int(_868)).z : texelFetch(waxBuffer0, int(_868)).w))) <= _857)
+                    {
+                        _860 = int(_862);
+                    }
+                    else
+                    {
+                        _860 = _859;
+                    }
+                }
+                vec4 _944;
+                if (_859 < 0)
+                {
+                    _944 = texelFetch(waxBuffer0, int(_811));
+                }
+                else
+                {
+                    uint _892 = uint(_859);
+                    vec4 _943;
+                    if (_892 == (_807 - 1u))
+                    {
+                        _943 = texelFetch(waxBuffer0, int(_811 + _892));
+                    }
+                    else
+                    {
+                        uint _902 = _808 + (_892 >> 2u);
+                        uint _905 = _892 & 3u;
+                        float _915 = (_905 == 0u) ? texelFetch(waxBuffer0, int(_902)).x : ((_905 == 1u) ? texelFetch(waxBuffer0, int(_902)).y : ((_905 == 2u) ? texelFetch(waxBuffer0, int(_902)).z : texelFetch(waxBuffer0, int(_902)).w));
+                        uint _916 = _892 + 1u;
+                        uint _918 = _808 + (_916 >> 2u);
+                        uint _921 = _916 & 3u;
+                        uint _932 = _811 + _892;
+                        _943 = mix(texelFetch(waxBuffer0, int(_932)), texelFetch(waxBuffer0, int(_932 + 1u)), vec4((_857 - _915) / (((_921 == 0u) ? texelFetch(waxBuffer0, int(_918)).x : ((_921 == 1u) ? texelFetch(waxBuffer0, int(_918)).y : ((_921 == 2u) ? texelFetch(waxBuffer0, int(_918)).z : texelFetch(waxBuffer0, int(_918)).w))) - _915)));
+                    }
+                    _944 = _943;
+                }
+                vec4 _957;
+                if (texelFetch(waxBuffer0, int(_788 + 2u)).x > 0.5)
+                {
+                    vec3 _955 = mix(pow(abs((_944.xyz + vec3(0.054999999701976776123046875)) * vec3(0.947867333889007568359375)), vec3(2.400000095367431640625)), _944.xyz * vec3(0.077399380505084991455078125), step(_944.xyz, vec3(0.040449999272823333740234375)));
+                    _957 = vec4(_955.x, _955.y, _955.z, _944.w);
+                }
+                else
+                {
+                    _957 = _944;
+                }
+                _792 = _791 + (_957 * texelFetch(waxBuffer0, int(_788)).w);
+            }
+            else
+            {
+                _792 = _791;
+            }
+            _789 = _811 + _807;
+        }
+        _961 = _791;
+    }
+    else
+    {
+        _961 = vec4(1.0);
+    }
+    vec4 _962 = wax_COLOR * _961;
+    float _964 = _962.w;
+    vec4 _970 = _771 * vec4(_962.xyz * _964, _964);
+    vec4 _1062;
+    vec4 _1063;
+    if ((waxConstants[2].z) == 2u)
+    {
+        float _977 = _970.w;
+        vec4 _1000;
+        vec4 _1001;
+        if ((waxConstants[2].y) == 2u)
+        {
+            _1000 = vec4(0.0);
+            _1001 = vec4((1.0 - _772) + _977);
+        }
+        else
+        {
+            vec4 _998;
+            vec4 _999;
+            if ((waxConstants[2].y) == 1u)
+            {
+                _998 = vec4(_772 * (uintBitsToFloat(waxConstants[2].w)));
+                _999 = vec4(_977 * (uintBitsToFloat(waxConstants[2].w)));
+            }
+            else
+            {
+                vec4 _997 = vec4(_977);
+                _998 = _997;
+                _999 = _997;
+            }
+            _1000 = _998;
+            _1001 = _999;
+        }
+        _1062 = _1000;
+        _1063 = _1001;
+    }
+    else
+    {
+        vec4 _1060;
+        vec4 _1061;
+        if ((waxConstants[2].y) == 3u)
+        {
+            float _1008 = _970.x;
+            _1060 = vec4(0.0);
+            _1061 = vec4(_1008, _970.yz, max(_1008, max(_970.y, _970.z)));
+        }
+        else
+        {
+            vec4 _1058;
+            vec4 _1059;
+            if ((waxConstants[2].y) == 2u)
+            {
+                _1058 = vec4(0.0);
+                _1059 = vec4(vec3(1.0 - _970.w) + _970.xyz, 1.0);
+            }
+            else
+            {
+                vec4 _1056;
+                vec4 _1057;
+                if ((waxConstants[2].y) == 1u)
+                {
+                    float _1046;
+                    if ((waxConstants[2].z) == 1u)
+                    {
+                        float _1042 = (1.0 - (uintBitsToFloat(waxConstants[2].w))) + (((_772 > 0.0) ? (_970.w / _772) : 0.0) * (uintBitsToFloat(waxConstants[2].w)));
+                        _1046 = (_1042 > 0.0) ? (1.0 / _1042) : 0.0;
+                    }
+                    else
+                    {
+                        _1046 = 1.0;
+                    }
+                    _1056 = vec4(_772 * (1.0 - ((1.0 - (uintBitsToFloat(waxConstants[2].w))) * _1046)));
+                    _1057 = _970 * ((uintBitsToFloat(waxConstants[2].w)) * _1046);
+                }
+                else
+                {
+                    _1056 = vec4(_970.w);
+                    _1057 = _970;
+                }
+                _1058 = _1056;
+                _1059 = _1057;
+            }
+            _1060 = _1058;
+            _1061 = _1059;
+        }
+        _1062 = _1060;
+        _1063 = _1061;
+    }
+    out_var_SV_Target0 = _1063;
+    out_var_SV_Target1 = _1062;
 }
 )glsl" },
 

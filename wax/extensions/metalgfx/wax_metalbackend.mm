@@ -798,7 +798,7 @@ id<MTLRenderPipelineState> MetalBackend::_createPipeline( PipelineKind kind, Ble
 
 	static const char * const vertexShaders[int(PipelineKind::Size)] = {
 		"fillVS", "fillAAVS", "blitVS", "blitVS", "blitVS", "blitVS",
-		"lineVS", "segmentsVS", "shapeVS", "warpVS", "warpVS", "warpVS" };
+		"lineVS", "segmentsVS", "shapeVS", "shapeVS", "shapeVS", "warpVS", "warpVS", "warpVS" };
 
 	static const char * const pixelShaders[int(PipelineKind::Size)][2] = {
 		{ "fillPS", "fillPSDual" },
@@ -809,7 +809,9 @@ id<MTLRenderPipelineState> MetalBackend::_createPipeline( PipelineKind kind, Ble
 		{ "paletteBlurPS", "paletteBlurPSDual" },
 		{ "linePS", "linePSDual" },
 		{ "segmentsPS", "segmentsPSDual" },
-		{ "shapePS", "shapePSDual" },
+		{ "shapeBoxPS", "shapeBoxPSDual" },
+		{ "shapeRingPS", "shapeRingPSDual" },
+		{ "shapeLinePS", "shapeLinePSDual" },
 		{ "warpEdgemapPS", "warpEdgemapPSDual" },
 		{ "warpBlitPS", "warpBlitPSDual" },
 		{ "warpPaletteBlitPS", "warpPaletteBlitPSDual" } };

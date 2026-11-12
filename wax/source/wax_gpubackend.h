@@ -111,7 +111,9 @@ namespace wax
 			PaletteBlur,		// which has to be looked up before it is filtered.
 			Line,
 			Segments,			// Edgemaps.
-			Shape,				// Shapes, coverage worked out per pixel, see GpuShapes.
+			ShapeBox,			// Shapes, coverage worked out per pixel, see GpuShapes. A pixel
+			ShapeRing,			// shader for each kind, see ../extensions/hlsl/shape.hlsl.
+			ShapeLine,			// Lines with caps.
 			WarpEdgemap,		// Warps, coverage worked out per pixel, see warp.hlsl.
 			WarpBlit,
 			WarpPaletteBlit,

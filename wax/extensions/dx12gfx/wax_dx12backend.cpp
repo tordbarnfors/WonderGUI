@@ -2259,7 +2259,9 @@ namespace wax
 			{ PipelineKind::PaletteBlur, g_blitVS },
 			{ PipelineKind::Line,	g_lineVS },
 			{ PipelineKind::Segments, g_segmentsVS },
-			{ PipelineKind::Shape,	g_shapeVS },
+			{ PipelineKind::ShapeBox, g_shapeVS },
+			{ PipelineKind::ShapeRing, g_shapeVS },
+			{ PipelineKind::ShapeLine, g_shapeVS },
 			{ PipelineKind::WarpEdgemap, g_warpVS },
 			{ PipelineKind::WarpBlit, g_warpVS },
 			{ PipelineKind::WarpPaletteBlit, g_warpVS },
@@ -2476,7 +2478,9 @@ namespace wax
 			case PipelineKind::PaletteBlur:	return g_paletteBlurPS;
 			case PipelineKind::Line:		return g_linePS;
 			case PipelineKind::Segments:	return g_segmentsPS;
-			case PipelineKind::Shape:		return g_shapePS;
+			case PipelineKind::ShapeBox:	return g_shapeBoxPS;
+			case PipelineKind::ShapeRing:	return g_shapeRingPS;
+			case PipelineKind::ShapeLine:	return g_shapeLinePS;
 			case PipelineKind::WarpEdgemap:	return g_warpEdgemapPS;
 			case PipelineKind::WarpBlit:	return g_warpBlitPS;
 			case PipelineKind::WarpPaletteBlit:	return g_warpPaletteBlitPS;

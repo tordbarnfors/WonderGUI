@@ -148,7 +148,7 @@ The UTF-8 text system was built and tested on Linux (SDL2 software and OpenGL) a
 been run on Win32/DX12. The macOS frameworks (Cocoa software/Metal, SDL2 Metal) haven't
 been built with it yet.
 
-### GlBackend on GpuBackend not timed on GPUs
+### GlBackend on GpuBackend timed on few GPUs
 
 GlBackend on GpuBackend and the generated GLSL runs gfxdevicetester on Windows, on a 2013 Mac Pro
 (AMD, macOS OpenGL 4.1) and on Mesa's llvmpipe, with PaletteBlitTests passing on the Mac Pro too,
@@ -159,8 +159,10 @@ instruction, it is faster overall than the old GlBackend (483 ms against 518 ms 
 each test), but blurs are about 20% slower, tiled blits 20%, palette blits up to 35% and rounded
 boxes 15%: the shared shaders branch on constants where the old GLSL had a program for each case,
 and the GLSL from SPIRV-Cross reads a buffer element again wherever it is used, which llvmpipe
-doesn't merge, see `openglgfx/compile_shaders.py`. Only timed on one GPU since, see "GlBackend:
-drawn shapes are slow on Windows" below.
+doesn't merge, see `openglgfx/compile_shaders.py`. Timed on Intel UHD 770 (Mesa) since, where it is
+faster than the old GlBackend overall (0.78 times as long for one run of each test), with blurs as
+the exception (2.6 times as long), and on an Arc B580 on Windows, see "GlBackend: drawn shapes are
+slow on Windows" below.
 
 ### VulkanBackend on Windows and on other GPUs
 
@@ -206,6 +208,10 @@ Timed with gfxdevicetester on an Arc B580 (driver 32.0.101.9033, wappsdl3gl), th
 pie charts, rings, rounded boxes, line caps, circles and ellipses take 3-11 times as long as on
 DX12Backend on the same GPU, where all tests taken together are level (median ratio 1.01). The
 thread calling us mostly waits during them, no core is loaded more than 20%.
+
+The shape shaders have been made faster since, which on Intel UHD 770 (Mesa) made rounded boxes
+2.6 times as fast and the other shapes 10-20%, see "Shape shaders on GPUs" in ROADMAP.md. Not
+timed on Windows since.
 
 They also come out at one of two or three speeds for a whole run of the tester, the same in all
 its passes (PieChartTests 126, 167 or 187 us per run), which makes them the tests that still

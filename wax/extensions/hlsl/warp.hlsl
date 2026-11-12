@@ -16,7 +16,7 @@
 //
 // The mesh of the Warpmap is in its buffer, see DX12Warpmap and vs_warp.hlsl.
 //
-// Functions return once, at their end, see ps_shape.hlsl. Integer arithmetic is
+// Functions return once, at their end, see shape.hlsl. Integer arithmetic is
 // unsigned, the compiler warns about signed divisions.
 
 

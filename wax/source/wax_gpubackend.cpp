@@ -64,7 +64,7 @@ namespace wax
 
 	bool GpuBackend::_hasPartialCoverage( PipelineKind kind )
 	{
-		return kind == PipelineKind::FillAA || kind == PipelineKind::Line || kind == PipelineKind::Shape || _isWarp(kind);
+		return kind == PipelineKind::FillAA || kind == PipelineKind::Line || kind == PipelineKind::ShapeBox || kind == PipelineKind::ShapeRing || kind == PipelineKind::ShapeLine || _isWarp(kind);
 	}
 
 	//____ _isWarp() _____________________________________________________________
@@ -740,7 +740,7 @@ namespace wax
 
 	void GpuBackend::_drawCappedLines(const RectSPX* pClipRects, int nClipRects)
 	{
-		if (!m_buffers.pVertexPtr || !m_buffers.pColorPtr || !m_buffers.pExtrasPtr || !_setPipeline(PipelineKind::Shape))
+		if (!m_buffers.pVertexPtr || !m_buffers.pColorPtr || !m_buffers.pExtrasPtr || !_setPipeline(PipelineKind::ShapeLine))
 			return;
 
 		int colorOfs = _addColor(HiColor::White);
@@ -792,7 +792,7 @@ namespace wax
 			nLinesDrawn++;
 		}
 
-		if (nLinesDrawn == 0 || !_setPipeline(PipelineKind::Shape))
+		if (nLinesDrawn == 0 || !_setPipeline(PipelineKind::ShapeLine))
 			return;
 
 		_drawScissored(pClipRects, nClipRects, firstVertex, nLinesDrawn * 6);
@@ -1433,7 +1433,7 @@ namespace wax
 			return;
 		}
 
-		if (!m_buffers.pVertexPtr || !m_buffers.pColorPtr || !m_buffers.pExtrasPtr || !_setPipeline(PipelineKind::Shape))
+		if (!m_buffers.pVertexPtr || !m_buffers.pColorPtr || !m_buffers.pExtrasPtr || !_setPipeline(kind == ShapeKind::Ring ? PipelineKind::ShapeRing : PipelineKind::ShapeBox))
 			return;
 
 		static bool bReported = false;

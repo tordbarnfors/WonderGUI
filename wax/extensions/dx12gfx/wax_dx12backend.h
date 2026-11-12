@@ -450,7 +450,9 @@ namespace wax
 		static const char g_segmentsVS[];
 		static const char g_segmentsPS[];
 		static const char g_shapeVS[];
-		static const char g_shapePS[];
+		static const char g_shapeBoxPS[];
+		static const char g_shapeRingPS[];
+		static const char g_shapeLinePS[];
 		static const char g_warpVS[];
 		static const char g_warpEdgemapPS[];
 		static const char g_warpBlitPS[];

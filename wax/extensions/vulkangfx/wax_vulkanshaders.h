@@ -56,7 +56,7 @@ namespace wax
 		extern const Code paletteBlurPS, paletteBlurPSDual;
 		extern const Code linePS, linePSDual;
 		extern const Code segmentsPS, segmentsPSDual;
-		extern const Code shapePS, shapePSDual;
+		extern const Code shapeBoxPS, shapeBoxPSDual, shapeRingPS, shapeRingPSDual, shapeLinePS, shapeLinePSDual;
 		extern const Code warpEdgemapPS, warpEdgemapPSDual;
 		extern const Code warpBlitPS, warpBlitPSDual;
 		extern const Code warpPaletteBlitPS, warpPaletteBlitPSDual;
