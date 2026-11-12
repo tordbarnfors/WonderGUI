@@ -197,7 +197,7 @@ namespace
 
 	const char * const c_vertexShaders[] = {
 		"fillVS", "fillAAVS", "blitVS", "blitVS", "blitVS", "blitVS",
-		"lineVS", "segmentsVS", "shapeVS", "warpVS", "warpVS", "warpVS" };
+		"lineVS", "segmentsVS", "shapeVS", "shapeVS", "shapeVS", "warpVS", "warpVS", "warpVS" };
 
 	const char * const c_pixelShaders[][2] = {
 		{ "fillPS", "fillPSDual" },
@@ -208,7 +208,9 @@ namespace
 		{ "paletteBlurPS", "paletteBlurPSDual" },
 		{ "linePS", "linePSDual" },
 		{ "segmentsPS", "segmentsPSDual" },
-		{ "shapePS", "shapePSDual" },
+		{ "shapeBoxPS", "shapeBoxPSDual" },
+		{ "shapeRingPS", "shapeRingPSDual" },
+		{ "shapeLinePS", "shapeLinePSDual" },
 		{ "warpEdgemapPS", "warpEdgemapPSDual" },
 		{ "warpBlitPS", "warpBlitPSDual" },
 		{ "warpPaletteBlitPS", "warpPaletteBlitPSDual" } };
