@@ -435,9 +435,7 @@ void main()
     float _280 = _278.w;
     vec3 _281 = _278.xyz * _280;
     float _282 = _281.x;
-    float _283 = _281.y;
-    float _284 = _281.z;
-    vec4 _285 = vec4(_282, _283, _284, _280);
+    vec4 _285 = vec4(_282, _281.yz, _280);
     vec4 _355;
     if ((waxConstants[2].z) == 2u)
     {
@@ -466,8 +464,7 @@ void main()
         vec4 _336;
         if ((waxConstants[2].y) == 3u)
         {
-            float _333 = isnan(_284) ? _283 : (isnan(_283) ? _284 : max(_283, _284));
-            _336 = vec4(_282, _283, _284, isnan(_333) ? _282 : (isnan(_282) ? _333 : max(_282, _333)));
+            _336 = vec4(_282, _281.yz, max(_282, max(_281.y, _281.z)));
         }
         else
         {
@@ -753,9 +750,7 @@ void main()
     float _281 = _279.w;
     vec3 _282 = _279.xyz * _281;
     float _283 = _282.x;
-    float _284 = _282.y;
-    float _285 = _282.z;
-    vec4 _286 = vec4(_283, _284, _285, _281);
+    vec4 _286 = vec4(_283, _282.yz, _281);
     vec4 _367;
     vec4 _368;
     if ((waxConstants[2].z) == 2u)
@@ -794,9 +789,8 @@ void main()
         vec4 _345;
         if ((waxConstants[2].y) == 3u)
         {
-            float _341 = isnan(_285) ? _284 : (isnan(_284) ? _285 : max(_284, _285));
             _344 = vec4(0.0);
-            _345 = vec4(_283, _284, _285, isnan(_341) ? _283 : (isnan(_283) ? _341 : max(_283, _341)));
+            _345 = vec4(_283, _282.yz, max(_283, max(_282.y, _282.z)));
         }
         else
         {
@@ -1122,10 +1116,7 @@ void main()
         if ((waxConstants[2].y) == 3u)
         {
             float _333 = _299.x;
-            float _334 = _299.y;
-            float _335 = _299.z;
-            float _336 = isnan(_335) ? _334 : (isnan(_334) ? _335 : max(_334, _335));
-            _382 = vec4(_333, _334, _335, isnan(_336) ? _333 : (isnan(_333) ? _336 : max(_333, _336)));
+            _382 = vec4(_333, _299.yz, max(_333, max(_299.y, _299.z)));
         }
         else
         {
@@ -1462,11 +1453,8 @@ void main()
         if ((waxConstants[2].y) == 3u)
         {
             float _338 = _300.x;
-            float _339 = _300.y;
-            float _340 = _300.z;
-            float _341 = isnan(_340) ? _339 : (isnan(_339) ? _340 : max(_339, _340));
             _396 = vec4(0.0);
-            _397 = vec4(_338, _339, _340, isnan(_341) ? _338 : (isnan(_338) ? _341 : max(_338, _341)));
+            _397 = vec4(_338, _300.yz, max(_338, max(_300.y, _300.z)));
         }
         else
         {
@@ -1572,13 +1560,7 @@ void main()
         if (((waxConstants[1].x) & 2u) != 0u)
         {
             vec2 _111 = wax_TEXCOORD0 * _95;
-            vec2 _112 = _111 + vec2(0.5);
-            vec2 _114 = (_95 - _111) + vec2(0.5);
-            bvec2 _441 = isnan(_112);
-            bvec2 _442 = isnan(_114);
-            vec2 _443 = min(_112, _114);
-            vec2 _444 = vec2(_441.x ? _114.x : _443.x, _441.y ? _114.y : _443.y);
-            vec2 _116 = clamp(vec2(_442.x ? _112.x : _444.x, _442.y ? _112.y : _444.y), vec2(0.0), vec2(1.0));
+            vec2 _116 = clamp(min(_111 + vec2(0.5), (_95 - _111) + vec2(0.5)), vec2(0.0), vec2(1.0));
             vec4 _120 = _82;
             _120.w = _116.x * _116.y;
             _121 = _120;
@@ -1853,10 +1835,7 @@ void main()
         if ((waxConstants[2].y) == 3u)
         {
             float _405 = _355.x;
-            float _406 = _355.y;
-            float _407 = _355.z;
-            float _408 = isnan(_407) ? _406 : (isnan(_406) ? _407 : max(_406, _407));
-            _411 = vec4(_405, _406, _407, isnan(_408) ? _405 : (isnan(_405) ? _408 : max(_405, _408)));
+            _411 = vec4(_405, _355.yz, max(_405, max(_355.y, _355.z)));
         }
         else
         {
@@ -1945,13 +1924,7 @@ void main()
         if (((waxConstants[1].x) & 2u) != 0u)
         {
             vec2 _112 = wax_TEXCOORD0 * _96;
-            vec2 _113 = _112 + vec2(0.5);
-            vec2 _115 = (_96 - _112) + vec2(0.5);
-            bvec2 _455 = isnan(_113);
-            bvec2 _456 = isnan(_115);
-            vec2 _457 = min(_113, _115);
-            vec2 _458 = vec2(_455.x ? _115.x : _457.x, _455.y ? _115.y : _457.y);
-            vec2 _117 = clamp(vec2(_456.x ? _113.x : _458.x, _456.y ? _113.y : _458.y), vec2(0.0), vec2(1.0));
+            vec2 _117 = clamp(min(_112 + vec2(0.5), (_96 - _112) + vec2(0.5)), vec2(0.0), vec2(1.0));
             vec4 _121 = _83;
             _121.w = _117.x * _117.y;
             _122 = _121;
@@ -2236,11 +2209,8 @@ void main()
         if ((waxConstants[2].y) == 3u)
         {
             float _414 = _356.x;
-            float _415 = _356.y;
-            float _416 = _356.z;
-            float _417 = isnan(_416) ? _415 : (isnan(_415) ? _416 : max(_415, _416));
             _420 = vec4(0.0);
-            _421 = vec4(_414, _415, _416, isnan(_417) ? _414 : (isnan(_414) ? _417 : max(_414, _417)));
+            _421 = vec4(_414, _356.yz, max(_414, max(_356.y, _356.z)));
         }
         else
         {
@@ -2722,9 +2692,7 @@ void main()
     float _587 = _585.w;
     vec3 _588 = _585.xyz * _587;
     float _589 = _588.x;
-    float _590 = _588.y;
-    float _591 = _588.z;
-    vec4 _592 = vec4(_589, _590, _591, _587);
+    vec4 _592 = vec4(_589, _588.yz, _587);
     vec4 _662;
     if ((waxConstants[2].z) == 2u)
     {
@@ -2753,8 +2721,7 @@ void main()
         vec4 _643;
         if ((waxConstants[2].y) == 3u)
         {
-            float _640 = isnan(_591) ? _590 : (isnan(_590) ? _591 : max(_590, _591));
-            _643 = vec4(_589, _590, _591, isnan(_640) ? _589 : (isnan(_589) ? _640 : max(_589, _640)));
+            _643 = vec4(_589, _588.yz, max(_589, max(_588.y, _588.z)));
         }
         else
         {
@@ -3228,9 +3195,7 @@ void main()
     float _588 = _586.w;
     vec3 _589 = _586.xyz * _588;
     float _590 = _589.x;
-    float _591 = _589.y;
-    float _592 = _589.z;
-    vec4 _593 = vec4(_590, _591, _592, _588);
+    vec4 _593 = vec4(_590, _589.yz, _588);
     vec4 _674;
     vec4 _675;
     if ((waxConstants[2].z) == 2u)
@@ -3269,9 +3234,8 @@ void main()
         vec4 _652;
         if ((waxConstants[2].y) == 3u)
         {
-            float _648 = isnan(_592) ? _591 : (isnan(_591) ? _592 : max(_591, _592));
             _651 = vec4(0.0);
-            _652 = vec4(_590, _591, _592, isnan(_648) ? _590 : (isnan(_590) ? _648 : max(_590, _648)));
+            _652 = vec4(_590, _589.yz, max(_590, max(_589.y, _589.z)));
         }
         else
         {
@@ -3958,10 +3922,7 @@ void main()
         if ((waxConstants[2].y) == 3u)
         {
             float _751 = _701.x;
-            float _752 = _701.y;
-            float _753 = _701.z;
-            float _754 = isnan(_753) ? _752 : (isnan(_752) ? _753 : max(_752, _753));
-            _757 = vec4(_751, _752, _753, isnan(_754) ? _751 : (isnan(_751) ? _754 : max(_751, _754)));
+            _757 = vec4(_751, _701.yz, max(_751, max(_701.y, _701.z)));
         }
         else
         {
@@ -4650,11 +4611,8 @@ void main()
         if ((waxConstants[2].y) == 3u)
         {
             float _760 = _702.x;
-            float _761 = _702.y;
-            float _762 = _702.z;
-            float _763 = isnan(_762) ? _761 : (isnan(_761) ? _762 : max(_761, _762));
             _766 = vec4(0.0);
-            _767 = vec4(_760, _761, _762, isnan(_763) ? _760 : (isnan(_760) ? _763 : max(_760, _763)));
+            _767 = vec4(_760, _702.yz, max(_760, max(_702.y, _702.z)));
         }
         else
         {
@@ -7352,9 +7310,7 @@ void main()
     float _3434 = _3432.w;
     vec3 _3435 = _3432.xyz * _3434;
     float _3436 = _3435.x;
-    float _3437 = _3435.y;
-    float _3438 = _3435.z;
-    vec4 _3439 = vec4(_3436, _3437, _3438, _3434);
+    vec4 _3439 = vec4(_3436, _3435.yz, _3434);
     vec4 _3509;
     if ((waxConstants[2].z) == 2u)
     {
@@ -7383,8 +7339,7 @@ void main()
         vec4 _3490;
         if ((waxConstants[2].y) == 3u)
         {
-            float _3487 = isnan(_3438) ? _3437 : (isnan(_3437) ? _3438 : max(_3437, _3438));
-            _3490 = vec4(_3436, _3437, _3438, isnan(_3487) ? _3436 : (isnan(_3436) ? _3487 : max(_3436, _3487)));
+            _3490 = vec4(_3436, _3435.yz, max(_3436, max(_3435.y, _3435.z)));
         }
         else
         {
@@ -10075,9 +10030,7 @@ void main()
     float _3435 = _3433.w;
     vec3 _3436 = _3433.xyz * _3435;
     float _3437 = _3436.x;
-    float _3438 = _3436.y;
-    float _3439 = _3436.z;
-    vec4 _3440 = vec4(_3437, _3438, _3439, _3435);
+    vec4 _3440 = vec4(_3437, _3436.yz, _3435);
     vec4 _3521;
     vec4 _3522;
     if ((waxConstants[2].z) == 2u)
@@ -10116,9 +10069,8 @@ void main()
         vec4 _3499;
         if ((waxConstants[2].y) == 3u)
         {
-            float _3495 = isnan(_3439) ? _3438 : (isnan(_3438) ? _3439 : max(_3438, _3439));
             _3498 = vec4(0.0);
-            _3499 = vec4(_3437, _3438, _3439, isnan(_3495) ? _3437 : (isnan(_3437) ? _3495 : max(_3437, _3495)));
+            _3499 = vec4(_3437, _3436.yz, max(_3437, max(_3436.y, _3436.z)));
         }
         else
         {
@@ -10445,10 +10397,7 @@ void main()
         if ((waxConstants[2].y) == 3u)
         {
             float _346 = _312.x;
-            float _347 = _312.y;
-            float _348 = _312.z;
-            float _349 = isnan(_348) ? _347 : (isnan(_347) ? _348 : max(_347, _348));
-            _395 = vec4(_346, _347, _348, isnan(_349) ? _346 : (isnan(_346) ? _349 : max(_346, _349)));
+            _395 = vec4(_346, _312.yz, max(_346, max(_312.y, _312.z)));
         }
         else
         {
@@ -10785,11 +10734,8 @@ void main()
         if ((waxConstants[2].y) == 3u)
         {
             float _351 = _313.x;
-            float _352 = _313.y;
-            float _353 = _313.z;
-            float _354 = isnan(_353) ? _352 : (isnan(_352) ? _353 : max(_352, _353));
             _409 = vec4(0.0);
-            _410 = vec4(_351, _352, _353, isnan(_354) ? _351 : (isnan(_351) ? _354 : max(_351, _354)));
+            _410 = vec4(_351, _313.yz, max(_351, max(_313.y, _313.z)));
         }
         else
         {
@@ -11347,8 +11293,7 @@ void main()
             }
             _586 = _584;
         }
-        float _588 = clamp(_573 + _586, 0.0, 1.0);
-        _337 = isnan(_336) ? _588 : (isnan(_588) ? _336 : min(_588, _336));
+        _337 = min(clamp(_573 + _586, 0.0, 1.0), _336);
         vec4 _596 = vec4(_566.xyz * _566.w, _566.w) * _331;
         float _597 = _336 - _337;
         bool _607;
@@ -11650,10 +11595,7 @@ void main()
         if ((waxConstants[2].y) == 3u)
         {
             float _931 = _884.x;
-            float _932 = _884.y;
-            float _933 = _884.z;
-            float _934 = isnan(_933) ? _932 : (isnan(_932) ? _933 : max(_932, _933));
-            _937 = vec4(_931, _932, _933, isnan(_934) ? _931 : (isnan(_931) ? _934 : max(_931, _934)));
+            _937 = vec4(_931, _884.yz, max(_931, max(_884.y, _884.z)));
         }
         else
         {
@@ -12207,8 +12149,7 @@ void main()
             }
             _589 = _587;
         }
-        float _591 = clamp(_576 + _589, 0.0, 1.0);
-        _340 = isnan(_339) ? _591 : (isnan(_591) ? _339 : min(_591, _339));
+        _340 = min(clamp(_576 + _589, 0.0, 1.0), _339);
         vec4 _599 = vec4(_569.xyz * _569.w, _569.w) * _332;
         float _600 = _339 - _340;
         bool _610;
@@ -12527,11 +12468,8 @@ void main()
         if ((waxConstants[2].y) == 3u)
         {
             float _947 = _892.x;
-            float _948 = _892.y;
-            float _949 = _892.z;
-            float _950 = isnan(_949) ? _948 : (isnan(_948) ? _949 : max(_948, _949));
             _953 = vec4(0.0);
-            _954 = vec4(_947, _948, _949, isnan(_950) ? _947 : (isnan(_947) ? _950 : max(_947, _950)));
+            _954 = vec4(_947, _892.yz, max(_947, max(_892.y, _892.z)));
         }
         else
         {
@@ -12773,7 +12711,7 @@ void main()
         float _241 = waxFragCoord().x - 0.5;
         float _248 = waxFragCoord().y + 0.5;
         float _250 = waxFragCoord().y - 0.5;
-        float _254 = clamp((isnan(texelFetch(waxBuffer1, int(_123)).z) ? _239 : (isnan(_239) ? texelFetch(waxBuffer1, int(_123)).z : min(_239, texelFetch(waxBuffer1, int(_123)).z))) - (isnan(texelFetch(waxBuffer1, int(_123)).x) ? _241 : (isnan(_241) ? texelFetch(waxBuffer1, int(_123)).x : max(_241, texelFetch(waxBuffer1, int(_123)).x))), 0.0, 1.0) * clamp((isnan(texelFetch(waxBuffer1, int(_123)).w) ? _248 : (isnan(_248) ? texelFetch(waxBuffer1, int(_123)).w : min(_248, texelFetch(waxBuffer1, int(_123)).w))) - (isnan(texelFetch(waxBuffer1, int(_123)).y) ? _250 : (isnan(_250) ? texelFetch(waxBuffer1, int(_123)).y : max(_250, texelFetch(waxBuffer1, int(_123)).y))), 0.0, 1.0);
+        float _254 = clamp(min(_239, texelFetch(waxBuffer1, int(_123)).z) - max(_241, texelFetch(waxBuffer1, int(_123)).x), 0.0, 1.0) * clamp(min(_248, texelFetch(waxBuffer1, int(_123)).w) - max(_250, texelFetch(waxBuffer1, int(_123)).y), 0.0, 1.0);
         float _321;
         if (_235)
         {
@@ -12789,8 +12727,8 @@ void main()
                     vec2 _269 = abs(_257 / vec2(_258));
                     float _270 = _269.x;
                     float _271 = _269.y;
-                    float _272 = isnan(_271) ? _270 : (isnan(_270) ? _271 : max(_270, _271));
-                    float _273 = isnan(_271) ? _270 : (isnan(_270) ? _271 : min(_270, _271));
+                    float _272 = max(_270, _271);
+                    float _273 = min(_270, _271);
                     float _274 = _272 + _273;
                     float _276 = _266 + (0.5 * _274);
                     float _315;
@@ -12851,7 +12789,7 @@ void main()
             {
                 _319 = 0.0;
             }
-            _321 = isnan(_319) ? _254 : (isnan(_254) ? _319 : min(_254, _319));
+            _321 = min(_254, _319);
         }
         else
         {
@@ -12988,7 +12926,7 @@ void main()
                 _432 = _429;
                 _433 = _430;
             }
-            float _446 = clamp((isnan(texelFetch(waxBuffer1, int(_329)).z) ? _239 : (isnan(_239) ? texelFetch(waxBuffer1, int(_329)).z : min(_239, texelFetch(waxBuffer1, int(_329)).z))) - (isnan(texelFetch(waxBuffer1, int(_329)).x) ? _241 : (isnan(_241) ? texelFetch(waxBuffer1, int(_329)).x : max(_241, texelFetch(waxBuffer1, int(_329)).x))), 0.0, 1.0) * clamp((isnan(texelFetch(waxBuffer1, int(_329)).w) ? _248 : (isnan(_248) ? texelFetch(waxBuffer1, int(_329)).w : min(_248, texelFetch(waxBuffer1, int(_329)).w))) - (isnan(texelFetch(waxBuffer1, int(_329)).y) ? _250 : (isnan(_250) ? texelFetch(waxBuffer1, int(_329)).y : max(_250, texelFetch(waxBuffer1, int(_329)).y))), 0.0, 1.0);
+            float _446 = clamp(min(_239, texelFetch(waxBuffer1, int(_329)).z) - max(_241, texelFetch(waxBuffer1, int(_329)).x), 0.0, 1.0) * clamp(min(_248, texelFetch(waxBuffer1, int(_329)).w) - max(_250, texelFetch(waxBuffer1, int(_329)).y), 0.0, 1.0);
             float _513;
             if (_433)
             {
@@ -13004,8 +12942,8 @@ void main()
                         vec2 _461 = abs(_449 / vec2(_450));
                         float _462 = _461.x;
                         float _463 = _461.y;
-                        float _464 = isnan(_463) ? _462 : (isnan(_462) ? _463 : max(_462, _463));
-                        float _465 = isnan(_463) ? _462 : (isnan(_462) ? _463 : min(_462, _463));
+                        float _464 = max(_462, _463);
+                        float _465 = min(_462, _463);
                         float _466 = _464 + _465;
                         float _468 = _458 + (0.5 * _466);
                         float _507;
@@ -13066,13 +13004,13 @@ void main()
                 {
                     _511 = 0.0;
                 }
-                _513 = isnan(_511) ? _446 : (isnan(_446) ? _511 : min(_446, _511));
+                _513 = min(_446, _511);
             }
             else
             {
                 _513 = _446;
             }
-            _515 = isnan(_513) ? _321 : (isnan(_321) ? _513 : min(_321, _513));
+            _515 = min(_321, _513);
         }
         else
         {
@@ -13094,7 +13032,7 @@ void main()
                 SPIRV_CROSS_BRANCH
                 if (texelFetch(waxBuffer1, int(_516)).y >= 0.0)
                 {
-                    uint _534 = uint(isnan(0.0) ? texelFetch(waxBuffer1, int(_516)).y : (isnan(texelFetch(waxBuffer1, int(_516)).y) ? 0.0 : max(texelFetch(waxBuffer1, int(_516)).y, 0.0)));
+                    uint _534 = uint(max(texelFetch(waxBuffer1, int(_516)).y, 0.0));
                     uint _537 = uint(texelFetch(waxBuffer0, int(_534)).x);
                     uint _538 = _534 + 1u;
                     vec4 _543;
@@ -13330,7 +13268,7 @@ void main()
                 SPIRV_CROSS_BRANCH
                 if (texelFetch(waxBuffer1, int(_755)).y >= 0.0)
                 {
-                    uint _774 = uint(isnan(0.0) ? texelFetch(waxBuffer1, int(_755)).y : (isnan(texelFetch(waxBuffer1, int(_755)).y) ? 0.0 : max(texelFetch(waxBuffer1, int(_755)).y, 0.0)));
+                    uint _774 = uint(max(texelFetch(waxBuffer1, int(_755)).y, 0.0));
                     uint _777 = uint(texelFetch(waxBuffer0, int(_774)).x);
                     uint _778 = _774 + 1u;
                     vec4 _783;
@@ -13568,11 +13506,7 @@ void main()
             float _1103;
             if (_1018)
             {
-                float _1025 = waxFragCoord().x + 0.5;
-                float _1027 = waxFragCoord().x - 0.5;
-                float _1034 = waxFragCoord().y + 0.5;
-                float _1036 = waxFragCoord().y - 0.5;
-                _1103 = clamp((isnan(texelFetch(waxBuffer1, int(_1011)).z) ? _1025 : (isnan(_1025) ? texelFetch(waxBuffer1, int(_1011)).z : min(_1025, texelFetch(waxBuffer1, int(_1011)).z))) - (isnan(texelFetch(waxBuffer1, int(_1011)).x) ? _1027 : (isnan(_1027) ? texelFetch(waxBuffer1, int(_1011)).x : max(_1027, texelFetch(waxBuffer1, int(_1011)).x))), 0.0, 1.0) * clamp((isnan(texelFetch(waxBuffer1, int(_1011)).w) ? _1034 : (isnan(_1034) ? texelFetch(waxBuffer1, int(_1011)).w : min(_1034, texelFetch(waxBuffer1, int(_1011)).w))) - (isnan(texelFetch(waxBuffer1, int(_1011)).y) ? _1036 : (isnan(_1036) ? texelFetch(waxBuffer1, int(_1011)).y : max(_1036, texelFetch(waxBuffer1, int(_1011)).y))), 0.0, 1.0);
+                _1103 = clamp(min(waxFragCoord().x + 0.5, texelFetch(waxBuffer1, int(_1011)).z) - max(waxFragCoord().x - 0.5, texelFetch(waxBuffer1, int(_1011)).x), 0.0, 1.0) * clamp(min(waxFragCoord().y + 0.5, texelFetch(waxBuffer1, int(_1011)).w) - max(waxFragCoord().y - 0.5, texelFetch(waxBuffer1, int(_1011)).y), 0.0, 1.0);
             }
             else
             {
@@ -13586,8 +13520,8 @@ void main()
                         vec2 _1052 = abs(_1015 / vec2(_1016));
                         float _1053 = _1052.x;
                         float _1054 = _1052.y;
-                        float _1055 = isnan(_1054) ? _1053 : (isnan(_1053) ? _1054 : max(_1053, _1054));
-                        float _1056 = isnan(_1054) ? _1053 : (isnan(_1053) ? _1054 : min(_1053, _1054));
+                        float _1055 = max(_1053, _1054);
+                        float _1056 = min(_1053, _1054);
                         float _1057 = _1055 + _1056;
                         float _1059 = _1049 + (0.5 * _1057);
                         float _1098;
@@ -13654,11 +13588,7 @@ void main()
             if (_1018)
             {
                 uint _1107 = wax_TEXCOORD1 + 4u;
-                float _1113 = waxFragCoord().x + 0.5;
-                float _1115 = waxFragCoord().x - 0.5;
-                float _1122 = waxFragCoord().y + 0.5;
-                float _1124 = waxFragCoord().y - 0.5;
-                _1191 = clamp((isnan(texelFetch(waxBuffer1, int(_1107)).z) ? _1113 : (isnan(_1113) ? texelFetch(waxBuffer1, int(_1107)).z : min(_1113, texelFetch(waxBuffer1, int(_1107)).z))) - (isnan(texelFetch(waxBuffer1, int(_1107)).x) ? _1115 : (isnan(_1115) ? texelFetch(waxBuffer1, int(_1107)).x : max(_1115, texelFetch(waxBuffer1, int(_1107)).x))), 0.0, 1.0) * clamp((isnan(texelFetch(waxBuffer1, int(_1107)).w) ? _1122 : (isnan(_1122) ? texelFetch(waxBuffer1, int(_1107)).w : min(_1122, texelFetch(waxBuffer1, int(_1107)).w))) - (isnan(texelFetch(waxBuffer1, int(_1107)).y) ? _1124 : (isnan(_1124) ? texelFetch(waxBuffer1, int(_1107)).y : max(_1124, texelFetch(waxBuffer1, int(_1107)).y))), 0.0, 1.0);
+                _1191 = clamp(min(waxFragCoord().x + 0.5, texelFetch(waxBuffer1, int(_1107)).z) - max(waxFragCoord().x - 0.5, texelFetch(waxBuffer1, int(_1107)).x), 0.0, 1.0) * clamp(min(waxFragCoord().y + 0.5, texelFetch(waxBuffer1, int(_1107)).w) - max(waxFragCoord().y - 0.5, texelFetch(waxBuffer1, int(_1107)).y), 0.0, 1.0);
             }
             else
             {
@@ -13672,8 +13602,8 @@ void main()
                         vec2 _1140 = abs(_1015 / vec2(_1016));
                         float _1141 = _1140.x;
                         float _1142 = _1140.y;
-                        float _1143 = isnan(_1142) ? _1141 : (isnan(_1141) ? _1142 : max(_1141, _1142));
-                        float _1144 = isnan(_1142) ? _1141 : (isnan(_1141) ? _1142 : min(_1141, _1142));
+                        float _1143 = max(_1141, _1142);
+                        float _1144 = min(_1141, _1142);
                         float _1145 = _1143 + _1144;
                         float _1147 = _1137 + (0.5 * _1145);
                         float _1186;
@@ -13736,7 +13666,7 @@ void main()
                 }
                 _1191 = _1190;
             }
-            float _1192 = isnan(_1103) ? _1191 : (isnan(_1191) ? _1103 : min(_1191, _1103));
+            float _1192 = min(_1191, _1103);
             float _1254;
             if (texelFetch(waxBuffer1, int(_1008)).x > 0.0)
             {
@@ -13747,8 +13677,8 @@ void main()
                     vec2 _1204 = abs(_1015 / vec2(_1016));
                     float _1205 = _1204.x;
                     float _1206 = _1204.y;
-                    float _1207 = isnan(_1206) ? _1205 : (isnan(_1205) ? _1206 : max(_1205, _1206));
-                    float _1208 = isnan(_1206) ? _1205 : (isnan(_1205) ? _1206 : min(_1205, _1206));
+                    float _1207 = max(_1205, _1206);
+                    float _1208 = min(_1205, _1206);
                     float _1209 = _1207 + _1208;
                     float _1211 = _1201 + (0.5 * _1209);
                     float _1250;
@@ -13809,7 +13739,7 @@ void main()
             {
                 _1254 = 0.0;
             }
-            float _1255 = isnan(_1192) ? _1254 : (isnan(_1254) ? _1192 : min(_1254, _1192));
+            float _1255 = min(_1254, _1192);
             float _1317;
             if (texelFetch(waxBuffer1, int(_1008)).y > 0.0)
             {
@@ -13820,8 +13750,8 @@ void main()
                     vec2 _1267 = abs(_1015 / vec2(_1016));
                     float _1268 = _1267.x;
                     float _1269 = _1267.y;
-                    float _1270 = isnan(_1269) ? _1268 : (isnan(_1268) ? _1269 : max(_1268, _1269));
-                    float _1271 = isnan(_1269) ? _1268 : (isnan(_1268) ? _1269 : min(_1268, _1269));
+                    float _1270 = max(_1268, _1269);
+                    float _1271 = min(_1268, _1269);
                     float _1272 = _1270 + _1271;
                     float _1274 = _1264 + (0.5 * _1272);
                     float _1313;
@@ -13882,16 +13812,11 @@ void main()
             {
                 _1317 = 0.0;
             }
-            float _1318 = isnan(_1255) ? _1317 : (isnan(_1317) ? _1255 : min(_1317, _1255));
+            float _1318 = min(_1317, _1255);
             float _1345;
             if ((_1004 & 2) != 0)
             {
-                float _1327 = waxFragCoord().x + 0.5;
-                float _1329 = waxFragCoord().x - 0.5;
-                float _1336 = waxFragCoord().y + 0.5;
-                float _1338 = waxFragCoord().y - 0.5;
-                float _1343 = (clamp((isnan(texelFetch(waxBuffer1, int(_1011)).z) ? _1327 : (isnan(_1327) ? texelFetch(waxBuffer1, int(_1011)).z : min(_1327, texelFetch(waxBuffer1, int(_1011)).z))) - (isnan(texelFetch(waxBuffer1, int(_1011)).x) ? _1329 : (isnan(_1329) ? texelFetch(waxBuffer1, int(_1011)).x : max(_1329, texelFetch(waxBuffer1, int(_1011)).x))), 0.0, 1.0) * clamp((isnan(texelFetch(waxBuffer1, int(_1011)).w) ? _1336 : (isnan(_1336) ? texelFetch(waxBuffer1, int(_1011)).w : min(_1336, texelFetch(waxBuffer1, int(_1011)).w))) - (isnan(texelFetch(waxBuffer1, int(_1011)).y) ? _1338 : (isnan(_1338) ? texelFetch(waxBuffer1, int(_1011)).y : max(_1338, texelFetch(waxBuffer1, int(_1011)).y))), 0.0, 1.0)) - _1103;
-                _1345 = isnan(0.0) ? _1343 : (isnan(_1343) ? 0.0 : max(_1343, 0.0));
+                _1345 = max((clamp(min(waxFragCoord().x + 0.5, texelFetch(waxBuffer1, int(_1011)).z) - max(waxFragCoord().x - 0.5, texelFetch(waxBuffer1, int(_1011)).x), 0.0, 1.0) * clamp(min(waxFragCoord().y + 0.5, texelFetch(waxBuffer1, int(_1011)).w) - max(waxFragCoord().y - 0.5, texelFetch(waxBuffer1, int(_1011)).y), 0.0, 1.0)) - _1103, 0.0);
             }
             else
             {
@@ -13926,7 +13851,7 @@ void main()
                     SPIRV_CROSS_BRANCH
                     if (texelFetch(waxBuffer1, int(_1357)).y >= 0.0)
                     {
-                        uint _1375 = uint(isnan(0.0) ? texelFetch(waxBuffer1, int(_1357)).y : (isnan(texelFetch(waxBuffer1, int(_1357)).y) ? 0.0 : max(texelFetch(waxBuffer1, int(_1357)).y, 0.0)));
+                        uint _1375 = uint(max(texelFetch(waxBuffer1, int(_1357)).y, 0.0));
                         uint _1378 = uint(texelFetch(waxBuffer0, int(_1375)).x);
                         uint _1379 = _1375 + 1u;
                         vec4 _1384;
@@ -14161,7 +14086,7 @@ void main()
                     SPIRV_CROSS_BRANCH
                     if (texelFetch(waxBuffer1, int(_1598)).y >= 0.0)
                     {
-                        uint _1616 = uint(isnan(0.0) ? texelFetch(waxBuffer1, int(_1598)).y : (isnan(texelFetch(waxBuffer1, int(_1598)).y) ? 0.0 : max(texelFetch(waxBuffer1, int(_1598)).y, 0.0)));
+                        uint _1616 = uint(max(texelFetch(waxBuffer1, int(_1598)).y, 0.0));
                         uint _1619 = uint(texelFetch(waxBuffer0, int(_1616)).x);
                         uint _1620 = _1616 + 1u;
                         vec4 _1625;
@@ -14397,7 +14322,7 @@ void main()
                     SPIRV_CROSS_BRANCH
                     if (texelFetch(waxBuffer1, int(_1841)).y >= 0.0)
                     {
-                        uint _1862 = uint(isnan(0.0) ? texelFetch(waxBuffer1, int(_1841)).y : (isnan(texelFetch(waxBuffer1, int(_1841)).y) ? 0.0 : max(texelFetch(waxBuffer1, int(_1841)).y, 0.0)));
+                        uint _1862 = uint(max(texelFetch(waxBuffer1, int(_1841)).y, 0.0));
                         uint _1865 = uint(texelFetch(waxBuffer0, int(_1862)).x);
                         uint _1866 = _1862 + 1u;
                         vec4 _1871;
@@ -14644,7 +14569,7 @@ void main()
                             SPIRV_CROSS_BRANCH
                             if (texelFetch(waxBuffer1, int(_2102)).y >= 0.0)
                             {
-                                uint _2119 = uint(isnan(0.0) ? texelFetch(waxBuffer1, int(_2102)).y : (isnan(texelFetch(waxBuffer1, int(_2102)).y) ? 0.0 : max(texelFetch(waxBuffer1, int(_2102)).y, 0.0)));
+                                uint _2119 = uint(max(texelFetch(waxBuffer1, int(_2102)).y, 0.0));
                                 uint _2122 = uint(texelFetch(waxBuffer0, int(_2119)).x);
                                 uint _2123 = _2119 + 1u;
                                 vec4 _2128;
@@ -14891,12 +14816,10 @@ void main()
                         float _2366 = 0.5 - _2365;
                         float _2367 = 0.5 + _2365;
                         bool _2368 = _2359 > 0.0;
-                        float _2370 = abs(_2359);
-                        float _2372 = (_2368 ? _2364 : _2363) / (isnan(9.9999996826552253889678874634872e-21) ? _2370 : (isnan(_2370) ? 9.9999996826552253889678874634872e-21 : max(_2370, 9.9999996826552253889678874634872e-21)));
+                        float _2372 = (_2368 ? _2364 : _2363) / max(abs(_2359), 9.9999996826552253889678874634872e-21);
                         bool _2373 = _2361 > 0.0;
-                        float _2375 = abs(_2361);
-                        float _2377 = (_2373 ? _2367 : _2366) / (isnan(9.9999996826552253889678874634872e-21) ? _2375 : (isnan(_2375) ? 9.9999996826552253889678874634872e-21 : max(_2375, 9.9999996826552253889678874634872e-21)));
-                        vec2 _2379 = vec2(_2359, _2361) * (isnan(_2377) ? _2372 : (isnan(_2372) ? _2377 : min(_2372, _2377)));
+                        float _2377 = (_2373 ? _2367 : _2366) / max(abs(_2361), 9.9999996826552253889678874634872e-21);
+                        vec2 _2379 = vec2(_2359, _2361) * min(_2372, _2377);
                         bool _2380 = _2377 <= _2372;
                         bool _2384;
                         if (_2380)
@@ -14975,12 +14898,10 @@ void main()
                                 float _2453 = sin(_2452);
                                 float _2455 = -cos(_2452);
                                 bool _2457 = _2453 > 0.0;
-                                float _2459 = abs(_2453);
-                                float _2461 = (_2457 ? _2364 : _2363) / (isnan(9.9999996826552253889678874634872e-21) ? _2459 : (isnan(_2459) ? 9.9999996826552253889678874634872e-21 : max(_2459, 9.9999996826552253889678874634872e-21)));
+                                float _2461 = (_2457 ? _2364 : _2363) / max(abs(_2453), 9.9999996826552253889678874634872e-21);
                                 bool _2462 = _2455 > 0.0;
-                                float _2464 = abs(_2455);
-                                float _2466 = (_2462 ? _2367 : _2366) / (isnan(9.9999996826552253889678874634872e-21) ? _2464 : (isnan(_2464) ? 9.9999996826552253889678874634872e-21 : max(_2464, 9.9999996826552253889678874634872e-21)));
-                                vec2 _2468 = vec2(_2453, _2455) * (isnan(_2466) ? _2461 : (isnan(_2461) ? _2466 : min(_2461, _2466)));
+                                float _2466 = (_2462 ? _2367 : _2366) / max(abs(_2455), 9.9999996826552253889678874634872e-21);
+                                vec2 _2468 = vec2(_2453, _2455) * min(_2461, _2466);
                                 bool _2469 = _2466 <= _2461;
                                 bool _2473;
                                 if (_2469)
@@ -15044,8 +14965,7 @@ void main()
                                 _2438 = _2430 + 1.0;
                             }
                             uint _2526 = wax_TEXCOORD1 + uint(texelFetch(waxBuffer1, int(_2094 + uint(_2439))).y);
-                            float _2527 = _2438 - _2437;
-                            float _2529 = _1356 * (isnan(0.0) ? _2527 : (isnan(_2527) ? 0.0 : max(_2527, 0.0)));
+                            float _2529 = _1356 * max(_2438 - _2437, 0.0);
                             SPIRV_CROSS_BRANCH
                             if (_2529 > 0.0)
                             {
@@ -15059,7 +14979,7 @@ void main()
                                     SPIRV_CROSS_BRANCH
                                     if (texelFetch(waxBuffer1, int(_2526)).y >= 0.0)
                                     {
-                                        uint _2547 = uint(isnan(0.0) ? texelFetch(waxBuffer1, int(_2526)).y : (isnan(texelFetch(waxBuffer1, int(_2526)).y) ? 0.0 : max(texelFetch(waxBuffer1, int(_2526)).y, 0.0)));
+                                        uint _2547 = uint(max(texelFetch(waxBuffer1, int(_2526)).y, 0.0));
                                         uint _2550 = uint(texelFetch(waxBuffer0, int(_2547)).x);
                                         uint _2551 = _2547 + 1u;
                                         vec4 _2556;
@@ -15293,11 +15213,11 @@ void main()
                             float _2788;
                             if (_2775 <= _2776)
                             {
-                                _2788 = atan(_2775 / (isnan(9.9999996826552253889678874634872e-21) ? _2776 : (isnan(_2776) ? 9.9999996826552253889678874634872e-21 : max(_2776, 9.9999996826552253889678874634872e-21))));
+                                _2788 = atan(_2775 / max(_2776, 9.9999996826552253889678874634872e-21));
                             }
                             else
                             {
-                                _2788 = 1.5707962512969970703125 - atan(_2776 / (isnan(9.9999996826552253889678874634872e-21) ? _2775 : (isnan(_2775) ? 9.9999996826552253889678874634872e-21 : max(_2775, 9.9999996826552253889678874634872e-21))));
+                                _2788 = 1.5707962512969970703125 - atan(_2776 / max(_2775, 9.9999996826552253889678874634872e-21));
                             }
                             float _2789 = _2788 * 0.15915493667125701904296875;
                             float _2795;
@@ -15353,8 +15273,7 @@ void main()
                         {
                             _2830 = _2091 - 1;
                         }
-                        float _2832 = 0.112539537250995635986328125 / (isnan(9.9999997473787516355514526367188e-05) ? _1016 : (isnan(_1016) ? 9.9999997473787516355514526367188e-05 : max(_1016, 9.9999997473787516355514526367188e-05)));
-                        float _2833 = isnan(_2832) ? 0.25 : (isnan(0.25) ? _2832 : min(0.25, _2832));
+                        float _2833 = min(0.25, 0.112539537250995635986328125 / max(_1016, 9.9999997473787516355514526367188e-05));
                         int _2841;
                         float _2844;
                         _2841 = _2830;
@@ -15439,8 +15358,8 @@ void main()
                                     vec2 _2920 = abs(vec2(cos(_2912), sin(_2912)));
                                     float _2921 = _2920.x;
                                     float _2922 = _2920.y;
-                                    float _2923 = isnan(_2922) ? _2921 : (isnan(_2921) ? _2922 : max(_2921, _2922));
-                                    float _2924 = isnan(_2922) ? _2921 : (isnan(_2921) ? _2922 : min(_2921, _2922));
+                                    float _2923 = max(_2921, _2922);
+                                    float _2924 = min(_2921, _2922);
                                     float _2925 = _2923 + _2924;
                                     float _2927 = _2916 + (0.5 * _2925);
                                     float _2966;
@@ -15489,7 +15408,7 @@ void main()
                                         }
                                         _2966 = _2965;
                                     }
-                                    _2886 = isnan(_2966) ? _2885 : (isnan(_2885) ? _2966 : min(_2885, _2966));
+                                    _2886 = min(_2885, _2966);
                                 }
                                 else
                                 {
@@ -15510,7 +15429,7 @@ void main()
                                         SPIRV_CROSS_BRANCH
                                         if (texelFetch(waxBuffer1, int(_2970)).y >= 0.0)
                                         {
-                                            uint _2990 = uint(isnan(0.0) ? texelFetch(waxBuffer1, int(_2970)).y : (isnan(texelFetch(waxBuffer1, int(_2970)).y) ? 0.0 : max(texelFetch(waxBuffer1, int(_2970)).y, 0.0)));
+                                            uint _2990 = uint(max(texelFetch(waxBuffer1, int(_2970)).y, 0.0));
                                             uint _2993 = uint(texelFetch(waxBuffer0, int(_2990)).x);
                                             uint _2994 = _2990 + 1u;
                                             vec4 _2999;
@@ -16070,8 +15989,8 @@ void main()
                                 vec2 _3553 = abs(_3246 / vec2(_3542));
                                 float _3554 = _3553.x;
                                 float _3555 = _3553.y;
-                                float _3556 = isnan(_3555) ? _3554 : (isnan(_3554) ? _3555 : max(_3554, _3555));
-                                float _3557 = isnan(_3555) ? _3554 : (isnan(_3554) ? _3555 : min(_3554, _3555));
+                                float _3556 = max(_3554, _3555);
+                                float _3557 = min(_3554, _3555);
                                 float _3558 = _3556 + _3557;
                                 float _3560 = _3550 + (0.5 * _3558);
                                 float _3599;
@@ -16152,8 +16071,8 @@ void main()
                                 vec2 _3619 = abs(_3326 / vec2(_3608));
                                 float _3620 = _3619.x;
                                 float _3621 = _3619.y;
-                                float _3622 = isnan(_3621) ? _3620 : (isnan(_3620) ? _3621 : max(_3620, _3621));
-                                float _3623 = isnan(_3621) ? _3620 : (isnan(_3620) ? _3621 : min(_3620, _3621));
+                                float _3622 = max(_3620, _3621);
+                                float _3623 = min(_3620, _3621);
                                 float _3624 = _3622 + _3623;
                                 float _3626 = _3616 + (0.5 * _3624);
                                 float _3665;
@@ -16355,7 +16274,6 @@ void main()
                     {
                         _3794 = _3676 ? 0.0 : 1.0;
                     }
-                    float _3795 = isnan(_3604) ? _3794 : (isnan(_3794) ? _3604 : max(_3794, _3604));
                     vec3 _111[6] = _108;
                     bool _3798;
                     bool _3801;
@@ -16491,11 +16409,7 @@ void main()
                     {
                         _3919 = _3801 ? 0.0 : 1.0;
                     }
-                    float _3920 = isnan(_3670) ? _3919 : (isnan(_3919) ? _3670 : max(_3919, _3670));
-                    float _3921 = isnan(_3920) ? _3604 : (isnan(_3604) ? _3920 : min(_3604, _3920));
-                    float _3922 = isnan(_3795) ? _3670 : (isnan(_3670) ? _3795 : min(_3670, _3795));
-                    float _3923 = isnan(_3922) ? _3921 : (isnan(_3921) ? _3922 : max(_3921, _3922));
-                    _3925 = isnan(_3923) ? _3532 : (isnan(_3532) ? _3923 : max(_3532, _3923));
+                    _3925 = max(_3532, max(min(_3604, max(_3919, _3670)), min(_3670, max(_3794, _3604))));
                 }
                 else
                 {
@@ -16770,10 +16684,7 @@ void main()
         if ((waxConstants[2].y) == 3u)
         {
             float _4210 = _4176.x;
-            float _4211 = _4176.y;
-            float _4212 = _4176.z;
-            float _4213 = isnan(_4212) ? _4211 : (isnan(_4211) ? _4212 : max(_4211, _4212));
-            _4259 = vec4(_4210, _4211, _4212, isnan(_4213) ? _4210 : (isnan(_4210) ? _4213 : max(_4210, _4213)));
+            _4259 = vec4(_4210, _4176.yz, max(_4210, max(_4176.y, _4176.z)));
         }
         else
         {
@@ -16997,7 +16908,7 @@ void main()
         float _242 = waxFragCoord().x - 0.5;
         float _249 = waxFragCoord().y + 0.5;
         float _251 = waxFragCoord().y - 0.5;
-        float _255 = clamp((isnan(texelFetch(waxBuffer1, int(_124)).z) ? _240 : (isnan(_240) ? texelFetch(waxBuffer1, int(_124)).z : min(_240, texelFetch(waxBuffer1, int(_124)).z))) - (isnan(texelFetch(waxBuffer1, int(_124)).x) ? _242 : (isnan(_242) ? texelFetch(waxBuffer1, int(_124)).x : max(_242, texelFetch(waxBuffer1, int(_124)).x))), 0.0, 1.0) * clamp((isnan(texelFetch(waxBuffer1, int(_124)).w) ? _249 : (isnan(_249) ? texelFetch(waxBuffer1, int(_124)).w : min(_249, texelFetch(waxBuffer1, int(_124)).w))) - (isnan(texelFetch(waxBuffer1, int(_124)).y) ? _251 : (isnan(_251) ? texelFetch(waxBuffer1, int(_124)).y : max(_251, texelFetch(waxBuffer1, int(_124)).y))), 0.0, 1.0);
+        float _255 = clamp(min(_240, texelFetch(waxBuffer1, int(_124)).z) - max(_242, texelFetch(waxBuffer1, int(_124)).x), 0.0, 1.0) * clamp(min(_249, texelFetch(waxBuffer1, int(_124)).w) - max(_251, texelFetch(waxBuffer1, int(_124)).y), 0.0, 1.0);
         float _322;
         if (_236)
         {
@@ -17013,8 +16924,8 @@ void main()
                     vec2 _270 = abs(_258 / vec2(_259));
                     float _271 = _270.x;
                     float _272 = _270.y;
-                    float _273 = isnan(_272) ? _271 : (isnan(_271) ? _272 : max(_271, _272));
-                    float _274 = isnan(_272) ? _271 : (isnan(_271) ? _272 : min(_271, _272));
+                    float _273 = max(_271, _272);
+                    float _274 = min(_271, _272);
                     float _275 = _273 + _274;
                     float _277 = _267 + (0.5 * _275);
                     float _316;
@@ -17075,7 +16986,7 @@ void main()
             {
                 _320 = 0.0;
             }
-            _322 = isnan(_320) ? _255 : (isnan(_255) ? _320 : min(_255, _320));
+            _322 = min(_255, _320);
         }
         else
         {
@@ -17212,7 +17123,7 @@ void main()
                 _433 = _430;
                 _434 = _431;
             }
-            float _447 = clamp((isnan(texelFetch(waxBuffer1, int(_330)).z) ? _240 : (isnan(_240) ? texelFetch(waxBuffer1, int(_330)).z : min(_240, texelFetch(waxBuffer1, int(_330)).z))) - (isnan(texelFetch(waxBuffer1, int(_330)).x) ? _242 : (isnan(_242) ? texelFetch(waxBuffer1, int(_330)).x : max(_242, texelFetch(waxBuffer1, int(_330)).x))), 0.0, 1.0) * clamp((isnan(texelFetch(waxBuffer1, int(_330)).w) ? _249 : (isnan(_249) ? texelFetch(waxBuffer1, int(_330)).w : min(_249, texelFetch(waxBuffer1, int(_330)).w))) - (isnan(texelFetch(waxBuffer1, int(_330)).y) ? _251 : (isnan(_251) ? texelFetch(waxBuffer1, int(_330)).y : max(_251, texelFetch(waxBuffer1, int(_330)).y))), 0.0, 1.0);
+            float _447 = clamp(min(_240, texelFetch(waxBuffer1, int(_330)).z) - max(_242, texelFetch(waxBuffer1, int(_330)).x), 0.0, 1.0) * clamp(min(_249, texelFetch(waxBuffer1, int(_330)).w) - max(_251, texelFetch(waxBuffer1, int(_330)).y), 0.0, 1.0);
             float _514;
             if (_434)
             {
@@ -17228,8 +17139,8 @@ void main()
                         vec2 _462 = abs(_450 / vec2(_451));
                         float _463 = _462.x;
                         float _464 = _462.y;
-                        float _465 = isnan(_464) ? _463 : (isnan(_463) ? _464 : max(_463, _464));
-                        float _466 = isnan(_464) ? _463 : (isnan(_463) ? _464 : min(_463, _464));
+                        float _465 = max(_463, _464);
+                        float _466 = min(_463, _464);
                         float _467 = _465 + _466;
                         float _469 = _459 + (0.5 * _467);
                         float _508;
@@ -17290,13 +17201,13 @@ void main()
                 {
                     _512 = 0.0;
                 }
-                _514 = isnan(_512) ? _447 : (isnan(_447) ? _512 : min(_447, _512));
+                _514 = min(_447, _512);
             }
             else
             {
                 _514 = _447;
             }
-            _516 = isnan(_514) ? _322 : (isnan(_322) ? _514 : min(_322, _514));
+            _516 = min(_322, _514);
         }
         else
         {
@@ -17318,7 +17229,7 @@ void main()
                 SPIRV_CROSS_BRANCH
                 if (texelFetch(waxBuffer1, int(_517)).y >= 0.0)
                 {
-                    uint _535 = uint(isnan(0.0) ? texelFetch(waxBuffer1, int(_517)).y : (isnan(texelFetch(waxBuffer1, int(_517)).y) ? 0.0 : max(texelFetch(waxBuffer1, int(_517)).y, 0.0)));
+                    uint _535 = uint(max(texelFetch(waxBuffer1, int(_517)).y, 0.0));
                     uint _538 = uint(texelFetch(waxBuffer0, int(_535)).x);
                     uint _539 = _535 + 1u;
                     vec4 _544;
@@ -17554,7 +17465,7 @@ void main()
                 SPIRV_CROSS_BRANCH
                 if (texelFetch(waxBuffer1, int(_756)).y >= 0.0)
                 {
-                    uint _775 = uint(isnan(0.0) ? texelFetch(waxBuffer1, int(_756)).y : (isnan(texelFetch(waxBuffer1, int(_756)).y) ? 0.0 : max(texelFetch(waxBuffer1, int(_756)).y, 0.0)));
+                    uint _775 = uint(max(texelFetch(waxBuffer1, int(_756)).y, 0.0));
                     uint _778 = uint(texelFetch(waxBuffer0, int(_775)).x);
                     uint _779 = _775 + 1u;
                     vec4 _784;
@@ -17792,11 +17703,7 @@ void main()
             float _1104;
             if (_1019)
             {
-                float _1026 = waxFragCoord().x + 0.5;
-                float _1028 = waxFragCoord().x - 0.5;
-                float _1035 = waxFragCoord().y + 0.5;
-                float _1037 = waxFragCoord().y - 0.5;
-                _1104 = clamp((isnan(texelFetch(waxBuffer1, int(_1012)).z) ? _1026 : (isnan(_1026) ? texelFetch(waxBuffer1, int(_1012)).z : min(_1026, texelFetch(waxBuffer1, int(_1012)).z))) - (isnan(texelFetch(waxBuffer1, int(_1012)).x) ? _1028 : (isnan(_1028) ? texelFetch(waxBuffer1, int(_1012)).x : max(_1028, texelFetch(waxBuffer1, int(_1012)).x))), 0.0, 1.0) * clamp((isnan(texelFetch(waxBuffer1, int(_1012)).w) ? _1035 : (isnan(_1035) ? texelFetch(waxBuffer1, int(_1012)).w : min(_1035, texelFetch(waxBuffer1, int(_1012)).w))) - (isnan(texelFetch(waxBuffer1, int(_1012)).y) ? _1037 : (isnan(_1037) ? texelFetch(waxBuffer1, int(_1012)).y : max(_1037, texelFetch(waxBuffer1, int(_1012)).y))), 0.0, 1.0);
+                _1104 = clamp(min(waxFragCoord().x + 0.5, texelFetch(waxBuffer1, int(_1012)).z) - max(waxFragCoord().x - 0.5, texelFetch(waxBuffer1, int(_1012)).x), 0.0, 1.0) * clamp(min(waxFragCoord().y + 0.5, texelFetch(waxBuffer1, int(_1012)).w) - max(waxFragCoord().y - 0.5, texelFetch(waxBuffer1, int(_1012)).y), 0.0, 1.0);
             }
             else
             {
@@ -17810,8 +17717,8 @@ void main()
                         vec2 _1053 = abs(_1016 / vec2(_1017));
                         float _1054 = _1053.x;
                         float _1055 = _1053.y;
-                        float _1056 = isnan(_1055) ? _1054 : (isnan(_1054) ? _1055 : max(_1054, _1055));
-                        float _1057 = isnan(_1055) ? _1054 : (isnan(_1054) ? _1055 : min(_1054, _1055));
+                        float _1056 = max(_1054, _1055);
+                        float _1057 = min(_1054, _1055);
                         float _1058 = _1056 + _1057;
                         float _1060 = _1050 + (0.5 * _1058);
                         float _1099;
@@ -17878,11 +17785,7 @@ void main()
             if (_1019)
             {
                 uint _1108 = wax_TEXCOORD1 + 4u;
-                float _1114 = waxFragCoord().x + 0.5;
-                float _1116 = waxFragCoord().x - 0.5;
-                float _1123 = waxFragCoord().y + 0.5;
-                float _1125 = waxFragCoord().y - 0.5;
-                _1192 = clamp((isnan(texelFetch(waxBuffer1, int(_1108)).z) ? _1114 : (isnan(_1114) ? texelFetch(waxBuffer1, int(_1108)).z : min(_1114, texelFetch(waxBuffer1, int(_1108)).z))) - (isnan(texelFetch(waxBuffer1, int(_1108)).x) ? _1116 : (isnan(_1116) ? texelFetch(waxBuffer1, int(_1108)).x : max(_1116, texelFetch(waxBuffer1, int(_1108)).x))), 0.0, 1.0) * clamp((isnan(texelFetch(waxBuffer1, int(_1108)).w) ? _1123 : (isnan(_1123) ? texelFetch(waxBuffer1, int(_1108)).w : min(_1123, texelFetch(waxBuffer1, int(_1108)).w))) - (isnan(texelFetch(waxBuffer1, int(_1108)).y) ? _1125 : (isnan(_1125) ? texelFetch(waxBuffer1, int(_1108)).y : max(_1125, texelFetch(waxBuffer1, int(_1108)).y))), 0.0, 1.0);
+                _1192 = clamp(min(waxFragCoord().x + 0.5, texelFetch(waxBuffer1, int(_1108)).z) - max(waxFragCoord().x - 0.5, texelFetch(waxBuffer1, int(_1108)).x), 0.0, 1.0) * clamp(min(waxFragCoord().y + 0.5, texelFetch(waxBuffer1, int(_1108)).w) - max(waxFragCoord().y - 0.5, texelFetch(waxBuffer1, int(_1108)).y), 0.0, 1.0);
             }
             else
             {
@@ -17896,8 +17799,8 @@ void main()
                         vec2 _1141 = abs(_1016 / vec2(_1017));
                         float _1142 = _1141.x;
                         float _1143 = _1141.y;
-                        float _1144 = isnan(_1143) ? _1142 : (isnan(_1142) ? _1143 : max(_1142, _1143));
-                        float _1145 = isnan(_1143) ? _1142 : (isnan(_1142) ? _1143 : min(_1142, _1143));
+                        float _1144 = max(_1142, _1143);
+                        float _1145 = min(_1142, _1143);
                         float _1146 = _1144 + _1145;
                         float _1148 = _1138 + (0.5 * _1146);
                         float _1187;
@@ -17960,7 +17863,7 @@ void main()
                 }
                 _1192 = _1191;
             }
-            float _1193 = isnan(_1104) ? _1192 : (isnan(_1192) ? _1104 : min(_1192, _1104));
+            float _1193 = min(_1192, _1104);
             float _1255;
             if (texelFetch(waxBuffer1, int(_1009)).x > 0.0)
             {
@@ -17971,8 +17874,8 @@ void main()
                     vec2 _1205 = abs(_1016 / vec2(_1017));
                     float _1206 = _1205.x;
                     float _1207 = _1205.y;
-                    float _1208 = isnan(_1207) ? _1206 : (isnan(_1206) ? _1207 : max(_1206, _1207));
-                    float _1209 = isnan(_1207) ? _1206 : (isnan(_1206) ? _1207 : min(_1206, _1207));
+                    float _1208 = max(_1206, _1207);
+                    float _1209 = min(_1206, _1207);
                     float _1210 = _1208 + _1209;
                     float _1212 = _1202 + (0.5 * _1210);
                     float _1251;
@@ -18033,7 +17936,7 @@ void main()
             {
                 _1255 = 0.0;
             }
-            float _1256 = isnan(_1193) ? _1255 : (isnan(_1255) ? _1193 : min(_1255, _1193));
+            float _1256 = min(_1255, _1193);
             float _1318;
             if (texelFetch(waxBuffer1, int(_1009)).y > 0.0)
             {
@@ -18044,8 +17947,8 @@ void main()
                     vec2 _1268 = abs(_1016 / vec2(_1017));
                     float _1269 = _1268.x;
                     float _1270 = _1268.y;
-                    float _1271 = isnan(_1270) ? _1269 : (isnan(_1269) ? _1270 : max(_1269, _1270));
-                    float _1272 = isnan(_1270) ? _1269 : (isnan(_1269) ? _1270 : min(_1269, _1270));
+                    float _1271 = max(_1269, _1270);
+                    float _1272 = min(_1269, _1270);
                     float _1273 = _1271 + _1272;
                     float _1275 = _1265 + (0.5 * _1273);
                     float _1314;
@@ -18106,16 +18009,11 @@ void main()
             {
                 _1318 = 0.0;
             }
-            float _1319 = isnan(_1256) ? _1318 : (isnan(_1318) ? _1256 : min(_1318, _1256));
+            float _1319 = min(_1318, _1256);
             float _1346;
             if ((_1005 & 2) != 0)
             {
-                float _1328 = waxFragCoord().x + 0.5;
-                float _1330 = waxFragCoord().x - 0.5;
-                float _1337 = waxFragCoord().y + 0.5;
-                float _1339 = waxFragCoord().y - 0.5;
-                float _1344 = (clamp((isnan(texelFetch(waxBuffer1, int(_1012)).z) ? _1328 : (isnan(_1328) ? texelFetch(waxBuffer1, int(_1012)).z : min(_1328, texelFetch(waxBuffer1, int(_1012)).z))) - (isnan(texelFetch(waxBuffer1, int(_1012)).x) ? _1330 : (isnan(_1330) ? texelFetch(waxBuffer1, int(_1012)).x : max(_1330, texelFetch(waxBuffer1, int(_1012)).x))), 0.0, 1.0) * clamp((isnan(texelFetch(waxBuffer1, int(_1012)).w) ? _1337 : (isnan(_1337) ? texelFetch(waxBuffer1, int(_1012)).w : min(_1337, texelFetch(waxBuffer1, int(_1012)).w))) - (isnan(texelFetch(waxBuffer1, int(_1012)).y) ? _1339 : (isnan(_1339) ? texelFetch(waxBuffer1, int(_1012)).y : max(_1339, texelFetch(waxBuffer1, int(_1012)).y))), 0.0, 1.0)) - _1104;
-                _1346 = isnan(0.0) ? _1344 : (isnan(_1344) ? 0.0 : max(_1344, 0.0));
+                _1346 = max((clamp(min(waxFragCoord().x + 0.5, texelFetch(waxBuffer1, int(_1012)).z) - max(waxFragCoord().x - 0.5, texelFetch(waxBuffer1, int(_1012)).x), 0.0, 1.0) * clamp(min(waxFragCoord().y + 0.5, texelFetch(waxBuffer1, int(_1012)).w) - max(waxFragCoord().y - 0.5, texelFetch(waxBuffer1, int(_1012)).y), 0.0, 1.0)) - _1104, 0.0);
             }
             else
             {
@@ -18150,7 +18048,7 @@ void main()
                     SPIRV_CROSS_BRANCH
                     if (texelFetch(waxBuffer1, int(_1358)).y >= 0.0)
                     {
-                        uint _1376 = uint(isnan(0.0) ? texelFetch(waxBuffer1, int(_1358)).y : (isnan(texelFetch(waxBuffer1, int(_1358)).y) ? 0.0 : max(texelFetch(waxBuffer1, int(_1358)).y, 0.0)));
+                        uint _1376 = uint(max(texelFetch(waxBuffer1, int(_1358)).y, 0.0));
                         uint _1379 = uint(texelFetch(waxBuffer0, int(_1376)).x);
                         uint _1380 = _1376 + 1u;
                         vec4 _1385;
@@ -18385,7 +18283,7 @@ void main()
                     SPIRV_CROSS_BRANCH
                     if (texelFetch(waxBuffer1, int(_1599)).y >= 0.0)
                     {
-                        uint _1617 = uint(isnan(0.0) ? texelFetch(waxBuffer1, int(_1599)).y : (isnan(texelFetch(waxBuffer1, int(_1599)).y) ? 0.0 : max(texelFetch(waxBuffer1, int(_1599)).y, 0.0)));
+                        uint _1617 = uint(max(texelFetch(waxBuffer1, int(_1599)).y, 0.0));
                         uint _1620 = uint(texelFetch(waxBuffer0, int(_1617)).x);
                         uint _1621 = _1617 + 1u;
                         vec4 _1626;
@@ -18621,7 +18519,7 @@ void main()
                     SPIRV_CROSS_BRANCH
                     if (texelFetch(waxBuffer1, int(_1842)).y >= 0.0)
                     {
-                        uint _1863 = uint(isnan(0.0) ? texelFetch(waxBuffer1, int(_1842)).y : (isnan(texelFetch(waxBuffer1, int(_1842)).y) ? 0.0 : max(texelFetch(waxBuffer1, int(_1842)).y, 0.0)));
+                        uint _1863 = uint(max(texelFetch(waxBuffer1, int(_1842)).y, 0.0));
                         uint _1866 = uint(texelFetch(waxBuffer0, int(_1863)).x);
                         uint _1867 = _1863 + 1u;
                         vec4 _1872;
@@ -18868,7 +18766,7 @@ void main()
                             SPIRV_CROSS_BRANCH
                             if (texelFetch(waxBuffer1, int(_2103)).y >= 0.0)
                             {
-                                uint _2120 = uint(isnan(0.0) ? texelFetch(waxBuffer1, int(_2103)).y : (isnan(texelFetch(waxBuffer1, int(_2103)).y) ? 0.0 : max(texelFetch(waxBuffer1, int(_2103)).y, 0.0)));
+                                uint _2120 = uint(max(texelFetch(waxBuffer1, int(_2103)).y, 0.0));
                                 uint _2123 = uint(texelFetch(waxBuffer0, int(_2120)).x);
                                 uint _2124 = _2120 + 1u;
                                 vec4 _2129;
@@ -19115,12 +19013,10 @@ void main()
                         float _2367 = 0.5 - _2366;
                         float _2368 = 0.5 + _2366;
                         bool _2369 = _2360 > 0.0;
-                        float _2371 = abs(_2360);
-                        float _2373 = (_2369 ? _2365 : _2364) / (isnan(9.9999996826552253889678874634872e-21) ? _2371 : (isnan(_2371) ? 9.9999996826552253889678874634872e-21 : max(_2371, 9.9999996826552253889678874634872e-21)));
+                        float _2373 = (_2369 ? _2365 : _2364) / max(abs(_2360), 9.9999996826552253889678874634872e-21);
                         bool _2374 = _2362 > 0.0;
-                        float _2376 = abs(_2362);
-                        float _2378 = (_2374 ? _2368 : _2367) / (isnan(9.9999996826552253889678874634872e-21) ? _2376 : (isnan(_2376) ? 9.9999996826552253889678874634872e-21 : max(_2376, 9.9999996826552253889678874634872e-21)));
-                        vec2 _2380 = vec2(_2360, _2362) * (isnan(_2378) ? _2373 : (isnan(_2373) ? _2378 : min(_2373, _2378)));
+                        float _2378 = (_2374 ? _2368 : _2367) / max(abs(_2362), 9.9999996826552253889678874634872e-21);
+                        vec2 _2380 = vec2(_2360, _2362) * min(_2373, _2378);
                         bool _2381 = _2378 <= _2373;
                         bool _2385;
                         if (_2381)
@@ -19199,12 +19095,10 @@ void main()
                                 float _2454 = sin(_2453);
                                 float _2456 = -cos(_2453);
                                 bool _2458 = _2454 > 0.0;
-                                float _2460 = abs(_2454);
-                                float _2462 = (_2458 ? _2365 : _2364) / (isnan(9.9999996826552253889678874634872e-21) ? _2460 : (isnan(_2460) ? 9.9999996826552253889678874634872e-21 : max(_2460, 9.9999996826552253889678874634872e-21)));
+                                float _2462 = (_2458 ? _2365 : _2364) / max(abs(_2454), 9.9999996826552253889678874634872e-21);
                                 bool _2463 = _2456 > 0.0;
-                                float _2465 = abs(_2456);
-                                float _2467 = (_2463 ? _2368 : _2367) / (isnan(9.9999996826552253889678874634872e-21) ? _2465 : (isnan(_2465) ? 9.9999996826552253889678874634872e-21 : max(_2465, 9.9999996826552253889678874634872e-21)));
-                                vec2 _2469 = vec2(_2454, _2456) * (isnan(_2467) ? _2462 : (isnan(_2462) ? _2467 : min(_2462, _2467)));
+                                float _2467 = (_2463 ? _2368 : _2367) / max(abs(_2456), 9.9999996826552253889678874634872e-21);
+                                vec2 _2469 = vec2(_2454, _2456) * min(_2462, _2467);
                                 bool _2470 = _2467 <= _2462;
                                 bool _2474;
                                 if (_2470)
@@ -19268,8 +19162,7 @@ void main()
                                 _2439 = _2431 + 1.0;
                             }
                             uint _2527 = wax_TEXCOORD1 + uint(texelFetch(waxBuffer1, int(_2095 + uint(_2440))).y);
-                            float _2528 = _2439 - _2438;
-                            float _2530 = _1357 * (isnan(0.0) ? _2528 : (isnan(_2528) ? 0.0 : max(_2528, 0.0)));
+                            float _2530 = _1357 * max(_2439 - _2438, 0.0);
                             SPIRV_CROSS_BRANCH
                             if (_2530 > 0.0)
                             {
@@ -19283,7 +19176,7 @@ void main()
                                     SPIRV_CROSS_BRANCH
                                     if (texelFetch(waxBuffer1, int(_2527)).y >= 0.0)
                                     {
-                                        uint _2548 = uint(isnan(0.0) ? texelFetch(waxBuffer1, int(_2527)).y : (isnan(texelFetch(waxBuffer1, int(_2527)).y) ? 0.0 : max(texelFetch(waxBuffer1, int(_2527)).y, 0.0)));
+                                        uint _2548 = uint(max(texelFetch(waxBuffer1, int(_2527)).y, 0.0));
                                         uint _2551 = uint(texelFetch(waxBuffer0, int(_2548)).x);
                                         uint _2552 = _2548 + 1u;
                                         vec4 _2557;
@@ -19517,11 +19410,11 @@ void main()
                             float _2789;
                             if (_2776 <= _2777)
                             {
-                                _2789 = atan(_2776 / (isnan(9.9999996826552253889678874634872e-21) ? _2777 : (isnan(_2777) ? 9.9999996826552253889678874634872e-21 : max(_2777, 9.9999996826552253889678874634872e-21))));
+                                _2789 = atan(_2776 / max(_2777, 9.9999996826552253889678874634872e-21));
                             }
                             else
                             {
-                                _2789 = 1.5707962512969970703125 - atan(_2777 / (isnan(9.9999996826552253889678874634872e-21) ? _2776 : (isnan(_2776) ? 9.9999996826552253889678874634872e-21 : max(_2776, 9.9999996826552253889678874634872e-21))));
+                                _2789 = 1.5707962512969970703125 - atan(_2777 / max(_2776, 9.9999996826552253889678874634872e-21));
                             }
                             float _2790 = _2789 * 0.15915493667125701904296875;
                             float _2796;
@@ -19577,8 +19470,7 @@ void main()
                         {
                             _2831 = _2092 - 1;
                         }
-                        float _2833 = 0.112539537250995635986328125 / (isnan(9.9999997473787516355514526367188e-05) ? _1017 : (isnan(_1017) ? 9.9999997473787516355514526367188e-05 : max(_1017, 9.9999997473787516355514526367188e-05)));
-                        float _2834 = isnan(_2833) ? 0.25 : (isnan(0.25) ? _2833 : min(0.25, _2833));
+                        float _2834 = min(0.25, 0.112539537250995635986328125 / max(_1017, 9.9999997473787516355514526367188e-05));
                         int _2842;
                         float _2845;
                         _2842 = _2831;
@@ -19663,8 +19555,8 @@ void main()
                                     vec2 _2921 = abs(vec2(cos(_2913), sin(_2913)));
                                     float _2922 = _2921.x;
                                     float _2923 = _2921.y;
-                                    float _2924 = isnan(_2923) ? _2922 : (isnan(_2922) ? _2923 : max(_2922, _2923));
-                                    float _2925 = isnan(_2923) ? _2922 : (isnan(_2922) ? _2923 : min(_2922, _2923));
+                                    float _2924 = max(_2922, _2923);
+                                    float _2925 = min(_2922, _2923);
                                     float _2926 = _2924 + _2925;
                                     float _2928 = _2917 + (0.5 * _2926);
                                     float _2967;
@@ -19713,7 +19605,7 @@ void main()
                                         }
                                         _2967 = _2966;
                                     }
-                                    _2887 = isnan(_2967) ? _2886 : (isnan(_2886) ? _2967 : min(_2886, _2967));
+                                    _2887 = min(_2886, _2967);
                                 }
                                 else
                                 {
@@ -19734,7 +19626,7 @@ void main()
                                         SPIRV_CROSS_BRANCH
                                         if (texelFetch(waxBuffer1, int(_2971)).y >= 0.0)
                                         {
-                                            uint _2991 = uint(isnan(0.0) ? texelFetch(waxBuffer1, int(_2971)).y : (isnan(texelFetch(waxBuffer1, int(_2971)).y) ? 0.0 : max(texelFetch(waxBuffer1, int(_2971)).y, 0.0)));
+                                            uint _2991 = uint(max(texelFetch(waxBuffer1, int(_2971)).y, 0.0));
                                             uint _2994 = uint(texelFetch(waxBuffer0, int(_2991)).x);
                                             uint _2995 = _2991 + 1u;
                                             vec4 _3000;
@@ -20294,8 +20186,8 @@ void main()
                                 vec2 _3554 = abs(_3247 / vec2(_3543));
                                 float _3555 = _3554.x;
                                 float _3556 = _3554.y;
-                                float _3557 = isnan(_3556) ? _3555 : (isnan(_3555) ? _3556 : max(_3555, _3556));
-                                float _3558 = isnan(_3556) ? _3555 : (isnan(_3555) ? _3556 : min(_3555, _3556));
+                                float _3557 = max(_3555, _3556);
+                                float _3558 = min(_3555, _3556);
                                 float _3559 = _3557 + _3558;
                                 float _3561 = _3551 + (0.5 * _3559);
                                 float _3600;
@@ -20376,8 +20268,8 @@ void main()
                                 vec2 _3620 = abs(_3327 / vec2(_3609));
                                 float _3621 = _3620.x;
                                 float _3622 = _3620.y;
-                                float _3623 = isnan(_3622) ? _3621 : (isnan(_3621) ? _3622 : max(_3621, _3622));
-                                float _3624 = isnan(_3622) ? _3621 : (isnan(_3621) ? _3622 : min(_3621, _3622));
+                                float _3623 = max(_3621, _3622);
+                                float _3624 = min(_3621, _3622);
                                 float _3625 = _3623 + _3624;
                                 float _3627 = _3617 + (0.5 * _3625);
                                 float _3666;
@@ -20579,7 +20471,6 @@ void main()
                     {
                         _3795 = _3677 ? 0.0 : 1.0;
                     }
-                    float _3796 = isnan(_3605) ? _3795 : (isnan(_3795) ? _3605 : max(_3795, _3605));
                     vec3 _112[6] = _109;
                     bool _3799;
                     bool _3802;
@@ -20715,11 +20606,7 @@ void main()
                     {
                         _3920 = _3802 ? 0.0 : 1.0;
                     }
-                    float _3921 = isnan(_3671) ? _3920 : (isnan(_3920) ? _3671 : max(_3920, _3671));
-                    float _3922 = isnan(_3921) ? _3605 : (isnan(_3605) ? _3921 : min(_3605, _3921));
-                    float _3923 = isnan(_3796) ? _3671 : (isnan(_3671) ? _3796 : min(_3671, _3796));
-                    float _3924 = isnan(_3923) ? _3922 : (isnan(_3922) ? _3923 : max(_3922, _3923));
-                    _3926 = isnan(_3924) ? _3533 : (isnan(_3533) ? _3924 : max(_3533, _3924));
+                    _3926 = max(_3533, max(min(_3605, max(_3920, _3671)), min(_3671, max(_3795, _3605))));
                 }
                 else
                 {
@@ -21004,11 +20891,8 @@ void main()
         if ((waxConstants[2].y) == 3u)
         {
             float _4215 = _4177.x;
-            float _4216 = _4177.y;
-            float _4217 = _4177.z;
-            float _4218 = isnan(_4217) ? _4216 : (isnan(_4216) ? _4217 : max(_4216, _4217));
             _4273 = vec4(0.0);
-            _4274 = vec4(_4215, _4216, _4217, isnan(_4218) ? _4215 : (isnan(_4215) ? _4218 : max(_4215, _4218)));
+            _4274 = vec4(_4215, _4177.yz, max(_4215, max(_4177.y, _4177.z)));
         }
         else
         {
@@ -21163,7 +21047,7 @@ void main()
         float _158;
         if (_148)
         {
-            _158 = isnan(texelFetch(waxBuffer1, int(_100)).z) ? texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x : (isnan(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x) ? texelFetch(waxBuffer1, int(_100)).z : min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x, texelFetch(waxBuffer1, int(_100)).z));
+            _158 = min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x, texelFetch(waxBuffer1, int(_100)).z);
         }
         else
         {
@@ -21193,7 +21077,7 @@ void main()
         float _179;
         if (_169)
         {
-            _179 = isnan(texelFetch(waxBuffer1, int(_100)).w) ? texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y : (isnan(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y) ? texelFetch(waxBuffer1, int(_100)).w : min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y, texelFetch(waxBuffer1, int(_100)).w));
+            _179 = min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y, texelFetch(waxBuffer1, int(_100)).w);
         }
         else
         {
@@ -21222,7 +21106,7 @@ void main()
     float _206;
     if (_148)
     {
-        _206 = isnan(texelFetch(waxBuffer1, int(_100)).z) ? texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x : (isnan(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x) ? texelFetch(waxBuffer1, int(_100)).z : min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x, texelFetch(waxBuffer1, int(_100)).z));
+        _206 = min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x, texelFetch(waxBuffer1, int(_100)).z);
     }
     else
     {
@@ -21269,8 +21153,8 @@ void main()
             vec2 _233 = abs(_135);
             float _234 = _233.x;
             float _235 = _233.y;
-            float _236 = isnan(_235) ? _234 : (isnan(_234) ? _235 : max(_234, _235));
-            float _237 = isnan(_235) ? _234 : (isnan(_234) ? _235 : min(_234, _235));
+            float _236 = max(_234, _235);
+            float _237 = min(_234, _235);
             float _238 = 2.0 * _126.x;
             float _239 = _236 + _237;
             float _271;
@@ -21361,8 +21245,8 @@ void main()
             vec2 _309 = abs(_135);
             float _310 = _309.x;
             float _311 = _309.y;
-            float _312 = isnan(_311) ? _310 : (isnan(_310) ? _311 : max(_310, _311));
-            float _313 = isnan(_311) ? _310 : (isnan(_310) ? _311 : min(_310, _311));
+            float _312 = max(_310, _311);
+            float _313 = min(_310, _311);
             float _314 = 2.0 * _308;
             float _315 = _312 + _313;
             float _347;
@@ -21608,8 +21492,7 @@ void main()
                 }
                 _519 = _518;
             }
-            float _521 = ((_347 - _381) + (_415 - _449)) + (_485 - _519);
-            _523 = isnan(1.0) ? _521 : (isnan(_521) ? 1.0 : min(_521, 1.0));
+            _523 = min(((_347 - _381) + (_415 - _449)) + (_485 - _519), 1.0);
         }
         _524 = _523;
     }
@@ -21617,7 +21500,7 @@ void main()
     float _532;
     if (_169)
     {
-        _532 = isnan(texelFetch(waxBuffer1, int(_100)).w) ? texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y : (isnan(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y) ? texelFetch(waxBuffer1, int(_100)).w : min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y, texelFetch(waxBuffer1, int(_100)).w));
+        _532 = min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y, texelFetch(waxBuffer1, int(_100)).w);
     }
     else
     {
@@ -21865,8 +21748,8 @@ void main()
                 vec2 _791 = abs(_138);
                 float _792 = _791.x;
                 float _793 = _791.y;
-                float _794 = isnan(_793) ? _792 : (isnan(_792) ? _793 : max(_792, _793));
-                float _795 = isnan(_793) ? _792 : (isnan(_792) ? _793 : min(_792, _793));
+                float _794 = max(_792, _793);
+                float _795 = min(_792, _793);
                 float _796 = 2.0 * _781;
                 float _797 = _794 + _795;
                 float _829;
@@ -21928,8 +21811,8 @@ void main()
                         vec2 _858 = abs(_138 - (_135 * _852));
                         float _859 = _858.x;
                         float _860 = _858.y;
-                        float _861 = isnan(_860) ? _859 : (isnan(_859) ? _860 : max(_859, _860));
-                        float _862 = isnan(_860) ? _859 : (isnan(_859) ? _860 : min(_859, _860));
+                        float _861 = max(_859, _860);
+                        float _862 = min(_859, _860);
                         float _863 = 2.0 * _855;
                         float _864 = _861 + _862;
                         float _896;
@@ -21971,7 +21854,7 @@ void main()
                             }
                             _896 = _895;
                         }
-                        _837 = isnan(_896) ? _836 : (isnan(_836) ? _896 : min(_836, _896));
+                        _837 = min(_836, _896);
                     }
                     else
                     {
@@ -22016,7 +21899,7 @@ void main()
                             }
                             _931 = _930;
                         }
-                        _837 = isnan(_931) ? _836 : (isnan(_836) ? _931 : min(_836, _931));
+                        _837 = min(_836, _931);
                     }
                     float _934 = (_836 - _837) * _526;
                     SPIRV_CROSS_BRANCH
@@ -22317,8 +22200,7 @@ void main()
         vec4 _1283;
         if ((waxConstants[2].y) == 3u)
         {
-            float _1237 = isnan(_1196.z) ? _1196.y : (isnan(_1196.y) ? _1196.z : max(_1196.y, _1196.z));
-            _1283 = vec4(_1196.xyz, isnan(_1237) ? _1196.x : (isnan(_1196.x) ? _1237 : max(_1196.x, _1237)));
+            _1283 = vec4(_1196.xyz, max(_1196.x, max(_1196.y, _1196.z)));
         }
         else
         {
@@ -22475,7 +22357,7 @@ void main()
         float _159;
         if (_149)
         {
-            _159 = isnan(texelFetch(waxBuffer1, int(_101)).z) ? texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x : (isnan(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x) ? texelFetch(waxBuffer1, int(_101)).z : min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x, texelFetch(waxBuffer1, int(_101)).z));
+            _159 = min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x, texelFetch(waxBuffer1, int(_101)).z);
         }
         else
         {
@@ -22505,7 +22387,7 @@ void main()
         float _180;
         if (_170)
         {
-            _180 = isnan(texelFetch(waxBuffer1, int(_101)).w) ? texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y : (isnan(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y) ? texelFetch(waxBuffer1, int(_101)).w : min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y, texelFetch(waxBuffer1, int(_101)).w));
+            _180 = min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y, texelFetch(waxBuffer1, int(_101)).w);
         }
         else
         {
@@ -22534,7 +22416,7 @@ void main()
     float _207;
     if (_149)
     {
-        _207 = isnan(texelFetch(waxBuffer1, int(_101)).z) ? texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x : (isnan(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x) ? texelFetch(waxBuffer1, int(_101)).z : min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x, texelFetch(waxBuffer1, int(_101)).z));
+        _207 = min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x, texelFetch(waxBuffer1, int(_101)).z);
     }
     else
     {
@@ -22581,8 +22463,8 @@ void main()
             vec2 _234 = abs(_136);
             float _235 = _234.x;
             float _236 = _234.y;
-            float _237 = isnan(_236) ? _235 : (isnan(_235) ? _236 : max(_235, _236));
-            float _238 = isnan(_236) ? _235 : (isnan(_235) ? _236 : min(_235, _236));
+            float _237 = max(_235, _236);
+            float _238 = min(_235, _236);
             float _239 = 2.0 * _127.x;
             float _240 = _237 + _238;
             float _272;
@@ -22673,8 +22555,8 @@ void main()
             vec2 _310 = abs(_136);
             float _311 = _310.x;
             float _312 = _310.y;
-            float _313 = isnan(_312) ? _311 : (isnan(_311) ? _312 : max(_311, _312));
-            float _314 = isnan(_312) ? _311 : (isnan(_311) ? _312 : min(_311, _312));
+            float _313 = max(_311, _312);
+            float _314 = min(_311, _312);
             float _315 = 2.0 * _309;
             float _316 = _313 + _314;
             float _348;
@@ -22920,8 +22802,7 @@ void main()
                 }
                 _520 = _519;
             }
-            float _522 = ((_348 - _382) + (_416 - _450)) + (_486 - _520);
-            _524 = isnan(1.0) ? _522 : (isnan(_522) ? 1.0 : min(_522, 1.0));
+            _524 = min(((_348 - _382) + (_416 - _450)) + (_486 - _520), 1.0);
         }
         _525 = _524;
     }
@@ -22929,7 +22810,7 @@ void main()
     float _533;
     if (_170)
     {
-        _533 = isnan(texelFetch(waxBuffer1, int(_101)).w) ? texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y : (isnan(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y) ? texelFetch(waxBuffer1, int(_101)).w : min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y, texelFetch(waxBuffer1, int(_101)).w));
+        _533 = min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y, texelFetch(waxBuffer1, int(_101)).w);
     }
     else
     {
@@ -23181,8 +23062,8 @@ void main()
                 vec2 _794 = abs(_139);
                 float _795 = _794.x;
                 float _796 = _794.y;
-                float _797 = isnan(_796) ? _795 : (isnan(_795) ? _796 : max(_795, _796));
-                float _798 = isnan(_796) ? _795 : (isnan(_795) ? _796 : min(_795, _796));
+                float _797 = max(_795, _796);
+                float _798 = min(_795, _796);
                 float _799 = 2.0 * _784;
                 float _800 = _797 + _798;
                 float _832;
@@ -23247,8 +23128,8 @@ void main()
                         vec2 _863 = abs(_139 - (_136 * _857));
                         float _864 = _863.x;
                         float _865 = _863.y;
-                        float _866 = isnan(_865) ? _864 : (isnan(_864) ? _865 : max(_864, _865));
-                        float _867 = isnan(_865) ? _864 : (isnan(_864) ? _865 : min(_864, _865));
+                        float _866 = max(_864, _865);
+                        float _867 = min(_864, _865);
                         float _868 = 2.0 * _860;
                         float _869 = _866 + _867;
                         float _901;
@@ -23290,7 +23171,7 @@ void main()
                             }
                             _901 = _900;
                         }
-                        _842 = isnan(_901) ? _841 : (isnan(_841) ? _901 : min(_841, _901));
+                        _842 = min(_841, _901);
                     }
                     else
                     {
@@ -23335,7 +23216,7 @@ void main()
                             }
                             _936 = _935;
                         }
-                        _842 = isnan(_936) ? _841 : (isnan(_841) ? _936 : min(_841, _936));
+                        _842 = min(_841, _936);
                     }
                     float _939 = (_841 - _842) * _527;
                     SPIRV_CROSS_BRANCH
@@ -23656,9 +23537,8 @@ void main()
         vec4 _1306;
         if ((waxConstants[2].y) == 3u)
         {
-            float _1250 = isnan(_1205.z) ? _1205.y : (isnan(_1205.y) ? _1205.z : max(_1205.y, _1205.z));
             _1305 = vec4(0.0);
-            _1306 = vec4(_1205.xyz, isnan(_1250) ? _1205.x : (isnan(_1205.x) ? _1250 : max(_1205.x, _1250)));
+            _1306 = vec4(_1205.xyz, max(_1205.x, max(_1205.y, _1205.z)));
         }
         else
         {
@@ -23823,7 +23703,7 @@ void main()
     float _150;
     if (_145)
     {
-        _150 = isnan(texelFetch(waxBuffer1, int(_106)).z) ? texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x : (isnan(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x) ? texelFetch(waxBuffer1, int(_106)).z : min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x, texelFetch(waxBuffer1, int(_106)).z));
+        _150 = min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x, texelFetch(waxBuffer1, int(_106)).z);
     }
     else
     {
@@ -23870,8 +23750,8 @@ void main()
             vec2 _177 = abs(_142);
             float _178 = _177.x;
             float _179 = _177.y;
-            float _180 = isnan(_179) ? _178 : (isnan(_178) ? _179 : max(_178, _179));
-            float _181 = isnan(_179) ? _178 : (isnan(_178) ? _179 : min(_178, _179));
+            float _180 = max(_178, _179);
+            float _181 = min(_178, _179);
             float _182 = 2.0 * _132.x;
             float _183 = _180 + _181;
             float _215;
@@ -23962,8 +23842,8 @@ void main()
             vec2 _253 = abs(_142);
             float _254 = _253.x;
             float _255 = _253.y;
-            float _256 = isnan(_255) ? _254 : (isnan(_254) ? _255 : max(_254, _255));
-            float _257 = isnan(_255) ? _254 : (isnan(_254) ? _255 : min(_254, _255));
+            float _256 = max(_254, _255);
+            float _257 = min(_254, _255);
             float _258 = 2.0 * _252;
             float _259 = _256 + _257;
             float _291;
@@ -24209,8 +24089,7 @@ void main()
                 }
                 _463 = _462;
             }
-            float _465 = ((_291 - _325) + (_359 - _393)) + (_429 - _463);
-            _467 = isnan(1.0) ? _465 : (isnan(_465) ? 1.0 : min(_465, 1.0));
+            _467 = min(((_291 - _325) + (_359 - _393)) + (_429 - _463), 1.0);
         }
         _468 = _467;
     }
@@ -24225,7 +24104,7 @@ void main()
         float _485;
         if (_480)
         {
-            _485 = isnan(texelFetch(waxBuffer1, int(_106)).w) ? texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y : (isnan(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y) ? texelFetch(waxBuffer1, int(_106)).w : min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y, texelFetch(waxBuffer1, int(_106)).w));
+            _485 = min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y, texelFetch(waxBuffer1, int(_106)).w);
         }
         else
         {
@@ -24272,8 +24151,8 @@ void main()
                 vec2 _512 = abs(_477);
                 float _513 = _512.x;
                 float _514 = _512.y;
-                float _515 = isnan(_514) ? _513 : (isnan(_513) ? _514 : max(_513, _514));
-                float _516 = isnan(_514) ? _513 : (isnan(_513) ? _514 : min(_513, _514));
+                float _515 = max(_513, _514);
+                float _516 = min(_513, _514);
                 float _517 = 2.0 * _132.y;
                 float _518 = _515 + _516;
                 float _550;
@@ -24364,8 +24243,8 @@ void main()
                 vec2 _588 = abs(_477);
                 float _589 = _588.x;
                 float _590 = _588.y;
-                float _591 = isnan(_590) ? _589 : (isnan(_589) ? _590 : max(_589, _590));
-                float _592 = isnan(_590) ? _589 : (isnan(_589) ? _590 : min(_589, _590));
+                float _591 = max(_589, _590);
+                float _592 = min(_589, _590);
                 float _593 = 2.0 * _587;
                 float _594 = _591 + _592;
                 float _626;
@@ -24611,8 +24490,7 @@ void main()
                     }
                     _798 = _797;
                 }
-                float _800 = ((_626 - _660) + (_694 - _728)) + (_764 - _798);
-                _802 = isnan(1.0) ? _800 : (isnan(_800) ? 1.0 : min(_800, 1.0));
+                _802 = min(((_626 - _660) + (_694 - _728)) + (_764 - _798), 1.0);
             }
             _803 = _802;
         }
@@ -24628,7 +24506,7 @@ void main()
         float _815;
         if (_145)
         {
-            _815 = isnan(texelFetch(waxBuffer1, int(_106)).z) ? texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x : (isnan(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x) ? texelFetch(waxBuffer1, int(_106)).z : min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x, texelFetch(waxBuffer1, int(_106)).z));
+            _815 = min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x, texelFetch(waxBuffer1, int(_106)).z);
         }
         else
         {
@@ -24658,7 +24536,7 @@ void main()
         float _835;
         if (_825)
         {
-            _835 = isnan(texelFetch(waxBuffer1, int(_106)).w) ? texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y : (isnan(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y) ? texelFetch(waxBuffer1, int(_106)).w : min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y, texelFetch(waxBuffer1, int(_106)).w));
+            _835 = min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y, texelFetch(waxBuffer1, int(_106)).w);
         }
         else
         {
@@ -24687,17 +24565,7 @@ void main()
     {
         vec2 _851 = texelFetch(waxBuffer1, int(_136)).xy + (texelFetch(waxBuffer1, int(wax_TEXCOORD1)).xy * 0.5);
         vec2 _852 = vec2(texelFetch(waxBuffer1, int(_136)).z);
-        vec2 _853 = texelFetch(waxBuffer1, int(_136)).xy + _852;
-        bvec2 _1267 = isnan(_853);
-        bvec2 _1268 = isnan(_851);
-        vec2 _1269 = min(_853, _851);
-        vec2 _1270 = vec2(_1267.x ? _851.x : _1269.x, _1267.y ? _851.y : _1269.y);
-        vec2 _856 = (texelFetch(waxBuffer1, int(_136)).xy + texelFetch(waxBuffer1, int(wax_TEXCOORD1)).xy) - _852;
-        bvec2 _1272 = isnan(_856);
-        bvec2 _1273 = isnan(_851);
-        vec2 _1274 = max(_856, _851);
-        vec2 _1275 = vec2(_1272.x ? _851.x : _1274.x, _1272.y ? _851.y : _1274.y);
-        _859 = clamp(_845, vec2(_1268.x ? _853.x : _1270.x, _1268.y ? _853.y : _1270.y), vec2(_1273.x ? _856.x : _1275.x, _1273.y ? _856.y : _1275.y));
+        _859 = clamp(_845, min(texelFetch(waxBuffer1, int(_136)).xy + _852, _851), max((texelFetch(waxBuffer1, int(_136)).xy + texelFetch(waxBuffer1, int(wax_TEXCOORD1)).xy) - _852, _851));
     }
     else
     {
@@ -24957,10 +24825,7 @@ void main()
         if ((waxConstants[2].y) == 3u)
         {
             float _1143 = _1109.x;
-            float _1144 = _1109.y;
-            float _1145 = _1109.z;
-            float _1146 = isnan(_1145) ? _1144 : (isnan(_1144) ? _1145 : max(_1144, _1145));
-            _1192 = vec4(_1143, _1144, _1145, isnan(_1146) ? _1143 : (isnan(_1143) ? _1146 : max(_1143, _1146)));
+            _1192 = vec4(_1143, _1109.yz, max(_1143, max(_1109.y, _1109.z)));
         }
         else
         {
@@ -25098,7 +24963,7 @@ void main()
     float _151;
     if (_146)
     {
-        _151 = isnan(texelFetch(waxBuffer1, int(_107)).z) ? texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x : (isnan(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x) ? texelFetch(waxBuffer1, int(_107)).z : min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x, texelFetch(waxBuffer1, int(_107)).z));
+        _151 = min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x, texelFetch(waxBuffer1, int(_107)).z);
     }
     else
     {
@@ -25145,8 +25010,8 @@ void main()
             vec2 _178 = abs(_143);
             float _179 = _178.x;
             float _180 = _178.y;
-            float _181 = isnan(_180) ? _179 : (isnan(_179) ? _180 : max(_179, _180));
-            float _182 = isnan(_180) ? _179 : (isnan(_179) ? _180 : min(_179, _180));
+            float _181 = max(_179, _180);
+            float _182 = min(_179, _180);
             float _183 = 2.0 * _133.x;
             float _184 = _181 + _182;
             float _216;
@@ -25237,8 +25102,8 @@ void main()
             vec2 _254 = abs(_143);
             float _255 = _254.x;
             float _256 = _254.y;
-            float _257 = isnan(_256) ? _255 : (isnan(_255) ? _256 : max(_255, _256));
-            float _258 = isnan(_256) ? _255 : (isnan(_255) ? _256 : min(_255, _256));
+            float _257 = max(_255, _256);
+            float _258 = min(_255, _256);
             float _259 = 2.0 * _253;
             float _260 = _257 + _258;
             float _292;
@@ -25484,8 +25349,7 @@ void main()
                 }
                 _464 = _463;
             }
-            float _466 = ((_292 - _326) + (_360 - _394)) + (_430 - _464);
-            _468 = isnan(1.0) ? _466 : (isnan(_466) ? 1.0 : min(_466, 1.0));
+            _468 = min(((_292 - _326) + (_360 - _394)) + (_430 - _464), 1.0);
         }
         _469 = _468;
     }
@@ -25500,7 +25364,7 @@ void main()
         float _486;
         if (_481)
         {
-            _486 = isnan(texelFetch(waxBuffer1, int(_107)).w) ? texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y : (isnan(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y) ? texelFetch(waxBuffer1, int(_107)).w : min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y, texelFetch(waxBuffer1, int(_107)).w));
+            _486 = min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y, texelFetch(waxBuffer1, int(_107)).w);
         }
         else
         {
@@ -25547,8 +25411,8 @@ void main()
                 vec2 _513 = abs(_478);
                 float _514 = _513.x;
                 float _515 = _513.y;
-                float _516 = isnan(_515) ? _514 : (isnan(_514) ? _515 : max(_514, _515));
-                float _517 = isnan(_515) ? _514 : (isnan(_514) ? _515 : min(_514, _515));
+                float _516 = max(_514, _515);
+                float _517 = min(_514, _515);
                 float _518 = 2.0 * _133.y;
                 float _519 = _516 + _517;
                 float _551;
@@ -25639,8 +25503,8 @@ void main()
                 vec2 _589 = abs(_478);
                 float _590 = _589.x;
                 float _591 = _589.y;
-                float _592 = isnan(_591) ? _590 : (isnan(_590) ? _591 : max(_590, _591));
-                float _593 = isnan(_591) ? _590 : (isnan(_590) ? _591 : min(_590, _591));
+                float _592 = max(_590, _591);
+                float _593 = min(_590, _591);
                 float _594 = 2.0 * _588;
                 float _595 = _592 + _593;
                 float _627;
@@ -25886,8 +25750,7 @@ void main()
                     }
                     _799 = _798;
                 }
-                float _801 = ((_627 - _661) + (_695 - _729)) + (_765 - _799);
-                _803 = isnan(1.0) ? _801 : (isnan(_801) ? 1.0 : min(_801, 1.0));
+                _803 = min(((_627 - _661) + (_695 - _729)) + (_765 - _799), 1.0);
             }
             _804 = _803;
         }
@@ -25903,7 +25766,7 @@ void main()
         float _816;
         if (_146)
         {
-            _816 = isnan(texelFetch(waxBuffer1, int(_107)).z) ? texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x : (isnan(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x) ? texelFetch(waxBuffer1, int(_107)).z : min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x, texelFetch(waxBuffer1, int(_107)).z));
+            _816 = min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x, texelFetch(waxBuffer1, int(_107)).z);
         }
         else
         {
@@ -25933,7 +25796,7 @@ void main()
         float _836;
         if (_826)
         {
-            _836 = isnan(texelFetch(waxBuffer1, int(_107)).w) ? texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y : (isnan(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y) ? texelFetch(waxBuffer1, int(_107)).w : min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y, texelFetch(waxBuffer1, int(_107)).w));
+            _836 = min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y, texelFetch(waxBuffer1, int(_107)).w);
         }
         else
         {
@@ -25962,17 +25825,7 @@ void main()
     {
         vec2 _852 = texelFetch(waxBuffer1, int(_137)).xy + (texelFetch(waxBuffer1, int(wax_TEXCOORD1)).xy * 0.5);
         vec2 _853 = vec2(texelFetch(waxBuffer1, int(_137)).z);
-        vec2 _854 = texelFetch(waxBuffer1, int(_137)).xy + _853;
-        bvec2 _1283 = isnan(_854);
-        bvec2 _1284 = isnan(_852);
-        vec2 _1285 = min(_854, _852);
-        vec2 _1286 = vec2(_1283.x ? _852.x : _1285.x, _1283.y ? _852.y : _1285.y);
-        vec2 _857 = (texelFetch(waxBuffer1, int(_137)).xy + texelFetch(waxBuffer1, int(wax_TEXCOORD1)).xy) - _853;
-        bvec2 _1288 = isnan(_857);
-        bvec2 _1289 = isnan(_852);
-        vec2 _1290 = max(_857, _852);
-        vec2 _1291 = vec2(_1288.x ? _852.x : _1290.x, _1288.y ? _852.y : _1290.y);
-        _860 = clamp(_846, vec2(_1284.x ? _854.x : _1286.x, _1284.y ? _854.y : _1286.y), vec2(_1289.x ? _857.x : _1291.x, _1289.y ? _857.y : _1291.y));
+        _860 = clamp(_846, min(texelFetch(waxBuffer1, int(_137)).xy + _853, _852), max((texelFetch(waxBuffer1, int(_137)).xy + texelFetch(waxBuffer1, int(wax_TEXCOORD1)).xy) - _853, _852));
     }
     else
     {
@@ -26242,11 +26095,8 @@ void main()
         if ((waxConstants[2].y) == 3u)
         {
             float _1148 = _1110.x;
-            float _1149 = _1110.y;
-            float _1150 = _1110.z;
-            float _1151 = isnan(_1150) ? _1149 : (isnan(_1149) ? _1150 : max(_1149, _1150));
             _1206 = vec4(0.0);
-            _1207 = vec4(_1148, _1149, _1150, isnan(_1151) ? _1148 : (isnan(_1148) ? _1151 : max(_1148, _1151)));
+            _1207 = vec4(_1148, _1110.yz, max(_1148, max(_1110.y, _1110.z)));
         }
         else
         {
@@ -26394,7 +26244,7 @@ void main()
     float _156;
     if (_151)
     {
-        _156 = isnan(texelFetch(waxBuffer1, int(_112)).z) ? texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x : (isnan(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x) ? texelFetch(waxBuffer1, int(_112)).z : min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x, texelFetch(waxBuffer1, int(_112)).z));
+        _156 = min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x, texelFetch(waxBuffer1, int(_112)).z);
     }
     else
     {
@@ -26441,8 +26291,8 @@ void main()
             vec2 _183 = abs(_148);
             float _184 = _183.x;
             float _185 = _183.y;
-            float _186 = isnan(_185) ? _184 : (isnan(_184) ? _185 : max(_184, _185));
-            float _187 = isnan(_185) ? _184 : (isnan(_184) ? _185 : min(_184, _185));
+            float _186 = max(_184, _185);
+            float _187 = min(_184, _185);
             float _188 = 2.0 * _138.x;
             float _189 = _186 + _187;
             float _221;
@@ -26533,8 +26383,8 @@ void main()
             vec2 _259 = abs(_148);
             float _260 = _259.x;
             float _261 = _259.y;
-            float _262 = isnan(_261) ? _260 : (isnan(_260) ? _261 : max(_260, _261));
-            float _263 = isnan(_261) ? _260 : (isnan(_260) ? _261 : min(_260, _261));
+            float _262 = max(_260, _261);
+            float _263 = min(_260, _261);
             float _264 = 2.0 * _258;
             float _265 = _262 + _263;
             float _297;
@@ -26780,8 +26630,7 @@ void main()
                 }
                 _469 = _468;
             }
-            float _471 = ((_297 - _331) + (_365 - _399)) + (_435 - _469);
-            _473 = isnan(1.0) ? _471 : (isnan(_471) ? 1.0 : min(_471, 1.0));
+            _473 = min(((_297 - _331) + (_365 - _399)) + (_435 - _469), 1.0);
         }
         _474 = _473;
     }
@@ -26796,7 +26645,7 @@ void main()
         float _491;
         if (_486)
         {
-            _491 = isnan(texelFetch(waxBuffer1, int(_112)).w) ? texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y : (isnan(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y) ? texelFetch(waxBuffer1, int(_112)).w : min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y, texelFetch(waxBuffer1, int(_112)).w));
+            _491 = min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y, texelFetch(waxBuffer1, int(_112)).w);
         }
         else
         {
@@ -26843,8 +26692,8 @@ void main()
                 vec2 _518 = abs(_483);
                 float _519 = _518.x;
                 float _520 = _518.y;
-                float _521 = isnan(_520) ? _519 : (isnan(_519) ? _520 : max(_519, _520));
-                float _522 = isnan(_520) ? _519 : (isnan(_519) ? _520 : min(_519, _520));
+                float _521 = max(_519, _520);
+                float _522 = min(_519, _520);
                 float _523 = 2.0 * _138.y;
                 float _524 = _521 + _522;
                 float _556;
@@ -26935,8 +26784,8 @@ void main()
                 vec2 _594 = abs(_483);
                 float _595 = _594.x;
                 float _596 = _594.y;
-                float _597 = isnan(_596) ? _595 : (isnan(_595) ? _596 : max(_595, _596));
-                float _598 = isnan(_596) ? _595 : (isnan(_595) ? _596 : min(_595, _596));
+                float _597 = max(_595, _596);
+                float _598 = min(_595, _596);
                 float _599 = 2.0 * _593;
                 float _600 = _597 + _598;
                 float _632;
@@ -27182,8 +27031,7 @@ void main()
                     }
                     _804 = _803;
                 }
-                float _806 = ((_632 - _666) + (_700 - _734)) + (_770 - _804);
-                _808 = isnan(1.0) ? _806 : (isnan(_806) ? 1.0 : min(_806, 1.0));
+                _808 = min(((_632 - _666) + (_700 - _734)) + (_770 - _804), 1.0);
             }
             _809 = _808;
         }
@@ -27199,7 +27047,7 @@ void main()
         float _821;
         if (_151)
         {
-            _821 = isnan(texelFetch(waxBuffer1, int(_112)).z) ? texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x : (isnan(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x) ? texelFetch(waxBuffer1, int(_112)).z : min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x, texelFetch(waxBuffer1, int(_112)).z));
+            _821 = min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x, texelFetch(waxBuffer1, int(_112)).z);
         }
         else
         {
@@ -27229,7 +27077,7 @@ void main()
         float _841;
         if (_831)
         {
-            _841 = isnan(texelFetch(waxBuffer1, int(_112)).w) ? texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y : (isnan(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y) ? texelFetch(waxBuffer1, int(_112)).w : min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y, texelFetch(waxBuffer1, int(_112)).w));
+            _841 = min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y, texelFetch(waxBuffer1, int(_112)).w);
         }
         else
         {
@@ -27258,17 +27106,7 @@ void main()
     {
         vec2 _857 = texelFetch(waxBuffer1, int(_142)).xy + (texelFetch(waxBuffer1, int(wax_TEXCOORD1)).xy * 0.5);
         vec2 _858 = vec2(texelFetch(waxBuffer1, int(_142)).z);
-        vec2 _859 = texelFetch(waxBuffer1, int(_142)).xy + _858;
-        bvec2 _1583 = isnan(_859);
-        bvec2 _1584 = isnan(_857);
-        vec2 _1585 = min(_859, _857);
-        vec2 _1586 = vec2(_1583.x ? _857.x : _1585.x, _1583.y ? _857.y : _1585.y);
-        vec2 _862 = (texelFetch(waxBuffer1, int(_142)).xy + texelFetch(waxBuffer1, int(wax_TEXCOORD1)).xy) - _858;
-        bvec2 _1588 = isnan(_862);
-        bvec2 _1589 = isnan(_857);
-        vec2 _1590 = max(_862, _857);
-        vec2 _1591 = vec2(_1588.x ? _857.x : _1590.x, _1588.y ? _857.y : _1590.y);
-        _865 = clamp(_851, vec2(_1584.x ? _859.x : _1586.x, _1584.y ? _859.y : _1586.y), vec2(_1589.x ? _862.x : _1591.x, _1589.y ? _862.y : _1591.y));
+        _865 = clamp(_851, min(texelFetch(waxBuffer1, int(_142)).xy + _858, _857), max((texelFetch(waxBuffer1, int(_142)).xy + texelFetch(waxBuffer1, int(wax_TEXCOORD1)).xy) - _858, _857));
     }
     else
     {
@@ -27776,10 +27614,7 @@ void main()
         if ((waxConstants[2].y) == 3u)
         {
             float _1455 = _1421.x;
-            float _1456 = _1421.y;
-            float _1457 = _1421.z;
-            float _1458 = isnan(_1457) ? _1456 : (isnan(_1456) ? _1457 : max(_1456, _1457));
-            _1504 = vec4(_1455, _1456, _1457, isnan(_1458) ? _1455 : (isnan(_1455) ? _1458 : max(_1455, _1458)));
+            _1504 = vec4(_1455, _1421.yz, max(_1455, max(_1421.y, _1421.z)));
         }
         else
         {
@@ -27919,7 +27754,7 @@ void main()
     float _157;
     if (_152)
     {
-        _157 = isnan(texelFetch(waxBuffer1, int(_113)).z) ? texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x : (isnan(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x) ? texelFetch(waxBuffer1, int(_113)).z : min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x, texelFetch(waxBuffer1, int(_113)).z));
+        _157 = min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x, texelFetch(waxBuffer1, int(_113)).z);
     }
     else
     {
@@ -27966,8 +27801,8 @@ void main()
             vec2 _184 = abs(_149);
             float _185 = _184.x;
             float _186 = _184.y;
-            float _187 = isnan(_186) ? _185 : (isnan(_185) ? _186 : max(_185, _186));
-            float _188 = isnan(_186) ? _185 : (isnan(_185) ? _186 : min(_185, _186));
+            float _187 = max(_185, _186);
+            float _188 = min(_185, _186);
             float _189 = 2.0 * _139.x;
             float _190 = _187 + _188;
             float _222;
@@ -28058,8 +27893,8 @@ void main()
             vec2 _260 = abs(_149);
             float _261 = _260.x;
             float _262 = _260.y;
-            float _263 = isnan(_262) ? _261 : (isnan(_261) ? _262 : max(_261, _262));
-            float _264 = isnan(_262) ? _261 : (isnan(_261) ? _262 : min(_261, _262));
+            float _263 = max(_261, _262);
+            float _264 = min(_261, _262);
             float _265 = 2.0 * _259;
             float _266 = _263 + _264;
             float _298;
@@ -28305,8 +28140,7 @@ void main()
                 }
                 _470 = _469;
             }
-            float _472 = ((_298 - _332) + (_366 - _400)) + (_436 - _470);
-            _474 = isnan(1.0) ? _472 : (isnan(_472) ? 1.0 : min(_472, 1.0));
+            _474 = min(((_298 - _332) + (_366 - _400)) + (_436 - _470), 1.0);
         }
         _475 = _474;
     }
@@ -28321,7 +28155,7 @@ void main()
         float _492;
         if (_487)
         {
-            _492 = isnan(texelFetch(waxBuffer1, int(_113)).w) ? texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y : (isnan(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y) ? texelFetch(waxBuffer1, int(_113)).w : min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y, texelFetch(waxBuffer1, int(_113)).w));
+            _492 = min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y, texelFetch(waxBuffer1, int(_113)).w);
         }
         else
         {
@@ -28368,8 +28202,8 @@ void main()
                 vec2 _519 = abs(_484);
                 float _520 = _519.x;
                 float _521 = _519.y;
-                float _522 = isnan(_521) ? _520 : (isnan(_520) ? _521 : max(_520, _521));
-                float _523 = isnan(_521) ? _520 : (isnan(_520) ? _521 : min(_520, _521));
+                float _522 = max(_520, _521);
+                float _523 = min(_520, _521);
                 float _524 = 2.0 * _139.y;
                 float _525 = _522 + _523;
                 float _557;
@@ -28460,8 +28294,8 @@ void main()
                 vec2 _595 = abs(_484);
                 float _596 = _595.x;
                 float _597 = _595.y;
-                float _598 = isnan(_597) ? _596 : (isnan(_596) ? _597 : max(_596, _597));
-                float _599 = isnan(_597) ? _596 : (isnan(_596) ? _597 : min(_596, _597));
+                float _598 = max(_596, _597);
+                float _599 = min(_596, _597);
                 float _600 = 2.0 * _594;
                 float _601 = _598 + _599;
                 float _633;
@@ -28707,8 +28541,7 @@ void main()
                     }
                     _805 = _804;
                 }
-                float _807 = ((_633 - _667) + (_701 - _735)) + (_771 - _805);
-                _809 = isnan(1.0) ? _807 : (isnan(_807) ? 1.0 : min(_807, 1.0));
+                _809 = min(((_633 - _667) + (_701 - _735)) + (_771 - _805), 1.0);
             }
             _810 = _809;
         }
@@ -28724,7 +28557,7 @@ void main()
         float _822;
         if (_152)
         {
-            _822 = isnan(texelFetch(waxBuffer1, int(_113)).z) ? texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x : (isnan(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x) ? texelFetch(waxBuffer1, int(_113)).z : min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x, texelFetch(waxBuffer1, int(_113)).z));
+            _822 = min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).x, texelFetch(waxBuffer1, int(_113)).z);
         }
         else
         {
@@ -28754,7 +28587,7 @@ void main()
         float _842;
         if (_832)
         {
-            _842 = isnan(texelFetch(waxBuffer1, int(_113)).w) ? texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y : (isnan(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y) ? texelFetch(waxBuffer1, int(_113)).w : min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y, texelFetch(waxBuffer1, int(_113)).w));
+            _842 = min(texelFetch(waxBuffer1, int(wax_TEXCOORD1)).y, texelFetch(waxBuffer1, int(_113)).w);
         }
         else
         {
@@ -28783,17 +28616,7 @@ void main()
     {
         vec2 _858 = texelFetch(waxBuffer1, int(_143)).xy + (texelFetch(waxBuffer1, int(wax_TEXCOORD1)).xy * 0.5);
         vec2 _859 = vec2(texelFetch(waxBuffer1, int(_143)).z);
-        vec2 _860 = texelFetch(waxBuffer1, int(_143)).xy + _859;
-        bvec2 _1599 = isnan(_860);
-        bvec2 _1600 = isnan(_858);
-        vec2 _1601 = min(_860, _858);
-        vec2 _1602 = vec2(_1599.x ? _858.x : _1601.x, _1599.y ? _858.y : _1601.y);
-        vec2 _863 = (texelFetch(waxBuffer1, int(_143)).xy + texelFetch(waxBuffer1, int(wax_TEXCOORD1)).xy) - _859;
-        bvec2 _1604 = isnan(_863);
-        bvec2 _1605 = isnan(_858);
-        vec2 _1606 = max(_863, _858);
-        vec2 _1607 = vec2(_1604.x ? _858.x : _1606.x, _1604.y ? _858.y : _1606.y);
-        _866 = clamp(_852, vec2(_1600.x ? _860.x : _1602.x, _1600.y ? _860.y : _1602.y), vec2(_1605.x ? _863.x : _1607.x, _1605.y ? _863.y : _1607.y));
+        _866 = clamp(_852, min(texelFetch(waxBuffer1, int(_143)).xy + _859, _858), max((texelFetch(waxBuffer1, int(_143)).xy + texelFetch(waxBuffer1, int(wax_TEXCOORD1)).xy) - _859, _858));
     }
     else
     {
@@ -29311,11 +29134,8 @@ void main()
         if ((waxConstants[2].y) == 3u)
         {
             float _1460 = _1422.x;
-            float _1461 = _1422.y;
-            float _1462 = _1422.z;
-            float _1463 = isnan(_1462) ? _1461 : (isnan(_1461) ? _1462 : max(_1461, _1462));
             _1518 = vec4(0.0);
-            _1519 = vec4(_1460, _1461, _1462, isnan(_1463) ? _1460 : (isnan(_1460) ? _1463 : max(_1460, _1463)));
+            _1519 = vec4(_1460, _1422.yz, max(_1460, max(_1422.y, _1422.z)));
         }
         else
         {
