@@ -10,7 +10,8 @@
 #
 # The shaders are those of VulkanBackend, listed in ../vulkangfx/compile_shaders.py, plus the
 # mipmap shaders, which VulkanBackend doesn't need. Pixel shaders are compiled twice, the second
-# time with WAX_DUAL_SOURCE for pipelines that blend with a second color.
+# time with WAX_DUAL_SOURCE for pipelines that blend with a second color. All are compiled as
+# HLSL 2018, see ../hlsl/README.md.
 #
 # Where things end up in Metal, see MetalBackend:
 #
@@ -47,7 +48,7 @@ VERTEX_SHADERS = vulkan_shaders.VERTEX_SHADERS + [('mipmapVS', ['vs_mipmap.hlsl'
 PIXEL_SHADERS = vulkan_shaders.PIXEL_SHADERS
 MIPMAP_PIXEL_SHADER = ('mipmapPS', ['ps_mipmap.hlsl'])
 
-DXC_OPTIONS = ['-nologo', '-spirv', '-fspv-target-env=vulkan1.3', '-fvk-t-shift', '1', '0', '-O3', '-E', 'main']
+DXC_OPTIONS = ['-nologo', '-HV', '2018', '-spirv', '-fspv-target-env=vulkan1.3', '-fvk-t-shift', '1', '0', '-O3', '-E', 'main']
 SPIRV_CROSS_OPTIONS = ['--msl', '--msl-version', '20300', '--msl-decoration-binding']
 
 HEADER = '''/*=========================================================================

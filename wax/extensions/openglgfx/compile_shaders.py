@@ -10,7 +10,8 @@
 #
 # The shaders are those of VulkanBackend, listed in ../vulkangfx/compile_shaders.py. Pixel shaders
 # are compiled twice, the second time with WAX_DUAL_SOURCE for pipelines that blend with a second
-# color. All are compiled with WAX_GLSL defined, see vs_warp.hlsl.
+# color. All are compiled with WAX_GLSL defined, see vs_warp.hlsl, and as HLSL 2018, see
+# ../hlsl/README.md.
 #
 # What is fixed up, see GlBackend for the other side of it:
 #
@@ -71,7 +72,7 @@ spec.loader.exec_module(vulkan_shaders)
 VERTEX_SHADERS = vulkan_shaders.VERTEX_SHADERS
 PIXEL_SHADERS = vulkan_shaders.PIXEL_SHADERS
 
-DXC_OPTIONS = ['-nologo', '-spirv', '-fspv-target-env=vulkan1.1', '-O3', '-E', 'main', '-D', 'WAX_GLSL=1']
+DXC_OPTIONS = ['-nologo', '-HV', '2018', '-spirv', '-fspv-target-env=vulkan1.1', '-O3', '-E', 'main', '-D', 'WAX_GLSL=1']
 SPIRV_CROSS_OPTIONS = ['--version', '330', '--no-es', '--glsl-emit-push-constant-as-ubo']
 
 LICENSE_FROM = os.path.join(HERE, '..', 'vulkangfx', 'wax_vulkanshaders.h')

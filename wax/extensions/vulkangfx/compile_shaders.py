@@ -14,6 +14,7 @@
 #
 # Options:
 #
+#   -HV 2018            No short-circuiting of &&, || and ?:, as with FXC, see ../hlsl/README.md.
 #   -fvk-s-shift 5 0    Samplers (s0) after the textures and buffers (t0-t4) in the descriptor set.
 #   -fvk-invert-y       Vertex shaders: Vulkan's clip space has y pointing down, D3D's up.
 
@@ -55,7 +56,7 @@ PIXEL_SHADERS = [
 	('warpPaletteBlitPS',	PIXEL + ['warp.hlsl', 'ps_warp_blit_palette.hlsl']),
 ]
 
-COMMON_OPTIONS = ['-nologo', '-spirv', '-fspv-target-env=vulkan1.3', '-fvk-s-shift', '5', '0', '-O3', '-E', 'main']
+COMMON_OPTIONS = ['-nologo', '-HV', '2018', '-spirv', '-fspv-target-env=vulkan1.3', '-fvk-s-shift', '5', '0', '-O3', '-E', 'main']
 
 
 def compile_shader(dxc, tmpdir, name, files, profile, extra):
