@@ -42,6 +42,9 @@ wax_obj wax_createSurfaceReader(const wax_surfaceReaderBP* blueprint)
 wax_obj wax_readSurfaceFromBlob( wax_obj surfaceReader, wax_obj blob )
 {
 	auto pSurface = getPtr(surfaceReader)->readSurfaceFromBlob(static_cast<Blob*>(reinterpret_cast<Object*>(blob)));
+	if( !pSurface )
+		return nullptr;
+
 	pSurface->retain();
 	return static_cast<Object*>(pSurface);
 }
@@ -49,6 +52,9 @@ wax_obj wax_readSurfaceFromBlob( wax_obj surfaceReader, wax_obj blob )
 wax_obj wax_readSurfaceFromMemory( wax_obj surfaceReader, const char * pData )
 {
 	auto pSurface = getPtr(surfaceReader)->readSurfaceFromMemory(pData);
+	if( !pSurface )
+		return nullptr;
+
 	pSurface->retain();
 	return static_cast<Object*>(pSurface);
 }

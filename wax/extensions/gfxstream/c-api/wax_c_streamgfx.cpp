@@ -133,6 +133,9 @@ wax_obj wax_createMirrorSurface(wax_obj streamEncoder, wax_mirrorSurfaceBP* blue
 	bp.surface = static_cast<Surface*>(reinterpret_cast<Object*>(blueprint->surface));
 	bp.streamOnCreate = blueprint->streamOnCreate != 0;
 	auto p = MirrorSurface::create(bp);
+	if( !p )
+		return nullptr;
+
 	p->retain();
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
@@ -177,6 +180,9 @@ wax_obj wax_createStreamEdgemap(wax_obj streamEncoder, const wax_edgemapBP* blue
 
 	auto pEncoder = static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder));
 	auto p = StreamEdgemap::create(pEncoder, bp);
+	if( !p )
+		return nullptr;
+
 	p->retain();
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
@@ -192,6 +198,9 @@ wax_obj wax_createStreamEdgemapFromFloats(wax_obj streamEncoder, const wax_edgem
 
 	auto pEncoder = static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder));
 	auto p = StreamEdgemap::create(pEncoder, bp, (SampleOrigo) origo, pSamples, edges, edgePitch, samplePitch);
+	if( !p )
+		return nullptr;
+
 	p->retain();
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
@@ -207,6 +216,9 @@ wax_obj wax_createStreamEdgemapFromSpx(wax_obj streamEncoder, const wax_edgemapB
 
 	auto pEncoder = static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder));
 	auto p = StreamEdgemap::create(pEncoder, bp, (SampleOrigo) origo, pSamples, edges, edgePitch, samplePitch);
+	if( !p )
+		return nullptr;
+
 	p->retain();
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }

@@ -43,6 +43,9 @@ wax_obj wax_createEdgemap(wax_obj factory, const wax_edgemapBP* pCBP)
 	convertBP(pCBP,cppBP,tints);
 
 	auto p = getPtr(factory)->createEdgemap(cppBP);
+	if( !p )
+		return nullptr;
+
 	p->retain();
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
@@ -55,6 +58,9 @@ wax_obj wax_createEdgemapFromFloats(wax_obj factory, const wax_edgemapBP* pCBP, 
 	convertBP(pCBP,cppBP,tints);
 
 	auto p = getPtr(factory)->createEdgemap(cppBP, (SampleOrigo) origo, pSamples, edges, edgePitch, samplePitch);
+	if( !p )
+		return nullptr;
+
 	p->retain();
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
@@ -67,6 +73,9 @@ wax_obj wax_createEdgemapFromSpx(wax_obj factory, const wax_edgemapBP* pCBP, wax
 	convertBP(pCBP,cppBP,tints);
 
 	auto p = getPtr(factory)->createEdgemap(cppBP, (SampleOrigo)origo, (const spx*) pSamples, edges, edgePitch, samplePitch);
+	if( !p )
+		return nullptr;
+
 	p->retain();
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }

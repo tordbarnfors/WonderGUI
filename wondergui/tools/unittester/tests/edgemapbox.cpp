@@ -232,22 +232,22 @@ bool EdgemapBoxTest::drawnTwiceTest(std::ostream& output)
 
 	// Not until generated.
 
-	auto colorsOf = [](Edgemap* pEdgemap)
+	auto hasColors = [](Edgemap* pEdgemap, const std::vector<HiColor>& colors)
 	{
-		return std::vector<HiColor>(pEdgemap->flatColors(), pEdgemap->flatColors() + pEdgemap->renderSegments());
+		return std::equal(colors.begin(), colors.end(), pEdgemap->flatColors(), pEdgemap->flatColors() + pEdgemap->renderSegments());
 	};
 
 	auto pBox = EdgemapBox::create(WGBP(EdgemapBox, _.factory = pFactory), first);
 	Edgemap* pBefore = pBox->pieces()[0].pEdgemap;
-	auto colorsBefore = colorsOf(pBefore);
+	std::vector<HiColor> colorsBefore(pBefore->flatColors(), pBefore->flatColors() + pBefore->renderSegments());
 
 	TEST_ASSERT(pBox->update(second));
-	TEST_ASSERT(pBox->pieces()[0].pEdgemap == pBefore && colorsOf(pBefore) == colorsBefore);
+	TEST_ASSERT(pBox->pieces()[0].pEdgemap == pBefore && hasColors(pBefore, colorsBefore));
 
 	// Recolored in place when nothing else holds the edgemaps, replaced when held.
 
 	pBox->generate();
-	TEST_ASSERT(pBox->pieces()[0].pEdgemap == pBefore && colorsOf(pBefore) != colorsBefore);
+	TEST_ASSERT(pBox->pieces()[0].pEdgemap == pBefore && !hasColors(pBefore, colorsBefore));
 
 	Edgemap_p pHeld = pBox->pieces()[0].pEdgemap;
 	TEST_ASSERT(pBox->update(first));

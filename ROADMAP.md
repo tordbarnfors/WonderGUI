@@ -452,9 +452,7 @@ For VulkanBackend, still to do:
   rendered into without touching alpha, as Vulkan has no BGRX.
 - **Windows render into an image of their own,** copied to the swap chain when something was
   drawn, as Wax only draws what changed and swap chain images don't keep their content.
-  wappsdl3gl does the same with a GlSurface per window, flipped into the back buffer and
-  swapped in, since what is drawn into the front buffer never shows on Wayland. The bytes are
-  copied as they are, as the window of an EGL context isn't sRGB-capable.
+  wappsdl3gl does the same, see WonderApp on Wayland below.
 - **Mipmaps are made with linear blits** in Vulkan, rather than the shaders DX12Backend draws them
   with, which average the same four texels.
 
@@ -487,3 +485,26 @@ For VulkanBackend, still to do:
   handful of 64-bit divisions per line remain, one set for the direction and slope and one per
   Vertical or Horizontal cap and per round cap, and lines allocate nothing once buffers have grown.
   Output is the same as before, down to the rounding.
+
+### Build setup (2026-11)
+
+- **`CMakePresets.json` is the shared build setup,** with a configure preset per WonderApp
+  framework and platform, read by VS Code, Visual Studio, CLion and `cmake --preset`. All of
+  them build in `build/`, as the folder per platform (`tuxbuild/`, `vsbuild/`) was an accident of
+  history. Linux builds with Ninja, in Debug or, with the `-release` presets, Release. Windows
+  builds with Visual Studio and macOS with Xcode, both multi-config.
+  Personal presets go in `CMakeUserPresets.json`, which is git-ignored.
+- **`.vscode/` stays out of git.** Developers use different IDEs, and VS Code needs little: one
+  launch configuration for the launch target picked in CMake Tools, run from the repository root,
+  covers every tool, see `README`. CMake has no target property for a VS Code debugger, as it has
+  for Visual Studio and Xcode in `target_working_directory()`.
+
+### WonderApp on Wayland (2026-11)
+
+- **wappsdl3gl windows render into a GlSurface of their own,** flipped into the back buffer and
+  swapped in when something was drawn, as Wax only draws what changed and the back buffer doesn't
+  keep its content. What is drawn into the front buffer never shows on Wayland. The bytes are
+  copied as they are, as the window of an EGL context isn't sRGB-capable.
+- **SDL3 windows present again when exposed.** The decorations SDL draws with libdecor only change
+  when the window commits a frame, so without that the border of a resizable window keeps an input
+  region over all of it and catches the pointer.

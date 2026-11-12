@@ -28,8 +28,10 @@
 
 ## Building and testing
 
-- CMake root is the repository root. Pick the app framework with `-DWAPPLIB=<name>`
-  (see the list in `CMakeLists.txt`), e.g. `wappsdl2sw` for software rendering on Linux.
+- CMake root is the repository root. `CMakePresets.json` has a configure preset per app
+  framework and platform, e.g. `cmake --preset linux-wappsdl3gl` (Debug, or `-release`). All of
+  them build in `build/`. Without a preset, pick the framework with `-DWAPPLIB=<name>` (see the
+  list in `CMakeLists.txt`).
 - In a Linux container without X11 development packages, SDL3 needs
   `-DSDL_X11_XCURSOR=OFF -DSDL_X11_XINPUT=OFF -DSDL_X11_XFIXES=OFF -DSDL_X11_XRANDR=OFF
   -DSDL_X11_XSCRNSAVER=OFF -DSDL_X11_XSHAPE=OFF -DSDL_X11_XTEST=OFF` to configure.
@@ -49,7 +51,7 @@
   widgets, skins and layouts (see its `README.md` for adding a test), `workbench` for trying things out.
 - Source files are listed explicitly in each `CMakeLists.txt`, so new files must be added there.
   New public headers also go in `wax/source/wax.h` or `wondergui/wondergui.h`.
-- `tuxbuild/` is the usual local build directory and is git-ignored.
+- `build/` is the build directory on all platforms and is git-ignored.
 
 ## Conventions
 
