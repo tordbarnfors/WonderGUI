@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
-#include <cstring>
 #include <ctime>
 #include <fstream>
 #include <limits>
@@ -1820,24 +1819,6 @@ void GfxDeviceTester::run_performance_pass(int test)
 	r.bDone = true;
 }
 
-//____ is_gpu_backend() _______________________________________________________
-/*
-	The GPU backends of this branch have no common base class and the tester
-	doesn't link them, so we go by the class names in their TypeInfo.
-*/
-
-static bool is_gpu_backend(Backend* pBackend)
-{
-	for (const TypeInfo* p = &pBackend->typeInfo(); p != nullptr; p = p->pSuperClass)
-	{
-		if (std::strcmp(p->className, "GlBackend") == 0 ||
-			std::strcmp(p->className, "DX12Backend") == 0 ||
-			std::strcmp(p->className, "MetalBackend") == 0)
-			return true;
-	}
-	return false;
-}
-
 //____ warm_up_testee() _______________________________________________________
 /*
 	Keeps the testee busy with the heater for c_perfRunWarmupTime before a run, so
@@ -1855,7 +1836,7 @@ void GfxDeviceTester::warm_up_testee()
 	GfxDevice* pDevice = m_backends[TESTEE].pDevice;
 
 	m_bHeatTestee = pDevice->isInstanceOf(GfxDeviceGen2::TYPEINFO) &&
-					is_gpu_backend(static_cast<GfxDeviceGen2*>(pDevice)->backend());
+					static_cast<GfxDeviceGen2*>(pDevice)->backend()->isInstanceOf(GpuBackend::TYPEINFO);
 
 	m_heaterLoops = 1;
 	m_heaterBest = std::numeric_limits<double>::max();
