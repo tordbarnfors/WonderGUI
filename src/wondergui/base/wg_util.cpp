@@ -412,6 +412,9 @@ namespace wg
 				if( maxSize.w == 0 || maxSize.h == 0 )
 					return {0,0};
 
+				if( orgSize.w == 0 && orgSize.h == 0 )
+					return {0,0};
+
 				SizeSPX	size;
 
 				float	fracX = orgSize.w / (float) maxSize.w;
