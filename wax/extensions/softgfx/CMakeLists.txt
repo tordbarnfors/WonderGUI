@@ -23,9 +23,13 @@ set(SOURCES
 	wax_softbackend.cpp
 	wax_softbackend.h
 	wax_softbackend_warp.cpp
+
+	wax_softkernelspec.h
+	wax_softkernelset.impl.h
+	wax_softkernelstanza.impl.h
+
 	wax_softkernels_default.cpp
 	wax_softkernels_default.h
-
 
 	wax_softkernels_tinylinear.cpp
 	wax_softkernels_tinylinear.h
@@ -45,7 +49,6 @@ set(SOURCES
 	wax_softkernels_rgb555be_extras.cpp
 	wax_softkernels_rgb555be_extras.h
 
-	wax_softkernelstanza.impl.h
 	wax_softdevicefactory.cpp
 	wax_softdevicefactory.h	
 	wax_softsurface.cpp
