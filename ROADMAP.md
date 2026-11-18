@@ -561,8 +561,10 @@ there, see KNOWN_ISSUES.md.
 On GlBackend, rounded boxes took 1.8 times as long as on the old GlBackend with its own GLSL, on
 Intel UHD 770 (Mesa). Rings and pie charts took 1.1 times as long, on Windows (Arc B580) all shapes
 3-11 times as long. The shaders work the same, the time went to how the HLSL is turned into GLSL.
-Now rounded boxes take 0.7 times as long as on the old GlBackend, rings, pie charts and line caps
-0.8-0.95 times, and VulkanBackend gains about the same.
+Now rounded boxes take 0.7 times as long as on the old GlBackend, rings and pie charts 0.8-0.95
+times and line caps 0.25-0.4 times, and VulkanBackend gains about the same. On Windows (Arc B580)
+line caps still took up to 4 times as long as on the old GlBackend after the first three changes
+below, when the other shapes were level.
 
 - **DXC compiles as HLSL 2018** (`-HV 2018`, all three compile_shaders.py). The default, HLSL
   2021, short-circuits `&&`, `||` and `?:`, so each became a branch, and a branch that reads a
@@ -578,6 +580,28 @@ Now rounded boxes take 0.7 times as long as on the old GlBackend, rings, pie cha
 - **Plain min() and max() in the GLSL** (`plain_min_max()` in `openglgfx/compile_shaders.py`). DXC
   makes HLSL's min() and max() NMin and NMax, which SPIRV-Cross can only write in GLSL as two
   isnan() and two selects around each. About 10% for rings and rounded boxes.
+- **Lines without arrays indexed at run time** (`ps_shape_line.hlsl`). The part of a pixel inside
+  the planes of a line was found by clipping the pixel to each plane in turn, with the corners in
+  arrays indexed by how many there were. Mesa read them through chains of selects, 4760
+  instructions and only SIMD8, and drivers that can't keep such arrays in registers put them in
+  scratch memory. Now the area comes from Green's theorem: each pixel edge and the line of each
+  plane is clipped to the others as an interval, and the pixel is half the sum of each interval
+  times how far it is from the pixel center. Indices are all constants once loops are unrolled.
+  Most pixels are crossed by one plane at most, which `halfPlaneCoverage()` covers, and the
+  others mostly by two or three, so only those planes are gathered for the intervals, which take
+  about n * n steps. Four or more, in lines thinner than 1.4 pixels and at spears, take a loop
+  over all six planes of a line, which turns them around one place per step instead of indexing
+  them. Unrolled, that and working out both round ends the general way took too many registers
+  for SIMD16 on Intel. Mesa makes about 2170 instructions of the shader now, most of them in
+  branches a pixel doesn't take, and runs it as SIMD16. On Intel UHD 770
+  (Mesa) line caps take 0.3-0.5 times as long as before on GlBackend and 0.2-0.45 times on
+  VulkanBackend. Results are the same as before in all of gfxdevicetester on both: the area is
+  exact both ways.
+  Lines on top of each other need care: a pixel edge and a plane facing the same way count once,
+  and planes facing each other both count, which cancels out. Lines less than 1e-6 apart in
+  direction are taken as parallel, with the distance between them worked out the same from both,
+  as normals that should be exactly opposite can be a little off, and a multiplication fused into
+  an addition leaves the cross product of two of them a little off 0.
 
 Not yet timed on Windows, where the shapes were slowest, nor with DX12Backend and MetalBackend.
 MetalBackend gets all but the plain min() and max(), which MSL has, DX12Backend only the shader
