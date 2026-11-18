@@ -602,6 +602,13 @@ below, when the other shapes were level.
   direction are taken as parallel, with the distance between them worked out the same from both,
   as normals that should be exactly opposite can be a little off, and a multiplication fused into
   an addition leaves the cross product of two of them a little off 0.
+- **No pipeline for lines without caps unless there are some** (`GpuBackend::_drawLines()`). A
+  line command set the pipeline of lines without caps first, then that of lines with caps, so
+  one with only capped lines switched pipelines twice for nothing. On Windows (Arc B580) the line
+  caps tests that draw each line in a clip of its own, one command per line, stayed at 4.6 times
+  as long as on the old GlBackend after the new line shader, which made the others 1.5-13 times
+  as fast. Those tests now take 0.65-0.9 times as long on GlBackend and 0.4-0.9 times on
+  VulkanBackend on Intel UHD 770 (Mesa), where the shader takes most of their time.
 
 Not yet timed on Windows, where the shapes were slowest, nor with DX12Backend and MetalBackend.
 MetalBackend gets all but the plain min() and max(), which MSL has, DX12Backend only the shader

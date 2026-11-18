@@ -615,10 +615,14 @@ namespace wax
 	// Lines are quads that cover everything the line might touch, with the line itself handed to
 	// the pixel shader as an offset, a half width and a slope, see GpuTools::lineQuad(). It works
 	// out the coverage of each pixel from those, which is what antialiases the edges.
+	//
+	// The pipeline is only set if there are lines without caps to draw. Lines with caps are drawn
+	// by another, and a command with only those would otherwise switch pipelines twice, which on
+	// GlBackend on Windows took more time than drawing a short line.
 
 	void GpuBackend::_drawLines(const uint16_t*& pCmd, const RectSPX*& pRects, const HiColor*& pColors, int nClipRects, int nLines)
 	{
-		bool bDraw = m_buffers.pVertexPtr != nullptr && _setPipeline(PipelineKind::Line);
+		bool bDraw = m_buffers.pVertexPtr != nullptr;
 
 		const RectSPX* pClipRects = pRects;
 		pRects += nClipRects;
@@ -698,7 +702,7 @@ namespace wax
 		// are not the geometry, they are what it may be drawn inside, so the same lines are drawn
 		// once per rect with the scissor set to it.
 
-		if (nLinesDrawn > 0)
+		if (nLinesDrawn > 0 && _setPipeline(PipelineKind::Line))
 			_drawScissored(pClipRects, nClipRects, firstVertex, nLinesDrawn * 6);
 
 		if (!m_cappedLines.empty())
@@ -792,10 +796,8 @@ namespace wax
 			nLinesDrawn++;
 		}
 
-		if (nLinesDrawn == 0 || !_setPipeline(PipelineKind::ShapeLine))
-			return;
-
-		_drawScissored(pClipRects, nClipRects, firstVertex, nLinesDrawn * 6);
+		if (nLinesDrawn > 0)
+			_drawScissored(pClipRects, nClipRects, firstVertex, nLinesDrawn * 6);
 	}
 
 	//____ _addColor() ___________________________________________________________
