@@ -64,7 +64,16 @@ namespace wax
 			return n;
 		}
 
-		//____ forEachBit() ____________________________________________________
+		//____ forEachBits() ___________________________________________________
+
+		// Calls Body::run<a, b, ...>(pBackend) for each combination of a bit a set in the first
+		// mask, b set in the second and so on. Only set bits are instantiated, so compile time
+		// grows with what is selected.
+		//
+		// The loops are function templates expanding index sequences, with the bodies as static
+		// member templates, rather than generic lambdas. MSVC doesn't take what a lambda gets from
+		// its enclosing function template, such as a local constexpr variable or the spec, as a
+		// constant expression in all the ways the bodies need.
 
 		template<uint32_t mask>
 		constexpr std::array<int, popCount(mask)> bitList()
@@ -80,19 +89,34 @@ namespace wax
 		template<uint32_t mask>
 		inline constexpr auto c_bitList = bitList<mask>();
 
-		template<uint32_t mask, class Func, std::size_t... I>
-		void forEachBit(Func&& func, std::index_sequence<I...>)
-		{
-			(func(std::integral_constant<int, c_bitList<mask>[I]>{}), ...);
-		}
+		template<uint32_t... masks>
+		struct MaskList {};
 
-		// Calls func(std::integral_constant<int,N>) for each bit N set in mask.
-		// Only set bits are instantiated, so compile time grows with what is selected.
-
-		template<uint32_t mask, class Func>
-		void forEachBit(Func&& func)
+		template<class Body, int... bits>
+		struct BitLoop
 		{
-			forEachBit<mask>(std::forward<Func>(func), std::make_index_sequence<popCount(mask)>{});
+			static void run(SoftBackend* pBackend, MaskList<>)
+			{
+				Body::template run<bits...>(pBackend);
+			}
+
+			template<uint32_t mask, uint32_t... rest>
+			static void run(SoftBackend* pBackend, MaskList<mask, rest...>)
+			{
+				runBits(pBackend, MaskList<mask, rest...>{}, std::make_index_sequence<popCount(mask)>{});
+			}
+
+			template<uint32_t mask, uint32_t... rest, std::size_t... I>
+			static void runBits(SoftBackend* pBackend, MaskList<mask, rest...>, std::index_sequence<I...>)
+			{
+				(BitLoop<Body, bits..., c_bitList<mask>[I]>::run(pBackend, MaskList<rest...>{}), ...);
+			}
+		};
+
+		template<class Body, uint32_t... masks>
+		void forEachBits(SoftBackend* pBackend)
+		{
+			BitLoop<Body>::run(pBackend, MaskList<masks...>{});
 		}
 
 		//____ hasFormat() _____________________________________________________
@@ -119,9 +143,9 @@ namespace wax
 
 		// Format written by the kernels drawing on a canvas of the given format.
 
-		constexpr SoftFormat kernelFormat(const SoftKernelSpec& spec, SoftFormat destFormat)
+		constexpr SoftFormat kernelFormat(bool bG5Green, SoftFormat destFormat)
 		{
-			return spec.bG5Green && destFormat == SoftFormat::BGR_565_BE_linear ? SoftFormat::BGR_565_BE_linear_G5 : destFormat;
+			return bG5Green && destFormat == SoftFormat::BGR_565_BE_linear ? SoftFormat::BGR_565_BE_linear_G5 : destFormat;
 		}
 
 		//____ addStraightBlit() _______________________________________________
@@ -142,59 +166,113 @@ namespace wax
 			pBackend->setTransformBlitKernel(SRC, SAMPLE, OP, TINT, BLEND, DEST, _transform_blit<SRC, SAMPLE, TINT, BLEND, KERNEL_DEST, OP>);
 		}
 
-		//____ addFirstPassBlits() _____________________________________________
+		//____ FirstPassBlits ________________________________________________
 
-		// Blits without tint or blend from each source format to DEST, which is the HiColor
-		// buffer (SoftFormat::Undefined) or the 8-bit linear buffer (SoftFormat::ARGB_8_linear).
+		// Blits without tint or blend from source format s to DEST, which is the HiColor buffer
+		// (SoftFormat::Undefined) or the 8-bit linear buffer (SoftFormat::ARGB_8_linear).
 
-		template<uint32_t srcFormats, SoftFormat DEST>
-		void addFirstPassBlits(SoftBackend* pBackend)
+		template<SoftFormat DEST>
+		struct FirstPassBlits
 		{
-			// No tint and Replace. Not as local constexpr variables, as MSVC doesn't take those
-			// as constant expressions in a lambda, so they can't be template arguments there.
+			template<int s>
+			static void run(SoftBackend* pBackend)
+			{
+				constexpr SoftFormat S = SoftFormat(s);
+				constexpr TintMode T = TintMode::None;
+				constexpr BlendMode B = BlendMode::Replace;
 
-			forEachBit<srcFormats>([&](auto s) {
-				constexpr SoftFormat S = SoftFormat(decltype(s)::value);
+				addStraightBlit<S, ReadOp::Normal, T, B, DEST>(pBackend);
+				addStraightBlit<S, ReadOp::Tile, T, B, DEST>(pBackend);
+				addStraightBlit<S, ReadOp::Blur, T, B, DEST>(pBackend);
 
-				addStraightBlit<S, ReadOp::Normal, TintMode::None, BlendMode::Replace, DEST>(pBackend);
-				addStraightBlit<S, ReadOp::Tile, TintMode::None, BlendMode::Replace, DEST>(pBackend);
-				addStraightBlit<S, ReadOp::Blur, TintMode::None, BlendMode::Replace, DEST>(pBackend);
-			});
+				addTransformBlit<S, SampleMethod::Nearest, ReadOp::Normal, T, B, DEST>(pBackend);
+				addTransformBlit<S, SampleMethod::Nearest, ReadOp::Clip, T, B, DEST>(pBackend);
+				addTransformBlit<S, SampleMethod::Nearest, ReadOp::Tile, T, B, DEST>(pBackend);
+				addTransformBlit<S, SampleMethod::Nearest, ReadOp::Blur, T, B, DEST>(pBackend);
 
-			forEachBit<srcFormats>([&](auto s) {
-				constexpr SoftFormat S = SoftFormat(decltype(s)::value);
+				addTransformBlit<S, SampleMethod::Bilinear, ReadOp::Normal, T, B, DEST>(pBackend);
+				addTransformBlit<S, SampleMethod::Bilinear, ReadOp::Clip, T, B, DEST>(pBackend);
+				addTransformBlit<S, SampleMethod::Bilinear, ReadOp::Tile, T, B, DEST>(pBackend);
+				addTransformBlit<S, SampleMethod::Bilinear, ReadOp::Blur, T, B, DEST>(pBackend);
+			}
+		};
 
-				addTransformBlit<S, SampleMethod::Nearest, ReadOp::Normal, TintMode::None, BlendMode::Replace, DEST>(pBackend);
-				addTransformBlit<S, SampleMethod::Nearest, ReadOp::Clip, TintMode::None, BlendMode::Replace, DEST>(pBackend);
-				addTransformBlit<S, SampleMethod::Nearest, ReadOp::Tile, TintMode::None, BlendMode::Replace, DEST>(pBackend);
-				addTransformBlit<S, SampleMethod::Nearest, ReadOp::Blur, TintMode::None, BlendMode::Replace, DEST>(pBackend);
+		//____ SecondPassBlits _______________________________________________
 
-				addTransformBlit<S, SampleMethod::Bilinear, ReadOp::Normal, TintMode::None, BlendMode::Replace, DEST>(pBackend);
-				addTransformBlit<S, SampleMethod::Bilinear, ReadOp::Clip, TintMode::None, BlendMode::Replace, DEST>(pBackend);
-				addTransformBlit<S, SampleMethod::Bilinear, ReadOp::Tile, TintMode::None, BlendMode::Replace, DEST>(pBackend);
-				addTransformBlit<S, SampleMethod::Bilinear, ReadOp::Blur, TintMode::None, BlendMode::Replace, DEST>(pBackend);
-			});
-		}
-
-		//____ addSecondPassBlits() ____________________________________________
-
-		// Blits with tint and blend from SRC, which is the HiColor buffer (SoftFormat::Undefined)
-		// or the 8-bit linear buffer (SoftFormat::ARGB_8_linear), to each destination format.
+		// Blits with tint t and blend b from SRC, which is the HiColor buffer (SoftFormat::Undefined)
+		// or the 8-bit linear buffer (SoftFormat::ARGB_8_linear), to destination format d.
 
 		template<const SoftKernelSpec& spec, SoftFormat SRC>
-		void addSecondPassBlits(SoftBackend* pBackend)
+		struct SecondPassBlits
 		{
-			forEachBit<spec.tintModes>([&](auto t) {
-			forEachBit<spec.blendModes>([&](auto b) {
-			forEachBit<spec.destFormats>([&](auto d) {
-				constexpr SoftFormat D = SoftFormat(decltype(d)::value);
+			template<int t, int b, int d>
+			static void run(SoftBackend* pBackend)
+			{
+				constexpr SoftFormat D = SoftFormat(d);
 
-				addStraightBlit<SRC, ReadOp::Normal, TintMode(decltype(t)::value), BlendMode(decltype(b)::value),
-								D, kernelFormat(spec, D)>(pBackend);
-			});
-			});
-			});
-		}
+				addStraightBlit<SRC, ReadOp::Normal, TintMode(t), BlendMode(b), D, kernelFormat(spec.bG5Green, D)>(pBackend);
+			}
+		};
+
+		//____ MovesFromFast8 ________________________________________________
+
+		// Plain moves from the 8-bit linear buffer to destination format d.
+
+		template<const SoftKernelSpec& spec>
+		struct MovesFromFast8
+		{
+			template<int d>
+			static void run(SoftBackend* pBackend)
+			{
+				constexpr SoftFormat D = SoftFormat(d);
+
+				addStraightBlit<SoftFormat::ARGB_8_linear, ReadOp::Normal, TintMode::None, BlendMode::Replace,
+								D, kernelFormat(spec.bG5Green, D)>(pBackend);
+			}
+		};
+
+		//____ FillKernels ___________________________________________________
+
+		template<const SoftKernelSpec& spec>
+		struct FillKernels
+		{
+			template<int t, int b, int d>
+			static void run(SoftBackend* pBackend)
+			{
+				constexpr TintMode T = TintMode(t);
+				constexpr BlendMode B = BlendMode(b);
+				constexpr SoftFormat D = SoftFormat(d);
+				constexpr SoftFormat K = kernelFormat(spec.bG5Green, D);
+
+				pBackend->setFillKernel(T, B, D, _fill<T, B, K>);
+			}
+		};
+
+		//____ LineKernels ___________________________________________________
+
+		// Line, segment strip and coverage kernels.
+
+		template<const SoftKernelSpec& spec>
+		struct LineKernels
+		{
+			template<int b, int d>
+			static void run(SoftBackend* pBackend)
+			{
+				constexpr BlendMode B = BlendMode(b);
+				constexpr SoftFormat D = SoftFormat(d);
+				constexpr SoftFormat K = kernelFormat(spec.bG5Green, D);
+
+				pBackend->setLineKernel(B, D, _draw_line<B, TintMode::None, K>);
+				pBackend->setClipLineKernel(B, D, _clip_draw_line<B, TintMode::None, K>);
+
+				pBackend->setSegmentStripKernel(StripSource::Colors, B, D, _draw_segment_strip<StripSource::Colors, B, K>);
+
+				if constexpr (contains(spec.tintModes, TintMode::GradientX))
+					pBackend->setSegmentStripKernel(StripSource::Tintmaps, B, D, _draw_segment_strip<StripSource::Tintmaps, B, K>);
+
+				pBackend->setCoverageKernel(B, D, _draw_coverage_span<B, K>);
+			}
+		};
 
 		//____ addCustomBlits() ________________________________________________
 
@@ -229,42 +307,33 @@ namespace wax
 			addCustomTransformBlit<blitTypes, BT::TransformBlurBilinear, SM::Bilinear, ReadOp::Blur, S, T, B, D, KD>(pBackend);
 		}
 
-		// What an entry of customBlits selects, as variable templates rather than local constexpr
-		// variables, since MSVC doesn't take those as constant expressions in a lambda.
+		//____ CustomBlits ___________________________________________________
+
+		// Blits of entry of the spec's customBlits, with tint t and blend b, from source format s
+		// to destination format d.
 
 		template<const SoftKernelSpec& spec, int entry>
-		inline constexpr uint32_t c_customBlitTypes = spec.customBlits[entry].blitTypes;
+		struct CustomBlits
+		{
+			template<int t, int b, int s, int d>
+			static void run(SoftBackend* pBackend)
+			{
+				constexpr SoftFormat D = SoftFormat(d);
 
-		template<const SoftKernelSpec& spec, int entry>
-		inline constexpr uint32_t c_customTintModes = spec.customBlits[entry].tintModes;
-
-		template<const SoftKernelSpec& spec, int entry>
-		inline constexpr uint32_t c_customBlendModes = spec.customBlits[entry].blendModes;
-
-		template<const SoftKernelSpec& spec, int entry>
-		inline constexpr uint32_t c_customSrcFormats = spec.customBlits[entry].srcFormats & spec.srcFormats;
-
-		template<const SoftKernelSpec& spec, int entry>
-		inline constexpr uint32_t c_customDestFormats = spec.customBlits[entry].destFormats & spec.destFormats;
+				addCustomBlits<spec.customBlits[entry].blitTypes, SoftFormat(s), TintMode(t), BlendMode(b),
+							   D, kernelFormat(spec.bG5Green, D)>(pBackend);
+			}
+		};
 
 		template<const SoftKernelSpec& spec, int entry>
 		void addCustomBlitEntry(SoftBackend* pBackend)
 		{
-			if constexpr (c_customBlitTypes<spec, entry> != 0)
-			{
-				forEachBit<c_customTintModes<spec, entry>>([&](auto t) {
-				forEachBit<c_customBlendModes<spec, entry>>([&](auto b) {
-				forEachBit<c_customSrcFormats<spec, entry>>([&](auto s) {
-				forEachBit<c_customDestFormats<spec, entry>>([&](auto d) {
-					constexpr SoftFormat D = SoftFormat(decltype(d)::value);
-
-					addCustomBlits<c_customBlitTypes<spec, entry>, SoftFormat(decltype(s)::value), TintMode(decltype(t)::value),
-								   BlendMode(decltype(b)::value), D, kernelFormat(spec, D)>(pBackend);
-				});
-				});
-				});
-				});
-			}
+			if constexpr (spec.customBlits[entry].blitTypes != 0)
+				forEachBits<CustomBlits<spec, entry>,
+							spec.customBlits[entry].tintModes,
+							spec.customBlits[entry].blendModes,
+							spec.customBlits[entry].srcFormats & spec.srcFormats,
+							spec.customBlits[entry].destFormats & spec.destFormats>(pBackend);
 		}
 
 		template<const SoftKernelSpec& spec, std::size_t... I>
@@ -305,65 +374,26 @@ namespace wax
 		constexpr bool bFast8Blits = hasFormat(spec.srcFormats, true) && hasFormat(spec.destFormats, true);
 		constexpr bool bHiColorBlits = hasFormat(spec.srcFormats, false) || hasFormat(spec.destFormats, false);
 
-		// Fill kernels
-
-		forEachBit<spec.tintModes>([&](auto t) {
-		forEachBit<spec.blendModes>([&](auto b) {
-		forEachBit<spec.destFormats>([&](auto d) {
-			constexpr TintMode T = TintMode(decltype(t)::value);
-			constexpr BlendMode B = BlendMode(decltype(b)::value);
-			constexpr SoftFormat D = SoftFormat(decltype(d)::value);
-			constexpr SoftFormat K = kernelFormat(spec, D);
-
-			pBackend->setFillKernel(T, B, D, _fill<T, B, K>);
-		});
-		});
-		});
-
-		// Line, segment strip and coverage kernels
-
-		forEachBit<spec.blendModes>([&](auto b) {
-		forEachBit<spec.destFormats>([&](auto d) {
-			constexpr BlendMode B = BlendMode(decltype(b)::value);
-			constexpr SoftFormat D = SoftFormat(decltype(d)::value);
-			constexpr SoftFormat K = kernelFormat(spec, D);
-
-			pBackend->setLineKernel(B, D, _draw_line<B, TintMode::None, K>);
-			pBackend->setClipLineKernel(B, D, _clip_draw_line<B, TintMode::None, K>);
-
-			pBackend->setSegmentStripKernel(StripSource::Colors, B, D, _draw_segment_strip<StripSource::Colors, B, K>);
-
-			if constexpr (contains(spec.tintModes, TintMode::GradientX))
-				pBackend->setSegmentStripKernel(StripSource::Tintmaps, B, D, _draw_segment_strip<StripSource::Tintmaps, B, K>);
-
-			pBackend->setCoverageKernel(B, D, _draw_coverage_span<B, K>);
-		});
-		});
+		forEachBits<FillKernels<spec>, spec.tintModes, spec.blendModes, spec.destFormats>(pBackend);
+		forEachBits<LineKernels<spec>, spec.blendModes, spec.destFormats>(pBackend);
 
 		// Second pass of two-pass blits. Plain moves from the 8-bit linear buffer are always
 		// needed, since some blits go through it whatever the formats.
 
 		if constexpr (bHiColorBlits)
-			addSecondPassBlits<spec, SoftFormat::Undefined>(pBackend);
+			forEachBits<SecondPassBlits<spec, SoftFormat::Undefined>, spec.tintModes, spec.blendModes, spec.destFormats>(pBackend);
 
 		if constexpr (bFast8Blits)
-			addSecondPassBlits<spec, SoftFormat::ARGB_8_linear>(pBackend);
+			forEachBits<SecondPassBlits<spec, SoftFormat::ARGB_8_linear>, spec.tintModes, spec.blendModes, spec.destFormats>(pBackend);
 		else
-		{
-			forEachBit<spec.destFormats>([&](auto d) {
-				constexpr SoftFormat D = SoftFormat(decltype(d)::value);
-
-				addStraightBlit<SoftFormat::ARGB_8_linear, ReadOp::Normal, TintMode::None, BlendMode::Replace,
-								D, kernelFormat(spec, D)>(pBackend);
-			});
-		}
+			forEachBits<MovesFromFast8<spec>, spec.destFormats>(pBackend);
 
 		// First pass of two-pass blits.
 
-		addFirstPassBlits<spec.srcFormats, SoftFormat::Undefined>(pBackend);
+		forEachBits<FirstPassBlits<SoftFormat::Undefined>, spec.srcFormats>(pBackend);
 
 		if constexpr (bFast8Blits)
-			addFirstPassBlits<spec.srcFormats, SoftFormat::ARGB_8_linear>(pBackend);
+			forEachBits<FirstPassBlits<SoftFormat::ARGB_8_linear>, spec.srcFormats>(pBackend);
 
 		// One-pass custom blits.
 
