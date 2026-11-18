@@ -50,6 +50,10 @@ namespace wg
 
 	DX12Surface *										DX12Surface::s_pFirstLive = nullptr;
 
+	DX12Surface *										DX12Surface::s_pFirstPending = nullptr;
+	DX12Surface *										DX12Surface::s_pLastPending = nullptr;
+	int64_t												DX12Surface::s_pendingBytes = 0;
+
 	//____ _copyFromMapping() ______________________________________________________
 	//
 	// Copies out of a buffer that was mapped on a device that may since have been
@@ -178,6 +182,99 @@ namespace wg
 		m_pNextLive = nullptr;
 	}
 
+	//____ _updatePending() _______________________________________________________
+	//
+	// A surface is on the list of pending uploads while it has pixels the texture
+	// doesn't have yet, and a texture to put them in. Call it whenever m_dirtyRect,
+	// the texture or the upload buffer changes.
+
+	void DX12Surface::_updatePending()
+	{
+		bool bPending = !m_dirtyRect.isEmpty() && m_texture && m_uploadBuffer;
+
+		if( bPending && !m_bUploadPending )
+		{
+			// Last in the list, so uploads are recorded in the order they came in.
+
+			m_pPrevPending = s_pLastPending;
+			m_pNextPending = nullptr;
+
+			if( s_pLastPending )
+				s_pLastPending->m_pNextPending = this;
+			else
+				s_pFirstPending = this;
+
+			s_pLastPending = this;
+			m_bUploadPending = true;
+		}
+		else if( !bPending && m_bUploadPending )
+		{
+			if( m_pPrevPending )
+				m_pPrevPending->m_pNextPending = m_pNextPending;
+			else
+				s_pFirstPending = m_pNextPending;
+
+			if( m_pNextPending )
+				m_pNextPending->m_pPrevPending = m_pPrevPending;
+			else
+				s_pLastPending = m_pPrevPending;
+
+			m_pPrevPending = nullptr;
+			m_pNextPending = nullptr;
+			m_bUploadPending = false;
+		}
+
+		// Copies are made in whole lines, see DX12Backend::_recordUploads().
+
+		int64_t bytes = bPending ? int64_t(m_dirtyRect.h) * m_uploadPitch : 0;
+
+		s_pendingBytes += bytes - m_pendingBytes;
+		m_pendingBytes = bytes;
+	}
+
+	//____ _waitForUpload() _______________________________________________________
+	//
+	// An upload copies straight from our pixels, at whatever time the GPU gets to
+	// it. Called before the CPU is handed our pixels to write to.
+
+	void DX12Surface::_waitForUpload()
+	{
+		// Recorded but not yet submitted, the GPU hasn't started on it. Writing now
+		// only makes that copy newer, and the change goes up again after it, since
+		// whoever writes to us marks it with pullPixels().
+
+		if( m_pUploadRecordedBy || !m_uploadFence )
+			return;
+
+		// Nothing runs on a lost device, and its fences can't be trusted to get
+		// anywhere. A null event makes SetEventOnCompletion() block until the fence
+		// has reached the value.
+
+		if( m_uploadFence->GetCompletedValue() < m_uploadFenceValue && !DX12Backend::isDeviceLost() )
+			m_uploadFence->SetEventOnCompletion(m_uploadFenceValue, nullptr);
+
+		m_uploadFence = nullptr;
+		m_uploadFenceValue = 0;
+	}
+
+	//____ _forgetUpload() ________________________________________________________
+	//
+	// For when we go away or let go of the device. A backend that has recorded an
+	// upload of ours and not yet submitted it holds the texture and upload buffer
+	// itself, but must not tell us when it submits.
+
+	void DX12Surface::_forgetUpload()
+	{
+		if( m_pUploadRecordedBy )
+		{
+			m_pUploadRecordedBy->_forgetRecordedUpload(this);
+			m_pUploadRecordedBy = nullptr;
+		}
+
+		m_uploadFence = nullptr;
+		m_uploadFenceValue = 0;
+	}
+
 	//____ _waitForCopyFence() _____________________________________________________
 
 	void DX12Surface::_waitForCopyFence()
@@ -196,9 +293,9 @@ namespace wg
 
 	//____ _initCopyResources() ____________________________________________________
 	//
-	// One copy queue shared by all surfaces, created on first use. Uploads are
-	// synchronous: we submit and wait. Surfaces are normally filled when loaded,
-	// so the stalls are not on the rendering path.
+	// One copy queue shared by all surfaces, created on first use. Only reading a
+	// canvas back uses it, which is synchronous: we submit and wait. Uploads go
+	// through DX12Backend, see _updatePending().
 
 	bool DX12Surface::_initCopyResources()
 	{
@@ -625,8 +722,9 @@ namespace wg
 		texDesc.Flags = (m_bCanvas && !m_bIndexed) ? D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET : D3D12_RESOURCE_FLAG_NONE;
 
 		// Kept in COMMON state: D3D12 promotes it to PIXEL_SHADER_RESOURCE when the
-		// render queue uses it and to COPY_DEST when we upload, then decays it back
-		// again, so no barriers are needed.
+		// render queue reads it, and to COPY_SOURCE when the copy queue reads it
+		// back, then decays it back again. Uploads are barriered into COPY_DEST and
+		// out again by DX12Backend, since that state doesn't decay.
 
 		if( FAILED(s_pDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &texDesc,
 													  D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(m_texture.GetAddressOf()))) )
@@ -727,6 +825,8 @@ namespace wg
 
 	void DX12Surface::_dropDeviceObjects()
 	{
+		_forgetUpload();
+
 		m_texture = nullptr;
 		m_uploadBuffer = nullptr;
 		m_readbackBuffer = nullptr;
@@ -740,6 +840,8 @@ namespace wg
 
 		m_pUploadData = m_pFallbackData;
 		m_pPaletteData = nullptr;
+
+		_updatePending();				// Nothing to upload to any more.
 	}
 
 	//____ _evacuate() _________________________________________________________
@@ -785,7 +887,8 @@ namespace wg
 		_dropDeviceObjects();
 
 		m_bBufferNeedsSync = false;
-		m_dirtyRect = RectI(0, 0, m_size.w, m_size.h);
+		m_dirtyRect = RectI(0, 0, m_size.w, m_size.h);		// Uploaded once we are on a device again, see _migrate().
+		_updatePending();
 		return bCopied;
 	}
 
@@ -810,10 +913,11 @@ namespace wg
 
 		_updatePaletteBuffer();
 
-		// Everything goes to the new texture on first use.
+		// Everything goes to the new texture.
 
 		m_bBufferNeedsSync = false;
 		m_dirtyRect = RectI(0, 0, m_size.w, m_size.h);
+		_updatePending();
 	}
 
 	//____ _createPaletteBuffer() ______________________________________________
@@ -922,9 +1026,10 @@ namespace wg
 			}
 		}
 
-		// Everything we have goes to the texture on first use.
+		// Everything we have goes to the texture, at the latest before we are drawn.
 
 		m_dirtyRect = RectI(0, 0, m_size.w, m_size.h);
+		_updatePending();
 	}
 
 	//____ Destructor ______________________________________________________________
@@ -932,6 +1037,14 @@ namespace wg
 	DX12Surface::~DX12Surface()
 	{
 		_unlink();
+
+		// Off the list of pending uploads, and out of reach of a backend that has
+		// recorded one of ours. That backend holds texture and upload buffer until
+		// the GPU is done with them.
+
+		_forgetUpload();
+		m_dirtyRect = RectI();
+		_updatePending();
 
 		if( m_uploadBuffer && m_pUploadData && m_pUploadData != m_pFallbackData )
 			m_uploadBuffer->Unmap(0, nullptr);
@@ -961,14 +1074,17 @@ namespace wg
 		//TODO: Keep a list of rectangles instead of growing one to cover them all.
 
 		m_dirtyRect = m_dirtyRect.isEmpty() ? rect : RectI::bounds(m_dirtyRect, rect);
+		_updatePending();
 	}
 
-	//____ syncTexture() _______________________________________________________
+	//____ _uploadNowAndWait() _________________________________________________
 	//
-	// Uploads whatever has changed since the last call and waits for it. Called by
-	// DX12Backend before the surface is used as blit source.
+	// Uploads whatever has changed on the copy queue and waits for it. Only for
+	// _syncBufferAndWait(), which must have our pixels in the texture before it
+	// reads the texture back and is about to wait anyway. Everything else goes
+	// through DX12Backend, see _updatePending().
 
-	void DX12Surface::syncTexture()
+	void DX12Surface::_uploadNowAndWait()
 	{
 		if( m_dirtyRect.isEmpty() || !m_texture || !s_copyList )
 			return;
@@ -1019,34 +1135,28 @@ namespace wg
 		// A DX12Backend may still have work for this texture recorded or in flight,
 		// and our copy must not land in the middle of it. Any of them might, since
 		// surfaces are shared between backends.
-		//
-		//TODO: This stalls the GPU. Fine for surfaces filled while loading, which
-		// is the normal case, but a surface updated every frame wants something
-		// better - a second texture, or a wait on the copy queue instead.
 
 		DX12Backend::waitForCompletionOfAll();
 
 		ID3D12CommandList* pLists[] = { s_copyList.Get() };
 		s_copyQueue->ExecuteCommandLists(1, pLists);
 
-		// Wait for it. Surfaces are normally filled while loading, not while rendering.
-
 		s_copyFenceValue++;
 		s_copyQueue->Signal(s_copyFence.Get(), s_copyFenceValue);
 		_waitForCopyFence();
 
 		m_dirtyRect = RectI();
+		_updatePending();
 	}
 
 	//____ notifyRendered() ____________________________________________________
 	//
-	// Called by DX12Backend when this surface is about to be rendered into. Our
-	// pixels are the older copy from here on, until someone asks for them.
+	// Called by DX12Backend when this surface is about to be rendered into, after
+	// it has recorded the upload of anything the CPU wrote. Our pixels are the
+	// older copy from here on, until someone asks for them.
 
 	void DX12Surface::notifyRendered()
 	{
-		syncTexture();			// Anything the CPU wrote goes in before we render over it.
-
 		m_bBufferNeedsSync = true;
 	}
 
@@ -1117,17 +1227,22 @@ namespace wg
 		}
 
 		// Rendering into us may still be sitting in a DX12Backend's command list,
-		// unsubmitted. It has to be on its way and finished before we look.
+		// unsubmitted. It has to be on its way and finished before we look. So does
+		// an upload of ours a backend has recorded, since we are about to write the
+		// pixels it copies from.
 		//
-		// syncTexture() does that itself when it has something to upload, and its
-		// pixels are the newer ones, so they go in on top of what was rendered.
+		// _uploadNowAndWait() does that itself when it has something to upload, and
+		// its pixels are the newer ones, so they go in on top of what was rendered.
 
 		if( m_dirtyRect.isEmpty() )
 		{
 			DX12Backend::waitForCompletionOfAll();
 		}
 		else
-			syncTexture();
+			_uploadNowAndWait();
+
+		m_uploadFence = nullptr;			// Waited for above.
+		m_uploadFenceValue = 0;
 
 		m_bBufferNeedsSync = false;
 
@@ -1177,6 +1292,7 @@ namespace wg
 		}
 
 		m_dirtyRect = RectI();			// Our pixels and the texture are identical now.
+		_updatePending();
 	}
 
 	//____ alpha() _______________________________________________________________
@@ -1189,17 +1305,29 @@ namespace wg
 		if( m_bBufferNeedsSync )
 			_syncBufferAndWait();
 
-		// No need to free the PixelBuffer, we know how our pixel buffer works.
+		// No need to free the PixelBuffer, we know how our pixel buffer works. We
+		// only read, so an upload copying from the same pixels is no concern.
 
-		return _alpha(coord, allocPixelBuffer());
+		return _alpha(coord, _pixelBuffer(RectI(m_size)));
 	}
 
 	//____ allocPixelBuffer() _________________________________________________
 	//
 	// Our pixels always live in a CPU accessible buffer, so this just points into
 	// it. Note that the pitch is padded, see _setupTexture().
+	//
+	// Whoever gets it may write to it, so an upload the GPU is still copying from
+	// it has to be finished first.
 
 	const PixelBuffer DX12Surface::allocPixelBuffer(const RectI& rect)
+	{
+		_waitForUpload();
+		return _pixelBuffer(rect);
+	}
+
+	//____ _pixelBuffer() _____________________________________________________
+
+	const PixelBuffer DX12Surface::_pixelBuffer(const RectI& rect)
 	{
 		PixelBuffer	buf;
 
