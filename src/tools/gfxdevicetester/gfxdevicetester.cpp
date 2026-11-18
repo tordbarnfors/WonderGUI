@@ -27,12 +27,9 @@
 #include "testsuites/linetests.h"
 #include "testsuites/mipmaptests.h"
 #include "testsuites/paletteblittests.h"
-#include "testsuites/piecharttests.h"
-#include "testsuites/segmenttests.h"
 #include "testsuites/tiletests.h"
 #include "testsuites/tintblittests.h"
 #include "testsuites/tinttests.h"
-#include "testsuites/wavetests.h"
 #include "testsuites/edgemaptests.h"
 #include "testsuites/edgemapboxtests.h"
 #include "testsuites/edgemapringtests.h"
@@ -217,11 +214,8 @@ void GfxDeviceTester::setup_tests()
 	add([]() { return new LineTests(); });
 	add([]() { return new CanvasFormatTests(); });
 	add([]() { return new PatchBlitTests(); });
-	add([]() { return new SegmentTests(); });
-	add([]() { return new WaveTests(); });
 	add([]() { return new PaletteBlitTests(); });
 	add([]() { return new MipmapTests(); });
-	add([]() { return new PieChartTests(); });
 	add([]() { return new TintBlitTests(); });
 	add([]() { return new TintTests(); });
 	add([]() { return new BlitBlendTests(); });

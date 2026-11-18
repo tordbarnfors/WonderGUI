@@ -250,12 +250,6 @@ static void populateBody(wg_c_calls_body * pBody)
 	pBody->gfxDevice.flipTile				= LOCKED(wg_flipTile);
 	pBody->gfxDevice.scaleTile				= LOCKED(wg_scaleTile);
 	pBody->gfxDevice.scaleFlipTile			= LOCKED(wg_scaleFlipTile);
-	pBody->gfxDevice.drawWave				= LOCKED(wg_drawWave);
-	pBody->gfxDevice.flipDrawWave			= LOCKED(wg_flipDrawWave);
-	pBody->gfxDevice.drawElipse				= LOCKED(wg_drawElipse);
-	pBody->gfxDevice.drawPieChart			= LOCKED(wg_drawPieChart);
-	pBody->gfxDevice.drawSegments			= LOCKED(wg_drawSegments);
-	pBody->gfxDevice.flipDrawSegments		= LOCKED(wg_flipDrawSegments);
 	pBody->gfxDevice.drawEdgemap			= LOCKED(wg_drawEdgemap);
 	pBody->gfxDevice.flipDrawEdgemap		= LOCKED(wg_flipDrawEdgemap);
 	pBody->gfxDevice.tileEdgemap			= LOCKED(wg_tileEdgemap);

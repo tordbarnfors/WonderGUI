@@ -264,7 +264,6 @@ ShapeRenderTest::ShapeRenderTest()
 	ADD_TEST(boxSkinTest);
 	ADD_TEST(ringTest);
 	ADD_TEST(undefinedColorTest);
-	ADD_TEST(elipseTest);
 	ADD_TEST(referenceCoverageTest);
 }
 
@@ -1067,61 +1066,6 @@ bool ShapeRenderTest::undefinedColorTest(std::ostream& output)
 
 	return check("RoundedBox", false, { { "fill", 24, 19 } }) &&
 		   check("Ring", true, { { "hub", 26, 24 }, { "back", 5, 3 } });
-}
-
-//____ elipseTest() ___________________________________________________________
-// Deprecated drawElipse(), now drawn with drawRing(): edges at radius r, r - outline,
-// r - outline - thickness and r - 2 * outline - thickness.
-
-bool ShapeRenderTest::elipseTest(std::ostream& output)
-{
-	const HiColor fill = HiColor(0, 0, 4096, 4096);
-	const HiColor outline = HiColor(4096, 0, 0, 4096);
-
-	struct Case { const char* name; spx thickness; spx outline; HiColor center; HiColor at9; HiColor at16; };
-
-	const Case cases[] = {
-		{ "ring", 64 * 4, 64 * 2, c_background, c_background, fill },			// Edges at 20, 18, 14, 12.
-		{ "outline reaching center", 64 * 10, 64 * 6, outline, fill, outline },	// 20, 14, 4, -2.
-		{ "fill reaching center", 64 * 19, 64 * 1, fill, fill, fill },			// 20, 19, 0, -1.
-		{ "nothing", 0, 0, c_background, c_background, c_background }
-	};
-
-	for (auto& c : cases)
-	{
-		Canvas canvas;
-		auto pDevice = createSoftDevice();
-
-		pDevice->beginRender();
-		pDevice->beginCanvasUpdate(canvas.surface);
-		pDevice->setBlendMode(BlendMode::Replace);
-		pDevice->fill(c_background);
-		pDevice->setBlendMode(BlendMode::Blend);
-		pDevice->drawElipse({ 64 * 4, 64 * 4, 64 * 40, 64 * 40 }, c.thickness, fill, c.outline, outline);
-		pDevice->endCanvasUpdate();
-		pDevice->endRender();
-
-		auto pixels = canvas.read();
-
-		struct Probe { int x, y; HiColor color; const char* where; };
-		const Probe probes[] = { { 24, 24, c.center, "center" }, { 24 + 9, 24, c.at9, "9 pixels from center" }, { 24, 24 - 16 - 1, c.at16, "16 pixels from center" } };
-
-		for (auto& p : probes)
-		{
-			C12 want = toC12(p.color);
-			for (int ch = 0; ch < 3; ch++)
-			{
-				int wanted = ch == 0 ? want.b : ch == 1 ? want.g : want.r;
-				if (std::abs(unpack(pixels, p.x, p.y, ch) - wanted) > 64)
-				{
-					output << c.name << ": pixel " << p.where << " has wrong color." << std::endl;
-					return false;
-				}
-			}
-		}
-	}
-
-	return true;
 }
 
 //____ referenceCoverageTest() ________________________________________________

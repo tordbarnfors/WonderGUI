@@ -416,8 +416,6 @@ int main ( int argc, char** argv )
         
 		pImgSkin->render(pGfxDevice, { 0,0,1920,1080 }, StateEnum::Normal );
 
-//		pGfxDevice->drawWave({ 0,500 }, 1900, &topLine, &bottomLine, { 0,0,255,128 }, Color::Yellow);
-
 //		pGfxDevice->stretchBlitSubPixelWithInvert(pMyCanvas, 0,0,400,400, 0,0, 200, 200 );
 //		pGfxDevice->blit(pMyCanvas, { 0,0,400,400 }, { 0,0 });
 //		pGfxDevice->stretchBlit(pMyCanvas, { 0,0,400,400 }, { 0,0,200,200 });

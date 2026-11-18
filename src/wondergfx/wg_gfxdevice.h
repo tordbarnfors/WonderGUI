@@ -56,17 +56,6 @@ namespace wg
 	typedef	WeakPtr<GfxDevice>		GfxDevice_wp;
 
 
-	//____ WaveLine ___________________________________________________________
-
-	struct WaveLine
-	{
-		int		length;
-		float	thickness;
-		HiColor	color;
-		int *	pWave;      // Pixel offset in 24.8 format.
-		int		hold;      // Value for extending the line if it is too short (or completely missing).
-	};
-
 	//____ RoundedBoxSpec _____________________________________________________
 	/**
 	 * A box with rounded corners and an outline, drawn by GfxDevice::drawRoundedBox().
@@ -371,19 +360,7 @@ namespace wg
 		virtual void	rotScaleBlur(const RectSPX& dest, float rotationDegrees, float scale, CoordF srcCenter = { 0.5f, 0.5f }, CoordF destCenter = { 0.5f,0.5f }) = 0;
 
 
-		// Draw segments methods
-
-		virtual void	drawWave(const RectSPX& dest, const WaveLine * pTopBorder, const WaveLine * pBottomBorder, HiColor fill) = 0;
-		virtual void	flipDrawWave(const RectSPX& dest, const WaveLine * pTopBorder, const WaveLine * pBottomBorder, HiColor fill, GfxFlip flip) = 0;
-
-		// drawElipse() and drawPieChart() are deprecated, use drawRing().
-
-		virtual void	drawElipse(const RectSPX& canvas, spx thickness, HiColor color, spx outlineThickness = 0, HiColor outlineColor = HiColor::Black) = 0;
-
-		virtual void	drawPieChart(const RectSPX& canvas, float start, int nSlices, const float * pSliceSizes, const HiColor * pSliceColors, float hubSize = 0.f, HiColor hubColor = HiColor::Transparent, HiColor backColor = HiColor::Transparent, bool bRectangular = false) = 0;
-
-		virtual void	drawSegments(const RectSPX& dest, int nSegments, const HiColor * pSegmentColors, int nEdgeStrips, const int * pEdgeStrips, int edgeStripPitch, TintMode tintMode = TintMode::Flat ) = 0;
-		virtual void	flipDrawSegments(const RectSPX& dest, int nSegments, const HiColor * pSegmentColors, int nEdgeStrips, const int * pEdgeStrips, int edgeStripPitch, GfxFlip flip, TintMode tintMode = TintMode::Flat) = 0;
+		// Edgemap methods
 
 		virtual void	drawEdgemap(CoordSPX dest, Edgemap * pEdgemap ) = 0;
 		virtual void	flipDrawEdgemap(CoordSPX dest, Edgemap * pEdgemap, GfxFlip flip) = 0;
@@ -403,10 +380,6 @@ namespace wg
 		// Special draw/blit methods
 
 		virtual void	blitNinePatch(const RectSPX& dstRect, const BorderSPX& dstFrame, const NinePatch& patch, int scale) = 0;
-
-		// Deprecated
-
-
 
 	protected:
 		GfxDevice();

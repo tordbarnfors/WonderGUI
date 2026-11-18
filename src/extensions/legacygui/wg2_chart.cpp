@@ -1077,21 +1077,7 @@ void WgChart::_renderWave( Wave& wave, wg::GfxDevice * pDevice, const WgRect& wa
 
 	int xOfs = wave.resampledFirst;
 
-	WgWaveLine top, bottom;
-
-	top.color = wave.topLineColor;
-	top.thickness = wave.topLineThickness*64*m_scale/WG_SCALE_BASE;
-	top.length = (int) wave.resampledTop.size();
-	top.pWave = wave.resampledTop.data();
-	top.hold = wave.resampledDefault;
-
-	bottom.color = wave.bottomLineColor;
-	bottom.thickness = wave.bottomLineThickness*64*m_scale/WG_SCALE_BASE;
-	bottom.length = (int)wave.resampledBottom.size();
-	bottom.pWave = wave.resampledBottom.data();
-	bottom.hold = wave.resampledDefault;
-
-	int length = std::max(top.length, bottom.length)-1;
+	int length = (int) std::max(wave.resampledTop.size(), wave.resampledBottom.size()) - 1;
 
     // Check if a tint is set by SetWaveTint
     bool useGradient = wave.m_pWaveTint != nullptr;
@@ -1139,19 +1125,6 @@ void WgChart::_renderWave( Wave& wave, wg::GfxDevice * pDevice, const WgRect& wa
 
 		wave.m_pWave->generate();
 		wave.m_pWave->draw(pDevice, waveCanvas.pos()*64);
-/*
-		if(useGradient)
-        {
-            pDevice->setTint(WgRect(waveCanvas.x + xOfs, waveCanvas.y, length, waveCanvas.h)*64, wave.m_pWaveTint);
-        }
-
-		pDevice->drawWave(WgRect(waveCanvas.x + xOfs, waveCanvas.y, length, waveCanvas.h)*64, &top, &bottom, wave.fillColor);
-
-        if(useGradient)
-        {
-            pDevice->clearTint();
-        }
- */
 	}
 }
 

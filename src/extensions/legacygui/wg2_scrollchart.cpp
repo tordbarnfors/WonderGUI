@@ -29,6 +29,7 @@
 #include <wg2_eventhandler.h>
 
 #include <wg_tint.h>
+#include <wg_edgemapwave.h>
 
 #include <algorithm>
 #include <limits>
@@ -993,6 +994,58 @@ float WgScrollChart::_thickestLine() const
 }
 
 
+//____ WaveEdge, renderWave() _________________________________________________
+
+namespace
+{
+	// One edge of a wave: its samples in spx, and the value it is held at past the
+	// last sample.
+
+	struct WaveEdge
+	{
+		int			length;
+		float		thickness;
+		const int*	pSamples;
+		int			hold;
+	};
+
+	// Fills the area between two edges with a temporary EdgemapWave, both edges outlined
+	// in outlineColor, as GfxDevice::drawWave() did before it was removed.
+
+	void renderWave(wg::GfxDevice* pDevice, const wg::RectSPX& dest, const WaveEdge& top, const WaveEdge& bottom, wg::HiColor outlineColor, wg::HiColor fill)
+	{
+		wg::RectI pixDest = dest / 64;
+
+		auto pWave = wg::EdgemapWave::create( WGBP(EdgemapWave,
+			_.size = pixDest.size()*64,
+			_.color = fill,
+			_.factory = pDevice->edgemapFactory(),
+			_.pos = dest.pos(),
+			_.topOutlineThickness = top.thickness,
+			_.bottomOutlineThickness = bottom.thickness,
+			_.outlineColor = outlineColor ) );
+
+		int samplesWanted = pixDest.w + 1;
+
+		int bufferSize = samplesWanted * sizeof(wg::spx) * 2;
+		auto pTopSamples = (wg::spx*) wg::GfxBase::memStackAlloc(bufferSize);
+		auto pBottomSamples = pTopSamples + samplesWanted;
+
+		for( int spl = 0 ; spl < samplesWanted ; spl++ )
+		{
+			pTopSamples[spl] = spl < top.length ? top.pSamples[spl] : top.hold;
+			pBottomSamples[spl] = spl < bottom.length ? bottom.pSamples[spl] : bottom.hold;
+		}
+
+		pWave->setSamples(0, samplesWanted, pTopSamples, pBottomSamples);
+
+		wg::GfxBase::memStackFree(bufferSize);
+
+		pWave->generate();
+		pWave->draw(pDevice);
+	}
+}
+
 //____ _renderWaveSegment() ___________________________________________________
 
 void WgScrollChart::_renderWaveSegment(wg::GfxDevice * pDevice, const WgRect& _canvas, double startTimestamp, double endTimestamp, float timestampInc)
@@ -1042,8 +1095,8 @@ void WgScrollChart::_renderWaveSegment(wg::GfxDevice * pDevice, const WgRect& _c
 
 			int floor = yOfs + (int)((wave.floorValue - graphFloor) * valueFactor * 64);
 
-			WgWaveLine topLine = { waveSamples, wave.topLineThickness*64, wave.topLineColor, pTopBuffer, 0 };
-			WgWaveLine bottomLine = { waveSamples, wave.bottomLineThickness*64, wave.bottomLineColor, pBottomBuffer, floor };
+			WaveEdge topEdge = { waveSamples, wave.topLineThickness*64, pTopBuffer, 0 };
+			WaveEdge bottomEdge = { waveSamples, wave.bottomLineThickness*64, pBottomBuffer, floor };
 
 			switch (wave.type)
 			{
@@ -1051,12 +1104,12 @@ void WgScrollChart::_renderWaveSegment(wg::GfxDevice * pDevice, const WgRect& _c
 				//TODO: Implement!
 				break;
 			case WaveType::Simple:
-				bottomLine.length = 0;
-				bottomLine.pWave = nullptr;
-				pDevice->drawWave( WgRect( _canvas.x - margin + waveSamplesOffset,_canvas.y, waveSamples-1,_canvas.h )*64, &topLine, &bottomLine, wave.fillColor);
+				bottomEdge.length = 0;
+				bottomEdge.pSamples = nullptr;
+				renderWave( pDevice, WgRect( _canvas.x - margin + waveSamplesOffset,_canvas.y, waveSamples-1,_canvas.h )*64, topEdge, bottomEdge, wave.topLineColor, wave.fillColor);
 				break;
 			case WaveType::Complex:
-				pDevice->drawWave( WgRect( _canvas.x - margin + waveSamplesOffset,_canvas.y, waveSamples-1,_canvas.h )*64, &topLine, &bottomLine, wave.fillColor);
+				renderWave( pDevice, WgRect( _canvas.x - margin + waveSamplesOffset,_canvas.y, waveSamples-1,_canvas.h )*64, topEdge, bottomEdge, wave.topLineColor, wave.fillColor);
 				break;
 			}
 		}

@@ -3006,15 +3006,6 @@ bool customSkinTest(ComponentPtr<DynamicSlot> pEntry)
 	pFlex->setSkin(ColorSkin::create(Color::LightYellow));
 	
 	auto pFiller = Filler::create();
-/*
-	auto pLambdaSkin = LambdaSkin::create( WGBP(LambdaSkin,
-												_.renderFunc = [](GfxDevice* pDevice,const RectSPX& canvas, int scale, State state, float value1, float value2)
-												{
-		pDevice->fill( canvas, HiColor::White );
-		pDevice->drawElipse(canvas, 64*4, Color8::Green, 64, Color8::Black );
-		
-												} ));
-*/
 
 	auto pLambdaSkin = LambdaSkin::create({
 		.ignoreState = true,

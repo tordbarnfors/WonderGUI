@@ -629,48 +629,6 @@ namespace wg
 		PluginCalls::gfxDevice->rotScaleBlur(m_cDevice, (wg_rectSPX*)&dest, rotationDegrees, scale, { srcCenter.x, srcCenter.y }, { destCenter.x, destCenter.y });
 	}
 
-    //____ drawWave() _________________________________________________________
-
-    void PluginGfxDevice::drawWave(const RectSPX& dest, const WaveLine * pTopBorder, const WaveLine * pBottomBorder, HiColor fill)
-    {
-        PluginCalls::gfxDevice->drawWave(m_cDevice, (wg_rectSPX*)&dest, (wg_waveLine*)pTopBorder, (wg_waveLine*)pBottomBorder, *(wg_color*)&fill);
-    }
-
-    //____ flipDrawWave() _____________________________________________________
-
-    void PluginGfxDevice::flipDrawWave(const RectSPX& dest, const WaveLine * pTopBorder, const WaveLine * pBottomBorder, HiColor fill, GfxFlip flip)
-    {
-        PluginCalls::gfxDevice->flipDrawWave(m_cDevice, (wg_rectSPX*)&dest, (wg_waveLine*)pTopBorder, (wg_waveLine*)pBottomBorder, *(wg_color*)&fill, (wg_gfxFlip) flip );
-    }
-
-    //____ _drawElipse() ______________________________________________________
-
-    void PluginGfxDevice::drawElipse(const RectSPX& canvas, spx thickness, HiColor color, spx outlineThickness, HiColor outlineColor )
-    {
-        PluginCalls::gfxDevice->drawElipse(m_cDevice,(wg_rectSPX*)&canvas, thickness, *(wg_color*)&color, outlineThickness, *(wg_color*)&outlineColor);
-    }
-
-    //____ drawPieChart() _____________________________________________________
-
-    void PluginGfxDevice::drawPieChart(const RectSPX& canvas, float start, int nSlices, const float * pSliceSizes, const HiColor * pSliceColors, float hubSize, HiColor hubColor, HiColor backColor, bool bRectangular)
-    {
-        PluginCalls::gfxDevice->drawPieChart(m_cDevice, (wg_rectSPX*)&canvas, start, nSlices, pSliceSizes, (const wg_color*)pSliceColors, hubSize, *(wg_color*)&hubColor, *(wg_color*)&backColor, bRectangular);
-    }
-
-    //____ drawSegments() _____________________________________________________
-
-    void PluginGfxDevice::drawSegments(const RectSPX& dest, int nSegments, const HiColor * pSegmentColors, int nEdgeStrips, const int * pEdgeStrips, int edgeStripPitch, TintMode tintMode )
-    {
-        PluginCalls::gfxDevice->drawSegments(m_cDevice, (wg_rectSPX*)&dest, nSegments, (const wg_color*)pSegmentColors, nEdgeStrips, pEdgeStrips, edgeStripPitch, (wg_tintMode)tintMode);
-    }
-
-    //____ flipDrawSegments() _________________________________________________
-
-    void PluginGfxDevice::flipDrawSegments(const RectSPX& dest, int nSegments, const HiColor * pSegmentColors, int nEdgeStrips, const int * pEdgeStrips, int edgeStripPitch, GfxFlip flip, TintMode tintMode)
-    {
-        PluginCalls::gfxDevice->flipDrawSegments(m_cDevice, (wg_rectSPX*)&dest, nSegments, (const wg_color*)pSegmentColors, nEdgeStrips, pEdgeStrips, edgeStripPitch, (wg_gfxFlip) flip, (wg_tintMode)tintMode);
-    }
-
     //____ drawEdgemap() _____________________________________________________
 
     void PluginGfxDevice::drawEdgemap(CoordSPX dest, Edgemap* pEdgemap)

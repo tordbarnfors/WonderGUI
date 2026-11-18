@@ -219,21 +219,6 @@ namespace wg
 
 		void	blitNinePatch(const RectSPX& dstRect, const BorderSPX& dstFrame, const NinePatch& patch, int scale) override;
 
-		//.____ Deprecated _______________________________________________________________
-
-
-		void		drawWave(const RectSPX& dest, const WaveLine* pTopBorder, const WaveLine* pBottomBorder, HiColor fill) override;
-		void		flipDrawWave(const RectSPX& dest, const WaveLine* pTopBorder, const WaveLine* pBottomBorder, HiColor fill, GfxFlip flip) override;
-
-		void		drawElipse(const RectSPX& canvas, spx thickness, HiColor color, spx outlineThickness = 0, HiColor outlineColor = HiColor::Black) override;
-
-		void		drawPieChart(const RectSPX& canvas, float start, int nSlices, const float* pSliceSizes, const HiColor* pSliceColors, float hubSize = 0.f, HiColor hubColor = HiColor::Transparent, HiColor backColor = HiColor::Transparent, bool bRectangular = false) override;
-
-		void		drawSegments(const RectSPX& dest, int nSegments, const HiColor* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, TintMode tintMode = TintMode::Flat) override;
-		void		flipDrawSegments(const RectSPX& dest, int nSegments, const HiColor* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, GfxFlip flip, TintMode tintMode = TintMode::Flat) override;
-
-
-
 	protected:
 
 		typedef GfxBackend::Command Command;

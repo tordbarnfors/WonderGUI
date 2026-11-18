@@ -33,17 +33,6 @@
 extern "C" {
 #endif
 
-	//____ wg_waveLine ____________________________________________________________
-
-	typedef struct wg_waveLine_struct
-	{
-		int			length;
-		wg_spx		thickness;
-		wg_color	color;
-		int* pWave;      // Pixel offset in 26.6 format.
-		wg_spx		hold;      // Value for extending the line if it is too short (or completely missing).
-	} wg_waveLine;
-
 	//____ wg_roundedBoxSpec ______________________________________________________
 	// Colors with negative alpha (undefined) are not drawn.
 
@@ -245,17 +234,6 @@ extern "C" {
 	WG_EXPORT void			wg_blitNinePatch(wg_obj device, const wg_rectSPX* dstRect, const wg_borderSPX* dstFrame, const wg_ninePatch* patch, int scale);
 
 	// Deprecated
-
-	WG_DEPRECATED void		wg_drawWave(wg_obj device, const wg_rectSPX* dest, const wg_waveLine* pTopBorder, const wg_waveLine* pBottomBorder, wg_color fill);
-	WG_DEPRECATED void		wg_flipDrawWave(wg_obj device, const wg_rectSPX* dest, const wg_waveLine* pTopBorder, const wg_waveLine* pBottomBorder, wg_color fill, wg_gfxFlip flip);
-
-	WG_DEPRECATED void		wg_drawElipse(wg_obj device, const wg_rectSPX* canvas, wg_spx thickness, wg_color color, wg_spx outlineThickness, wg_color outlineColor);
-
-	WG_DEPRECATED void		wg_drawPieChart(wg_obj device, const wg_rectSPX* canvas, float start, int nSlices, const float* pSliceSizes, const wg_color* pSliceColors, float hubSize, wg_color hubColor, wg_color backColor, int bRectangular);
-
-	WG_DEPRECATED void		wg_drawSegments(wg_obj device, const wg_rectSPX* dest, int nSegments, const wg_color* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, wg_tintMode tintMode);
-	WG_DEPRECATED void		wg_flipDrawSegments(wg_obj device, const wg_rectSPX* dest, int nSegments, const wg_color* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, wg_gfxFlip flip, wg_tintMode tintMode);
-
 
 	WG_DEPRECATED void		wg_setBlurMatrices(wg_obj device, wg_spx radius, const float red[9], const float green[9], const float blue[9] );
 

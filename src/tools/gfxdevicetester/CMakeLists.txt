@@ -35,17 +35,13 @@ set( SOURCES
 	testsuites/mipmaptests.h
 	testsuites/paletteblittests.h
 	testsuites/palettecapacitytests.h
-	testsuites/piecharttests.h
 	testsuites/readbacktests.h
 	testsuites/rgb565bigendiantests.h
 	testsuites/samplingtests.h
-	testsuites/segmenttests.h
 	testsuites/testsuite.h
 	testsuites/tiletests.h
 	testsuites/tintblittests.h
-	testsuites/tintsegmenttests.h
 	testsuites/tinttests.h
-	testsuites/wavetests.h
 )
 
 
