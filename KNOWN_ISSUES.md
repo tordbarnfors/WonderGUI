@@ -268,7 +268,9 @@ The shape shaders have been made faster since, which on Intel UHD 770 (Mesa) mad
 2.6 times as fast and the other shapes 10-20%, see "Shape shaders on GPUs" in ROADMAP.md. Timed
 on Windows after that, the shapes were level with the old GlBackend but for line caps, which
 took up to 4 times as long. The line shader has been rewritten since, without arrays indexed at
-run time, which made line caps 2-3 times as fast on Intel UHD 770. Not timed on Windows since.
+run time, which made line caps 2-3 times as fast on Intel UHD 770. On Windows that made them 1.5-13
+times as fast, but for the tests drawing each line in a clip of its own, which stayed 4.6 times
+as slow. Those switched pipelines twice per line, which is gone now, not timed on Windows since.
 
 DX12Backend compiles the new line shader with FXC when it starts, which hasn't been tried, and
 MetalBackend hasn't run the MSL made from it either. Both have the same shader as GlBackend and
