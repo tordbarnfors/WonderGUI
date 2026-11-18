@@ -211,8 +211,14 @@ DX12Backend on the same GPU, where all tests taken together are level (median ra
 thread calling us mostly waits during them, no core is loaded more than 20%.
 
 The shape shaders have been made faster since, which on Intel UHD 770 (Mesa) made rounded boxes
-2.6 times as fast and the other shapes 10-20%, see "Shape shaders on GPUs" in ROADMAP.md. Not
-timed on Windows since.
+2.6 times as fast and the other shapes 10-20%, see "Shape shaders on GPUs" in ROADMAP.md. Timed
+on Windows after that, the shapes were level with the old GlBackend but for line caps, which
+took up to 4 times as long. The line shader has been rewritten since, without arrays indexed at
+run time, which made line caps 2-3 times as fast on Intel UHD 770. Not timed on Windows since.
+
+DX12Backend compiles the new line shader with FXC when it starts, which hasn't been tried, and
+MetalBackend hasn't run the MSL made from it either. Both have the same shader as GlBackend and
+VulkanBackend, where it gives the same results as before.
 
 They also come out at one of two or three speeds for a whole run of the tester, the same in all
 its passes (PieChartTests 126, 167 or 187 us per run), which makes them the tests that still
