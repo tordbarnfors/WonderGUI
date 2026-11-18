@@ -277,7 +277,7 @@ namespace wg
 			if(defSize.w <= 0)
 				return 0;
 
-			spx wantedHeight = align(spx(int64_t(defSize.h * givenWidth) / defSize.w));
+			spx wantedHeight = align(spx((int64_t(defSize.h) * givenWidth) / defSize.w));
 			return wantedHeight + border.h;
 		}
 		else
@@ -297,7 +297,7 @@ namespace wg
 			if(defSize.h <= 0)
 				return 0;
 
-			spx wantedWidth = align( spx(int64_t(defSize.w * givenHeight) / defSize.h));
+			spx wantedWidth = align( spx((int64_t(defSize.w) * givenHeight) / defSize.h));
 			return wantedWidth + border.w;
 		}
 		else

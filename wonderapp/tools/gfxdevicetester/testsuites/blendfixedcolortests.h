@@ -74,7 +74,14 @@ public:
 			for( int i = 0 ; i < 16 ; i++ )
 			{
 				RectSPX r = {i*32, y*32, 32, 32};
-				pDevice->drawElipse(r*64, 4*64, HiColor(4096, 4096, 4096, 4096*i/15));
+				RingSlice slice = { 1.f, HiColor(4096, 4096, 4096, 4096*i/15), nullptr };
+
+				RingSpec ring;
+				ring.rect = r*64;
+				ring.thickness = 4*64;
+				ring.nSlices = 1;
+				ring.pSlices = &slice;
+				pDevice->drawRing(ring);
 			}
 		}
 

@@ -86,10 +86,6 @@ struct wg_c_calls_body
 	wg_hostbridge_calls			hostBridge;
 	wg_plugincapsule_calls		pluginCapsule;
 	wg_blurbrush_calls			blurbrush;
-	wg_tintmap_calls			tintmap;			// Retired, all stubs.
-	wg_gradyent_calls			gradyent;			// Retired, all stubs.
-	wg_statictintmap_calls		staticTintmap;		// Retired, all stubs.
-
 	wg_tint_calls				tint;
 	wg_warpmap_calls			warpmap;
 	wg_warpmapfactory_calls		warpmapFactory;
@@ -97,35 +93,6 @@ struct wg_c_calls_body
 
 static wg_c_calls_body	body;
 static std::once_flag	bodyPopulated;
-
-//____ Stubs for retired calls __________________________________________________
-//
-// Plugins built before a call was retired may still call it. These do nothing
-// and return 0 or null, with the call's own signature so no caller is surprised
-// by how a value comes back.
-
-static void			stub_setTintmap(wax_obj, const wax_rectSPX*, const wax_obj) {}
-static wax_obj		stub_getTintmap(wax_obj) { return nullptr; }
-static wax_rectSPX	stub_getTintmapRect(wax_obj) { return wax_rectSPX{ 0, 0, 0, 0 }; }
-static void			stub_clearTintmap(wax_obj) {}
-static int			stub_hasTintmap(wax_obj) { return 0; }
-static void			stub_setTintGradient(wax_obj, const wax_rectSPX*, const void*) {}
-static void			stub_clearTintGradient(wax_obj) {}
-
-static int				stub_edgemapPaletteType(wax_obj) { return 0; }		// Was WG_EDGEMAP_PALETTE_UNDEFINED.
-static int				stub_setEdgemapColorsFromGradients(wax_obj, int, int, const void*) { return 0; }
-static int				stub_setEdgemapColorsFromTintmaps(wax_obj, int, int, wax_obj*) { return 0; }
-static int				stub_setEdgemapColorsFromStrips(wax_obj, int, int, const wax_color*, const wax_color*) { return 0; }
-static int				stub_importEdgemapPaletteEntries(wax_obj, int, int, const wax_color*) { return 0; }
-static const wax_color*	stub_edgemapColorstrips(wax_obj) { return nullptr; }
-static int				stub_importPaletteEntries(wax_obj, int, int, const wax_color*) { return 0; }
-
-static int		stub_isTintmapFlag(wax_obj) { return 0; }
-static void		stub_exportTintmapColors(wax_obj, wax_sizeI, wax_color*, wax_color*) {}
-static wax_obj	stub_createGradyent(wax_color, wax_color, wax_color, wax_color) { return nullptr; }
-static wax_obj	stub_createStaticTintmap(wax_sizeI, const wax_color*, const wax_color*) { return nullptr; }
-
-
 
 // The body is shared by all headers and only ever holds the same constant function
 // pointers, so it is filled once. wg_populatePluginInterface() may be called from
@@ -201,13 +168,6 @@ static void populateBody(wg_c_calls_body * pBody)
 	pBody->gfxDevice.hasTintColor			= LOCKED(wax_hasTintColor);
 	pBody->gfxDevice.getTintColor			= LOCKED(wax_getTintColor);
 
-	pBody->gfxDevice.setTintmap				= &stub_setTintmap;
-	pBody->gfxDevice.getTintmap				= &stub_getTintmap;
-	pBody->gfxDevice.getTintmapRect			= &stub_getTintmapRect;
-	pBody->gfxDevice.clearTintmap			= &stub_clearTintmap;
-	pBody->gfxDevice.hasTintmap				= &stub_hasTintmap;
-	pBody->gfxDevice.setTintGradient		= &stub_setTintGradient;
-	pBody->gfxDevice.clearTintGradient		= &stub_clearTintGradient;
 	pBody->gfxDevice.setTint				= LOCKED(wax_setTint);
 	pBody->gfxDevice.getTint				= LOCKED(wax_getTint);
 	pBody->gfxDevice.getTintRect			= LOCKED(wax_getTintRect);
@@ -250,12 +210,6 @@ static void populateBody(wg_c_calls_body * pBody)
 	pBody->gfxDevice.flipTile				= LOCKED(wax_flipTile);
 	pBody->gfxDevice.scaleTile				= LOCKED(wax_scaleTile);
 	pBody->gfxDevice.scaleFlipTile			= LOCKED(wax_scaleFlipTile);
-	pBody->gfxDevice.drawWave				= LOCKED(wax_drawWave);
-	pBody->gfxDevice.flipDrawWave			= LOCKED(wax_flipDrawWave);
-	pBody->gfxDevice.drawElipse				= LOCKED(wax_drawElipse);
-	pBody->gfxDevice.drawPieChart			= LOCKED(wax_drawPieChart);
-	pBody->gfxDevice.drawSegments			= LOCKED(wax_drawSegments);
-	pBody->gfxDevice.flipDrawSegments		= LOCKED(wax_flipDrawSegments);
 	pBody->gfxDevice.drawEdgemap			= LOCKED(wax_drawEdgemap);
 	pBody->gfxDevice.flipDrawEdgemap		= LOCKED(wax_flipDrawEdgemap);
 	pBody->gfxDevice.tileEdgemap			= LOCKED(wax_tileEdgemap);
@@ -388,14 +342,6 @@ static void populateBody(wg_c_calls_body * pBody)
 	pBody->edgemap.setRenderSegments		= LOCKED(wax_setRenderSegments);
 	pBody->edgemap.getRenderSegments		= LOCKED(wax_getRenderSegments);
 
-	pBody->edgemap.edgemapPaletteType		= &stub_edgemapPaletteType;
-	pBody->edgemap.setEdgemapColorsFromGradients = &stub_setEdgemapColorsFromGradients;
-	pBody->edgemap.setEdgemapColorsFromTintmaps = &stub_setEdgemapColorsFromTintmaps;
-	pBody->edgemap.setEdgemapColorsFromStrips = &stub_setEdgemapColorsFromStrips;
-	pBody->edgemap.importEdgemapPaletteEntries = &stub_importEdgemapPaletteEntries;
-	pBody->edgemap.edgemapColorstripsX		= &stub_edgemapColorstrips;
-	pBody->edgemap.edgemapColorstripsY		= &stub_edgemapColorstrips;
-	pBody->edgemap.importPaletteEntries		= &stub_importPaletteEntries;
 	pBody->edgemap.setEdgemapColors			= LOCKED(wax_setEdgemapColors);
 	pBody->edgemap.setEdgemapTints			= LOCKED(wax_setEdgemapTints);
 
@@ -464,18 +410,6 @@ static void populateBody(wg_c_calls_body * pBody)
 	pBody->blurbrush.green					= LOCKED(wax_blurbrushGreen);
 	pBody->blurbrush.red					= LOCKED(wax_blurbrushRed);
 
-	pBody->tintmap.structSize				= sizeof(wg_tintmap_calls);
-	pBody->tintmap.isTintmapOpaque			= &stub_isTintmapFlag;
-	pBody->tintmap.isTintmapVertical		= &stub_isTintmapFlag;
-	pBody->tintmap.isTintmapHorizontal		= &stub_isTintmapFlag;
-	pBody->tintmap.exportTintmapColors		= &stub_exportTintmapColors;
-
-	pBody->gradyent.structSize				= sizeof(wg_gradyent_calls);
-	pBody->gradyent.createGradyent			= &stub_createGradyent;
-
-	pBody->staticTintmap.structSize			= sizeof(wg_statictintmap_calls);
-	pBody->staticTintmap.createStaticTintmap = &stub_createStaticTintmap;
-
 	pBody->tint.structSize					= sizeof(wg_tint_calls);
 	pBody->tint.defaultTintBP				= LOCKED(wax_defaultTintBP);
 	pBody->tint.createTint					= LOCKED(wax_createTint);
@@ -523,9 +457,6 @@ void wg_populatePluginInterface(wg_plugin_interface * pHeader)
 	pHeader->pHostBridge		= &pBody->hostBridge;
 	pHeader->pPluginCapsule		= &pBody->pluginCapsule;
 	pHeader->pBlurbrush			= &pBody->blurbrush;
-	pHeader->pTintmap			= &pBody->tintmap;
-	pHeader->pGradyent			= &pBody->gradyent;
-	pHeader->pStaticTintmap		= &pBody->staticTintmap;
 
 	pHeader->pTint				= &pBody->tint;
 

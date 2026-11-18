@@ -13,7 +13,7 @@ using namespace wax;
 SoftGfxDeviceTest::SoftGfxDeviceTest()
 {
 
-	ADD_TEST(drawElipseTest);
+	ADD_TEST(drawRingTest);
 
 }
 
@@ -28,7 +28,7 @@ bool SoftGfxDeviceTest::init(std::ostream& output)
 }
 
 
-bool SoftGfxDeviceTest::drawElipseTest(std::ostream& output)
+bool SoftGfxDeviceTest::drawRingTest(std::ostream& output)
 {
 
 	SoftSurface_p pCanvas =	SoftSurface::create( { .canvas = true, .size = {4096,4096} } );
@@ -40,19 +40,16 @@ bool SoftGfxDeviceTest::drawElipseTest(std::ostream& output)
 	
 	pDevice->beginCanvasUpdate(pCanvas);
 
-	pDevice->drawElipse({59,59,1288,1288}, 10*64+3, HiColor( 4096, 0, 0, 4096) );
+	RingSlice slice = { 1.f, HiColor( 4096, 0, 0, 4096), nullptr };
+
+	RingSpec ring;
+	ring.rect = {59,59,1288,1288};
+	ring.thickness = 10*64+3;
+	ring.nSlices = 1;
+	ring.pSlices = &slice;
+	pDevice->drawRing(ring);
 
 	
-/*
-	for( int j = 0 ; j < 64 ; j++ )
-	{
-		for( int i = 0 ; i < 64*64 ; i++ )
-		{
-			for( int k = 0 ; k < 64*64 ; k++ )
-				pDevice->drawElipse({j,j,i,k}, 10*64+3, HiColor( 4096, 0, 0, 4096) );
-		}
-	}
-*/
 	pDevice->endCanvasUpdate();
 	
 	pDevice->endRender();

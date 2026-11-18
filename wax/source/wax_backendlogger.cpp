@@ -726,6 +726,32 @@ namespace wax
 			*m_pOStream << "Called waitForCompletion()" << std::endl;
 	}
 
+	//____ submitUploads() _______________________________________________________
+
+	int64_t BackendLogger::submitUploads(int64_t maxBytes)
+	{
+		int64_t pending = 0;
+		if (m_pBackend)
+			pending = m_pBackend->submitUploads(maxBytes);
+
+		if( m_pOStream )
+			*m_pOStream << "Called submitUploads(" << maxBytes << "). Returned: " << pending << std::endl;
+		return pending;
+	}
+
+	//____ pendingUploadBytes() __________________________________________________
+
+	int64_t BackendLogger::pendingUploadBytes() const
+	{
+		int64_t pending = 0;
+		if (m_pBackend)
+			pending = m_pBackend->pendingUploadBytes();
+
+		if( m_pOStream )
+			*m_pOStream << "Called pendingUploadBytes(). Returned: " << pending << std::endl;
+		return pending;
+	}
+
 
 
 	//____ setOStream() _______________________________________________________

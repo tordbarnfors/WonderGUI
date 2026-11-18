@@ -52,6 +52,8 @@ namespace wax
 
 	class DX12Backend : public Backend
 	{
+		friend class DX12Surface;		// Tells us when one whose upload we recorded goes away.
+
 	public:
 
 		//.____ Creation __________________________________________
@@ -60,6 +62,10 @@ namespace wax
 		// but they all share one device and one command queue, set with setDevice()
 		// before the first backend or surface is created. Sharing the queue is what
 		// lets surfaces move freely between backends without cross-queue syncing.
+		//
+		// It is also what keeps surface uploads in order. They are recorded into
+		// our command list, so they run after whatever any backend submitted before
+		// and before whatever comes after. See submitUploads().
 
 		static DX12Backend_p	create();
 
@@ -132,8 +138,8 @@ namespace wax
 		static ID3D12CommandQueue *	commandQueue() { return s_pCommandQueue.Get(); }
 
 		// Submits what every backend has recorded and waits for the GPU to finish
-		// all of it. Used by surfaces before they touch a texture any backend might
-		// be using.
+		// all of it. Used by surfaces before they read a canvas back on the copy
+		// queue, since any backend might be using it.
 
 		static void				waitForCompletionOfAll();
 
@@ -195,6 +201,24 @@ namespace wax
 		bool	canBeCanvas(const TypeInfo& type) const override;
 
 		void	waitForCompletion() override;
+
+		//.____ Uploads ______________________________________________________
+
+		// Surfaces don't send the pixels the CPU writes to their textures right
+		// away. They wait on a list shared by all surfaces, and every backend
+		// records the copies of everything on it before a session, so a surface is
+		// never drawn out of date. That puts all of them in front of the frame
+		// that first needs them, which can be a lot just after loading.
+		//
+		// submitUploads() sends them earlier, at a time of your choosing, oldest
+		// first. Outside a frame it submits a command list of its own, which waits
+		// for the oldest of our frames in flight like beginRender() does, so calling
+		// it again and again keeps at most two batches on their way. Within a frame,
+		// but outside a session, it records and submits what we have so far. No
+		// other wait on the CPU is involved.
+
+		int64_t	submitUploads(int64_t maxBytes = -1) override;
+		int64_t	pendingUploadBytes() const override;
 
 	protected:
 
@@ -280,6 +304,17 @@ namespace wax
 		void _setCanvas(DX12Surface* pCanvas);
 		void _resetStates();					// To start values, for a new session or canvas.
 		void _transitionCanvas(DX12Surface* pCanvas, D3D12_RESOURCE_STATES state);
+
+		// Uploads of pending surfaces, recorded into our open command list. See
+		// "Uploads" in the public section and DX12Surface::_updatePending().
+
+		int64_t _recordUploads(int64_t maxBytes);			// Oldest first, returns bytes recorded.
+		void _recordUpload(DX12Surface* pSurface);			// Just this one, if it is pending.
+		void _recordUploadBatch();							// Whatever _recordUploads() put in m_uploadBatch.
+		void _uploadsSubmitted();							// Right after Signal(m_fenceValue) for the list holding them.
+		void _abandonRecordedUploads();						// The list holding them was never submitted.
+		void _forgetRecordedUpload(DX12Surface* pSurface);	// It is going away.
+		void _openedCommandList();							// After every Reset() of the command list.
 
 		// Resources the command list being recorded uses, held until the GPU is
 		// done with it. See _holdUntilDone() and _releaseWhenDone().
@@ -513,6 +548,23 @@ namespace wax
 		// it.
 
 		std::vector<Surface_p>								m_blitSourceCanvases;
+
+		// Every command list we open gets a serial of its own, unique among all
+		// backends. A surface read as blit source remembers the serial, so we know
+		// when it was read, and implicitly promoted out of COMMON, by the list we
+		// are about to record its upload into. See _recordUploads().
+
+		UINT64												m_listSerial = 0;
+		static UINT64										s_lastListSerial;
+
+		// Surfaces whose uploads are in our open command list, told the fence value
+		// to wait for once we have submitted it. They let us know if they go away
+		// before that.
+
+		std::vector<DX12Surface*>							m_recordedUploads;
+
+		std::vector<DX12Surface*>							m_uploadBatch;		// Kept between calls, so it doesn't reallocate.
+		std::vector<D3D12_RESOURCE_BARRIER>					m_uploadBarriers;	// Likewise.
 
 		// A command list holds no references to what it uses, and D3D12 must not
 		// have a resource released while the GPU may still use it. So every

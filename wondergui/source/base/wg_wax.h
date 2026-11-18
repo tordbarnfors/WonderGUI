@@ -303,7 +303,6 @@ namespace wg
 
 	using GfxDevice_p = wax::Device_p;
 	using GfxDevice_wp = wax::Device_wp;
-	using wax::WaveLine;
 	using wax::RoundedBoxSpec;
 	using wax::RingSlice;
 	using wax::RingSpec;

@@ -14,5 +14,5 @@ public:
 
 private:
 
-	bool drawElipseTest(std::ostream& output);
+	bool drawRingTest(std::ostream& output);
 };

@@ -24,6 +24,7 @@
 #pragma once
 
 #include <climits>
+#include <cstdint>
 #include <bitset>
 
 #include <wax_device.h>
@@ -366,6 +367,30 @@ namespace wax
 		virtual bool	canBeCanvas(const TypeInfo& type) const = 0;
 
 		virtual void	waitForCompletion() = 0;
+
+		//.____ Uploads ______________________________________________________
+
+		// Pixels written to a surface by the CPU have to reach the GPU before the
+		// surface can be drawn. Backends that defer those uploads do them when the
+		// surface is first used, which puts all of them in front of the first frame
+		// that needs them. submitUploads() lets you choose when the GPU does that
+		// work instead, e.g. right after loading, so the copies run while the CPU is
+		// still busy building the GUI.
+		//
+		// Nothing depends on calling it: whatever is still pending when a surface is
+		// drawn is uploaded then. It does not wait for the GPU to finish, use
+		// waitForCompletion() for that.
+		//
+		// maxBytes limits how much is sent in one call, counted in whole surfaces and
+		// never less than one, so the work can be spread over several calls. A
+		// negative value sends everything. Not allowed during a session.
+		//
+		// Returns the number of bytes still pending, which pendingUploadBytes() also
+		// tells. Backends that upload as soon as pixels change have nothing pending
+		// and always return 0.
+
+		virtual int64_t	submitUploads(int64_t maxBytes = -1) { return 0; }
+		virtual int64_t	pendingUploadBytes() const { return 0; }
 
 		static const int	NbStandardTransforms = GfxFlip_size + 3;
 

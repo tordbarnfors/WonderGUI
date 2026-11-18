@@ -27,15 +27,8 @@
 
 #include <wax_c_blurbrush.h>
 
-#include <type_traits>
-
 
 using namespace wax;
-
-
-static_assert( sizeof(wax_waveLine) == sizeof(wax::WaveLine), "wax_waveLine differs in size from wax::WaveLine!" );
-static_assert( std::is_trivially_copyable<wax::WaveLine>::value, "wax::WaveLine is not trivially copyable" );
-
 
 
 inline DeviceGen2* getPtr(wax_obj obj) {
@@ -484,42 +477,6 @@ void wax_scaleTile(wax_obj device, const wax_rectSPX* dest, float scale, wax_coo
 void wax_scaleFlipTile(wax_obj device, const wax_rectSPX* dest, float scale, wax_gfxFlip flip, wax_coordSPX shift)
 {
 	getPtr(device)->scaleFlipTile(*(const RectSPX*)dest, scale, (GfxFlip) flip, {shift.x, shift.y});
-}
-
-
-void wax_drawWave(wax_obj device, const wax_rectSPX* dest, const wax_waveLine* pTopBorder, const wax_waveLine* pBottomBorder, wax_color fill)
-{
-	getPtr(device)->drawWave(*(const RectSPX*)dest, (WaveLine*) pTopBorder, (WaveLine*) pBottomBorder, * (HiColor*) &fill );
-}
-
-
-void wax_flipDrawWave(wax_obj device, const wax_rectSPX* dest, const wax_waveLine* pTopBorder, const wax_waveLine* pBottomBorder, wax_color fill, wax_gfxFlip flip)
-{
-	getPtr(device)->flipDrawWave(*(const RectSPX*)dest, (WaveLine*)pTopBorder, (WaveLine*)pBottomBorder, *(HiColor*)&fill, (GfxFlip) flip );
-}
-
-
-void wax_drawElipse(wax_obj device, const wax_rectSPX* canvas, wax_spx thickness, wax_color color, wax_spx outlineThickness, wax_color outlineColor)
-{
-	getPtr(device)->drawElipse(*(const RectSPX*)canvas, thickness, *(HiColor*)&color, outlineThickness, *(HiColor*)&outlineColor );
-}
-
-
-void wax_drawPieChart(wax_obj device, const wax_rectSPX* canvas, float start, int nSlices, const float* pSliceSizes, const wax_color* pSliceColors, float hubSize, wax_color hubColor, wax_color backColor, int bRectangular)
-{
-	getPtr(device)->drawPieChart(*(const RectSPX*)canvas, start, nSlices, pSliceSizes, (HiColor*)pSliceColors, hubSize, *(HiColor*)&hubColor, *(HiColor*)&backColor, bRectangular );
-}
-
-
-void wax_drawSegments(wax_obj device, const wax_rectSPX* dest, int nSegments, const wax_color* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, wax_tintMode tintMode)
-{
-	getPtr(device)->drawSegments(*(const RectSPX*)dest, nSegments, (HiColor*)pSegmentColors, nEdgeStrips, pEdgeStrips, edgeStripPitch, (TintMode) tintMode );
-}
-
-
-void wax_flipDrawSegments(wax_obj device, const wax_rectSPX* dest, int nSegments, const wax_color* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, wax_gfxFlip flip, wax_tintMode tintMode)
-{
-	getPtr(device)->flipDrawSegments(*(const RectSPX*)dest, nSegments, (HiColor*)pSegmentColors, nEdgeStrips, pEdgeStrips, edgeStripPitch, (GfxFlip) flip, (TintMode)tintMode);
 }
 
 

@@ -33,17 +33,6 @@
 extern "C" {
 #endif
 
-	//____ wax_waveLine ____________________________________________________________
-
-	typedef struct wax_waveLine_struct
-	{
-		int			length;
-		wax_spx		thickness;
-		wax_color	color;
-		int* pWave;      // Pixel offset in 26.6 format.
-		wax_spx		hold;      // Value for extending the line if it is too short (or completely missing).
-	} wax_waveLine;
-
 	//____ wax_roundedBoxSpec ______________________________________________________
 	// Colors with negative alpha (undefined) are not drawn.
 
@@ -245,17 +234,6 @@ extern "C" {
 	WAX_EXPORT void			wax_blitNinePatch(wax_obj device, const wax_rectSPX* dstRect, const wax_borderSPX* dstFrame, const wax_ninePatch* patch, int scale);
 
 	// Deprecated
-
-	WAX_DEPRECATED void		wax_drawWave(wax_obj device, const wax_rectSPX* dest, const wax_waveLine* pTopBorder, const wax_waveLine* pBottomBorder, wax_color fill);
-	WAX_DEPRECATED void		wax_flipDrawWave(wax_obj device, const wax_rectSPX* dest, const wax_waveLine* pTopBorder, const wax_waveLine* pBottomBorder, wax_color fill, wax_gfxFlip flip);
-
-	WAX_DEPRECATED void		wax_drawElipse(wax_obj device, const wax_rectSPX* canvas, wax_spx thickness, wax_color color, wax_spx outlineThickness, wax_color outlineColor);
-
-	WAX_DEPRECATED void		wax_drawPieChart(wax_obj device, const wax_rectSPX* canvas, float start, int nSlices, const float* pSliceSizes, const wax_color* pSliceColors, float hubSize, wax_color hubColor, wax_color backColor, int bRectangular);
-
-	WAX_DEPRECATED void		wax_drawSegments(wax_obj device, const wax_rectSPX* dest, int nSegments, const wax_color* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, wax_tintMode tintMode);
-	WAX_DEPRECATED void		wax_flipDrawSegments(wax_obj device, const wax_rectSPX* dest, int nSegments, const wax_color* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, wax_gfxFlip flip, wax_tintMode tintMode);
-
 
 	WAX_DEPRECATED void		wax_setBlurMatrices(wax_obj device, wax_spx radius, const float red[9], const float green[9], const float blue[9] );
 

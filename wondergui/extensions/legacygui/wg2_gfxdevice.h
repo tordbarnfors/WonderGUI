@@ -44,10 +44,6 @@
 #include <wax_device.h>
 #include <wg2_geo.h>
 
-//____ WgWaveLine ___________________________________________________________
-
-typedef wg::WaveLine        WgWaveLine;
-
 class	WgBlock;
 class	WgText;
 class	WgCursorInstance;

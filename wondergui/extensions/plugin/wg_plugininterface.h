@@ -212,16 +212,6 @@ typedef struct wg_gfxdevice_calls_struct
 	void				(*setTintColor)(wax_obj device, wax_color color);
 	wax_color			(*getTintColor)(wax_obj device);
 
-	// RETIRED: Tintmaps and tint gradients were replaced by Tints, see setTint() below.
-
-	void				(*setTintmap)(wax_obj device, const wax_rectSPX* rect, const wax_obj tintmap);
-	wax_obj				(*getTintmap)(wax_obj device);
-	wax_rectSPX			(*getTintmapRect)(wax_obj device);
-	void				(*clearTintmap)(wax_obj device);
-	int					(*hasTintmap)(wax_obj device);
-	void				(*setTintGradient)(wax_obj device, const wax_rectSPX* rect, const void* gradient);
-	void				(*clearTintGradient)(wax_obj device);
-
 	int					(*setBlendMode)(wax_obj device, wax_blendMode blendMode);
 	wax_blendMode 		(*getBlendMode)(wax_obj device);
 	int					(*setBlitSource)(wax_obj device, wax_obj surface);
@@ -258,12 +248,6 @@ typedef struct wg_gfxdevice_calls_struct
 	void				(*flipTile)(wax_obj device, const wax_rectSPX* dest, wax_gfxFlip flip, wax_coordSPX shift);
 	void				(*scaleTile)(wax_obj device, const wax_rectSPX* dest, float scale, wax_coordSPX shift);
 	void				(*scaleFlipTile)(wax_obj device, const wax_rectSPX* dest, float scale, wax_gfxFlip flip, wax_coordSPX shift);
-	void				(*drawWave)(wax_obj device, const wax_rectSPX* dest, const wax_waveLine* pTopBorder, const wax_waveLine* pBottomBorder, wax_color fill);
-	void				(*flipDrawWave)(wax_obj device, const wax_rectSPX* dest, const wax_waveLine* pTopBorder, const wax_waveLine* pBottomBorder, wax_color fill, wax_gfxFlip flip);
-	void				(*drawElipse)(wax_obj device, const wax_rectSPX* canvas, wax_spx thickness, wax_color color, wax_spx outlineThickness, wax_color outlineColor);
-	void				(*drawPieChart)(wax_obj device, const wax_rectSPX* canvas, float start, int nSlices, const float* pSliceSizes, const wax_color* pSliceColors, float hubSize, wax_color hubColor, wax_color backColor, int bRectangular);
-	void				(*drawSegments)(wax_obj device, const wax_rectSPX* dest, int nSegments, const wax_color* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, wax_tintMode tintMode);
-	void				(*flipDrawSegments)(wax_obj device, const wax_rectSPX* dest, int nSegments, const wax_color* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, wax_gfxFlip flip, wax_tintMode tintMode);
 	void				(*drawEdgemap)(wax_obj device, wax_coordSPX dest, wax_obj edgemap);
 	void				(*flipDrawEdgemap)(wax_obj device, wax_coordSPX dest, wax_obj edgemap, wax_gfxFlip flip);
 	void				(*blitNinePatch)(wax_obj device, const wax_rectSPX* dstRect, const wax_borderSPX* dstFrame, const wax_ninePatch* patch, int scale);
@@ -466,17 +450,8 @@ typedef struct wg_edgemap_calls_struct
 	int					(*setRenderSegments)(wax_obj edgemap, int nSegments);
 	int					(*getRenderSegments)(wax_obj edgemap);
 
-	int					(*edgemapPaletteType)(wax_obj edgemap);		// RETIRED, there are no palette types anymore.
 	int					(*setEdgemapColors)(wax_obj edgemap, int begin, int end, const wax_color * pColors);
-	int					(*setEdgemapColorsFromGradients)(wax_obj edgemap, int begin, int end, const void * pGradients );		// RETIRED
-	int					(*setEdgemapColorsFromTintmaps)(wax_obj edgemap, int begin, int end, wax_obj * pTintmaps );			// RETIRED
-	int					(*setEdgemapColorsFromStrips)(wax_obj edgemap, int begin, int end, const wax_color * pColorstripX, const wax_color * pColorstripY );	// RETIRED
-
-	int					(*importEdgemapPaletteEntries)(wax_obj edgemap, int begin, int end, const wax_color * pColors );		// RETIRED
-
 	const wax_color *  	(*edgemapFlatColors)(wax_obj edgemap);
-	const wax_color *  	(*edgemapColorstripsX)(wax_obj edgemap);		// RETIRED
-	const wax_color *  	(*edgemapColorstripsY)(wax_obj edgemap);		// RETIRED
 
 	int					(*edgemapSegments)(wax_obj edgemap);
 	int					(*edgemapSamples)(wax_obj edgemap);
@@ -484,7 +459,6 @@ typedef struct wg_edgemap_calls_struct
 	int 				(*importFloatSamples)(wax_obj edgemap, wax_sampleOrigo origo, const float* pSource, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
 	int 				(*exportSpxSamples)(wax_obj edgemap, wax_sampleOrigo origo, wax_spx* pDestination, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
 	int 				(*exportFloatSamples)(wax_obj edgemap, wax_sampleOrigo origo, float* pDestination, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
-	int					(*importPaletteEntries)(wax_obj edgemap, int begin, int end, const wax_color * pColors );		// RETIRED
 
 	void				(*exportBounds)( wax_obj edgemap, wax_spx * pMinMaxOutput, int nSections, int sectionWidth, int topEdge, int bottomEdge, int mapOffset, int minMaxPitch );
 
@@ -581,39 +555,6 @@ typedef struct wg_blurbrush_calls_struct
 } wg_blurbrush_calls;
 
 
-//____ Retired call structs ___________________________________________________
-//
-// Tintmap, Gradyent and StaticTintmap were replaced by Tint. The structs keep
-// their place and size in wg_plugin_interface, and all calls are stubs.
-
-typedef struct wg_tintmap_calls_struct
-{
-	int				structSize;
-
-	int		(*isTintmapOpaque)( wax_obj tintmap );
-	int		(*isTintmapVertical)( wax_obj tintmap );
-	int		(*isTintmapHorizontal)( wax_obj tintmap );
-
-	void	(*exportTintmapColors)( wax_obj tintmap, wax_sizeI tintmapSize, wax_color* pOutputX, wax_color* pOutputY);
-
-} wg_tintmap_calls;
-
-typedef struct wg_gradyent_calls_struct
-{
-	int				structSize;
-
-	wax_obj	(*createGradyent)(wax_color top, wax_color bottom, wax_color left, wax_color right);
-
-} wg_gradyent_calls;
-
-typedef struct wg_statictintmap_calls_struct
-{
-	int				structSize;
-
-	wax_obj	(*createStaticTintmap)( wax_sizeI size, const wax_color * pColorstripX, const wax_color * pColorstripY );
-
-} wg_statictintmap_calls;
-
 //____ wg_tint_calls_struct _____________________________________________
 
 typedef struct wg_tint_calls_struct
@@ -668,9 +609,6 @@ typedef struct wg_plugin_interface_struct
 	wg_hostbridge_calls *		pHostBridge;
 	wg_plugincapsule_calls *	pPluginCapsule;
 	wg_blurbrush_calls *		pBlurbrush;
-	wg_tintmap_calls *			pTintmap;			// RETIRED
-	wg_gradyent_calls *			pGradyent;			// RETIRED
-	wg_statictintmap_calls *	pStaticTintmap;		// RETIRED
 	wg_tint_calls *				pTint;
 	wg_warpmap_calls *			pWarpmap;
 	wg_warpmapfactory_calls *	pWarpmapFactory;

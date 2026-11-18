@@ -87,6 +87,9 @@ public:
 
 	void	waitForCompletion() override;
 
+	int64_t	submitUploads(int64_t maxBytes = -1) override;
+	int64_t	pendingUploadBytes() const override;
+
 protected:
 	BackendLogger(std::ostream * pStream, Backend* pBackend) : m_pBackend(pBackend), m_pOStream(pStream) {}
 

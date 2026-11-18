@@ -45,6 +45,7 @@ namespace wax
 
 	class DX12Surface : public Surface
 	{
+		friend class DX12Backend;		// Records our uploads, see "Uploads" below.
 
 	public:
 
@@ -87,9 +88,10 @@ namespace wax
 
 		//.____ Misc __________________________________________________________
 
-		// Set by DX12Backend::setDevice() before any surface is created. All
-		// surfaces share one copy queue for their uploads. Before touching a
-		// texture they wait for every DX12Backend, since any of them may use it.
+		// Set by DX12Backend::setDevice() before any surface is created. Uploads
+		// are recorded by DX12Backend on the render queue, see "Uploads" below.
+		// Reading a canvas back uses a copy queue shared by all surfaces, which
+		// waits for every DX12Backend first, since any of them may use the texture.
 
 		static bool				setDevice( ID3D12Device * pDevice );
 		static void				exitDevice();
@@ -134,8 +136,14 @@ namespace wax
 		D3D12_CPU_DESCRIPTOR_HANDLE	mipSourceSRV( int level ) const;
 		D3D12_CPU_DESCRIPTOR_HANDLE	mipRTV( int level ) const;
 
-		void					syncTexture();			// Uploads pending pixel changes, if any.
-		void					notifyRendered();		// Called by DX12Backend before it renders into us.
+		// Called by DX12Backend before it renders into us, once anything the CPU
+		// wrote has been uploaded.
+
+		void					notifyRendered();
+
+		// Total size of the uploads waiting to be recorded, for all surfaces.
+
+		static int64_t			pendingUploadBytes() { return s_pendingBytes; }
 
 
 	protected:
@@ -156,6 +164,28 @@ namespace wax
 
 		void			_syncBufferAndWait();			// Brings anything rendered into us back to our pixels.
 		bool			_initReadbackBuffer();
+		void			_uploadNowAndWait();			// On the copy queue, for _syncBufferAndWait() only.
+
+		ID3D12Resource *	_uploadSource( int y1, int y2, Microsoft::WRL::ComPtr<ID3D12Resource>& temp, UINT64& sourceOffset );	// Premultiplied if need be.
+
+		const PixelBuffer	_pixelBuffer( const RectI& rect );	// Points into our pixels, without _waitForUpload().
+
+		// Uploads. Pixels the CPU writes are not sent to the texture right away.
+		// The surface goes on a list of pending uploads instead, in the order they
+		// came in, and DX12Backend records the copies into its own command list:
+		// all of them before a session, so no draw finds a texture out of date, or
+		// earlier through DX12Backend::submitUploads(). The render queue is shared
+		// by all backends and runs in order, which keeps the copy after any earlier
+		// work reading the texture and before any later, with no wait on the CPU.
+		//
+		// The copy reads our pixels straight from the upload buffer when the GPU
+		// gets to it, unless they had to be premultiplied first, see
+		// _uploadSource(). So the CPU must not write to them between submission
+		// and completion. allocPixelBuffer() waits for that, see _waitForUpload().
+
+		void			_updatePending();				// Puts us on or takes us off the list, as m_dirtyRect says.
+		void			_waitForUpload();				// Until the GPU has read our pixels for an upload already submitted.
+		void			_forgetUpload();				// Drops what DX12Backend knows of an upload of ours.
 
 		bool			_setPixelDetails();		// Settles on a layout D3D12 can hold.
 		bool			_allocFallbackPixels();						// Plain memory, for when D3D12 wouldn't play along.
@@ -203,6 +233,27 @@ namespace wax
 		int				m_mipLevels = 1;
 		bool			m_bMipmapStale = false;			// Level 0 has changed since the others were drawn from it.
 
+		// On the list of pending uploads, see _updatePending(). Linked through
+		// ourselves, oldest first.
+
+		bool			m_bUploadPending = false;
+		int64_t			m_pendingBytes = 0;				// Whole lines of m_dirtyRect, our share of s_pendingBytes.
+		DX12Surface *	m_pPrevPending = nullptr;
+		DX12Surface *	m_pNextPending = nullptr;
+
+		// An upload recorded by a DX12Backend. Until that backend has submitted it,
+		// m_pUploadRecordedBy says who has it. After that, the GPU is done reading
+		// our pixels when m_uploadFence reaches m_uploadFenceValue.
+
+		DX12Backend *							m_pUploadRecordedBy = nullptr;
+		Microsoft::WRL::ComPtr<ID3D12Fence>		m_uploadFence;
+		UINT64									m_uploadFenceValue = 0;
+
+		// Serial of the last command list that read us as blit source, see
+		// DX12Backend::_recordUploads().
+
+		UINT64			m_lastReadInList = 0;
+
 		// All live surfaces, linked through themselves, so they can be found when
 		// the device has to be replaced. Not thread safe, like the rest of the
 		// backend.
@@ -211,6 +262,10 @@ namespace wax
 		DX12Surface *	m_pNextLive = nullptr;
 
 		static DX12Surface *									s_pFirstLive;
+
+		static DX12Surface *									s_pFirstPending;
+		static DX12Surface *									s_pLastPending;
+		static int64_t											s_pendingBytes;
 
 		//
 
