@@ -127,6 +127,7 @@ namespace wg
 	std::mutex									DX12Backend::s_pendingMutex;
 	std::vector<DX12Backend::PendingRelease*>	DX12Backend::s_pendingReleases;
 	std::vector<DX12Backend*>					DX12Backend::s_backends;
+	UINT64										DX12Backend::s_lastListSerial = 0;
 
 	//____ create() ______________________________________________________________
 
@@ -640,6 +641,8 @@ namespace wg
 
 		m_bCommandListOpen = false;
 		m_bDeviceObjectsOK = false;
+
+		_abandonRecordedUploads();		// Only if the list was never submitted, which takes a lost device.
 		m_bInSession = false;
 		m_bSessionOnDefaultCanvas = false;
 
@@ -708,6 +711,11 @@ namespace wg
 
 		m_heldResources.clear();
 
+		// waitForCompletion() submitted any uploads we had recorded, so this should
+		// be empty, but no surface may be left pointing at us.
+
+		_abandonRecordedUploads();
+
 		s_backends.erase(std::remove(s_backends.begin(), s_backends.end(), this), s_backends.end());
 
 		// The last backend waits for the release callbacks still out, which the
@@ -762,6 +770,7 @@ namespace wg
 		m_frameResources[frame].commandAllocator->Reset();
 		m_commandList->Reset(m_frameResources[frame].commandAllocator.Get(), nullptr);
 		m_bCommandListOpen = true;
+		_openedCommandList();
 
 		// Vertices and colors are written for the whole frame, not per session,
 		// since the GPU doesn't run any of it until the command list has been
@@ -806,20 +815,20 @@ namespace wg
 
 		m_bCommandListOpen = false;
 
-		if (!CHECK_HR(hr, "ID3D12GraphicsCommandList::Close"))
-			return;
+		// Lost during the frame, or the list broke. Executing would do nothing, and
+		// signaling the fence would only fail.
 
-		// Lost during the frame. Executing would do nothing, and signaling the
-		// fence would only fail.
-
-		if (s_bDeviceLost)
+		if (!CHECK_HR(hr, "ID3D12GraphicsCommandList::Close") || s_bDeviceLost)
+		{
+			_abandonRecordedUploads();
 			return;
+		}
 
 		// Execute the command list.
 		ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
 
 		 m_pDX12CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-	 
+
 		 // Signal and increment the fence value.
 
 		m_fenceValue++;
@@ -827,6 +836,7 @@ namespace wg
 		m_pDX12CommandQueue->Signal(m_commandFence.Get(), m_fenceValue);
 		m_frameResources[m_currentFrameIndex].fenceValue = m_fenceValue;
 
+		_uploadsSubmitted();
 		_releaseWhenDone(m_fenceValue);
 
 	}
@@ -849,6 +859,7 @@ namespace wg
 		if (!CHECK_HR(hr, "ID3D12GraphicsCommandList::Close") || s_bDeviceLost)
 		{
 			m_bCommandListOpen = false;
+			_abandonRecordedUploads();
 			return;
 		}
 
@@ -860,6 +871,7 @@ namespace wg
 		m_pDX12CommandQueue->Signal(m_commandFence.Get(), m_fenceValue);
 		m_frameResources[m_currentFrameIndex].fenceValue = m_fenceValue;
 
+		_uploadsSubmitted();
 		_releaseWhenDone(m_fenceValue);
 
 		// The textures the descriptors in the heap were copied for are no longer
@@ -872,6 +884,7 @@ namespace wg
 		// reset in beginRender() once the fence says the GPU is done with it.
 
 		m_commandList->Reset(m_frameResources[m_currentFrameIndex].commandAllocator.Get(), nullptr);
+		_openedCommandList();
 
 		m_pActivePipeline = nullptr;
 		m_bBlitSourceBound = false;
@@ -1057,6 +1070,12 @@ namespace wg
 
 		if (!m_bCommandListOpen || s_bDeviceLost)
 			return;					// Nothing can be recorded: device lost, beginRender() never called or the list broke.
+
+		// Every pending upload, so no draw of the session finds a texture out of
+		// date. Whatever submitUploads() hasn't already sent. It may flush the
+		// command list, which is fine before anything of the session is recorded.
+
+		_recordUploads(-1);
 
 		if (m_bSessionOnDefaultCanvas && m_defaultCanvasBuffer)
 		{
@@ -1465,13 +1484,15 @@ namespace wg
 		if (pCanvas)
 		{
 			// Gets any pixels the CPU wrote into the texture before we render over
-			// it, and marks our copy of them as the older one from here on. That
-			// upload runs on the copy queue, which can only reach a texture that
-			// rests in COMMON, so the surface goes back there first. It usually
-			// already is, in which case the call below records nothing.
+			// it, and marks our copy of them as the older one from here on. The
+			// upload barriers the texture out of COMMON and back, so the surface
+			// goes there first. It usually already is, in which case the call
+			// below records nothing. beginSession() has normally taken care of the
+			// upload already.
 
 			_transitionCanvas(pCanvas, D3D12_RESOURCE_STATE_COMMON);
 
+			_recordUpload(pCanvas);
 			pCanvas->notifyRendered();
 
 			_transitionCanvas(pCanvas, D3D12_RESOURCE_STATE_RENDER_TARGET);
@@ -2421,9 +2442,10 @@ namespace wg
 			return;
 		}
 
-		// Make sure the texture holds everything written to the surface.
+		// Make sure the texture holds everything written to the surface. Normally
+		// beginSession() has already recorded the upload and this does nothing.
 
-		pSurface->syncTexture();
+		_recordUpload(pSurface);
 
 		m_blitSourceSize = pSurface->pixelSize();
 		m_bBlitSourceAlphaOnly = pSurface->isAlphaOnly();
@@ -2467,6 +2489,10 @@ namespace wg
 		// A palette based surface is read through its palette buffer as well.
 
 		_holdUntilDone(m_pBlitSource->paletteBuffer());
+
+		// An upload into it, later in this list, has to know it has been promoted.
+
+		m_pBlitSource->m_lastReadInList = m_listSerial;
 
 		auto& frame = m_frameResources[m_currentFrameIndex];
 
@@ -2556,9 +2582,10 @@ namespace wg
 	// call, so we draw them ourselves, see ps_mipmap.hlsl.
 	//
 	// We get here from _bindBlitSource() when level 0 has changed since the
-	// levels were drawn: after an upload, which flushed the command list, or
-	// after rendering into the surface, which ended with it back in COMMON.
-	// Either way every level rests in COMMON and this command list hasn't
+	// levels were drawn: after an upload, which _recordUploadBatch() ends with a
+	// barrier back to COMMON, in a fresh command list if this one had read the
+	// surface, or after rendering into the surface, which ended with it back in
+	// COMMON. Either way every level rests in COMMON and this command list hasn't
 	// promoted it, so we can barrier it ourselves. We leave it in COMMON, where
 	// _bindBlitSource() expects it.
 
@@ -3750,6 +3777,288 @@ namespace wg
 			m_commandFence->SetEventOnCompletion(fenceValue, m_fenceEvent);
 			WaitForSingleObject(m_fenceEvent, INFINITE);
 		}
+	}
+
+	//____ submitUploads() _____________________________________________________
+
+	int64_t DX12Backend::submitUploads(int64_t maxBytes)
+	{
+		if (m_bInSession)
+		{
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "submitUploads() can't be called during a session.",
+				this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return DX12Surface::pendingUploadBytes();
+		}
+
+		// Nothing can be recorded without device objects or on a lost device. The
+		// uploads stay pending until a new device is set, which redoes them anyway.
+
+		if (!DX12Surface::s_pFirstPending || !m_bDeviceObjectsOK || s_bDeviceLost)
+			return DX12Surface::pendingUploadBytes();
+
+		if (m_bCommandListOpen)
+		{
+			// Within a frame, between sessions. Submitting what we have so far is
+			// allowed here, the next session sets everything up again.
+
+			_recordUploads(maxBytes);
+			_flushCommandList();
+		}
+		else
+		{
+			// A command list of our own. beginRender() waits for the oldest frame in
+			// flight to free its allocator, which is what keeps a caller looping
+			// over us from piling up work on the GPU.
+
+			beginRender();
+			_recordUploads(maxBytes);
+			endRender();
+		}
+
+		return DX12Surface::pendingUploadBytes();
+	}
+
+	//____ pendingUploadBytes() ________________________________________________
+
+	int64_t DX12Backend::pendingUploadBytes() const
+	{
+		return DX12Surface::pendingUploadBytes();
+	}
+
+	//____ _recordUploads() ____________________________________________________
+	//
+	// Records the uploads of pending surfaces into our open command list, oldest
+	// first, until maxBytes is reached. Always at least one, so a surface larger
+	// than maxBytes doesn't block the rest. A negative maxBytes records them all.
+	//
+	// Only between sessions, or at the start of one, since it may have to flush
+	// the command list. See _recordUploadBatch().
+
+	int64_t DX12Backend::_recordUploads(int64_t maxBytes)
+	{
+		if (!m_bCommandListOpen || s_bDeviceLost || !DX12Surface::s_pFirstPending)
+			return 0;
+
+		int64_t bytes = 0;
+
+		for (DX12Surface* p = DX12Surface::s_pFirstPending; p; p = p->m_pNextPending)
+		{
+			if (maxBytes >= 0 && !m_uploadBatch.empty() && bytes + p->m_pendingBytes > maxBytes)
+				break;
+
+			m_uploadBatch.push_back(p);
+			bytes += p->m_pendingBytes;
+		}
+
+		_recordUploadBatch();
+		return bytes;
+	}
+
+	//____ _recordUpload() _____________________________________________________
+	//
+	// For a surface about to be read or rendered into that is still pending. That
+	// shouldn't happen, beginSession() records all uploads before anything of the
+	// session, but it is cheap to make sure.
+
+	void DX12Backend::_recordUpload(DX12Surface* pSurface)
+	{
+		if (!pSurface->m_bUploadPending || !m_bCommandListOpen || s_bDeviceLost)
+			return;
+
+		m_uploadBatch.push_back(pSurface);
+		_recordUploadBatch();
+	}
+
+	//____ _recordUploadBatch() ________________________________________________
+	//
+	// Records the copies of everything in m_uploadBatch, with their barriers in
+	// one call before and one after. Textures go into COPY_DEST from whatever state
+	// we know them in, which is COMMON for anything but a canvas we track, and come
+	// out in COMMON, since COPY_DEST doesn't decay.
+	//
+	// No wait on the CPU: the command queue is shared by all backends and runs in
+	// order, so the copies come after whatever was submitted before and in front
+	// of what we record after them.
+
+	void DX12Backend::_recordUploadBatch()
+	{
+		// Recorded but unsubmitted work of other backends might read the textures
+		// we are about to change. It goes in front of our copies, as it would have
+		// had it been submitted already.
+
+		for (auto pBackend : s_backends)
+		{
+			if (pBackend != this && pBackend->m_bCommandListOpen)
+				pBackend->_flushCommandList();
+		}
+
+		// A texture we have already read from in this list was promoted out of
+		// COMMON by D3D12, into a state we don't know. It decays when the list has
+		// run, so the upload goes into a fresh one. Canvases are tracked, so their
+		// state is always known.
+
+		for (auto p : m_uploadBatch)
+		{
+			if (!p->canBeCanvas() && p->m_lastReadInList == m_listSerial)
+			{
+				_flushCommandList();
+				break;
+			}
+		}
+
+		if (!m_bCommandListOpen || s_bDeviceLost)
+		{
+			m_uploadBatch.clear();		// The flush failed. They stay pending.
+			return;
+		}
+
+		m_uploadBarriers.clear();
+
+		for (auto p : m_uploadBatch)
+		{
+			D3D12_RESOURCE_BARRIER barrier = {};
+			barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+			barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+			barrier.Transition.pResource = p->m_texture.Get();
+			barrier.Transition.StateBefore = p->m_resourceState;
+			barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+			barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+			m_uploadBarriers.push_back(barrier);
+		}
+
+		m_commandList->ResourceBarrier((UINT) m_uploadBarriers.size(), m_uploadBarriers.data());
+
+		for (auto p : m_uploadBatch)
+		{
+			// Full lines, so the source offset stays aligned. See
+			// DX12Surface::_setupTexture().
+
+			int y1 = p->m_dirtyRect.y;
+			int y2 = p->m_dirtyRect.y + p->m_dirtyRect.h;
+
+			// Surfaces with alpha are premultiplied on the way, into a buffer of
+			// their own, held until the GPU has copied from it.
+
+			Microsoft::WRL::ComPtr<ID3D12Resource> premultiplied;
+			UINT64 sourceOffset;
+			ID3D12Resource* pSource = p->_uploadSource(y1, y2, premultiplied, sourceOffset);
+
+			if (premultiplied)
+				_holdUntilDone(premultiplied.Get());
+
+			D3D12_TEXTURE_COPY_LOCATION dst = {};
+			dst.pResource = p->m_texture.Get();
+			dst.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+			dst.SubresourceIndex = 0;
+
+			D3D12_TEXTURE_COPY_LOCATION src = {};
+			src.pResource = pSource;
+			src.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+			src.PlacedFootprint.Offset = sourceOffset;
+			src.PlacedFootprint.Footprint.Format = p->m_dxgiFormat;
+			src.PlacedFootprint.Footprint.Width = p->m_size.w;
+			src.PlacedFootprint.Footprint.Height = y2 - y1;
+			src.PlacedFootprint.Footprint.Depth = 1;
+			src.PlacedFootprint.Footprint.RowPitch = p->m_uploadPitch;
+
+			m_commandList->CopyTextureRegion(&dst, 0, y1, 0, &src, nullptr);
+		}
+
+		for (auto& barrier : m_uploadBarriers)
+		{
+			barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+			barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COMMON;
+		}
+
+		m_commandList->ResourceBarrier((UINT) m_uploadBarriers.size(), m_uploadBarriers.data());
+
+		for (auto p : m_uploadBatch)
+		{
+			p->m_resourceState = D3D12_RESOURCE_STATE_COMMON;
+
+			// The surface may go before the GPU has copied, taking both with it.
+
+			_holdUntilDone(p->m_texture.Get());
+			_holdUntilDone(p->m_uploadBuffer.Get());
+
+			p->m_dirtyRect = RectI();
+			p->_updatePending();
+
+			// Level 0 has changed, the others are drawn from it before the surface
+			// is read, see _generateMipmaps().
+
+			if (p->m_mipLevels > 1)
+				p->m_bMipmapStale = true;
+
+			// Told the fence value once we have submitted. Any fence it had is for
+			// an earlier upload, which the CPU has waited for before writing the
+			// pixels we copy now, see DX12Surface::_waitForUpload().
+
+			p->m_uploadFence = nullptr;
+			p->m_uploadFenceValue = 0;
+
+			if (p->m_pUploadRecordedBy != this)
+			{
+				p->m_pUploadRecordedBy = this;
+				m_recordedUploads.push_back(p);
+			}
+		}
+
+		m_uploadBatch.clear();
+
+		// A canvas among them may have been our blit source, and is in COMMON now.
+
+		m_bBlitSourceBound = false;
+	}
+
+	//____ _uploadsSubmitted() _________________________________________________
+	//
+	// The list holding the uploads went to the GPU, followed by a signal of
+	// m_fenceValue. The surfaces must not be written to until it gets there.
+
+	void DX12Backend::_uploadsSubmitted()
+	{
+		for (auto p : m_recordedUploads)
+		{
+			p->m_pUploadRecordedBy = nullptr;
+			p->m_uploadFence = m_commandFence;
+			p->m_uploadFenceValue = m_fenceValue;
+		}
+
+		m_recordedUploads.clear();
+	}
+
+	//____ _abandonRecordedUploads() ___________________________________________
+	//
+	// The list holding the uploads was closed without being submitted, so their
+	// textures never got the pixels. They go back on the list, whole, which on a
+	// lost device does nothing until a new device replaces their textures anyway.
+
+	void DX12Backend::_abandonRecordedUploads()
+	{
+		for (auto p : m_recordedUploads)
+		{
+			p->m_pUploadRecordedBy = nullptr;
+			p->m_dirtyRect = RectI(0, 0, p->m_size.w, p->m_size.h);
+			p->_updatePending();
+		}
+
+		m_recordedUploads.clear();
+	}
+
+	//____ _forgetRecordedUpload() _____________________________________________
+
+	void DX12Backend::_forgetRecordedUpload(DX12Surface* pSurface)
+	{
+		m_recordedUploads.erase(std::remove(m_recordedUploads.begin(), m_recordedUploads.end(), pSurface), m_recordedUploads.end());
+	}
+
+	//____ _openedCommandList() ________________________________________________
+
+	void DX12Backend::_openedCommandList()
+	{
+		m_listSerial = ++s_lastListSerial;
 	}
 
 	//____ _createBuffer() _________________________________________________
