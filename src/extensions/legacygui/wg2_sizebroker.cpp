@@ -154,19 +154,22 @@ int WgOSDTrackMetersSizeBroker::SetItemLengths( WgSizeBrokerItem * pItems, int n
 
 	// Loop through items and set their length
 
-	int lengthLeft = totalLength - totalUsed;
-
-	for( int i = 0 ; i < nItems ; i++ )
+	if( totalWeight > 0 )
 	{
-		if( pItems[i].weight != 0 )
+		int lengthLeft = totalLength - totalUsed;
+
+		for( int i = 0 ; i < nItems ; i++ )
 		{
-			int length = pItems[i].weight / totalWeight * lengthLeft;
-			if( length != 0 )
+			if( pItems[i].weight != 0 )
 			{
-				pItems[i].output = length;
-				totalUsed += length;
+				int length = pItems[i].weight / totalWeight * lengthLeft;
+				if( length != 0 )
+				{
+					pItems[i].output = length;
+					totalUsed += length;
+				}
 			}
-		}
+		}		
 	}
 
 	//
