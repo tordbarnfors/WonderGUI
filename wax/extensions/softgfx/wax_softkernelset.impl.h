@@ -150,29 +150,29 @@ namespace wax
 		template<uint32_t srcFormats, SoftFormat DEST>
 		void addFirstPassBlits(SoftBackend* pBackend)
 		{
-			constexpr TintMode T = TintMode::None;
-			constexpr BlendMode B = BlendMode::Replace;
+			// No tint and Replace. Not as local constexpr variables, as MSVC doesn't take those
+			// as constant expressions in a lambda, so they can't be template arguments there.
 
 			forEachBit<srcFormats>([&](auto s) {
 				constexpr SoftFormat S = SoftFormat(decltype(s)::value);
 
-				addStraightBlit<S, ReadOp::Normal, T, B, DEST>(pBackend);
-				addStraightBlit<S, ReadOp::Tile, T, B, DEST>(pBackend);
-				addStraightBlit<S, ReadOp::Blur, T, B, DEST>(pBackend);
+				addStraightBlit<S, ReadOp::Normal, TintMode::None, BlendMode::Replace, DEST>(pBackend);
+				addStraightBlit<S, ReadOp::Tile, TintMode::None, BlendMode::Replace, DEST>(pBackend);
+				addStraightBlit<S, ReadOp::Blur, TintMode::None, BlendMode::Replace, DEST>(pBackend);
 			});
 
 			forEachBit<srcFormats>([&](auto s) {
 				constexpr SoftFormat S = SoftFormat(decltype(s)::value);
 
-				addTransformBlit<S, SampleMethod::Nearest, ReadOp::Normal, T, B, DEST>(pBackend);
-				addTransformBlit<S, SampleMethod::Nearest, ReadOp::Clip, T, B, DEST>(pBackend);
-				addTransformBlit<S, SampleMethod::Nearest, ReadOp::Tile, T, B, DEST>(pBackend);
-				addTransformBlit<S, SampleMethod::Nearest, ReadOp::Blur, T, B, DEST>(pBackend);
+				addTransformBlit<S, SampleMethod::Nearest, ReadOp::Normal, TintMode::None, BlendMode::Replace, DEST>(pBackend);
+				addTransformBlit<S, SampleMethod::Nearest, ReadOp::Clip, TintMode::None, BlendMode::Replace, DEST>(pBackend);
+				addTransformBlit<S, SampleMethod::Nearest, ReadOp::Tile, TintMode::None, BlendMode::Replace, DEST>(pBackend);
+				addTransformBlit<S, SampleMethod::Nearest, ReadOp::Blur, TintMode::None, BlendMode::Replace, DEST>(pBackend);
 
-				addTransformBlit<S, SampleMethod::Bilinear, ReadOp::Normal, T, B, DEST>(pBackend);
-				addTransformBlit<S, SampleMethod::Bilinear, ReadOp::Clip, T, B, DEST>(pBackend);
-				addTransformBlit<S, SampleMethod::Bilinear, ReadOp::Tile, T, B, DEST>(pBackend);
-				addTransformBlit<S, SampleMethod::Bilinear, ReadOp::Blur, T, B, DEST>(pBackend);
+				addTransformBlit<S, SampleMethod::Bilinear, ReadOp::Normal, TintMode::None, BlendMode::Replace, DEST>(pBackend);
+				addTransformBlit<S, SampleMethod::Bilinear, ReadOp::Clip, TintMode::None, BlendMode::Replace, DEST>(pBackend);
+				addTransformBlit<S, SampleMethod::Bilinear, ReadOp::Tile, TintMode::None, BlendMode::Replace, DEST>(pBackend);
+				addTransformBlit<S, SampleMethod::Bilinear, ReadOp::Blur, TintMode::None, BlendMode::Replace, DEST>(pBackend);
 			});
 		}
 
@@ -229,24 +229,36 @@ namespace wax
 			addCustomTransformBlit<blitTypes, BT::TransformBlurBilinear, SM::Bilinear, ReadOp::Blur, S, T, B, D, KD>(pBackend);
 		}
 
+		// What an entry of customBlits selects, as variable templates rather than local constexpr
+		// variables, since MSVC doesn't take those as constant expressions in a lambda.
+
+		template<const SoftKernelSpec& spec, int entry>
+		inline constexpr uint32_t c_customBlitTypes = spec.customBlits[entry].blitTypes;
+
+		template<const SoftKernelSpec& spec, int entry>
+		inline constexpr uint32_t c_customTintModes = spec.customBlits[entry].tintModes;
+
+		template<const SoftKernelSpec& spec, int entry>
+		inline constexpr uint32_t c_customBlendModes = spec.customBlits[entry].blendModes;
+
+		template<const SoftKernelSpec& spec, int entry>
+		inline constexpr uint32_t c_customSrcFormats = spec.customBlits[entry].srcFormats & spec.srcFormats;
+
+		template<const SoftKernelSpec& spec, int entry>
+		inline constexpr uint32_t c_customDestFormats = spec.customBlits[entry].destFormats & spec.destFormats;
+
 		template<const SoftKernelSpec& spec, int entry>
 		void addCustomBlitEntry(SoftBackend* pBackend)
 		{
-			constexpr uint32_t blitTypes = spec.customBlits[entry].blitTypes;
-			constexpr uint32_t tintModes = spec.customBlits[entry].tintModes;
-			constexpr uint32_t blendModes = spec.customBlits[entry].blendModes;
-			constexpr uint32_t srcFormats = spec.customBlits[entry].srcFormats & spec.srcFormats;
-			constexpr uint32_t destFormats = spec.customBlits[entry].destFormats & spec.destFormats;
-
-			if constexpr (blitTypes != 0)
+			if constexpr (c_customBlitTypes<spec, entry> != 0)
 			{
-				forEachBit<tintModes>([&](auto t) {
-				forEachBit<blendModes>([&](auto b) {
-				forEachBit<srcFormats>([&](auto s) {
-				forEachBit<destFormats>([&](auto d) {
+				forEachBit<c_customTintModes<spec, entry>>([&](auto t) {
+				forEachBit<c_customBlendModes<spec, entry>>([&](auto b) {
+				forEachBit<c_customSrcFormats<spec, entry>>([&](auto s) {
+				forEachBit<c_customDestFormats<spec, entry>>([&](auto d) {
 					constexpr SoftFormat D = SoftFormat(decltype(d)::value);
 
-					addCustomBlits<blitTypes, SoftFormat(decltype(s)::value), TintMode(decltype(t)::value),
+					addCustomBlits<c_customBlitTypes<spec, entry>, SoftFormat(decltype(s)::value), TintMode(decltype(t)::value),
 								   BlendMode(decltype(b)::value), D, kernelFormat(spec, D)>(pBackend);
 				});
 				});
