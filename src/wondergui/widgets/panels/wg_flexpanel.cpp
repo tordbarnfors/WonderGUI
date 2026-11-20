@@ -418,7 +418,7 @@ namespace wg
 
 		PatchesSPX patches;
 		
-		RectSPX rect  = m_edgePolicy == EdgePolicy::Confine ? RectSPX::overlap(_rect, RectSPX(0, 0, m_size)) : _rect;
+		RectSPX rect  = m_edgePolicy == EdgePolicy::Clip ? RectSPX::overlap(_rect, RectSPX(0, 0, m_size)) : _rect;
 		patches.add( rect );
 
 		// Remove portions of patches that are covered by upper siblings opaque areas
