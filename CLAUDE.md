@@ -7,6 +7,9 @@
   same commit as the fix.
 - **ROADMAP.md** lists planned changes and the design decisions behind existing code.
   Add decisions made in a session there, so they don't only exist in that chat.
+- **SUGGESTIONS.md** lists things that work as intended but could be nicer: paper cuts, small
+  conveniences, places where the first try goes wrong. Add an entry when you run into one,
+  and remove it when it has been done or decided against.
 
 ## Documentation
 
