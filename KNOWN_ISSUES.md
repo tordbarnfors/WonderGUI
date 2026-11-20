@@ -178,6 +178,15 @@ They expect `src/baselibrary/` and `build/gnumake/` from older repository layout
 `predoxy.rb` has been tested, but not `doxygen` and `postdoxy.rb` (which needs the Ruby
 module nokogiri), since neither was available on the machine.
 
+### `TablePanel::setMinRowHeight()` had no visible effect
+
+In Cybersim's report page a `TablePanel` of 4 rows of `TextDisplay` cells, with no `rowLayout`
+and with `setMinRowHeight(0, 4, 30)` called right after creating it, drew its rows at the height
+of the text, about 23 points. `columns[i].setMinWidth()` on the same table did work. Not looked
+into further: the rows got their spacing from `rowSpacing` instead.
+
+`wondergui/source/widgets/panels/wg_tablepanel.cpp`
+
 ### Text system rewrite on macOS
 
 The UTF-8 text system was built and tested on Linux (SDL2 software and OpenGL) and has

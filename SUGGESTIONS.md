@@ -108,6 +108,47 @@ Cybersim averages the pixels itself, in linear light with premultiplied colors a
 `src/image/Bitmap.cpp`). The same as a `Surface` method or utility in Wax would do for icons
 and pictures shown at a size that depends on the scale.
 
+## Widgets
+
+From building Cybersim's report page: a table of figures, bar charts and curves.
+
+### Column and row weights of a TablePanel do nothing without a layout
+
+A `TablePanel` given a width and `setColumnWeight()` keeps its columns at the width of their
+content, packed to the left. Weights only come into play with a `columnLayout` (a `PackLayout`)
+in the Blueprint, which nothing at `setColumnWeight()` hints at. Falling back on
+`Base::defaultPackLayout()`, or a line in the header, would help. Cybersim wanted fixed column
+widths anyway and uses `columns[i].setMinWidth()`.
+
+### No cell that spans columns
+
+The report's table has figures per part in its upper rows and per part and side below, so the
+upper cells should span two columns. `TablePanel` has no span, so Cybersim stacks two tables
+and gives their columns matching minimum widths (`ReportPage::summaryTable()`).
+
+### A bar chart
+
+There are `AreaChart` and `PlotChart` but nothing for bars. Cybersim's reaction chart, one
+horizontal bar per sign going left or right from a middle line, is built from a `Filler` per bar
+and grid line and a `TextDisplay` per label in a `FlexPanel` (`makeReactionChart()` in its
+`src/gui/ReportCharts.cpp`): about 60 widgets per chart. A bar chart sharing `Chart`'s grid lines
+and labels would replace that.
+
+### A curve is an AreaChart with a transparent fill
+
+A line chart is made by giving an `AreaChart` entry `color = HiColor::Transparent`,
+`bottomOutlineThickness = 0` and only top samples. That works well, but the only place that
+shows it is `wonderapp/tools/pluginworkbench/testplugin.cpp`. Worth a sentence in the guide's
+widget gallery.
+
+### `xLines` and `yLines` of a Chart read the other way around
+
+`xLines` are the horizontal lines, placed by value between `displayFloor` and `displayCeiling`.
+`yLines` are the vertical ones, placed by a fraction of the width from 0 to 1, since a chart has
+no range along its width. The first guess is that `xLines` are lines at x positions, and that
+both are placed by value. Comments at the two members would settle it. A range for the width
+(seconds, in Cybersim's case) would let vertical lines be placed by value too.
+
 ## Documentation
 
 ### The guide says FlexPanel clips what sticks out, the default is to move it
