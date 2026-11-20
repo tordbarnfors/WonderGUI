@@ -5,6 +5,41 @@ find one, and remove it in the same commit that fixes it.
 
 Each entry says what happens, where in the code, and anything known about the cause.
 
+## Starting up
+
+Found when Cybersim set WonderGUI up on its own, without WonderApp. None of them gives an
+error message.
+
+### A `HiColor` made from a `Color8` before `Base::init()` is transparent black
+
+`HiColor::HiColor(Color8)` looks the channels up in `unpackLinearTab`, which `_initTables()`
+fills in when `Base::init()` runs. Before that the table is all zeros, so a color converted
+earlier, such as a constant at namespace scope (`const HiColor paper = Color8(0xF3F3F3);`),
+silently becomes transparent black and stays that way. Skins made with it draw nothing.
+
+`wax/source/wax_color.cpp`
+
+### Without a `HostBridge`, the first change of pointer style crashes
+
+`InputHandler` calls `Base::hostBridge()->setPointerStyle()` without checking for null, while
+`lockHidePointer()`, the clipboard calls in `Base` and the focus calls in `RootPanel` do check.
+With `Base::init(nullptr)`, as `example01` does, it crashes as soon as the pointer comes over a
+widget with another pointer style, such as a `LineEditor`.
+
+`wondergui/source/base/wg_inputhandler.cpp`
+
+### Without a default `SurfaceFactory`, drawing text with a `FreeTypeFont` crashes
+
+A `FreeTypeFont` that isn't given a cache uses `Base::defaultBitmapCache()`, and
+`BitmapCache::_addCacheSurface()` calls `createSurface()` on `Base::defaultSurfaceFactory()`
+without checking for null. A host that creates a `RootPanel` with its own device and never
+calls `Base::setDefaultSurfaceFactory()` works until the first text is drawn.
+`Font::getGlyphAsSurface()` does check. Seen as a crash at the first render with text; the null
+factory is from reading the code, since the fix that was tried set the default device and all
+three factories at once.
+
+`wax/source/font/wax_bitmapcache.cpp`
+
 ## Text system
 
 ### Markdown: code fence lines show as empty lines
@@ -52,6 +87,16 @@ isn't told about the new scale.
 `wondergui/source/components/wg_statictext.cpp`
 
 ## Widgets
+
+### The tab key doesn't move keyboard focus, and `tabLock` has no effect
+
+Nothing moves focus from one widget to the next. `Widget` has `tabLock` in its Blueprint with
+`setTabLock()` and `isTabLocked()`, described as preventing focus from shifting away with tab,
+but only the debugger reads it. `TextEditor` handles the tab key itself through its
+`tabKeyAction`, `LineEditor` types nothing for it. A form with several fields has to move focus
+itself with `grabFocus()`.
+
+`wondergui/source/widgets/wg_widget.h`
 
 ### `ScrollCapsule::viewOffset()` returns the negated offset
 
@@ -140,6 +185,26 @@ been run on Win32/DX12. The macOS frameworks (Cocoa software/Metal, SDL2 Metal) 
 been built with it yet.
 
 ## Graphics
+
+### SoftBackend doesn't use the `mipmap` flag of a surface
+
+`Surface` keeps `mipmap` from its Blueprint, but nothing in `wax/extensions/softgfx` reads it:
+no smaller levels are made and blits always sample the full-size pixels. A blit to a much
+smaller size, like an `Image` showing a 1173 pixel wide picture 150 wide, should therefore alias.
+That hasn't been measured: Cybersim shrinks its pictures itself before making surfaces of them.
+
+`wax/extensions/softgfx/wax_softsurface.cpp`, `wax_softbackend.cpp`
+
+### DX12Surface: reading pixels is slow, 16 ms to read back a 512x512 canvas
+
+The pixels of a DX12Surface live in its mapped upload buffer, which is write-combined memory:
+fast to write, around 60 ns per pixel to read. After a canvas has been rendered to, any read
+(`pushPixels()`, `alpha()`) copies the whole texture back and un-premultiplies it in place in that
+buffer, which is where the 16 ms go (the GPU copy and the wait for it take 0.5 ms). Whoever reads
+the pixels afterwards reads the same memory. Un-premultiplying while copying from the readback
+buffer would get rid of most of it, reading back only the lines asked for of the rest.
+
+`_syncBufferAndWait()` and `_convertAlpha()` in `wax/extensions/dx12gfx/wax_dx12surface.cpp`
 
 ### SoftBackend draws thick rings slower than the grid of nodes did
 

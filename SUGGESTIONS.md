@@ -1,0 +1,126 @@
+# Suggestions
+
+Things that work as intended but could be nicer: paper cuts, small conveniences, places
+where the first try goes wrong. Bugs and limitations go in KNOWN_ISSUES.md, plans and
+decisions in ROADMAP.md. Add an entry when you run into something, and remove it when it
+has been done or decided against.
+
+Each entry says what came up, where, and what might help. They are observations from using
+the library, not decisions.
+
+## Using WonderGUI without WonderApp
+
+Cybersim draws its own 3D view and puts WonderGUI on top of it, so it drives a `RootPanel`
+itself as `example01` does. Most of these come from that.
+
+### One call to set up the software renderer
+
+A host needs `SoftBackend::create()`, `addDefaultSoftKernels()`, `GfxDeviceGen2::create()`, and
+then `Base::setDefaultDevice()`, `setDefaultSurfaceFactory()`, `setDefaultEdgemapFactory()` and
+`setDefaultWarpmapFactory()`. Leaving the last four out works until the first text is drawn
+(see KNOWN_ISSUES.md). `example01` leaves them out, and the only place that shows the whole
+list is `wonderapp/source/sdl3/backend_software.cpp`. `SoftDeviceFactory` may already be most
+of this. A documented one-liner, or `example01` doing it, would save the search.
+
+### A `HostBridge` that does nothing, as the default
+
+`Base::init(nullptr)` is what `example01` shows, and it crashes once a `LineEditor` is added
+(see KNOWN_ISSUES.md). If `Base` used a do-nothing bridge when given none, callers of
+`Base::hostBridge()` wouldn't need to check, and small hosts wouldn't need to write one.
+
+### SDL3 input translation outside WonderApp
+
+The table from `SDLK_*` to `Key`, the mouse button translation and the event switch are in
+`wonderapp/source/sdl3/main.cpp`, and a host that bypasses WonderApp writes them again.
+Cybersim's copy is `src/gui/GuiInput.cpp`. A small extension with `mapSDLKeys()` and
+`translateSDLEvent(event, root)`, and a `HostBridge` for SDL's clipboard and cursor, would let
+both use the same code.
+
+### Loading a file into a `Blob`, and a picture into a `Surface`
+
+`loadBlob()` and `wappLoadSurface()` belong to WonderApp. Without it, reading a font file into
+a `Blob` and a PNG into a `Surface` is the first thing a host writes. `Blob::load(path)` in Wax
+would cover fonts. Pictures need a decoder, so maybe an extension next to `freetypefont` that
+uses the stb_image already in `thirdparty`.
+
+### `example01` points at examples that aren't there
+
+Its header says "there are better examples to use as a template" and "See other examples for
+a more full initialization", but it is the only one in `wondergui/examples`. A second example
+with a font, a text field and keyboard input would be the template most hosts need.
+
+### Errors go nowhere unless a handler is set
+
+`Base::throwError()` does nothing when no error handler has been set, so a host that hasn't
+called `Base::setErrorHandler()` never sees the warnings WonderGUI gives. Printing to stderr
+by default, at least in debug builds, would make first-time mistakes visible.
+
+## Building
+
+### Library targets that carry their include directories
+
+`wax`, `waxsoftgfx`, `waxfreetypefont` and `wondergui` add their include directories as
+`PRIVATE` and hand them to the parent in variables (`WONDERGUI_INCDIRS` and so on). Inside this
+repository that works, but a project that adds the libraries has to wire the variables up
+itself. Cybersim wraps them in an interface target in its `cmake/WonderGUI.cmake`. `PUBLIC`
+include directories, or one `WonderGUI::wondergui` style target per library, would make
+`target_link_libraries()` enough.
+
+### A way to build only the libraries
+
+The root `CMakeLists.txt` always builds a WonderApp framework, the tools and the examples, and
+by default wants SDL2, OpenGL and GLEW for `wappsdl2gl`. A product that only needs the
+libraries adds `wax`, `wax/extensions/softgfx`, `wax/extensions/freetypefont` and `wondergui`
+with `add_subdirectory()` one by one, and has to `include(GenerateExportHeader)` and set
+`WONDERGUI_FETCH_DEPS` first, since those come from the root. An option such as
+`WONDERGUI_BUILD_TOOLS=OFF`, on by default, would let products use the root as it is.
+
+### CMake 4.2.3 as the minimum
+
+The root asks for CMake 4.2.3 or newer, which is newer than what current Linux distributions
+ship. The library folders don't state a minimum of their own, and Cybersim, whose own minimum
+is 3.28, adds them directly. That has only been run with CMake 4.4, so whether the libraries
+need anything from 4.x is not known. If they don't, a lower minimum for them would help
+products that build with a distribution's own CMake.
+
+## API
+
+### `Size`, `Border` and `Corners` can't be `constexpr`
+
+`CoordT` has `constexpr` constructors but `SizeT`, `BorderT` and `CornersT` don't, so
+`constexpr wg::Size buttonSize{250, 90};` doesn't compile while the same with `wg::Coord` does.
+Layout constants are a natural use.
+
+### A transparent canvas takes a trick
+
+To draw a GUI onto a transparent surface that is then laid over something else, the areas
+`RootPanel` redraws must first be cleared, or widgets that go away stay visible. What works is
+a root skin of `ColorSkin` with `BlendMode::Replace` and `HiColor::Transparent`. A sentence in
+the guide, or a `RootPanel` blueprint member saying the canvas is an overlay, would save
+working it out.
+
+### Shrinking a picture well
+
+There is no way to get a good small version of a large picture: SoftBackend doesn't use
+mipmaps (see KNOWN_ISSUES.md) and a bilinear blit to an eighth of the size skips most pixels.
+Cybersim averages the pixels itself, in linear light with premultiplied colors as
+`blending_and_transparency.md` asks of mipmaps, before making the surface (`resized()` in its
+`src/image/Bitmap.cpp`). The same as a `Surface` method or utility in Wax would do for icons
+and pictures shown at a size that depends on the scale.
+
+## Documentation
+
+### The guide says FlexPanel clips what sticks out, the default is to move it
+
+`widget_layout_fundamentals.md` says slots placed partly outside a FlexPanel "will be clipped
+when rendering" and that `setConfineWidgets()` changes it. The Blueprint's default is
+`EdgePolicy::Confine`, which moves the widget back inside: a text box that was 70 points too
+tall ended up 70 points higher than it was placed, over the heading above it. The guide should
+describe `edgePolicy` and its default.
+
+### `FreeTypeFont` glyph cache entry in KNOWN_ISSUES.md may be out of date
+
+The entry says sizes that aren't a whole number of pixels hit the cache mismatch.
+`FreeTypeFont::setSize()` now starts with `align(_size)`, which rounds to whole pixels, and both
+`_findGlyph()` and `_addGlyph()` are called with `m_size`. If that is so, the mismatch can no
+longer happen and the entry can go, though the two functions still round differently.
