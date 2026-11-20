@@ -145,7 +145,7 @@ namespace wax
 
 		// Our context should be the only object alive at this point. Still needed for the error-handler.
 
-		if (s_objectsCreated != s_objectsDestroyed )
+		if (s_objectsCreated - s_objectsDestroyed > 1 )
 			throwError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, "Some objects still alive after Wax exit. Might cause problems when they go out of scope. Forgotten to clear pointers?\nHint: Enable object tracking to find out which ones.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		s_pContext = nullptr;
