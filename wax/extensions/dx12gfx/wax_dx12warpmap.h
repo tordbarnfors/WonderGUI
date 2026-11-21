@@ -28,6 +28,7 @@
 
 #include <wrl.h>
 #include <d3d12.h>
+#include <vector>
 
 namespace wax
 {
@@ -76,9 +77,38 @@ namespace wax
 		D3D12_GPU_VIRTUAL_ADDRESS	_gpuAddress() const { return m_buffer ? m_buffer->GetGPUVirtualAddress() : 0; }
 		D3D12_INDEX_BUFFER_VIEW		_indexBufferView() const;
 
+		// Buffers are kept for new Warpmaps when we go away, see the constructor. A buffer
+		// can only be taken once the GPU is done with every submission that drew from it.
+		// Each backend has a fence of its own, so it is one value per fence.
+
+		struct Use
+		{
+			Microsoft::WRL::ComPtr<ID3D12Fence>	fence;
+			UINT64								value;
+		};
+
+		struct SpareBuffer
+		{
+			Microsoft::WRL::ComPtr<ID3D12Resource>	buffer;
+			uint8_t *								pData;			// Still mapped.
+			size_t									bytes;
+			std::vector<Use>						uses;
+		};
+
+		void		_drawnBy(ID3D12Fence * pFence, UINT64 value);	// By DX12Backend, value is signalled after the draw.
+		static void	_exitDevice();									// By DX12Backend::setDevice(), when the GPU is done.
+
+		bool		_takeSpareBuffer(ID3D12Device * pDevice, size_t bytes);
+
 		Microsoft::WRL::ComPtr<ID3D12Resource>	m_buffer;
-		uint8_t *	m_pBuffer = nullptr;			// Permanently mapped content of m_buffer.
-		size_t		m_indexOffset = 0;				// Where the triangles start in m_buffer, in bytes.
+		uint8_t *			m_pBuffer = nullptr;			// Permanently mapped content of m_buffer.
+		size_t				m_bufferBytes = 0;
+		size_t				m_indexOffset = 0;				// Where the triangles start in m_buffer, in bytes.
+		std::vector<Use>	m_uses;
+
+		static std::vector<SpareBuffer>	s_spareBuffers;		// Oldest first.
+		static size_t					s_spareBytes;
+		static ID3D12Device *			s_pSpareDevice;		// That the spare buffers are on.
 	};
 
 } // namespace wax

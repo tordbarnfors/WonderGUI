@@ -246,16 +246,27 @@ frame. DX12Backend records the uploads into its own command list instead, see
 
 `syncTexture()` in `wax_vulkansurface.cpp`
 
-### DX12Surface: reading pixels is slow, 16 ms to read back a 512x512 canvas
+### DX12Backend: new surfaces, Warpmaps and readback were slow, fixes not yet run
 
-The pixels of a DX12Surface live in its mapped upload buffer, which is write-combined memory:
-fast to write, around 60 ns per pixel to read. After a canvas has been rendered to, any read
-(`pushPixels()`, `alpha()`) copies the whole texture back and un-premultiplies it in place in that
-buffer, which is where the 16 ms go (the GPU copy and the wait for it take 0.5 ms). Whoever reads
-the pixels afterwards reads the same memory. Un-premultiplying while copying from the readback
-buffer would get rid of most of it, reading back only the lines asked for of the rest.
+On Windows (Arc B580), gfxdevicetester's tests drawing into canvas layers took 130-200 times as
+long as on GlBackend (CanvasLayerTest1 54 ms), the WarpTests that make their Warpmaps for each
+frame 5-17 times, and ReadbackTests twice as long. All other tests are level with GlBackend
+(median 1.01). Fixed but not yet compiled or run on Windows, see "DX12Backend: surfaces and
+Warpmaps" in ROADMAP.md:
 
-`_syncBufferAndWait()` and `_convertAlpha()` in `wax/extensions/dx12gfx/wax_dx12surface.cpp`
+- The pixels of a DX12Surface were in write-combined memory, around 60 ns per pixel to read, so
+  reading back a 512x512 canvas took 16 ms, and the first upload of a canvas with alpha read it
+  all twice. They are in cached system memory now, if the driver takes a custom heap of
+  `D3D12_CPU_PAGE_PROPERTY_WRITE_BACK`, otherwise still in the upload heap.
+- Every DX12Warpmap made a committed resource, about 250 us each. Buffers are kept for new
+  Warpmaps now.
+
+What may still be left: each canvas layer is a new DX12Surface for every canvas update, with a
+texture, a pixel buffer and two descriptor heaps, which is several committed resources each time.
+DeviceGen2 could keep layer canvases between updates, for all backends.
+
+`_createDeviceObjects()`, `_uploadSource()` and `_convertAlpha()` in `wax/extensions/dx12gfx/wax_dx12surface.cpp`,
+`wax/extensions/dx12gfx/wax_dx12warpmap.cpp`
 
 ### GlBackend: drawn shapes are slow on Windows, and come at two speeds
 
