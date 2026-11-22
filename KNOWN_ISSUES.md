@@ -246,16 +246,16 @@ frame. DX12Backend records the uploads into its own command list instead, see
 
 `syncTexture()` in `wax_vulkansurface.cpp`
 
-### DX12Backend: new surfaces and readback were slow, fix not yet run
+### DX12Backend: new canvases were slow, fix not yet run
 
 On Windows (Arc B580), gfxdevicetester's tests drawing into canvas layers took 130-200 times as
 long as on GlBackend (CanvasLayerTest1 54 ms), and ReadbackTests twice as long. All other tests
 are level with GlBackend (median 1.01), but for the WarpTests making their Warpmaps for each run,
 see the next entry. The pixels of a DX12Surface were in write-combined memory, around 60 ns per
 pixel to read, so reading back a 512x512 canvas took 16 ms, and the first upload of a canvas with
-alpha read it all twice. They are in cached system memory now, if the driver takes a custom heap
-of `D3D12_CPU_PAGE_PROPERTY_WRITE_BACK`, otherwise still in the upload heap. Not yet compiled or
-run on Windows, see "DX12Backend: surfaces" in ROADMAP.md.
+alpha read it all twice. They are in CPU cached memory since 95e05825, and premultiplying for an
+upload no longer reads back what it writes. Neither timed with gfxdevicetester on Windows yet,
+see "DX12Backend: surfaces" in ROADMAP.md.
 
 What may still be left: each canvas layer is a new DX12Surface for every canvas update, with a
 texture, a pixel buffer and two descriptor heaps, which is several committed resources each time.

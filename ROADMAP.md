@@ -619,15 +619,13 @@ per kind, as FXC doesn't short-circuit.
 Compared with GlBackend on the same Windows machine (Arc B580), DX12Backend was level in all of
 gfxdevicetester (median 1.01) but for tests making D3D12 objects or reading pixels with the CPU:
 canvas layers 130-200 times as long, WarpTests making their Warpmaps for each run 5-17 times,
-ReadbackTests twice. The changes below have not been compiled or run on Windows yet.
+ReadbackTests twice. Not yet timed on Windows with the changes below.
 
-- **The pixels of a DX12Surface are in cached memory** (`_createDeviceObjects()`), a custom heap of
-  `D3D12_CPU_PAGE_PROPERTY_WRITE_BACK` in `D3D12_MEMORY_POOL_L0`, falling back to the upload heap
-  if the driver won't create it. The pixels are read as much as they are written: by whoever has
-  a PixelBuffer, by `alpha()`, by the premultiplying copy for uploads and the unpremultiplying
-  after readback. In the upload heap, write-combined on a GPU of its own, reading took around 60
-  ns per pixel. The GPU only ever copies from these pixels, over PCIe from system memory either
-  way.
+- **The pixels of a DX12Surface are in CPU cached memory** (`_createDeviceObjects()`, 95e05825),
+  a custom heap with the properties of a READBACK heap, created in COMMON. The pixels are read as
+  much as they are written: by whoever has a PixelBuffer, by `alpha()`, by the premultiplying copy
+  for uploads and the unpremultiplying after readback. In the upload heap, write-combined on a GPU
+  of its own, reading took around 60 ns per pixel. The GPU only ever copies from these pixels.
 - **Premultiplying writes its buffer once and never reads it** (`_convertAlpha()` from one buffer
   into another), as that buffer is in the upload heap. Uploads copy straight from the pixels when
   they are all opaque or transparent black, as a new canvas is, without a buffer of their own.
