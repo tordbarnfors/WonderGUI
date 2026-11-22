@@ -60,7 +60,7 @@ namespace wg
 	//____ _copyFromMapping() ______________________________________________________
 	//
 	// Copies out of a buffer that was mapped on a device that may since have been
-	// removed. In practice the memory of an upload heap stays mapped until the
+	// removed. In practice the memory of a mapped buffer stays mapped until the
 	// resource is released, but D3D12 makes no such promise, so an access
 	// violation is caught here and turned into a false. Kept on its own, since
 	// __try can't share a function with objects that need unwinding.
@@ -735,9 +735,16 @@ namespace wg
 		m_resourceState = D3D12_RESOURCE_STATE_COMMON;
 
 		// Create the buffer holding our pixels
+		//
+		// Not in an UPLOAD heap, although the GPU copies from it like from one. That
+		// memory is write-combined and uncached, often in VRAM behind the PCIe bus
+		// on a discrete GPU, and reading it from the CPU crawls: reading a 2100 x 440
+		// canvas back out of it took half a second on an AMD card. We read our pixels
+		// whenever someone asks for them, so they get the CPU cached memory the
+		// driver uses for READBACK heaps instead, as a custom heap the GPU can copy
+		// from.
 
-		D3D12_HEAP_PROPERTIES uploadProps = {};
-		uploadProps.Type = D3D12_HEAP_TYPE_UPLOAD;
+		D3D12_HEAP_PROPERTIES uploadProps = s_pDevice->GetCustomHeapProperties(0, D3D12_HEAP_TYPE_READBACK);
 
 		D3D12_RESOURCE_DESC bufDesc = {};
 		bufDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
@@ -749,8 +756,11 @@ namespace wg
 		bufDesc.SampleDesc = { 1, 0 };
 		bufDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 
+		// A buffer outside an UPLOAD heap starts out COMMON, and is promoted to a
+		// copy source by itself whenever it is copied from.
+
 		if( FAILED(s_pDevice->CreateCommittedResource(&uploadProps, D3D12_HEAP_FLAG_NONE, &bufDesc,
-													  D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(m_uploadBuffer.GetAddressOf()))) )
+													  D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(m_uploadBuffer.GetAddressOf()))) )
 			return fail( "Failed to create pixel buffer for surface." );
 
 		setObjectName( m_uploadBuffer.Get(), L"upload buffer", this, m_size );
