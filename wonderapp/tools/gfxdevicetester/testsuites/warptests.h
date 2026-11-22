@@ -36,6 +36,7 @@ public:
 		addTest("BlendModes", &WarpTests::blendModes);
 		addTest("Rounded rects", &WarpTests::roundedRects);
 		addTest("Cylinders", &WarpTests::cylinders);
+		addTest("Cylinders made each run", &WarpTests::cylindersMadeEachRun);
 		addTest("Perspective", &WarpTests::perspective);
 		addTest("Vertex coverage", &WarpTests::vertexCoverage);
 		addTest("Balls", &WarpTests::balls);
@@ -253,6 +254,13 @@ public:
 		m_pIdentity = _gridWarpmap(pWarpmapFactory, m_pSmall->pixelSize(), { 9, 9 }, [](int x, int y) { return CoordSPX(x * 64, y * 64); });
 		m_pIdentityBlit = _gridWarpmap(pWarpmapFactory, { 64, 32 }, { 7, 7 }, [](int x, int y) { return CoordSPX(x * 64, y * 64); });
 
+		m_roundedRects = _makeRoundedRects(pWarpmapFactory);
+		m_cylinders = _makeCylinders(pWarpmapFactory);
+		m_discs = _makeDiscs(pWarpmapFactory);
+		m_perspectives = _makePerspectives(pWarpmapFactory);
+		m_balls = _makeBalls(pWarpmapFactory);
+		m_lenses = _makeLenses(pWarpmapFactory);
+
 		return m_pGauge && m_pTintedGauge && m_pSmall && m_pTiling && m_pTilingNPOT && m_pTilingNPOTNearest && m_pNearest && m_pBilinear && m_pReelStrip && m_pReelLabel && m_pFloor && m_pCard &&
 			   m_forGauge.ring && m_forGauge.wave && m_forGauge.stripes;
 	}
@@ -281,6 +289,12 @@ public:
 		m_forBlendRect = {};
 		m_pIdentity = nullptr;
 		m_pIdentityBlit = nullptr;
+		m_roundedRects = {};
+		m_cylinders = {};
+		m_discs = {};
+		m_perspectives = {};
+		m_balls = {};
+		m_lenses = {};
 		return true;
 	}
 
@@ -428,43 +442,79 @@ public:
 	// RoundedRectWarps: a band across the outline, a band outside an outline with sharp corners, an
 	// arc and a band inside deeper than the corners, which are mitered.
 
-	bool roundedRects(GfxDevice * pDevice, const RectSPX& canvas)
+	struct RoundedRectWarps
 	{
-		auto pFactory = pDevice->warpmapFactory();
+		Warpmap_p	band, sharp, arc, frame;
+	};
+
+	RoundedRectWarps _makeRoundedRects(WarpmapFactory * pFactory)
+	{
 		SizeSPX gauge = m_pGauge->pixelSize() * 64;
 		SizeSPX surface = m_pTiling->pixelSize() * 64;
+		RoundedRectWarps w;
 
-		auto pBand = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 240, 240 }, _.sourceSize = gauge, _.rect = { 64 * 30, 64 * 50, 64 * 180, 64 * 140 },
-												  _.cornerRadius = 64 * 30, _.topDistance = 64 * 25, _.bottomDistance = -64 * 20), pFactory);
-		auto pSharp = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 240, 240 }, _.sourceSize = surface, _.rect = { 64 * 30, 64 * 50, 64 * 180, 64 * 140 },
-												   _.topDistance = 64 * 24, _.bottomDistance = 0), pFactory);
-		auto pArc = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 240, 240 }, _.sourceSize = gauge, _.rect = { 64 * 30, 64 * 50, 64 * 180, 64 * 140 },
-												 _.cornerRadius = 64 * 50, _.topDistance = 64 * 25, _.bottomDistance = -64 * 20, _.start = -0.3f, _.sweep = 0.75f), pFactory);
-		auto pFrame = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 240, 240 }, _.sourceSize = surface, _.rect = { 64 * 10, 64 * 30, 64 * 220, 64 * 180 },
-												  _.cornerRadius = 64 * 8, _.topDistance = 0, _.bottomDistance = -64 * 36, _.precision = 10.f), pFactory);
+		w.band = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 240, 240 }, _.sourceSize = gauge, _.rect = { 64 * 30, 64 * 50, 64 * 180, 64 * 140 },
+											  _.cornerRadius = 64 * 30, _.topDistance = 64 * 25, _.bottomDistance = -64 * 20), pFactory)->generate();
+		w.sharp = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 240, 240 }, _.sourceSize = surface, _.rect = { 64 * 30, 64 * 50, 64 * 180, 64 * 140 },
+											   _.topDistance = 64 * 24, _.bottomDistance = 0), pFactory)->generate();
+		w.arc = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 240, 240 }, _.sourceSize = gauge, _.rect = { 64 * 30, 64 * 50, 64 * 180, 64 * 140 },
+											 _.cornerRadius = 64 * 50, _.topDistance = 64 * 25, _.bottomDistance = -64 * 20, _.start = -0.3f, _.sweep = 0.75f), pFactory)->generate();
+		w.frame = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 240, 240 }, _.sourceSize = surface, _.rect = { 64 * 10, 64 * 30, 64 * 220, 64 * 180 },
+											   _.cornerRadius = 64 * 8, _.topDistance = 0, _.bottomDistance = -64 * 36, _.precision = 10.f), pFactory)->generate();
+		return w;
+	}
 
-		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 10 }, pBand->generate(), m_pGauge);
+	bool roundedRects(GfxDevice * pDevice, const RectSPX& canvas)
+	{
+		const RoundedRectWarps& w = m_roundedRects;
+
+		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 10 }, w.band, m_pGauge);
 		pDevice->setBlitSource(m_pTiling);
-		pDevice->warpBlit({ 64 * 260, 64 * 10 }, pSharp->generate());
-		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 260 }, pArc->generate(), m_pTintedGauge);
-		pDevice->warpBlit({ 64 * 260, 64 * 260 }, pFrame->generate());
+		pDevice->warpBlit({ 64 * 260, 64 * 10 }, w.sharp);
+		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 260 }, w.arc, m_pTintedGauge);
+		pDevice->warpBlit({ 64 * 260, 64 * 260 }, w.frame);
 		return true;
 	}
 
 	// Top: the reel strip flat, then wrapped around reels: plain, turned and shaded darker towards
 	// the rims as a cylinder would be drawn, and one seen almost to its rims. Bottom: the strip on
 	// its side around a standing cylinder, plain and turned and shaded.
+	//
+	// "Cylinders made each run" draws the same with CylinderWarps made anew each time, which is
+	// what making Warpmaps costs. The other tests make theirs in init(), as Warpmaps are usually
+	// kept for long.
+
+	struct CylinderWarps
+	{
+		CylinderWarp_p	reel, wide, standing;
+	};
+
+	CylinderWarps _makeCylinders(WarpmapFactory * pFactory)
+	{
+		SizeSPX strip = m_pReelStrip->pixelSize() * 64;
+		SizeSPX label = m_pReelLabel->pixelSize() * 64;
+		CylinderWarps w;
+
+		w.reel = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 90, 240 }, _.sourceSize = strip, _.span = 110.f), pFactory);
+		w.wide = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 90, 240 }, _.sourceSize = strip, _.span = 170.f), pFactory);
+		w.standing = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 240, 110 }, _.sourceSize = label, _.axis = Axis::Y, _.span = 150.f), pFactory);
+		return w;
+	}
 
 	bool cylinders(GfxDevice * pDevice, const RectSPX& canvas)
 	{
-		auto pFactory = pDevice->warpmapFactory();
-		SizeSPX strip = m_pReelStrip->pixelSize() * 64;
-		SizeSPX label = m_pReelLabel->pixelSize() * 64;
+		_drawCylinders(pDevice, m_cylinders);
+		return true;
+	}
 
-		auto pReel = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 90, 240 }, _.sourceSize = strip, _.span = 110.f), pFactory);
-		auto pWide = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 90, 240 }, _.sourceSize = strip, _.span = 170.f), pFactory);
-		auto pStanding = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 240, 110 }, _.sourceSize = label, _.axis = Axis::Y, _.span = 150.f), pFactory);
+	bool cylindersMadeEachRun(GfxDevice * pDevice, const RectSPX& canvas)
+	{
+		_drawCylinders(pDevice, _makeCylinders(pDevice->warpmapFactory()));
+		return true;
+	}
 
+	void _drawCylinders(GfxDevice * pDevice, const CylinderWarps& w)
+	{
 		HiColor rim(1200, 1200, 1300, 4096), light = HiColor::White;
 		auto shadeAcross = [&](CoordSPX pos, SizeI size, bool bVertical)
 		{
@@ -478,30 +528,34 @@ public:
 
 		// Reels.
 
-		pDevice->warpBlit({ 64 * 90, 64 * 10 }, pReel->generate());
+		pDevice->warpBlit({ 64 * 90, 64 * 10 }, w.reel->generate());
 
 		shadeAcross({ 64 * 195, 64 * 10 }, { 90, 240 }, true);
-		pDevice->warpBlit({ 64 * 195, 64 * 10 }, pReel->generate(), pReel->rotationOffset(20.f));
+		pDevice->warpBlit({ 64 * 195, 64 * 10 }, w.reel->generate(), w.reel->rotationOffset(20.f));
 
 		shadeAcross({ 64 * 300, 64 * 10 }, { 90, 240 }, true);
-		pDevice->warpBlit({ 64 * 300, 64 * 10 }, pWide->generate(), pWide->rotationOffset(20.f));
+		pDevice->warpBlit({ 64 * 300, 64 * 10 }, w.wide->generate(), w.wide->rotationOffset(20.f));
 		pDevice->clearTint();
 
 		// Standing.
 
 		pDevice->setBlitSource(m_pReelLabel);
-		pDevice->warpBlit({ 64 * 10, 64 * 270 }, pStanding->generate());
+		pDevice->warpBlit({ 64 * 10, 64 * 270 }, w.standing->generate());
 
 		shadeAcross({ 64 * 260, 64 * 270 }, { 240, 110 }, false);
-		pDevice->warpBlit({ 64 * 260, 64 * 270 }, pStanding->generate(), pStanding->rotationOffset(20.f));
+		pDevice->warpBlit({ 64 * 260, 64 * 270 }, w.standing->generate(), w.standing->rotationOffset(20.f));
 		pDevice->clearTint();
-		return true;
 	}
 
 	// Discs with their outline going from full coverage half a pixel inside to none half a pixel
 	// outside, which antialiases it, and with half coverage everywhere.
 
-	bool vertexCoverage(GfxDevice * pDevice, const RectSPX& canvas)
+	struct DiscWarps
+	{
+		Warpmap_p	large, largeBlit, half, small;
+	};
+
+	DiscWarps _makeDiscs(WarpmapFactory * pFactory)
 	{
 		auto disc = [&](SizeSPX source, int radius, int innerCoverage, int outerCoverage)
 		{
@@ -535,17 +589,29 @@ public:
 			}
 
 			int size = 2 * (radius + 2);
-			return pDevice->warpmapFactory()->createWarpmap(WGBP(Warpmap, _.size = { size, size }, _.triangles = int(triangles.size()), _.vertices = int(vertices.size())),
-															 vertices.data(), triangles.data());
+			return pFactory->createWarpmap(WGBP(Warpmap, _.size = { size, size }, _.triangles = int(triangles.size()), _.vertices = int(vertices.size())),
+										   vertices.data(), triangles.data());
 		};
 
 		SizeSPX gauge = m_pGauge->pixelSize() * 64, surface = m_pBilinear->pixelSize() * 64;
+		DiscWarps w;
 
-		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 10 }, disc(gauge, 110, Warpmap::coverageOne, 0), m_pGauge);
+		w.large = disc(gauge, 110, Warpmap::coverageOne, 0);
+		w.largeBlit = disc(surface, 110, Warpmap::coverageOne, 0);
+		w.half = disc(gauge, 57, Warpmap::coverageOne / 2, Warpmap::coverageOne / 2);
+		w.small = disc(surface, 13, Warpmap::coverageOne, 0);
+		return w;
+	}
+
+	bool vertexCoverage(GfxDevice * pDevice, const RectSPX& canvas)
+	{
+		const DiscWarps& w = m_discs;
+
+		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 10 }, w.large, m_pGauge);
 		pDevice->setBlitSource(m_pBilinear);
-		pDevice->warpBlit({ 64 * 260, 64 * 10 }, disc(surface, 110, Warpmap::coverageOne, 0));
-		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 260 + 20 }, disc(gauge, 57, Warpmap::coverageOne / 2, Warpmap::coverageOne / 2), m_pGauge);
-		pDevice->warpBlit({ 64 * 260 + 30, 64 * 260 }, disc(surface, 13, Warpmap::coverageOne, 0));
+		pDevice->warpBlit({ 64 * 260, 64 * 10 }, w.largeBlit);
+		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 260 + 20 }, w.half, m_pGauge);
+		pDevice->warpBlit({ 64 * 260 + 30, 64 * 260 }, w.small);
 		return true;
 	}
 
@@ -554,32 +620,34 @@ public:
 	// middle. Bottom: a card turned 0, 60 and 120 degrees around its middle (the last one mirrored,
 	// its back facing the viewer), one tilted, turned and rolled, and one pinned onto a free shape.
 
-	bool perspective(GfxDevice * pDevice, const RectSPX& canvas)
+	// The source rectangle of the floor covers many tiles of the tiling surface.
+
+	static SizeSPX _floorSource() { return { 64 * 512, 64 * 256 }; }
+
+	struct PerspectiveWarps
 	{
-		auto pFactory = pDevice->warpmapFactory();
+		Warpmap_p	floor, credits;
+		Warpmap_p	row[5];
+		Warpmap_p	turned[5];
+	};
+
+	PerspectiveWarps _makePerspectives(WarpmapFactory * pFactory)
+	{
 		SizeSPX cardSize = m_pCard->pixelSize() * 64;
+		PerspectiveWarps w;
 
 		// Floor, tilted back around its front edge and seen from above, so it goes towards a horizon
-		// at the top. The source rectangle covers many tiles of the tiling surface.
+		// at the top.
 
-		const SizeSPX floorSource = { 64 * 512, 64 * 256 };
-
-		auto pFloor = PerspectiveWarp::create(WGBP(PerspectiveWarp, _.size = { 300, 150 }, _.sourceSize = floorSource,
-			_.corners = PerspectiveWarp::rotated({ 0, 0, 64 * 300, 64 * 150 }, 70.f, 0.f, 0.f, 64 * 150, { 0.5f, 1.f }, CoordSPX(64 * 150, 0))), pFactory);
-
-		pDevice->setBlitSource(m_pFloor);
-		pDevice->warpBlit({ 64 * 10, 64 * 10 }, pFloor->generate(), { 0, 0, floorSource.w, floorSource.h }, { 0, 64 * 40 });
+		w.floor = PerspectiveWarp::create(WGBP(PerspectiveWarp, _.size = { 300, 150 }, _.sourceSize = _floorSource(),
+			_.corners = PerspectiveWarp::rotated({ 0, 0, 64 * 300, 64 * 150 }, 70.f, 0.f, 0.f, 64 * 150, { 0.5f, 1.f }, CoordSPX(64 * 150, 0))), pFactory)->generate();
 
 		// Credits, likewise.
 
-		auto pCredits = PerspectiveWarp::create(WGBP(PerspectiveWarp, _.size = { 180, 150 }, _.sourceSize = m_pGauge->pixelSize() * 64,
-			_.corners = PerspectiveWarp::rotated({ 0, 64 * 60, 64 * 180, 64 * 90 }, 60.f, 0.f, 0.f, 64 * 150, { 0.5f, 1.f }, CoordSPX(64 * 90, 0))), pFactory);
-
-		pDevice->warpDrawEdgemap({ 64 * 320, 64 * 10 }, pCredits->generate(), m_pGauge);
+		w.credits = PerspectiveWarp::create(WGBP(PerspectiveWarp, _.size = { 180, 150 }, _.sourceSize = m_pGauge->pixelSize() * 64,
+			_.corners = PerspectiveWarp::rotated({ 0, 64 * 60, 64 * 180, 64 * 90 }, 60.f, 0.f, 0.f, 64 * 150, { 0.5f, 1.f }, CoordSPX(64 * 90, 0))), pFactory)->generate();
 
 		// A row of cards seen from one eye in the middle of the row, the outer ones turned away.
-
-		pDevice->setBlitSource(m_pCard);
 
 		const SizeI row = { 490, 140 };
 		const CoordSPX eye = { 64 * row.w / 2, 64 * 70 };
@@ -588,10 +656,8 @@ public:
 		for (int i = 0; i < 5; i++)
 		{
 			RectSPX rect = { 64 * (20 + i * 95), 64 * 22, cardSize.w, cardSize.h };
-			auto pCard = PerspectiveWarp::create(WGBP(PerspectiveWarp, _.size = row, _.sourceSize = cardSize,
-				_.corners = PerspectiveWarp::rotated(rect, 0.f, turns[i], 0.f, 64 * 300, { 0.5f, 0.5f }, eye)), pFactory);
-
-			pDevice->warpBlit({ 64 * 10, 64 * 175 }, pCard->generate());
+			w.row[i] = PerspectiveWarp::create(WGBP(PerspectiveWarp, _.size = row, _.sourceSize = cardSize,
+				_.corners = PerspectiveWarp::rotated(rect, 0.f, turns[i], 0.f, 64 * 300, { 0.5f, 0.5f }, eye)), pFactory)->generate();
 		}
 
 		// Turned, turned and rolled, and pinned.
@@ -608,10 +674,28 @@ public:
 		};
 
 		for (int i = 0; i < 5; i++)
-		{
-			auto pCard = PerspectiveWarp::create(WGBP(PerspectiveWarp, _.size = cell, _.sourceSize = cardSize, _.corners = shapes[i]), pFactory);
-			pDevice->warpBlit({ 64 * (10 + i * 100), 64 * 335 }, pCard->generate());
-		}
+			w.turned[i] = PerspectiveWarp::create(WGBP(PerspectiveWarp, _.size = cell, _.sourceSize = cardSize, _.corners = shapes[i]), pFactory)->generate();
+
+		return w;
+	}
+
+	bool perspective(GfxDevice * pDevice, const RectSPX& canvas)
+	{
+		const PerspectiveWarps& w = m_perspectives;
+
+		pDevice->setBlitSource(m_pFloor);
+		pDevice->warpBlit({ 64 * 10, 64 * 10 }, w.floor, { 0, 0, _floorSource().w, _floorSource().h }, { 0, 64 * 40 });
+
+		pDevice->warpDrawEdgemap({ 64 * 320, 64 * 10 }, w.credits, m_pGauge);
+
+		pDevice->setBlitSource(m_pCard);
+
+		for (int i = 0; i < 5; i++)
+			pDevice->warpBlit({ 64 * 10, 64 * 175 }, w.row[i]);
+
+		for (int i = 0; i < 5; i++)
+			pDevice->warpBlit({ 64 * (10 + i * 100), 64 * 335 }, w.turned[i]);
+
 		return true;
 	}
 
@@ -619,9 +703,16 @@ public:
 	// top left, and one leaning away, rolled and turned. Bottom: the gauge around a ball, globes seen
 	// from straight above and below the poles, and globes getting smaller, turned by offset.
 
-	bool balls(GfxDevice * pDevice, const RectSPX& canvas)
+	static constexpr int c_smallGlobes[5] = { 80, 50, 30, 16, 8 };
+
+	struct BallWarps
 	{
-		auto pFactory = pDevice->warpmapFactory();
+		BallWarp_p	earth, rolled, marble, north, south;
+		BallWarp_p	small[5];
+	};
+
+	BallWarps _makeBalls(WarpmapFactory * pFactory)
+	{
 		SizeSPX map = m_pMap->pixelSize() * 64;
 
 		auto globe = [&](int size, float tilt, float roll = 0.f)
@@ -629,30 +720,44 @@ public:
 			return BallWarp::create(WGBP(BallWarp, _.size = { size, size }, _.sourceSize = map, _.tilt = tilt, _.roll = roll), pFactory);
 		};
 
+		BallWarps w;
+		w.earth = globe(200, 23.5f);
+		w.rolled = globe(110, -40.f, 30.f);
+		w.marble = BallWarp::create(WGBP(BallWarp, _.size = { 200, 200 }, _.sourceSize = m_pGauge->pixelSize() * 64, _.tilt = 60.f, _.roll = -20.f), pFactory);
+		w.north = globe(110, 90.f);
+		w.south = globe(110, -90.f);
+
+		for (int i = 0; i < 5; i++)
+			w.small[i] = globe(c_smallGlobes[i], 23.5f);
+
+		return w;
+	}
+
+	bool balls(GfxDevice * pDevice, const RectSPX& canvas)
+	{
+		const BallWarps& w = m_balls;
+		SizeSPX map = m_pMap->pixelSize() * 64;
+
 		pDevice->setBlitSource(m_pMap);
 		pDevice->blit({ 64 * 10, 64 * 10 }, { 0, 0, map.w, map.h });
 
-		auto pEarth = globe(200, 23.5f);
 		pDevice->setTint({ { 64 * 270, 64 * 10 }, SizeSPX(64 * 200, 64 * 200) },
 						 Tint::create({ { 0.f, HiColor::White }, { 1.f, HiColor(900, 900, 1100, 4096) } }, { 0.f, 0.f }, { 1.f, 1.f }));
-		pDevice->warpBlit({ 64 * 270, 64 * 10 }, pEarth->generate(), pEarth->rotationOffset(30.f));
+		pDevice->warpBlit({ 64 * 270, 64 * 10 }, w.earth->generate(), w.earth->rotationOffset(30.f));
 		pDevice->clearTint();
 
-		auto pRolled = globe(110, -40.f, 30.f);
-		pDevice->warpBlit({ 64 * 140, 64 * 150 }, pRolled->generate(), pRolled->rotationOffset(120.f));
+		pDevice->warpBlit({ 64 * 140, 64 * 150 }, w.rolled->generate(), w.rolled->rotationOffset(120.f));
 
-		auto pMarble = BallWarp::create(WGBP(BallWarp, _.size = { 200, 200 }, _.sourceSize = m_pGauge->pixelSize() * 64, _.tilt = 60.f, _.roll = -20.f), pFactory);
-		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 270 }, pMarble->generate(), m_pGauge);
+		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 270 }, w.marble->generate(), m_pGauge);
 
-		auto pNorth = globe(110, 90.f), pSouth = globe(110, -90.f);
-		pDevice->warpBlit({ 64 * 230, 64 * 270 }, pNorth->generate());
-		pDevice->warpBlit({ 64 * 350, 64 * 270 }, pSouth->generate(), pSouth->rotationOffset(45.f));
+		pDevice->warpBlit({ 64 * 230, 64 * 270 }, w.north->generate());
+		pDevice->warpBlit({ 64 * 350, 64 * 270 }, w.south->generate(), w.south->rotationOffset(45.f));
 
 		int x = 230;
-		for (int size : { 80, 50, 30, 16, 8 })
+		for (int i = 0; i < 5; i++)
 		{
-			auto pSmall = globe(size, 23.5f);
-			pDevice->warpBlit({ 64 * x, 64 * 400 }, pSmall->generate(), pSmall->rotationOffset(float(size) * 3));
+			int size = c_smallGlobes[i];
+			pDevice->warpBlit({ 64 * x, 64 * 400 }, w.small[i]->generate(), w.small[i]->rotationOffset(float(size) * 3));
 			x += size + 10;
 		}
 		return true;
@@ -664,15 +769,46 @@ public:
 	// tiles and the map are drawn straight from their surfaces, so what is under a lens is the same
 	// rectangle of the surface.
 
-	bool lenses(GfxDevice * pDevice, const RectSPX& canvas)
-	{
-		auto pFactory = pDevice->warpmapFactory();
+	static constexpr int c_smallLenses[4] = { 80, 50, 30, 16 };
 
+	struct LensWarps
+	{
+		LensWarp_p	overFloor[4];
+		LensWarp_p	small[4];
+		LensWarp_p	overMap[4];
+		LensWarp_p	gauge;
+	};
+
+	LensWarps _makeLenses(WarpmapFactory * pFactory)
+	{
 		auto lens = [&](int size, float magnification, float falloff)
 		{
 			return LensWarp::create(WGBP(LensWarp, _.size = { size, size }, _.sourceSize = SizeSPX(64 * size, 64 * size),
 										 _.magnification = magnification, _.falloff = falloff), pFactory);
 		};
+
+		LensWarps w;
+
+		w.overFloor[0] = lens(110, 2.f, 0.f);
+		w.overFloor[1] = lens(110, 3.f, 0.3f);
+		w.overFloor[2] = lens(110, 2.5f, 1.f);
+		w.overFloor[3] = lens(110, 6.f, 0.6f);
+
+		for (int i = 0; i < 4; i++)
+			w.small[i] = lens(c_smallLenses[i], 2.f, 0.3f);
+
+		w.overMap[0] = lens(100, 6.f, 0.f);
+		w.overMap[1] = lens(100, 2.f, 0.2f);
+		w.overMap[2] = lens(100, 3.f, 1.f);
+		w.overMap[3] = lens(120, 1.5f, 0.5f);
+
+		w.gauge = LensWarp::create(WGBP(LensWarp, _.size = { 60, 60 }, _.sourceSize = SizeSPX(64 * 60, 64 * 60), _.magnification = 3.f, _.falloff = 0.4f), pFactory);
+		return w;
+	}
+
+	bool lenses(GfxDevice * pDevice, const RectSPX& canvas)
+	{
+		const LensWarps& w = m_lenses;
 
 		auto over = [&](CoordI pos, CoordI origin, LensWarp * pLens)
 		{
@@ -683,16 +819,16 @@ public:
 		pDevice->setBlitSource(m_pFloor);
 		pDevice->tile({ 0, 0, 64 * 512, 64 * 250 });
 
-		over({ 15, 15 }, { 0, 0 }, lens(110, 2.f, 0.f));
-		over({ 135, 15 }, { 0, 0 }, lens(110, 3.f, 0.3f));
-		over({ 255, 15 }, { 0, 0 }, lens(110, 2.5f, 1.f));
-		over({ 375, 15 }, { 0, 0 }, lens(110, 6.f, 0.6f));
+		over({ 15, 15 }, { 0, 0 }, w.overFloor[0]);
+		over({ 135, 15 }, { 0, 0 }, w.overFloor[1]);
+		over({ 255, 15 }, { 0, 0 }, w.overFloor[2]);
+		over({ 375, 15 }, { 0, 0 }, w.overFloor[3]);
 
 		int x = 30;
-		for (int size : { 80, 50, 30, 16 })
+		for (int i = 0; i < 4; i++)
 		{
-			over({ x, 140 }, { 0, 0 }, lens(size, 2.f, 0.3f));
-			x += size + 40;
+			over({ x, 140 }, { 0, 0 }, w.small[i]);
+			x += c_smallLenses[i] + 40;
 		}
 
 		const CoordI mapOrigin = { 0, 256 };
@@ -701,19 +837,18 @@ public:
 		pDevice->tile({ 0, 64 * 256, 64 * 512, 64 * 176 });
 
 		pDevice->setBlitSource(m_pMapNearest);
-		over({ 15, 290 }, mapOrigin, lens(100, 6.f, 0.f));
+		over({ 15, 290 }, mapOrigin, w.overMap[0]);
 
 		pDevice->setBlitSource(m_pMap);
-		over({ 135, 290 }, mapOrigin, lens(100, 2.f, 0.2f));
-		over({ 255, 290 }, mapOrigin, lens(100, 3.f, 1.f));
-		over({ 375, 280 }, mapOrigin, lens(120, 1.5f, 0.5f));
+		over({ 135, 290 }, mapOrigin, w.overMap[1]);
+		over({ 255, 290 }, mapOrigin, w.overMap[2]);
+		over({ 375, 280 }, mapOrigin, w.overMap[3]);
 
 		// The gauge flat, and a part of it magnified beside it, still sharp. Its blue is translucent,
 		// so a lens over it would blend it twice.
 
 		pDevice->drawEdgemap({ 64 * 10, 64 * 444 }, m_pGauge);
-		auto pGaugeLens = LensWarp::create(WGBP(LensWarp, _.size = { 60, 60 }, _.sourceSize = SizeSPX(64 * 60, 64 * 60), _.magnification = 3.f, _.falloff = 0.4f), pFactory);
-		pDevice->warpDrawEdgemap({ 64 * 400, 64 * 444 }, pGaugeLens->generate(), m_pGauge, { 64 * 150, 0 });
+		pDevice->warpDrawEdgemap({ 64 * 400, 64 * 444 }, w.gauge->generate(), m_pGauge, { 64 * 150, 0 });
 		return true;
 	}
 
@@ -819,4 +954,11 @@ private:
 
 	Warpmap_p	m_pIdentity;
 	Warpmap_p	m_pIdentityBlit;
+
+	RoundedRectWarps	m_roundedRects;
+	CylinderWarps		m_cylinders;
+	DiscWarps			m_discs;
+	PerspectiveWarps	m_perspectives;
+	BallWarps			m_balls;
+	LensWarps			m_lenses;
 };
