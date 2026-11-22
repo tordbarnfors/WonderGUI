@@ -221,7 +221,6 @@ namespace wax
 
 			DX12Surface::exitDevice();
 			DX12Edgemap::exitDevice();
-			DX12Warpmap::_exitDevice();
 		}
 
 		if (!pDX12Device && s_backends.empty())
@@ -1885,7 +1884,6 @@ namespace wax
 		// The command list keeps no references to the buffers, see _bindEdgemap().
 
 		_holdUntilDone(pDX12Warpmap->m_buffer.Get());
-		pDX12Warpmap->_drawnBy(m_commandFence.Get(), m_fenceValue + 1);		// Signalled when this list is submitted.
 		m_commandList->SetGraphicsRootShaderResourceView(7, pDX12Warpmap->_gpuAddress());
 
 		D3D12_INDEX_BUFFER_VIEW indexBufferView = pDX12Warpmap->_indexBufferView();
