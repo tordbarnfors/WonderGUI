@@ -130,18 +130,22 @@ namespace wax
 		}
 	}
 
-	//____ _isOpaque() ____________________________________________________________
-	// Checks if all ARGB_8 pixels are opaque. Pixels are 32-bit words in native byte
-	// order with alpha in the high byte.
+	//____ _isSamePremultiplied() ____________________________________________________
+	// Checks if ARGB_8 pixels are the same premultiplied, which they are when each is
+	// opaque or transparent black, as a canvas is when made. Pixels are 32-bit words in
+	// native byte order with alpha in the high byte.
 
-	static bool _isOpaque(const uint8_t* pPixels, int pitch, int width, int height)
+	static bool _isSamePremultiplied(const uint8_t* pPixels, int pitch, int width, int height)
 	{
 		for (int y = 0; y < height; y++)
 		{
 			auto p = (const uint32_t*)(pPixels + y * pitch);
 			for (int x = 0; x < width; x++)
-				if ((p[x] >> 24) != 255)
+			{
+				uint32_t a = p[x] >> 24;
+				if (a != 255 && p[x] != 0)
 					return false;
+			}
 		}
 		return true;
 	}
@@ -1115,8 +1119,8 @@ namespace wax
 	// Where lines y1 to y2 of our pixels are copied to the texture from. Surfaces
 	// with alpha keep premultiplied colors in the texture, so that blending and
 	// filtering work on premultiplied colors, see DX12Backend::_createPipeline().
-	// Our pixels are the ones handed out, so unless all opaque they are
-	// premultiplied into a buffer of their own, returned in temp, which the caller
+	// Our pixels are the ones handed out, so unless all opaque or transparent black
+	// they are premultiplied into a buffer of their own, returned in temp, which the caller
 	// keeps until the GPU has copied from it. Otherwise it is our upload buffer.
 
 	ID3D12Resource * DX12Surface::_uploadSource( int y1, int y2, Microsoft::WRL::ComPtr<ID3D12Resource>& temp, UINT64& sourceOffset )
@@ -1126,7 +1130,7 @@ namespace wax
 
 		temp = nullptr;
 
-		if( _isPremultiplied() && !_isOpaque(m_pUploadData + sourceOffset, m_uploadPitch, m_size.w, y2 - y1) )
+		if( _isPremultiplied() && !_isSamePremultiplied(m_pUploadData + sourceOffset, m_uploadPitch, m_size.w, y2 - y1) )
 		{
 			size_t nBytes = size_t(m_uploadPitch) * (y2 - y1);
 
@@ -1155,8 +1159,9 @@ namespace wax
 			}
 			else
 			{
-				memcpy( pDest, m_pUploadData + sourceOffset, nBytes );
-				_convertAlpha( pDest, m_uploadPitch, m_size.w, y2 - y1, true );
+				// Written once and never read, as the upload heap is write-combined.
+
+				_convertAlpha( m_pUploadData + sourceOffset, pDest, m_uploadPitch, m_size.w, y2 - y1, true );
 				temp->Unmap(0, nullptr);
 
 				pSource = temp.Get();
@@ -1414,7 +1419,7 @@ namespace wax
 			// The texture holds premultiplied colors, see _uploadSource().
 
 			if( _isPremultiplied() )
-				_convertAlpha( m_pUploadData, m_uploadPitch, m_size.w, m_size.h, false );
+				_convertAlpha( m_pUploadData, m_pUploadData, m_uploadPitch, m_size.w, m_size.h, false );
 		}
 
 		m_dirtyRect = RectI();			// Our pixels and the texture are identical now.
@@ -1423,28 +1428,27 @@ namespace wax
 
 	//____ _convertAlpha() ____________________________________________________
 	//
-	// Premultiplies or unpremultiplies ARGB_8 pixels in place. Pixels are 32-bit words
-	// in native byte order with alpha in the high byte.
+	// Premultiplies or unpremultiplies ARGB_8 pixels from pSrc into pDst, which may be the
+	// same. Every pixel of pDst is written and none read, so pDst can be write-combined
+	// memory. Pixels are 32-bit words in native byte order with alpha in the high byte.
 
-	void DX12Surface::_convertAlpha( uint8_t * pPixels, int pitch, int width, int height, bool bPremultiply ) const
+	void DX12Surface::_convertAlpha( const uint8_t * pSrc, uint8_t * pDst, int pitch, int width, int height, bool bPremultiply ) const
 	{
 		bool bSRGB = (m_colorSpace == ColorSpace::sRGB);
 
 		for( int y = 0 ; y < height ; y++ )
 		{
-			auto p = (uint32_t*)(pPixels + y * pitch);
+			auto pIn = (const uint32_t*)(pSrc + y * pitch);
+			auto pOut = (uint32_t*)(pDst + y * pitch);
 
 			for( int x = 0 ; x < width ; x++ )
 			{
-				uint32_t v = p[x];
-
+				uint32_t v = pIn[x];
 				int a = v >> 24;
-				if( a == 255 )
-					continue;
 
 				if( a == 0 )
 					v = 0;
-				else
+				else if( a != 255 )
 				{
 					uint8_t b = uint8_t(v), g = uint8_t(v >> 8), r = uint8_t(v >> 16);
 
@@ -1456,7 +1460,7 @@ namespace wax
 					v = (uint32_t(a) << 24) | (uint32_t(r) << 16) | (uint32_t(g) << 8) | b;
 				}
 
-				p[x] = v;
+				pOut[x] = v;
 			}
 		}
 	}

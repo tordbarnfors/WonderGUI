@@ -200,7 +200,7 @@ namespace wax
 		void			_updatePaletteBuffer();						// Converts m_pPalette into the palette buffer.
 
 		bool			_isPremultiplied() const { return m_pixelFormat == PixelFormat::ARGB_8; }		// Texture holds premultiplied colors.
-		void			_convertAlpha( uint8_t * pPixels, int pitch, int width, int height, bool bPremultiply ) const;
+		void			_convertAlpha( const uint8_t * pSrc, uint8_t * pDst, int pitch, int width, int height, bool bPremultiply ) const;
 
 		static bool			_initCopyResources();
 		static void			_waitForCopyFence();
