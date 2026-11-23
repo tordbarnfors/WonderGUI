@@ -143,7 +143,7 @@ namespace wax
 		bool		_reserveFrameBuffers( int nVertices, int nColors, int nExtras, int nObjects ) override;
 
 		bool		_bindCanvas( Surface * pCanvas, SizeI& size, CanvasKind& kind ) override;
-		bool		_setPipeline( PipelineKind kind ) override;
+		bool		_bindPipeline( PipelineKind kind, BlendMode blendMode ) override;
 		void		_setConstants( ConstantBlock block ) override;
 		void		_draw( int firstVertex, int nVertices ) override;
 		void		_setScissor( const RectI& rect ) override;
@@ -159,7 +159,6 @@ namespace wax
 
 		bool		_createDeviceObjects();
 		void		_destroyDeviceObjects();
-		bool		_createShaderModules();
 		bool		_createSamplers();
 
 		bool		_beginCommandBuffer();
@@ -177,8 +176,8 @@ namespace wax
 		void		_pushImage( uint32_t binding, VkImageView view );
 		void		_pushSampler( uint32_t binding, VkSampler sampler );
 
-		VkPipeline	_pipeline( PipelineKind kind, BlendMode mode );
-		VkPipeline	_createPipeline( PipelineKind kind, BlendMode mode, VkFormat format, CanvasKind canvasKind );
+		VkPipeline	_createPipeline( PipelineKind kind, const BlendState& blend, VkFormat format );
+		VkShaderModule	_shaderModule( const char * pName );
 
 		static VkFormat		_defaultCanvasFormat( VkFormat format, PixelFormat& pixelFormat, ColorSpace& colorSpace );
 
@@ -249,10 +248,7 @@ namespace wax
 		std::map<uint64_t, VkPipeline>	m_pipelines;
 		VkPipeline						m_activePipeline = VK_NULL_HANDLE;
 
-		VkShaderModule		m_vertexShaders[int(PipelineKind::Size)] = {};
-		VkShaderModule		m_pixelShaders[int(PipelineKind::Size)] = {};
-		VkShaderModule		m_dualSourcePixelShaders[int(PipelineKind::Size)] = {};
-		std::vector<VkShaderModule>	m_shaderModules;		// All of them, for destroying.
+		std::vector<VkShaderModule>	m_shaderModules;		// Of VulkanShaders::shaders, null until needed, see _shaderModule().
 
 		// Samplers, indexed (clip ? 4 : 0) + (tiling ? 2 : 0) + (bilinear ? 1 : 0) as DX12Backend
 		// has them. The clip ones return transparent black outside the texture.

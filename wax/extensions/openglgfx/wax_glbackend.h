@@ -128,7 +128,7 @@ namespace wax
 		bool	_reserveFrameBuffers( int nVertices, int nColors, int nExtras, int nObjects ) override;
 
 		bool	_bindCanvas( Surface * pCanvas, SizeI& size, CanvasKind& kind ) override;
-		bool	_setPipeline( PipelineKind kind ) override;
+		bool	_bindPipeline( PipelineKind kind, BlendMode blendMode ) override;
 		void	_setConstants( ConstantBlock block ) override;
 		void	_draw( int firstVertex, int nVertices ) override;
 		void	_setScissor( const RectI& rect ) override;
@@ -223,7 +223,6 @@ namespace wax
 
 		bool						m_bCanvasBound = false;	// A canvas has been bound in the recording.
 		SizeI						m_targetSize;			// Of the canvas being recorded for, in pixels.
-		CanvasKind					m_targetKind = CanvasKind::WithAlpha;
 
 		std::vector<Vertex>			m_vertices;				// GpuBackend's buffers, see _reserveFrameBuffers().
 		std::vector<Color>			m_colors;

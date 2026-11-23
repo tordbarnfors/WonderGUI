@@ -222,6 +222,16 @@ slow on Windows" below.
 
 Only run on Linux, with lavapipe and Intel UHD 770 (Mesa).
 
+### MetalBackend and VulkanBackend with the blending of GpuBackend
+
+Blending, pipelines and shaders by name moved to GpuBackend (`_blendState()`, `_bindPipeline()`),
+see "GPU backends (2026-11)" in ROADMAP.md. gfxdevicetester gives the same results as before on
+DX12Backend and GlBackend. VulkanBackend has only been compiled since (MSVC, with the Vulkan
+headers of SDL3), not linked or run, and MetalBackend not even compiled. Run gfxdevicetester
+--accuracy on both.
+
+`_bindPipeline()` and `_createPipeline()` in `wax_vulkanbackend.cpp` and `wax_metalbackend.mm`
+
 ## Graphics
 
 ### gfxdevicetester: tests that differ on GlBackend and VulkanBackend alike

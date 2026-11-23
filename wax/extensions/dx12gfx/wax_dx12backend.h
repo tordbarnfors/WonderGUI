@@ -234,7 +234,7 @@ namespace wax
 		bool		_reserveFrameBuffers(int nVertices, int nColors, int nExtras, int nObjects) override;
 
 		bool		_bindCanvas(Surface* pCanvas, SizeI& size, CanvasKind& kind) override;
-		bool		_setPipeline(PipelineKind kind) override;
+		bool		_bindPipeline(PipelineKind kind, BlendMode blendMode) override;
 		void		_setConstants(ConstantBlock block) override;
 		void		_draw(int firstVertex, int nVertices) override;
 		void		_setScissor(const RectI& rect) override;
@@ -271,9 +271,7 @@ namespace wax
 		bool _createPipelineResources();
 		bool _createRootSignature();
 		bool _createSamplers();
-		bool _createPipeline(BlendMode blendMode, PipelineKind kind, DXGI_FORMAT rtvFormat, Microsoft::WRL::ComPtr<ID3D12PipelineState>& pPipeline);
-
-		ID3D12PipelineState* _pipeline(BlendMode blendMode, PipelineKind kind);
+		bool _createPipeline(PipelineKind kind, const BlendState& blend, DXGI_FORMAT rtvFormat, Microsoft::WRL::ComPtr<ID3D12PipelineState>& pPipeline);
 
 		void _transitionCanvas(DX12Surface* pCanvas, D3D12_RESOURCE_STATES state);
 
@@ -444,9 +442,9 @@ namespace wax
 
 		//
 
-		// Pipelines vary with blend mode, fill or blit, and the format of the canvas
-		// we render into, which we only learn as canvases are set. So they are
-		// created on demand and kept, keyed on those three.
+		// Pipelines vary with the kind of draw, the blend mode and the format of the
+		// canvas we render into, which we only learn as canvases are set. So they
+		// are created on demand and kept, see _bindPipeline().
 
 		std::map<uint64_t, Microsoft::WRL::ComPtr<ID3D12PipelineState>>	m_pipelines;
 

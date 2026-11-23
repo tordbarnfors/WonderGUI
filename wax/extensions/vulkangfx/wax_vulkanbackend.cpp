@@ -232,7 +232,11 @@ namespace wax
 		if (!WAX_VK_CHECK(vkCreatePipelineLayout(device, &layoutInfo, nullptr, &m_pipelineLayout), "vkCreatePipelineLayout"))
 			return false;
 
-		return _createShaderModules() && _createSamplers();
+		// Shader modules are made when a pipeline first needs them, see _shaderModule().
+
+		m_shaderModules.assign(VulkanShaders::nbShaders, VK_NULL_HANDLE);
+
+		return _createSamplers();
 	}
 
 	//____ _destroyDeviceObjects() _______________________________________________
@@ -251,7 +255,8 @@ namespace wax
 		m_activePipeline = VK_NULL_HANDLE;
 
 		for (auto module : m_shaderModules)
-			vkDestroyShaderModule(device, module, nullptr);
+			if (module)
+				vkDestroyShaderModule(device, module, nullptr);
 
 		m_shaderModules.clear();
 
@@ -286,60 +291,37 @@ namespace wax
 		m_buffers = FrameBuffers();
 	}
 
-	//____ _createShaderModules() ________________________________________________
+	//____ _shaderModule() _______________________________________________________
+	//
+	// The module of a shader, by the name GpuBackend has for it, made the first time a pipeline
+	// needs it. Null if there is no such shader, which is reported, or the module couldn't be made.
 
-	bool VulkanBackend::_createShaderModules()
+	VkShaderModule VulkanBackend::_shaderModule( const char * pName )
 	{
-		using namespace VulkanShaders;
-
-		auto module = [this](const Code& code) -> VkShaderModule
+		for (int i = 0; pName && i < VulkanShaders::nbShaders; i++)
 		{
-			VkShaderModuleCreateInfo info = { VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
-			info.codeSize = code.bytes;
-			info.pCode = code.pWords;
+			const VulkanShaders::Shader& shader = VulkanShaders::shaders[i];
 
-			VkShaderModule handle = VK_NULL_HANDLE;
-			if (!WAX_VK_CHECK(vkCreateShaderModule(VulkanContext::device(), &info, nullptr, &handle), "vkCreateShaderModule"))
-				return VK_NULL_HANDLE;
+			if (std::strcmp(shader.pName, pName) != 0)
+				continue;
 
-			m_shaderModules.push_back(handle);
-			return handle;
-		};
+			if (!m_shaderModules[i])
+			{
+				VkShaderModuleCreateInfo info = { VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
+				info.codeSize = shader.bytes;
+				info.pCode = shader.pWords;
 
-		struct { PipelineKind kind; const Code* pVS; const Code* pPS; const Code* pDualPS; } shaders[] =
-		{
-			{ PipelineKind::Fill,				&fillVS,		&fillPS,			&fillPSDual },
-			{ PipelineKind::FillAA,				&fillAAVS,		&fillAAPS,			&fillAAPSDual },
-			{ PipelineKind::Blit,				&blitVS,		&blitPS,			&blitPSDual },
-			{ PipelineKind::Blur,				&blitVS,		&blurPS,			&blurPSDual },		// Same geometry, so the same vertex shader.
-			{ PipelineKind::PaletteBlit,		&blitVS,		&paletteBlitPS,		&paletteBlitPSDual },
-			{ PipelineKind::PaletteBlur,		&blitVS,		&paletteBlurPS,		&paletteBlurPSDual },
-			{ PipelineKind::Line,				&lineVS,		&linePS,			&linePSDual },
-			{ PipelineKind::Segments,			&segmentsVS,	&segmentsPS,		&segmentsPSDual },
-			{ PipelineKind::ShapeBox,			&shapeVS,		&shapeBoxPS,		&shapeBoxPSDual },
-			{ PipelineKind::ShapeRing,			&shapeVS,		&shapeRingPS,		&shapeRingPSDual },
-			{ PipelineKind::ShapeLine,			&shapeVS,		&shapeLinePS,		&shapeLinePSDual },
-			{ PipelineKind::WarpEdgemap,		&warpVS,		&warpEdgemapPS,		&warpEdgemapPSDual },
-			{ PipelineKind::WarpBlit,			&warpVS,		&warpBlitPS,		&warpBlitPSDual },
-			{ PipelineKind::WarpPaletteBlit,	&warpVS,		&warpPaletteBlitPS,	&warpPaletteBlitPSDual },
-		};
+				WAX_VK_CHECK(vkCreateShaderModule(VulkanContext::device(), &info, nullptr, &m_shaderModules[i]), "vkCreateShaderModule");
+			}
 
-		std::map<const Code*, VkShaderModule> vertexModules;		// Shared by kinds with the same vertex shader.
-
-		for (auto& shader : shaders)
-		{
-			int i = int(shader.kind);
-
-			auto it = vertexModules.find(shader.pVS);
-			m_vertexShaders[i] = it != vertexModules.end() ? it->second : (vertexModules[shader.pVS] = module(*shader.pVS));
-			m_pixelShaders[i] = module(*shader.pPS);
-			m_dualSourcePixelShaders[i] = module(*shader.pDualPS);
-
-			if (!m_vertexShaders[i] || !m_pixelShaders[i] || !m_dualSourcePixelShaders[i])
-				return false;
+			return m_shaderModules[i];
 		}
 
-		return true;
+		char buffer[128];
+		snprintf(buffer, sizeof(buffer), "Shader %s is missing, run compile_shaders.py.", pName ? pName : "without a name");
+		Base::throwError(ErrorLevel::Error, ErrorCode::Internal, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+
+		return VK_NULL_HANDLE;
 	}
 
 	//____ _createSamplers() _____________________________________________________
@@ -836,14 +818,24 @@ namespace wax
 		m_bRendering = false;
 	}
 
-	//____ _setPipeline() ________________________________________________________
+	//____ _bindPipeline()_______________________________________________________
+	//
+	// Pipelines are created the first time a combination of canvas format, kind and blend mode
+	// shows up.
 
-	bool VulkanBackend::_setPipeline( PipelineKind kind )
+	bool VulkanBackend::_bindPipeline( PipelineKind kind, BlendMode blendMode )
 	{
 		if (!m_bRecording || !m_target.view)
 			return false;
 
-		VkPipeline pipeline = _pipeline(kind, m_activeBlendMode);
+		uint64_t key = _pipelineKey(m_target.format, m_activeCanvasKind, kind, blendMode);
+
+		auto it = m_pipelines.find(key);
+		if (it == m_pipelines.end())
+			it = m_pipelines.emplace(key, _createPipeline(kind, _blendState(kind, blendMode, m_activeCanvasKind), m_target.format)).first;		// Also when null, so a failure is only tried once.
+
+		VkPipeline pipeline = it->second;
+
 		if (!pipeline)
 			return false;
 
@@ -856,204 +848,66 @@ namespace wax
 		return true;
 	}
 
-	//____ _pipeline() ___________________________________________________________
-	//
-	// The pipeline for the given kind and blend mode on the canvas we are rendering into, created
-	// the first time a combination shows up.
-
-	VkPipeline VulkanBackend::_pipeline( PipelineKind kind, BlendMode blendMode )
-	{
-		if (blendMode == BlendMode::Ignore)
-			return VK_NULL_HANDLE;						// Nothing should be drawn.
-
-		BlendMode mode = _normalizeBlendMode(blendMode);
-
-		uint64_t key = (uint64_t(m_target.format) << 24) | (uint64_t(m_activeCanvasKind) << 16) | (uint64_t(kind) << 8) | uint64_t(mode);
-
-		auto it = m_pipelines.find(key);
-		if (it != m_pipelines.end())
-			return it->second;							// May be null, if creation failed before.
-
-		VkPipeline pipeline = _createPipeline(kind, mode, m_target.format, m_activeCanvasKind);
-		m_pipelines[key] = pipeline;
-		return pipeline;
-	}
-
 	//____ _createPipeline() _____________________________________________________
 	//
-	// Blending as DX12Backend::_createPipeline() has it, see there for why. Canvases with alpha
-	// hold premultiplied colors. The pixel shaders pass what they draw to the blender as the mode
-	// needs it, see output.hlsl, Replace, Morph and Multiply keeping the uncovered part of the pixel
-	// by the second color of dual-source blending.
-	//
-	// An alpha only canvas is R8 here rather than A8, see VulkanSurface. The shaders write the value
-	// to all channels for it, so the factors of alpha are those of color.
+	// Blending is that of GpuBackend::_blendState(), in Vulkan terms. An alpha only canvas is R8
+	// here rather than A8, see VulkanSurface.
 
-	VkPipeline VulkanBackend::_createPipeline( PipelineKind kind, BlendMode blendMode, VkFormat format, CanvasKind canvasKind )
+	VkPipeline VulkanBackend::_createPipeline( PipelineKind kind, const BlendState& blend, VkFormat format )
 	{
-		bool bAlphaOnly = (canvasKind == CanvasKind::AlphaOnly);
-		bool bNoAlpha = (canvasKind == CanvasKind::WithoutAlpha);
-		bool bPartialCoverage = _hasPartialCoverage(kind);
+		static const VkBlendFactor factors[] = {								// In the order of BlendFactor.
+			VK_BLEND_FACTOR_ZERO, VK_BLEND_FACTOR_ONE,
+			VK_BLEND_FACTOR_SRC_COLOR, VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR, VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+			VK_BLEND_FACTOR_DST_COLOR, VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR, VK_BLEND_FACTOR_DST_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA,
+			VK_BLEND_FACTOR_SRC1_COLOR, VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR, VK_BLEND_FACTOR_SRC1_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA };
 
-		VkBool32		bBlend = VK_TRUE;
-		VkBlendOp		op = VK_BLEND_OP_ADD;
-		VkBlendFactor	srcBlend = VK_BLEND_FACTOR_ONE;
-		VkBlendFactor	destBlend = VK_BLEND_FACTOR_ZERO;
-		bool			bKeepAlpha = false;
-		bool			bInvertAlpha = false;
+		static const VkBlendOp ops[] = {										// In the order of BlendOp.
+			VK_BLEND_OP_ADD, VK_BLEND_OP_REVERSE_SUBTRACT, VK_BLEND_OP_MIN, VK_BLEND_OP_MAX };
 
-		switch (blendMode)
-		{
-			case BlendMode::Replace:
-				srcBlend = VK_BLEND_FACTOR_ONE;
-				destBlend = VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA;
-				bBlend = bPartialCoverage ? VK_TRUE : VK_FALSE;
-				break;
-
-			case BlendMode::Blend:
-				srcBlend = VK_BLEND_FACTOR_ONE;
-				destBlend = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-				break;
-
-			case BlendMode::Morph:
-				srcBlend = VK_BLEND_FACTOR_ONE;
-				destBlend = VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA;
-				break;
-
-			case BlendMode::Add:
-			case BlendMode::Subtract:
-				op = (blendMode == BlendMode::Add) ? VK_BLEND_OP_ADD : VK_BLEND_OP_REVERSE_SUBTRACT;
-				srcBlend = VK_BLEND_FACTOR_ONE;
-				destBlend = VK_BLEND_FACTOR_ONE;
-				bKeepAlpha = (blendMode == BlendMode::Subtract);
-				break;
-
-			case BlendMode::Multiply:
-				srcBlend = bAlphaOnly ? VK_BLEND_FACTOR_DST_ALPHA : VK_BLEND_FACTOR_DST_COLOR;
-				destBlend = VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA;
-				bKeepAlpha = true;
-				break;
-
-			case BlendMode::Invert:
-				srcBlend = bAlphaOnly ? VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA : VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
-				destBlend = bAlphaOnly ? VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA : VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
-				bInvertAlpha = !bAlphaOnly;
-				break;
-
-			case BlendMode::Min:
-			case BlendMode::Max:
-				op = (blendMode == BlendMode::Min) ? VK_BLEND_OP_MIN : VK_BLEND_OP_MAX;
-				srcBlend = VK_BLEND_FACTOR_ONE;
-				destBlend = VK_BLEND_FACTOR_ONE;
-				bKeepAlpha = (blendMode == BlendMode::Min);
-				break;
-
-			default:
-			{
-				char buffer[128];
-				snprintf(buffer, sizeof(buffer), "BlendMode %d is unknown, using Blend.", (int) blendMode);
-				Base::throwError(ErrorLevel::Warning, ErrorCode::Other, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
-
-				srcBlend = VK_BLEND_FACTOR_ONE;
-				destBlend = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-				break;
-			}
-		}
-
-		// The value of an alpha only canvas is in R, as are the alphas the shaders output for it.
-
-		if (bAlphaOnly)
-		{
-			auto toColor = [](VkBlendFactor factor)
-			{
-				switch (factor)
-				{
-					case VK_BLEND_FACTOR_SRC_ALPHA:				return VK_BLEND_FACTOR_SRC_COLOR;
-					case VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA:	return VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
-					case VK_BLEND_FACTOR_DST_ALPHA:				return VK_BLEND_FACTOR_DST_COLOR;
-					case VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA:	return VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
-					case VK_BLEND_FACTOR_SRC1_ALPHA:			return VK_BLEND_FACTOR_SRC1_COLOR;
-					case VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA:	return VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR;
-					default:									return factor;
-				}
-			};
-
-			srcBlend = toColor(srcBlend);
-			destBlend = toColor(destBlend);
-			bKeepAlpha = false;
-		}
-
-		bool bDualSource = bBlend && (destBlend == VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA || destBlend == VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR);
+		static_assert(sizeof(factors) / sizeof(factors[0]) == size_t(BlendFactor::Size) && sizeof(ops) / sizeof(ops[0]) == size_t(BlendOp::Size),
+					  "A Vulkan value for each blend factor and operation");
 
 		VkPipelineColorBlendAttachmentState attachment = {};
-		attachment.blendEnable = bBlend;
-		attachment.colorBlendOp = op;
-		attachment.srcColorBlendFactor = srcBlend;
-		attachment.dstColorBlendFactor = destBlend;
+		attachment.blendEnable = blend.bEnable ? VK_TRUE : VK_FALSE;
+		attachment.colorBlendOp = ops[int(blend.colorOp)];
+		attachment.srcColorBlendFactor = factors[int(blend.srcColor)];
+		attachment.dstColorBlendFactor = factors[int(blend.dstColor)];
+		attachment.alphaBlendOp = ops[int(blend.alphaOp)];
+		attachment.srcAlphaBlendFactor = factors[int(blend.srcAlpha)];
+		attachment.dstAlphaBlendFactor = factors[int(blend.dstAlpha)];
 
-		if (bKeepAlpha)
-		{
-			attachment.alphaBlendOp = VK_BLEND_OP_ADD;
-			attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-			attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-		}
-		else if (bInvertAlpha)
-		{
-			attachment.alphaBlendOp = VK_BLEND_OP_ADD;
-			attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
-			attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-		}
-		else
-		{
-			// Alpha can't take color factors, but none of these is one, except on an alpha only
-			// canvas, which has no alpha.
+		attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT;
 
-			auto toAlpha = [](VkBlendFactor factor)
-			{
-				switch (factor)
-				{
-					case VK_BLEND_FACTOR_SRC_COLOR:				return VK_BLEND_FACTOR_SRC_ALPHA;
-					case VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR:	return VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-					case VK_BLEND_FACTOR_DST_COLOR:				return VK_BLEND_FACTOR_DST_ALPHA;
-					case VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR:	return VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
-					case VK_BLEND_FACTOR_SRC1_COLOR:			return VK_BLEND_FACTOR_SRC1_ALPHA;
-					case VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR:	return VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA;
-					default:									return factor;
-				}
-			};
+		if (blend.bWriteAlpha)
+			attachment.colorWriteMask |= VK_COLOR_COMPONENT_A_BIT;
 
-			attachment.alphaBlendOp = op;
-			attachment.srcAlphaBlendFactor = toAlpha(srcBlend);
-			attachment.dstAlphaBlendFactor = toAlpha(destBlend);
-		}
-
-		// A canvas without alpha has an alpha channel here, which is left alone. Reading it as a
-		// blit source gives alpha 1 regardless, see VulkanSurface.
-
-		attachment.colorWriteMask = bNoAlpha ? (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT)
-											 : (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
-
-		VkPipelineColorBlendStateCreateInfo blend = { VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO };
-		blend.attachmentCount = 1;
-		blend.pAttachments = &attachment;
+		VkPipelineColorBlendStateCreateInfo blendInfo = { VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO };
+		blendInfo.attachmentCount = 1;
+		blendInfo.pAttachments = &attachment;
 
 		// Shaders.
+
+		VkShaderModule vertexShader = _shaderModule(_vertexShaderName(kind));
+		VkShaderModule pixelShader = _shaderModule(_pixelShaderName(kind, blend.bDualSource));
+
+		if (!vertexShader || !pixelShader)
+			return VK_NULL_HANDLE;
 
 		VkPipelineShaderStageCreateInfo stages[2] = {};
 
 		stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-		stages[0].module = m_vertexShaders[int(kind)];
+		stages[0].module = vertexShader;
 		stages[0].pName = "main";
 
 		stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		stages[1].module = bDualSource ? m_dualSourcePixelShaders[int(kind)] : m_pixelShaders[int(kind)];
+		stages[1].module = pixelShader;
 		stages[1].pName = "main";
 
 		// One vertex layout for all but warps, whose vertex shader reads the vertices of the
-		// Warpmap itself. Shaders that read fewer attributes leave the last ones unused, see
-		// ../hlsl/README.md.
+		// Warpmap itself. Only the attributes the vertex shader reads, see _nbVertexAttributes(),
+		// which the validation layers would otherwise complain about.
 
 		VkVertexInputBindingDescription vertexBinding = { 0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX };
 
@@ -1064,24 +918,12 @@ namespace wax
 			{ 3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, u) }
 		};
 
-		// Only the attributes the vertex shader reads, which the validation layers would otherwise
-		// complain about.
-
-		uint32_t nAttributes;
-
-		switch (kind)
-		{
-			case PipelineKind::Fill:		nAttributes = 2; break;
-			case PipelineKind::Segments:	nAttributes = 4; break;
-			default:						nAttributes = 3; break;
-		}
-
-		bool bWarp = _isWarp(kind);
+		uint32_t nAttributes = uint32_t(_nbVertexAttributes(kind));
 
 		VkPipelineVertexInputStateCreateInfo vertexInput = { VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
-		vertexInput.vertexBindingDescriptionCount = bWarp ? 0 : 1;
+		vertexInput.vertexBindingDescriptionCount = nAttributes > 0 ? 1 : 0;
 		vertexInput.pVertexBindingDescriptions = &vertexBinding;
-		vertexInput.vertexAttributeDescriptionCount = bWarp ? 0 : nAttributes;
+		vertexInput.vertexAttributeDescriptionCount = nAttributes;
 		vertexInput.pVertexAttributeDescriptions = attributes;
 
 		VkPipelineInputAssemblyStateCreateInfo inputAssembly = { VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
@@ -1119,7 +961,7 @@ namespace wax
 		info.pViewportState = &viewport;
 		info.pRasterizationState = &raster;
 		info.pMultisampleState = &multisample;
-		info.pColorBlendState = &blend;
+		info.pColorBlendState = &blendInfo;
 		info.pDynamicState = &dynamic;
 		info.layout = m_pipelineLayout;
 

@@ -110,7 +110,7 @@ namespace wax
 		bool	_reserveFrameBuffers( int nVertices, int nColors, int nExtras, int nObjects ) override;
 
 		bool	_bindCanvas( Surface * pCanvas, SizeI& size, CanvasKind& kind ) override;
-		bool	_setPipeline( PipelineKind kind ) override;
+		bool	_bindPipeline( PipelineKind kind, BlendMode blendMode ) override;
 		void	_setConstants( ConstantBlock block ) override;
 		void	_draw( int firstVertex, int nVertices ) override;
 		void	_setScissor( const RectI& rect ) override;
@@ -165,8 +165,7 @@ namespace wax
 		void	_flushConstants();
 
 		id<MTLFunction>				_function( const char * pName );
-		id<MTLRenderPipelineState>	_pipeline( PipelineKind kind, BlendMode blendMode );
-		id<MTLRenderPipelineState>	_createPipeline( PipelineKind kind, BlendMode blendMode, MTLPixelFormat format, CanvasKind canvasKind );
+		id<MTLRenderPipelineState>	_createPipeline( PipelineKind kind, const BlendState& blend, MTLPixelFormat format );
 
 		void						_generateMipmaps( MetalSurface * pSurface );		// Draws every mip level from level 0, between render passes.
 		id<MTLRenderPipelineState>	_mipmapPipeline( MTLPixelFormat format );
@@ -212,7 +211,7 @@ namespace wax
 
 		std::map<std::string, id<MTLFunction>>		m_functions;		// Each compiled on first use, nil if that failed.
 		std::vector<id<MTLLibrary>>					m_libraries;		// One per shader, holding its function.
-		std::map<uint64_t, id<MTLRenderPipelineState>>	m_pipelines;	// See _pipeline(), nil if creation failed.
+		std::map<uint64_t, id<MTLRenderPipelineState>>	m_pipelines;	// See _bindPipeline(), nil if creation failed.
 		std::map<MTLPixelFormat, id<MTLRenderPipelineState>>	m_mipmapPipelines;	// See _mipmapPipeline().
 
 		id<MTLSamplerState>				m_samplers[8] = {};				// [bClip*4 + bTiling*2 + bBilinear]

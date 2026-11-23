@@ -429,6 +429,18 @@ For VulkanBackend, still to do:
   draw, not per vertex, so being virtual costs nothing measurable. What does need the API stays
   in each backend, duplicated in structure where the APIs are alike, as that is where they differ
   in ways that matter for reliability: lifetime of resources, synchronization, device loss.
+- **Blending and the choice of pipeline are GpuBackend's too.** `_blendState()` works out the
+  fixed-function blending of a kind of draw, blend mode and kind of canvas in factors and
+  operations of its own, which each backend turns into those of its API with a table. It is the
+  only place the blend modes are mapped to the GPU blender, where all four had a copy of it.
+  GpuBackend drops draws with Ignore and normalizes the blend mode before it asks the backend to
+  bind a pipeline (`_bindPipeline()`), and `_pipelineKey()`, `_vertexShaderName()`,
+  `_pixelShaderName()` and `_nbVertexAttributes()` are what the backends tell pipelines, shaders
+  and vertex inputs apart by. All four find their shaders by those names, VulkanBackend from a
+  table CMake makes of `vulkangfx/spirv`. An alpha only canvas gets the factors of alpha in their
+  color form for its colors, which serves the R8 of GL, Metal and Vulkan and the A8 of DX12
+  alike. DX12Backend offers all four vertex inputs to every vertex shader, as D3D12 wants each
+  one a shader declares, also those it doesn't read.
 - **DX12Backend and VulkanBackend draw with the same HLSL shaders** (`wax/extensions/hlsl`), see
   its README.md. DX12 gets them as bytecode compiled by FXC, Vulkan as SPIR-V compiled by DXC.
   The constants are declared once, in constants.hlsl, as root constants for DX12 and push

@@ -592,14 +592,24 @@ void MetalBackend::_bindEncoderState()
 	m_bConstantsDirty = true;
 }
 
-//____ _setPipeline() ________________________________________________________
+//____ _bindPipeline() _______________________________________________________
+//
+// Pipelines are created the first time a combination of canvas format, kind and blend mode shows
+// up.
 
-bool MetalBackend::_setPipeline( PipelineKind kind )
+bool MetalBackend::_bindPipeline( PipelineKind kind, BlendMode blendMode )
 {
 	if( !m_renderEncoder )
 		return false;
 
-	id<MTLRenderPipelineState> pipeline = _pipeline(kind, m_activeBlendMode);
+	uint64_t key = _pipelineKey(m_targetFormat, m_activeCanvasKind, kind, blendMode);
+
+	auto it = m_pipelines.find(key);
+	if( it == m_pipelines.end() )
+		it = m_pipelines.emplace(key, _createPipeline(kind, _blendState(kind, blendMode, m_activeCanvasKind), m_targetFormat)).first;	// Also when nil, so a failure is only tried once.
+
+	id<MTLRenderPipelineState> pipeline = it->second;
+
 	if( pipeline == nil )
 		return false;
 
@@ -612,230 +622,56 @@ bool MetalBackend::_setPipeline( PipelineKind kind )
 	return true;
 }
 
-//____ _pipeline() ___________________________________________________________
-//
-// The pipeline for the given kind and blend mode on the canvas we are rendering into, created
-// the first time a combination shows up.
-
-id<MTLRenderPipelineState> MetalBackend::_pipeline( PipelineKind kind, BlendMode blendMode )
-{
-	if( blendMode == BlendMode::Ignore )
-		return nil;							// Nothing should be drawn.
-
-	BlendMode mode = _normalizeBlendMode(blendMode);
-
-	uint64_t key = (uint64_t(m_targetFormat) << 24) | (uint64_t(m_activeCanvasKind) << 16) | (uint64_t(kind) << 8) | uint64_t(mode);
-
-	auto it = m_pipelines.find(key);
-	if( it != m_pipelines.end() )
-		return it->second;					// May be nil, if creation failed before.
-
-	id<MTLRenderPipelineState> pipeline = _createPipeline(kind, mode, m_targetFormat, m_activeCanvasKind);
-	m_pipelines[key] = pipeline;
-	return pipeline;
-}
-
 //____ _createPipeline() _____________________________________________________
-/*
-	Blending as DX12Backend::_createPipeline() and VulkanBackend::_createPipeline() have it, see
-	there for why. Canvases with alpha hold premultiplied colors. The pixel shaders pass what they
-	draw to the blender as the mode needs it, see output.hlsl, Replace, Morph and Multiply keeping
-	the uncovered part of the pixel by the second color of dual-source blending.
+//
+// Blending is that of GpuBackend::_blendState(), in Metal terms. An alpha only canvas is R8 here,
+// as in VulkanBackend.
 
-	An alpha only canvas is R8 here, as in VulkanBackend. The shaders write the value to all
-	channels for it, so the factors of alpha are those of color. Canvases without alpha are
-	opaque, their alpha is left alone.
-*/
-
-id<MTLRenderPipelineState> MetalBackend::_createPipeline( PipelineKind kind, BlendMode blendMode, MTLPixelFormat format, CanvasKind canvasKind )
+id<MTLRenderPipelineState> MetalBackend::_createPipeline( PipelineKind kind, const BlendState& blend, MTLPixelFormat format )
 {
-	bool bAlphaOnly = (canvasKind == CanvasKind::AlphaOnly);
-	bool bNoAlpha = (canvasKind == CanvasKind::WithoutAlpha);
-	bool bPartialCoverage = _hasPartialCoverage(kind);
+	static const MTLBlendFactor factors[] = {									// In the order of BlendFactor.
+		MTLBlendFactorZero, MTLBlendFactorOne,
+		MTLBlendFactorSourceColor, MTLBlendFactorOneMinusSourceColor, MTLBlendFactorSourceAlpha, MTLBlendFactorOneMinusSourceAlpha,
+		MTLBlendFactorDestinationColor, MTLBlendFactorOneMinusDestinationColor, MTLBlendFactorDestinationAlpha, MTLBlendFactorOneMinusDestinationAlpha,
+		MTLBlendFactorSource1Color, MTLBlendFactorOneMinusSource1Color, MTLBlendFactorSource1Alpha, MTLBlendFactorOneMinusSource1Alpha };
 
-	BOOL				bBlend = YES;
-	MTLBlendOperation	op = MTLBlendOperationAdd;
-	MTLBlendFactor		srcBlend = MTLBlendFactorOne;
-	MTLBlendFactor		destBlend = MTLBlendFactorZero;
-	bool				bKeepAlpha = false;
-	bool				bInvertAlpha = false;
+	static const MTLBlendOperation ops[] = {									// In the order of BlendOp.
+		MTLBlendOperationAdd, MTLBlendOperationReverseSubtract, MTLBlendOperationMin, MTLBlendOperationMax };
 
-	switch( blendMode )
-	{
-		case BlendMode::Replace:
-			srcBlend = MTLBlendFactorOne;
-			destBlend = MTLBlendFactorOneMinusSource1Alpha;
-			bBlend = bPartialCoverage ? YES : NO;
-			break;
-
-		case BlendMode::Blend:
-			srcBlend = MTLBlendFactorOne;
-			destBlend = MTLBlendFactorOneMinusSourceAlpha;
-			break;
-
-		case BlendMode::Morph:
-			srcBlend = MTLBlendFactorOne;
-			destBlend = MTLBlendFactorOneMinusSource1Alpha;
-			break;
-
-		case BlendMode::Add:
-		case BlendMode::Subtract:
-			op = (blendMode == BlendMode::Add) ? MTLBlendOperationAdd : MTLBlendOperationReverseSubtract;
-			srcBlend = MTLBlendFactorOne;
-			destBlend = MTLBlendFactorOne;
-			bKeepAlpha = (blendMode == BlendMode::Subtract);
-			break;
-
-		case BlendMode::Multiply:
-			srcBlend = bAlphaOnly ? MTLBlendFactorDestinationAlpha : MTLBlendFactorDestinationColor;
-			destBlend = MTLBlendFactorOneMinusSource1Alpha;
-			bKeepAlpha = true;
-			break;
-
-		case BlendMode::Invert:
-			srcBlend = bAlphaOnly ? MTLBlendFactorOneMinusDestinationAlpha : MTLBlendFactorOneMinusDestinationColor;
-			destBlend = bAlphaOnly ? MTLBlendFactorOneMinusSourceAlpha : MTLBlendFactorOneMinusSourceColor;
-			bInvertAlpha = !bAlphaOnly;
-			break;
-
-		case BlendMode::Min:
-		case BlendMode::Max:
-			op = (blendMode == BlendMode::Min) ? MTLBlendOperationMin : MTLBlendOperationMax;
-			srcBlend = MTLBlendFactorOne;
-			destBlend = MTLBlendFactorOne;
-			bKeepAlpha = (blendMode == BlendMode::Min);
-			break;
-
-		default:
-		{
-			char buffer[128];
-			snprintf(buffer, sizeof(buffer), "BlendMode %d is unknown, using Blend.", (int) blendMode);
-			Base::throwError(ErrorLevel::Warning, ErrorCode::Other, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
-
-			srcBlend = MTLBlendFactorOne;
-			destBlend = MTLBlendFactorOneMinusSourceAlpha;
-			break;
-		}
-	}
-
-	// The value of an alpha only canvas is in R, as are the alphas the shaders output for it.
-
-	if( bAlphaOnly )
-	{
-		auto toColor = [](MTLBlendFactor factor)
-		{
-			switch( factor )
-			{
-				case MTLBlendFactorSourceAlpha:					return MTLBlendFactorSourceColor;
-				case MTLBlendFactorOneMinusSourceAlpha:			return MTLBlendFactorOneMinusSourceColor;
-				case MTLBlendFactorDestinationAlpha:			return MTLBlendFactorDestinationColor;
-				case MTLBlendFactorOneMinusDestinationAlpha:	return MTLBlendFactorOneMinusDestinationColor;
-				case MTLBlendFactorSource1Alpha:				return MTLBlendFactorSource1Color;
-				case MTLBlendFactorOneMinusSource1Alpha:		return MTLBlendFactorOneMinusSource1Color;
-				default:										return factor;
-			}
-		};
-
-		srcBlend = toColor(srcBlend);
-		destBlend = toColor(destBlend);
-		bKeepAlpha = false;
-	}
-
-	bool bDualSource = bBlend && (destBlend == MTLBlendFactorOneMinusSource1Alpha || destBlend == MTLBlendFactorOneMinusSource1Color);
+	static_assert(sizeof(factors) / sizeof(factors[0]) == size_t(BlendFactor::Size) && sizeof(ops) / sizeof(ops[0]) == size_t(BlendOp::Size),
+				  "A Metal value for each blend factor and operation");
 
 	MTLRenderPipelineDescriptor * pDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
 	MTLRenderPipelineColorAttachmentDescriptor * pAttachment = pDescriptor.colorAttachments[0];
 
 	pAttachment.pixelFormat = format;
-	pAttachment.blendingEnabled = bBlend;
-	pAttachment.rgbBlendOperation = op;
-	pAttachment.sourceRGBBlendFactor = srcBlend;
-	pAttachment.destinationRGBBlendFactor = destBlend;
+	pAttachment.blendingEnabled = blend.bEnable ? YES : NO;
+	pAttachment.rgbBlendOperation = ops[int(blend.colorOp)];
+	pAttachment.sourceRGBBlendFactor = factors[int(blend.srcColor)];
+	pAttachment.destinationRGBBlendFactor = factors[int(blend.dstColor)];
+	pAttachment.alphaBlendOperation = ops[int(blend.alphaOp)];
+	pAttachment.sourceAlphaBlendFactor = factors[int(blend.srcAlpha)];
+	pAttachment.destinationAlphaBlendFactor = factors[int(blend.dstAlpha)];
 
-	if( bKeepAlpha )
-	{
-		pAttachment.alphaBlendOperation = MTLBlendOperationAdd;
-		pAttachment.sourceAlphaBlendFactor = MTLBlendFactorZero;
-		pAttachment.destinationAlphaBlendFactor = MTLBlendFactorOne;
-	}
-	else if( bInvertAlpha )
-	{
-		pAttachment.alphaBlendOperation = MTLBlendOperationAdd;
-		pAttachment.sourceAlphaBlendFactor = MTLBlendFactorOneMinusDestinationAlpha;
-		pAttachment.destinationAlphaBlendFactor = MTLBlendFactorOne;
-	}
-	else
-	{
-		// Alpha can't take color factors, but none of these is one, except on an alpha only
-		// canvas, which has no alpha.
-
-		auto toAlpha = [](MTLBlendFactor factor)
-		{
-			switch( factor )
-			{
-				case MTLBlendFactorSourceColor:					return MTLBlendFactorSourceAlpha;
-				case MTLBlendFactorOneMinusSourceColor:			return MTLBlendFactorOneMinusSourceAlpha;
-				case MTLBlendFactorDestinationColor:			return MTLBlendFactorDestinationAlpha;
-				case MTLBlendFactorOneMinusDestinationColor:	return MTLBlendFactorOneMinusDestinationAlpha;
-				case MTLBlendFactorSource1Color:				return MTLBlendFactorSource1Alpha;
-				case MTLBlendFactorOneMinusSource1Color:		return MTLBlendFactorOneMinusSource1Alpha;
-				default:										return factor;
-			}
-		};
-
-		pAttachment.alphaBlendOperation = op;
-		pAttachment.sourceAlphaBlendFactor = toAlpha(srcBlend);
-		pAttachment.destinationAlphaBlendFactor = toAlpha(destBlend);
-	}
-
-	// A canvas without alpha has an alpha channel here, which is left alone. Reading it as a blit
-	// source gives alpha 1 regardless, see MetalSurface::sampleTexture().
-
-	if( bNoAlpha )
+	if( !blend.bWriteAlpha )
 		pAttachment.writeMask = MTLColorWriteMaskRed | MTLColorWriteMaskGreen | MTLColorWriteMaskBlue;
 
-	// Shaders, see compile_shaders.py. Kinds with the same geometry share a vertex shader.
+	const char * pVertexShader = _vertexShaderName(kind);
+	const char * pPixelShader = _pixelShaderName(kind, blend.bDualSource);
 
-	static const char * const vertexShaders[int(PipelineKind::Size)] = {
-		"fillVS", "fillAAVS", "blitVS", "blitVS", "blitVS", "blitVS",
-		"lineVS", "segmentsVS", "shapeVS", "shapeVS", "shapeVS", "warpVS", "warpVS", "warpVS" };
-
-	static const char * const pixelShaders[int(PipelineKind::Size)][2] = {
-		{ "fillPS", "fillPSDual" },
-		{ "fillAAPS", "fillAAPSDual" },
-		{ "blitPS", "blitPSDual" },
-		{ "blurPS", "blurPSDual" },
-		{ "paletteBlitPS", "paletteBlitPSDual" },
-		{ "paletteBlurPS", "paletteBlurPSDual" },
-		{ "linePS", "linePSDual" },
-		{ "segmentsPS", "segmentsPSDual" },
-		{ "shapeBoxPS", "shapeBoxPSDual" },
-		{ "shapeRingPS", "shapeRingPSDual" },
-		{ "shapeLinePS", "shapeLinePSDual" },
-		{ "warpEdgemapPS", "warpEdgemapPSDual" },
-		{ "warpBlitPS", "warpBlitPSDual" },
-		{ "warpPaletteBlitPS", "warpPaletteBlitPSDual" } };
-
-	pDescriptor.vertexFunction = _function(vertexShaders[int(kind)]);
-	pDescriptor.fragmentFunction = _function(pixelShaders[int(kind)][bDualSource ? 1 : 0]);
+	pDescriptor.vertexFunction = _function(pVertexShader);
+	pDescriptor.fragmentFunction = _function(pPixelShader);
 
 	// One vertex layout for all but warps, whose vertex shader reads the vertices of the Warpmap
-	// itself. Only the attributes the vertex shader reads, see ../hlsl/README.md.
+	// itself. Only the attributes the vertex shader reads, see _nbVertexAttributes().
 
 	MTLVertexDescriptor * pVertexDescriptor = nil;
 
-	if( !_isWarp(kind) )
+	int nAttributes = _nbVertexAttributes(kind);
+
+	if( nAttributes > 0 )
 	{
 		pVertexDescriptor = [[MTLVertexDescriptor alloc] init];
-
-		int nAttributes;
-
-		switch( kind )
-		{
-			case PipelineKind::Fill:		nAttributes = 2; break;
-			case PipelineKind::Segments:	nAttributes = 4; break;
-			default:						nAttributes = 3; break;
-		}
 
 		const MTLVertexFormat formats[4] = { MTLVertexFormatFloat2, MTLVertexFormatUInt, MTLVertexFormatUInt, MTLVertexFormatFloat2 };
 		const NSUInteger offsets[4] = { offsetof(Vertex, x), offsetof(Vertex, colorOfs), offsetof(Vertex, extrasOfs), offsetof(Vertex, u) };
@@ -861,7 +697,7 @@ id<MTLRenderPipelineState> MetalBackend::_createPipeline( PipelineKind kind, Ble
 
 	if( pipeline == nil )
 	{
-		NSString * pMessage = [NSString stringWithFormat:@"Failed to create pipeline %s/%s: %@", vertexShaders[int(kind)], pixelShaders[int(kind)][bDualSource ? 1 : 0],
+		NSString * pMessage = [NSString stringWithFormat:@"Failed to create pipeline %s/%s: %@", pVertexShader, pPixelShader,
 							   pError ? pError.localizedDescription : @"shader function missing"];
 		Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, pMessage.UTF8String, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 	}

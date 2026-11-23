@@ -29,37 +29,20 @@
 namespace wax
 {
 	// The shaders of VulkanBackend as SPIR-V, compiled from ../hlsl by compile_shaders.py into
-	// wax_vulkanshaders.cpp. Pixel shaders ending in Dual output the second color of dual-source
-	// blending.
+	// spirv/, which CMakeLists.txt turns into wax_vulkanshaders.cpp in the build directory. Named as
+	// GpuBackend has them, see GpuBackend::_vertexShaderName() and _pixelShaderName().
 
 	namespace VulkanShaders
 	{
-		struct Code
+		struct Shader
 		{
+			const char *		pName;
 			const uint32_t *	pWords;
 			size_t				bytes;
 		};
 
-		extern const Code fillVS;
-		extern const Code fillAAVS;
-		extern const Code blitVS;
-		extern const Code lineVS;
-		extern const Code segmentsVS;
-		extern const Code shapeVS;
-		extern const Code warpVS;
-
-		extern const Code fillPS, fillPSDual;
-		extern const Code fillAAPS, fillAAPSDual;
-		extern const Code blitPS, blitPSDual;
-		extern const Code blurPS, blurPSDual;
-		extern const Code paletteBlitPS, paletteBlitPSDual;
-		extern const Code paletteBlurPS, paletteBlurPSDual;
-		extern const Code linePS, linePSDual;
-		extern const Code segmentsPS, segmentsPSDual;
-		extern const Code shapeBoxPS, shapeBoxPSDual, shapeRingPS, shapeRingPSDual, shapeLinePS, shapeLinePSDual;
-		extern const Code warpEdgemapPS, warpEdgemapPSDual;
-		extern const Code warpBlitPS, warpBlitPSDual;
-		extern const Code warpPaletteBlitPS, warpPaletteBlitPSDual;
+		extern const Shader		shaders[];
+		extern const int		nbShaders;
 	}
 }
 

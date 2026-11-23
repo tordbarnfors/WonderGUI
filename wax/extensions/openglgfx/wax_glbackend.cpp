@@ -43,156 +43,6 @@ GlBackend::ProgramBinary	GlBackend::s_programBinaries[c_nbPrograms];
 #define LOG_INIT_GLERROR(check) { GLenum err = check; if(err != 0) { onGlError(err, this, &TYPEINFO, __func__, __FILE__, __LINE__ ); m_bFullyInitialized = false; } }
 
 
-//____ Blending _______________________________________________________________
-/*
-	Blending as DX12Backend::_createPipeline() and VulkanBackend::_createPipeline() have it, see
-	there for why. Canvases with alpha hold premultiplied colors. The pixel shaders pass what they
-	draw to the blender as the mode needs it, see output.hlsl, Replace, Morph and Multiply keeping
-	the uncovered part of the pixel by the second color of dual-source blending.
-
-	An alpha only canvas is GL_R8, as in VulkanBackend. The shaders write the value to all
-	channels for it, so the factors of alpha are those of color. Canvases without alpha are
-	opaque, their alpha is left alone.
-*/
-
-namespace
-{
-	struct GlBlend
-	{
-		bool	bEnable = true;
-		GLenum	op = GL_FUNC_ADD;
-		GLenum	src = GL_ONE;
-		GLenum	dst = GL_ZERO;
-		GLenum	opAlpha = GL_FUNC_ADD;
-		GLenum	srcAlpha = GL_ONE;
-		GLenum	dstAlpha = GL_ZERO;
-		bool	bDualSource = false;
-		bool	bWriteAlpha = true;
-	};
-
-	GLenum toColorFactor( GLenum factor )
-	{
-		switch( factor )
-		{
-			case GL_SRC_ALPHA:				return GL_SRC_COLOR;
-			case GL_ONE_MINUS_SRC_ALPHA:	return GL_ONE_MINUS_SRC_COLOR;
-			case GL_DST_ALPHA:				return GL_DST_COLOR;
-			case GL_ONE_MINUS_DST_ALPHA:	return GL_ONE_MINUS_DST_COLOR;
-			case GL_SRC1_ALPHA:				return GL_SRC1_COLOR;
-			case GL_ONE_MINUS_SRC1_ALPHA:	return GL_ONE_MINUS_SRC1_COLOR;
-			default:						return factor;
-		}
-	}
-
-	GLenum toAlphaFactor( GLenum factor )
-	{
-		switch( factor )
-		{
-			case GL_SRC_COLOR:				return GL_SRC_ALPHA;
-			case GL_ONE_MINUS_SRC_COLOR:	return GL_ONE_MINUS_SRC_ALPHA;
-			case GL_DST_COLOR:				return GL_DST_ALPHA;
-			case GL_ONE_MINUS_DST_COLOR:	return GL_ONE_MINUS_DST_ALPHA;
-			case GL_SRC1_COLOR:				return GL_SRC1_ALPHA;
-			case GL_ONE_MINUS_SRC1_COLOR:	return GL_ONE_MINUS_SRC1_ALPHA;
-			default:						return factor;
-		}
-	}
-
-	GlBlend blendFor( BlendMode blendMode, bool bAlphaOnly, bool bNoAlpha, bool bPartialCoverage )
-	{
-		GlBlend b;
-		bool bKeepAlpha = false;
-		bool bInvertAlpha = false;
-
-		switch( blendMode )
-		{
-			case BlendMode::Replace:
-				b.src = GL_ONE;
-				b.dst = GL_ONE_MINUS_SRC1_ALPHA;
-				b.bEnable = bPartialCoverage;
-				break;
-
-			case BlendMode::Morph:
-				b.src = GL_ONE;
-				b.dst = GL_ONE_MINUS_SRC1_ALPHA;
-				break;
-
-			case BlendMode::Add:
-			case BlendMode::Subtract:
-				b.op = (blendMode == BlendMode::Add) ? GL_FUNC_ADD : GL_FUNC_REVERSE_SUBTRACT;
-				b.src = GL_ONE;
-				b.dst = GL_ONE;
-				bKeepAlpha = (blendMode == BlendMode::Subtract);
-				break;
-
-			case BlendMode::Multiply:
-				b.src = bAlphaOnly ? GL_DST_ALPHA : GL_DST_COLOR;
-				b.dst = GL_ONE_MINUS_SRC1_ALPHA;
-				bKeepAlpha = true;
-				break;
-
-			case BlendMode::Invert:
-				b.src = bAlphaOnly ? GL_ONE_MINUS_DST_ALPHA : GL_ONE_MINUS_DST_COLOR;
-				b.dst = bAlphaOnly ? GL_ONE_MINUS_SRC_ALPHA : GL_ONE_MINUS_SRC_COLOR;
-				bInvertAlpha = !bAlphaOnly;
-				break;
-
-			case BlendMode::Min:
-			case BlendMode::Max:
-				b.op = (blendMode == BlendMode::Min) ? GL_MIN : GL_MAX;
-				b.src = GL_ONE;
-				b.dst = GL_ONE;
-				bKeepAlpha = (blendMode == BlendMode::Min);
-				break;
-
-			case BlendMode::Blend:
-			default:						// GpuBackend has normalized the blend mode, see _pipeline() of the others.
-				b.src = GL_ONE;
-				b.dst = GL_ONE_MINUS_SRC_ALPHA;
-				break;
-		}
-
-		// The value of an alpha only canvas is in R, as are the alphas the shaders output for it.
-
-		if( bAlphaOnly )
-		{
-			b.src = toColorFactor(b.src);
-			b.dst = toColorFactor(b.dst);
-			bKeepAlpha = false;
-		}
-
-		b.bDualSource = b.bEnable && (b.dst == GL_ONE_MINUS_SRC1_ALPHA || b.dst == GL_ONE_MINUS_SRC1_COLOR);
-
-		if( bKeepAlpha )
-		{
-			b.opAlpha = GL_FUNC_ADD;
-			b.srcAlpha = GL_ZERO;
-			b.dstAlpha = GL_ONE;
-		}
-		else if( bInvertAlpha )
-		{
-			b.opAlpha = GL_FUNC_ADD;
-			b.srcAlpha = GL_ONE_MINUS_DST_ALPHA;
-			b.dstAlpha = GL_ONE;
-		}
-		else
-		{
-			// Alpha can't take color factors, but none of these is one, except on an alpha only
-			// canvas, which has no alpha.
-
-			b.opAlpha = b.op;
-			b.srcAlpha = toAlphaFactor(b.src);
-			b.dstAlpha = toAlphaFactor(b.dst);
-		}
-
-		// A canvas without alpha may have an alpha channel, which is left alone. Reading it as a
-		// blit source gives alpha 1 regardless.
-
-		b.bWriteAlpha = !bNoAlpha;
-		return b;
-	}
-}
-
 //____ onGlError() _______________________________________________________________
 
 void GlBackend::onGlError(GLenum errorCode, const Object * pObject, const TypeInfo* pClassType, const char * func, const char * file, int line)
@@ -713,25 +563,25 @@ bool GlBackend::_bindCanvas( Surface * pCanvas, SizeI& size, CanvasKind& kind )
 
 	m_bCanvasBound = true;
 	m_targetSize = size;
-	m_targetKind = kind;
 	return true;
 }
 
-//____ _setPipeline() ________________________________________________________
+//____ _bindPipeline() _______________________________________________________
+//
+// A pipeline is a program, of which there is one per kind and one more for those that blend with
+// a second color, and the blending, which is set when played back, see _executeSetPipeline().
 
-bool GlBackend::_setPipeline( PipelineKind kind )
+bool GlBackend::_bindPipeline( PipelineKind kind, BlendMode blendMode )
 {
-	if( !m_bCanvasBound || m_activeBlendMode == BlendMode::Ignore )
-		return false;							// Ignore draws nothing.
+	if( !m_bCanvasBound )
+		return false;
 
-	BlendMode mode = _normalizeBlendMode(m_activeBlendMode);
-
-	GlBlend blend = blendFor(mode, m_targetKind == CanvasKind::AlphaOnly, m_targetKind == CanvasKind::WithoutAlpha, _hasPartialCoverage(kind));
+	BlendState blend = _blendState(kind, blendMode, m_activeCanvasKind);
 
 	if( _program(kind, blend.bDualSource) == 0 )
 		return false;
 
-	_record(Op::SetPipeline, int(kind), int(mode));
+	_record(Op::SetPipeline, int(kind), int(blendMode));
 	return true;
 }
 
@@ -1097,13 +947,27 @@ void GlBackend::_executeBindCanvas( GlSurface * pCanvas )
 
 //____ _executeSetPipeline() _________________________________________________
 
+//
+// Blending is that of GpuBackend::_blendState(), in GL terms. An alpha only canvas is GL_R8, as in
+// VulkanBackend.
+
 void GlBackend::_executeSetPipeline( PipelineKind kind, BlendMode blendMode )
 {
-	bool bAlphaOnly = (m_execTargetKind == CanvasKind::AlphaOnly);
-	bool bNoAlpha = (m_execTargetKind == CanvasKind::WithoutAlpha);
+	static const GLenum factors[] = {										// In the order of BlendFactor.
+		GL_ZERO, GL_ONE,
+		GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+		GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR, GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA,
+		GL_SRC1_COLOR, GL_ONE_MINUS_SRC1_COLOR, GL_SRC1_ALPHA, GL_ONE_MINUS_SRC1_ALPHA };
+
+	static const GLenum ops[] = {											// In the order of BlendOp.
+		GL_FUNC_ADD, GL_FUNC_REVERSE_SUBTRACT, GL_MIN, GL_MAX };
+
+	static_assert(sizeof(factors) / sizeof(factors[0]) == size_t(BlendFactor::Size) && sizeof(ops) / sizeof(ops[0]) == size_t(BlendOp::Size),
+				  "A GL value for each blend factor and operation");
+
 	bool bPartial = _hasPartialCoverage(kind);
 
-	GlBlend blend = blendFor(blendMode, bAlphaOnly, bNoAlpha, bPartial);
+	BlendState blend = _blendState(kind, blendMode, m_execTargetKind);
 
 	GLuint program = m_programs[int(kind)][blend.bDualSource ? 1 : 0];
 
@@ -1124,8 +988,8 @@ void GlBackend::_executeSetPipeline( PipelineKind kind, BlendMode blendMode )
 	if( blend.bEnable )
 	{
 		glEnable(GL_BLEND);
-		glBlendEquationSeparate(blend.op, blend.opAlpha);
-		glBlendFuncSeparate(blend.src, blend.dst, blend.srcAlpha, blend.dstAlpha);
+		glBlendEquationSeparate(ops[int(blend.colorOp)], ops[int(blend.alphaOp)]);
+		glBlendFuncSeparate(factors[int(blend.srcColor)], factors[int(blend.dstColor)], factors[int(blend.srcAlpha)], factors[int(blend.dstAlpha)]);
 	}
 	else
 		glDisable(GL_BLEND);

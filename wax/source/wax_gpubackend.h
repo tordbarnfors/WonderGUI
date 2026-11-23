@@ -202,6 +202,53 @@ namespace wax
 
 		static CanvasKind	_canvasKind( const Surface * pSurface );
 
+		// How the blender of the GPU combines what a pipeline draws with the canvas, worked out
+		// by _blendState() the same way for every graphics API, which each backend translates to
+		// its own. Factors of the second color are those of dual-source blending.
+
+		enum class BlendFactor : uint8_t
+		{
+			Zero, One,
+			SrcColor, InvSrcColor, SrcAlpha, InvSrcAlpha,
+			DstColor, InvDstColor, DstAlpha, InvDstAlpha,
+			Src1Color, InvSrc1Color, Src1Alpha, InvSrc1Alpha,
+
+			Size
+		};
+
+		enum class BlendOp : uint8_t
+		{
+			Add, RevSubtract, Min, Max,
+
+			Size
+		};
+
+		struct BlendState
+		{
+			bool			bEnable;		// Off, what the pixel shader outputs is written as it is.
+			BlendOp			colorOp;
+			BlendFactor		srcColor;
+			BlendFactor		dstColor;
+			BlendOp			alphaOp;		// Alpha factors are never color factors.
+			BlendFactor		srcAlpha;
+			BlendFactor		dstAlpha;
+			bool			bDualSource;	// Blends with the second color, which needs the Dual pixel shader, see _pixelShaderName().
+			bool			bWriteAlpha;	// False on a canvas without alpha, whose alpha channel is left alone.
+		};
+
+		static BlendState	_blendState( PipelineKind kind, BlendMode blendMode, CanvasKind canvasKind );
+
+		// What tells pipelines apart, for backends that keep them: the format of the canvas in
+		// the graphics API, its kind, the kind of draw and the blend mode.
+
+		static uint64_t		_pipelineKey( uint64_t canvasFormat, CanvasKind canvasKind, PipelineKind kind, BlendMode blendMode );
+
+		// Vertex inputs the vertex shader of a kind reads, of position, color offset, extras offset
+		// and u, v in that order, see ../extensions/hlsl/README.md, for APIs that want only those.
+		// None for warps, which read the vertices of the Warpmap.
+
+		static int			_nbVertexAttributes( PipelineKind kind );
+
 		//.____ For subclasses to implement ______________________________
 
 		// True while draws can be recorded: between beginRender() and endRender() of a backend with
@@ -235,10 +282,11 @@ namespace wax
 
 		virtual bool		_bindCanvas( Surface * pCanvas, SizeI& size, CanvasKind& kind ) = 0;
 
-		// Binds the pipeline of the given kind for m_activeBlendMode on the canvas. Returns false if
-		// there is none, which drops the draw.
+		// Binds the pipeline of a kind of draw and blend mode on the canvas, with the blending of
+		// _blendState(). The blend mode is normalized and never Ignore, see _setPipeline().
+		// Returns false if there is no such pipeline, which drops the draw.
 
-		virtual bool		_setPipeline( PipelineKind kind ) = 0;
+		virtual bool		_bindPipeline( PipelineKind kind, BlendMode blendMode ) = 0;
 
 		// Sets the constants of a block, from m_canvasConstants, m_pixelConstants or m_warpConstants.
 
@@ -281,6 +329,8 @@ namespace wax
 
 		void				_resetStates();			// To start values, for a new session or canvas.
 		void				_setCanvas( Surface * pCanvas );
+
+		bool				_setPipeline( PipelineKind kind );		// For m_activeBlendMode, see _bindPipeline().
 
 		void				_reserveBuffers( const SessionInfo * pInfo );
 		void				_checkSessionUsage();

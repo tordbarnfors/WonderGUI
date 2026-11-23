@@ -1869,14 +1869,31 @@ namespace wax
 		_resetScissor();
 	}
 
-	//____ _setPipeline() ______________________________________________________
+	//____ _bindPipeline() _____________________________________________________
+	//
+	// Pipelines are created the first time a combination of canvas format, kind
+	// and blend mode shows up, as the canvas formats in use are not known until
+	// canvases are set.
 
-	bool DX12Backend::_setPipeline(PipelineKind kind)
+	bool DX12Backend::_bindPipeline(PipelineKind kind, BlendMode blendMode)
 	{
-		if (!m_bCommandListOpen || m_activeCanvasRTV.ptr == 0)
+		if (!m_bCommandListOpen || m_activeCanvasRTV.ptr == 0 || m_activeCanvasFormat == DXGI_FORMAT_UNKNOWN)
 			return false;
 
-		ID3D12PipelineState* pPipeline = _pipeline(m_activeBlendMode, kind);
+		uint64_t key = _pipelineKey(m_activeCanvasFormat, m_activeCanvasKind, kind, blendMode);
+
+		auto it = m_pipelines.find(key);
+		if (it == m_pipelines.end())
+		{
+			Microsoft::WRL::ComPtr<ID3D12PipelineState> pPipeline;
+
+			if (!_createPipeline(kind, _blendState(kind, blendMode, m_activeCanvasKind), m_activeCanvasFormat, pPipeline))
+				pPipeline = nullptr;
+
+			it = m_pipelines.emplace(key, pPipeline).first;		// Also when null, so a failure is only tried once.
+		}
+
+		ID3D12PipelineState* pPipeline = it->second.Get();
 
 		if (!pPipeline)
 			return false;
@@ -1952,40 +1969,6 @@ namespace wax
 
 		D3D12_RECT fullRect = { 0, 0, LONG(m_targetSize.w), LONG(m_targetSize.h) };
 		m_commandList->RSSetScissorRects(1, &fullRect);
-	}
-
-	//____ _pipeline() _________________________________________________________
-	//
-	// The pipeline for the given blend mode and draw kind, on the canvas we are
-	// rendering into. Created the first time a combination shows up, since the
-	// canvas formats in use are not known until canvases are set.
-
-	ID3D12PipelineState* DX12Backend::_pipeline(BlendMode blendMode, PipelineKind kind)
-	{
-		if (blendMode == BlendMode::Ignore)
-			return nullptr;							// Nothing should be drawn.
-
-		if (m_activeCanvasFormat == DXGI_FORMAT_UNKNOWN)
-			return nullptr;							// No canvas set.
-
-		BlendMode mode = _normalizeBlendMode(blendMode);
-
-		uint64_t key = (uint64_t(m_activeCanvasFormat) << 16) |
-					   (uint64_t(kind) << 8) |
-					   uint64_t(mode);
-
-		auto it = m_pipelines.find(key);
-		if (it != m_pipelines.end())
-			return it->second.Get();				// May be null, if creation failed before.
-
-		Microsoft::WRL::ComPtr<ID3D12PipelineState> pPipeline;
-
-		if (!_createPipeline(mode, kind, m_activeCanvasFormat, pPipeline))
-			pPipeline = nullptr;					// Remembered as a failure, so we don't try again every draw.
-
-		m_pipelines[key] = pPipeline;
-
-		return pPipeline.Get();
 	}
 
 	//____ setDefaultCanvas() ___________________________________________
@@ -2520,7 +2503,7 @@ namespace wax
 	//____ _createPipelineResources() _________________________________________
 	//
 	// What all pipelines share. The pipelines themselves are created on demand
-	// by _pipeline(), since they depend on the canvas format.
+	// by _bindPipeline(), since they depend on the canvas format.
 
 	bool DX12Backend::_createPipelineResources()
 	{
@@ -2741,129 +2724,27 @@ namespace wax
 
 	//____ _createPipeline() __________________________________________________
 	//
-	// Canvases with alpha hold premultiplied colors, which lets fixed-function
-	// blending follow the blend rules exactly: Blend is Porter-Duff over, Morph a
-	// premultiplied cross-fade and a partly covered pixel gets the average of the
-	// blend result and the canvas. The pixel shaders pass what they draw to the
-	// blender as the mode needs it, told by root constants, see output.hlsl and
-	// _updatePixelInfo():
-	//
-	// - Replace and Morph keep the uncovered part of the pixel by the second color of
-	//   dual-source blending. Replace only blends in pipelines that can cover pixels
-	//   partly, the rest just write.
-	// - Effect modes work on the premultiplied colors of the canvas, as the blend
-	//   rules define them, with the source as its light (pc) and partial coverage
-	//   fading it. Add, Invert and Max raise the alpha of the canvas by the strongest
-	//   channel of pc, which the pixel shaders output as alpha for them. Subtract,
-	//   Multiply and Min keep it.
-	// - An alpha only canvas keeps its value in the alpha channel. Effect modes use
-	//   the alpha of the source as the value there.
-	// - A canvas without alpha is opaque, and has no alpha channel to write to.
-	//
-	// Pixel shaders only output the second color in pipelines that blend with it,
-	// which have shaders of their own for that, since the debug layer warns about
-	// output nothing reads.
+	// Blending is that of GpuBackend::_blendState(), in D3D12 terms. Pixel shaders
+	// only output the second color in pipelines that blend with it, which have
+	// shaders of their own for that, since the debug layer warns about output
+	// nothing reads.
 
-	bool DX12Backend::_createPipeline(BlendMode blendMode, PipelineKind kind, DXGI_FORMAT rtvFormat, Microsoft::WRL::ComPtr<ID3D12PipelineState>& pPipeline)
+	bool DX12Backend::_createPipeline(PipelineKind kind, const BlendState& blend, DXGI_FORMAT rtvFormat, Microsoft::WRL::ComPtr<ID3D12PipelineState>& pPipeline)
 	{
-		bool bAlphaOnly = (_canvasKindOfFormat(rtvFormat) == CanvasKind::AlphaOnly);
-		bool bNoAlpha = (_canvasKindOfFormat(rtvFormat) == CanvasKind::WithoutAlpha);
-		bool bPartialCoverage = _hasPartialCoverage(kind);
+		static const D3D12_BLEND factors[] = {								// In the order of BlendFactor.
+			D3D12_BLEND_ZERO, D3D12_BLEND_ONE,
+			D3D12_BLEND_SRC_COLOR, D3D12_BLEND_INV_SRC_COLOR, D3D12_BLEND_SRC_ALPHA, D3D12_BLEND_INV_SRC_ALPHA,
+			D3D12_BLEND_DEST_COLOR, D3D12_BLEND_INV_DEST_COLOR, D3D12_BLEND_DEST_ALPHA, D3D12_BLEND_INV_DEST_ALPHA,
+			D3D12_BLEND_SRC1_COLOR, D3D12_BLEND_INV_SRC1_COLOR, D3D12_BLEND_SRC1_ALPHA, D3D12_BLEND_INV_SRC1_ALPHA };
 
-		// Blend state. Factors are for colors and alpha alike, unless the alpha of the
-		// canvas is kept or inverted. On an alpha only canvas only alpha is written, so the colors
-		// get the factors of alpha, which are valid for them too. Factors are filled in
-		// even where blending is off and they are never used, since zero is not a valid
-		// value for any of them.
+		static const D3D12_BLEND_OP ops[] = {								// In the order of BlendOp.
+			D3D12_BLEND_OP_ADD, D3D12_BLEND_OP_REV_SUBTRACT, D3D12_BLEND_OP_MIN, D3D12_BLEND_OP_MAX };
 
-		BOOL			bBlend = TRUE;
-		D3D12_BLEND_OP	op = D3D12_BLEND_OP_ADD;
-		D3D12_BLEND		srcBlend = D3D12_BLEND_ONE;
-		D3D12_BLEND		destBlend = D3D12_BLEND_ZERO;
-		bool			bKeepAlpha = false;
-		bool			bInvertAlpha = false;		// Alpha gets the source over it, see Invert below.
-
-		switch (blendMode)
-		{
-			case BlendMode::Replace:
-				srcBlend = D3D12_BLEND_ONE;
-				destBlend = D3D12_BLEND_INV_SRC1_ALPHA;
-				bBlend = bPartialCoverage;
-				break;
-
-			case BlendMode::Blend:
-				srcBlend = D3D12_BLEND_ONE;
-				destBlend = D3D12_BLEND_INV_SRC_ALPHA;
-				break;
-
-			case BlendMode::Morph:
-				srcBlend = D3D12_BLEND_ONE;
-				destBlend = D3D12_BLEND_INV_SRC1_ALPHA;
-				break;
-
-			case BlendMode::Add:
-			case BlendMode::Subtract:
-				// The source is added to or subtracted from the premultiplied colors of the
-				// canvas. Add also adds the alpha the pixel shader outputs to that of the
-				// canvas, Subtract keeps it.
-
-				op = (blendMode == BlendMode::Add) ? D3D12_BLEND_OP_ADD : D3D12_BLEND_OP_REV_SUBTRACT;
-				srcBlend = D3D12_BLEND_ONE;
-				destBlend = D3D12_BLEND_ONE;
-				bKeepAlpha = (blendMode == BlendMode::Subtract);
-				break;
-
-			case BlendMode::Multiply:
-				srcBlend = bAlphaOnly ? D3D12_BLEND_DEST_ALPHA : D3D12_BLEND_DEST_COLOR;
-				destBlend = D3D12_BLEND_INV_SRC1_ALPHA;
-				bKeepAlpha = true;
-				break;
-
-			case BlendMode::Invert:
-				// The alpha the pixel shader outputs is put over that of the canvas.
-
-				srcBlend = bAlphaOnly ? D3D12_BLEND_INV_DEST_ALPHA : D3D12_BLEND_INV_DEST_COLOR;
-				destBlend = bAlphaOnly ? D3D12_BLEND_INV_SRC_ALPHA : D3D12_BLEND_INV_SRC_COLOR;
-				bInvertAlpha = !bAlphaOnly;
-				break;
-
-			case BlendMode::Min:
-			case BlendMode::Max:
-				// Max also takes the larger of the alpha the pixel shader outputs and that of
-				// the canvas, Min keeps it.
-
-				op = (blendMode == BlendMode::Min) ? D3D12_BLEND_OP_MIN : D3D12_BLEND_OP_MAX;
-				srcBlend = D3D12_BLEND_ONE;
-				destBlend = D3D12_BLEND_ONE;
-				bKeepAlpha = (blendMode == BlendMode::Min);
-				break;
-
-			case BlendMode::Ignore:
-				// Nothing should be drawn. _pipeline() returns null for this, so we
-				// only get here if that ever changes.
-
-				srcBlend = D3D12_BLEND_ZERO;
-				destBlend = D3D12_BLEND_ONE;
-				break;
-
-			default:
-			{
-				char buffer[128];
-				sprintf_s(buffer, "BlendMode %d is unknown, using Blend.", (int) blendMode);
-				Base::throwError(ErrorLevel::Warning, ErrorCode::Other, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
-
-				srcBlend = D3D12_BLEND_ONE;
-				destBlend = D3D12_BLEND_INV_SRC_ALPHA;
-				break;
-			}
-		}
-
-		bool bDualSource = bBlend && (destBlend == D3D12_BLEND_INV_SRC1_ALPHA);
-
-		// Setup the graphics pipeline state.
+		static_assert(sizeof(factors) / sizeof(factors[0]) == size_t(BlendFactor::Size) && sizeof(ops) / sizeof(ops[0]) == size_t(BlendOp::Size),
+					  "A D3D12 value for each blend factor and operation");
 
 		D3D12_SHADER_BYTECODE vertexShader = _shader(_vertexShaderName(kind));
-		D3D12_SHADER_BYTECODE pixelShader = _shader(_pixelShaderName(kind, bDualSource));
+		D3D12_SHADER_BYTECODE pixelShader = _shader(_pixelShaderName(kind, blend.bDualSource));
 
 		if (!vertexShader.pShaderBytecode || !pixelShader.pShaderBytecode)
 			return false;
@@ -2892,43 +2773,24 @@ namespace wax
 			unused.LogicOp = D3D12_LOGIC_OP_NOOP;
 		}
 
+		// Factors are filled in also where blending is off, since zero is not a
+		// valid value for any of them.
+
 		auto& rt = desc.BlendState.RenderTarget[0];
 
-		rt.BlendEnable = bBlend;
+		rt.BlendEnable = blend.bEnable;
 		rt.LogicOpEnable = false;
 		rt.LogicOp = D3D12_LOGIC_OP_NOOP;
 
-		// A BGRX canvas has no alpha channel to write to, so the mask just says so.
-		// Blits from it read alpha as 1.0 regardless, which is the point of giving
-		// it an X format in the first place.
+		rt.BlendOp = ops[int(blend.colorOp)];
+		rt.SrcBlend = factors[int(blend.srcColor)];
+		rt.DestBlend = factors[int(blend.dstColor)];
+		rt.BlendOpAlpha = ops[int(blend.alphaOp)];
+		rt.SrcBlendAlpha = factors[int(blend.srcAlpha)];
+		rt.DestBlendAlpha = factors[int(blend.dstAlpha)];
 
-		rt.RenderTargetWriteMask = bNoAlpha ? (D3D12_COLOR_WRITE_ENABLE_RED | D3D12_COLOR_WRITE_ENABLE_GREEN | D3D12_COLOR_WRITE_ENABLE_BLUE)
-											: D3D12_COLOR_WRITE_ENABLE_ALL;
-
-		rt.BlendOp = op;
-		rt.SrcBlend = srcBlend;
-		rt.DestBlend = destBlend;
-
-		if (bKeepAlpha && !bAlphaOnly)
-		{
-			rt.BlendOpAlpha = D3D12_BLEND_OP_ADD;
-			rt.SrcBlendAlpha = D3D12_BLEND_ZERO;
-			rt.DestBlendAlpha = D3D12_BLEND_ONE;
-		}
-		else if (bInvertAlpha)
-		{
-			rt.BlendOpAlpha = D3D12_BLEND_OP_ADD;
-			rt.SrcBlendAlpha = D3D12_BLEND_INV_DEST_ALPHA;
-			rt.DestBlendAlpha = D3D12_BLEND_ONE;
-		}
-		else
-		{
-			// Alpha can't take color factors, but none of these is one.
-
-			rt.BlendOpAlpha = op;
-			rt.SrcBlendAlpha = srcBlend;
-			rt.DestBlendAlpha = destBlend;
-		}
+		rt.RenderTargetWriteMask = blend.bWriteAlpha ? D3D12_COLOR_WRITE_ENABLE_ALL
+													 : (D3D12_COLOR_WRITE_ENABLE_RED | D3D12_COLOR_WRITE_ENABLE_GREEN | D3D12_COLOR_WRITE_ENABLE_BLUE);
 
 		desc.SampleMask = 0xFFFFFFFF;
 		desc.SampleDesc = { 1,0 };
@@ -2944,8 +2806,9 @@ namespace wax
 		desc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
 
 		// One vertex layout for all but warps, whose vertex shader reads the vertices of
-		// the Warpmap itself, see DX12Warpmap. The plain fill shader ignores EXTRASOFS,
-		// which is fine - the input layout is allowed to offer more than a shader reads.
+		// the Warpmap itself, see DX12Warpmap. All four inputs, as D3D12 wants each one
+		// a vertex shader declares, also those it doesn't read, and the layout is
+		// allowed to offer more than a shader declares.
 
 		D3D12_INPUT_ELEMENT_DESC elements[] = {
 			{ "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0,

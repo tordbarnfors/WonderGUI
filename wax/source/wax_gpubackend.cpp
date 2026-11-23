@@ -137,6 +137,193 @@ namespace wax
 		}
 	}
 
+	//____ _nbVertexAttributes() _________________________________________________
+
+	int GpuBackend::_nbVertexAttributes( PipelineKind kind )
+	{
+		if( _isWarp(kind) )
+			return 0;
+
+		switch( kind )
+		{
+			case PipelineKind::Fill:		return 2;
+			case PipelineKind::Segments:	return 4;
+			default:						return 3;
+		}
+	}
+
+	//____ _pipelineKey() ________________________________________________________
+
+	uint64_t GpuBackend::_pipelineKey( uint64_t canvasFormat, CanvasKind canvasKind, PipelineKind kind, BlendMode blendMode )
+	{
+		return (canvasFormat << 24) | (uint64_t(canvasKind) << 16) | (uint64_t(kind) << 8) | uint64_t(blendMode);
+	}
+
+	//____ _blendState() _________________________________________________________
+	//
+	// Canvases with alpha hold premultiplied colors, which lets fixed-function blending follow the
+	// blend rules exactly: Blend is Porter-Duff over, Morph a premultiplied cross-fade and a partly
+	// covered pixel gets the average of the blend result and the canvas. The pixel shaders pass what
+	// they draw to the blender as the mode needs it, told by the pixel constants, see output.hlsl
+	// and _updatePixelInfo():
+	//
+	// - Replace and Morph keep the uncovered part of the pixel by the second color of dual-source
+	//   blending. Replace only blends in pipelines that can cover pixels partly, the rest just write.
+	// - Effect modes work on the premultiplied colors of the canvas, as the blend rules define them,
+	//   with the source as its light (pc) and partial coverage fading it. Add, Invert and Max raise
+	//   the alpha of the canvas by the strongest channel of pc, which the pixel shaders output as
+	//   alpha for them. Subtract, Multiply and Min keep it.
+	// - An alpha only canvas has its value in alpha (A8 in DX12Backend) or in red (R8 in the
+	//   others), and the pixel shaders write the value to all channels for it. So the factors are
+	//   those of alpha, in their color form for the colors. Effect modes use the alpha of the source
+	//   as the value.
+	// - A canvas without alpha is opaque, and its alpha is left alone. Reading it as a blit source
+	//   gives alpha 1 regardless.
+	//
+	// The blend mode is normalized, see _normalizeBlendMode(), and never Ignore, which has no
+	// pipeline.
+
+	GpuBackend::BlendState GpuBackend::_blendState( PipelineKind kind, BlendMode blendMode, CanvasKind canvasKind )
+	{
+		bool bAlphaOnly = (canvasKind == CanvasKind::AlphaOnly);
+
+		bool			bEnable = true;
+		BlendOp			op = BlendOp::Add;
+		BlendFactor		src = BlendFactor::One;
+		BlendFactor		dst = BlendFactor::Zero;
+		bool			bKeepAlpha = false;
+		bool			bInvertAlpha = false;		// Alpha gets the source over it, see Invert.
+
+		switch( blendMode )
+		{
+			case BlendMode::Replace:
+				dst = BlendFactor::InvSrc1Alpha;
+				bEnable = _hasPartialCoverage(kind);
+				break;
+
+			case BlendMode::Blend:
+				dst = BlendFactor::InvSrcAlpha;
+				break;
+
+			case BlendMode::Morph:
+				dst = BlendFactor::InvSrc1Alpha;
+				break;
+
+			case BlendMode::Add:
+			case BlendMode::Subtract:
+				op = (blendMode == BlendMode::Add) ? BlendOp::Add : BlendOp::RevSubtract;
+				dst = BlendFactor::One;
+				bKeepAlpha = (blendMode == BlendMode::Subtract);
+				break;
+
+			case BlendMode::Multiply:
+				src = bAlphaOnly ? BlendFactor::DstAlpha : BlendFactor::DstColor;
+				dst = BlendFactor::InvSrc1Alpha;
+				bKeepAlpha = true;
+				break;
+
+			case BlendMode::Invert:
+				src = bAlphaOnly ? BlendFactor::InvDstAlpha : BlendFactor::InvDstColor;
+				dst = bAlphaOnly ? BlendFactor::InvSrcAlpha : BlendFactor::InvSrcColor;
+				bInvertAlpha = !bAlphaOnly;
+				break;
+
+			case BlendMode::Min:
+			case BlendMode::Max:
+				op = (blendMode == BlendMode::Min) ? BlendOp::Min : BlendOp::Max;
+				dst = BlendFactor::One;
+				bKeepAlpha = (blendMode == BlendMode::Min);
+				break;
+
+			default:
+			{
+				char buffer[128];
+				snprintf(buffer, sizeof(buffer), "BlendMode %d has no blending of its own, using Blend.", (int) blendMode);
+				Base::throwError(ErrorLevel::Warning, ErrorCode::Other, buffer, nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+
+				dst = BlendFactor::InvSrcAlpha;
+				break;
+			}
+		}
+
+		// The value of an alpha only canvas is all it has, so it is never kept.
+
+		if( bAlphaOnly )
+			bKeepAlpha = false;
+
+		auto toColor = []( BlendFactor factor )
+		{
+			switch( factor )
+			{
+				case BlendFactor::SrcAlpha:		return BlendFactor::SrcColor;
+				case BlendFactor::InvSrcAlpha:	return BlendFactor::InvSrcColor;
+				case BlendFactor::DstAlpha:		return BlendFactor::DstColor;
+				case BlendFactor::InvDstAlpha:	return BlendFactor::InvDstColor;
+				case BlendFactor::Src1Alpha:	return BlendFactor::Src1Color;
+				case BlendFactor::InvSrc1Alpha:	return BlendFactor::InvSrc1Color;
+				default:						return factor;
+			}
+		};
+
+		auto toAlpha = []( BlendFactor factor )
+		{
+			switch( factor )
+			{
+				case BlendFactor::SrcColor:		return BlendFactor::SrcAlpha;
+				case BlendFactor::InvSrcColor:	return BlendFactor::InvSrcAlpha;
+				case BlendFactor::DstColor:		return BlendFactor::DstAlpha;
+				case BlendFactor::InvDstColor:	return BlendFactor::InvDstAlpha;
+				case BlendFactor::Src1Color:	return BlendFactor::Src1Alpha;
+				case BlendFactor::InvSrc1Color:	return BlendFactor::InvSrc1Alpha;
+				default:						return factor;
+			}
+		};
+
+		BlendState state;
+
+		state.bEnable = bEnable;
+		state.bDualSource = bEnable && dst == BlendFactor::InvSrc1Alpha;
+		state.bWriteAlpha = (canvasKind != CanvasKind::WithoutAlpha);
+
+		state.colorOp = op;
+		state.srcColor = bAlphaOnly ? toColor(src) : src;
+		state.dstColor = bAlphaOnly ? toColor(dst) : dst;
+
+		if( bKeepAlpha )
+		{
+			state.alphaOp = BlendOp::Add;
+			state.srcAlpha = BlendFactor::Zero;
+			state.dstAlpha = BlendFactor::One;
+		}
+		else if( bInvertAlpha )
+		{
+			state.alphaOp = BlendOp::Add;
+			state.srcAlpha = BlendFactor::InvDstAlpha;
+			state.dstAlpha = BlendFactor::One;
+		}
+		else
+		{
+			state.alphaOp = op;
+			state.srcAlpha = toAlpha(src);
+			state.dstAlpha = toAlpha(dst);
+		}
+
+		return state;
+	}
+
+	//____ _setPipeline() ________________________________________________________
+	//
+	// Ignore draws nothing, so it has no pipeline. Modes that blend the same share one, see
+	// _normalizeBlendMode().
+
+	bool GpuBackend::_setPipeline( PipelineKind kind )
+	{
+		if( !m_bCanvasBound || m_activeBlendMode == BlendMode::Ignore )
+			return false;
+
+		return _bindPipeline(kind, _normalizeBlendMode(m_activeBlendMode));
+	}
+
 	//____ _canvasKind() _________________________________________________________
 
 	GpuBackend::CanvasKind GpuBackend::_canvasKind( const Surface * pSurface )
