@@ -458,3 +458,12 @@ others leaks a reference. The header doesn't say which is meant. Dropping the re
 of contract for callers that already release it, so it is left until someone decides.
 
 `wax/extensions/freetypefont/wax_c_freetypefont.cpp`
+
+### The C# wrapper doesn't build
+
+`StreamBackend.DefineCanvas()` takes a `StreamSurface`, a class no file of the wrapper has, so
+`dotnet build` of `Wax.csproj` stops with CS0246 (dotnet 10.0.402, 2026-11-23). It is the only
+error, on v4 and breaking-changes too, so the rest compiles, but nothing of the wrapper has been
+run, the `FillColor` of `Surface.Blueprint` included.
+
+`wax/wrappers/c-sharp/wax_streambackend.cs`, `wax/wrappers/c-sharp/Wax/Wax.csproj`
