@@ -176,7 +176,47 @@ namespace wax
 				m_pAlphaMap = new uint8_t[m_size.w * m_size.h];
 		}
 
-		_setupGlTexture(nullptr, 0);
+		// Without a fill color the texture is given no pixels and holds whatever GL made it
+		// with, and so do a backing buffer and an alpha map.
+
+		if( bp.fillColor.isUndefined() )
+			_setupGlTexture(nullptr, 0);
+		else if( m_pBlob )
+		{
+			PixelTools::fillBitmap((uint8_t*) m_pBlob->data(), m_pixelFormat, m_colorSpace, m_bBigEndian, m_pitch, RectI(m_size),
+								   bp.fillColor, m_pPalette, m_paletteSize);
+
+			_setupGlTexture(m_pBlob->data(), m_pitch);
+		}
+		else
+		{
+			// We keep no pixels ourselves, so they are made for the upload only.
+
+			int tempBufPitch = ((m_size.w * m_pPixelDescription->bits / 8) + 3) & 0xFFFFFFFC;
+			uint8_t * pTempPixelBuffer = new uint8_t[tempBufPitch * m_size.h];
+
+			PixelTools::fillBitmap(pTempPixelBuffer, m_pixelFormat, m_colorSpace, m_bBigEndian, tempBufPitch, RectI(m_size),
+								   bp.fillColor, m_pPalette, m_paletteSize);
+
+			_setupGlTexture(pTempPixelBuffer, tempBufPitch);
+
+			if( m_pAlphaMap )
+			{
+				// Setup a fake PixelBuffer for call to _updateAlphaMap
+				PixelBuffer buf;
+				buf.format = m_pixelFormat;
+				buf.colorSpace = m_colorSpace;
+				buf.bigEndian = m_bBigEndian;
+				buf.palette = m_pPalette;
+				buf.pitch = tempBufPitch;
+				buf.pixels = pTempPixelBuffer;
+				buf.rect = m_size;
+
+				_updateAlphaMap(buf, m_size);
+			}
+
+			delete [] pTempPixelBuffer;
+		}
 
 		HANDLE_GLERROR(glGetError());
 	}

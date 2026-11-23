@@ -12,6 +12,7 @@
 #include "tests/qoi.h"
 #include "tests/rangeallocator.h"
 #include "tests/surfacefile.h"
+#include "tests/surfacefill.h"
 #include "tests/softshapes.h"
 #include "tests/shaperender.h"
 #include "tests/edgemap.h"
@@ -39,6 +40,7 @@ TestFramework::TestFramework( std::ostream& output ) :
 	addCollection( new QOITest() );
 	addCollection( new RangeAllocatorTest() );
 	addCollection( new SurfaceFileTest() );
+	addCollection( new SurfaceFillTest() );
 	addCollection( new SoftShapesTest() );
 	addCollection( new ShapeRenderTest() );
 	addCollection( new EdgemapTest() );

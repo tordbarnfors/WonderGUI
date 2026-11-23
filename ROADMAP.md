@@ -478,6 +478,28 @@ For VulkanBackend, still to do:
 - **Mipmaps are made with linear blits** in Vulkan, rather than the shaders DX12Backend draws them
   with, which average the same four texels.
 
+### Surfaces created without pixels (2026-11)
+
+Decided with Tord: `Surface::Blueprint` has `fillColor`, which a surface created without pixels
+is filled with. It defaults to `HiColor::Undefined`, which fills nothing in and leaves the content
+unspecified until all of it has been drawn or written. It was unspecified already on SoftSurface
+(memory as it came) and GlSurface (a texture given no pixels), while DX12Surface filled its pixels
+with zeroes and uploaded them, which cost more than making the surface for something like a
+canvas layer that is cleared right after.
+
+- **How it is filled is up to the surface.** For now each fills the pixels it keeps with
+  `PixelTools::fillBitmap()`, as `Surface::fill()` does, and sends them to its texture as it sends
+  supplied pixels. GlSurface fills a buffer for the upload when it keeps none. A clear on the GPU
+  is the faster way for a canvas that keeps no pixels, and is left for when there are such.
+- **Ignored when pixels are supplied,** and `Surface::blueprint()` returns it undefined: it says
+  how the surface was to start out, not what it is.
+- **Indexed surfaces** get the nearest color of their palette.
+- **gfxstream:** the CreateSurface chunk ends with the fill color, 48 bytes instead of 40. The
+  player reads it when the chunk is that long, so older streams still play, but an older player
+  can't read a new stream.
+- **C API:** `wax_surfaceBP` has `useFillColor` besides `fillColor`, as a zeroed struct would
+  otherwise ask for transparent black. In C# `Surface.Blueprint.FillColor` is null by default.
+
 ### Software tiling (2026-11)
 
 - **Tiling surfaces of any size.** SoftBackend and LinearBackend wrap tile positions by the size

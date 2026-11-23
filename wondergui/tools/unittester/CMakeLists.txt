@@ -19,6 +19,8 @@ set( SOURCES
 	tests/rangeallocator.h
 	tests/surfacefile.cpp
 	tests/surfacefile.h
+	tests/surfacefill.cpp
+	tests/surfacefill.h
 	tests/softshapes.cpp
 	tests/softshapes.h
 	tests/shaperender.cpp

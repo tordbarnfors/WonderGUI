@@ -109,7 +109,8 @@ namespace wax
 		static bool		_isFormatSupported( PixelFormat format );
 		void		    _setPixelDetails();
 		void 			_setupMetalTexture(const void * pPixels, int pitch, const PixelDescription * pSrcPixelDesc,
-										   const Color8 * pSrcPalette, int srcPaletteSize, const Color8 * pDstPalette );
+										   const Color8 * pSrcPalette, int srcPaletteSize, const Color8 * pDstPalette,
+										   HiColor fillColor = HiColor::Undefined );
 
 		void			_updatePaletteColors();
 

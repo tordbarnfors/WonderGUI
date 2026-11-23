@@ -74,6 +74,8 @@ typedef struct wax_surfaceBP_struct			// NOT BINARY EQUIVALENT!
 	uint8_t				buffered;
 	uint8_t				canvas;
 	wax_colorSpace		colorSpace;				// Defaults to sRGB.
+	uint8_t				useFillColor;			// Set to have a surface created without pixels filled with fillColor. Its content is unspecified otherwise.
+	wax_color			fillColor;
 	const wax_color8* 	palette;
 	int					paletteSize;
 	int					paletteCapacity;

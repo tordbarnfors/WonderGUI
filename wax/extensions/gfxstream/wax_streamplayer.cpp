@@ -617,6 +617,16 @@ namespace wax
 			decoder >> bp.paletteCapacity;
 			decoder >> bp.paletteSize;
 
+			// The fill color was added later, older streams end here.
+
+			if( header.size >= 48 )
+			{
+				decoder >> bp.fillColor;
+
+				if( header.size > 48 )
+					decoder.skip(header.size - 48);
+			}
+
 			bp.bigEndian = (bigEndian != 0);
 			bp.buffered = false;
 			bp.palette = nullptr;
