@@ -291,14 +291,33 @@ pixels. Edgemaps, Warpmaps and palettes had the same and get their buffers from 
 since, see ROADMAP.md, but that is for buffers that are only written: the pixels are read by the
 CPU, so they would need blocks of cached memory, and textures a heap to be placed in.
 
+Accepted as it is (Tord, 2026-11): graphics is meant to be baked into larger surfaces, for
+performance too, so nothing is planned for this.
+
 `_createDeviceObjects()` in `wax/extensions/dx12gfx/wax_dx12surface.cpp`
 
 ### DX12BufferPool keeps a block for as long as one buffer is left in it
 
-Buffers aren't moved, so blocks that had many buffers and have few left stay as they are. New
+Buffers aren't moved, so a block that had many buffers and has one left stays, 64 KB of it. New
 buffers go to the oldest block with room, which lets newer ones empty.
 
 `wax/extensions/dx12gfx/wax_dx12bufferpool.cpp`
+
+### DX12BufferPool releases nothing until something is drawn or allocated
+
+What is given back while the GPU may still read it waits for `collect()`, which runs at the next
+`beginRender()` of any DX12Backend and at the next `alloc()`. An application that stops drawing,
+like the editor of a plugin, keeps a buffer too big for a block that it let go of, or a block
+that emptied, until then. Textures and frame buffers don't have this, the thread pool of DX12Backend releases
+them when the GPU is done, see ROADMAP.md.
+
+`DX12BufferPool::free()` and `collect()` in `wax/extensions/dx12gfx/wax_dx12bufferpool.cpp`
+
+Having the callbacks of that thread pool release these too was looked at and left: one only runs
+for a submission that held a texture or an outgrown buffer, and it runs on another thread, so the
+pool would need a lock and its own wait. A buffer given back when the GPU is done already, as
+when a widget goes between frames, is released at once, and its block with it if it emptied
+and another is empty already.
 
 ### GlBackend: drawn shapes are slow on Windows, and come at two speeds
 

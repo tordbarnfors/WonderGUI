@@ -42,8 +42,12 @@ namespace wax
 	 * while to create. Edgemaps, Warpmaps and palettes are mostly far smaller than that, so they
 	 * get a range of a block instead: an upload heap buffer, mapped for as long as it exists.
 	 * D3D12 binds such buffers by address, so a range is used just as a buffer of its own would
-	 * be. The first block is 64 KB, made when first needed, and each one after it twice the size
-	 * of the one before, up to 1 MB. What is too big for that gets a resource of its own.
+	 * be. Blocks are 64 KB, the least D3D12 makes a buffer, and made when needed. What is too big
+	 * for one gets a resource of its own.
+	 *
+	 * A block is released when the last buffer of it is given back, unless it is the only empty
+	 * one: one empty block is kept, so that a buffer made and let go of over and over doesn't take
+	 * making a block each time. An application with no buffers left has one block of 64 KB.
 	 *
 	 * The memory is write-combined: quick to write, very slow to read. So a buffer is only for
 	 * what is written and never read back, and what is taken of the blocks is kept track of in
@@ -105,7 +109,8 @@ namespace wax
 
 		static void		submitted();
 
-		// Takes back the buffers the GPU is done with. Called by DX12Backends once a frame.
+		// Takes back the buffers the GPU is done with. Called by DX12Backends once a frame, and
+		// when a buffer is asked for.
 
 		static void		collect();
 
@@ -113,7 +118,7 @@ namespace wax
 
 		struct Block
 		{
-			Block( int size ) : ranges(size, c_alignment) {}
+			Block() : ranges(c_blockSize, c_alignment) {}
 
 			Microsoft::WRL::ComPtr<ID3D12Resource>	resource;		// Null for a slot whose block has been released.
 			uint8_t *								pData = nullptr;
@@ -135,9 +140,9 @@ namespace wax
 		};
 
 		static bool		_createResource( int bytes, Microsoft::WRL::ComPtr<ID3D12Resource>& resource, uint8_t *& pData );
-		static int		_createBlock( int minBytes );
+		static int		_createBlock();
 		static void		_release( Waiting& waiting );
-		static void		_releaseEmptyBlocks();
+		static void		_blockEmptied( int block );
 
 		// Ranges start at and are whole numbers of this many bytes: a multiple of the float4 of
 		// edgemaps and palettes (16), of the vertex of a Warpmap (24) and of a cache line (64), so
@@ -145,9 +150,11 @@ namespace wax
 
 		static const int	c_alignment = 192;
 
-		static const int	c_firstBlockSize = 64 * 1024;
-		static const int	c_maxBlockSize = 1024 * 1024;
-		static const int	c_maxPooledSize = 256 * 1024;			// Larger buffers get a resource of their own.
+		// The least D3D12 makes a buffer, so nothing is lost to rounding, and little is held by a
+		// block with a single buffer left in it.
+
+		static const int	c_blockSize = 64 * 1024;
+		static const int	c_blockCapacity = (c_blockSize / c_alignment) * c_alignment;	// Larger buffers get a resource of their own.
 
 		static Microsoft::WRL::ComPtr<ID3D12Device>			s_pDevice;
 		static Microsoft::WRL::ComPtr<ID3D12CommandQueue>	s_pQueue;

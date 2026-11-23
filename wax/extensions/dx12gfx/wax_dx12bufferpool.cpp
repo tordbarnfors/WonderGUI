@@ -97,7 +97,7 @@ namespace wax
 
 		collect();
 
-		if( bytes > c_maxPooledSize )
+		if( bytes > c_blockCapacity )
 		{
 			if( !_createResource(bytes, buffer.resource, buffer.pData) )
 				return false;
@@ -106,7 +106,8 @@ namespace wax
 		}
 		else
 		{
-			// Older blocks first, so that newer ones get the chance to empty and be released.
+			// Older blocks first, so that newer ones get the chance to empty and be released. A
+			// new one is only made when no block has room, so not while one is empty.
 
 			int block = -1;
 			int offset = -1;
@@ -122,7 +123,7 @@ namespace wax
 
 			if( offset < 0 )
 			{
-				block = _createBlock(bytes);
+				block = _createBlock();
 				if( block < 0 )
 					return false;
 
@@ -188,72 +189,75 @@ namespace wax
 
 	void DX12BufferPool::collect()
 	{
-		if( !s_waiting.empty() && s_pFence )
+		if( s_waiting.empty() || !s_pFence )
+			return;
+
+		bool bRecording = DX12Backend::_isAnyRecording();
+		UINT64 done = s_pFence->GetCompletedValue();
+
+		auto it = std::remove_if( s_waiting.begin(), s_waiting.end(), [bRecording, done]( Waiting& waiting )
 		{
-			bool bRecording = DX12Backend::_isAnyRecording();
-			UINT64 done = s_pFence->GetCompletedValue();
-
-			auto it = std::remove_if( s_waiting.begin(), s_waiting.end(), [bRecording, done]( Waiting& waiting )
+			if( !waiting.bValueKnown )
 			{
-				if( !waiting.bValueKnown )
-				{
-					if( bRecording )
-						return false;
-
-					waiting.value = s_lastSubmitted;
-					waiting.bValueKnown = true;
-				}
-
-				if( waiting.value > done )
+				if( bRecording )
 					return false;
 
-				_release(waiting);
-				return true;
-			});
+				waiting.value = s_lastSubmitted;
+				waiting.bValueKnown = true;
+			}
 
-			s_waiting.erase( it, s_waiting.end() );
-		}
+			if( waiting.value > done )
+				return false;
 
-		_releaseEmptyBlocks();
+			_release(waiting);
+			return true;
+		});
+
+		s_waiting.erase( it, s_waiting.end() );
 	}
 
 	//____ _release() ____________________________________________________________
+	//
+	// The memory is free again: a range of a block, or a resource of its own, which goes here.
 
 	void DX12BufferPool::_release( Waiting& waiting )
 	{
 		if( waiting.block >= 0 && waiting.block < int(s_blocks.size()) )
+		{
 			s_blocks[waiting.block].ranges.free(waiting.offset, waiting.size);
+
+			if( s_blocks[waiting.block].ranges.isEmpty() )
+				_blockEmptied(waiting.block);
+		}
 
 		waiting.resource = nullptr;
 	}
 
-	//____ _releaseEmptyBlocks() _________________________________________________
+	//____ _blockEmptied() _______________________________________________________
 	//
-	// A block nothing is taken of is released, newest first, but for the last one, which is
-	// kept for what comes next. A range that waits for the GPU still counts as taken.
+	// One empty block is kept for what comes next, so that a buffer made and let go of over and
+	// over doesn't take making a block each time. With one empty already, the newer of the two
+	// is released, so there is never more than one. A range that waits for the GPU still counts
+	// as taken.
 
-	void DX12BufferPool::_releaseEmptyBlocks()
+	void DX12BufferPool::_blockEmptied( int block )
 	{
-		int nBlocks = 0;
+		int other = -1;
 
-		for( auto& block : s_blocks )
+		for( int i = 0 ; i < int(s_blocks.size()) && other < 0 ; i++ )
 		{
-			if( block.resource )
-				nBlocks++;
+			if( i != block && s_blocks[i].resource && s_blocks[i].ranges.isEmpty() )
+				other = i;
 		}
 
-		for( int i = int(s_blocks.size()) - 1 ; i >= 0 && nBlocks > 1 ; i-- )
-		{
-			Block& block = s_blocks[i];
+		if( other < 0 )
+			return;
 
-			if( block.resource && block.ranges.isEmpty() )
-			{
-				block.resource = nullptr;
-				block.pData = nullptr;
-				block.gpuAddress = 0;
-				nBlocks--;
-			}
-		}
+		Block& released = s_blocks[std::max(block, other)];
+
+		released.resource = nullptr;				// Unmaps it too.
+		released.pData = nullptr;
+		released.gpuAddress = 0;
 
 		while( !s_blocks.empty() && !s_blocks.back().resource )
 			s_blocks.pop_back();
@@ -261,50 +265,31 @@ namespace wax
 
 	//____ _createBlock() ________________________________________________________
 	//
-	// Returns the index of a new block with room for the given number of bytes, -1 if it
-	// couldn't be created.
+	// Returns the index of a new block, -1 if it couldn't be created.
 
-	int DX12BufferPool::_createBlock( int minBytes )
+	int DX12BufferPool::_createBlock()
 	{
-		int nBlocks = 0;
-		int slot = -1;
+		Block block;
 
-		for( int i = 0 ; i < int(s_blocks.size()) ; i++ )
-		{
-			if( s_blocks[i].resource )
-				nBlocks++;
-			else if( slot < 0 )
-				slot = i;
-		}
-
-		// Twice the size for each block there is, so few blocks hold a lot, and one is all a
-		// small application ever needs.
-
-		int size = c_firstBlockSize;
-
-		for( int i = 0 ; i < nBlocks && size < c_maxBlockSize ; i++ )
-			size *= 2;
-
-		while( (size / c_alignment) * c_alignment < minBytes )
-			size *= 2;
-
-		Block block(size);
-
-		if( !_createResource(size, block.resource, block.pData) )
+		if( !_createResource(c_blockSize, block.resource, block.pData) )
 			return -1;
 
 		block.resource->SetName(L"Wax DX12BufferPool: block");
 		block.gpuAddress = block.resource->GetGPUVirtualAddress();
 
-		if( slot < 0 )
-		{
-			slot = int(s_blocks.size());
-			s_blocks.push_back(block);
-		}
-		else
-			s_blocks[slot] = block;
+		// In the place of one that has been released, if there is one.
 
-		return slot;
+		for( int i = 0 ; i < int(s_blocks.size()) ; i++ )
+		{
+			if( !s_blocks[i].resource )
+			{
+				s_blocks[i] = block;
+				return i;
+			}
+		}
+
+		s_blocks.push_back(block);
+		return int(s_blocks.size()) - 1;
 	}
 
 	//____ _createResource() _____________________________________________________

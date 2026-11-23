@@ -701,11 +701,23 @@ with Tord: they keep a buffer of their own, but get it from DX12BufferPool
 (`dx12gfx/wax_dx12bufferpool.h`), as a range of a block they share. D3D12 binds these buffers by
 address, so nothing changes in shaders or in how they are bound.
 
-- **Blocks are upload heap buffers,** mapped for as long as they exist. The first is 64 KB and
-  made when first needed, each one after it twice the size of the one before, up to 1 MB, so a
-  small application has one block of 64 KB for all of them, what a single edgemap took. Buffers
-  over 256 KB get a resource of their own, where the rounding to 64 KB is little. A block nothing
-  is taken of is released, but for the last one.
+- **Blocks are upload heap buffers of 64 KB,** mapped for as long as they exist and made when
+  needed, so a small application has one block for all of them, what a single edgemap took.
+  64 KB is the least D3D12 makes a buffer, so nothing is lost to rounding and a block with one
+  buffer left in it holds little. Blocks first doubled in size up to 1 MB, which made fewer of
+  them, but then one buffer left could hold 1 MB. Decided with Tord: the pool is there to save
+  memory before time.
+- **Buffers that don't fit a block get a resource of their own,** rounded up to 64 KB as all of
+  them were before the pool. At default precision the Warpmaps of all generators but BallWarp
+  stay under 42 KB up to 1024 pixels and most take a few KB, a ball passes 64 KB between 256 and
+  512 pixels, and an edgemap takes about width * (segments - 1) * 32 bytes, so one of 1000
+  pixels with three segments is at the limit. 128 KB blocks would pack those better and cost a
+  small application 64 KB more.
+- **A block is released when its last buffer is given back,** unless it is the only empty one.
+  One empty block is kept, so a buffer made and let go of over and over doesn't take making a
+  block each time, and there is never more than one. An application that makes and lets go of
+  more than a block of buffers for each frame makes a block for each 64 KB over that, each frame.
+  Accepted: resources are meant to be made once and kept.
 - **What is taken of a block is kept track of outside it,** by RangeAllocator
   (`wax/source/wax_rangeallocator.h`): a list of the free ranges in ordinary memory, first fit,
   joined when given back, with unit tests. MemHeap wasn't used, as it keeps its bookkeeping in the
@@ -731,11 +743,36 @@ address, so nothing changes in shaders or in how they are bound.
   first and get new ones on the next device, as before. A DX12Warpmap, which wasn't moved to a new
   device before and held on to the old one, finds its buffer no longer valid and gets a new one
   when next drawn (`_prepare()`).
+- **Surfaces stay as they are.** A small DX12Surface takes at least 128 KB, see KNOWN_ISSUES.md.
+  Decided with Tord not to pool them: graphics is meant to be baked into larger surfaces anyway.
 
 On Windows (Arc B580, Release): gfxdevicetester has 134 such buffers of 2.6 MB together, now in
-six blocks of 3.1 MB, where they took 8.6 MB or more. "Cylinders made each run" of WarpTests went
-from 848 us to 15 us, and the other 71 tests of the edgemap, warp and palette suites take 0.85
-to 1.01 times as long as before, median 1.00. All of gfxdevicetester gives the same results as
-before on DX12Backend and GlBackend. A debug build, with the debug layer of D3D12 on, gives the
-same results for the edgemap, warp and palette suites after two simulated device losses as
-without them.
+27 blocks and nine resources of their own, 2.9 MB, where they took 8.6 MB or more. (Doubling
+blocks took 3.1 MB in six.) A whole accuracy run makes 32 blocks and releases all but the one
+kept. "Cylinders made each run" of WarpTests went from 848 us to 15 us, and the other 71 tests
+of the edgemap, warp and palette suites take 0.85 to 1.01 times as long as before the pool,
+median 1.00, the same with blocks of 64 KB as with doubling ones. All of gfxdevicetester gives
+the same results as before on DX12Backend and GlBackend. A debug build, with the debug layer of
+D3D12 on, gives the same results for the fill, edgemap, warp and palette suites after two
+simulated device losses as without them.
+
+### DX12Backend: the thread pool that releases resources stays (2026-11)
+
+DX12Backend holds the textures and frame buffers that recorded draws use, and hands them to a
+thread pool wait at each submission, which releases them when the GPU has passed the fence
+(`_holdUntilDone()`, `_releaseWhenDone()`). Replacing it with a release on the thread that draws,
+as VulkanContext and DX12BufferPool do, was suggested for being simpler. Decided with Tord to keep
+it.
+
+- **It releases without another frame being drawn.** Before it came (e9bf1670, 2026-10, from work
+  on a plugin framework) resources were released in `beginRender()`, when their frame slot came
+  round again. An editor of a plugin draws only when something changes, so what it let go of
+  would stay until whenever that was. The reason wasn't written down then, this is what the diff
+  says.
+- **The thread that draws never waits for the GPU** or does the releasing.
+- **What it costs is for hosts of plugins too:** the callbacks name our module as their library,
+  so a host can't unload it while one runs, and the last backend and a lost device wait at most
+  two seconds for callbacks still out, rather than hang the host.
+- **Not for many instances as such.** Instances of one plugin share the statics of DX12Backend,
+  and each plugin has a copy of its own. All DX12Backends of a module are taken to draw on one
+  thread: `s_backends` and DX12BufferPool have no locks.
