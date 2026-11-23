@@ -26,6 +26,7 @@
 
 #define NOMINMAX
 #include <wax_gpuedgemap.h>
+#include <wax_dx12bufferpool.h>
 
 #include <wrl.h>
 #include <d3d12.h>
@@ -41,8 +42,8 @@ namespace wax
 	/**
 	 * @brief Edgemap for DX12Backend.
 	 *
-	 * GpuEdgemap fills in the buffer the shaders read, this class keeps it in an
-	 * upload heap buffer, permanently mapped.
+	 * GpuEdgemap fills in the buffer the shaders read, which this class gets from
+	 * DX12BufferPool.
 	 */
 
 	class DX12Edgemap : public GpuEdgemap
@@ -63,14 +64,6 @@ namespace wax
 		const TypeInfo& typeInfo(void) const override;
 		const static TypeInfo   TYPEINFO;
 
-		//.____ Misc __________________________________________________________
-
-		// Set by DX12Backend before any edgemap is created.
-
-		static bool				setDevice( ID3D12Device * pDevice );
-		static void				exitDevice();
-
-
 	protected:
 
 		DX12Edgemap(const Blueprint& bp);
@@ -89,14 +82,12 @@ namespace wax
 		void	_link();						// Into the list of live edgemaps.
 		void	_unlink();
 
-		void	_releaseBuffer( Microsoft::WRL::ComPtr<ID3D12Resource>& buffer );
-
 		// Where DX12Backend finds us.
 
-		D3D12_GPU_VIRTUAL_ADDRESS	_gpuAddress() const { return m_buffer ? m_buffer->GetGPUVirtualAddress() : 0; }
+		D3D12_GPU_VIRTUAL_ADDRESS	_gpuAddress() const { return DX12BufferPool::isValid(m_buffer) ? m_buffer.gpuAddress : 0; }
 
-		Microsoft::WRL::ComPtr<ID3D12Resource>	m_buffer;		// Permanently mapped at m_pGpuData.
-		Microsoft::WRL::ComPtr<ID3D12Resource>	m_newBuffer;	// From _allocBuffer() until _commitBuffer().
+		DX12BufferPool::Buffer	m_buffer;			// Where m_pGpuData points.
+		DX12BufferPool::Buffer	m_newBuffer;		// From _allocBuffer() until _commitBuffer().
 
 		// All live edgemaps, linked through themselves, so they can be found when
 		// the device has to be replaced.
@@ -105,8 +96,6 @@ namespace wax
 		DX12Edgemap *	m_pNextLive = nullptr;
 
 		static DX12Edgemap *	s_pFirstLive;
-
-		static ID3D12Device *	s_pDevice;
 	};
 
 

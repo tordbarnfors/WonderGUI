@@ -140,6 +140,11 @@ namespace wax
 
 		static void				waitForCompletionOfAll();
 
+		// True while any backend is recording a frame, whose draws are yet to be
+		// submitted. For DX12BufferPool.
+
+		static bool				_isAnyRecording();
+
 		//.____ Device loss __________________________________________________
 
 		// A device can be removed under us: the GPU hung and was reset (TDR), the

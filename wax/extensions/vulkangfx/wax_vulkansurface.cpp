@@ -392,25 +392,31 @@ namespace wax
 
 		bool bLinear = (m_colorSpace == ColorSpace::Linear);
 
+		// Worked out here and then written, as the buffer may be in memory that isn't cached, which
+		// is very slow to read back from.
+
 		float * p = ((float*) m_palette.pMapped) + 4;			// Past the capacity.
 
 		for( int i = 0; i < m_paletteCapacity; i++ )
 		{
 			HiColor col = m_pPalette[i];
 
+			float c[4];
+
 			if( bLinear )
 			{
-				p[0] = col.r / 4096.f;
-				p[1] = col.g / 4096.f;
-				p[2] = col.b / 4096.f;
-				p[3] = col.a / 4096.f;
+				c[0] = col.r / 4096.f;
+				c[1] = col.g / 4096.f;
+				c[2] = col.b / 4096.f;
+				c[3] = col.a / 4096.f;
 			}
 			else
-				col.toLinearFloat(p);
+				col.toLinearFloat(c);
 
-			p[0] *= p[3];
-			p[1] *= p[3];
-			p[2] *= p[3];
+			p[0] = c[0] * c[3];
+			p[1] = c[1] * c[3];
+			p[2] = c[2] * c[3];
+			p[3] = c[3];
 			p += 4;
 		}
 	}

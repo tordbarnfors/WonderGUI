@@ -10,6 +10,7 @@
 #include "tests/softtint.h"
 #include "tests/slotlinks.h"
 #include "tests/qoi.h"
+#include "tests/rangeallocator.h"
 #include "tests/surfacefile.h"
 #include "tests/softshapes.h"
 #include "tests/shaperender.h"
@@ -36,6 +37,7 @@ TestFramework::TestFramework( std::ostream& output ) :
 	addCollection( new SoftTintTest() );
 	addCollection( new SlotLinksTest() );
 	addCollection( new QOITest() );
+	addCollection( new RangeAllocatorTest() );
 	addCollection( new SurfaceFileTest() );
 	addCollection( new SoftShapesTest() );
 	addCollection( new ShapeRenderTest() );

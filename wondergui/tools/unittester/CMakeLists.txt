@@ -15,6 +15,8 @@ set( SOURCES
 	tests/slotlinks.h
 	tests/qoi.cpp
 	tests/qoi.h
+	tests/rangeallocator.cpp
+	tests/rangeallocator.h
 	tests/surfacefile.cpp
 	tests/surfacefile.h
 	tests/softshapes.cpp

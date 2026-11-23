@@ -261,7 +261,7 @@ frame. DX12Backend records the uploads into its own command list instead, see
 On Windows (Arc B580), gfxdevicetester's tests drawing into canvas layers took 130-200 times as
 long as on GlBackend (CanvasLayerTest1 54 ms), and ReadbackTests twice as long. All other tests
 are level with GlBackend (median 1.01), but for the WarpTests making their Warpmaps for each run,
-see the next entry. The pixels of a DX12Surface were in write-combined memory, around 60 ns per
+which is solved since, see "DX12Backend: small buffers out of shared blocks" in ROADMAP.md. The pixels of a DX12Surface were in write-combined memory, around 60 ns per
 pixel to read, so reading back a 512x512 canvas took 16 ms, and the first upload of a canvas with
 alpha read it all twice. They are in CPU cached memory since 95e05825, and premultiplying for an
 upload no longer reads back what it writes. Neither timed with gfxdevicetester on Windows yet,
@@ -283,18 +283,22 @@ CMake warns about it when a DX12 build is configured, if it finds a Python, and
 
 `wax/extensions/dx12gfx/compile_shaders.py`
 
-### DX12Warpmap and DX12Edgemap: a committed resource each, of at least 64 KB
+### DX12Surface: a small surface takes at least 128 KB
 
-Making a DX12Warpmap takes about 250 us on Windows (Arc B580), going by the WarpTests that made
-their Warpmaps for each run, 5-17 times as long as on GlBackend then: each has a buffer that is a
-committed resource of its own, which D3D12 gets from the OS and makes at least 64 KB. GL drivers
-carve buffers out of larger blocks of their own. Warpmaps are usually made once and kept, so the
-time is of little matter, the 64 KB for a small Warpmap or Edgemap more so with many of them.
-Taking them out of shared blocks of the upload heap, as GL drivers do, would fix both. Buffers are
-not kept around in case a new Warpmap could use them. WarpTests make their Warpmaps in `init()`
-now, but for "Cylinders made each run", which shows what making them costs.
+The texture of a DX12Surface and the buffer with its pixels are a committed resource each, which
+D3D12 makes at least 64 KB, and there are one or two descriptor heaps besides. A 32x32 icon has 4 KB of
+pixels. Edgemaps, Warpmaps and palettes had the same and get their buffers from DX12BufferPool
+since, see ROADMAP.md, but that is for buffers that are only written: the pixels are read by the
+CPU, so they would need blocks of cached memory, and textures a heap to be placed in.
 
-`wax/extensions/dx12gfx/wax_dx12warpmap.cpp`, `wax_dx12edgemap.cpp`
+`_createDeviceObjects()` in `wax/extensions/dx12gfx/wax_dx12surface.cpp`
+
+### DX12BufferPool keeps a block for as long as one buffer is left in it
+
+Buffers aren't moved, so blocks that had many buffers and have few left stay as they are. New
+buffers go to the oldest block with room, which lets newer ones empty.
+
+`wax/extensions/dx12gfx/wax_dx12bufferpool.cpp`
 
 ### GlBackend: drawn shapes are slow on Windows, and come at two speeds
 
@@ -334,6 +338,8 @@ does, is planned, see ROADMAP.md.
 ### VulkanBackend: one memory allocation per buffer and image
 
 Drivers can limit allocations to 4096, which an app with that many surfaces would hit.
+RangeAllocator (`wax/source/wax_rangeallocator.h`), which DX12BufferPool hands out ranges of its
+blocks with, is there to do the same for blocks of Vulkan memory.
 
 `VulkanContext::createBuffer()` and `createImage()` in `wax/extensions/vulkangfx/wax_vulkancontext.cpp`
 ### SoftBackend doesn't use the `mipmap` flag of a surface

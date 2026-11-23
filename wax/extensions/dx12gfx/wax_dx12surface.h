@@ -25,6 +25,7 @@
 #pragma once
 
 #include <wax_surface.h>
+#include <wax_dx12bufferpool.h>
 
 #include <wrl.h>
 #include <d3d12.h>
@@ -116,8 +117,7 @@ namespace wax
 		// palette, converted to linear, in a buffer of float4 the pixel shader reads.
 		// The first entry holds the palette's capacity, the colors follow.
 		bool						isIndexed() const { return m_bIndexed; }
-		D3D12_GPU_VIRTUAL_ADDRESS	paletteGPUAddress() const { return m_paletteBuffer ? m_paletteBuffer->GetGPUVirtualAddress() : 0; }
-		ID3D12Resource*				paletteBuffer() const { return m_paletteBuffer.Get(); }		// So DX12Backend can hold it while the GPU reads it.
+		D3D12_GPU_VIRTUAL_ADDRESS	paletteGPUAddress() const { return DX12BufferPool::isValid(m_paletteBuffer) ? m_paletteBuffer.gpuAddress : 0; }
 
 		// Resource state of the texture at the end of the command list DX12Backend
 		// is recording. Only canvas surfaces ever leave D3D12_RESOURCE_STATE_COMMON.
@@ -209,7 +209,7 @@ namespace wax
 		Microsoft::WRL::ComPtr<ID3D12Resource>			m_texture;			// Rests in COMMON state, promoted on use.
 		Microsoft::WRL::ComPtr<ID3D12Resource>			m_uploadBuffer;		// Holds our pixels, readable and writable by the CPU.
 		Microsoft::WRL::ComPtr<ID3D12Resource>			m_readbackBuffer;	// Created on first read back from a canvas surface.
-		Microsoft::WRL::ComPtr<ID3D12Resource>			m_paletteBuffer;	// Palette based surfaces only. Upload heap, permanently mapped.
+		DX12BufferPool::Buffer							m_paletteBuffer;	// Palette based surfaces only, see _createPaletteBuffer().
 		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	m_srvHeap;			// Holds this surface's SRV, then one per mip level but the last. Not shader visible.
 		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	m_rtvHeap;			// Holds one RTV per mip level. Canvas and mipmapped surfaces only.
 

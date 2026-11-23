@@ -441,6 +441,12 @@ For VulkanBackend, still to do:
   color form for its colors, which serves the R8 of GL, Metal and Vulkan and the A8 of DX12
   alike. DX12Backend offers all four vertex inputs to every vertex shader, as D3D12 wants each
   one a shader declares, also those it doesn't read.
+- **Decided with Tord: edgemaps keep a GPU buffer of their own,** as surfaces have their
+  textures. Copying what a frame draws of them into its extras buffer was considered and turned
+  down: an edgemap can be drawn many times a frame, and a resource shouldn't fill up the buffers
+  of the frame. So each backend keeps its edgemap class, which is what makes that buffer. The
+  64 KB a small DX12Edgemap, DX12Warpmap or palette took is solved by shared blocks instead, see
+  "DX12Backend: small buffers out of shared blocks" below.
 - **DX12Backend and VulkanBackend draw with the same HLSL shaders** (`wax/extensions/hlsl`), see
   its README.md. DX12 gets them as bytecode compiled by FXC, Vulkan as SPIR-V compiled by DXC.
   The constants are declared once, in constants.hlsl, as root constants for DX12 and push
@@ -645,7 +651,7 @@ ReadbackTests twice. Not yet timed on Windows with the changes below.
   resource, about 250 us. Keeping the buffers of Warpmaps that go away for new ones, up to 32 MB,
   was tried and taken out again: Warpmaps are usually made once and kept for long, and memory
   shouldn't be held for what might come. Shared blocks, which GL drivers carve buffers out of,
-  are the way if it matters, see KNOWN_ISSUES.md. WarpTests make their Warpmaps in `init()`, as
+  took the cost away since, see below. WarpTests make their Warpmaps in `init()`, as
   the other suites do with what they draw, so they compare drawing. "Cylinders made each run"
   makes them for each run.
 
@@ -684,6 +690,52 @@ before on both.
 - **One list of shaders,** that of `vulkangfx/compile_shaders.py`, which the DX12 script uses as
   the Metal and GL ones do. `wax_dx12shaders.cpp.template` and the Ruby step are gone.
   `GpuBackend::_vertexShaderName()` and `_pixelShaderName()` say which shaders a kind of pipeline
-  has, used by DX12Backend and GlBackend. MetalBackend still has tables of its own for that,
-  left as it couldn't be built here.
+  has, used by all four backends since.
 
+
+### DX12Backend: small buffers out of shared blocks (2026-11)
+
+Each DX12Edgemap, DX12Warpmap and palette of a DX12Surface had a buffer that was a committed
+resource of its own, which D3D12 makes at least 64 KB and takes about 250 us to create. Decided
+with Tord: they keep a buffer of their own, but get it from DX12BufferPool
+(`dx12gfx/wax_dx12bufferpool.h`), as a range of a block they share. D3D12 binds these buffers by
+address, so nothing changes in shaders or in how they are bound.
+
+- **Blocks are upload heap buffers,** mapped for as long as they exist. The first is 64 KB and
+  made when first needed, each one after it twice the size of the one before, up to 1 MB, so a
+  small application has one block of 64 KB for all of them, what a single edgemap took. Buffers
+  over 256 KB get a resource of their own, where the rounding to 64 KB is little. A block nothing
+  is taken of is released, but for the last one.
+- **What is taken of a block is kept track of outside it,** by RangeAllocator
+  (`wax/source/wax_rangeallocator.h`): a list of the free ranges in ordinary memory, first fit,
+  joined when given back, with unit tests. MemHeap wasn't used, as it keeps its bookkeeping in the
+  memory it hands out, and the blocks are write-combined memory, which is very slow to read.
+  RangeAllocator knows nothing of D3D12, so VulkanBackend can use it for its memory.
+- **The buffers are only ever written.** That is why upload heap memory is right for them, where
+  it was wrong for the pixels of surfaces, which are read. Two places did read them and no longer
+  do: GpuEdgemap copied the old buffer into the new one when an edgemap got its first tint, and
+  now fills the new one in from the samples, and the palette was premultiplied where it lay
+  (`p[0] *= p[3]`), in VulkanSurface too, and is now worked out before it is written.
+- **A range given back waits for the GPU** before it is handed out again, as draws recorded or
+  on their way may still read it. One fence counts the submissions of all DX12Backends
+  (`DX12BufferPool::submitted()`), and a range waits for the last one that may read it, which for
+  one given back while a backend records is known once nothing is being recorded. This is how
+  VulkanContext does it, on the thread that draws, without locks. So DX12Backend no longer holds
+  these buffers for each submission, and replacing the buffer of an edgemap at its first tint no
+  longer waits for the GPU. The thread pool that releases what DX12Backend holds is still there
+  for textures and the buffers of frames.
+- **Ranges are whole numbers of 192 bytes,** a multiple of the float4 of edgemaps and palettes,
+  of the 24 bytes of a Warpmap vertex and of a cache line, so every kind can start at any range.
+  The debug layer of D3D12 has nothing to say about buffers bound that way.
+- **A device let go of takes the blocks with it.** Edgemaps and surfaces give their buffers back
+  first and get new ones on the next device, as before. A DX12Warpmap, which wasn't moved to a new
+  device before and held on to the old one, finds its buffer no longer valid and gets a new one
+  when next drawn (`_prepare()`).
+
+On Windows (Arc B580, Release): gfxdevicetester has 134 such buffers of 2.6 MB together, now in
+six blocks of 3.1 MB, where they took 8.6 MB or more. "Cylinders made each run" of WarpTests went
+from 848 us to 15 us, and the other 71 tests of the edgemap, warp and palette suites take 0.85
+to 1.01 times as long as before, median 1.00. All of gfxdevicetester gives the same results as
+before on DX12Backend and GlBackend. A debug build, with the debug layer of D3D12 on, gives the
+same results for the edgemap, warp and palette suites after two simulated device losses as
+without them.

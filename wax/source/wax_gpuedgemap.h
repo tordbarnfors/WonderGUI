@@ -77,7 +77,8 @@ namespace wax
 		bool	_createContent();
 
 		// Creates a buffer of the given size, mapped for writing, without letting go of the one
-		// we have, which may be read from while the new one is filled in. Returns null on failure.
+		// we have, which the GPU may read while the new one is filled in. Returns null on failure.
+		// We only write to it, so it can be in memory that is slow to read.
 
 		virtual float *	_allocBuffer( size_t bytes ) = 0;
 
@@ -101,7 +102,7 @@ namespace wax
 
 		static const int c_tintSlotSize;		// In float4 entries.
 
-		float *	m_pGpuData = nullptr;			// Mapped content of the buffer, null if there is none.
+		float *	m_pGpuData = nullptr;			// Mapped content of the buffer, null if there is none. Written to, never read.
 		int		m_samplesSize = 0;				// Size of the edge strips and raw samples, in float4 entries.
 		bool	m_bHasTintSlots = false;
 	};

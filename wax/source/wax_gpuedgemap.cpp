@@ -158,13 +158,15 @@ namespace wax
 		if( !m_pGpuData )
 			return;
 
-		// First tint on an edgemap that had none, it needs a bigger buffer. Happens once per
-		// edgemap at most.
+		// First tint on an edgemap that had none, it needs a bigger buffer, filled in anew. Happens
+		// once per edgemap at most.
 
 		if( m_nbTints > 0 && !m_bHasTintSlots )
 		{
 			if( !_replaceBuffer(true) )
 				return;
+
+			_samplesUpdated(0, m_nbSegments - 1, 0, m_size.w + 1);
 
 			beginSegment = 0;
 			endSegment = m_nbSegments;
@@ -175,8 +177,10 @@ namespace wax
 
 	//____ _replaceBuffer() ________________________________________________________
 	//
-	// Gets a new buffer, with or without room for tint blocks, and carries over the edge strips
-	// and raw samples of the one it replaces. Colors are left for _writeColors().
+	// Gets a new buffer, with or without room for tint blocks, for the caller to fill in with
+	// _samplesUpdated() and _writeColors(). Nothing is carried over from the buffer it replaces:
+	// a buffer is only ever written to, as it may be in memory that is very slow to read, like the
+	// write-combined memory of an upload heap in D3D12.
 
 	bool GpuEdgemap::_replaceBuffer(bool bWithTintSlots)
 	{
@@ -195,9 +199,6 @@ namespace wax
 		// yet would otherwise be noise.
 
 		memset( pNew, 0, bytes );
-
-		if( m_pGpuData )
-			memcpy( pNew, m_pGpuData, size_t(m_samplesSize) * 4 * sizeof(float) );
 
 		_commitBuffer();
 

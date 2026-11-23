@@ -70,6 +70,7 @@
 #include <wax_patches.h>
 #include <wax_pixeltools.h>
 #include <wax_printer.h>
+#include <wax_rangeallocator.h>
 #include <wax_q565compression.h>
 #include <wax_qoicompression.h>
 #include <wax_rlecompression.h>

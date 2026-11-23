@@ -58,9 +58,11 @@ namespace wax
 	{
 		static_assert(sizeof(Vertex) == 6 * sizeof(int32_t) && sizeof(Triangle) == 3 * sizeof(uint16_t), "Vertices and triangles are uploaded as they are");
 
-		ID3D12Device * pDevice = DX12Backend::device();
+		// Triangles start at an aligned offset after the vertices.
 
-		if (!pDevice)
+		m_indexOffset = (size_t(m_nVertices) * sizeof(Vertex) + 255) & ~size_t(255);
+
+		if (!DX12Backend::device())
 		{
 			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
 				"No D3D12 device set. DX12Backend::setDevice() must be called before any warpmap is created.",
@@ -69,72 +71,41 @@ namespace wax
 		}
 
 		// Nothing can be created on a lost device. The warpmap is left without a
-		// buffer and DX12Backend draws nothing for it.
+		// buffer and DX12Backend draws nothing for it, until there is a new device,
+		// see _prepare().
 
 		if (DX12Backend::isDeviceLost())
 			return;
 
-		// Triangles start at an aligned offset after the vertices. A buffer can't be empty.
-
-		m_indexOffset = (size_t(m_nVertices) * sizeof(Vertex) + 255) & ~size_t(255);
-		size_t bytes = std::max(m_indexOffset + size_t(m_nTriangles) * sizeof(Triangle), size_t(256));
-
-		D3D12_HEAP_PROPERTIES heapProps = {};
-		heapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
-
-		D3D12_RESOURCE_DESC bufDesc = {};
-		bufDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-		bufDesc.Width = UINT64(bytes);
-		bufDesc.Height = 1;
-		bufDesc.DepthOrArraySize = 1;
-		bufDesc.MipLevels = 1;
-		bufDesc.Format = DXGI_FORMAT_UNKNOWN;
-		bufDesc.SampleDesc = { 1, 0 };
-		bufDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
-		if (FAILED(pDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufDesc,
-													D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(m_buffer.GetAddressOf()))))
-		{
-			// A lost device is reported once by DX12Backend, not by every warpmap.
-
-			if (!DX12Backend::checkDeviceLost())
-				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for warpmap.",
-					this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			m_buffer = nullptr;
-			return;
-		}
-
-		// Named after us, so the debug layer's live object report shows where it comes from.
-		{
-			wchar_t name[96];
-			swprintf(name, 96, L"Wax DX12Warpmap %p: buffer", (const void*) this);
-			m_buffer->SetName(name);
-		}
-
-		D3D12_RANGE readRange = { 0, 0 };			// We only write.
-
-		if (FAILED(m_buffer->Map(0, &readRange, (void**) &m_pBuffer)))
-		{
-			if (!DX12Backend::checkDeviceLost())
-				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to map buffer for warpmap.",
-					this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			m_buffer = nullptr;
-			m_pBuffer = nullptr;
-			return;
-		}
-
 		//TODO: As for DX12Edgemap, there is one buffer and two frames in flight, so
 		// updating the mesh can change what the GPU is still reading for the previous frame.
 
-		_updated(0, m_nVertices, 0, m_nTriangles);
+		_prepare();
 	}
 
 	//____ destructor ____________________________________________________________
 
 	DX12Warpmap::~DX12Warpmap()
 	{
-		if (m_buffer && m_pBuffer)
-			m_buffer->Unmap(0, nullptr);
+		DX12BufferPool::free(m_buffer);
+	}
+
+	//____ _prepare() ____________________________________________________________
+	//
+	// A buffer can't be empty.
+
+	bool DX12Warpmap::_prepare()
+	{
+		if (DX12BufferPool::isValid(m_buffer))
+			return true;
+
+		size_t bytes = std::max(m_indexOffset + size_t(m_nTriangles) * sizeof(Triangle), size_t(256));
+
+		if (!DX12BufferPool::alloc(int(bytes), m_buffer))
+			return false;
+
+		_updated(0, m_nVertices, 0, m_nTriangles);
+		return true;
 	}
 
 	//____ typeInfo() ____________________________________________________________
@@ -161,14 +132,14 @@ namespace wax
 
 	void DX12Warpmap::_updated(int firstVertex, int nVertices, int firstTriangle, int nTriangles)
 	{
-		if (!m_pBuffer)
+		if (!DX12BufferPool::isValid(m_buffer))
 			return;
 
 		if (nVertices > 0)
-			std::memcpy(m_pBuffer + size_t(firstVertex) * sizeof(Vertex), m_pVertices + firstVertex, size_t(nVertices) * sizeof(Vertex));
+			std::memcpy(m_buffer.pData + size_t(firstVertex) * sizeof(Vertex), m_pVertices + firstVertex, size_t(nVertices) * sizeof(Vertex));
 
 		if (nTriangles > 0)
-			std::memcpy(m_pBuffer + m_indexOffset + size_t(firstTriangle) * sizeof(Triangle), m_pTriangles + firstTriangle, size_t(nTriangles) * sizeof(Triangle));
+			std::memcpy(m_buffer.pData + m_indexOffset + size_t(firstTriangle) * sizeof(Triangle), m_pTriangles + firstTriangle, size_t(nTriangles) * sizeof(Triangle));
 	}
 
 } // namespace wax

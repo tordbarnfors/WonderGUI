@@ -29,6 +29,7 @@
 #include <wax_dx12edgemapfactory.h>
 #include <wax_dx12warpmap.h>
 #include <wax_dx12warpmapfactory.h>
+#include <wax_dx12bufferpool.h>
 
 #include <cstdio>
 #include <cstring>
@@ -203,7 +204,7 @@ namespace wax
 			_flushPendingReleases();
 
 			DX12Surface::exitDevice();
-			DX12Edgemap::exitDevice();
+			DX12BufferPool::exitDevice();
 		}
 
 		s_pDevice = pDX12Device;
@@ -224,10 +225,11 @@ namespace wax
 			s_bDeviceLost = false;
 			s_deviceRemovedReason = S_OK;
 
-			// Surfaces and edgemaps create their own resources and need the device for it.
+			// Surfaces create their own resources and need the device for it, as does
+			// the pool edgemaps, Warpmaps and palettes get their buffers from.
 
 			DX12Surface::setDevice(pDX12Device);
-			DX12Edgemap::setDevice(pDX12Device);
+			DX12BufferPool::setDevice(pDX12Device, pDX12CommandQueue);
 
 			for (auto pBackend : s_backends)
 				pBackend->_createDeviceObjects(pDX12Device, pDX12CommandQueue);
@@ -254,6 +256,19 @@ namespace wax
 #else
 		return false;
 #endif
+	}
+
+	//____ _isAnyRecording() _____________________________________________________
+
+	bool DX12Backend::_isAnyRecording()
+	{
+		for (auto pBackend : s_backends)
+		{
+			if (pBackend->m_bCommandListOpen)
+				return true;
+		}
+
+		return false;
 	}
 
 	//____ waitForCompletionOfAll() ______________________________________________
@@ -734,6 +749,11 @@ namespace wax
 
 		_waitForFence(m_frameResources[frame].fenceValue);
 
+		// Buffers that edgemaps, Warpmaps and palettes have given back, which the GPU
+		// is done with by now.
+
+		DX12BufferPool::collect();
+
 		m_frameResources[frame].commandAllocator->Reset();
 		m_commandList->Reset(m_frameResources[frame].commandAllocator.Get(), nullptr);
 		m_bCommandListOpen = true;
@@ -805,6 +825,8 @@ namespace wax
 		m_pDX12CommandQueue->Signal(m_commandFence.Get(), m_fenceValue);
 		m_frameResources[m_currentFrameIndex].fenceValue = m_fenceValue;
 
+		DX12BufferPool::submitted();
+
 		_uploadsSubmitted();
 		_releaseWhenDone(m_fenceValue);
 
@@ -839,6 +861,8 @@ namespace wax
 
 		m_pDX12CommandQueue->Signal(m_commandFence.Get(), m_fenceValue);
 		m_frameResources[m_currentFrameIndex].fenceValue = m_fenceValue;
+
+		DX12BufferPool::submitted();
 
 		_uploadsSubmitted();
 		_releaseWhenDone(m_fenceValue);
@@ -1463,10 +1487,6 @@ namespace wax
 			m_blitSourceCanvases.push_back(pSource);
 		}
 
-		// A palette based surface is read through its palette buffer as well.
-
-		_holdUntilDone(pSource->paletteBuffer());
-
 		// An upload into it, later in this list, has to know it has been promoted.
 
 		pSource->m_lastReadInList = m_listSerial;
@@ -1832,10 +1852,8 @@ namespace wax
 
 		// The command list mentions the edgemap's buffer but keeps no reference to
 		// it, and DeviceGen2 lets go of the edgemap when the session ends. A
-		// waveform drawn from a temporary would otherwise be freed while the GPU
-		// still had work referring to it.
-
-		_holdUntilDone(pDX12Edgemap->m_buffer.Get());
+		// waveform drawn from a temporary is still safe: DX12BufferPool doesn't hand
+		// out the memory of a buffer again until the GPU is done with what we record.
 
 		m_commandList->SetGraphicsRootShaderResourceView(5, pDX12Edgemap->_gpuAddress());
 		return true;
@@ -1849,12 +1867,9 @@ namespace wax
 	{
 		auto pDX12Warpmap = static_cast<DX12Warpmap*>(pWarpmap);
 
-		if (!m_bCommandListOpen || pDX12Warpmap->_gpuAddress() == 0 || pWarpmap->triangleCount() == 0 || nPatches <= 0)
+		if (!m_bCommandListOpen || pWarpmap->triangleCount() == 0 || nPatches <= 0 || !pDX12Warpmap->_prepare())
 			return;
 
-		// The command list keeps no references to the buffers, see _bindEdgemap().
-
-		_holdUntilDone(pDX12Warpmap->m_buffer.Get());
 		m_commandList->SetGraphicsRootShaderResourceView(7, pDX12Warpmap->_gpuAddress());
 
 		D3D12_INDEX_BUFFER_VIEW indexBufferView = pDX12Warpmap->_indexBufferView();

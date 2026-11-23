@@ -36,23 +36,7 @@ namespace wax
 
 	const TypeInfo DX12Edgemap::TYPEINFO = { "DX12Edgemap", &GpuEdgemap::TYPEINFO };
 
-	ID3D12Device * DX12Edgemap::s_pDevice = nullptr;
 	DX12Edgemap *  DX12Edgemap::s_pFirstLive = nullptr;
-
-	//____ setDevice() _________________________________________________________
-
-	bool DX12Edgemap::setDevice( ID3D12Device * pDevice )
-	{
-		s_pDevice = pDevice;
-		return true;
-	}
-
-	//____ exitDevice() ________________________________________________________
-
-	void DX12Edgemap::exitDevice()
-	{
-		s_pDevice = nullptr;
-	}
 
 
 	//____ create() ______________________________________________________________
@@ -110,7 +94,7 @@ namespace wax
 		if( DX12Backend::isDeviceLost() )
 			return;
 
-		if( !s_pDevice )
+		if( !DX12Backend::device() )
 		{
 			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
 				"No D3D12 device set. DX12Backend must be created before any edgemap.",
@@ -127,8 +111,8 @@ namespace wax
 	{
 		_unlink();
 
-		_releaseBuffer(m_newBuffer);
-		_releaseBuffer(m_buffer);
+		DX12BufferPool::free(m_newBuffer);
+		DX12BufferPool::free(m_buffer);
 	}
 
 	//____ _evacuateAll() ________________________________________________________
@@ -140,8 +124,8 @@ namespace wax
 
 		for( DX12Edgemap * p = s_pFirstLive; p; p = p->m_pNextLive )
 		{
-			p->_releaseBuffer(p->m_newBuffer);
-			p->_releaseBuffer(p->m_buffer);
+			DX12BufferPool::free(p->m_newBuffer);
+			DX12BufferPool::free(p->m_buffer);
 			p->m_pGpuData = nullptr;
 			p->m_bHasTintSlots = false;
 		}
@@ -151,12 +135,12 @@ namespace wax
 
 	void DX12Edgemap::_migrateAll()
 	{
-		if( !s_pDevice )
+		if( !DX12Backend::device() )
 			return;
 
 		for( DX12Edgemap * p = s_pFirstLive; p; p = p->m_pNextLive )
 		{
-			if( !p->m_buffer )
+			if( !DX12BufferPool::isValid(p->m_buffer) )
 				p->_createContent();
 		}
 	}
@@ -200,95 +184,33 @@ namespace wax
 	//
 	//TODO: There is one buffer and two frames in flight, so updating samples can
 	// change what the GPU is still reading for the previous frame.
+	//
+	// Nothing can be created on a lost device, or without one. The edgemap is then
+	// left with the buffer it has, or without one, as when creating one fails, and
+	// DX12Backend draws nothing for it.
 
 	float * DX12Edgemap::_allocBuffer( size_t bytes )
 	{
-		_releaseBuffer(m_newBuffer);
+		DX12BufferPool::free(m_newBuffer);
 
-		// Nothing can be created on a lost device, and trying costs an exception
-		// inside the D3D12 runtime. The edgemap is left with the buffer it has,
-		// or without one, as when creating one fails, and DX12Backend draws
-		// nothing for it.
-
-		if( DX12Backend::isDeviceLost() || !s_pDevice )
+		if( !DX12BufferPool::alloc(int(bytes), m_newBuffer) )
 			return nullptr;
 
-		D3D12_HEAP_PROPERTIES heapProps = {};
-		heapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
-
-		D3D12_RESOURCE_DESC bufDesc = {};
-		bufDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-		bufDesc.Width = UINT64(bytes);
-		bufDesc.Height = 1;
-		bufDesc.DepthOrArraySize = 1;
-		bufDesc.MipLevels = 1;
-		bufDesc.Format = DXGI_FORMAT_UNKNOWN;
-		bufDesc.SampleDesc = { 1, 0 };
-		bufDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
-		Microsoft::WRL::ComPtr<ID3D12Resource>	buffer;
-		float * pBuffer = nullptr;
-
-		if( FAILED(s_pDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufDesc,
-													  D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(buffer.GetAddressOf()))) )
-		{
-			// A lost device is reported once by DX12Backend, not by every edgemap.
-
-			if( !DX12Backend::checkDeviceLost() )
-				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for edgemap.",
-					this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			return nullptr;
-		}
-
-		// Named after us, so the debug layer's live object report shows where it comes from.
-		{
-			wchar_t name[96];
-			swprintf( name, 96, L"Wax DX12Edgemap %p: buffer", (const void*) this );
-			buffer->SetName( name );
-		}
-
-		D3D12_RANGE readRange = { 0, 0 };			// We only write.
-
-		if( FAILED(buffer->Map(0, &readRange, (void**) &pBuffer)) )
-		{
-			if( !DX12Backend::checkDeviceLost() )
-				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to map buffer for edgemap.",
-					this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			return nullptr;
-		}
-
-		m_newBuffer = buffer;
-		return pBuffer;
+		return (float*) m_newBuffer.pData;
 	}
 
 	//____ _commitBuffer() _______________________________________________________
 	//
 	// Replacing a buffer we had happens once per edgemap at most, when it gets its
-	// first tint. The GPU may still be reading the old one, so we wait for it
-	// before letting go.
+	// first tint. The GPU may still be reading the old one, which the pool waits
+	// for before it hands out its memory again.
 
 	void DX12Edgemap::_commitBuffer()
 	{
-		if( m_buffer )
-		{
-			DX12Backend::waitForCompletionOfAll();
-			_releaseBuffer(m_buffer);
-		}
+		DX12BufferPool::free(m_buffer);
 
 		m_buffer = m_newBuffer;
-		m_newBuffer = nullptr;
-	}
-
-	//____ _releaseBuffer() ______________________________________________________
-
-	void DX12Edgemap::_releaseBuffer( Microsoft::WRL::ComPtr<ID3D12Resource>& buffer )
-	{
-		if( buffer )
-		{
-			buffer->Unmap(0, nullptr);
-			buffer = nullptr;
-		}
+		m_newBuffer = DX12BufferPool::Buffer();
 	}
 
 } // namespace wax
-

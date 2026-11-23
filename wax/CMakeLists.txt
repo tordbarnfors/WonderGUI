@@ -58,6 +58,8 @@ set( SOURCES
 	source/wax_pointers.h
 	source/wax_printer.cpp
 	source/wax_printer.h
+	source/wax_rangeallocator.cpp
+	source/wax_rangeallocator.h
 	source/wax_spans.h
 	source/wax_strongptr.h
 	source/wax_tint.cpp

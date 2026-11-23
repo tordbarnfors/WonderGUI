@@ -25,6 +25,7 @@
 
 #define NOMINMAX
 #include <wax_warpmap.h>
+#include <wax_dx12bufferpool.h>
 
 #include <wrl.h>
 #include <d3d12.h>
@@ -40,7 +41,7 @@ namespace wax
 	/**
 	 * @brief Warpmap for DX12Backend.
 	 *
-	 * The mesh is kept on the GPU as it is, in one permanently mapped buffer: the vertices (x, y,
+	 * The mesh is kept on the GPU as it is, in one buffer from DX12BufferPool: the vertices (x, y,
 	 * u, v, w and coverage as integers, the layout of Warpmap::Vertex), read by the vertex shader as
 	 * a structured buffer, followed by the triangles (the corners as 16-bit unsigned ints, the layout
 	 * of Warpmap::Triangle), which are the index buffer. Content that changes is copied there, with
@@ -73,12 +74,16 @@ namespace wax
 
 		void	_updated(int firstVertex, int nVertices, int firstTriangle, int nTriangles) override;
 
-		D3D12_GPU_VIRTUAL_ADDRESS	_gpuAddress() const { return m_buffer ? m_buffer->GetGPUVirtualAddress() : 0; }
+		// Makes sure there is a buffer with the mesh in it on the device there is now: a device
+		// that is let go of takes the buffer with it. Returns false if there is none to draw from.
+
+		bool						_prepare();
+
+		D3D12_GPU_VIRTUAL_ADDRESS	_gpuAddress() const { return DX12BufferPool::isValid(m_buffer) ? m_buffer.gpuAddress : 0; }
 		D3D12_INDEX_BUFFER_VIEW		_indexBufferView() const;
 
-		Microsoft::WRL::ComPtr<ID3D12Resource>	m_buffer;
-		uint8_t *	m_pBuffer = nullptr;			// Permanently mapped content of m_buffer.
-		size_t		m_indexOffset = 0;				// Where the triangles start in m_buffer, in bytes.
+		DX12BufferPool::Buffer	m_buffer;
+		size_t					m_indexOffset = 0;			// Where the triangles start in m_buffer, in bytes.
 	};
 
 } // namespace wax

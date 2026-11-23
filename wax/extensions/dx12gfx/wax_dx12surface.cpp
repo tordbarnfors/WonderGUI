@@ -862,7 +862,7 @@ namespace wax
 		m_texture = nullptr;
 		m_uploadBuffer = nullptr;
 		m_readbackBuffer = nullptr;
-		m_paletteBuffer = nullptr;
+		DX12BufferPool::free(m_paletteBuffer);
 		m_srvHeap = nullptr;
 		m_rtvHeap = nullptr;
 
@@ -962,32 +962,15 @@ namespace wax
 
 	bool DX12Surface::_createPaletteBuffer()
 	{
-		D3D12_HEAP_PROPERTIES uploadProps = {};
-		uploadProps.Type = D3D12_HEAP_TYPE_UPLOAD;
+		DX12BufferPool::free(m_paletteBuffer);
+		m_pPaletteData = nullptr;
 
-		D3D12_RESOURCE_DESC bufDesc = {};
-		bufDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-		bufDesc.Width = UINT64(m_paletteCapacity + 1) * 4 * sizeof(float);
-		bufDesc.Height = 1;
-		bufDesc.DepthOrArraySize = 1;
-		bufDesc.MipLevels = 1;
-		bufDesc.Format = DXGI_FORMAT_UNKNOWN;
-		bufDesc.SampleDesc = { 1, 0 };
-		bufDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+		// From the pool, which reports if it fails, unless the device is lost.
 
-		if( FAILED(s_pDevice->CreateCommittedResource(&uploadProps, D3D12_HEAP_FLAG_NONE, &bufDesc,
-													  D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(m_paletteBuffer.GetAddressOf()))) ||
-			FAILED(m_paletteBuffer->Map(0, nullptr, (void**) &m_pPaletteData)) )
-		{
-			m_paletteBuffer = nullptr;
-			m_pPaletteData = nullptr;
-			if( !DX12Backend::checkDeviceLost() )
-				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create palette buffer for surface.",
-					this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		if( !DX12BufferPool::alloc( (m_paletteCapacity + 1) * 4 * int(sizeof(float)), m_paletteBuffer ) )
 			return false;
-		}
 
-		setObjectName( m_paletteBuffer.Get(), L"palette buffer", this, m_size );
+		m_pPaletteData = (float*) m_paletteBuffer.pData;
 
 		memset( m_pPaletteData, 0, size_t(m_paletteCapacity + 1) * 4 * sizeof(float) );
 
@@ -1015,25 +998,31 @@ namespace wax
 
 		bool bLinear = (m_colorSpace == ColorSpace::Linear);
 
+		// Worked out here and then written, as the buffer is in write-combined memory, which is
+		// very slow to read back from.
+
 		float * p = m_pPaletteData + 4;			// Past the capacity.
 
 		for( int i = 0; i < m_paletteCapacity; i++ )
 		{
 			HiColor col = m_pPalette[i];		// Same color space, just more bits.
 
+			float c[4];
+
 			if( bLinear )
 			{
-				p[0] = col.r / 4096.f;
-				p[1] = col.g / 4096.f;
-				p[2] = col.b / 4096.f;
-				p[3] = col.a / 4096.f;
+				c[0] = col.r / 4096.f;
+				c[1] = col.g / 4096.f;
+				c[2] = col.b / 4096.f;
+				c[3] = col.a / 4096.f;
 			}
 			else
-				col.toLinearFloat(p);
+				col.toLinearFloat(c);
 
-			p[0] *= p[3];
-			p[1] *= p[3];
-			p[2] *= p[3];
+			p[0] = c[0] * c[3];
+			p[1] = c[1] * c[3];
+			p[2] = c[2] * c[3];
+			p[3] = c[3];
 			p += 4;
 		}
 	}
@@ -1088,8 +1077,7 @@ namespace wax
 
 		delete [] m_pFallbackData;
 
-		if( m_paletteBuffer && m_pPaletteData )
-			m_paletteBuffer->Unmap(0, nullptr);
+		DX12BufferPool::free(m_paletteBuffer);
 
 		delete [] m_pPalette;
 	}

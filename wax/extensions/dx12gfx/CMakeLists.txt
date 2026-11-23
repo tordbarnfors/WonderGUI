@@ -4,6 +4,8 @@ set(SOURCES
 	compile_shaders.py
 	wax_dx12backend.cpp
 	wax_dx12backend.h
+	wax_dx12bufferpool.cpp
+	wax_dx12bufferpool.h
 	wax_dx12edgemap.cpp
 	wax_dx12edgemap.h
 	wax_dx12edgemapfactory.cpp
