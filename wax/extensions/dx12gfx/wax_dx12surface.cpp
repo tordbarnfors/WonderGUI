@@ -651,7 +651,15 @@ namespace wax
 		// exception inside the D3D12 runtime. Go straight to plain pixels. Should a
 		// new device be set, migrateAll() moves them onto it.
 
-		if( !bFormatSupported || DX12Backend::isDeviceLost() || !_initCopyResources() || !_createDeviceObjects() )
+		// A canvas is drawn to, and rarely asked for its pixels, so one that isn't buffered and
+		// is given nothing to start out with gets no pixel buffer until someone asks for its
+		// pixels, see _needPixels(). That is half its memory, and a third of the time it takes
+		// to make it, which matters for canvas layers, made for every canvas update. An indexed
+		// canvas can't be drawn to and is written by the CPU like any other surface.
+
+		bool bPixelBuffer = pPixels || !fillColor.isUndefined() || !m_bCanvas || m_bBuffered || m_bIndexed;
+
+		if( !bFormatSupported || DX12Backend::isDeviceLost() || !_initCopyResources() || !_createDeviceObjects(bPixelBuffer) )
 		{
 			if( !_allocFallbackPixels() )
 				return;
@@ -672,9 +680,10 @@ namespace wax
 	// surface is never left halfway onto a device.
 	//
 	// On success m_pUploadData points into the new upload buffer, which holds
-	// whatever was in that memory. Filling it is up to the caller.
+	// whatever was in that memory. Filling it is up to the caller. Without a pixel
+	// buffer it is null, and _needPixels() makes the buffer when it is asked for.
 
-	bool DX12Surface::_createDeviceObjects()
+	bool DX12Surface::_createDeviceObjects( bool bPixelBuffer )
 	{
 		const char * pFunc = __func__;
 
@@ -736,41 +745,10 @@ namespace wax
 
 		m_resourceState = D3D12_RESOURCE_STATE_COMMON;
 
-		// Create the buffer holding our pixels
-		//
-		// Not in an UPLOAD heap, although the GPU copies from it like from one. That
-		// memory is write-combined and uncached, often in VRAM behind the PCIe bus
-		// on a discrete GPU, and reading it from the CPU crawls: reading a 2100 x 440
-		// canvas back out of it took half a second on an AMD card. We read our pixels
-		// whenever someone asks for them, so they get the CPU cached memory the
-		// driver uses for READBACK heaps instead, as a custom heap the GPU can copy
-		// from.
+		// Create the buffer holding our pixels, unless it can wait until they are asked for.
 
-		D3D12_HEAP_PROPERTIES uploadProps = s_pDevice->GetCustomHeapProperties(0, D3D12_HEAP_TYPE_READBACK);
-
-		D3D12_RESOURCE_DESC bufDesc = {};
-		bufDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-		bufDesc.Width = UINT64(m_uploadPitch) * m_size.h;
-		bufDesc.Height = 1;
-		bufDesc.DepthOrArraySize = 1;
-		bufDesc.MipLevels = 1;
-		bufDesc.Format = DXGI_FORMAT_UNKNOWN;
-		bufDesc.SampleDesc = { 1, 0 };
-		bufDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
-		// A buffer outside an UPLOAD heap starts out COMMON, and is promoted to a
-		// copy source by itself whenever it is copied from.
-
-		if( FAILED(s_pDevice->CreateCommittedResource(&uploadProps, D3D12_HEAP_FLAG_NONE, &bufDesc,
-													  D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(m_uploadBuffer.GetAddressOf()))) )
-			return fail( "Failed to create pixel buffer for surface." );
-
-		setObjectName( m_uploadBuffer.Get(), L"upload buffer", this, m_size );
-
-		uint8_t * pMapped = nullptr;
-
-		if( FAILED(m_uploadBuffer->Map(0, nullptr, (void**) &pMapped)) )
-			return fail( "Failed to map pixel buffer for surface." );
+		if( bPixelBuffer && !_createPixelBuffer() )
+			return fail( nullptr );
 
 		// Create the descriptor for the texture. It lives in a heap of its own and
 		// is copied into the shader visible heap by DX12Backend when used. Each mip
@@ -843,7 +821,78 @@ namespace wax
 		if( m_bIndexed && (!m_pPalette || !_createPaletteBuffer()) )
 			return fail( nullptr );
 
+		return true;
+	}
+
+	//____ _createPixelBuffer() ________________________________________________
+	//
+	// The buffer holding our pixels, mapped, which m_pUploadData points into from here on.
+	// It holds whatever was in that memory. Reports its own failure.
+	//
+	// Not in an UPLOAD heap, although the GPU copies from it like from one. That
+	// memory is write-combined and uncached, often in VRAM behind the PCIe bus
+	// on a discrete GPU, and reading it from the CPU crawls: reading a 2100 x 440
+	// canvas back out of it took half a second on an AMD card. We read our pixels
+	// whenever someone asks for them, so they get the CPU cached memory the
+	// driver uses for READBACK heaps instead, as a custom heap the GPU can copy
+	// from.
+
+	bool DX12Surface::_createPixelBuffer()
+	{
+		D3D12_HEAP_PROPERTIES uploadProps = s_pDevice->GetCustomHeapProperties(0, D3D12_HEAP_TYPE_READBACK);
+
+		D3D12_RESOURCE_DESC bufDesc = {};
+		bufDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+		bufDesc.Width = UINT64(m_uploadPitch) * m_size.h;
+		bufDesc.Height = 1;
+		bufDesc.DepthOrArraySize = 1;
+		bufDesc.MipLevels = 1;
+		bufDesc.Format = DXGI_FORMAT_UNKNOWN;
+		bufDesc.SampleDesc = { 1, 0 };
+		bufDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+		// A buffer outside an UPLOAD heap starts out COMMON, and is promoted to a
+		// copy source by itself whenever it is copied from.
+
+		uint8_t * pMapped = nullptr;
+
+		if( FAILED(s_pDevice->CreateCommittedResource(&uploadProps, D3D12_HEAP_FLAG_NONE, &bufDesc,
+													  D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(m_uploadBuffer.ReleaseAndGetAddressOf()))) ||
+			FAILED(m_uploadBuffer->Map(0, nullptr, (void**) &pMapped)) )
+		{
+			m_uploadBuffer = nullptr;
+
+			// A lost device is reported once by DX12Backend, not by every surface.
+
+			if( !DX12Backend::checkDeviceLost() )
+				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create pixel buffer for surface.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+
+			return false;
+		}
+
+		setObjectName( m_uploadBuffer.Get(), L"upload buffer", this, m_size );
+
 		m_pUploadData = pMapped;
+		return true;
+	}
+
+	//____ _needPixels() _______________________________________________________
+	//
+	// Called before our pixels are handed out or read. A canvas created without a pixel
+	// buffer, see _setupTexture(), gets it here. What it has is in the texture, so the
+	// buffer starts out as the older copy, to be read back into before it is read.
+	//
+	// Returns false if we have no pixels and can't get any.
+
+	bool DX12Surface::_needPixels()
+	{
+		if( m_pUploadData )
+			return true;
+
+		if( !m_texture || !s_pDevice || DX12Backend::isDeviceLost() || !_createPixelBuffer() )
+			return false;
+
+		m_bBufferNeedsSync = true;
 		return true;
 	}
 
@@ -892,8 +941,15 @@ namespace wax
 
 	bool DX12Surface::_evacuate()
 	{
-		if( !m_uploadBuffer )
+		if( !m_texture )
 			return true;						// Nothing on the device, our pixels are already ours.
+
+		// A canvas without a pixel buffer gets one to read back into, if the device still
+		// works. If not, what was rendered into it is gone, and it has no pixels to lose.
+
+		bool bHadPixels = (m_pUploadData != nullptr);
+
+		_needPixels();
 
 		if( m_bBufferNeedsSync && !DX12Backend::isDeviceLost() )
 			_syncBufferAndWait();
@@ -921,7 +977,7 @@ namespace wax
 		m_bBufferNeedsSync = false;
 		m_dirtyRect = RectI(0, 0, m_size.w, m_size.h);		// Uploaded once we are on a device again, see _migrate().
 		_updatePending();
-		return bCopied;
+		return bCopied || !bHadPixels;
 	}
 
 	//____ _migrate() __________________________________________________________
@@ -932,7 +988,7 @@ namespace wax
 
 	void DX12Surface::_migrate()
 	{
-		if( m_uploadBuffer || !m_pFallbackData || m_dxgiFormat == DXGI_FORMAT_UNKNOWN )
+		if( m_texture || !m_pFallbackData || m_dxgiFormat == DXGI_FORMAT_UNKNOWN )
 			return;
 
 		if( !_initCopyResources() || !_createDeviceObjects() )
@@ -1464,7 +1520,7 @@ namespace wax
 
 	int DX12Surface::alpha(CoordSPX coord)
 	{
-		if( !m_pUploadData )
+		if( !_needPixels() )
 			return 0;
 
 		if( m_bBufferNeedsSync )
@@ -1478,14 +1534,16 @@ namespace wax
 
 	//____ allocPixelBuffer() _________________________________________________
 	//
-	// Our pixels always live in a CPU accessible buffer, so this just points into
-	// it. Note that the pitch is padded, see _setupTexture().
+	// Our pixels live in a CPU accessible buffer, so this just points into it, once
+	// a canvas that was created without has got one. Note that the pitch is padded,
+	// see _setupTexture().
 	//
 	// Whoever gets it may write to it, so an upload the GPU is still copying from
 	// it has to be finished first.
 
 	const PixelBuffer DX12Surface::allocPixelBuffer(const RectI& rect)
 	{
+		_needPixels();
 		_waitForUpload();
 		return _pixelBuffer(rect);
 	}
@@ -1516,10 +1574,13 @@ namespace wax
 
 		//TODO: Only read back the lines asked for, not the whole texture.
 
+		if( !_needPixels() )
+			return false;
+
 		if( m_bBufferNeedsSync )
 			_syncBufferAndWait();
 
-		return m_pUploadData != nullptr;
+		return true;
 	}
 
 	//____ pullPixels() _______________________________________________________

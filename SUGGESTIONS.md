@@ -165,3 +165,19 @@ The entry says sizes that aren't a whole number of pixels hit the cache mismatch
 `FreeTypeFont::setSize()` now starts with `align(_size)`, which rounds to whole pixels, and both
 `_findGlyph()` and `_addGlyph()` are called with `m_size`. If that is so, the mismatch can no
 longer happen and the entry can go, though the two functions still round differently.
+
+## Tools
+
+### A simulated device loss doesn't happen in an unattended gfxdevicetester run on Win32
+
+`WAPP_DX12_SIMULATE_DEVICE_LOSS=<seconds>` removes the device between frames, counted from the
+first time it is looked at, which the Win32 main loop does after the update of the application.
+`gfxdevicetester --accuracy` runs all its tests in its first update, so the run is over before
+the device can be removed: with 1 and 2 seconds a print showed no loss in a run of 92 seconds
+(Debug, 2026-11-23). Results that are the same with and without the variable then say nothing.
+To test surfaces going off the device and back, the run was held back 200 frames and the device
+removed at the first look, both as temporary changes. A value that means at once, and a test or
+a suite per frame, would make it something to just run.
+
+`_simulateDeviceLoss()` in `wonderapp/source/win32/dx12/win32gfxbackend.cpp` and
+`wonderapp/source/sdl3/backend_dx12.cpp`, `GfxDeviceTester::update()`

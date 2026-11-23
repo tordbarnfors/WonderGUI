@@ -664,7 +664,9 @@ Compared with GlBackend on the same Windows machine (Arc B580), DX12Backend was 
 gfxdevicetester (median 1.01) but for tests making D3D12 objects or reading pixels with the CPU:
 canvas layers 130-200 times as long, WarpTests making their Warpmaps for each run 5-17 times,
 ReadbackTests twice. Timed with the changes below (2026-11-23): canvas layers 5-9 times as long,
-ReadbackTests 1.7 times, see "DX12Backend: canvas layers" in KNOWN_ISSUES.md for what is left.
+ReadbackTests 1.7 times, and with canvases without a pixel buffer, see the section of that name
+below, canvas layers 1.5-3 times as long. See "DX12Backend: canvas layers" in KNOWN_ISSUES.md for
+what is left.
 
 - **The pixels of a DX12Surface are in CPU cached memory** (`_createDeviceObjects()`, 95e05825),
   a custom heap with the properties of a READBACK heap, created in COMMON. The pixels are read as
@@ -681,6 +683,44 @@ ReadbackTests 1.7 times, see "DX12Backend: canvas layers" in KNOWN_ISSUES.md for
   took the cost away since, see below. WarpTests make their Warpmaps in `init()`, as
   the other suites do with what they draw, so they compare drawing. "Cylinders made each run"
   makes them for each run.
+
+### DX12Surface: canvases without a pixel buffer (2026-11)
+
+Decided with Tord, after timing where canvas layers spent their time: 2.4 of the 2.55 ms of
+gfxdevicetester's CanvasLayerTest1 went to making the four DX12Surfaces of the layers, each a
+texture (345 us), a buffer for its pixels (160 us), zeroes written to that buffer (17 us), all of
+it read to see if it needed premultiplying (64 us) and then uploaded to the texture, which
+DeviceGen2 clears with a fill right after.
+
+- **A canvas that isn't `buffered` and is created without pixels or fill color has no pixel
+  buffer** until its pixels are asked for: `allocPixelBuffer()`, `pushPixels()` and `alpha()` make
+  it (`_needPixels()`), marked as older than the texture, so it is read back into before it is
+  read. That is what `buffered` of the Blueprint says, which DX12Surface didn't look at. It is
+  half the memory of a canvas nobody reads, and with the upload gone CanvasLayerTest1 takes
+  0.76 ms where it took 2.45 ms. Other surfaces are written by the CPU and keep their buffer, as
+  does an indexed canvas, which can't be drawn to.
+- **With a fill color the canvas gets its pixel buffer at once,** filled and uploaded as for any
+  surface. Clearing the texture on the GPU instead would save that for a canvas nobody reads, but
+  it has to be recorded by a DX12Backend, as uploads are. Left until something needs it: canvas
+  layers are created without a fill color and cleared by DeviceGen2.
+- **On the device is having a texture,** which `_evacuate()` and `_migrate()` went by the pixel
+  buffer for. A canvas without one gets it when a working device is let go of, to read back into.
+  When the device is lost it has nothing but what was rendered, which is gone, and it is marked
+  as having lost its content like any canvas. Back on a device it has a pixel buffer, as its
+  pixels come from plain memory then.
+- **Not kept between canvas updates:** what is left of a canvas layer is making its texture,
+  about 350 us at 512x512. Placed in a heap that is there already it takes 21 us, but Tord doesn't
+  want canvases or memory for them kept behind the scenes. If it is to be solved, by layer
+  surfaces that whoever owns the canvas supplies or keeps.
+- VulkanSurface still sends the unspecified pixels of a new surface to its texture, as that is
+  what takes the image out of the layout it is created in.
+
+Tested on Windows (Arc B580): gfxdevicetester gives the same results as before on all 262 tests,
+and in a Debug build the same for 43 tests of canvases, layers, readback, mipmaps and warps with
+the device removed and replaced between starting up and running them, which takes the surfaces
+made by then off the device and back, as without. That took holding the run back some frames, see
+SUGGESTIONS.md. Not tested: the device removed while drawing, and a working device being let go
+of, which is when a canvas without a pixel buffer gets one to read back into.
 
 ### GPU backends: no shaders compiled at startup (2026-11)
 

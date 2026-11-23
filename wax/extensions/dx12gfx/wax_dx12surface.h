@@ -190,7 +190,9 @@ namespace wax
 
 		bool			_setPixelDetails();		// Settles on a layout D3D12 can hold.
 		bool			_allocFallbackPixels();						// Plain memory, for when D3D12 wouldn't play along.
-		bool			_createDeviceObjects();						// Texture, pixel buffer, views and palette buffer. All or none.
+		bool			_createDeviceObjects( bool bPixelBuffer = true );	// Texture, pixel buffer, views and palette buffer. All or none.
+		bool			_createPixelBuffer();						// The buffer of our pixels, mapped.
+		bool			_needPixels();								// Makes the pixel buffer a canvas was created without.
 		void			_dropDeviceObjects();
 		bool			_evacuate();						// False if our pixels went with the device.
 		void			_migrate();
@@ -208,7 +210,7 @@ namespace wax
 
 
 		Microsoft::WRL::ComPtr<ID3D12Resource>			m_texture;			// Rests in COMMON state, promoted on use.
-		Microsoft::WRL::ComPtr<ID3D12Resource>			m_uploadBuffer;		// Holds our pixels, readable and writable by the CPU.
+		Microsoft::WRL::ComPtr<ID3D12Resource>			m_uploadBuffer;		// Holds our pixels, readable and writable by the CPU. A canvas may be without, see _needPixels().
 		Microsoft::WRL::ComPtr<ID3D12Resource>			m_readbackBuffer;	// Created on first read back from a canvas surface.
 		DX12BufferPool::Buffer							m_paletteBuffer;	// Palette based surfaces only, see _createPaletteBuffer().
 		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	m_srvHeap;			// Holds this surface's SRV, then one per mip level but the last. Not shader visible.
@@ -220,7 +222,7 @@ namespace wax
 		DXGI_FORMAT		m_dxgiFormat = DXGI_FORMAT_UNKNOWN;
 		D3D12_RESOURCE_STATES m_resourceState = D3D12_RESOURCE_STATE_COMMON;
 
-		uint8_t *		m_pUploadData = nullptr;		// Our pixels: the mapped upload buffer, or m_pFallbackData.
+		uint8_t *		m_pUploadData = nullptr;		// Our pixels: the mapped upload buffer, or m_pFallbackData. Null for a canvas nobody has asked for the pixels of.
 		uint8_t *		m_pFallbackData = nullptr;		// Plain memory, only used when we have no upload buffer.
 		int				m_uploadPitch = 0;				// Bytes per line, aligned as D3D12 requires for texture copies.
 		int				m_pixelSize = 0;				// Bytes per pixel.

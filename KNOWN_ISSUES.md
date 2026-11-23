@@ -271,35 +271,26 @@ frame. DX12Backend records the uploads into its own command list instead, see
 
 `syncTexture()` in `wax_vulkansurface.cpp`
 
-### DX12Backend: canvas layers take 5-9 times as long as on GlBackend
+### DX12Backend: canvas layers take 1.5-3 times as long as on GlBackend
 
 On Windows (Arc B580), gfxdevicetester's tests drawing into canvas layers took 130-200 times as
-long as on GlBackend, as the pixels of a DX12Surface were in write-combined memory, see
-"DX12Backend: surfaces" in ROADMAP.md. With them in CPU cached memory (95e05825) the same tests
-take 5-9 times as long (gfxdevicetester, Release, 09025b5e, two runs of each, 2026-11-23):
+long as on GlBackend, then 5-9 times with the pixels of a DX12Surface in CPU cached memory
+(95e05825). A canvas layer no longer gets a pixel buffer, nor an upload of transparent black, see
+"DX12Surface: canvases without a pixel buffer" in ROADMAP.md, which leaves this (gfxdevicetester,
+Release, two runs of each, 2026-11-23):
 
-    Test                                        before    DX12Backend   GlBackend
-    CanvasLayerTests     CanvasLayerTest1       54.9 ms   2.45 ms       0.27 ms
-    FlattenLayersTests   WithCanvasLayers       84.1 ms   3.1 ms        0.59 ms
-    LayerRoundTripTests  ViaCanvasLayer         26.6 ms   0.82-0.87 ms  0.15 ms
-    ReadbackTests        Readback                4.7 ms   3.3 ms        2.0 ms
+    Test                                        at first   95e05825      now       GlBackend
+    CanvasLayerTests     CanvasLayerTest1       54.9 ms    2.45 ms       0.76 ms   0.27 ms
+    FlattenLayersTests   WithCanvasLayers       84.1 ms    3.1 ms        1.16 ms   0.59 ms
+    LayerRoundTripTests  ViaCanvasLayer         26.6 ms    0.82-0.87 ms  0.23 ms   0.15 ms
+    ReadbackTests        Readback                4.7 ms    3.3 ms        3.2 ms    2.0 ms
 
 Without canvas layers the same tests are faster on DX12Backend (NoCanvasLayers 18 us against
 210 us, ViaSurface 15 us against 100 us).
 
-Nearly all of it is making the DX12Surfaces of the layers, which DeviceGen2 does for every canvas
-update (`_beginCanvasUpdate()`). Measured with timers in the code (512x512 canvas, four layers,
-two of them Alpha_8), 2.4 ms of the 2.55 ms of CanvasLayerTest1 goes to, for each layer:
-
-    texture, a committed resource                      345 us
-    buffer for its pixels, a committed resource        160 us
-    filling that buffer with zeroes                     17 us
-    reading it all to see if it needs premultiplying    64 us
-    two descriptor heaps and their views                 9 us
-
-The last three are for uploading transparent black to a texture that is cleared by a fill right
-after, and nobody asks a layer for its pixels. The pixel side grows with the size, the texture
-less so (ARGB_8, two runs of 20 each):
+What is left is making the texture of each layer, a committed resource, which DeviceGen2 does for
+every canvas update (`_beginCanvasUpdate()`). Timed by itself it grows with the size, less than
+the pixel buffer did (ARGB_8, two runs of 20 each):
 
     Size         Texture          Pixel buffer
     64x64        150-250 us       65 us
@@ -309,9 +300,11 @@ less so (ARGB_8, two runs of 20 each):
     3840x2160    740-1860 us      1210 us
 
 Tried: D3D12_HEAP_FLAG_CREATE_NOT_ZEROED makes no difference. A texture placed in a heap that is
-there already takes 21 us, which made the test take 1.5 ms, but needs a heap kept between updates.
+there already takes 21 us, but needs a heap kept between updates, which is what GL drivers do.
+Decided with Tord not to keep canvases or memory for them behind the scenes: if anything, layer
+surfaces are to be supplied or kept by whoever owns the canvas.
 
-`_createDeviceObjects()`, `_setupTexture()` and `_uploadSource()` in `wax/extensions/dx12gfx/wax_dx12surface.cpp`
+`_createDeviceObjects()` in `wax/extensions/dx12gfx/wax_dx12surface.cpp`
 
 ### DeviceGen2 makes a surface for every canvas layer, used or not, of the size of the canvas
 
@@ -340,7 +333,7 @@ CMake warns about it when a DX12 build is configured, if it finds a Python, and
 
 The texture of a DX12Surface and the buffer with its pixels are a committed resource each, which
 D3D12 makes at least 64 KB, and there are one or two descriptor heaps besides. A 32x32 icon has 4 KB of
-pixels. Edgemaps, Warpmaps and palettes had the same and get their buffers from DX12BufferPool
+pixels. A canvas that isn't buffered has no pixel buffer until its pixels are asked for, so half. Edgemaps, Warpmaps and palettes had the same and get their buffers from DX12BufferPool
 since, see ROADMAP.md, but that is for buffers that are only written: the pixels are read by the
 CPU, so they would need blocks of cached memory, and textures a heap to be placed in.
 
