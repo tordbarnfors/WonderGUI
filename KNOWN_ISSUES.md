@@ -271,22 +271,60 @@ frame. DX12Backend records the uploads into its own command list instead, see
 
 `syncTexture()` in `wax_vulkansurface.cpp`
 
-### DX12Backend: new canvases were slow, fix not yet run
+### DX12Backend: canvas layers take 5-9 times as long as on GlBackend
 
 On Windows (Arc B580), gfxdevicetester's tests drawing into canvas layers took 130-200 times as
-long as on GlBackend (CanvasLayerTest1 54 ms), and ReadbackTests twice as long. All other tests
-are level with GlBackend (median 1.01), but for the WarpTests making their Warpmaps for each run,
-which is solved since, see "DX12Backend: small buffers out of shared blocks" in ROADMAP.md. The pixels of a DX12Surface were in write-combined memory, around 60 ns per
-pixel to read, so reading back a 512x512 canvas took 16 ms, and the first upload of a canvas with
-alpha read it all twice. They are in CPU cached memory since 95e05825, and premultiplying for an
-upload no longer reads back what it writes. Neither timed with gfxdevicetester on Windows yet,
-see "DX12Backend: surfaces" in ROADMAP.md.
+long as on GlBackend, as the pixels of a DX12Surface were in write-combined memory, see
+"DX12Backend: surfaces" in ROADMAP.md. With them in CPU cached memory (95e05825) the same tests
+take 5-9 times as long (gfxdevicetester, Release, 09025b5e, two runs of each, 2026-11-23):
 
-What may still be left: each canvas layer is a new DX12Surface for every canvas update, with a
-texture, a pixel buffer and two descriptor heaps, which is several committed resources each time.
-DeviceGen2 could keep layer canvases between updates, for all backends.
+    Test                                        before    DX12Backend   GlBackend
+    CanvasLayerTests     CanvasLayerTest1       54.9 ms   2.45 ms       0.27 ms
+    FlattenLayersTests   WithCanvasLayers       84.1 ms   3.1 ms        0.59 ms
+    LayerRoundTripTests  ViaCanvasLayer         26.6 ms   0.82-0.87 ms  0.15 ms
+    ReadbackTests        Readback                4.7 ms   3.3 ms        2.0 ms
 
-`_createDeviceObjects()`, `_uploadSource()` and `_convertAlpha()` in `wax/extensions/dx12gfx/wax_dx12surface.cpp`
+Without canvas layers the same tests are faster on DX12Backend (NoCanvasLayers 18 us against
+210 us, ViaSurface 15 us against 100 us).
+
+Nearly all of it is making the DX12Surfaces of the layers, which DeviceGen2 does for every canvas
+update (`_beginCanvasUpdate()`). Measured with timers in the code (512x512 canvas, four layers,
+two of them Alpha_8), 2.4 ms of the 2.55 ms of CanvasLayerTest1 goes to, for each layer:
+
+    texture, a committed resource                      345 us
+    buffer for its pixels, a committed resource        160 us
+    filling that buffer with zeroes                     17 us
+    reading it all to see if it needs premultiplying    64 us
+    two descriptor heaps and their views                 9 us
+
+The last three are for uploading transparent black to a texture that is cleared by a fill right
+after, and nobody asks a layer for its pixels. The pixel side grows with the size, the texture
+less so (ARGB_8, two runs of 20 each):
+
+    Size         Texture          Pixel buffer
+    64x64        150-250 us       65 us
+    512x512      160-280 us       95 us
+    1024x1024    210-410 us       205 us
+    2048x2048    390-1050 us      630 us
+    3840x2160    740-1860 us      1210 us
+
+Tried: D3D12_HEAP_FLAG_CREATE_NOT_ZEROED makes no difference. A texture placed in a heap that is
+there already takes 21 us, which made the test take 1.5 ms, but needs a heap kept between updates.
+
+`_createDeviceObjects()`, `_setupTexture()` and `_uploadSource()` in `wax/extensions/dx12gfx/wax_dx12surface.cpp`
+
+### DeviceGen2 makes a surface for every canvas layer, used or not, of the size of the canvas
+
+`CanvasLayers` says that the surface of a layer is made when something first draws to the layer,
+so that layers not used cost nothing. DeviceGen2 makes one for every layer with a format or a
+function of its own when the canvas update begins, clears it, and blends it onto the canvas when
+the update ends, also when nothing was drawn to it. The surfaces are of the size of the whole
+canvas, however small the rectangles to update are. RootPanel and CanvasCapsule begin a canvas
+update with their layers for every render, so a window with layers pays for all of them each time
+something in it changes. All backends.
+
+`DeviceGen2::_beginCanvasUpdate()` and `_doFlattenLayers()` in `wax/source/wax_device_gen2.cpp`,
+`wax/source/wax_canvaslayers.h`
 
 ### DX12Backend: shaders changed outside Windows leave its bytecode out of date
 
@@ -385,17 +423,6 @@ smaller size, like an `Image` showing a 1173 pixel wide picture 150 wide, should
 That hasn't been measured: Cybersim shrinks its pictures itself before making surfaces of them.
 
 `wax/extensions/softgfx/wax_softsurface.cpp`, `wax_softbackend.cpp`
-
-### DX12Surface: reading pixels is slow, 16 ms to read back a 512x512 canvas
-
-The pixels of a DX12Surface live in its mapped upload buffer, which is write-combined memory:
-fast to write, around 60 ns per pixel to read. After a canvas has been rendered to, any read
-(`pushPixels()`, `alpha()`) copies the whole texture back and un-premultiplies it in place in that
-buffer, which is where the 16 ms go (the GPU copy and the wait for it take 0.5 ms). Whoever reads
-the pixels afterwards reads the same memory. Un-premultiplying while copying from the readback
-buffer would get rid of most of it, reading back only the lines asked for of the rest.
-
-`_syncBufferAndWait()` and `_convertAlpha()` in `wax/extensions/dx12gfx/wax_dx12surface.cpp`
 
 ### SoftBackend draws thick rings slower than the grid of nodes did
 

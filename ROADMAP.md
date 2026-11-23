@@ -641,7 +641,8 @@ per kind, as FXC doesn't short-circuit.
 Compared with GlBackend on the same Windows machine (Arc B580), DX12Backend was level in all of
 gfxdevicetester (median 1.01) but for tests making D3D12 objects or reading pixels with the CPU:
 canvas layers 130-200 times as long, WarpTests making their Warpmaps for each run 5-17 times,
-ReadbackTests twice. Not yet timed on Windows with the changes below.
+ReadbackTests twice. Timed with the changes below (2026-11-23): canvas layers 5-9 times as long,
+ReadbackTests 1.7 times, see "DX12Backend: canvas layers" in KNOWN_ISSUES.md for what is left.
 
 - **The pixels of a DX12Surface are in CPU cached memory** (`_createDeviceObjects()`, 95e05825),
   a custom heap with the properties of a READBACK heap, created in COMMON. The pixels are read as
