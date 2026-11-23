@@ -540,7 +540,7 @@ namespace wg
 		_link();
 
 		m_bMipmapped = bp.mipmap;
-		_setupTexture( nullptr, 0, nullptr, nullptr, bp.palette, 0 );
+		_setupTexture( nullptr, 0, nullptr, nullptr, bp.palette, 0, bp.fillColor );
 	}
 
 	DX12Surface::DX12Surface(const Blueprint& bp, Blob* pBlob, int pitch) : Surface(bp, PixelFormat::ARGB_8, SampleMethod::Bilinear)
@@ -599,7 +599,7 @@ namespace wg
 	//____ _setupTexture() _____________________________________________________
 
 	void DX12Surface::_setupTexture( const void * pPixels, int pitch, const PixelDescription * pSrcPixelDesc,
-									 const Color8 * pSrcPalette, const Color8 * pDstPalette, int srcPaletteSize )
+									 const Color8 * pSrcPalette, const Color8 * pDstPalette, int srcPaletteSize, HiColor fillColor )
 	{
 		bool bFormatSupported = _setPixelDetails();
 
@@ -652,13 +652,11 @@ namespace wg
 			if( !_allocFallbackPixels() )
 				return;
 
-			_copyInPixels( pPixels, pitch, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
+			_copyInPixels( pPixels, pitch, pSrcPixelDesc, pSrcPalette, srcPaletteSize, fillColor );
 			return;
 		}
 
-		memset( m_pUploadData, 0, size_t(m_uploadPitch) * m_size.h );
-
-		_copyInPixels( pPixels, pitch, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
+		_copyInPixels( pPixels, pitch, pSrcPixelDesc, pSrcPalette, srcPaletteSize, fillColor );
 		_updatePaletteBuffer();
 	}
 
@@ -1038,10 +1036,12 @@ namespace wg
 	//
 	// Copies the pixels we were handed at creation into our own buffer, converting
 	// them to our format on the way. Our format is not always the one that was
-	// asked for, see _setPixelDetails().
+	// asked for, see _setPixelDetails(). Without pixels the buffer is filled with
+	// fillColor, and without that too it is left as it is, as is the texture: the
+	// content of such a surface is unspecified.
 
 	void DX12Surface::_copyInPixels( const void * pPixels, int pitch, const PixelDescription * pSrcPixelDesc,
-									 const Color8 * pSrcPalette, int srcPaletteSize )
+									 const Color8 * pSrcPalette, int srcPaletteSize, HiColor fillColor )
 	{
 		if( !m_pUploadData )
 			return;
@@ -1058,6 +1058,13 @@ namespace wg
 								   m_pUploadData, m_pixelFormat, m_colorSpace, m_bBigEndian, dstLineMargin,
 								   m_pPalette, m_paletteSize, m_paletteCapacity);
 		}
+		else if( !fillColor.isUndefined() )
+		{
+			PixelTools::fillBitmap(m_pUploadData, m_pixelFormat, m_colorSpace, m_bBigEndian, m_uploadPitch, RectI(m_size),
+								   fillColor, m_pPalette, m_paletteSize);
+		}
+		else
+			return;
 
 		// Everything we have goes to the texture, at the latest before we are drawn.
 

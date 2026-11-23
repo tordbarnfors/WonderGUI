@@ -38,6 +38,7 @@
 #include "testsuites/palettecapacitytests.h"
 #include "testsuites/blursourcetests.h"
 #include "testsuites/readbacktests.h"
+#include "testsuites/surfacefilltests.h"
 #include "testsuites/edgemaptinttests.h"
 #include "testsuites/layerroundtriptests.h"
 #include "testsuites/blendruletests.h"
@@ -232,6 +233,7 @@ void GfxDeviceTester::setup_tests()
 	add([]() { return new PaletteCapacityTests(); });
 	add([]() { return new BlurSourceTests(); });
 	add([]() { return new ReadbackTests(); });
+	add([]() { return new SurfaceFillTests(); });
 	add([]() { return new EdgemapTintTests(); });
 	add([]() { return new LayerRoundTripTests(); });
 	add([]() { return new BlendRuleTests(); });

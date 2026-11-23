@@ -68,7 +68,7 @@ namespace wg
 		if( blueprint.canvasRef == CanvasRef::None )
 		{
 			m_surfaceId = m_pEncoder->allocObjectId();
-			_sendCreateSurface();
+			_sendCreateSurface( blueprint.streamOnCreate ? HiColor::Undefined : blueprint.fillColor );
 		}
 
 		if (blueprint.streamOnCreate )
@@ -165,13 +165,16 @@ namespace wg
 
 	//____ _sendCreateSurface() _______________________________________________
 
-	void MirrorSurface::_sendCreateSurface()
+	// A fill color makes the other end fill its surface as ours was when created, which
+	// saves sending the pixels. Undefined when the pixels follow.
+
+	void MirrorSurface::_sendCreateSurface( HiColor fillColor )
 	{
 		StreamEncoder& encoder = * m_pEncoder;
 
 		int paletteSize = m_pSurface->paletteSize();
 
-		encoder << GfxStream::Header{ GfxStream::ChunkId::CreateSurface, 0, 40 };
+		encoder << GfxStream::Header{ GfxStream::ChunkId::CreateSurface, 0, 48 };
 		encoder << m_surfaceId;
 		encoder << false;						// CanBeCanvas-flag. We never want the remote end to use a MirrorSurface as canvas.
 		encoder << m_pSurface->isDynamic();
@@ -186,6 +189,7 @@ namespace wg
 		encoder << m_pSurface->isTiling();
 		encoder << m_pSurface->paletteCapacity();
 		encoder << paletteSize;
+		encoder << fillColor;
 
 		// The palette follows in chunks of its own, since a large one doesn't fit in one.
 		// The surface is created on the other end once all of it has arrived.

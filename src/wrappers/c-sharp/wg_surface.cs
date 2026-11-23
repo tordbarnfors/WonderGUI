@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace WG;
@@ -60,6 +61,7 @@ public class Surface : Objekt
 		public bool Buffered = false;
 		public bool Canvas = false;
 		public ColorSpace ColorSpace = ColorSpace.Undefined;        // Defaults to sRGB.
+		public Color? FillColor = null;                             // What a surface created without pixels is filled with. Null leaves its content unspecified.
 		//		public const wg_color8* palette;				HOW DO WE DO THIS?
 		public int PaletteSize = 0;
 		public int PaletteCapacity = 0;
@@ -176,6 +178,8 @@ public class Surface : Objekt
 		public byte buffered;
 		public byte canvas;
 		public ColorSpace colorSpace;
+		public byte useFillColor;
+		public long fillColor;               // A wg_color, which is aligned as the 64 bit word it also is.
 		public IntPtr palette;
 		public int paletteSize;
 		public int paletteCapacity;
@@ -196,6 +200,9 @@ public class Surface : Objekt
 		converted.buffered = (byte)(org.Buffered ? 1 : 0);
 		converted.canvas = (byte)(org.Canvas ? 1 : 0);
 		converted.colorSpace = org.ColorSpace;
+		converted.useFillColor = (byte)(org.FillColor.HasValue ? 1 : 0);
+		Color fillColor = org.FillColor ?? new Color(0, 0, 0, 0);
+		converted.fillColor = Unsafe.As<Color, long>(ref fillColor);
 		converted.palette = 0;                                          //TODO: Need to solve this...
 		converted.paletteSize = 0;
 		converted.paletteCapacity = org.PaletteCapacity;

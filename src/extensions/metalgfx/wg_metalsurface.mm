@@ -156,7 +156,7 @@ namespace wg
     {
         _setPixelDetails();
         m_bMipmapped = bp.mipmap;
-        _setupMetalTexture( nullptr, 0, nullptr, nullptr, 0, bp.palette );
+        _setupMetalTexture( nullptr, 0, nullptr, nullptr, 0, bp.palette, bp.fillColor );
     }
 
     MetalSurface::MetalSurface(const Blueprint& bp, Blob* pBlob, int pitch) : Surface( bp, PixelFormat::ARGB_8, SampleMethod::Bilinear )
@@ -233,7 +233,7 @@ namespace wg
 
 	//____ _setupMetalTexture() __________________________________________________________________
 
-	void MetalSurface::_setupMetalTexture(const void * pPixels, int pitch, const PixelDescription * pSrcPixelDesc, const Color8 * pSrcPalette, int srcPaletteSize, const Color8 * pDstPalette )
+	void MetalSurface::_setupMetalTexture(const void * pPixels, int pitch, const PixelDescription * pSrcPixelDesc, const Color8 * pSrcPalette, int srcPaletteSize, const Color8 * pDstPalette, HiColor fillColor )
 	{
 		m_bTextureSyncInProgress = false;
 
@@ -277,9 +277,16 @@ namespace wg
 								   pDst, m_pixelFormat, m_colorSpace, m_bBigEndian, 0,
 								   m_pPalette, m_paletteSize, m_paletteCapacity);
 		}
-			   
-		
-		_createAndSyncTextures( pPixels != nullptr );
+		else if( !fillColor.isUndefined() )
+		{
+			PixelTools::fillBitmap((uint8_t*)[m_textureBuffer contents], m_pixelFormat, m_colorSpace, m_bBigEndian, m_size.w * m_pixelSize, RectI(m_size),
+								   fillColor, m_pPalette, m_paletteSize);
+		}
+
+		// Without pixels and without a fill color nothing is sent to the texture, which
+		// holds whatever Metal made it with.
+
+		_createAndSyncTextures( pPixels != nullptr || !fillColor.isUndefined() );
 		
 	//        setScaleMode(m_scaleMode);
 	}

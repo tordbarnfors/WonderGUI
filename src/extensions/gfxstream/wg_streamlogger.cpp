@@ -358,6 +358,15 @@ namespace wg
 				decoder >> bp.paletteCapacity;
 				decoder >> bp.paletteSize;
 
+				// The fill color was added later, older streams end here.
+
+				if( header.size >= 48 )
+				{
+					decoder >> bp.fillColor;
+
+					if( header.size > 48 )
+						decoder.skip(header.size - 48);
+				}
 
 				m_charStream << "    surfaceId   = " << surfaceId << std::endl;
 				m_charStream << "    canvas      = " << bp.canvas << std::endl;
@@ -373,6 +382,10 @@ namespace wg
 				m_charStream << "    tiling      = " << bp.tiling << std::endl;
 				m_charStream << "    paletteCap. = " << bp.paletteCapacity << std::endl;
 				m_charStream << "    paletteSize = " << bp.paletteSize << std::endl;
+
+				if( !bp.fillColor.isUndefined() )
+					_printColor("    fillColor  ", bp.fillColor);
+
 				break;
 			}
 				

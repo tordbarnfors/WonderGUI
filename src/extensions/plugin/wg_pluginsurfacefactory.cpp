@@ -135,6 +135,11 @@ namespace wg
 		pDest->buffered = pSource->buffered;
 		pDest->canvas = pSource->canvas;
 		pDest->colorSpace = (wg_colorSpace)pSource->colorSpace;
+		pDest->useFillColor = !pSource->fillColor.isUndefined();
+		pDest->fillColor.b = pSource->fillColor.b;
+		pDest->fillColor.g = pSource->fillColor.g;
+		pDest->fillColor.r = pSource->fillColor.r;
+		pDest->fillColor.a = pSource->fillColor.a;
 		pDest->palette = (wg_color8*)pSource->palette;
 		pDest->paletteSize = pSource->paletteSize;
 		pDest->paletteCapacity = pSource->paletteCapacity;

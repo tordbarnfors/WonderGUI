@@ -61,7 +61,7 @@ namespace wg
 	{
 		auto pOrgSurface = m_pBackingSurfaceFactory->createSurface(blueprint);
 
-		auto p = MirrorSurface::create( WGBP(MirrorSurface, _.encoder = m_pEncoder, _.surface = pOrgSurface ));
+		auto p = MirrorSurface::create( WGBP(MirrorSurface, _.encoder = m_pEncoder, _.fillColor = blueprint.fillColor, _.surface = pOrgSurface ));
 		_addReference( p );
 		return p;
 	}

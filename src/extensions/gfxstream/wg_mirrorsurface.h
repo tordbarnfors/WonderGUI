@@ -46,6 +46,7 @@ namespace wg
 			CanvasRef		canvasRef = CanvasRef::None;	// Stream to specified reference, otherwise create surface and stream to that.
 			Compressor_p	compressor;
 			StreamEncoder_p	encoder;						// Required
+			HiColor			fillColor = HiColor::Undefined;	// What the surface was created filled with, for the other end to do the same.
 			Finalizer_p		finalizer = nullptr;
 			Surface_p		surface;						// Required
 			bool			streamOnCreate = false;			// If true, surface content will be streamed immediately after creation.
@@ -92,7 +93,7 @@ namespace wg
 		MirrorSurface(const Blueprint& blueprint);
 		~MirrorSurface();
 
-		void 	_sendCreateSurface();
+		void 	_sendCreateSurface( HiColor fillColor = HiColor::Undefined );
 		void	_sendDeleteSurface();
 		void	_sendPixels(int nRects, const RectI* pRects);
 

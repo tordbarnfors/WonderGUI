@@ -155,12 +155,13 @@ namespace wg
 		~DX12Surface();
 
 		void			_setupTexture( const void * pPixels, int pitch, const PixelDescription * pSrcPixelDesc,
-									   const Color8 * pSrcPalette, const Color8 * pDstPalette, int srcPaletteSize );
+									   const Color8 * pSrcPalette, const Color8 * pDstPalette, int srcPaletteSize,
+									   HiColor fillColor = HiColor::Undefined );
 
 		void			_addDirtyRect( const RectI& rect );
 
 		void			_copyInPixels( const void * pPixels, int pitch, const PixelDescription * pSrcPixelDesc,
-									   const Color8 * pSrcPalette, int srcPaletteSize );
+									   const Color8 * pSrcPalette, int srcPaletteSize, HiColor fillColor );
 
 		void			_syncBufferAndWait();			// Brings anything rendered into us back to our pixels.
 		bool			_initReadbackBuffer();

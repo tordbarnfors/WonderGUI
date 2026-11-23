@@ -183,6 +183,7 @@ namespace wg
 			bool				buffered = false;
 			bool				canvas = false;
 			ColorSpace			colorSpace = ColorSpace::Undefined;		// Color space of the pixels. Defaults to sRGB.
+			HiColor				fillColor = HiColor::Undefined;			// What a surface created without pixels is filled with. Undefined leaves its content unspecified.
 			Finalizer_p			finalizer = nullptr;
 			const Color8* 		palette = nullptr;
 			int					paletteCapacity = 0;		// Default to paletteSize. Must be >= paletteSize if set.
