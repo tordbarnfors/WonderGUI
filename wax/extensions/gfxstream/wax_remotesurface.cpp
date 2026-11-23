@@ -78,6 +78,7 @@ namespace wax
 		m_pEncoder = pEncoder;
 		m_inStreamId = pEncoder->allocObjectId();
 		m_bDynamic = bp.dynamic;
+		m_fillColor = bp.fillColor;
 		_initPalette(bp);
 
 		_sendCreateSurface(pEncoder);
@@ -277,7 +278,7 @@ namespace wax
 
 	void RemoteSurface::_sendCreateSurface(StreamEncoder* pEncoder)
 	{
-		*pEncoder << GfxStream::Header{ GfxStream::ChunkId::CreateSurface, 0, 40 };
+		*pEncoder << GfxStream::Header{ GfxStream::ChunkId::CreateSurface, 0, 48 };
 		*pEncoder << m_inStreamId;
 		*pEncoder << m_bCanvas;
 		*pEncoder << m_bDynamic;
@@ -292,6 +293,7 @@ namespace wax
 		*pEncoder << m_bTiling;
 		*pEncoder << m_paletteCapacity;
 		*pEncoder << m_paletteSize;
+		*pEncoder << m_fillColor;
 
 		// The palette follows in chunks of its own, since a large one doesn't fit in one.
 		// The surface is created on the other end once all of it has arrived.

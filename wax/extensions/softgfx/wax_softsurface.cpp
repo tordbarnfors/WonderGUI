@@ -91,6 +91,11 @@ namespace wax
 			m_pPalette = nullptr;
 
 		_init();
+
+		// Without a fill color the pixels are whatever the memory held.
+
+		if( !bp.fillColor.isUndefined() )
+			PixelTools::fillBitmap(m_pData, m_pixelFormat, m_colorSpace, m_bBigEndian, m_pitch, RectI(m_size), bp.fillColor, m_pPalette, m_paletteSize);
 	}
 
 	SoftSurface::SoftSurface(const Blueprint& bp, Blob * pBlob, int pitch ) : Surface(bp, PixelFormat::ARGB_8, SampleMethod::Nearest)

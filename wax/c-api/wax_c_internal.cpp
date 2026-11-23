@@ -31,6 +31,7 @@ void convertSurfaceBlueprint(Surface::Blueprint* pDest, const wax_surfaceBP* pSo
 	pDest->buffered = pSource->buffered;
 	pDest->canvas = pSource->canvas;
 	pDest->colorSpace = (ColorSpace)pSource->colorSpace;
+	pDest->fillColor = pSource->useFillColor ? HiColor(pSource->fillColor.r, pSource->fillColor.g, pSource->fillColor.b, pSource->fillColor.a) : HiColor::Undefined;
 	pDest->palette = (Color8*)pSource->palette;
 	pDest->paletteCapacity = pSource->paletteCapacity;
 	pDest->paletteSize = pSource->paletteSize;

@@ -38,6 +38,7 @@ set( SOURCES
 	testsuites/readbacktests.h
 	testsuites/rgb565bigendiantests.h
 	testsuites/samplingtests.h
+	testsuites/surfacefilltests.h
 	testsuites/testsuite.h
 	testsuites/tiletests.h
 	testsuites/tintblittests.h
