@@ -74,6 +74,69 @@ namespace wax
 		return kind == PipelineKind::WarpEdgemap || kind == PipelineKind::WarpBlit || kind == PipelineKind::WarpPaletteBlit;
 	}
 
+	//____ _vertexShaderName() ___________________________________________________
+
+	const char * GpuBackend::_vertexShaderName( PipelineKind kind )
+	{
+		switch( kind )
+		{
+			case PipelineKind::Fill:
+				return "fillVS";
+
+			case PipelineKind::FillAA:
+				return "fillAAVS";
+
+			case PipelineKind::Blit:
+			case PipelineKind::Blur:
+			case PipelineKind::PaletteBlit:
+			case PipelineKind::PaletteBlur:
+				return "blitVS";
+
+			case PipelineKind::Line:
+				return "lineVS";
+
+			case PipelineKind::Segments:
+				return "segmentsVS";
+
+			case PipelineKind::ShapeBox:
+			case PipelineKind::ShapeRing:
+			case PipelineKind::ShapeLine:
+				return "shapeVS";
+
+			case PipelineKind::WarpEdgemap:
+			case PipelineKind::WarpBlit:
+			case PipelineKind::WarpPaletteBlit:
+				return "warpVS";
+
+			default:
+				return nullptr;
+		}
+	}
+
+	//____ _pixelShaderName() ____________________________________________________
+
+	const char * GpuBackend::_pixelShaderName( PipelineKind kind, bool bDualSource )
+	{
+		switch( kind )
+		{
+			case PipelineKind::Fill:			return bDualSource ? "fillPSDual" : "fillPS";
+			case PipelineKind::FillAA:			return bDualSource ? "fillAAPSDual" : "fillAAPS";
+			case PipelineKind::Blit:			return bDualSource ? "blitPSDual" : "blitPS";
+			case PipelineKind::Blur:			return bDualSource ? "blurPSDual" : "blurPS";
+			case PipelineKind::PaletteBlit:		return bDualSource ? "paletteBlitPSDual" : "paletteBlitPS";
+			case PipelineKind::PaletteBlur:		return bDualSource ? "paletteBlurPSDual" : "paletteBlurPS";
+			case PipelineKind::Line:			return bDualSource ? "linePSDual" : "linePS";
+			case PipelineKind::Segments:		return bDualSource ? "segmentsPSDual" : "segmentsPS";
+			case PipelineKind::ShapeBox:		return bDualSource ? "shapeBoxPSDual" : "shapeBoxPS";
+			case PipelineKind::ShapeRing:		return bDualSource ? "shapeRingPSDual" : "shapeRingPS";
+			case PipelineKind::ShapeLine:		return bDualSource ? "shapeLinePSDual" : "shapeLinePS";
+			case PipelineKind::WarpEdgemap:		return bDualSource ? "warpEdgemapPSDual" : "warpEdgemapPS";
+			case PipelineKind::WarpBlit:		return bDualSource ? "warpBlitPSDual" : "warpBlitPS";
+			case PipelineKind::WarpPaletteBlit:	return bDualSource ? "warpPaletteBlitPSDual" : "warpPaletteBlitPS";
+			default:							return nullptr;
+		}
+	}
+
 	//____ _canvasKind() _________________________________________________________
 
 	GpuBackend::CanvasKind GpuBackend::_canvasKind( const Surface * pSurface )

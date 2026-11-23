@@ -430,7 +430,7 @@ For VulkanBackend, still to do:
   in each backend, duplicated in structure where the APIs are alike, as that is where they differ
   in ways that matter for reliability: lifetime of resources, synchronization, device loss.
 - **DX12Backend and VulkanBackend draw with the same HLSL shaders** (`wax/extensions/hlsl`), see
-  its README.md. DX12 compiles them when it starts, Vulkan gets them as SPIR-V compiled by DXC.
+  its README.md. DX12 gets them as bytecode compiled by FXC, Vulkan as SPIR-V compiled by DXC.
   The constants are declared once, in constants.hlsl, as root constants for DX12 and push
   constants for Vulkan. A local variable may not be named like a constant, as they are defines
   for Vulkan.
@@ -636,4 +636,42 @@ ReadbackTests twice. Not yet timed on Windows with the changes below.
   are the way if it matters, see KNOWN_ISSUES.md. WarpTests make their Warpmaps in `init()`, as
   the other suites do with what they draw, so they compare drawing. "Cylinders made each run"
   makes them for each run.
+
+### GPU backends: no shaders compiled at startup (2026-11)
+
+GlBackend made all its 28 programs when created, and the first DX12Backend compiled all shaders,
+which an application drawing with a few of them waited for: 130 ms on GlBackend with the driver's
+cache of compiled shaders warm, 2.4 s on DX12Backend (Windows, Arc B580, Release). Small
+applications should start fast and not feel heavy. gfxdevicetester gives the same results as
+before on both.
+
+- **GlBackend makes a program the first time something is drawn with it** (`_program()`), which
+  takes 1.5-17 ms each. `create()` doesn't fail on shaders that don't compile anymore, as it
+  compiles none: it checks for OpenGL 3.3, and a program that can't be made is reported once and
+  draws nothing.
+- **Program binaries are kept per program, as each is compiled** (`s_programBinaries`), where
+  those of all programs were fetched at startup. A second GlBackend loads its programs from them.
+  `shaderBlob()` puts the ones there are in a blob an application can save, and `setShaderBlob()`
+  takes them back the next time it starts. Run with OpenGL 4.1, as binaries need: 23 programs
+  loaded in 105 ms, against 408 ms compiling them with a cold driver cache. A blob cut short or
+  with binaries the driver turns down ends in compiling. No app framework saves the blob.
+- **DX12Backend has its shaders compiled, as bytecode that is checked in**
+  (`dx12gfx/wax_dx12shaders.cpp`, made by `dx12gfx/compile_shaders.py` with FXC), so it compiles
+  nothing and no longer needs d3dcompiler_47.dll. Compiling each when first needed was tried
+  first: fills and blits took 30-35 ms each, but rounded boxes 150 ms, rings 490 ms and lines with
+  caps 650 ms, each a pause the first time something of the kind was drawn. A small test run went
+  from 3.4 s to 0.95 s. The 37 shaders are 552 KB, 1.7 MB as source, written as 32-bit words to
+  keep that down, where the HLSL was 314 KB.
+- **Decided with Tord: checked in rather than compiled by FXC when building,** as the shaders
+  of the other backends are, so that building needs no shader compiler and DX12Backend builds
+  without CMake. The cost is that FXC only runs on Windows: shaders changed elsewhere leave the
+  bytecode out of date. `wax_dx12shaders.cpp` says which sources it was made from,
+  `compile_shaders.py --check` compares that with the HLSL, and CMake warns when configuring.
+- **Debug builds draw with the same optimized shaders** as release builds, where DX12Backend
+  compiled them unoptimized with debug information. For debugging a shader, compile it by hand.
+- **One list of shaders,** that of `vulkangfx/compile_shaders.py`, which the DX12 script uses as
+  the Metal and GL ones do. `wax_dx12shaders.cpp.template` and the Ruby step are gone.
+  `GpuBackend::_vertexShaderName()` and `_pixelShaderName()` say which shaders a kind of pipeline
+  has, used by DX12Backend and GlBackend. MetalBackend still has tables of its own for that,
+  left as it couldn't be built here.
 

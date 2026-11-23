@@ -124,6 +124,13 @@ namespace wax
 		static bool			_hasPartialCoverage( PipelineKind kind );	// Covers pixels partly, so Replace blends.
 		static bool			_isWarp( PipelineKind kind );				// No vertex input, reads the Warpmap.
 
+		// The shaders of a kind of pipeline, by the names the compile_shaders.py of the backends
+		// give them. Kinds with the same geometry share a vertex shader. Pipelines that blend
+		// with a second color have a pixel shader of their own, which outputs it, see output.hlsl.
+
+		static const char *	_vertexShaderName( PipelineKind kind );
+		static const char *	_pixelShaderName( PipelineKind kind, bool bDualSource );
+
 		// What the shaders read, see wax/extensions/hlsl.
 
 		struct Vertex

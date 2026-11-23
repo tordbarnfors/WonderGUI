@@ -47,8 +47,9 @@
   for `gfxdevicetester --accuracy`. `WAPP_VK_VALIDATION=1` turns on the validation layer.
 - After changing a shader in `wax/extensions/hlsl`, run `wax/extensions/vulkangfx/compile_shaders.py`
   (needs DXC), `wax/extensions/metalgfx/compile_shaders.py` and `wax/extensions/openglgfx/compile_shaders.py`
-  (also need spirv-cross, and glslangValidator checks the GLSL), and regenerate
-  `wax/extensions/dx12gfx/wax_dx12shaders.cpp`, see `wax/extensions/hlsl/README.md`.
+  (also need spirv-cross, and glslangValidator checks the GLSL), and
+  `wax/extensions/dx12gfx/compile_shaders.py` (needs FXC of the Windows SDK, so only on Windows:
+  elsewhere, say that it is left to do), see `wax/extensions/hlsl/README.md`.
 - `gfxdevicetester` compares the native device of the selected `WAPPLIB` against the software
   reference. Use it when changing a graphics backend or blending. `widgetbench` is for looking at
   widgets, skins and layouts (see its `README.md` for adding a test), `workbench` for trying things out.

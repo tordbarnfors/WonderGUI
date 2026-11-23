@@ -61,6 +61,9 @@ namespace wax
 	 * GpuBackend calls only record what to do, and endSession() uploads the buffers and plays the
 	 * recording back, see _execute(). The constants of each draw are recorded the same way and set
 	 * as uniforms when they have changed for the program in use, see compile_shaders.py.
+	 *
+	 * A program is compiled the first time something is drawn with it, see _program(), so an
+	 * application only waits for the ones it uses.
 	 */
 
 	class GlBackend : public GpuBackend
@@ -98,8 +101,14 @@ namespace wax
 
 		void	waitForCompletion() override;
 
-		static void		setShaderBlob(Blob* pBlob) { s_pShaderPrograms = pBlob; }
-		static Blob_p	shaderBlob() { return s_pShaderPrograms; }
+		// The binaries of the programs compiled so far, by any GlBackend, for an application to
+		// save when it quits and give back before it creates its first GlBackend the next time,
+		// which then loads them instead of compiling. Null if there are none, as on drivers
+		// without program binaries (they need OpenGL 4.1). Binaries the driver no longer takes,
+		// as after it has been updated, are compiled again.
+
+		static void		setShaderBlob(Blob* pBlob);
+		static Blob_p	shaderBlob();
 
 	protected:
 		GlBackend(int uboBindingPoint);
@@ -189,9 +198,8 @@ namespace wax
 		void	_executeScissor( const RectI& rect );
 		void	_executeConstants();
 
-		void	_loadPrograms();
-		Blob_p	_generateProgramBlob();
-		GLuint  _loadOrCompileProgram(int programNb, const char* pVertexShaderSource, const char* pFragmentShaderSource);
+		GLuint	_program( PipelineKind kind, bool bDualSource );
+		GLuint	_createProgram( int index );
 		void	_setUniforms(GLuint progId);
 
 		static const char *	_shaderSource( const char * pName );
@@ -235,7 +243,8 @@ namespace wax
 
 		// GL objects
 
-		GLuint			m_programs[int(PipelineKind::Size)][2] = {};	// [kind][dual source]
+		GLuint			m_programs[int(PipelineKind::Size)][2] = {};	// [kind][dual source], 0 until needed, see _program().
+		bool			m_bProgramFailed[int(PipelineKind::Size) * 2] = {};		// Couldn't be created, [kind * 2 + dual source].
 		GLint			m_constantsLocations[int(PipelineKind::Size) * 2] = {};	// Of waxConstants, [kind * 2 + dual source].
 		int				m_programConstants[int(PipelineKind::Size) * 2] = {};	// What each program has been given this session, -1 for nothing.
 		GLuint			m_samplers[16] = {};				// [mipmapped*8 + clip*4 + tiling*2 + bilinear]
@@ -287,7 +296,16 @@ namespace wax
 			ProgramBlobEntry	programs[c_nbPrograms];
 		};
 
-		static Blob_p	s_pShaderPrograms;
+		// Binaries of the programs compiled so far, [kind * 2 + dual source]. A second GlBackend
+		// loads its programs from them, as does the first when given those of an earlier run.
+
+		struct ProgramBinary
+		{
+			GLenum				format = 0;
+			std::vector<char>	data;
+		};
+
+		static ProgramBinary	s_programBinaries[c_nbPrograms];
 
 		// Shaders, see wax_glshaders.cpp.
 

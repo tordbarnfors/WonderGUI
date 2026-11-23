@@ -29,7 +29,6 @@
 #include <wax_dx12edgemapfactory.h>
 #include <wax_dx12warpmap.h>
 #include <wax_dx12warpmapfactory.h>
-#include <d3dcompiler.h>
 
 #include <cstdio>
 #include <cstring>
@@ -74,17 +73,6 @@ namespace wax
 
 	static constexpr bool c_bDebugClearUpdateRects = false;
 
-	// Shaders were compiled unoptimized whatever the build, which the blur shader
-	// with its nine taps is the first one to really feel.
-
-#ifdef _DEBUG
-	static constexpr UINT c_shaderCompileFlags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION
-												| D3DCOMPILE_WARNINGS_ARE_ERRORS | D3DCOMPILE_ALL_RESOURCES_BOUND;
-#else
-	static constexpr UINT c_shaderCompileFlags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_OPTIMIZATION_LEVEL3
-												| D3DCOMPILE_WARNINGS_ARE_ERRORS | D3DCOMPILE_ALL_RESOURCES_BOUND;
-#endif
-
 	//____ _checkHR() __________________________________________________________
 	//
 	// Reports failed HRESULTs through the error handler. Use the CHECK_HR macro,
@@ -111,11 +99,6 @@ namespace wax
 
 	#define CHECK_HR(call, what) _checkHR(call, what, this, &TYPEINFO, __func__, __FILE__, __LINE__)
 
-	Microsoft::WRL::ComPtr<ID3DBlob>			DX12Backend::s_vertexShaderBlobs[int(PipelineKind::Size)];
-	Microsoft::WRL::ComPtr<ID3DBlob>			DX12Backend::s_pixelShaderBlobs[int(PipelineKind::Size)];
-	Microsoft::WRL::ComPtr<ID3DBlob>			DX12Backend::s_dualSourcePixelShaderBlobs[int(PipelineKind::Size)];
-	Microsoft::WRL::ComPtr<ID3DBlob>			DX12Backend::s_mipmapVertexShaderBlob;
-	Microsoft::WRL::ComPtr<ID3DBlob>			DX12Backend::s_mipmapPixelShaderBlob;
 	Microsoft::WRL::ComPtr<ID3D12Device>		DX12Backend::s_pDevice;
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue>	DX12Backend::s_pCommandQueue;
 	bool										DX12Backend::s_bImplicitDevice = false;
@@ -221,19 +204,6 @@ namespace wax
 
 			DX12Surface::exitDevice();
 			DX12Edgemap::exitDevice();
-		}
-
-		if (!pDX12Device && s_backends.empty())
-		{
-			for (auto& blob : s_vertexShaderBlobs)
-				blob.Reset();
-			for (auto& blob : s_pixelShaderBlobs)
-				blob.Reset();
-			for (auto& blob : s_dualSourcePixelShaderBlobs)
-				blob.Reset();
-
-			s_mipmapVertexShaderBlob.Reset();
-			s_mipmapPixelShaderBlob.Reset();
 		}
 
 		s_pDevice = pDX12Device;
@@ -1702,14 +1672,15 @@ namespace wax
 
 		Microsoft::WRL::ComPtr<ID3D12PipelineState> pPipeline;
 
-		if (s_mipmapVertexShaderBlob && s_mipmapPixelShaderBlob)
+		D3D12_SHADER_BYTECODE vertexShader = _shader("mipmapVS");
+		D3D12_SHADER_BYTECODE pixelShader = _shader("mipmapPS");
+
+		if (vertexShader.pShaderBytecode && pixelShader.pShaderBytecode)
 		{
 			D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {};
 			desc.pRootSignature = m_pRootSignature.Get();
-			desc.VS.pShaderBytecode = s_mipmapVertexShaderBlob->GetBufferPointer();
-			desc.VS.BytecodeLength = s_mipmapVertexShaderBlob->GetBufferSize();
-			desc.PS.pShaderBytecode = s_mipmapPixelShaderBlob->GetBufferPointer();
-			desc.PS.BytecodeLength = s_mipmapPixelShaderBlob->GetBufferSize();
+			desc.VS = vertexShader;
+			desc.PS = pixelShader;
 
 			// Zero is not a valid blend value, even with blending off.
 
@@ -2548,55 +2519,34 @@ namespace wax
 
 	//____ _createPipelineResources() _________________________________________
 	//
-	// Everything the pipelines are built from. The pipelines themselves are
-	// created on demand by _pipeline(), since they depend on the canvas format.
+	// What all pipelines share. The pipelines themselves are created on demand
+	// by _pipeline(), since they depend on the canvas format.
 
 	bool DX12Backend::_createPipelineResources()
 	{
-		if (!_createRootSignature())
-			return false;
+		return _createRootSignature() && _createSamplers();
+	}
 
-		if (!_createSamplers())
-			return false;
+	//____ _shader() ___________________________________________________________
+	//
+	// The bytecode of a shader, by the name GpuBackend has for it. They come
+	// compiled, see wax_dx12shaders.cpp, as compiling them here took seconds for
+	// all of them and up to 650 ms for one. No bytecode if there is none by that
+	// name, which is reported.
 
-		struct { PipelineKind kind; const char * pVS; } shaders[] =
+	D3D12_SHADER_BYTECODE DX12Backend::_shader(const char * pName)
+	{
+		for (int i = 0; pName && i < s_nbCompiledShaders; i++)
 		{
-			{ PipelineKind::Fill,	g_fillVS },
-			{ PipelineKind::FillAA,	g_fillAAVS },
-			{ PipelineKind::Blit,	g_blitVS },
-			{ PipelineKind::Blur,	g_blitVS },		// Same geometry, so the same vertex shader.
-			{ PipelineKind::PaletteBlit, g_blitVS },
-			{ PipelineKind::PaletteBlur, g_blitVS },
-			{ PipelineKind::Line,	g_lineVS },
-			{ PipelineKind::Segments, g_segmentsVS },
-			{ PipelineKind::ShapeBox, g_shapeVS },
-			{ PipelineKind::ShapeRing, g_shapeVS },
-			{ PipelineKind::ShapeLine, g_shapeVS },
-			{ PipelineKind::WarpEdgemap, g_warpVS },
-			{ PipelineKind::WarpBlit, g_warpVS },
-			{ PipelineKind::WarpPaletteBlit, g_warpVS },
-		};
-
-		// Compiled by the first backend, reused by the rest. Opening a window
-		// shouldn't cost a round of D3DCompile each time. Pixel shaders for dual-
-		// source blending are compiled when first needed, see _createPipeline().
-
-		for (auto& shader : shaders)
-		{
-			if (!s_vertexShaderBlobs[int(shader.kind)] && !_compileVertexShader(s_vertexShaderBlobs[int(shader.kind)], shader.pVS))
-				return false;
-
-			if (!s_pixelShaderBlobs[int(shader.kind)] && !_compilePixelShader(s_pixelShaderBlobs[int(shader.kind)], _pixelShaderSource(shader.kind)))
-				return false;
+			if (strcmp(s_compiledShaders[i].pName, pName) == 0)
+				return { s_compiledShaders[i].pCode, s_compiledShaders[i].size };
 		}
 
-		if (!s_mipmapVertexShaderBlob && !_compileVertexShader(s_mipmapVertexShaderBlob, g_mipmapVS))
-			return false;
+		char buffer[128];
+		sprintf_s(buffer, "Shader %s is missing, run compile_shaders.py.", pName ? pName : "without a name");
+		Base::throwError(ErrorLevel::Error, ErrorCode::Internal, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
-		if (!s_mipmapPixelShaderBlob && !_compilePixelShader(s_mipmapPixelShaderBlob, g_mipmapPS))
-			return false;
-
-		return true;
+		return { nullptr, 0 };
 	}
 
 	//____ _createRootSignature() _____________________________________________
@@ -2774,30 +2724,6 @@ namespace wax
 		return true;
 	}
 
-	//____ _pixelShaderSource() _______________________________________________
-
-	const char * DX12Backend::_pixelShaderSource(PipelineKind kind)
-	{
-		switch (kind)
-		{
-			case PipelineKind::Fill:		return g_fillPS;
-			case PipelineKind::FillAA:		return g_fillAAPS;
-			case PipelineKind::Blit:		return g_blitPS;
-			case PipelineKind::Blur:		return g_blurPS;
-			case PipelineKind::PaletteBlit:	return g_paletteBlitPS;
-			case PipelineKind::PaletteBlur:	return g_paletteBlurPS;
-			case PipelineKind::Line:		return g_linePS;
-			case PipelineKind::Segments:	return g_segmentsPS;
-			case PipelineKind::ShapeBox:	return g_shapeBoxPS;
-			case PipelineKind::ShapeRing:	return g_shapeRingPS;
-			case PipelineKind::ShapeLine:	return g_shapeLinePS;
-			case PipelineKind::WarpEdgemap:	return g_warpEdgemapPS;
-			case PipelineKind::WarpBlit:	return g_warpBlitPS;
-			case PipelineKind::WarpPaletteBlit:	return g_warpPaletteBlitPS;
-			default:						return nullptr;
-		}
-	}
-
 	//____ _canvasKindOfFormat() _______________________________________________
 	//
 	// What the pixel shaders need to know about the canvas, see output.hlsl.
@@ -2835,8 +2761,8 @@ namespace wax
 	// - A canvas without alpha is opaque, and has no alpha channel to write to.
 	//
 	// Pixel shaders only output the second color in pipelines that blend with it,
-	// since the debug layer warns about output nothing reads. Those are compiled
-	// when first needed.
+	// which have shaders of their own for that, since the debug layer warns about
+	// output nothing reads.
 
 	bool DX12Backend::_createPipeline(BlendMode blendMode, PipelineKind kind, DXGI_FORMAT rtvFormat, Microsoft::WRL::ComPtr<ID3D12PipelineState>& pPipeline)
 	{
@@ -2936,21 +2862,16 @@ namespace wax
 
 		// Setup the graphics pipeline state.
 
-		auto& vertexShaderBlob = s_vertexShaderBlobs[int(kind)];
-		auto& pixelShaderBlob = bDualSource ? s_dualSourcePixelShaderBlobs[int(kind)] : s_pixelShaderBlobs[int(kind)];
+		D3D12_SHADER_BYTECODE vertexShader = _shader(_vertexShaderName(kind));
+		D3D12_SHADER_BYTECODE pixelShader = _shader(_pixelShaderName(kind, bDualSource));
 
-		if (bDualSource && !pixelShaderBlob && !_compilePixelShader(pixelShaderBlob, _pixelShaderSource(kind), true))
-			return false;
-
-		if (!vertexShaderBlob || !pixelShaderBlob)
+		if (!vertexShader.pShaderBytecode || !pixelShader.pShaderBytecode)
 			return false;
 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {};
 		desc.pRootSignature = m_pRootSignature.Get();
-		desc.VS.pShaderBytecode = vertexShaderBlob->GetBufferPointer();
-		desc.VS.BytecodeLength = vertexShaderBlob->GetBufferSize();
-		desc.PS.pShaderBytecode = pixelShaderBlob->GetBufferPointer();
-		desc.PS.BytecodeLength = pixelShaderBlob->GetBufferSize();
+		desc.VS = vertexShader;
+		desc.PS = pixelShader;
 
 		desc.BlendState.AlphaToCoverageEnable = false;
 		desc.BlendState.IndependentBlendEnable = false;
@@ -3062,57 +2983,4 @@ namespace wax
 		return true;
 	}
 
-	//____ _compileVertexShader() _____________________________________________
-
-	bool DX12Backend::_compileVertexShader(Microsoft::WRL::ComPtr<ID3DBlob>& shaderBlob, LPCVOID pSrc)
-	{ 
-		UINT compileFlags = c_shaderCompileFlags;
-
-		Microsoft::WRL::ComPtr<ID3DBlob> errorMsg;
-
-		HRESULT hr = D3DCompile(pSrc, strlen((const char*)pSrc), nullptr, nullptr, nullptr, "main", "vs_5_0", compileFlags, 0, shaderBlob.GetAddressOf(), errorMsg.GetAddressOf());
-		if (FAILED(hr))
-		{
-			const char* pError = errorMsg ? (const char*)errorMsg->GetBufferPointer() : "Unknown error";
-			char buffer[1024];
-			sprintf_s(buffer, "Vertex shader compile failed, HRESULT = 0x%08lX: %s", (unsigned long)hr, pError);
-			Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			assert(false);
-			return false;
-		}
-
-		return true;
-	}
-
-	//____ _compilePixelShader() _______________________________________________
-
-	bool DX12Backend::_compilePixelShader(Microsoft::WRL::ComPtr<ID3DBlob>& shaderBlob, LPCVOID pSrc, bool bDualSource)
-	{
-		UINT compileFlags = c_shaderCompileFlags;
-
-		Microsoft::WRL::ComPtr<ID3DBlob> errorMsg;
-
-		// WAX_DUAL_SOURCE has the shader output the second color of dual-source blending,
-		// see output.hlsl.
-
-		const D3D_SHADER_MACRO dualSourceDefines[] = { { "WAX_DUAL_SOURCE", "1" }, { nullptr, nullptr } };
-
-		HRESULT hr = D3DCompile(pSrc, strlen((const char*)pSrc), nullptr, bDualSource ? dualSourceDefines : nullptr, nullptr, "main", "ps_5_0", compileFlags, 0, shaderBlob.GetAddressOf(), errorMsg.GetAddressOf());
-		if (FAILED(hr))
-		{
-			const char* pError = errorMsg ? (const char*)errorMsg->GetBufferPointer() : "Unknown error";
-
-			char buffer[1024];
-			sprintf_s(buffer, "Pixel shader compile failed, HRESULT = 0x%08lX: %s", (unsigned long)hr, pError);
-			Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			assert(false);
-			return false;
-		}
-
-		return true;
-
-	}
-
-
-
-}
+} // namespace wax

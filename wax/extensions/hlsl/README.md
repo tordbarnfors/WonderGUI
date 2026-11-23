@@ -6,8 +6,8 @@ change here changes them all.
 
 ## How they are put together
 
-Each shader is a few of these files put one after the other, listed in the shader templates of
-the backends:
+Each shader is a few of these files put one after the other, listed in
+`vulkangfx/compile_shaders.py`, which the scripts of the other backends take their list from:
 
 - `constants.hlsl` first, for all but the mipmap shaders: the constants set between draws.
 - `output.hlsl` and `tint.hlsl` next, for the pixel shaders that draw into canvases.
@@ -15,11 +15,15 @@ the backends:
 - `shape.hlsl` before the shape pixel shaders, one for each kind of shape.
 - Then the `vs_*.hlsl` or `ps_*.hlsl` file itself.
 
-DX12Backend compiles them when it starts. `dx12gfx/wax_dx12shaders.cpp.template` lists them, and
-`scripts/insert_quoted.rb` turns it into `wax_dx12shaders.cpp`, which is checked in:
+DX12Backend gets them as bytecode, compiled by FXC of the Windows SDK into
+`dx12gfx/wax_dx12shaders.cpp`, which is checked in. `dx12gfx/compile_shaders.py` makes it, and
+finds FXC where the SDK is usually installed:
 
-    cd wax/extensions/dx12gfx
-    ruby ../../../scripts/insert_quoted.rb wax_dx12shaders.cpp.template
+    python wax/extensions/dx12gfx/compile_shaders.py
+
+FXC only runs on Windows. After changing a shader elsewhere, run the other three and leave this
+one for someone on Windows: `compile_shaders.py --check` tells if `wax_dx12shaders.cpp` is made
+from the shaders as they are, which CMake also warns about when configuring a DX12 build.
 
 VulkanBackend gets them as SPIR-V, compiled by DXC into `vulkangfx/spirv`, which is checked in.
 `vulkangfx/compile_shaders.py` lists them and compiles them all:
@@ -38,7 +42,8 @@ checked in. It checks the GLSL with glslangValidator if there is one:
 
     python3 wax/extensions/openglgfx/compile_shaders.py --dxc path/to/dxc
 
-The list of DX12Backend and that of VulkanBackend have to be kept in step when a shader is added.
+A new shader is added to the list in `vulkangfx/compile_shaders.py`, and to
+`GpuBackend::_vertexShaderName()` or `_pixelShaderName()` for the kind of pipeline it draws.
 
 ## Rules that keep them working on all four
 
@@ -77,4 +82,4 @@ The list of DX12Backend and that of VulkanBackend have to be kept in step when a
   which FXC never allowed anyway.
 
 All shaders should compile with DXC both ways, which can be checked without Windows: as DXIL
-(`dxc -T ps_6_0 ...`), the closest we get to DX12's `D3DCompile()`, and as SPIR-V.
+(`dxc -T ps_6_0 ...`), the closest we get to FXC, and as SPIR-V.

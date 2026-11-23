@@ -36,7 +36,7 @@ namespace wax
 {
 const TypeInfo GlBackend::TYPEINFO = { "GlBackend", &GpuBackend::TYPEINFO };
 
-Blob_p			GlBackend::s_pShaderPrograms = nullptr;
+GlBackend::ProgramBinary	GlBackend::s_programBinaries[c_nbPrograms];
 
 #define LOG_GLERROR(check) { GLenum err = check; if(err != 0) onGlError(err, this, &TYPEINFO, __func__, __FILE__, __LINE__ ); }
 
@@ -191,29 +191,6 @@ namespace
 		b.bWriteAlpha = !bNoAlpha;
 		return b;
 	}
-
-	// Shaders of the kinds of pipelines, see compile_shaders.py. Kinds with the same geometry
-	// share a vertex shader.
-
-	const char * const c_vertexShaders[] = {
-		"fillVS", "fillAAVS", "blitVS", "blitVS", "blitVS", "blitVS",
-		"lineVS", "segmentsVS", "shapeVS", "shapeVS", "shapeVS", "warpVS", "warpVS", "warpVS" };
-
-	const char * const c_pixelShaders[][2] = {
-		{ "fillPS", "fillPSDual" },
-		{ "fillAAPS", "fillAAPSDual" },
-		{ "blitPS", "blitPSDual" },
-		{ "blurPS", "blurPSDual" },
-		{ "paletteBlitPS", "paletteBlitPSDual" },
-		{ "paletteBlurPS", "paletteBlurPSDual" },
-		{ "linePS", "linePSDual" },
-		{ "segmentsPS", "segmentsPSDual" },
-		{ "shapeBoxPS", "shapeBoxPSDual" },
-		{ "shapeRingPS", "shapeRingPSDual" },
-		{ "shapeLinePS", "shapeLinePSDual" },
-		{ "warpEdgemapPS", "warpEdgemapPSDual" },
-		{ "warpBlitPS", "warpBlitPSDual" },
-		{ "warpPaletteBlitPS", "warpPaletteBlitPSDual" } };
 }
 
 //____ onGlError() _______________________________________________________________
@@ -279,7 +256,7 @@ GlBackend::GlBackend( int uboBindingPoint )
 
 	// Get version number, set flags
 
-	GLint major, minor;
+	GLint major = 0, minor = 0;
 	glGetIntegerv(GL_MAJOR_VERSION, &major);
 	glGetIntegerv(GL_MINOR_VERSION, &minor);
 
@@ -292,10 +269,15 @@ GlBackend::GlBackend( int uboBindingPoint )
 
 	m_bFullyInitialized = true;
 
-	_loadPrograms();
+	// The programs are compiled when first drawn with, see _program(), so this is where we find
+	// out if they can be: the shaders are GLSL 3.3.
 
-	if (!s_pShaderPrograms && m_bProgramBinariesSupported && m_bFullyInitialized)
-		s_pShaderPrograms = _generateProgramBlob();
+	if( major < 3 || (major == 3 && minor < 3) )
+	{
+		Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "GlBackend needs OpenGL 3.3 or later.",
+			this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		m_bFullyInitialized = false;
+	}
 
 	LOG_INIT_GLERROR(glGetError());
 
@@ -746,7 +728,7 @@ bool GlBackend::_setPipeline( PipelineKind kind )
 
 	GlBlend blend = blendFor(mode, m_targetKind == CanvasKind::AlphaOnly, m_targetKind == CanvasKind::WithoutAlpha, _hasPartialCoverage(kind));
 
-	if( m_programs[int(kind)][blend.bDualSource ? 1 : 0] == 0 )
+	if( _program(kind, blend.bDualSource) == 0 )
 		return false;
 
 	_record(Op::SetPipeline, int(kind), int(mode));
@@ -1199,47 +1181,142 @@ const char * GlBackend::_shaderSource( const char * pName )
 	return nullptr;
 }
 
-//____ _loadPrograms() ______________________________________________________________
+//____ _program() ____________________________________________________________
 //
-// A program per kind of pipeline, and one more for those that blend with a second color.
+// The program of a kind of pipeline, or the one of it that blends with a second color. Created
+// the first time it is asked for, as an application typically draws with a few of them only and
+// compiling them all takes a while. 0 if it can't be created, which is only tried once.
 
-void GlBackend::_loadPrograms()
+GLuint GlBackend::_program( PipelineKind kind, bool bDualSource )
 {
-	for( int kind = 0 ; kind < int(PipelineKind::Size) ; kind++ )
+	int index = int(kind) * 2 + (bDualSource ? 1 : 0);
+	GLuint& program = m_programs[int(kind)][bDualSource ? 1 : 0];
+
+	if( program == 0 && !m_bProgramFailed[index] )
 	{
-		for( int dual = 0 ; dual < 2 ; dual++ )
+		program = _createProgram(index);
+		m_bProgramFailed[index] = (program == 0);
+
+		LOG_GLERROR(glGetError());
+	}
+
+	return program;
+}
+
+//____ _createProgram() ______________________________________________________
+//
+// Loads the program from its binary if we have one, see shaderBlob(), and compiles it otherwise.
+
+GLuint GlBackend::_createProgram( int index )
+{
+	ProgramBinary& binary = s_programBinaries[index];
+
+	GLuint program = glCreateProgram();
+	GLint linkStatus = GL_FALSE;
+
+	if( m_bProgramBinariesSupported && !binary.data.empty() )
+	{
+		glProgramBinary(program, binary.format, binary.data.data(), GLsizei(binary.data.size()));
+		glGetProgramiv(program, GL_LINK_STATUS, &linkStatus);
+
+		if( linkStatus != GL_TRUE )
 		{
-			const char * pVertexShader = _shaderSource(c_vertexShaders[kind]);
-			const char * pPixelShader = _shaderSource(c_pixelShaders[kind][dual]);
+			// The driver doesn't take it, as when it has been updated since the binary was made,
+			// which then goes for the others too. Not an error of ours.
 
-			if( !pVertexShader || !pPixelShader )
-			{
-				char buffer[128];
-				snprintf(buffer, sizeof(buffer), "Shader %s or %s is missing, run compile_shaders.py.", c_vertexShaders[kind], c_pixelShaders[kind][dual]);
-				Base::throwError(ErrorLevel::Error, ErrorCode::Internal, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
-				m_bFullyInitialized = false;
-				continue;
-			}
+			for( auto& stale : s_programBinaries )
+				stale = ProgramBinary();
 
-			GLuint progId = _loadOrCompileProgram(kind * 2 + dual, pVertexShader, pPixelShader);
-
-			GLint linkStatus = 0;
-			glGetProgramiv(progId, GL_LINK_STATUS, &linkStatus);
-
-			if( linkStatus != GL_TRUE )
-			{
-				glDeleteProgram(progId);
-				m_bFullyInitialized = false;
-				continue;
-			}
-
-			_setUniforms(progId);
-			m_programs[kind][dual] = progId;
-			m_constantsLocations[kind * 2 + dual] = glGetUniformLocation(progId, "waxConstants");
+			while( glGetError() != GL_NO_ERROR ) {}
 		}
 	}
 
-	LOG_INIT_GLERROR(glGetError());
+	if( linkStatus != GL_TRUE )
+	{
+		const char * pVertexShaderName = _vertexShaderName(PipelineKind(index / 2));
+		const char * pPixelShaderName = _pixelShaderName(PipelineKind(index / 2), (index % 2) != 0);
+
+		const char * pVertexShaderSource = _shaderSource(pVertexShaderName);
+		const char * pPixelShaderSource = _shaderSource(pPixelShaderName);
+
+		if( !pVertexShaderSource || !pPixelShaderSource )
+		{
+			char buffer[128];
+			snprintf(buffer, sizeof(buffer), "Shader %s or %s is missing, run compile_shaders.py.", pVertexShaderName, pPixelShaderName);
+			Base::throwError(ErrorLevel::Error, ErrorCode::Internal, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+
+			glDeleteProgram(program);
+			return 0;
+		}
+
+		GLuint vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
+		GLuint fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
+
+		glShaderSource(vertexShaderID, 1, &pVertexShaderSource, NULL);
+		glCompileShader(vertexShaderID);
+
+		glShaderSource(fragmentShaderID, 1, &pPixelShaderSource, NULL);
+		glCompileShader(fragmentShaderID);
+
+		glAttachShader(program, vertexShaderID);
+		glAttachShader(program, fragmentShaderID);
+		glLinkProgram(program);
+
+		// glLinkProgram doesn't use glGetError
+
+		glGetProgramiv(program, GL_LINK_STATUS, &linkStatus);
+
+		if( linkStatus != GL_TRUE )
+		{
+			GLchar	vertexShaderLog[2048] = "";
+			GLchar	fragmentShaderLog[2048] = "";
+			GLchar	programInfoLog[2048] = "";
+
+			glGetShaderInfoLog(vertexShaderID, 2048, nullptr, vertexShaderLog);
+			glGetShaderInfoLog(fragmentShaderID, 2048, nullptr, fragmentShaderLog);
+			glGetProgramInfoLog(program, 2048, nullptr, programInfoLog);
+
+			char	buffer[2048 * 3 + 256];
+
+			snprintf(buffer, sizeof(buffer), "Failed compiling OpenGL shaders %s and %s\nVertexShaderLog: %s\nFragmentShaderLog: %s\nProgramInfoLog: %s",
+					 pVertexShaderName, pPixelShaderName, vertexShaderLog, fragmentShaderLog, programInfoLog);
+			Base::throwError(ErrorLevel::Error, ErrorCode::OpenGL, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		}
+
+		glDetachShader(program, vertexShaderID);
+		glDetachShader(program, fragmentShaderID);
+
+		glDeleteShader(vertexShaderID);
+		glDeleteShader(fragmentShaderID);
+
+		if( linkStatus != GL_TRUE )
+		{
+			glDeleteProgram(program);
+			return 0;
+		}
+
+		// Its binary, for the GlBackends to come and for shaderBlob().
+
+		if( m_bProgramBinariesSupported )
+		{
+			GLint size = 0;
+			glGetProgramiv(program, GL_PROGRAM_BINARY_LENGTH, &size);
+
+			if( size > 0 )
+			{
+				GLsizei written = 0;
+
+				binary.data.resize(size);
+				glGetProgramBinary(program, size, &written, &binary.format, binary.data.data());
+				binary.data.resize(written);
+			}
+		}
+	}
+
+	_setUniforms(program);
+	m_constantsLocations[index] = glGetUniformLocation(program, "waxConstants");
+
+	return program;
 }
 
 //____ _setUniforms() __________________________________________________
@@ -1271,125 +1348,75 @@ void GlBackend::_setUniforms(GLuint progId)
 	LOG_GLERROR(glGetError());
 }
 
-//____ _loadOrCompileProgram() __________________________________________________________
+//____ setShaderBlob() _______________________________________________________
+//
+// Takes the binaries out of a blob shaderBlob() made, replacing those we have. A blob made for
+// other shaders than ours, or cut short, is ignored.
 
-GLuint GlBackend::_loadOrCompileProgram(int programNb, const char* pVertexShaderSource, const char* pFragmentShaderSource)
+void GlBackend::setShaderBlob( Blob * pBlob )
 {
-	GLuint  programID = glCreateProgram();
+	for( auto& binary : s_programBinaries )
+		binary = ProgramBinary();
 
-	if (s_pShaderPrograms)
+	if( !pBlob || pBlob->size() < int(sizeof(ProgramBlobHeader)) )
+		return;
+
+	const char * pBuffer = (const char*) pBlob->data();
+	const ProgramBlobHeader * pHeader = (const ProgramBlobHeader*) pBuffer;
+
+	if( pHeader->version != c_versionNb || pHeader->nbPrograms != c_nbPrograms )
+		return;
+
+	for( int i = 0 ; i < c_nbPrograms ; i++ )
 	{
-		char* pBuffer = (char*)s_pShaderPrograms->data();
-		ProgramBlobHeader* pHeader = (ProgramBlobHeader*)pBuffer;
+		const ProgramBlobEntry& entry = pHeader->programs[i];
 
-		if (pHeader->version == c_versionNb && pHeader->nbPrograms == c_nbPrograms)
+		if( entry.size > 0 && entry.offset >= int(sizeof(ProgramBlobHeader)) && entry.offset <= pBlob->size() - entry.size )
 		{
-			ProgramBlobEntry& prg = pHeader->programs[programNb];
-			glProgramBinary(programID, prg.binaryFormat, pBuffer + prg.offset, prg.size);
+			s_programBinaries[i].format = entry.binaryFormat;
+			s_programBinaries[i].data.assign(pBuffer + entry.offset, pBuffer + entry.offset + entry.size);
 		}
 	}
-
-	GLint linkStatus = 0;
-	glGetProgramiv(programID, GL_LINK_STATUS, &linkStatus);
-
-	if (linkStatus == false)
-	{
-		// Since a program failed to load we discard the whole programs blob.
-
-		s_pShaderPrograms = nullptr;
-
-		GLuint vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
-		GLuint fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
-
-		glShaderSource(vertexShaderID, 1, &pVertexShaderSource, NULL);
-		glCompileShader(vertexShaderID);
-
-		glShaderSource(fragmentShaderID, 1, &pFragmentShaderSource, NULL);
-		glCompileShader(fragmentShaderID);
-
-		glAttachShader(programID, vertexShaderID);
-		glAttachShader(programID, fragmentShaderID);
-		glLinkProgram(programID);
-
-		// glLinkProgram doesn't use glGetError
-		int mess = 0;
-		glGetProgramiv(programID, GL_LINK_STATUS, &mess);
-		if (mess != GL_TRUE)
-		{
-			GLchar	vertexShaderLog[2048];
-			GLchar	fragmentShaderLog[2048];
-			GLchar	programInfoLog[2048];
-
-			GLsizei vertexShaderLogLength;
-			GLsizei fragmentShaderLogLength;
-			GLsizei programInfoLogLength;
-
-			glGetShaderInfoLog(vertexShaderID, 2048, &vertexShaderLogLength, vertexShaderLog);
-			glGetShaderInfoLog(fragmentShaderID, 2048, &fragmentShaderLogLength, fragmentShaderLog);
-			glGetProgramInfoLog(programID, 2048, &programInfoLogLength, programInfoLog);
-
-			char	buffer[2048 * 3 + 256];
-
-			snprintf(buffer, 2048*3+256, "Failed compiling OpenGL shader\nVertexShaderLog: %s\nFragmentShaderLog: %s\nProgramInfoLog: %s", vertexShaderLog, fragmentShaderLog, programInfoLog);
-			Base::throwError(ErrorLevel::SilentError, ErrorCode::OpenGL, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
-		}
-
-		glDetachShader(programID, vertexShaderID);
-		glDetachShader(programID, fragmentShaderID);
-
-		glDeleteShader(vertexShaderID);
-		glDeleteShader(fragmentShaderID);
-
-		LOG_GLERROR(glGetError());
-	}
-
-	return programID;
 }
 
-//____ _generateProgramBlob() __________________________________________________________
+//____ shaderBlob() __________________________________________________________
+//
+// A program not compiled yet has an entry of size 0.
 
-Blob_p GlBackend::_generateProgramBlob()
+Blob_p GlBackend::shaderBlob()
 {
-	GLuint	programs[c_nbPrograms];
-
-	for( int kind = 0 ; kind < int(PipelineKind::Size) ; kind++ )
-	{
-		programs[kind * 2] = m_programs[kind][0];
-		programs[kind * 2 + 1] = m_programs[kind][1];
-	}
-
-	// Store sizes and calculate space needed
-
 	int totalSize = 0;
-	int	programSize[c_nbPrograms];
 
-	for (int i = 0; i < c_nbPrograms; i++)
-	{
-		GLint	size;
-		glGetProgramiv(programs[i], GL_PROGRAM_BINARY_LENGTH, &size);
-		programSize[i] = size;
-		totalSize += size;
-	}
+	for( auto& binary : s_programBinaries )
+		totalSize += int(binary.data.size());
 
-	// Create our Blob
+	if( totalSize == 0 )
+		return nullptr;
 
-	auto pBlob = Blob::create(sizeof(ProgramBlobHeader) + totalSize);
+	auto pBlob = Blob::create(int(sizeof(ProgramBlobHeader)) + totalSize);
 
-	char* pBuffer = (char*)pBlob->data();
+	char * pBuffer = (char*) pBlob->data();
+	ProgramBlobHeader * pHeader = (ProgramBlobHeader*) pBuffer;
 
-	ProgramBlobHeader* pHeader = (ProgramBlobHeader*)pBuffer;
+	std::memset(pHeader, 0, sizeof(ProgramBlobHeader));
 
 	pHeader->version = c_versionNb;
 	pHeader->nbPrograms = c_nbPrograms;
 
-	// Get our program binaries
+	int offset = int(sizeof(ProgramBlobHeader));
 
-	int offset = sizeof(ProgramBlobHeader);
-	for (int i = 0; i < c_nbPrograms; i++)
+	for( int i = 0 ; i < c_nbPrograms ; i++ )
 	{
+		const ProgramBinary& binary = s_programBinaries[i];
+
 		pHeader->programs[i].offset = offset;
-		glGetProgramBinary(programs[i], programSize[i], &pHeader->programs[i].size, &pHeader->programs[i].binaryFormat, pBuffer + offset);
-		offset += pHeader->programs[i].size;
+		pHeader->programs[i].size = GLsizei(binary.data.size());
+		pHeader->programs[i].binaryFormat = binary.format;
+
+		if( !binary.data.empty() )
+			std::memcpy(pBuffer + offset, binary.data.data(), binary.data.size());
+
+		offset += int(binary.data.size());
 	}
 
 	return pBlob;

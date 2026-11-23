@@ -1,6 +1,7 @@
 
 set(SOURCES
 
+	compile_shaders.py
 	wax_dx12backend.cpp
 	wax_dx12backend.h
 	wax_dx12edgemap.cpp
@@ -12,7 +13,6 @@ set(SOURCES
 	wax_dx12warpmapfactory.cpp
 	wax_dx12warpmapfactory.h
 	wax_dx12shaders.cpp
-	wax_dx12shaders.cpp.template
 	wax_dx12surface.cpp
 	wax_dx12surface.h
 	wax_dx12surfacefactory.cpp
@@ -76,7 +76,25 @@ target_include_directories(waxdx12gfx PRIVATE
 )
 
 
-set_source_files_properties( wax_dx12shaders.cpp.template ${SHADERS} PROPERTIES HEADER_FILE_ONLY TRUE )
+set_source_files_properties( compile_shaders.py ${SHADERS} PROPERTIES HEADER_FILE_ONLY TRUE )
+
+# wax_dx12shaders.cpp has the shaders compiled, made by compile_shaders.py, which needs FXC and
+# so only runs on Windows. Shaders changed elsewhere leave it out of date, which we warn about.
+
+find_package(Python3 COMPONENTS Interpreter QUIET)
+
+if(Python3_Interpreter_FOUND)
+	execute_process(
+		COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/compile_shaders.py --check
+		RESULT_VARIABLE DX12_SHADERS_OUT_OF_DATE
+		OUTPUT_QUIET ERROR_QUIET
+	)
+
+	if(DX12_SHADERS_OUT_OF_DATE)
+		message(WARNING "wax_dx12shaders.cpp is not made from the shaders in wax/extensions/hlsl as they are now. "
+						"Run wax/extensions/dx12gfx/compile_shaders.py.")
+	endif()
+endif()
 
 list(TRANSFORM SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/ )
 set(DX12GFX_SOURCES ${SOURCES} PARENT_SCOPE)

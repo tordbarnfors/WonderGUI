@@ -1,6 +1,5 @@
-// The tint, shared by all pixel shaders that apply one. wax_dx12shaders.cpp.template
-// puts this file in front of each of them, after output.hlsl, D3DCompile has no
-// include handler here.
+// The tint, shared by all pixel shaders that apply one. This file is put in front of
+// each of them, after output.hlsl, see README.md.
 //
 // A tint block is a run of float4 entries, see TintTools::writeGpuTintBlock():
 //

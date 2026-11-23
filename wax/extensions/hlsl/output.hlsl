@@ -1,5 +1,5 @@
-// Output of the pixel shaders that draw into canvases. The shader templates put this
-// file in front of each of them, after constants.hlsl and ahead of tint.hlsl.
+// Output of the pixel shaders that draw into canvases. This file is put in front of
+// each of them, after constants.hlsl and ahead of tint.hlsl, see README.md.
 //
 // Canvases with alpha hold premultiplied colors. A pixel shader works out the
 // premultiplied color of what it draws times the part of the pixel it covers (pc)

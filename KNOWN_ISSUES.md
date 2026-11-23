@@ -263,6 +263,16 @@ DeviceGen2 could keep layer canvases between updates, for all backends.
 
 `_createDeviceObjects()`, `_uploadSource()` and `_convertAlpha()` in `wax/extensions/dx12gfx/wax_dx12surface.cpp`
 
+### DX12Backend: shaders changed outside Windows leave its bytecode out of date
+
+DX12Backend draws with bytecode that is checked in (`wax_dx12shaders.cpp`), compiled by FXC,
+which only runs on Windows. After a shader in `wax/extensions/hlsl` is changed on Linux or macOS,
+DX12Backend keeps drawing with the old one until `dx12gfx/compile_shaders.py` is run on Windows.
+CMake warns about it when a DX12 build is configured, if it finds a Python, and
+`compile_shaders.py --check` tells anywhere.
+
+`wax/extensions/dx12gfx/compile_shaders.py`
+
 ### DX12Warpmap and DX12Edgemap: a committed resource each, of at least 64 KB
 
 Making a DX12Warpmap takes about 250 us on Windows (Arc B580), going by the WarpTests that made
@@ -291,9 +301,10 @@ run time, which made line caps 2-3 times as fast on Intel UHD 770. On Windows th
 times as fast, but for the tests drawing each line in a clip of its own, which stayed 4.6 times
 as slow. Those switched pipelines twice per line, which is gone now, not timed on Windows since.
 
-DX12Backend compiles the new line shader with FXC when it starts, which hasn't been tried, and
-MetalBackend hasn't run the MSL made from it either. Both have the same shader as GlBackend and
-VulkanBackend, where it gives the same results as before.
+DX12Backend has run the new line shader, compiled by FXC, in all of gfxdevicetester on Windows
+(Arc B580, 2026-11-23): LineCapTests pass, not timed. MetalBackend hasn't run the MSL made from
+it. It is the same shader as GlBackend and VulkanBackend have, where it gives the same results
+as before.
 
 They also come out at one of two or three speeds for a whole run of the tester, the same in all
 its passes (PieChartTests 126, 167 or 187 us per run), which makes them the tests that still

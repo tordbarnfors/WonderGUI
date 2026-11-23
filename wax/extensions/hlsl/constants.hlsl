@@ -1,6 +1,6 @@
 // The constants all shaders share, set by the backend between draws. Put in front of every
-// shader by the shader templates of DX12Backend and VulkanBackend, which both use these
-// shaders.
+// shader by the compile_shaders.py of the backends, which all use these shaders, see
+// README.md.
 //
 // DX12Backend sets them as root constants: CanvasInfo (b0) with the canvas and blit source,
 // PixelInfo (b1) with the tint and how the pixel shaders hand what they draw to the blender,

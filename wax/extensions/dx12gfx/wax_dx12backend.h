@@ -308,11 +308,10 @@ namespace wax
 		void _generateMipmaps(DX12Surface* pSurface);			// Draws every mip level from level 0.
 		ID3D12PipelineState* _mipmapPipeline(DXGI_FORMAT format);
 
-		static const char * _pixelShaderSource(PipelineKind kind);
 		static CanvasKind _canvasKindOfFormat(DXGI_FORMAT format);
 
-		bool _compileVertexShader(Microsoft::WRL::ComPtr<ID3DBlob>& shaderBlob, LPCVOID pSrc );
-		bool _compilePixelShader(Microsoft::WRL::ComPtr<ID3DBlob>& shaderBlob, LPCVOID pSrc, bool bDualSource = false);
+		D3D12_SHADER_BYTECODE _shader(const char * pName);
+
 
 
 		SurfaceFactory_p	m_pSurfaceFactory;	
@@ -467,15 +466,6 @@ namespace wax
 
 		//
 
-		// Compiled once, shared by all backends. Plain bytecode, so they survive a
-		// change of device. Released by setDevice(nullptr, nullptr) once no backend
-		// is left.
-
-		static Microsoft::WRL::ComPtr<ID3DBlob>				s_vertexShaderBlobs[int(PipelineKind::Size)];
-		static Microsoft::WRL::ComPtr<ID3DBlob>				s_pixelShaderBlobs[int(PipelineKind::Size)];
-		static Microsoft::WRL::ComPtr<ID3DBlob>				s_dualSourcePixelShaderBlobs[int(PipelineKind::Size)];		// Compiled when first needed, see _createPipeline().
-		static Microsoft::WRL::ComPtr<ID3DBlob>				s_mipmapVertexShaderBlob;
-		static Microsoft::WRL::ComPtr<ID3DBlob>				s_mipmapPixelShaderBlob;
 
 		static Microsoft::WRL::ComPtr<ID3D12Device>			s_pDevice;
 		static Microsoft::WRL::ComPtr<ID3D12CommandQueue>	s_pCommandQueue;
@@ -484,31 +474,18 @@ namespace wax
 		static HRESULT										s_deviceRemovedReason;
 		static std::vector<DX12Backend*>					s_backends;				// All that exist. Not thread safe, like the rest of the backend.
 
-		// Source code for shaders:
+		// The shaders, compiled, see wax_dx12shaders.cpp, which compile_shaders.py
+		// makes from the HLSL. Plain bytecode, shared by all backends.
 
-		static const char g_fillVS[];
-		static const char g_fillPS[];
-		static const char g_fillAAVS[];
-		static const char g_fillAAPS[];
-		static const char g_blitVS[];
-		static const char g_blitPS[];
-		static const char g_blurPS[];
-		static const char g_paletteBlitPS[];
-		static const char g_paletteBlurPS[];
-		static const char g_mipmapVS[];
-		static const char g_mipmapPS[];
-		static const char g_lineVS[];
-		static const char g_linePS[];
-		static const char g_segmentsVS[];
-		static const char g_segmentsPS[];
-		static const char g_shapeVS[];
-		static const char g_shapeBoxPS[];
-		static const char g_shapeRingPS[];
-		static const char g_shapeLinePS[];
-		static const char g_warpVS[];
-		static const char g_warpEdgemapPS[];
-		static const char g_warpBlitPS[];
-		static const char g_warpPaletteBlitPS[];
+		struct CompiledShader
+		{
+			const char *	pName;
+			const void *	pCode;
+			size_t			size;		// In bytes.
+		};
+
+		static const CompiledShader	s_compiledShaders[];
+		static const int			s_nbCompiledShaders;
 
 	};
 
