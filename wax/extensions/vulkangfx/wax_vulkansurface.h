@@ -124,7 +124,8 @@ namespace wax
 		~VulkanSurface();
 
 		void			_setupTexture( const void * pPixels, int pitch, const PixelDescription * pSrcPixelDesc,
-									   const Color8 * pSrcPalette, const Color8 * pDstPalette, int srcPaletteSize );
+									   const Color8 * pSrcPalette, const Color8 * pDstPalette, int srcPaletteSize,
+									   HiColor fillColor = HiColor::Undefined );
 
 		bool			_setPixelDetails();			// Settles on a layout Vulkan can hold.
 		bool			_createDeviceObjects();		// Image, views, pixel buffer and palette buffer. All or none.

@@ -74,7 +74,7 @@ namespace wax
 	VulkanSurface::VulkanSurface(const Blueprint& bp) : Surface(bp, PixelFormat::ARGB_8, SampleMethod::Bilinear)
 	{
 		m_bMipmapped = bp.mipmap;
-		_setupTexture( nullptr, 0, nullptr, nullptr, bp.palette, 0 );
+		_setupTexture( nullptr, 0, nullptr, nullptr, bp.palette, 0, bp.fillColor );
 	}
 
 	VulkanSurface::VulkanSurface(const Blueprint& bp, Blob* pBlob, int pitch) : Surface(bp, PixelFormat::ARGB_8, SampleMethod::Bilinear)
@@ -212,7 +212,7 @@ namespace wax
 	//____ _setupTexture() _____________________________________________________
 
 	void VulkanSurface::_setupTexture( const void * pPixels, int pitch, const PixelDescription * pSrcPixelDesc,
-									   const Color8 * pSrcPalette, const Color8 * pDstPalette, int srcPaletteSize )
+									   const Color8 * pSrcPalette, const Color8 * pDstPalette, int srcPaletteSize, HiColor fillColor )
 	{
 		bool bFormatSupported = _setPixelDetails();
 
@@ -257,7 +257,16 @@ namespace wax
 			m_pPixels = m_pFallbackPixels;
 		}
 
-		memset( m_pPixels, 0, size_t(m_pitch) * m_size.h );
+		// Without pixels and without a fill color our pixels are left as the memory came, as
+		// the content of such a surface is unspecified. They are still sent to the texture on
+		// first use, see _copyInPixels(): that is what takes the image out of the layout it is
+		// created in, which it can't be read in.
+
+		if( !pPixels && !fillColor.isUndefined() )
+		{
+			PixelTools::fillBitmap(m_pPixels, m_pixelFormat, m_colorSpace, m_bBigEndian, m_pitch, RectI(m_size),
+								   fillColor, m_pPalette, m_paletteSize);
+		}
 
 		_copyInPixels( pPixels, pitch, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
 		_updatePaletteBuffer();
