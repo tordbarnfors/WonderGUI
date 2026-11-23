@@ -440,7 +440,11 @@ For VulkanBackend, still to do:
   table CMake makes of `vulkangfx/spirv`. An alpha only canvas gets the factors of alpha in their
   color form for its colors, which serves the R8 of GL, Metal and Vulkan and the A8 of DX12
   alike. DX12Backend offers all four vertex inputs to every vertex shader, as D3D12 wants each
-  one a shader declares, also those it doesn't read.
+  one a shader declares, also those it doesn't read. Vulkan and Metal only get those a shader
+  reads, as DXC removes the unused one from their shaders. gfxdevicetester gives the same
+  results as before the change on all four: DX12Backend and GlBackend on Windows (Arc B580),
+  VulkanBackend on Linux (Intel UHD 770 with Mesa, validation layer on and silent) and
+  MetalBackend on a Mac (x86_64, Debug), each at bcf58e51 against d155b18a.
 - **Decided with Tord: edgemaps keep a GPU buffer of their own,** as surfaces have their
   textures. Copying what a frame draws of them into its extras buffer was considered and turned
   down: an edgemap can be drawn many times a frame, and a resource shouldn't fill up the buffers

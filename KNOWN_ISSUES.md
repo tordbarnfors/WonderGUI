@@ -222,16 +222,6 @@ slow on Windows" below.
 
 Only run on Linux, with lavapipe and Intel UHD 770 (Mesa).
 
-### MetalBackend and VulkanBackend with the blending of GpuBackend
-
-Blending, pipelines and shaders by name moved to GpuBackend (`_blendState()`, `_bindPipeline()`),
-see "GPU backends (2026-11)" in ROADMAP.md. gfxdevicetester gives the same results as before on
-DX12Backend and GlBackend. VulkanBackend has only been compiled since (MSVC, with the Vulkan
-headers of SDL3), not linked or run, and MetalBackend not even compiled. Run gfxdevicetester
---accuracy on both.
-
-`_bindPipeline()` and `_createPipeline()` in `wax_vulkanbackend.cpp` and `wax_metalbackend.mm`
-
 ## Graphics
 
 ### gfxdevicetester: tests that differ on GlBackend and VulkanBackend alike
@@ -239,13 +229,38 @@ headers of SDL3), not linked or run, and MetalBackend not even compiled. Run gfx
 SegmentTests Circles, MipmapTests Mipmapped_0.4 and EdgemapTintTests ReplaceVerticalAndFlat differ
 from ReferenceBackend by the same amounts on GlBackend (llvmpipe) and VulkanBackend (lavapipe and
 Intel UHD 770), so it is likely something they have in common with each other, and maybe with the
-other GPU backends, rather than a bug of one backend. Not looked into yet.
+other GPU backends, rather than a bug of one backend. Not looked into yet. At bcf58e51 (2026-11)
+Circles was no longer among those that differ on VulkanBackend (Intel UHD 770) or MetalBackend,
+the other two were, on both.
 
 ### gfxdevicetester's ReadbackTests differs on VulkanBackend
 
 The RGB_565 canvas is kept as XRGB_8, as on DX12Backend and MetalBackend, which keeps the dark
 colors a Replace leaves in a linear canvas, where RGB_565 rounds them to black. Expected, see the
-comment in `readbacktests.h`.
+comment in `readbacktests.h`. MetalBackend differs the same way (max 28, mean 0.796).
+
+### gfxdevicetester: tests that differ on DX12Backend and MetalBackend alike
+
+On a Mac (x86_64, Debug, 2026-11-23) twelve tests differ from ReferenceBackend, the same at
+bcf58e51 as at d155b18a, so not from the blending moved to GpuBackend. Three are those of the
+two entries above. The other nine differ by exactly the same amounts on DX12Backend (Windows,
+Arc B580), so it is something the two have in common and not the GPU. They don't differ on
+VulkanBackend (Intel UHD 770), and on GlBackend (Arc B580) the three of palettes and BlitGridNear
+are OK and the other five have specks:
+
+    BlitConsistencyTests  BlitGridNear             max 255  mean 0.314  over  1293
+    SamplingTests         RotScaleNearestAlpha     max 151  mean 0.068  over   665
+    SamplingTests         RotScaleNearestRGBX      max 148  mean 0.060  over   420
+    PaletteCapacityTests  Palette8                 max 215  mean 0.058  over    65
+    PaletteCapacityTests  Palette8Capacity16       max 215  mean 0.058  over    65
+    PaletteCapacityTests  Palette256               max 232  mean 0.047  over    71
+    WarpTests             Blit nearest wave        max 199  mean 0.097  over   404
+    WarpTests             Blit source rectangle    max 199  mean 0.051  over   465
+    WarpTests             Tiling not power of two  max 199  mean 0.062  over   344
+
+Few pixels each, far off. Several are of nearest sampling by their names, so a guess is which
+texel D3D12 and Metal pick at the border between two, where GL and Vulkan pick the other. Not
+looked into.
 
 ### VulkanBackend stalls when pixels of a surface are uploaded
 
@@ -335,9 +350,10 @@ times as fast, but for the tests drawing each line in a clip of its own, which s
 as slow. Those switched pipelines twice per line, which is gone now, not timed on Windows since.
 
 DX12Backend has run the new line shader, compiled by FXC, in all of gfxdevicetester on Windows
-(Arc B580, 2026-11-23): LineCapTests pass, not timed. MetalBackend hasn't run the MSL made from
-it. It is the same shader as GlBackend and VulkanBackend have, where it gives the same results
-as before.
+(Arc B580, 2026-11-23): LineCapTests pass, not timed. MetalBackend has run the MSL made from it
+(a Mac, x86_64, 2026-11-23), not timed: LineCapTests come out as on DX12Backend and GlBackend,
+eight OK and Round solaris and Dots with specks (max 21 and 24). It is the same shader as
+GlBackend and VulkanBackend have, where it gives the same results as before.
 
 They also come out at one of two or three speeds for a whole run of the tester, the same in all
 its passes (PieChartTests 126, 167 or 187 us per run), which makes them the tests that still
