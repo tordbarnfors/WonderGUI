@@ -20,6 +20,9 @@
 
 =========================================================================*/
 #include <vector>
+#include <algorithm>
+#include <climits>
+#include <cstdint>
 #include <wg2_panel.h>
 #include <wg2_util.h>
 
@@ -228,7 +231,12 @@ WgSize WgPanelHook::_paddedMinPixelSize(int scale) const
 
 WgSize WgPanelHook::_paddedMaxPixelSize(int scale) const
 {
-		return m_pWidget->MaxPixelSize() + m_padding.scale(scale);
+	WgSize		max = m_pWidget->MaxPixelSize();
+	WgBorders	padding = m_padding.scale(scale);
+
+	// Saturating, since INT_MAX is how a widget says it has no limit, which padding must not wrap around.
+	return WgSize( (int) std::min( (int64_t) max.w + padding.width(), (int64_t) INT_MAX ),
+				   (int) std::min( (int64_t) max.h + padding.height(), (int64_t) INT_MAX ) );
 }
 
 int WgPanelHook::_paddedMatchingPixelWidth( int paddedHeight, int scale ) const

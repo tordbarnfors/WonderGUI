@@ -228,6 +228,7 @@ namespace wg
 		if( policy != m_edgePolicy )
 		{
 			m_edgePolicy = policy;
+			m_bClipChildren = (policy == EdgePolicy::Clip);
 
 			auto p = slots.begin();
 
