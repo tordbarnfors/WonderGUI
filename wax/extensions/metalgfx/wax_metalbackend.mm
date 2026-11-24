@@ -366,14 +366,6 @@ void MetalBackend::_endSessionOnDevice()
 	m_extrasBuffer = nil;
 	m_buffers = FrameBuffers();
 
-	// What we rendered isn't in the CPU side buffers of the canvases. Set once the session is
-	// committed, so that syncing them comes after it in the queue.
-
-	for( auto& pCanvas : m_sessionCanvases )
-		pCanvas->m_bBufferNeedsSync = true;
-
-	m_sessionCanvases.clear();
-
 	m_pCanvasSurface = nullptr;
 	m_targetSize = SizeI();
 	m_targetFormat = MTLPixelFormatInvalid;
@@ -454,22 +446,18 @@ bool MetalBackend::_bindCanvas( Surface * pCanvas, SizeI& size, CanvasKind& kind
 	if( pSurface )
 	{
 		// Anything the CPU has written goes in before we render over it, in a command buffer
-		// that is ahead of ours in the queue.
+		// that is ahead of ours in the queue. From here on the pixels of the surface are the
+		// older copy and its mip levels stale, as DX12Backend and VulkanBackend have it.
+		//
+		// What we render isn't in the texture until our command buffer has been committed, when
+		// the session ends. Pixels asked for before that are read back without it.
 
 		pSurface->syncTexture();
+		pSurface->notifyRendered();
 
 		m_targetFormat = pSurface->m_texture.pixelFormat;
 		m_targetSize = pSurface->pixelSize();
 		kind = _canvasKind(pSurface);
-
-		// Its mip levels no longer match what we draw into level 0.
-
-		pSurface->m_bMipmapStale = pSurface->m_bMipmapped;
-
-		auto isCanvas = [pSurface](const MetalSurface_p& p) { return p.rawPtr() == pSurface; };
-
-		if( std::none_of(m_sessionCanvases.begin(), m_sessionCanvases.end(), isCanvas) )
-			m_sessionCanvases.push_back(pSurface);
 	}
 	else
 	{

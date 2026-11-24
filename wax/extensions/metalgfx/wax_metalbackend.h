@@ -186,8 +186,6 @@ namespace wax
 		id<MTLBuffer>					m_colorBuffer = nil;
 		id<MTLBuffer>					m_extrasBuffer = nil;
 
-		std::vector<MetalSurface_p>		m_sessionCanvases;				// Surfaces rendered into this session.
-
 		// Canvas
 
 		MetalSurface *					m_pCanvasSurface = nullptr;		// Null for the default canvas.

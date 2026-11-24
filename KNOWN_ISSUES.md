@@ -222,6 +222,15 @@ slow on Windows" below.
 
 Only run on Linux, with lavapipe and Intel UHD 770 (Mesa).
 
+### MetalSurface with surfaces that change while drawing
+
+MetalSurface sends pixels to its texture when the surface is used, in a command buffer committed
+ahead of the session, since e4e1e9b5. gfxdevicetester gives the same results as before, but it
+fills most of its surfaces once. An application that writes to surfaces every frame hasn't been
+run with it: widgetbench was only started and left on its first test, with nobody at it.
+MetalBackend calling `notifyRendered()` when it binds a canvas, in place of marking the canvases
+of a session when it ends, was changed after that and has not been compiled.
+
 ## Graphics
 
 ### gfxdevicetester: tests that differ on GlBackend and VulkanBackend alike
@@ -274,14 +283,33 @@ GpuSurface" in ROADMAP.md.
 
 `GpuSurface::_setup()` in `wax/source/wax_gpusurface.cpp`, `wax/extensions/openglgfx/wax_glsurface.cpp`
 
+### MetalSurface: pixels asked for during a session miss what it rendered, and stay that way
+
+MetalBackend marks a canvas as rendered into when it binds it, as DX12Backend and VulkanBackend
+do, but what it renders isn't in the texture until its command buffer is committed, when the
+session ends. `pushPixels()`, `allocPixelBuffer()` on a canvas without pixel buffer or `alpha()`
+between the two reads the texture back as it was and takes the mark away, so the pixels stay
+without what the session rendered, also when asked for again afterwards, until the surface is
+rendered into the next time. DX12Surface and VulkanSurface have every backend submit what it has
+recorded before they read back, which MetalSurface has no way to ask for.
+
+It can't happen through a device: DeviceGen2 opens and closes the session of a canvas update
+inside the call that ends it (`_doFlattenLayers()`), so nothing of the caller runs in between,
+also with nested canvas updates. It takes code that drives the backend itself and asks for pixels
+between `beginSession()` and `endSession()`. The texture is right all along, so drawing from the
+surface is.
+
+`MetalBackend::_bindCanvas()`, `MetalSurface::_readBack()`
+
 ### VulkanBackend stalls when pixels of a surface are uploaded
 
 VulkanSurface submits what every backend has recorded and waits for the GPU before and after
 copying pixels to a texture. Fine for surfaces filled while loading, slow for one updated every
 frame. DX12Backend records the uploads into its own command list instead, see
-`DX12Backend::submitUploads()`.
+`DX12Backend::submitUploads()`. Reading back a surface that has pixels to upload waits twice, once
+for the upload and once for the copy back, where one command buffer with both would wait once.
 
-`syncTexture()` in `wax_vulkansurface.cpp`
+`syncTexture()` and `_readBack()` in `wax_vulkansurface.cpp`
 
 ### DX12Backend: canvas layers take 1.5-3 times as long as on GlBackend
 

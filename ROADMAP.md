@@ -716,6 +716,12 @@ all four GPU surfaces had their own constructors, palette conversion and premult
   command buffer of its own committed there, so ahead of the session in the queue. The copy reads
   the pixels when the GPU gets to it, so `allocPixelBuffer()` waits for the last one. The palette
   is in plain memory, where it was in a Metal buffer nothing on the GPU read.
+- **All three backends call `notifyRendered()` when they bind a surface as canvas** (Tord:
+  consistency first, then fix what breaks). MetalBackend kept a list of the canvases of a session
+  and marked them when the session had been committed, as reading a texture back doesn't wait for
+  a session being recorded, which it does with DX12Backend and VulkanBackend. See "MetalSurface:
+  pixels asked for during a session" in KNOWN_ISSUES.md for what that leaves. Changed after the
+  test runs below, and not compiled.
 - **GlSurface isn't built on GpuSurface.** It keeps no pixels unless `buffered`, palette based or
   `Alpha_8`: the texture is the only copy, `allocPixelBuffer()` makes a buffer for the call and
   `alpha()` reads an alpha map of a byte per pixel. That is the leanest of the four and another
@@ -728,7 +734,10 @@ all four GPU surfaces had their own constructors, palette conversion and premult
 Tested on Windows (Arc B580): gfxdevicetester gives the same results as before on all 262 tests
 with DX12Backend and GlBackend, unittester passes, and in a Debug build 51 tests of canvases,
 layers, readback, mipmaps, palettes and warps give the same with the device removed and replaced
-before they run.
+before they run. VulkanBackend on Linux (Intel UHD 770 with Mesa, validation layer on and silent)
+and MetalBackend on a Mac (x86_64, Debug) built as they were written and give the same results
+as before on all 262 tests too, VulkanBackend also with garbage written to every new image and
+pixel buffer. All at e4e1e9b5 against 50102486.
 
 ### DX12Surface: canvases without a pixel buffer (2026-11)
 
