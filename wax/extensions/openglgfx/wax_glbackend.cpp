@@ -809,10 +809,10 @@ void GlBackend::_execute()
 
 				glBindTexture(GL_TEXTURE_2D, pSource->getTexture());
 
-				if( pSource->m_bMipmapStale )
+				if( pSource->isMipmapStale() )
 				{
 					glGenerateMipmap(GL_TEXTURE_2D);
-					pSource->m_bMipmapStale = false;
+					pSource->clearMipmapStale();
 				}
 
 				// A palette based source has its palette where edgemaps go, which is free while we blit.
@@ -911,12 +911,9 @@ void GlBackend::_executeBindCanvas( GlSurface * pCanvas )
 			m_bExecCanvasOK = false;
 		}
 
-		// What we draw isn't in its backing buffer or mip levels.
+		// What we draw isn't in its alpha map or mip levels.
 
-		if (pCanvas->m_pBlob)
-			pCanvas->m_bBackingBufferStale = true;
-
-		pCanvas->m_bMipmapStale = pCanvas->m_bMipmapped;
+		pCanvas->notifyRendered();
 
 		m_execTargetKind = _canvasKind(pCanvas);
 	}

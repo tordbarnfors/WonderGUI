@@ -65,7 +65,7 @@ auto pNewSurface = pMySurface->convert( { .format = PixelFormat::RGB_565 }, pSur
 
 The size-property of the blueprint is ignored, the converted surface is always the same size as the original surface. Format and color space default to the ones of the original surface if not specified.
 
-One thing to keep in mind is that the supplied blueprint has defaults that might differ from the original surface. Flags such as canvas or buffered might be set which are lost in the process. To avoid this you can copy the original surfaces blueprint and just modify the properties intended:
+One thing to keep in mind is that the supplied blueprint has defaults that might differ from the original surface. Flags such as canvas or mipmap might be set which are lost in the process. To avoid this you can copy the original surfaces blueprint and just modify the properties intended:
 
 ```c++
 auto pNewSurface = pMySurface->convert( WGOVR(pMySurface->blueprint(),
@@ -73,7 +73,7 @@ auto pNewSurface = pMySurface->convert( WGOVR(pMySurface->blueprint(),
 ));
 ```
 
-However, be aware that  this will copy the content of the **whole** blueprint, including things you might not have intended such as id, baggage and finalizers.
+However, be aware that  this will copy the content of the **whole** blueprint, including things you might not have intended such as id, baggage, finalizers and the restorer.
 
 
 
@@ -215,7 +215,9 @@ pMySurface->freePixelBuffer(bufferInfo);
 Some additional things to point out:
 
 * It is perfectly fine to allocate several small PixelBuffers for the same surface at the same time, but they should not overlap.
-* Even though you only write pixels to the PixelBuffer you need to pullPixels() first if you don't change ALL pixels in the buffer. Otherwise you might pull dirt into the buffer alongside your written pixels.
+* Even though you only write pixels to the PixelBuffer you need to pushPixels() first if you don't change ALL pixels you pull. Otherwise you might pull dirt into the surface alongside your written pixels.
+* Only write pixels that you pull, and only read pixels that you have pushed. The buffer may be the pixels of the surface itself, where what you write is in the surface whether you pull it or not, or memory of its own, where what you didn't push is whatever was in that memory.
+* On a graphics backend with a GPU, pushPixels() of a canvas or a surface with a [restorer](../resources/surfaces#keeping-the-pixels-and-getting-them-back) reads the pixels back from the GPU and waits for it, which takes about as long for a few pixels as for all of them. Colors with alpha come back with less precision than they were written with, the lower the alpha the less, so reading, changing and writing back can shift them. A surface you read regularly should be neither.
 * It is absolutely forbidden to write pixels outside the buffer.
 * A PixelBuffer should only be alive for a short amount of time. Depending on graphics backend it's existence can hamper or even prevent rendering operations.
 * If the PixelFormat is unknown or not fully understood you can use Util::pixelFormatToDescription() to get detailed information about the pixel format, such as the size of a pixel, size and arrangement of R, G, B and A components etc.

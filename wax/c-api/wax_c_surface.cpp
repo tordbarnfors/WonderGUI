@@ -173,6 +173,18 @@ int wax_surfaceCanBeCanvas(wax_obj surface)
 }
 
 
+int wax_surfaceIsContentLost(wax_obj surface)
+{
+	return getPtr(surface)->isContentLost();
+}
+
+
+uint8_t wax_declineSurfaceRestore(wax_obj surface)
+{
+	return 0;
+}
+
+
 wax_pixelBuffer wax_allocPixelBuffer(wax_obj surface)
 {
 	auto pixbuf = getPtr(surface)->allocPixelBuffer();
@@ -274,7 +286,6 @@ wax_surfaceBP wax_getSurfaceBlueprint(wax_obj surface)
 	Surface::Blueprint src = getPtr(surface)->blueprint();
 
 	dest.byteOrder		= src.bigEndian ? WAX_BYTEORDER_BIG_ENDIAN : WAX_BYTEORDER_LITTLE_ENDIAN;
-	dest.buffered		= src.buffered;
 	dest.canvas			= src.canvas;
 	dest.colorSpace		= (wax_colorSpace) src.colorSpace;
 	dest.palette		= (wax_color8*)src.palette;
@@ -284,6 +295,7 @@ wax_surfaceBP wax_getSurfaceBlueprint(wax_obj surface)
 	dest.format			= (wax_pixelFormat) src.format;
 	dest.identity		= src.identity;
 	dest.mipmap			= src.mipmap;
+	dest.restorer		= reinterpret_cast<wax_restorer_func>(src.restorer);
 	dest.sampleMethod	= (wax_sampleMethod) src.sampleMethod;
 	dest.scale			= src.scale;
 	dest.size.w			= src.size.w;

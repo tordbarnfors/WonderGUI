@@ -537,10 +537,13 @@ namespace wax
 
 	//____ flushBackends() _______________________________________________________
 
-	void VulkanContext::flushBackends()
+	void VulkanContext::flushBackends( VulkanBackend * pExcept )
 	{
 		for( auto pBackend : s_backends )
-			pBackend->_flush();
+		{
+			if( pBackend != pExcept )
+				pBackend->_flush();
+		}
 	}
 
 	//____ transition() __________________________________________________________

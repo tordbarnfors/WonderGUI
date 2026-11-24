@@ -43,6 +43,7 @@ typedef void* wax_obj;
 
 
 typedef	void(*wax_finalizer_func)(wax_obj);
+typedef	uint8_t(*wax_restorer_func)(wax_obj surface);		// Returns non-zero when it has put the content of the surface back.
 
 //____ wax_component __________________________________________________________
 

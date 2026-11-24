@@ -58,7 +58,6 @@ public class Surface : Objekt
 		public Blueprint() { }
 
 		public ByteOrder ByteOrder = ByteOrder.Native;
-		public bool Buffered = false;
 		public bool Canvas = false;
 		public ColorSpace ColorSpace = ColorSpace.Undefined;        // Defaults to sRGB.
 		public Color? FillColor = null;                             // What a surface created without pixels is filled with. Null leaves its content unspecified.
@@ -69,6 +68,7 @@ public class Surface : Objekt
 		public PixelFormat format = PixelFormat.Undefined;
 		public int Identity = 0;
 		public bool Mipmap = false;
+		public IntPtr Restorer = IntPtr.Zero;                       // Pointer to a native wax_restorer_func, such as Surface.DeclineRestore. Zero has the surface keep its pixels.
 		public SampleMethod SampleMethod = SampleMethod.Undefined;
 		public int Scale = 0;
 		public SizeI Size;                  // Mandatory, except when creating from other surface.
@@ -141,6 +141,15 @@ public class Surface : Objekt
     //____ CanBeCanvas() ______________________________________________________
     public bool CanBeCanvas() => wax_surfaceCanBeCanvas(_obj) == 1;
 
+    //____ IsContentLost() ______________________________________________________
+
+    public bool IsContentLost() => wax_surfaceIsContentLost(_obj) == 1;
+
+    //____ DeclineRestore _______________________________________________________
+    // A restorer that does nothing, for Blueprint.Restorer.
+
+    public static IntPtr DeclineRestore => NativeLibrary.GetExport(NativeLibrary.Load(NativeLib), "wax_declineSurfaceRestore");
+
 	//____ AllocPixelBuffer() _________________________________________________
 	public PixelBuffer AllocPixelBuffer()
 	{
@@ -175,7 +184,6 @@ public class Surface : Objekt
 	public struct C_Blueprint
 	{
 		public ByteOrder byteOrder;
-		public byte buffered;
 		public byte canvas;
 		public ColorSpace colorSpace;
 		public byte useFillColor;
@@ -187,6 +195,7 @@ public class Surface : Objekt
 		public PixelFormat format;
 		public int identity;
 		public byte mipmap;
+		public IntPtr restorer;
 		public SampleMethod sampleMethod;
 		public int scale;
 		public SizeI size;                   // Mandatory, except when creating from other surface.
@@ -197,7 +206,6 @@ public class Surface : Objekt
 	static internal void ConvertBlueprint(in Blueprint org, out C_Blueprint converted)
 	{
 		converted.byteOrder = org.ByteOrder;
-		converted.buffered = (byte)(org.Buffered ? 1 : 0);
 		converted.canvas = (byte)(org.Canvas ? 1 : 0);
 		converted.colorSpace = org.ColorSpace;
 		converted.useFillColor = (byte)(org.FillColor.HasValue ? 1 : 0);
@@ -210,6 +218,7 @@ public class Surface : Objekt
 		converted.format = org.format;
 		converted.identity = org.Identity;
 		converted.mipmap = (byte)(org.Mipmap ? 1 : 0);
+		converted.restorer = org.Restorer;
 		converted.sampleMethod = org.SampleMethod;
 		converted.scale = org.Scale;
 		converted.size = new SizeI(org.Size.W, org.Size.H);
@@ -217,6 +226,9 @@ public class Surface : Objekt
 	}
 
 	//____ DLL functions ______________________________________________________
+
+	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+	private static extern int wax_surfaceIsContentLost(IntPtr surface);
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
 	private static extern void wax_setSurfaceIdentity(IntPtr surface, int id);

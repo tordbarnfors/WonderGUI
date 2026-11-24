@@ -495,7 +495,6 @@ Surface::Blueprint SurfaceReader::_blueprintFromHeader( const SurfaceFileHeader 
 				_.format 		= layout.format,
 				_.colorSpace	= layout.colorSpace,
 				_.bigEndian		= layout.bigEndian,
-				_.buffered 		= pHeader->buffered,
 				_.canvas 		= pHeader->canvas,
 				_.dynamic 		= pHeader->dynamic,
 				_.mipmap 		= pHeader->mipmap,
@@ -511,8 +510,8 @@ int SurfaceReader::_addFlagsFromOtherBlueprint(Surface::Blueprint& dest, const S
 {
 	int errorCode = 0;
 
-	if ( extraFlags.buffered )
-		dest.buffered = true;
+	if (extraFlags.restorer)
+		dest.restorer = extraFlags.restorer;
 
 	if (extraFlags.canvas)
 		dest.canvas = true;

@@ -38,9 +38,7 @@
 #	endif
 #endif
 
-#include <wax_surface.h>
-
-#include <vector>
+#include <wax_gpusurface.h>
 
 namespace wax
 {
@@ -50,11 +48,20 @@ namespace wax
 	typedef	WeakPtr<GlSurface>	GlSurface_wp;
 
 	//____ GlSurface _____________________________________________________________
+	/**
+	 * @brief Surface with an OpenGL texture.
+	 *
+	 * What it keeps of its pixels and how they are read and written is that of GpuSurface.
+	 * OpenGL has copied the pixels when it is given them, so what is written is in the
+	 * texture when pullPixels() returns, and it needs no staging memory of its own kind.
+	 *
+	 * Creating a surface and reading or writing its pixels takes the OpenGL context it is
+	 * used in to be current.
+	 */
 
-	class GlSurface : public Surface
+	class GlSurface : public GpuSurface
 	{
 		friend class GlSurfaceFactory;
-		friend class GlGfxDevice;
 		friend class GlBackend;
 
 	public:
@@ -63,11 +70,11 @@ namespace wax
 
 		static GlSurface_p	create(const Blueprint& blueprint);
 		static GlSurface_p	create(const Blueprint& blueprint, Blob* pBlob, int pitch = 0 );
-		
+
 		static GlSurface_p	create(const Blueprint& blueprint, const uint8_t* pPixels,
 									   PixelFormat format = PixelFormat::Undefined, int pitch = 0,
 									   const Color8 * pPalette = nullptr, int paletteSize = 0 );
-		
+
 		static GlSurface_p	create(const Blueprint& blueprint, const uint8_t* pPixels,
 									   const PixelDescription& pixelDescription, int pitch = 0,
 									   const Color8 * pPalette = nullptr, int paletteSize = 0 );
@@ -82,82 +89,41 @@ namespace wax
 
 		static SizeI	maxSize();
 
-		//.____ Content _______________________________________________________
-
-		int			alpha( CoordSPX coord ) override;
-
-		//.____ Control _______________________________________________________
-
-		using Surface::allocPixelBuffer;
-		using Surface::pullPixels;
-		using Surface::pushPixels;
-
-		const PixelBuffer	allocPixelBuffer(const RectI& rect) override;
-		bool				pushPixels(const PixelBuffer& buffer, const RectI& bufferRect) override;
-		void				pullPixels(const PixelBuffer& buffer, const RectI& bufferRect, bool bAutoNotify = true) override;
-		void				freePixelBuffer(const PixelBuffer& buffer) override;
-
-		bool		unload();
-		bool		isLoaded();
-		void		reload();
-
-
 		//.____ Misc __________________________________________________________
 
 		inline	GLuint	getTexture() const { return m_texture; }
-		inline	GLuint	getPaletteTexture() const { return m_paletteTexture; }		// Buffer texture of float4, see _uploadPalette().
-
-		static unsigned int totalTexturePixels() { return g_texturePixels; }
-		static unsigned int totalBackingPixels() { return g_backingPixels; }
-
+		inline	GLuint	getPaletteTexture() const { return m_paletteTexture; }		// Buffer texture of float4, see _updatePaletteColors().
 
 	private:
-		GlSurface(const Blueprint& blueprint);
-		GlSurface(const Blueprint& blueprint, Blob* pBlob, int pitch);
-		GlSurface(const Blueprint& blueprint, const uint8_t* pPixels, PixelFormat format, int pitch, const Color8 * pPalette, int paletteSize);
-		GlSurface(const Blueprint& blueprint, const uint8_t* pPixels, const PixelDescription& pixelDescription, int pitch, const Color8 * pPalette, int paletteSize);
-
+		GlSurface(const Blueprint& blueprint, const PixelSource& source);
 		~GlSurface();
 
-		static bool	_isFormatSupported( PixelFormat format );
-		bool		_needsBackingBuffer() const;
-		void		_setPixelDetails();
-		void		_uploadPalette();
-		void		_setSwizzle();
-		void		_setupGlTexture(void * pPixelsToUpload, int pitch);
-		void		_updateAlphaMap(const PixelBuffer& buffer, const RectI& bufferRect);
+		PixelFormat	_setTextureFormat( PixelFormat format ) override;
+		bool		_createDeviceObjects() override;
+		Staging *	_allocStaging( SizeI size, bool bReadable ) override;
+		void		_pull( Staging * pStaging, const RectI& rect, CoordI dest ) override;
+		bool		_readBack( const RectI& rect, uint8_t * pDest, int destPitch ) override;
+		void		_updatePending() override;
+		void		_updatePaletteColors() override;
 
-		bool		_isPremultiplied() const { return m_pixelFormat == PixelFormat::ARGB_8; }		// Texture holds premultiplied colors.
-		const uint8_t* _premultiplied(const uint8_t* pPixels, int& pitch, int width, int height, std::vector<uint8_t>& buffer) const;
+		struct GlStaging : Staging
+		{
+			~GlStaging() { delete [] pPixels; }
+		};
 
-		bool		m_bBackingBufferStale = false;				// Set when there are modifications (in texture or queued GL commands) for this surface.
-		bool        m_bMipmapStale = false;
+		bool		_bindReadFramebuffer( GLint& oldFramebuffer );
 
-		void		_readBackTexture( void * pDest, int pitch );
+		GLuint 		m_texture = 0;			// GL texture handle.
+		GLint		m_internalFormat = 0;	// Format of the texture, like GL_SRGB8_ALPHA8 or GL_RGB565.
+		GLenum		m_accessFormat = 0;		// Format of pixels we upload and read back, like GL_BGRA or GL_RGB.
+		GLenum		m_pixelDataType = 0;
 
-
-		GLuint 		m_paletteTexture = 0;	// Buffer texture of the palette, see _uploadPalette().
+		GLuint 		m_paletteTexture = 0;	// Buffer texture of the palette, see _updatePaletteColors().
 		GLuint		m_paletteBuffer = 0;	// The buffer it reads.
 
-		GLuint		m_framebufferId;		// Initialized and used when m_bCanvas is set.
+		GLuint		m_framebufferId = 0;	// For reading part of the texture back, made when first needed.
 
-		GLuint 		m_texture = 0;		// GL texture handle.
-		GLint       m_internalFormat;   // Format of the texture, like GL_SRGB8_ALPHA8 or GL_RGB565.
-		GLenum		m_accessFormat;		// Format of pixels we upload and read back, like GL_BGRA or GL_RGB.
-		bool		m_bSwapBytes = false;	// Pixels are not in native byte order.
-		Blob_p      m_pBlob;
-		int			m_pitch;
-
-		uint32_t	m_pixelSize;		// Size in bytes of a pixel.
-		GLenum		m_pixelDataType;
 		static SizeI	s_maxSize;
-
-		static unsigned int    g_texturePixels;
-		static unsigned int    g_backingPixels;
-
-		
-		uint8_t*	m_pAlphaMap = nullptr;
 	};
 } // namespace wax
 #endif //WAX_GLSURFACE_DOT_H
-

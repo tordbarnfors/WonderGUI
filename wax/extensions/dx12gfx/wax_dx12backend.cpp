@@ -2249,6 +2249,10 @@ namespace wax
 			return;
 		}
 
+		// Pixels of their own that have changed go into buffers the GPU copies from.
+
+		_stageUploadBatch();
+
 		m_uploadBarriers.clear();
 
 		for (auto p : m_uploadBatch)
@@ -2268,38 +2272,17 @@ namespace wax
 
 		for (auto p : m_uploadBatch)
 		{
-			// Full lines, so the source offset stays aligned. See the constructor
-			// of DX12Surface.
+			p->_recordPulls(m_commandList.Get());
 
-			int y1 = p->m_dirtyRect.y;
-			int y2 = p->m_dirtyRect.y + p->m_dirtyRect.h;
+			// The surface may go before the GPU has copied, taking the texture with
+			// it, and lets go of what is copied from here.
 
-			// Surfaces with alpha are premultiplied on the way, into a buffer of
-			// their own, held until the GPU has copied from it.
+			_holdUntilDone(p->m_texture.Get());
 
-			Microsoft::WRL::ComPtr<ID3D12Resource> premultiplied;
-			UINT64 sourceOffset;
-			ID3D12Resource* pSource = p->_uploadSource(y1, y2, premultiplied, sourceOffset);
+			for (auto& pull : p->m_pulls)
+				_holdUntilDone(pull.buffer.Get());
 
-			if (premultiplied)
-				_holdUntilDone(premultiplied.Get());
-
-			D3D12_TEXTURE_COPY_LOCATION dst = {};
-			dst.pResource = p->m_texture.Get();
-			dst.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-			dst.SubresourceIndex = 0;
-
-			D3D12_TEXTURE_COPY_LOCATION src = {};
-			src.pResource = pSource;
-			src.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-			src.PlacedFootprint.Offset = sourceOffset;
-			src.PlacedFootprint.Footprint.Format = p->m_dxgiFormat;
-			src.PlacedFootprint.Footprint.Width = p->m_size.w;
-			src.PlacedFootprint.Footprint.Height = y2 - y1;
-			src.PlacedFootprint.Footprint.Depth = 1;
-			src.PlacedFootprint.Footprint.RowPitch = p->m_pitch;
-
-			m_commandList->CopyTextureRegion(&dst, 0, y1, 0, &src, nullptr);
+			p->m_pulls.clear();
 		}
 
 		for (auto& barrier : m_uploadBarriers)
@@ -2314,22 +2297,12 @@ namespace wax
 		{
 			p->m_resourceState = D3D12_RESOURCE_STATE_COMMON;
 
-			// The surface may go before the GPU has copied, taking both with it.
-
-			_holdUntilDone(p->m_texture.Get());
-			_holdUntilDone(p->m_uploadBuffer.Get());
-
 			// Level 0 has changed, so the others are stale. They are drawn from it
 			// before the surface is read, see _generateMipmaps().
 
 			p->_uploaded();
 
-			// Told the fence value once we have submitted. Any fence it had is for
-			// an earlier upload, which the CPU has waited for before writing the
-			// pixels we copy now, see DX12Surface::_waitForUpload().
-
-			p->m_uploadFence = nullptr;
-			p->m_uploadFenceValue = 0;
+			// Told if we never get to submit, see _abandonRecordedUploads().
 
 			if (p->m_pUploadRecordedBy != this)
 			{
@@ -2345,19 +2318,78 @@ namespace wax
 		m_bBlitSourceBound = false;
 	}
 
+	//____ _stageUploadBatch() _________________________________________________
+	//
+	// Copies the pixels the surfaces of m_uploadBatch have to send into buffers
+	// the GPU copies from, premultiplied if need be. One buffer for as many
+	// surfaces as fit: making a buffer takes far longer than filling a small one,
+	// and D3D12 makes none smaller than 64 KB. It is held until the GPU has
+	// copied from it and released then.
+	//
+	// A surface whose buffer couldn't be made keeps what it has to send, and
+	// stays pending.
+
+	void DX12Backend::_stageUploadBatch()
+	{
+		size_t first = 0;
+
+		while (first < m_uploadBatch.size())
+		{
+			// As many surfaces as stay under the limit, at least one.
+
+			UINT64 bytes = 0;
+			size_t end = first;
+
+			for (; end < m_uploadBatch.size(); end++)
+			{
+				UINT64 surfaceBytes = m_uploadBatch[end]->_dirtyStagingBytes();
+
+				if (bytes > 0 && bytes + surfaceBytes > c_maxStagingBufferBytes)
+					break;
+
+				bytes += surfaceBytes;
+			}
+
+			if (bytes > 0)
+			{
+				Microsoft::WRL::ComPtr<ID3D12Resource> buffer;
+				uint8_t* pMapped = nullptr;
+				D3D12_RANGE noRead = { 0, 0 };			// Write-combined, we only write.
+
+				_createBuffer(buffer, int(bytes), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ, L"Wax DX12Backend: staging buffer");
+
+				if (buffer && SUCCEEDED(buffer->Map(0, &noRead, (void**) &pMapped)))
+				{
+					UINT64 offset = 0;
+
+					for (size_t i = first; i < end; i++)
+					{
+						UINT64 surfaceBytes = m_uploadBatch[i]->_dirtyStagingBytes();
+
+						if (surfaceBytes > 0)
+						{
+							m_uploadBatch[i]->_stageDirtyInto(buffer.Get(), pMapped, offset);
+							offset += surfaceBytes;
+						}
+					}
+
+					buffer->Unmap(0, nullptr);
+				}
+			}
+
+			first = end;
+		}
+	}
+
 	//____ _uploadsSubmitted() _________________________________________________
 	//
-	// The list holding the uploads went to the GPU, followed by a signal of
-	// m_fenceValue. The surfaces must not be written to until it gets there.
+	// The list holding the uploads went to the GPU, so they are no longer ours to
+	// tell the surfaces of.
 
 	void DX12Backend::_uploadsSubmitted()
 	{
 		for (auto p : m_recordedUploads)
-		{
 			p->m_pUploadRecordedBy = nullptr;
-			p->m_uploadFence = m_commandFence;
-			p->m_uploadFenceValue = m_fenceValue;
-		}
 
 		m_recordedUploads.clear();
 	}
@@ -2371,11 +2403,7 @@ namespace wax
 	void DX12Backend::_abandonRecordedUploads()
 	{
 		for (auto p : m_recordedUploads)
-		{
-			p->m_pUploadRecordedBy = nullptr;
-			p->m_dirtyRect = RectI(0, 0, p->m_size.w, p->m_size.h);
-			p->_updatePending();
-		}
+			p->_uploadAbandoned();
 
 		m_recordedUploads.clear();
 	}

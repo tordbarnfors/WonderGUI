@@ -39,7 +39,6 @@ wax_obj wax_createSurfaceWriter(const wax_surfaceWriterBP* blueprint)
 	bp.saveInfo.mipmap = (blueprint->saveInfo & WAX_SAVE_MIPMAP_FLAG);
 	bp.saveInfo.tiling = (blueprint->saveInfo & WAX_SAVE_TILING_FLAG);
 	bp.saveInfo.dynamic = (blueprint->saveInfo & WAX_SAVE_DYNAMIC_FLAG);
-	bp.saveInfo.buffered = (blueprint->saveInfo & WAX_SAVE_BUFFERED_FLAG);
 	bp.saveInfo.canvas = (blueprint->saveInfo & WAX_SAVE_CANVAS_FLAG);
 	
 	auto pWriter = SurfaceWriter::create(bp);

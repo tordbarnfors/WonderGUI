@@ -112,10 +112,12 @@ namespace wax
 		//
 		//   1. setDevice(nullptr, nullptr). Everything lets go of the device. If it
 		//      still works, what was rendered into canvas surfaces is read back
-		//      first, otherwise that is lost, and they keep the pixels they last
-		//      had. Backends render nothing until step 2.
+		//      first, otherwise that is lost. Backends render nothing until step 2.
 		//
-		//   2. setDevice(pNewDevice, pNewQueue). Everything moves onto it.
+		//   2. setDevice(pNewDevice, pNewQueue). Everything moves onto it. Surfaces
+		//      with a restorer (Surface::Blueprint::restorer) have theirs called
+		//      here, as they had their content in the texture only, also when the
+		//      device they left still worked.
 		//
 		// D3D12 hands out one device per adapter and process, and gives back the
 		// old one for as long as anything holds it. So in between, whoever owns the
@@ -128,7 +130,8 @@ namespace wax
 		// That redraw also restores what was rendered into canvas surfaces and lost
 		// with a lost device. Such surfaces say so through Surface::isContentLost(),
 		// and the widgets that keep content in canvases render it again when they
-		// see it. Surfaces of your own that you render into need the same check.
+		// see it. Surfaces of your own that you render into need the same check, or
+		// a restorer, and so do surfaces whose restorer declines.
 
 		static bool					setDevice(ID3D12Device * pDX12Device, ID3D12CommandQueue * pDX12CommandQueue);
 		static ID3D12Device *		device() { return s_pDevice.Get(); }
@@ -286,6 +289,7 @@ namespace wax
 		int64_t _recordUploads(int64_t maxBytes);			// Oldest first, returns bytes recorded.
 		void _recordUpload(DX12Surface* pSurface);			// Just this one, if it is pending.
 		void _recordUploadBatch();							// Whatever _recordUploads() put in m_uploadBatch.
+		void _stageUploadBatch();							// Their changed pixels, into buffers the GPU copies from.
 		void _uploadsSubmitted();							// Right after Signal(m_fenceValue) for the list holding them.
 		void _abandonRecordedUploads();						// The list holding them was never submitted.
 		void _forgetRecordedUpload(DX12Surface* pSurface);	// It is going away.
@@ -389,14 +393,18 @@ namespace wax
 		UINT64												m_listSerial = 0;
 		static UINT64										s_lastListSerial;
 
-		// Surfaces whose uploads are in our open command list, told the fence value
-		// to wait for once we have submitted it. They let us know if they go away
-		// before that.
+		// Surfaces whose uploads are in our open command list, told if it is never
+		// submitted. They let us know if they go away before that.
 
 		std::vector<DX12Surface*>							m_recordedUploads;
 
 		std::vector<DX12Surface*>							m_uploadBatch;		// Kept between calls, so it doesn't reallocate.
 		std::vector<D3D12_RESOURCE_BARRIER>					m_uploadBarriers;	// Likewise.
+
+		// The most one buffer of _stageUploadBatch() holds, unless a single surface
+		// has more to send.
+
+		static const UINT64									c_maxStagingBufferBytes = 64 * 1024 * 1024;
 
 		// A command list holds no references to what it uses, and D3D12 must not
 		// have a resource released while the GPU may still use it. So every

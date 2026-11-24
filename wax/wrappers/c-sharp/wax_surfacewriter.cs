@@ -14,7 +14,6 @@ public class SurfaceWriter : Objekt
 		public bool Identity = true;
 		public bool SampleMethod = false;
 		public bool Scale = true;
-		public bool Buffered = false;
 		public bool Canvas = false;
 		public bool Dynamic = false;
 		public bool Tiling = true;
@@ -40,8 +39,6 @@ public class SurfaceWriter : Objekt
 			saveInfo += 2;
 		if (blueprint.saveInfo.Scale)
 			saveInfo += 4;
-		if (blueprint.saveInfo.Buffered)
-			saveInfo += 8;
 		if (blueprint.saveInfo.Canvas)
 			saveInfo += 16;
 		if (blueprint.saveInfo.Dynamic)

@@ -65,7 +65,6 @@ Surface::Blueprint SurfaceFileInspector::surfaceBlueprint()
 				_.format 		= layout.format,
 				_.colorSpace	= layout.colorSpace,
 				_.bigEndian		= layout.bigEndian,
-				_.buffered 		= m_header.buffered,
 				_.canvas 		= m_header.canvas,
 				_.dynamic 		= m_header.dynamic,
 				_.mipmap 		= m_header.mipmap,

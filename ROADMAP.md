@@ -67,156 +67,28 @@ For VulkanBackend, still to do:
   well within limits for a GUI, but Windows drivers can have as few as 4096 allocations.
 - **wappsdl2vk,** a Win32 framework, and running on Windows at all.
 
-### GPU surfaces: pixels kept once
+### GPU surfaces: left after "pixels kept once"
 
-Decided with Tord 2026-11-24, not started. DX12Surface, VulkanSurface and MetalSurface keep the
-pixels of every surface besides the texture, and GlSurface only when asked to, see "GPU surfaces
-keep their pixels twice" in KNOWN_ISSUES.md. The second set is there for the CPU to read and write
-and to get the texture back after a lost device. Most surfaces are never read or written once
-made, and many can get their pixels back in a cheaper way.
+"GPU surfaces: pixels kept once" under Decided is done but for this:
 
-**The rule: a surface keeps its pixels unless it is promised them back.** The promise is a
-restorer in its Blueprint, which is called when the texture is lost. A canvas is the other case:
-the GPU writes it, so pixels kept would be old ones, and whoever rendered into it does that again.
-
-| Surface | Kept in plain memory | After a lost device | Read by the CPU | Written by the CPU |
-|---|---|---|---|---|
-| Without restorer | All pixels | Sent again | At once, in place | In place, then copied to staging |
-| With restorer | An alpha map, if it has alpha | Restorer called | Read back, waits for the GPU | Straight into staging |
-| `Alpha_8`, `Index_8` | All pixels, restorer or not | Sent again | At once, in place | In place, then copied to staging |
-| Canvas | Nothing | `isContentLost()` | Read back, waits for the GPU | Straight into staging |
-
-At rest an `ARGB_8` surface takes 8 bytes a pixel without restorer, as on three of the backends
-today, 5 with one (4 if all of it is opaque) and 4 as a canvas, 5 once `alpha()` has been asked.
-
-So for whoever makes a surface: give a restorer to what is only written, and none to what is read.
-
-#### Pixels and staging
-
-- **Pixels that are kept are in plain memory,** on all backends. They survive a lost device as
-  they are, so the copying out of and back into device memory of `DX12Surface::_evacuate()` and
-  `_migrate()` goes. The price is one copy more for each upload of a surface without alpha: the
-  GPU copies straight from the pixels today, as they are in a buffer of the device.
-- **The GPU copies from staging memory,** which each backend makes when asked for and releases
-  when it has been given back and the GPU has passed the copy, told by the fence DX12BufferPool
-  and VulkanContext have. GlSurface needs none of that, as `glTexSubImage2D()` has copied when it
-  returns.
-- **No staging memory is kept to be used again** (Tord, who first chose keeping it until a frame
-  had passed without use). A stream makes a buffer for each frame, about 160 us with D3D12. Small
-  ones can share blocks that are released when empty, as the buffers of DX12BufferPool do, so
-  that a glyph doesn't take the 64 KB that D3D12 makes a buffer at least.
-- **Several surfaces are staged and sent in one go,** as DX12Backend does it today and what Tord
-  asked for to stay: surfaces with pixels to send wait on a list, and their copies are recorded
-  together in front of the session that first needs one, or earlier by `submitUploads()`. The
-  staging memory of each lives until the GPU has passed that.
-- **Staging memory is CPU cached,** the kind the pixels of a DX12Surface are in today, not
-  write-combined. A PixelBuffer may be read, by whoever has it and by us for premultiplying and
-  the alpha map, and reading write-combined memory took 60 ns a pixel, see "DX12Backend:
-  surfaces" below. Nothing is measured to be gained from writing it.
-- **Uploads never wait for the GPU.** VulkanSurface does today, see "VulkanBackend stalls when
-  pixels of a surface are uploaded" in KNOWN_ISSUES.md, which has to go with this. When the copy
-  is recorded stays with each backend, as now.
-- **A surface that keeps its pixels collects what is to be sent as today** and has it copied to
-  staging, premultiplied if need be, when the texture is next used.
-- **A surface made while there is no device** keeps what it was given in plain memory until there
-  is one, as today, also with a restorer.
-
-#### Surfaces without pixels of their own
-
-- **`allocPixelBuffer()` hands out staging memory** of the rectangle asked for, and `pullPixels()`
-  has just that region copied to the texture. A pull is a copy of its own, where a surface with
-  pixels sends one rectangle around all that has changed.
-- **That is the fast path for streaming:** the producer writes straight into what the GPU copies
-  from, also from another thread, as it is memory like any other between the two calls. Without
-  alpha that is one pass over the pixels on the CPU, the producer's own. With alpha it is two: the
-  pixels are premultiplied into a second staging buffer, in the pass that writes the alpha map. A
-  surface that keeps its pixels takes two as well: into the pixels, and from there to staging.
-- **The whole rectangle must be written if `pushPixels()` is skipped.** That is what the
-  documentation says, but with the PixelBuffer pointing into the pixels of the surface, writing
-  part of it works today. In staging memory the rest is whatever was there.
-- **`pushPixels()` reads the rectangle back and waits for the GPU,** which takes about as long for
-  a few pixels as for all. Alpha is exact, from the alpha map. Colors are unpremultiplied and lose
-  precision where alpha is low, so reading, changing and writing back can shift such pixels. What
-  is read regularly should keep its pixels. `Surface::copy()`, `convert()` and SurfaceWriter read
-  this way too.
-- **The alpha map is a byte for each pixel,** as GlSurface has it, since skins have a mark
-  threshold of their own. It is written with the pixels, when the surface is made and by each
-  pull, and not made as long as all that has been written is opaque. `Alpha_8` and `Index_8` keep
-  their pixels instead, which take as much, so their restorer is never called. A side effect is
-  that the glyph cache gets through a lost device by itself.
-- **A canvas gets its alpha map by reading back** at the first `alpha()`, and again at the next
-  one after it has been rendered into. That is what the pixel buffer of a canvas does today, at a
-  quarter of the memory.
-- **Mipmaps are made anew for the whole surface** after a write, as today, so what is written
-  every frame shouldn't have them.
-
-#### The restorer
-
-- **A pointer to a function** that takes the surface and returns a bool, as `finalizer` is one
-  (Tord, over an object with a `restore()` to override). What it has to go by is the surface, with
-  its `identity` and its `baggage`, so a loader is found through one of them or is global. The C
-  API passes the pointer on as it is.
-- **Called when the device has been replaced,** between frames, from where `DX12Backend::setDevice()`
-  puts surfaces back on a device today. Not when the surface is first used: that spreads the work,
-  but runs code of the application from inside rendering. An application that wants it spread
-  declines and writes the pixels in its own time.
-- **It gets the surface and fills it** with what Surface has for writing. No buffer is made for it
-  beforehand, so declining costs nothing.
-- **It returns true when the content is back, false when it did nothing.** After false the surface
-  is transparent black and says `isContentLost()`, which is how a canvas without restorer ends up
-  too. A decoder with threads of its own declines and writes when it is done, and a stream
-  declines as its next frame replaces everything.
-- **It gives back what the surface held, not what it was made with.** One that loads a file again
-  takes a surface that was changed since back to what the file has.
-- **One ready-made restorer,** which declines, for streams.
+- **It is on gl-shape-performance,** in one piece with what has no API change (Tord, 2026-11-24:
+  "just move on with 2 and 3 locally"). The restorer, `buffered` leaving and what went out of
+  GlSurface and MetalSurface change the API, which is for breaking-changes and v4. That takes
+  breaking-changes building and working first.
+- **VulkanSurface and MetalSurface are not compiled,** see KNOWN_ISSUES.md. To be built and run
+  on Linux and Mac when all of it is in place (Tord).
 - **`loadSurface()` of WonderApp gives no restorer,** so what it loads keeps its pixels (Tord,
   who plans to change its API). Until then, what an application loads through it takes twice its
-  pixels on all backends, which on GlBackend is more than today, once GlSurface follows the rule.
-- **`isContentLost()` goes back to false** when the restorer returns true or the whole surface has
-  been written. A canvas is replaced by its owner, as CanvasCapsule, Glow, PlotChart and
-  ScrollChart do.
-- **A working device that is let go of is as a lost one** to a surface with restorer: the
-  restorer is called on the next device (Tord). Every surface is read back before the device goes
-  today, which for these would be all textures at once, with colors of low alpha losing precision
-  on the way. Canvases are still read back, into plain memory they keep until they are on a
-  device again, as nobody else has what was rendered into them.
-- **Only DX12Backend replaces a device today,** so that is where restorers are called. On the
-  others a restorer says the same about what to keep, and is called once they can replace theirs.
-
-#### `buffered` goes
-
-Without restorer the pixels are kept, which is what `buffered` asked for. With one, `buffered`
-would say to not use it, as leaving it out does. For a canvas it only decides whether the pixel
-buffer is made with the canvas or when first read. It leaves the Blueprint, the C API, the C#
-wrapper and the surface factory of the plugin. The header of `.surf` files keeps the field as
-reserved, so files written with it load.
-
-#### Steps
-
-1. **Staging and plain memory,** for DX12Surface, VulkanSurface and MetalSurface, without change
-   to the API: staging memory, kept pixels in plain memory, uploads that don't wait, and
-   canvases without pixels of their own, which is all of a surface with restorer but the restorer.
-   On gl-shape-performance.
-2. **The restorer in the Blueprint and `buffered` out of it,** `isContentLost()` going back to
-   false, the restorer that declines, the C API, the C# wrapper and `resources/surfaces.md` of the
-   guide. On breaking-changes, merged into v4, which needs breaking-changes to build and work
-   first.
-3. **GlSurface onto GpuSurface,** after step 2, as it would keep pixels it doesn't today in
-   between. Its staging is plain memory let go of when sent, and it reads a rectangle back through
-   a framebuffer. `unload()`, `reload()` and `isLoaded()` of GlSurface and MetalSurface and the
-   pixel counters of GlSurface go here.
-
-To test with: gfxdevicetester giving the same results on all four, its ReadbackTests and
-SurfaceFillTests with and without restorer where they have `buffered` today, new tests writing
-and reading rectangles of surfaces with restorer, one timing a surface written in full each run,
-and a device removed and replaced with restorers that restore and that decline.
-
-#### Not part of this
-
+  pixels on all backends, which on GlBackend is more than before.
+- **Restorers are only called by DX12Backend,** which is the one that replaces its device. On
+  the others a restorer says the same about what to keep, and is called once they can replace
+  theirs, see "VulkanBackend: a lost device stops rendering for good" in KNOWN_ISSUES.md.
+- **Surfaces of a plugin** can't have one, see KNOWN_ISSUES.md.
+- **Alpha in one pass:** pixels with alpha written to a surface with restorer are gone through
+  twice, for the alpha map and for premultiplying, where one function could do both.
 - **Alpha without the second pass:** a flag for pixels the producer has premultiplied, or a
   texture with straight alpha that the shader multiplies, which is right at 1:1 and with nearest
-  sampling but lets the color of transparent texels in at edges when scaled. Either can be added
-  later.
+  sampling but lets the color of transparent texels in at edges when scaled.
 - **Video as YUV planes, and decoding on the GPU.**
 - **Writing into the texture without staging on integrated GPUs.** Each API has something for it
   as I recall (`WriteToSubresource()`, `VK_EXT_host_image_copy`, `replaceRegion`), not looked up.
@@ -899,7 +771,7 @@ all four GPU surfaces had their own constructors, palette conversion and premult
   `alpha()` reads an alpha map of a byte per pixel. That is the leanest of the four and another
   model, so a base class would only have been in its way. It uses the helpers in GpuTools. Making
   the other three as lean, which is what `buffered` says, is a decision of its own, taken since:
-  see "GPU surfaces: pixels kept once" under Planned.
+  see "GPU surfaces: pixels kept once" below, where GlSurface was put on GpuSurface after all.
 - **Left in:** `unload()`, `reload()` and `isLoaded()` of GlSurface and MetalSurface and the two
   pixel counters of GlSurface. Nothing in the repository calls them, but they are public API, so
   taking them out belongs on breaking-changes.
@@ -951,6 +823,197 @@ the device removed and replaced between starting up and running them, which take
 made by then off the device and back, as without. That took holding the run back some frames, see
 SUGGESTIONS.md. Not tested: the device removed while drawing, and a working device being let go
 of, which is when a canvas without a pixel buffer gets one to read back into.
+
+### GPU surfaces: staging and plain memory (2026-11)
+
+Step 1 of "GPU surfaces: pixels kept once" below, decided with Tord 2026-11-24. It
+replaces what "DX12Backend: surfaces", "GPU surfaces on GpuSurface" and "DX12Surface: canvases
+without a pixel buffer" above say of where the pixels of a surface are and of the pixel buffer of
+a canvas.
+
+- **GpuSurface has the pixels of every surface but a canvas, in plain memory.** A subclass makes
+  staging memory (`_allocStaging()`), has a rectangle of it copied to the texture (`_pull()`) and
+  reads a rectangle of the texture back (`_readBack()`). It no longer has a buffer with our
+  pixels, nor says how their lines are to be padded.
+- **Lines of kept pixels start on four byte boundaries.** With D3D12 they were padded to 512
+  bytes, as what a texture is copied from has to be, so a 16 x 16 icon had 8 KB of pixels where it
+  now has 1 KB.
+- **`buffered` of the Blueprint does nothing** for the three, until it goes.
+- **A PixelBuffer of a canvas is staging memory of the rectangle asked for,** which the GPU
+  copies from where it is. What needs premultiplying is copied by a second buffer. The surface
+  keeps a list of what it has handed out, as `freePixelBuffer()` gets a pointer.
+- **A canvas without a device has pixels like any surface,** and lets go of them when they are on
+  their way to a texture again and no PixelBuffer points into them.
+- **Reading back makes a buffer for the rectangle and lets go of it.** A DX12Surface kept the one
+  it read back by, so a canvas that had been read had its pixels three times: texture, pixel
+  buffer and that.
+- **`alpha()` of a canvas reads a map of a byte for each pixel,** made by reading the canvas back
+  when first asked for and again after it has been rendered into or written.
+- **DX12Backend stages what a batch of surfaces has to send in one buffer**
+  (`_stageUploadBatch()`), up to 64 MB a buffer unless one surface has more. That is one buffer
+  made where each surface had one for its pixels, and nothing rounded up to 64 KB. It is in an
+  UPLOAD heap, as it is written once. A PixelBuffer of a canvas is in the CPU cached memory the
+  pixels of a DX12Surface were in.
+- **Nothing waits for an upload with D3D12,** which `allocPixelBuffer()` did when the GPU hadn't
+  read the pixels yet. Nothing on the GPU reads our pixels now.
+- **A lost device takes nothing of a surface that keeps its pixels.** A canvas is read back if the
+  device works, otherwise cleared and marked with `isContentLost()`, also one that was created
+  with pixels or a fill color and never rendered into, which had them back before. With the
+  device removed and replaced ahead of gfxdevicetester's tests, that is what shows: the three
+  canvases of SurfaceFillTests come out cleared.
+- **VulkanBackend records the uploads of a surface in its own command buffer**
+  (`_recordUploads()`) when it is about to draw from or into it, outside the render pass and
+  after having other backends submit what they have recorded. VulkanSurface submitted every
+  backend and waited for the GPU before and after each upload. Reading back records what is to
+  be uploaded in the command buffer it reads with, so it waits once. A rectangle starting at an
+  offset that isn't a multiple of four goes by a buffer of its own, as Vulkan doesn't promise
+  such a copy for every queue.
+- **MetalSurface commits its uploads as before,** and nothing waits for them either. `unload()`
+  reads a canvas back, where what was rendered into it was lost.
+- **A PixelBuffer is the pixels of the surface or memory of its own,** so only what is pulled is
+  written and only what is pushed has been read. That was so with GlSurface already, and is
+  what the documentation of Surface says, but the first version of the test below filled a
+  buffer before pushing part of it, which wrote the surface itself with the software renderer.
+  For `resources/surfaces.md` of the guide, with step 2.
+
+Tested on Windows (Arc B580): gfxdevicetester gives the same results as before on all 262 tests
+with DX12Backend and GlBackend. "Rectangles" of ReadbackTests is new: it writes and reads parts
+of canvases through parts of pixel buffers. With DX12Backend it differs where "Readback" does,
+at the canvas D3D12 has as XRGB_8 for RGB_565. With GlBackend it differs for the one in
+KNOWN_ISSUES.md, as GlSurface can't read part of a surface it has no pixels of. In a Debug build,
+63 tests of canvases, layers, readback, mipmaps, palettes, blurs and warps give the same with the
+device removed and replaced before they run, but for the three canvases above.
+
+Timed with DX12Backend (two runs each): the median of the 262 tests is 1.000 of what it was.
+"Readback" takes 5.3 ms where it took 3.2: each of its six canvases is read back twice a run,
+for its pixels and for `alpha()`, and each time a buffer is made. "FillColor" of
+SurfaceFillTests takes 0.9 ms where it took 9 us: it reads three canvases that are never
+rendered into, which had their pixels at hand. See SUGGESTIONS.md.
+
+Not done: VulkanSurface and MetalSurface are not compiled. What the debug layer of D3D12 says
+hasn't been looked at. How long it takes to load the surfaces of an application hasn't been
+timed. A working device being let go of was run with the next section.
+
+### GPU surfaces: pixels kept once (2026-11)
+
+Decided with Tord 2026-11-24 and built the same day, in three steps: staging and plain memory
+(the section above), the restorer with `buffered` gone, and GlSurface onto GpuSurface. It
+replaces what "GPU surfaces on GpuSurface" above says of GlSurface standing by itself and of
+what was left in, and what the section above says of `buffered` and of canvases created with
+pixels.
+
+**The rule: a surface keeps its pixels unless it is promised them back.** The promise is a
+restorer in its Blueprint, which is called when the texture is lost. A canvas is the other case:
+the GPU writes it, so pixels kept would be old ones, and whoever rendered into it does that again.
+
+| Surface | Kept in plain memory | After a lost device | Read by the CPU | Written by the CPU |
+|---|---|---|---|---|
+| Without restorer | All pixels | Sent again | At once, in place | In place, then copied to staging |
+| With restorer | An alpha map, if not all is opaque | Restorer called | Read back, waits for the GPU | Straight into staging |
+| `Alpha_8`, palette based | All pixels, restorer or not | Sent again | At once, in place | In place, then copied to staging |
+| Canvas | Nothing | Restorer called if it has one, else `isContentLost()` | Read back, waits for the GPU | Straight into staging |
+
+At rest an `ARGB_8` surface takes 8 bytes a pixel without restorer, 5 with one (4 if all of it is
+opaque) and 4 as a canvas, 5 once `alpha()` has been asked. So for whoever makes a surface: give
+a restorer to what is only written, and none to what is read.
+
+Surfaces without pixels of their own:
+
+- **`allocPixelBuffer()` hands out staging memory** of the rectangle asked for, and `pullPixels()`
+  has just that region copied to the texture. That is the fast path for a stream: the producer
+  writes straight into what the GPU copies from.
+- **The whole rectangle must be written if `pushPixels()` is skipped.** In staging memory the
+  rest is whatever was there.
+- **`pushPixels()` reads the rectangle back and waits for the GPU.** Colors are unpremultiplied
+  and lose precision where alpha is low, so what is read regularly should keep its pixels.
+- **The alpha map is a byte for each pixel,** written with the pixels and not made as long as
+  all that has been written is opaque. A canvas reads its texture back for it.
+- **`Alpha_8` and palette based surfaces keep their pixels** with a restorer too, which is never
+  called. An alpha map would take as much as the pixels of the 8 bit ones. `Index_16` is with
+  them (mine): its alpha comes by the palette, which can change after the pixels were written.
+  A side effect is that the glyph cache gets through a lost device by itself.
+- **What a surface is created with is written to pixels it has until they are sent,** not
+  straight to staging memory (mine). That is a copy more, but DX12Backend stages what a batch of
+  surfaces has to send in one buffer, where each would have had a buffer of at least 64 KB made
+  for it. A surface that is never drawn from keeps them, as it has nothing in its texture.
+
+The restorer:
+
+- **A pointer to a function** that takes the surface and returns a bool, `Surface::Restorer`, as
+  `finalizer` is one (Tord, over an object with a `restore()` to override). What it has to go by
+  is the surface, with its `identity` and its `baggage`.
+- **Called when the device has been replaced,** between frames, by `DX12Surface::migrateAll()`
+  once every surface is on the new device, as a restorer may use other surfaces. The surfaces to
+  call are held by strong pointers meanwhile, as a restorer may let go of surfaces. Not when the
+  surface is first used: that spreads the work, but runs code of the application from inside
+  rendering. An application that wants it spread declines and writes the pixels in its own time.
+- **It returns true when the content is back, false when it did nothing.** After false the surface
+  is cleared to transparent black and says `isContentLost()`, which is how a canvas without
+  restorer ends up too. Clearing is sending zeros, from pixels made for it and let go of when sent.
+- **`isContentLost()` goes back to false** when the restorer returns true or all of the surface
+  has been written by one `pullPixels()`. A canvas without restorer says it from when the device
+  is let go of, a surface with one when it has declined.
+- **`Surface::declineRestore()`** is the one ready-made restorer, for streams.
+- **A working device that is let go of is as a lost one** to a surface with restorer (Tord).
+  Canvases without are read back, into pixels they have until they are on a device again.
+- **A canvas with a restorer has it called** in place of being read back or left lost (mine, it
+  wasn't talked through). So CanvasCapsule and the like could repaint from one instead of
+  looking at `isContentLost()`, which none of them does yet.
+- **Without a device, a surface without pixels gets them when first read or written,** zeroed, as
+  its content is lost by then. That is no memory for those that are left alone meanwhile.
+
+`buffered` is gone from the Blueprint, the C API (`wax_surfaceBP`, and `WAX_SAVE_BUFFERED_FLAG`,
+whose value 8 is left unused), SurfaceWriter, the C# wrapper and the surface factory of the
+plugin. The header of `.surf` files keeps the bit as reserved, so files written with it load.
+`wax_surfaceBP` got `restorer` (`wax_restorer_func`, passed on as it is), and the C API
+`wax_declineSurfaceRestore()` and `wax_surfaceIsContentLost()`. The layout of `wax_surfaceBP`
+changed, as it did for `fillColor`, so plugins have to be built again.
+
+GlSurface on GpuSurface:
+
+- **It sends what is written when it is written,** as before, since `glTexSubImage2D()` has
+  copied when it returns. GpuSurface gives such a subclass (`m_bPullsAtOnce`) pixels to copy from
+  where they are, so nothing goes by staging memory but what has to be premultiplied.
+- **Its pixels are little endian** like those of the others, where they were in the byte order
+  of the Blueprint. A PixelBuffer says which it is.
+- **It keeps its pixels unless it has a restorer,** where it kept none unless `buffered`. That is
+  more memory for an application that gives none.
+- **Part of a surface is read through a framebuffer,** made when first needed. If GL won't make
+  one of the texture, which it doesn't promise for every format, all of it is read and the part
+  copied. That fixes "Rectangles" of ReadbackTests.
+- **`alpha()` of a canvas reads an alpha map,** read back whole when the canvas has been
+  rendered into, where it read one pixel for each call. See SUGGESTIONS.md.
+- **A Blob is copied from,** where a `buffered` surface took it over, and its pitch no longer
+  has to be a multiple of four.
+- **`unload()`, `reload()`, `isLoaded()` and the pixel counters are gone,** from MetalSurface
+  the first three.
+
+Tested on Windows (Arc B580): gfxdevicetester gives the same results as before on all 263 tests
+with DX12Backend and GlBackend, but for "Rectangles" on GlBackend, which is right now.
+ReadbackTests and SurfaceFillTests have a restorer where they had `buffered`. New in
+ReadbackTests: "Restorer" writes and reads rectangles of surfaces with a restorer that fills
+them again, two of them sRGB, and "WriteAll" and "WriteAllRestorer" write all of a 256 x 256
+surface each run. All three give what the software renderer gives on both.
+
+In a Debug build with DX12Backend, with temporary changes that ran the tests, replaced the
+device and ran them again: with the device removed, "Restorer" gives the same after, as do the
+other tests of ReadbackTests, canvas layers, mipmaps and palettes. Of SurfaceFillTests, the
+surface whose restorer declines and the three canvases come back cleared, the first with alpha
+0 from `alpha()`, and the surfaces that keep their pixels as they were. With a device that
+worked, the two canvases without restorer were read back and came through, and the two surfaces
+with a restorer that declines were cleared.
+
+Everything builds for wappwin32dx12 and wappsdl3gl, and unittester passes.
+
+Not timed: runs of `gfxdevicetester --performance` were started and stopped, as other work was
+running on the machine (Tord). To do on a quiet one: GlBackend against the commit before
+(7842e2ee), as GlSurface now keeps pixels where it had none and reads the alpha of a canvas
+another way, the 263 tests on DX12Backend against "GPU surfaces: staging and plain memory", and
+"WriteAll" against "WriteAllRestorer" on each backend, which is what a restorer is to gain.
+
+Not done: VulkanSurface and MetalSurface are not compiled. No application has been run with
+it, only gfxdevicetester and unittester. What the debug layer of D3D12 says hasn't been looked
+at.
 
 ### GPU backends: no shaders compiled at startup (2026-11)
 

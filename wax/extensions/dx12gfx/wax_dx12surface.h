@@ -46,9 +46,9 @@ namespace wax
 	/**
 	 * @brief Surface for DX12Backend.
 	 *
-	 * Built on GpuSurface, which keeps our pixels and knows what the texture lacks of them. Here
-	 * is what is on the device, how pixels get to the texture and back, and what happens when the
-	 * device is replaced.
+	 * Built on GpuSurface, which has our pixels, if we keep any, and knows what the texture lacks
+	 * of them. Here is what is on the device, how pixels get to the texture and back, and what
+	 * happens when the device is replaced.
 	 */
 
 	class DX12Surface : public GpuSurface
@@ -90,9 +90,11 @@ namespace wax
 		static void				exitDevice();
 
 		// Used by DX12Backend::setDevice() to move every surface from one device to
-		// another, see there. evacuateAll() takes the pixels of every surface out
-		// into plain memory and lets go of all D3D12 objects, migrateAll() gives
-		// them new ones on the device set since and uploads the pixels again.
+		// another, see there. evacuateAll() lets go of all D3D12 objects, after
+		// reading back what was rendered into canvases without restorer if the
+		// device still works. migrateAll() gives the surfaces new ones on the device
+		// set since and uploads their pixels again. Surfaces that had their content
+		// in the texture only then get it back by their restorer, or are cleared.
 
 		static void				evacuateAll();
 		static void				migrateAll();
@@ -136,16 +138,19 @@ namespace wax
 		// What GpuSurface has us do.
 
 		PixelFormat		_setTextureFormat( PixelFormat format ) override;	// D3D12 has no 565, they are widened to XRGB_8.
-		bool			_createDeviceObjects( bool bPixelBuffer ) override;	// Texture, pixel buffer, views and palette buffer. All or none.
-		bool			_createPixelBuffer() override;						// The buffer of our pixels, mapped.
-		bool			_readBack() override;
-		void			_waitForUpload() override;							// Until the GPU has read our pixels for an upload already submitted.
-		void			_updatePending() override;							// Puts us on or takes us off the list, as m_dirtyRect says.
+		bool			_createDeviceObjects() override;					// Texture, views and palette buffer. All or none.
+		Staging *		_allocStaging( SizeI size, bool bReadable ) override;
+		void			_pull( Staging * pStaging, const RectI& rect, CoordI dest ) override;
+		bool			_readBack( const RectI& rect, uint8_t * pDest, int destPitch ) override;
+		void			_updatePending() override;							// Puts us on or takes us off the list.
 
-		bool			_initReadbackBuffer();
-		void			_uploadNowAndWait();			// On the copy queue, for _readBack() only.
+		// Staging memory is a buffer of its own.
 
-		ID3D12Resource *	_uploadSource( int y1, int y2, Microsoft::WRL::ComPtr<ID3D12Resource>& temp, UINT64& sourceOffset );	// Premultiplied if need be.
+		struct DX12Staging : public Staging
+		{
+			Microsoft::WRL::ComPtr<ID3D12Resource>	buffer;
+			SizeI									size;
+		};
 
 		// Uploads. Pixels the CPU writes are not sent to the texture right away.
 		// The surface goes on a list of pending uploads instead, in the order they
@@ -155,15 +160,33 @@ namespace wax
 		// by all backends and runs in order, which keeps the copy after any earlier
 		// work reading the texture and before any later, with no wait on the CPU.
 		//
-		// The copy reads our pixels straight from the upload buffer when the GPU
-		// gets to it, unless they had to be premultiplied first, see
-		// _uploadSource(). So the CPU must not write to them between submission
-		// and completion. allocPixelBuffer() waits for that, see _waitForUpload().
+		// What is to be copied is a list of rectangles of buffers, see _pull().
+		// Pixels of our own that have changed, m_dirtyRect, are copied to a buffer
+		// when the upload is recorded, which DX12Backend shares between the
+		// surfaces of a batch, see _stageDirtyInto(). Nothing on the GPU reads our
+		// pixels, so they can be written to at any time.
+
+		struct Pull
+		{
+			Microsoft::WRL::ComPtr<ID3D12Resource>	buffer;
+			UINT64		offset;				// Of the pixels in the buffer.
+			int			pitch;
+			SizeI		size;				// Of the pixels in the buffer.
+			RectI		rect;				// What of them to copy.
+			CoordI		dest;				// Where in the texture.
+		};
+
+		int				_stagingPitch( int width ) const;
+		UINT64			_dirtyStagingBytes() const;
+		void			_stageDirtyInto( ID3D12Resource * pBuffer, uint8_t * pMapped, UINT64 offset );
+		void			_recordPulls( ID3D12GraphicsCommandList * pList );
+		void			_uploadNowAndWait();			// On the copy queue, for _readBack() only.
 
 		void			_forgetUpload();				// Drops what DX12Backend knows of an upload of ours.
+		void			_uploadAbandoned();				// The list it was recorded into was never submitted.
 
 		void			_dropDeviceObjects();
-		bool			_evacuate();						// False if our pixels went with the device.
+		void			_evacuate();
 		void			_migrate();
 
 		void			_link();							// Into the list of live surfaces.
@@ -175,8 +198,6 @@ namespace wax
 
 
 		Microsoft::WRL::ComPtr<ID3D12Resource>			m_texture;			// Rests in COMMON state, promoted on use.
-		Microsoft::WRL::ComPtr<ID3D12Resource>			m_uploadBuffer;		// Holds our pixels, readable and writable by the CPU. A canvas may be without, see GpuSurface::_needPixels().
-		Microsoft::WRL::ComPtr<ID3D12Resource>			m_readbackBuffer;	// Created on first read back from a canvas surface.
 		DX12BufferPool::Buffer							m_paletteBuffer;	// Palette based surfaces only, see _createPaletteBuffer().
 		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	m_srvHeap;			// Holds this surface's SRV, then one per mip level but the last. Not shader visible.
 		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	m_rtvHeap;			// Holds one RTV per mip level. Canvas and mipmapped surfaces only.
@@ -192,18 +213,17 @@ namespace wax
 		// On the list of pending uploads, see _updatePending(). Linked through
 		// ourselves, oldest first.
 
+		std::vector<Pull>	m_pulls;						// What is to be copied to the texture.
+
 		bool			m_bUploadPending = false;
-		int64_t			m_pendingBytes = 0;				// Whole lines of m_dirtyRect, our share of s_pendingBytes.
+		int64_t			m_pendingBytes = 0;				// Our share of s_pendingBytes.
 		DX12Surface *	m_pPrevPending = nullptr;
 		DX12Surface *	m_pNextPending = nullptr;
 
-		// An upload recorded by a DX12Backend. Until that backend has submitted it,
-		// m_pUploadRecordedBy says who has it. After that, the GPU is done reading
-		// our pixels when m_uploadFence reaches m_uploadFenceValue.
+		// The DX12Backend that has recorded an upload of ours and not yet submitted
+		// it, which tells us if it never gets to, see _uploadAbandoned().
 
 		DX12Backend *							m_pUploadRecordedBy = nullptr;
-		Microsoft::WRL::ComPtr<ID3D12Fence>		m_uploadFence;
-		UINT64									m_uploadFenceValue = 0;
 
 		// Serial of the last command list that read us as blit source, see
 		// DX12Backend::_recordUploads().

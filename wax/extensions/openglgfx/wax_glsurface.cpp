@@ -19,18 +19,14 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <memory.h>
 
 #include <wax_glsurface.h>
 #include <wax_glbackend.h>
-#include <wax_gputools.h>
 #include <wax_util.h>
-#include <wax_pixeltools.h>
 #include <wax_blob.h>
 #include <wax_base.h>
-#include <assert.h>
-#include <vector>
-#include <algorithm>
+
+#include <cstring>
 
 
 #define GL_SILENCE_DEPRECATION
@@ -38,14 +34,17 @@
 
 namespace wax
 {
-	const TypeInfo GlSurface::TYPEINFO = { "GlSurface", &Surface::TYPEINFO };
+	const TypeInfo GlSurface::TYPEINFO = { "GlSurface", &GpuSurface::TYPEINFO };
 
 	SizeI	GlSurface::s_maxSize;
 
 #define HANDLE_GLERROR(check) { GLenum err = check; if(err != 0) GlBackend::onGlError(err, this, &TYPEINFO, __func__, __FILE__, __LINE__ ); }
 
-	unsigned int    GlSurface::g_texturePixels = 0;
-	unsigned int    GlSurface::g_backingPixels = 0;
+	// Our pixels are little endian, see GpuSurface. Packed pixel types describe a pixel as a
+	// word of the CPU, with the same register order as our PixelFormats, so on a big endian
+	// one OpenGL swaps the bytes on the way in and out.
+
+	static const GLint c_swapBytes = (WAX_IS_BIG_ENDIAN == 1) ? GL_TRUE : GL_FALSE;
 
 	//____ maxSize() _______________________________________________________________
 
@@ -66,354 +65,175 @@ namespace wax
 
 	GlSurface_p GlSurface::create(const Blueprint& bp)
 	{
-		if( !_isBlueprintValid(bp, maxSize()) || !_isFormatSupported(bp.format) )
+		if( !_isBlueprintValid(bp, maxSize()) )
 			return GlSurface_p();
 
-		return GlSurface_p(new GlSurface(bp));
+		return GlSurface_p(new GlSurface(bp, PixelSource()));
 	}
 
 	GlSurface_p GlSurface::create(const Blueprint& bp, Blob* pBlob, int pitch)
 	{
-		if (!_isBlueprintValid(bp, maxSize()) || !_isFormatSupported(bp.format) )
+		if( !_isBlueprintValid(bp, maxSize()) )
 			return GlSurface_p();
 
-		int realPitch = pitch > 0 ? pitch : bp.size.w * Util::pixelFormatToDescription( bp.format == PixelFormat::Undefined ? PixelFormat::ARGB_8 : bp.format ).bits/8;
-		
-		if ( !pBlob || realPitch % 4 != 0 )
-			return GlSurface_p();
-
-
-		return GlSurface_p(new GlSurface(bp, pBlob, pitch));
+		return GlSurface_p(new GlSurface(bp, _source(bp, pBlob, pitch)));
 	}
 
 	GlSurface_p	GlSurface::create(const Blueprint& bp, const uint8_t* pPixels,
 								  PixelFormat format, int pitch, const Color8 * pPalette, int paletteSize)
 	{
-		if (!_isBlueprintValid(bp, maxSize()) || !_isFormatSupported(bp.format))
+		if( !_isBlueprintValid(bp, maxSize()) )
 			return GlSurface_p();
 
-		return  GlSurface_p(new GlSurface(bp, pPixels, format, pitch, pPalette, paletteSize));
-	};
+		return GlSurface_p(new GlSurface(bp, _source(bp, pPixels, format, pitch, pPalette, paletteSize)));
+	}
 
 	GlSurface_p	GlSurface::create(const Blueprint& bp, const uint8_t* pPixels,
 								  const PixelDescription& pixelDescription, int pitch, const Color8 * pPalette, int paletteSize)
 	{
-		if (!_isBlueprintValid(bp, maxSize()) || !_isFormatSupported(bp.format))
+		if( !_isBlueprintValid(bp, maxSize()) )
 			return GlSurface_p();
 
-		return  GlSurface_p(new GlSurface(bp, pPixels, pixelDescription, pitch, pPalette, paletteSize));
-	};
-
+		return GlSurface_p(new GlSurface(bp, _source(bp, pPixels, pixelDescription, pitch, pPalette, paletteSize)));
+	}
 
 	//____ constructor _____________________________________________________________
 
+	GlSurface::GlSurface( const Blueprint& bp, const PixelSource& source ) : GpuSurface(bp)
+	{
+		m_bPullsAtOnce = true;			// glTexSubImage2D() has copied when it returns.
 
-	GlSurface::GlSurface( const Blueprint& bp ) : Surface(bp, PixelFormat::ARGB_8, SampleMethod::Bilinear)
+		_setup(bp, source);
+	}
+
+	//____ Destructor ______________________________________________________________
+
+	GlSurface::~GlSurface()
+	{
+		if( m_framebufferId != 0 )
+			glDeleteFramebuffers(1, &m_framebufferId);
+
+		if( m_texture != 0 )
+			glDeleteTextures(1, &m_texture);
+
+		if( m_paletteTexture != 0 )
+		{
+			glDeleteTextures(1, &m_paletteTexture);
+			glDeleteBuffers(1, &m_paletteBuffer);
+		}
+
+		delete [] m_pPaletteColors;
+	}
+
+	//____ typeInfo() _________________________________________________________
+
+	const TypeInfo& GlSurface::typeInfo(void) const
+	{
+		return TYPEINFO;
+	}
+
+	//____ _setTextureFormat() ___________________________________________________
+	//
+	// Picks the GL texture format and the format of the pixels we upload and read back. GL has
+	// a texture for each of our formats, so the pixels are in the one asked for.
+	//
+	// An sRGB surface gets an sRGB texture, which the GPU decodes to linear when sampling. An
+	// sRGB 565 surface is stored as GL_SRGB8, since there is no sRGB 565 texture format.
+
+	PixelFormat GlSurface::_setTextureFormat( PixelFormat format )
+	{
+		bool bSRGB = (m_colorSpace == ColorSpace::sRGB);
+
+		switch (format)
+		{
+			case PixelFormat::XRGB_8:
+				m_internalFormat = bSRGB ? GL_SRGB8 : GL_RGB8;
+				m_accessFormat = GL_BGRA;
+				m_pixelDataType = GL_UNSIGNED_INT_8_8_8_8_REV;		// Blue in the low bits, X in the high.
+				break;
+
+			case PixelFormat::ARGB_8:
+				m_internalFormat = bSRGB ? GL_SRGB8_ALPHA8 : GL_RGBA8;
+				m_accessFormat = GL_BGRA;
+				m_pixelDataType = GL_UNSIGNED_INT_8_8_8_8_REV;		// Blue in the low bits, alpha in the high.
+				break;
+
+			case PixelFormat::RGB_565:
+				m_internalFormat = bSRGB ? GL_SRGB8 : GL_RGB565;
+				m_accessFormat = GL_RGB;
+				m_pixelDataType = GL_UNSIGNED_SHORT_5_6_5;			// Red in the high bits, blue in the low.
+				break;
+
+			case PixelFormat::BGR_565:
+				m_internalFormat = bSRGB ? GL_SRGB8 : GL_RGB565;
+				m_accessFormat = GL_RGB;
+				m_pixelDataType = GL_UNSIGNED_SHORT_5_6_5_REV;		// Red in the low bits, blue in the high.
+				break;
+
+			case PixelFormat::Index_8:
+				m_internalFormat = GL_R8UI;							// Read as integers, see ps_blit_palette.hlsl.
+				m_accessFormat = GL_RED_INTEGER;
+				m_pixelDataType = GL_UNSIGNED_BYTE;
+				break;
+
+			case PixelFormat::Index_16:
+				m_internalFormat = GL_R16UI;
+				m_accessFormat = GL_RED_INTEGER;
+				m_pixelDataType = GL_UNSIGNED_SHORT;
+				break;
+
+			case PixelFormat::Alpha_8:
+				m_internalFormat = GL_R8;
+				m_accessFormat = GL_RED;
+				m_pixelDataType = GL_UNSIGNED_BYTE;
+				break;
+
+			default:
+				break;			// create() turns other formats away.
+		}
+
+		return format;
+	}
+
+	//____ _createDeviceObjects() ________________________________________________
+	//
+	// The texture, without pixels, and for a palette based surface the buffer texture the
+	// shaders read its palette from.
+
+	bool GlSurface::_createDeviceObjects()
 	{
 		HANDLE_GLERROR(glGetError());
 
-		m_bMipmapped = bp.mipmap;
-		_setPixelDetails();
-		m_pPalette = nullptr;
-
-		if (bp.buffered || _needsBackingBuffer())
-		{
-			g_backingPixels += m_size.w*m_size.h;
-			m_pitch = ((m_size.w * m_pPixelDescription->bits / 8) + 3) & 0xFFFFFFFC;
-			m_pBlob = Blob::create(m_pitch * m_size.h + m_paletteCapacity*sizeof(Color8));
-
-			if (m_paletteCapacity > 0)
-			{
-				m_pPalette = (Color8*)((uint8_t*)m_pBlob->data() + m_pitch * m_size.h);
-				memcpy(m_pPalette, bp.palette, m_paletteSize*sizeof(Color8));
-			}
-		}
-		else
-		{
-			m_pitch = 0;
-
-			if (m_paletteCapacity > 0)
-			{
-				m_pPalette = new Color8[m_paletteCapacity];
-				memcpy(m_pPalette, bp.palette, m_paletteSize*sizeof(Color8));
-			}
-
-			if (m_pPixelDescription->A_mask > 0 && bp.canvas == false)
-				m_pAlphaMap = new uint8_t[m_size.w * m_size.h];
-		}
-
-		// Without a fill color the texture is given no pixels and holds whatever GL made it
-		// with, and so do a backing buffer and an alpha map.
-
-		if( bp.fillColor.isUndefined() )
-			_setupGlTexture(nullptr, 0);
-		else if( m_pBlob )
-		{
-			PixelTools::fillBitmap((uint8_t*) m_pBlob->data(), m_pixelFormat, m_colorSpace, m_bBigEndian, m_pitch, RectI(m_size),
-								   bp.fillColor, m_pPalette, m_paletteSize);
-
-			_setupGlTexture(m_pBlob->data(), m_pitch);
-		}
-		else
-		{
-			// We keep no pixels ourselves, so they are made for the upload only.
-
-			int tempBufPitch = ((m_size.w * m_pPixelDescription->bits / 8) + 3) & 0xFFFFFFFC;
-			uint8_t * pTempPixelBuffer = new uint8_t[tempBufPitch * m_size.h];
-
-			PixelTools::fillBitmap(pTempPixelBuffer, m_pixelFormat, m_colorSpace, m_bBigEndian, tempBufPitch, RectI(m_size),
-								   bp.fillColor, m_pPalette, m_paletteSize);
-
-			_setupGlTexture(pTempPixelBuffer, tempBufPitch);
-
-			if( m_pAlphaMap )
-			{
-				// Setup a fake PixelBuffer for call to _updateAlphaMap
-				PixelBuffer buf;
-				buf.format = m_pixelFormat;
-				buf.colorSpace = m_colorSpace;
-				buf.bigEndian = m_bBigEndian;
-				buf.palette = m_pPalette;
-				buf.pitch = tempBufPitch;
-				buf.pixels = pTempPixelBuffer;
-				buf.rect = m_size;
-
-				_updateAlphaMap(buf, m_size);
-			}
-
-			delete [] pTempPixelBuffer;
-		}
-
-		HANDLE_GLERROR(glGetError());
-	}
-
-
-	GlSurface::GlSurface(const Blueprint& bp, Blob* pBlob, int pitch) : Surface(bp, PixelFormat::ARGB_8, SampleMethod::Bilinear)
-	{
-		// Set general information
-
-
-		m_bMipmapped = bp.mipmap;
-		_setPixelDetails();
-		m_pPalette = const_cast<Color8*>(bp.palette);
-
-		if (pitch == 0)
-			pitch = bp.size.w * m_pPixelDescription->bits / 8;
-
-		if (bp.buffered || _needsBackingBuffer())
-		{
-			g_backingPixels += m_size.w*m_size.h;
-			m_pitch = pitch;
-			m_pBlob = pBlob;
-		}
-		else
-		{
-			m_pitch = 0;
-
-			if (m_paletteCapacity > 0)
-			{
-				m_pPalette = new Color8[m_paletteCapacity];
-				memcpy(m_pPalette, bp.palette, m_paletteSize*sizeof(Color8));
-			}
-
-			if (m_pPixelDescription->A_mask > 0 && bp.canvas == false)
-			{
-				m_pAlphaMap = new uint8_t[m_size.w * m_size.h];
-
-				// Setup a fake PixelBuffer for call to _updateAlphaMap
-				PixelBuffer buf;
-				buf.format = m_pixelFormat;
-				buf.colorSpace = m_colorSpace;
-				buf.bigEndian = m_bBigEndian;
-				buf.palette = m_pPalette;
-				buf.pitch = pitch;
-				buf.pixels = (uint8_t*) pBlob->data();
-				buf.rect = m_size;
-
-				_updateAlphaMap( buf, m_size );
-			}
-		}
-
-		//TODO: Support pitch
-		
-		_setupGlTexture(pBlob->data(), pitch);
-	}
-
-	GlSurface::GlSurface(const Blueprint& bp, const uint8_t* pPixels, PixelFormat format, int pitch, const Color8 * pPalette, int paletteSize)
-	: GlSurface(bp, pPixels, Util::pixelFormatToDescription(format != PixelFormat::Undefined ? format : bp.format != PixelFormat::Undefined ? bp.format : PixelFormat::ARGB_8, bp.bigEndian),
-				pitch, pPalette, paletteSize)
-	{
-		// Source pixels are in the byte order and color space of the blueprint.
-		// Calling constructor with PixelDescription could be slow (but should be ok, once we optimize copyPixels() to take fast route).
-	}
-
-	GlSurface::GlSurface(const Blueprint& bp, const uint8_t* pPixels, const PixelDescription& pixelDescription, int pitch, const Color8 * pPalette, int paletteSize)
-	: Surface(bp, PixelFormat::ARGB_8, SampleMethod::Bilinear)
-	{
-		//TODO: Not just default to ARGB_8 if PixelFormat not specified in Blueprint. Instead we should take the most suitable PixelFormat based on pPixelDescription (same for SoftSurface, MetalSurface etc.)
-		
-		m_bMipmapped = bp.mipmap;
-		_setPixelDetails();
-		m_pPalette = nullptr;
-		
-		if( pitch == 0 )
-			pitch = PixelTools::bytesPerLine(pixelDescription, m_size.w);
-		
-		if (bp.buffered || _needsBackingBuffer())
-		{
-			g_backingPixels += m_size.w*m_size.h;
-
-			// Create our blob
-			
-			m_pitch = ((m_size.w * m_pPixelDescription->bits / 8) + 3) & 0xFFFFFFFC;
-			m_pBlob = Blob::create(m_pitch * m_size.h + m_paletteCapacity*sizeof(Color8));
-
-			// Setup palette
-
-			if (m_paletteCapacity > 0)
-			{
-				m_pPalette = (Color8*)((uint8_t*)m_pBlob->data() + m_pitch * m_size.h);
-				memcpy(m_pPalette, bp.palette, m_paletteSize*sizeof(Color8));
-			}
-
-			// Copy pixels
-			
-			_fixSrcParam(pixelDescription, pPalette, paletteSize);
-			
-			int srcPitchAdd = pitch - PixelTools::bytesPerLine(pixelDescription, m_size.w);
-			
-			PixelTools::copyPixels(m_size.w, m_size.h, pPixels, pixelDescription, m_colorSpace, srcPitchAdd, pPalette, paletteSize,
-					   (uint8_t*) m_pBlob->data(), m_pixelFormat, m_colorSpace, m_bBigEndian, m_pitch - m_size.w * m_pPixelDescription->bits / 8,
-					   m_pPalette, m_paletteSize, m_paletteCapacity);
-
-			// Setup GL-texture
-			
-			_setupGlTexture(m_pBlob->data(), m_pitch);
-		}
-		else
-		{
-			m_pitch = 0;
-
-			// Setup palette, not part of Blob since we should keep this.
-
-			if (m_paletteCapacity > 0)
-			{
-				m_pPalette = new Color8[m_paletteCapacity];
-				memcpy(m_pPalette, bp.palette, m_paletteSize*sizeof(Color8));
-			}
-			
-			// Convert/copy pixels to temporary buffer.
-
-			_fixSrcParam(pixelDescription, pPalette, paletteSize);
-
-			//TODO: Skip temporary buffer and copy if source format is same as destination (and pitch/4 == 0).
-
-			int tempBufPitch = ((m_size.w * m_pPixelDescription->bits / 8)+3) & 0xFFFFFFFC;
-			uint8_t * pTempPixelBuffer = new uint8_t[tempBufPitch * m_size.h];
-
-			// Copy pixels
-		
-			PixelTools::copyPixels(m_size.w, m_size.h, pPixels, pixelDescription, m_colorSpace, pitch - PixelTools::bytesPerLine(pixelDescription, m_size.w), pPalette, paletteSize,
-					   pTempPixelBuffer, m_pixelFormat, m_colorSpace, m_bBigEndian, tempBufPitch - m_size.w * m_pPixelDescription->bits/8,
-					   m_pPalette, m_paletteSize, m_paletteCapacity);
-
-			// Setup GL-texture
-
-			_setupGlTexture(pTempPixelBuffer, tempBufPitch);
-
-			//
-			
-			if (m_pPixelDescription->A_mask > 0 && bp.canvas == false)
-			{
-				m_pAlphaMap = new uint8_t[m_size.w * m_size.h];
-
-				// Setup a fake PixelBuffer for call to _updateAlphaMap
-				PixelBuffer buf;
-				buf.format = m_pixelFormat;
-				buf.colorSpace = m_colorSpace;
-				buf.bigEndian = m_bBigEndian;
-				buf.palette = m_pPalette;
-				buf.pitch = tempBufPitch;
-				buf.pixels = pTempPixelBuffer;
-				buf.rect = m_size;
-
-				_updateAlphaMap(buf, m_size);
-			}
-
-			// Delete our temp buffer
-			
-			delete [] pTempPixelBuffer;
-
-		}
-	}
-
-
-	//____ _setupGlTexture() __________________________________________________
-
-	void GlSurface::_setupGlTexture(void* pPixelsToUpload, int pitch)
-	{
 		GLint oldBinding;
 		glGetIntegerv(GL_TEXTURE_BINDING_2D, &oldBinding);
-
-		g_texturePixels += m_size.w*m_size.h;
-
-		// Create and bind texture
 
 		glGenTextures(1, &m_texture);
 		glBindTexture(GL_TEXTURE_2D, m_texture);
 
-		// Set tiling
+		GLint wrapMode = m_bTiling ? GL_REPEAT : GL_CLAMP_TO_EDGE;
 
-		GLint mode = m_bTiling ? GL_REPEAT : GL_CLAMP_TO_EDGE;
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapMode);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapMode);
 
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, mode);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, mode);
+		glTexImage2D(GL_TEXTURE_2D, 0, m_internalFormat, m_size.w, m_size.h, 0, m_accessFormat, m_pixelDataType, nullptr);
 
-		// Push pixels
+		// The shaders read the alpha of Alpha_8 sources, which GL keeps in red. Reading through
+		// a swizzle doesn't change what is rendered into the texture as a canvas. XRGB_8 and the
+		// 565 formats have textures without alpha, which read alpha 1.
 
-		const void* pUpload = pPixelsToUpload;
-
-		std::vector<uint8_t> premultiplied;
-		if (pUpload && _isPremultiplied())
-			pUpload = _premultiplied((const uint8_t*)pUpload, pitch, m_size.w, m_size.h, premultiplied);
-
-		HANDLE_GLERROR(glGetError());
-		glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch/m_pixelSize);
-		glPixelStorei(GL_UNPACK_SWAP_BYTES, m_bSwapBytes);
-		glTexImage2D(GL_TEXTURE_2D, 0, m_internalFormat, m_size.w, m_size.h, 0, m_accessFormat, m_pixelDataType, pUpload);
-		glPixelStorei(GL_UNPACK_SWAP_BYTES, GL_FALSE);
-		glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-		HANDLE_GLERROR(glGetError());
-
-		//
-
-		if( m_bCanvas )
+		if( m_pixelFormat == PixelFormat::Alpha_8 )
 		{
-			glGenFramebuffers(1, &m_framebufferId);
-
-			GLint			oldFrameBuffer;
-
-			glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &oldFrameBuffer);
-
-			glBindFramebuffer(GL_READ_FRAMEBUFFER, m_framebufferId);
-			glFramebufferTexture(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_texture, 0);
-
-			glBindFramebuffer(GL_READ_FRAMEBUFFER, oldFrameBuffer);
+			GLint swizzle[4] = { GL_ZERO, GL_ZERO, GL_ZERO, GL_RED };
+			glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
 		}
 
-		//
-
-		_setSwizzle();
-
-		if (m_pPalette)
+		if( m_bIndexed )
 		{
 			// Indexes are integers the shaders read with texelFetch(), see ps_blit_palette.hlsl.
 
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-
-			HANDLE_GLERROR(glGetError());
 
 			GLint oldBuffer;
 			glGetIntegerv(GL_TEXTURE_BINDING_BUFFER, &oldBuffer);
@@ -429,444 +249,17 @@ namespace wax
 			glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, m_paletteBuffer);
 			glBindTexture(GL_TEXTURE_BUFFER, GLuint(oldBuffer));
 
-			_uploadPalette();
+			// Sent to the buffer by _updatePaletteColors(), which GpuSurface calls when the
+			// palette is set and when it may have changed.
 
-			HANDLE_GLERROR(glGetError());
+			m_pPaletteColors = new float[size_t(m_paletteCapacity + 1) * 4];
 		}
-		else
+		else if( m_sampleMethod == SampleMethod::Bilinear )
 		{
-			switch (m_sampleMethod)
-			{
-			case SampleMethod::Bilinear:
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, m_bMipmapped ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-				break;
+			// A mipmap filter on a texture without mipmaps leaves it incomplete, and it samples
+			// as black, so GlBackend makes them before the first use.
 
-			case SampleMethod::Nearest:
-			default:
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-				break;
-			}
-
-			if (m_bMipmapped)
-				m_bMipmapStale = true;
-		}
-
-		//
-
-		glBindTexture(GL_TEXTURE_2D, oldBinding);
-
-		HANDLE_GLERROR(glGetError());
-	}
-
-	//____ _isFormatSupported() _________________________________________________
-
-	bool GlSurface::_isFormatSupported( PixelFormat format )
-	{
-		switch (format)
-		{
-			case PixelFormat::Undefined:			// Defaults to ARGB_8.
-			case PixelFormat::XRGB_8:
-			case PixelFormat::ARGB_8:
-			case PixelFormat::RGB_565:
-			case PixelFormat::BGR_565:
-			case PixelFormat::Index_8:
-			case PixelFormat::Index_16:
-			case PixelFormat::Alpha_8:
-				return true;
-
-			default:
-				return false;
-		}
-	}
-
-	//____ _needsBackingBuffer() __________________________________________________
-
-	bool GlSurface::_needsBackingBuffer() const
-	{
-		// Indexed and alpha-only surfaces always keep their pixels in memory.
-
-		return m_pPixelDescription->bits <= 8 || m_pPixelDescription->type == PixelType::Index;
-	}
-
-	//____ _setPixelDetails() ____________________________________________________
-	/*
-		Picks the GL texture format and the format of the pixels we upload and read back.
-
-		Pixels are always transferred in the format, color space and byte order of the surface
-		(which is also what the backing buffer holds). Packed pixel types describe a pixel as a
-		native word with the same register order as our PixelFormats, so the other byte order
-		is just a matter of GL_UNPACK_SWAP_BYTES/GL_PACK_SWAP_BYTES.
-
-		An sRGB surface gets an sRGB texture, which the GPU decodes to linear when sampling.
-		An sRGB 565 surface is stored as GL_SRGB8, since there is no sRGB 565 texture format.
-	*/
-
-	void GlSurface::_setPixelDetails()
-	{
-		bool bSRGB = (m_colorSpace == ColorSpace::sRGB);
-		m_bSwapBytes = (m_bBigEndian != (WAX_IS_BIG_ENDIAN == 1));
-
-		switch (m_pixelFormat)
-		{
-			case PixelFormat::XRGB_8:
-				m_internalFormat = bSRGB ? GL_SRGB8 : GL_RGB8;
-				m_accessFormat = GL_BGRA;
-				m_pixelDataType = GL_UNSIGNED_INT_8_8_8_8_REV;		// Blue in the low bits, X in the high.
-				m_pixelSize = 4;
-				break;
-
-			case PixelFormat::ARGB_8:
-				m_internalFormat = bSRGB ? GL_SRGB8_ALPHA8 : GL_RGBA8;
-				m_accessFormat = GL_BGRA;
-				m_pixelDataType = GL_UNSIGNED_INT_8_8_8_8_REV;		// Blue in the low bits, alpha in the high.
-				m_pixelSize = 4;
-				break;
-
-			case PixelFormat::RGB_565:
-				m_internalFormat = bSRGB ? GL_SRGB8 : GL_RGB565;
-				m_accessFormat = GL_RGB;
-				m_pixelDataType = GL_UNSIGNED_SHORT_5_6_5;			// Red in the high bits, blue in the low.
-				m_pixelSize = 2;
-				break;
-
-			case PixelFormat::BGR_565:
-				m_internalFormat = bSRGB ? GL_SRGB8 : GL_RGB565;
-				m_accessFormat = GL_RGB;
-				m_pixelDataType = GL_UNSIGNED_SHORT_5_6_5_REV;		// Red in the low bits, blue in the high.
-				m_pixelSize = 2;
-				break;
-
-			case PixelFormat::Index_8:
-				m_internalFormat = GL_R8UI;							// Read as integers, see ps_blit_palette.hlsl.
-				m_accessFormat = GL_RED_INTEGER;
-				m_pixelDataType = GL_UNSIGNED_BYTE;
-				m_pixelSize = 1;
-				break;
-
-			case PixelFormat::Index_16:
-				m_internalFormat = GL_R16UI;
-				m_accessFormat = GL_RED_INTEGER;
-				m_pixelDataType = GL_UNSIGNED_SHORT;
-				m_pixelSize = 2;
-				break;
-
-			case PixelFormat::Alpha_8:
-				m_internalFormat = GL_R8;
-				m_accessFormat = GL_RED;
-				m_pixelDataType = GL_UNSIGNED_BYTE;
-				m_pixelSize = 1;
-				break;
-
-			default:
-				assert(false);           // Should never get here, create() rejects formats we don't support.
-				break;
-		}
-	}
-
-	//____ _setSwizzle() ________________________________________________________
-	/*
-		The shaders read the alpha of Alpha_8 sources, which GL keeps in red. Reading through a
-		swizzle doesn't change what is rendered into the texture as a canvas. XRGB_8 and the 565
-		formats have textures without alpha, which read alpha 1.
-	*/
-
-	void GlSurface::_setSwizzle()
-	{
-		if (m_pixelFormat == PixelFormat::Alpha_8)
-		{
-			GLint swizzle[4] = { GL_ZERO, GL_ZERO, GL_ZERO, GL_RED };
-			glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
-		}
-	}
-
-	//____ _uploadPalette() ______________________________________________________
-	/*
-		The palette as the shaders read it, see GpuTools::paletteToFloats().
-	*/
-
-	void GlSurface::_uploadPalette()
-	{
-		if (!m_pPalette || m_paletteBuffer == 0)
-			return;
-
-		std::vector<GLfloat> colors(size_t(m_paletteCapacity + 1) * 4);
-
-		GpuTools::paletteToFloats(m_pPalette, m_paletteCapacity, m_colorSpace, colors.data());
-
-		glBindBuffer(GL_TEXTURE_BUFFER, m_paletteBuffer);
-		glBufferSubData(GL_TEXTURE_BUFFER, 0, GLsizeiptr(colors.size() * sizeof(GLfloat)), colors.data());
-		glBindBuffer(GL_TEXTURE_BUFFER, 0);
-	}
-
-	//____ Destructor ______________________________________________________________
-
-	GlSurface::~GlSurface()
-	{
-		
-		g_texturePixels -= m_size.w*m_size.h;
-
-		if( m_pBlob )
-			g_backingPixels -= m_size.w*m_size.h;
-
-		if( m_bCanvas )
-			glDeleteFramebuffers(1, &m_framebufferId);
-
-		// Free the stuff
-
-		glDeleteTextures( 1, &m_texture );
-
-		if (m_pPalette)
-		{
-			glDeleteTextures(1, &m_paletteTexture);
-			glDeleteBuffers(1, &m_paletteBuffer);
-			if (!m_pBlob)
-				delete[] m_pPalette;		// Palette is not part of the blob.
-		}
-
-		if (m_pAlphaMap)
-		{
-			delete[] m_pAlphaMap;
-		}
-	}
-
-	//____ typeInfo() _________________________________________________________
-
-	const TypeInfo& GlSurface::typeInfo(void) const
-	{
-		return TYPEINFO;
-	}
-
-	//____ allocPixelBuffer() _________________________________________________
-
-	const PixelBuffer GlSurface::allocPixelBuffer(const RectI& rect)
-	{
-		PixelBuffer pixbuf;
-
-		if (m_pBlob)
-		{
-			pixbuf.format = m_pixelFormat;
-			pixbuf.colorSpace = m_colorSpace;
-			pixbuf.bigEndian = m_bBigEndian;
-			pixbuf.palette = m_pPalette;
-			pixbuf.pitch = m_pitch;
-			pixbuf.pixels = ((uint8_t*)m_pBlob->data()) + rect.y * m_pitch + rect.x * m_pixelSize;
-			pixbuf.rect = rect;
-		}
-		else
-		{
-			pixbuf.format = m_pixelFormat;
-			pixbuf.colorSpace = m_colorSpace;
-			pixbuf.bigEndian = m_bBigEndian;
-			pixbuf.palette = m_pPalette;
-			pixbuf.pitch = ((rect.w * m_pPixelDescription->bits / 8) + 3) & 0xFFFFFFFC;
-			pixbuf.pixels = new uint8_t[rect.h * pixbuf.pitch];
-			pixbuf.rect = rect;
-		}
-		return pixbuf;
-	}
-
-	//____ pushPixels() _______________________________________________________
-
-	bool GlSurface::pushPixels(const PixelBuffer& buffer, const RectI& bufferRect)
-	{
-		if (m_pBlob)
-		{
-			if (m_bBackingBufferStale)
-				_readBackTexture(m_pBlob->data(), m_pitch);
-
-			return true;
-		}
-		else if( bufferRect.size() == m_size )
-		{
-			// This is OpenGL pre 4.5, we can only read back a whole texture :(
-			
-			_readBackTexture(buffer.pixels, buffer.pitch);
-			return true;
-		}
-		else
-			return false;
-	}
-
-	//____ pullPixels() _______________________________________________________
-
-	void GlSurface::pullPixels(const PixelBuffer& buffer, const RectI& bufferRect, bool bAutoNotify)
-	{
-		// Handle special case where we use _copyFrom() in constructor
-		// before texture has been created.
-
-		if (m_texture == 0)
-			return;
-
-		//
-
-		GLint oldBinding;
-		glGetIntegerv(GL_TEXTURE_BINDING_2D, &oldBinding);
-		glBindTexture(GL_TEXTURE_2D, m_texture);
-
-		RectI texRect = { buffer.rect.pos() + bufferRect.pos(), bufferRect.size() };
-		const uint8_t* pSrc = buffer.pixels + bufferRect.y * buffer.pitch + bufferRect.x * m_pixelSize;
-		int srcPitch = buffer.pitch;
-
-		std::vector<uint8_t> premultiplied;
-		if (_isPremultiplied())
-			pSrc = _premultiplied(pSrc, srcPitch, texRect.w, texRect.h, premultiplied);
-
-		glPixelStorei(GL_UNPACK_ROW_LENGTH, srcPitch/m_pixelSize);
-		glPixelStorei(GL_UNPACK_SWAP_BYTES, m_bSwapBytes);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, texRect.x, texRect.y, texRect.w, texRect.h, m_accessFormat, m_pixelDataType, pSrc);
-
-		glPixelStorei(GL_UNPACK_SWAP_BYTES, GL_FALSE);
-		glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-		glBindTexture(GL_TEXTURE_2D, oldBinding);
-		m_bMipmapStale = m_bMipmapped;
-
-		// Colors might have been added to or changed in the palette.
-
-		if (m_pPalette && m_paletteTexture != 0)
-			_uploadPalette();
-
-		HANDLE_GLERROR(glGetError());
-
-		if (m_pAlphaMap)
-			_updateAlphaMap(buffer, bufferRect);
-
-		Surface::pullPixels(buffer, bufferRect, bAutoNotify);
-	}
-
-	//____ freePixelBuffer() ____________________________________________________
-
-	void GlSurface::freePixelBuffer(const PixelBuffer& buffer)
-	{
-		if (!m_pBlob)
-			delete [] buffer.pixels;
-	}
-
-	//____ alpha() ____________________________________________________________
-
-	int GlSurface::alpha( CoordSPX _coord )
-	{
-		if( m_pBlob )
-		{
-			if (m_bBackingBufferStale)
-				_readBackTexture(m_pBlob->data(), m_pitch);
-
-			PixelBuffer buf;
-			buf.rect = m_size;
-			buf.palette = m_pPalette;
-			buf.pitch = m_pitch;
-			buf.format = m_pixelFormat;
-			buf.colorSpace = m_colorSpace;
-			buf.bigEndian = m_bBigEndian;
-			buf.pixels = (uint8_t*) m_pBlob->data();
-			
-			return _alpha(_coord, buf);
-		}
-		else if (m_pAlphaMap)
-		{
-			//TODO: Take endianess into account.
-			//TODO: Take advantage of subpixel precision and interpolate alpha value if surface set to interpolate.
-
-			CoordI coord(((_coord.x + 32) / 64) % m_size.w, ((_coord.y + 32) / 64) % m_size.h);
-
-			return HiColor::unpackLinearTab[m_pAlphaMap[coord.y * m_size.w + coord.x]];
-		}
-		else if( m_bCanvas )
-		{
-			GLint		oldViewport[4];
-			GLint		oldFrameBuffer;
-
-			glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &oldFrameBuffer);
-
-			glGetIntegerv(GL_VIEWPORT, oldViewport);
-
-			glBindFramebuffer(GL_READ_FRAMEBUFFER, m_framebufferId);
-			if (glCheckFramebufferStatus(GL_READ_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-			{
-				Base::throwError(ErrorLevel::SilentError, ErrorCode::OpenGL, "Can not read pixel from surface for unknow reason, returning 4096 as alpha value.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
-
-				return 4096;
-			}
-
-			glViewport(0, 0, m_size.w, m_size.h);
-
-			CoordI coord(((_coord.x + 32) / 64) % m_size.w, ((_coord.y + 32) / 64) % m_size.h);
-
-			uint32_t	myPixel;
-			glReadPixels(coord.x, coord.y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &myPixel);
-
-			glBindFramebuffer(GL_READ_FRAMEBUFFER, oldFrameBuffer);
-			glViewport(oldViewport[0], oldViewport[1], oldViewport[2], oldViewport[3]);
-
-			return HiColor::unpackLinearTab[ myPixel >> 24 ];
-
-		}
-		else
-			return 4096;
-	}
-
-	//____ unload() ___________________________________________________________
-
-	bool GlSurface::unload()
-	{
-		if (!m_pBlob)
-			return false;
-
-		if( m_texture == 0 )
-			return true;
-
-		glDeleteTextures( 1, &m_texture );
-		m_texture = 0;
-
-		HANDLE_GLERROR(glGetError());
-		return true;
-	}
-
-	//____ isLoaded() _________________________________________________________
-
-	bool GlSurface::isLoaded()
-	{
-		return (m_texture != 0);
-	}
-
-	//____ reloaded() _________________________________________________________
-
-	void GlSurface::reload()
-	{
-		if (m_texture != 0)
-			return;
-
-		HANDLE_GLERROR(glGetError());
-
-		GLint oldBinding;
-		glGetIntegerv(GL_TEXTURE_BINDING_2D, &oldBinding);
-
-		glGenTextures( 1, &m_texture );
-		glBindTexture( GL_TEXTURE_2D, m_texture );
-
-		// Same settings as _setupGlTexture() gives a new texture.
-
-		GLint wrapMode = m_bTiling ? GL_REPEAT : GL_CLAMP_TO_EDGE;
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapMode);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapMode);
-
-		_setSwizzle();
-
-		if (m_pPalette)
-		{
-			// Indexes are looked up in the shader and must not be interpolated.
-
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-		}
-		else if (m_sampleMethod == SampleMethod::Bilinear)
-		{
-			// A mipmap filter on a texture without mipmaps leaves it incomplete, and it samples as black.
-
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, m_bMipmapped ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, m_mipLevels > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		}
 		else
@@ -875,120 +268,180 @@ namespace wax
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		}
 
-		const uint8_t* pPixels = (const uint8_t*) m_pBlob->data();
-		int pitch = m_pitch;
+		m_bMipmapStale = (m_mipLevels > 1);
 
-		std::vector<uint8_t> premultiplied;
-		if (_isPremultiplied())
-			pPixels = _premultiplied(pPixels, pitch, m_size.w, m_size.h, premultiplied);
-
-		glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch/m_pixelSize);
-		glPixelStorei(GL_UNPACK_SWAP_BYTES, m_bSwapBytes);
-		glTexImage2D( GL_TEXTURE_2D, 0, m_internalFormat, m_size.w, m_size.h, 0,
-					 m_accessFormat, m_pixelDataType, pPixels );
-		glPixelStorei(GL_UNPACK_SWAP_BYTES, GL_FALSE);
-		glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-
-		glBindTexture( GL_TEXTURE_2D, oldBinding );
-
-		// A canvas reads back through a framebuffer that still points at the texture we deleted.
-
-		if( m_bCanvas )
-		{
-			GLint oldFrameBuffer;
-			glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &oldFrameBuffer);
-
-			glBindFramebuffer(GL_READ_FRAMEBUFFER, m_framebufferId);
-			glFramebufferTexture(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_texture, 0);
-
-			glBindFramebuffer(GL_READ_FRAMEBUFFER, oldFrameBuffer);
-		}
-
-		m_bMipmapStale = m_bMipmapped;
+		glBindTexture(GL_TEXTURE_2D, oldBinding);
 
 		HANDLE_GLERROR(glGetError());
+		return true;
 	}
 
-	//____ _updateAlphaMap() __________________________________________________
+	//____ _allocStaging() _______________________________________________________
+	//
+	// Plain memory, as glTexSubImage2D() copies from anywhere.
 
-	void GlSurface::_updateAlphaMap(const PixelBuffer& buffer, const RectI& bufferRect)
+	GpuSurface::Staging * GlSurface::_allocStaging( SizeI size, bool bReadable )
 	{
-		PixelTools::extractAlphaChannel(m_pixelFormat, m_bBigEndian, buffer.pixels, buffer.pitch,
-										{ bufferRect.x,bufferRect.y, bufferRect.w, bufferRect.h },
-										m_pAlphaMap + buffer.rect.y * m_size.w + buffer.rect.x, m_size.w, m_pPalette);
+		auto pStaging = new GlStaging();
+
+		pStaging->pitch = (size.w * m_pixelBytes + 3) & ~3;
+		pStaging->pPixels = new uint8_t[size_t(pStaging->pitch) * size.h];
+
+		return pStaging;
 	}
 
-	//____ _readBackTexture() ____________________________________________
+	//____ _pull() _______________________________________________________________
+	//
+	// Lines are pitch bytes apart, which a row length in pixels says for every pitch that is a
+	// whole number of pixels. Ours are, being multiples of four.
 
-	void GlSurface::_readBackTexture(void * pDest, int pitch)
+	void GlSurface::_pull( Staging * pStaging, const RectI& rect, CoordI dest )
 	{
-		HANDLE_GLERROR(glGetError());
+		if( m_texture == 0 )
+			return;
 
 		GLint oldBinding;
 		glGetIntegerv(GL_TEXTURE_BINDING_2D, &oldBinding);
+		glBindTexture(GL_TEXTURE_2D, m_texture);
 
-		// Rows are pitch bytes apart. Byte alignment and a row length in pixels covers every pitch
-		// that is a whole number of pixels. Other pitches are padded rows of 3 byte pixels, which
-		// the pack alignment covers when they are padded to 4 bytes (which is how we allocate them).
+		const uint8_t * pSrc = pStaging->pPixels + rect.y * pStaging->pitch + rect.x * m_pixelBytes;
+
+		glPixelStorei(GL_UNPACK_ROW_LENGTH, pStaging->pitch / m_pixelBytes);
+		glPixelStorei(GL_UNPACK_SWAP_BYTES, c_swapBytes);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, dest.x, dest.y, rect.w, rect.h, m_accessFormat, m_pixelDataType, pSrc);
+		glPixelStorei(GL_UNPACK_SWAP_BYTES, GL_FALSE);
+		glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+
+		glBindTexture(GL_TEXTURE_2D, oldBinding);
+
+		if( m_mipLevels > 1 )
+			m_bMipmapStale = true;
+
+		HANDLE_GLERROR(glGetError());
+	}
+
+	//____ _updatePending() ______________________________________________________
+	//
+	// Nothing waits to be sent with OpenGL: what is written to our pixels goes to the texture
+	// right away.
+
+	void GlSurface::_updatePending()
+	{
+		_stageDirty();
+	}
+
+	//____ _updatePaletteColors() ________________________________________________
+
+	void GlSurface::_updatePaletteColors()
+	{
+		GpuSurface::_updatePaletteColors();
+
+		if( !m_pPaletteColors || m_paletteBuffer == 0 )
+			return;
+
+		glBindBuffer(GL_TEXTURE_BUFFER, m_paletteBuffer);
+		glBufferSubData(GL_TEXTURE_BUFFER, 0, GLsizeiptr(m_paletteCapacity + 1) * 4 * sizeof(GLfloat), m_pPaletteColors);
+		glBindBuffer(GL_TEXTURE_BUFFER, 0);
+	}
+
+	//____ _bindReadFramebuffer() ________________________________________________
+	//
+	// Binds a framebuffer with our texture to read from. False if GL won't have one of a
+	// texture of our format, which it doesn't promise for all of them.
+
+	bool GlSurface::_bindReadFramebuffer( GLint& oldFramebuffer )
+	{
+		glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &oldFramebuffer);
+
+		if( m_framebufferId == 0 )
+		{
+			glGenFramebuffers(1, &m_framebufferId);
+			glBindFramebuffer(GL_READ_FRAMEBUFFER, m_framebufferId);
+			glFramebufferTexture(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_texture, 0);
+		}
+		else
+			glBindFramebuffer(GL_READ_FRAMEBUFFER, m_framebufferId);
+
+		if( glCheckFramebufferStatus(GL_READ_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
+		{
+			glBindFramebuffer(GL_READ_FRAMEBUFFER, oldFramebuffer);
+			return false;
+		}
+
+		return true;
+	}
+
+	//____ _readBack() ___________________________________________________________
+	//
+	// OpenGL before 4.5 can read a whole texture, or a rectangle of a framebuffer. So part of
+	// us is read through a framebuffer, and if there is none to be had, by reading all of us.
+	//
+	// What GlBackend has recorded and not yet executed isn't in the texture, which only shows
+	// to code that asks for pixels between its beginSession() and endSession().
+
+	bool GlSurface::_readBack( const RectI& rect, uint8_t * pDest, int destPitch )
+	{
+		if( m_texture == 0 )
+			return false;
+
+		HANDLE_GLERROR(glGetError());
 
 		GLint oldAlignment;
 		glGetIntegerv(GL_PACK_ALIGNMENT, &oldAlignment);
 
-		if (pitch % m_pixelSize == 0)
+		glPixelStorei(GL_PACK_ALIGNMENT, 1);
+		glPixelStorei(GL_PACK_SWAP_BYTES, c_swapBytes);
+
+		GLint oldFramebuffer;
+
+		if( rect == RectI(m_size) )
 		{
-			glPixelStorei(GL_PACK_ALIGNMENT, 1);
-			glPixelStorei(GL_PACK_ROW_LENGTH, pitch / m_pixelSize);
+			GLint oldBinding;
+			glGetIntegerv(GL_TEXTURE_BINDING_2D, &oldBinding);
+
+			glPixelStorei(GL_PACK_ROW_LENGTH, destPitch / m_pixelBytes);
+			glBindTexture(GL_TEXTURE_2D, m_texture);
+			glGetTexImage(GL_TEXTURE_2D, 0, m_accessFormat, m_pixelDataType, pDest);
+			glBindTexture(GL_TEXTURE_2D, oldBinding);
+		}
+		else if( _bindReadFramebuffer(oldFramebuffer) )
+		{
+			glPixelStorei(GL_PACK_ROW_LENGTH, destPitch / m_pixelBytes);
+			glReadPixels(rect.x, rect.y, rect.w, rect.h, m_accessFormat, m_pixelDataType, pDest);
+			glBindFramebuffer(GL_READ_FRAMEBUFFER, oldFramebuffer);
 		}
 		else
 		{
-			assert(pitch == ((m_size.w * m_pixelSize + 3) & ~3));
-			glPixelStorei(GL_PACK_ALIGNMENT, 4);
+			GLint oldBinding;
+			glGetIntegerv(GL_TEXTURE_BINDING_2D, &oldBinding);
+
+			int			pitch = m_size.w * m_pixelBytes;
+			uint8_t *	pAll = new uint8_t[size_t(pitch) * m_size.h];
+
 			glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+			glBindTexture(GL_TEXTURE_2D, m_texture);
+			glGetTexImage(GL_TEXTURE_2D, 0, m_accessFormat, m_pixelDataType, pAll);
+			glBindTexture(GL_TEXTURE_2D, oldBinding);
+
+			for( int y = 0; y < rect.h; y++ )
+				memcpy( pDest + y * destPitch, pAll + (rect.y + y) * pitch + rect.x * m_pixelBytes, rect.w * m_pixelBytes );
+
+			delete [] pAll;
 		}
 
-		glPixelStorei(GL_PACK_SWAP_BYTES, m_bSwapBytes);
-		glBindTexture(GL_TEXTURE_2D, m_texture);
-		glGetTexImage(GL_TEXTURE_2D, 0, m_accessFormat, m_pixelDataType, pDest);
 		glPixelStorei(GL_PACK_SWAP_BYTES, GL_FALSE);
 		glPixelStorei(GL_PACK_ROW_LENGTH, 0);
 		glPixelStorei(GL_PACK_ALIGNMENT, oldAlignment);
-		glBindTexture(GL_TEXTURE_2D, oldBinding);
 
-		HANDLE_GLERROR(glGetError());
+		GLenum err = glGetError();
 
-		if (_isPremultiplied())
+		if( err != 0 )
 		{
-			GpuTools::convertAlpha((uint8_t*)pDest, pitch, (uint8_t*)pDest, pitch, m_size.w, m_size.h, false,
-								   m_colorSpace == ColorSpace::sRGB, m_bSwapBytes);
+			GlBackend::onGlError(err, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return false;
 		}
 
-		m_bBackingBufferStale = false;
-	}
-
-
-
-
-
-	//____ _premultiplied() ____________________________________________________
-	/*
-		Surfaces with alpha keep their pixels premultiplied in the texture, so that blending
-		and filtering work on premultiplied colors. Returns the pixels to upload, which are the
-		pixels themselves if they are the same premultiplied, otherwise a premultiplied copy in
-		buffer with a pitch of width pixels, set in pitch.
-	*/
-
-	const uint8_t* GlSurface::_premultiplied(const uint8_t* pPixels, int& pitch, int width, int height, std::vector<uint8_t>& buffer) const
-	{
-		if (GpuTools::isSamePremultiplied(pPixels, pitch, width, height, m_bSwapBytes))
-			return pPixels;
-
-		int rowBytes = width * m_pixelSize;
-		buffer.resize(rowBytes * height);
-
-		GpuTools::convertAlpha(pPixels, pitch, buffer.data(), rowBytes, width, height, true, m_colorSpace == ColorSpace::sRGB, m_bSwapBytes);
-
-		pitch = rowBytes;
-		return buffer.data();
+		return true;
 	}
 
 } // namespace wax

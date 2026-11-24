@@ -49,7 +49,6 @@ public:
 		bool identity		= true;
 		bool sampleMethod 	= false;
 		bool scale			= true;
-		bool buffered		= false;
 		bool canvas			= false;
 		bool dynamic		= false;
 		bool tiling			= true;

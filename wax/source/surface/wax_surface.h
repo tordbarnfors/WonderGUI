@@ -174,13 +174,16 @@ namespace wax
 
 	public:
 
+		// Puts back the content of a surface that lost it, see Blueprint::restorer.
+
+		typedef bool (*Restorer)( Surface * pSurface );
+
 		//.____ Blueprint _________________________________________
 
 		struct Blueprint
 		{
 			Object_p			baggage;
 			bool				bigEndian = (WAX_IS_BIG_ENDIAN == 1);	// Byte order of the pixels. Defaults to the byte order of the system.
-			bool				buffered = false;
 			bool				canvas = false;
 			ColorSpace			colorSpace = ColorSpace::Undefined;		// Color space of the pixels. Defaults to sRGB.
 			HiColor				fillColor = HiColor::Undefined;			// What a surface created without pixels is filled with. Undefined leaves its content unspecified.
@@ -192,6 +195,21 @@ namespace wax
 			PixelFormat			format = PixelFormat::Undefined;
 			int					identity = 0;
 			bool				mipmap = false;
+
+			// A promise to give the surface its content back, which lets a surface with a texture
+			// on a GPU go without pixels of its own in plain memory. It is called when the texture
+			// has been lost, between frames, and writes the content the surface is to have with
+			// allocPixelBuffer() and pullPixels(), fill() or copy(). True says the content is back.
+			// False says nothing was done: the surface is then transparent black and says
+			// isContentLost() until all of it has been written. declineRestore() is one that
+			// does just that, for what is written anew all the time.
+			//
+			// Such a surface is read by reading the texture back, which waits for the GPU, so
+			// what is read regularly should be without one. Surfaces that keep their pixels
+			// anyway never call it: all of SoftSurface, and Alpha_8 and palette based ones with
+			// a texture.
+
+			Restorer			restorer = nullptr;
 			SampleMethod		sampleMethod = SampleMethod::Undefined;
 			int					scale = 0;
 			SizeI				size;					// Mandatory. Size in pixels.
@@ -280,12 +298,19 @@ namespace wax
 		Blueprint			blueprint() const;
 
 		// True if what the surface held was lost together with the device of a
-		// GPU backend, most likely because something rendered into it was never
-		// read back. The surface keeps working, but whoever put that content
-		// there needs to render it again, which is easiest done by replacing the
-		// surface. It doesn't go back to false.
+		// GPU backend: something rendered into a canvas, or the content of a
+		// surface whose restorer did nothing. The surface keeps working and is
+		// transparent black. Whoever put the content there needs to do it again,
+		// and it goes back to false when all of the surface has been written.
+		// For a canvas the easiest is to replace the surface.
 
 		inline bool			isContentLost() const { return m_bContentLost; }
+
+		// A restorer that does nothing, for a surface whose content is replaced
+		// all the time, as that of a stream, or by someone who looks at
+		// isContentLost() in their own time.
+
+		static bool			declineRestore( Surface * pSurface );
 
 	protected:
 
@@ -306,8 +331,8 @@ namespace wax
 			m_sampleMethod = method;
 			m_bTiling = bp.tiling;
 			m_bCanvas = bp.canvas;
-			m_bBuffered = bp.buffered;
 			m_bDynamic = bp.dynamic;
+			m_pRestorer = bp.restorer;
 			m_id = bp.identity;
 			m_pBaggage = bp.baggage;
 
@@ -357,10 +382,10 @@ namespace wax
 		SampleMethod		m_sampleMethod = SampleMethod::Nearest;
 		bool				m_bMipmapped = false;
 		bool				m_bTiling = false;
-        bool                m_bCanvas = false;
-		bool				m_bBuffered = false;
+		bool				m_bCanvas = false;
 		bool				m_bDynamic = false;
 		bool				m_bContentLost = false;			// Set by backends, see isContentLost().
+		Restorer			m_pRestorer = nullptr;
 //		bool				m_bOpaque = false;
 
 		Color8 *			m_pPalette = nullptr;					// Pointer at color lookup table. Always 256 entries long.

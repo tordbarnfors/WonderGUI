@@ -27,6 +27,8 @@
 
 #include <wax_gpusurface.h>
 
+#include <vector>
+
 namespace wax
 {
 
@@ -38,8 +40,9 @@ namespace wax
 	/**
 	 * @brief Surface for MetalBackend.
 	 *
-	 * Built on GpuSurface, which keeps our pixels and knows what the texture lacks of them. They
-	 * are in a shared buffer, and copied to the private texture when it is used.
+	 * Built on GpuSurface, which has our pixels, if we keep any, and knows what the texture lacks
+	 * of them. What is to be sent is copied to the private texture when it is used, from shared
+	 * buffers made for it.
 	 *
 	 * Formats: ARGB_8 and XRGB_8 are BGRA8Unorm, the latter read with alpha 1, the 565 formats are
 	 * widened to XRGB_8, Alpha_8 is R8Unorm read as alpha, and palette based surfaces hold their
@@ -76,15 +79,6 @@ namespace wax
 
 		static SizeI	maxSize();
 
-		//.____ Control _______________________________________________________
-
-		// Lets go of the texture and makes it again from our pixels. What was rendered into it
-		// and hasn't been asked for since is lost.
-
-		bool		unload();
-		bool		isLoaded();
-		void		reload();
-
 		//.____ Misc __________________________________________________________
 
 		inline	id<MTLTexture>	getTexture() const { return m_texture; }
@@ -97,8 +91,9 @@ namespace wax
 		inline	id<MTLBuffer>	paletteColors() const { return m_paletteColors; }
 
 		// Sends what the CPU has written since the last call to the texture, if anything, in a
-		// command buffer of its own that is committed at once. Called by MetalBackend before the
-		// surface is drawn from or into, which puts it ahead of the drawing in the queue.
+		// command buffer of its own that is committed at once, without waiting for it. Called by
+		// MetalBackend before the surface is drawn from or into, which puts it ahead of the
+		// drawing in the queue.
 
 		void					syncTexture();
 
@@ -110,22 +105,40 @@ namespace wax
 		// What GpuSurface has us do.
 
 		PixelFormat		_setTextureFormat( PixelFormat format ) override;	// Metal has no 565 on macOS, they are widened to XRGB_8.
-		bool			_createDeviceObjects( bool bPixelBuffer ) override;	// Texture, its view, pixel buffer and palette buffer. All or none.
-		bool			_createPixelBuffer() override;
-		bool			_readBack() override;
-		void			_waitForUpload() override;							// Until the GPU has read our pixels for an upload already committed.
+		bool			_createDeviceObjects() override;					// Texture, its view and palette buffer. All or none.
+		Staging *		_allocStaging( SizeI size, bool bReadable ) override;
+		void			_pull( Staging * pStaging, const RectI& rect, CoordI dest ) override;
+		bool			_readBack( const RectI& rect, uint8_t * pDest, int destPitch ) override;
 
 		bool			_createTexture();									// The texture and its view for the shaders.
 		void			_dropDeviceObjects();
+		void			_dropPulls();
 
-		id<MTLBuffer>	_encodeTextureUpload( id<MTLBlitCommandEncoder> encoder, RectI region );
+		// Staging memory is a shared buffer of its own.
+
+		struct MetalStaging : public Staging
+		{
+			~MetalStaging();
+
+			id<MTLBuffer>	buffer = nil;
+		};
+
+		// What is to be copied to the texture, from buffers we keep until it is encoded.
+
+		struct Pull
+		{
+			id<MTLBuffer>	buffer;
+			int				offset;				// Of the first pixel in the buffer.
+			int				pitch;
+			SizeI			size;
+			CoordI			dest;				// Where in the texture.
+		};
+
+		std::vector<Pull>	m_pulls;
 
 		id<MTLTexture>	m_texture = nil;			// Private texture, only accessed by GPU.
 		id<MTLTexture>	m_sampleTexture = nil;		// Swizzled view of it for the shaders, nil if they read it as it is.
-		id<MTLBuffer>	m_textureBuffer = nil;		// Shared buffer with our pixels. A canvas may be without, see GpuSurface::_needPixels().
 		id<MTLBuffer>	m_paletteColors = nil;		// The palette as the shaders read it.
-
-		id<MTLCommandBuffer>	m_lastUpload = nil;	// Reads our pixels when the GPU gets to it, see _waitForUpload().
 
 		MTLPixelFormat	m_internalFormat = MTLPixelFormatInvalid;
 	};

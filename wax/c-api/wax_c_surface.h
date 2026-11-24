@@ -71,7 +71,6 @@ typedef struct wax_ninePatch_struct
 typedef struct wax_surfaceBP_struct			// NOT BINARY EQUIVALENT!
 {
 	wax_byteOrder		byteOrder;				// Defaults to native byte order.
-	uint8_t				buffered;
 	uint8_t				canvas;
 	wax_colorSpace		colorSpace;				// Defaults to sRGB.
 	uint8_t				useFillColor;			// Set to have a surface created without pixels filled with fillColor. Its content is unspecified otherwise.
@@ -83,6 +82,7 @@ typedef struct wax_surfaceBP_struct			// NOT BINARY EQUIVALENT!
 	wax_pixelFormat		format;
 	int					identity;
 	uint8_t				mipmap;
+	wax_restorer_func	restorer;				// Called to put the content back when the texture is lost, see Surface::Blueprint. Null to have the surface keep its pixels.
 	wax_sampleMethod		sampleMethod;
 	int					scale;
 	wax_sizeI			size;					// Mandatory, except when creating from other surface.
@@ -130,6 +130,9 @@ WAX_EXPORT int				wax_surfaceIsBigEndian(wax_obj surface);
 
 WAX_EXPORT int				wax_surfaceIsOpaque(wax_obj surface);				///< @brief Check if surface is guaranteed to be entirely opaque.
 WAX_EXPORT int				wax_surfaceCanBeCanvas(wax_obj surface);
+
+WAX_EXPORT int				wax_surfaceIsContentLost(wax_obj surface);			///< @brief Check if the surface lost its content with the device of a GPU backend.
+WAX_EXPORT uint8_t			wax_declineSurfaceRestore(wax_obj surface);			///< @brief A restorer that does nothing, for wax_surfaceBP.
 
 //____ Control _______________________________________________________
 

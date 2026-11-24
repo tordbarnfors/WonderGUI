@@ -144,7 +144,7 @@ namespace wax
 
 		//.____ One-shot commands _________________________________________________
 
-		// For surfaces: records commands into a command buffer of our own, which endOneShot()
+		// For surfaces reading back: records commands into a command buffer of our own, which endOneShot()
 		// submits and waits for. Everything backends have recorded is submitted first, so that the
 		// one-shot commands come after it, as they are meant to.
 
@@ -157,7 +157,7 @@ namespace wax
 		static void				removeBackend( VulkanBackend * pBackend );
 		static int				nbBackends() { return int(s_backends.size()); }
 
-		static void				flushBackends();					// Submits what every backend has recorded.
+		static void				flushBackends( VulkanBackend * pExcept = nullptr );		// Submits what every backend has recorded, but the given one.
 
 		//.____ Barriers ___________________________________________________________
 

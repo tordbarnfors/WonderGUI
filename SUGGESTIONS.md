@@ -99,6 +99,28 @@ a root skin of `ColorSkin` with `BlendMode::Replace` and `HiColor::Transparent`.
 the guide, or a `RootPanel` blueprint member saying the canvas is an overlay, would save
 working it out.
 
+### Reading the pixels of a canvas waits for the GPU each time
+
+A canvas of a GPU backend has no pixels of its own, so each `pushPixels()` reads the texture back
+and waits for the GPU, also when nothing has been rendered into it since the last one, and
+`alpha()` reads it back again after each time it has been rendered into. Reading a canvas and
+then asking for its alpha is two round trips. A widget that is rendered into a canvas every frame
+and marked against its alpha has the whole canvas read back for each frame the pointer moves in,
+where GlSurface read the one pixel until 2026-11-24. Things that would help, none of them needed
+by anything we have: bringing an alpha map that is there up to date when all of the canvas is
+read back anyway, reading just the pixel asked for when the map is stale, and keeping the buffer
+a canvas was last read back by for as long as it isn't rendered into, which is memory held for
+what might come. Timings in "GPU surfaces: staging and plain memory" in ROADMAP.md.
+
+### Members of `Surface::Blueprint` are not in alphabetical order
+
+`dynamic`, `format`, `identity` and `mipmap` come after `paletteSize`, where the convention has
+them before `finalizer` and `palette`. Moving them breaks every designated initializer that sets
+one of them together with a palette member, in the order they have now, so it is a change for
+breaking-changes. `restorer` was put where it belongs either way.
+
+`wax/source/surface/wax_surface.h`
+
 ### Shrinking a picture well
 
 There is no way to get a good small version of a large picture: SoftBackend doesn't use
@@ -175,9 +197,13 @@ first time it is looked at, which the Win32 main loop does after the update of t
 `gfxdevicetester --accuracy` runs all its tests in its first update, so the run is over before
 the device can be removed: with 1 and 2 seconds a print showed no loss in a run of 92 seconds
 (Debug, 2026-11-23). Results that are the same with and without the variable then say nothing.
-To test surfaces going off the device and back, the run was held back 200 frames and the device
-removed at the first look, both as temporary changes. A value that means at once, and a test or
-a suite per frame, would make it something to just run.
+Removing the device ahead of the run says little as well: what surfaces were created with hasn't
+been sent to their textures before something draws from them, so nothing is lost. What tells is
+running the tests, removing the device and running them again, which was done as temporary
+changes (2026-11-24): the batch run twice with a frame in between, and the device removed at the
+first look. A value that means at once and an option to run the tests twice would make it
+something to just run, and replacing a device that works (`_recoverDevice()` without a loss) has
+no way to be asked for at all.
 
 `_simulateDeviceLoss()` in `wonderapp/source/win32/dx12/win32gfxbackend.cpp` and
 `wonderapp/source/sdl3/backend_dx12.cpp`, `GfxDeviceTester::update()`

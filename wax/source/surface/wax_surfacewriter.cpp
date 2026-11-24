@@ -262,9 +262,6 @@ namespace wax
 		if( m_saveInfo.sampleMethod )
 			pHeader->sampleMethod = bp.sampleMethod;
 
-		if( m_saveInfo.buffered )
-			pHeader->buffered = bp.buffered;
-
 		if( m_saveInfo.canvas )
 			pHeader->canvas = bp.canvas;
 

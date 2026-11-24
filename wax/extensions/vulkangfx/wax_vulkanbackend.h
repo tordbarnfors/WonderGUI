@@ -170,6 +170,7 @@ namespace wax
 		void		_endRendering();						// For barriers and copies, which can't be inside.
 
 		void		_releaseCanvas();						// Puts the bound canvas back to rest.
+		void		_recordUploads( VulkanSurface * pSurface );	// What the CPU has written to it, into our command buffer.
 		void		_generateMipmaps( VulkanSurface * pSurface );
 
 		void		_pushBuffer( uint32_t binding, VkBuffer buffer, VkDeviceSize offset = 0, VkDeviceSize range = VK_WHOLE_SIZE );

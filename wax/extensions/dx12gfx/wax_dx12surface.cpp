@@ -57,27 +57,6 @@ namespace wax
 	DX12Surface *										DX12Surface::s_pLastPending = nullptr;
 	int64_t												DX12Surface::s_pendingBytes = 0;
 
-	//____ _copyFromMapping() ______________________________________________________
-	//
-	// Copies out of a buffer that was mapped on a device that may since have been
-	// removed. In practice the memory of a mapped buffer stays mapped until the
-	// resource is released, but D3D12 makes no such promise, so an access
-	// violation is caught here and turned into a false. Kept on its own, since
-	// __try can't share a function with objects that need unwinding.
-
-	static bool _copyFromMapping( void * pDst, const void * pSrc, size_t nBytes )
-	{
-		__try
-		{
-			memcpy( pDst, pSrc, nBytes );
-			return true;
-		}
-		__except( GetExceptionCode() == EXCEPTION_ACCESS_VIOLATION ? EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH )
-		{
-			return false;
-		}
-	}
-
 	//____ setObjectName() _________________________________________________________
 	//
 	// Names a D3D12 object after the surface owning it, so the debug layer's live
@@ -133,20 +112,8 @@ namespace wax
 
 	void DX12Surface::evacuateAll()
 	{
-		int nLost = 0;
-
 		for( DX12Surface * p = s_pFirstLive; p; p = p->m_pNextLive )
-		{
-			if( !p->_evacuate() )
-				nLost++;
-		}
-
-		if( nLost > 0 )
-		{
-			char buffer[256];
-			sprintf_s(buffer, "The pixels of %d surface(s) could not be read from the lost device and have been cleared.", nLost);
-			Base::throwError(ErrorLevel::Warning, ErrorCode::RenderFailure, buffer, nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
-		}
+			p->_evacuate();
 	}
 
 	//____ migrateAll() ____________________________________________________________
@@ -155,6 +122,21 @@ namespace wax
 	{
 		for( DX12Surface * p = s_pFirstLive; p; p = p->m_pNextLive )
 			p->_migrate();
+
+		// Restorers are called once every surface is back, as one may use others. They are
+		// code of the application, which can create and let go of surfaces, so we hold on to
+		// those we are to call instead of walking the list.
+
+		std::vector<DX12Surface_p> lost;
+
+		for( DX12Surface * p = s_pFirstLive; p; p = p->m_pNextLive )
+		{
+			if( p->_isRestorePending() )
+				lost.push_back(p);
+		}
+
+		for( auto& pSurface : lost )
+			pSurface->_restore();
 	}
 
 	//____ _link() _________________________________________________________________
@@ -187,13 +169,14 @@ namespace wax
 
 	//____ _updatePending() _______________________________________________________
 	//
-	// A surface is on the list of pending uploads while it has pixels the texture
-	// doesn't have yet, and a texture to put them in. Call it whenever m_dirtyRect,
-	// the texture or the upload buffer changes.
+	// A surface is on the list of pending uploads while it has something its texture
+	// lacks: pixels of its own that have changed, or what has been pulled from pixel
+	// buffers handed out. Call it whenever any of that or the texture changes.
 
 	void DX12Surface::_updatePending()
 	{
-		bool bPending = !m_dirtyRect.isEmpty() && m_texture && m_uploadBuffer;
+		bool bDirty = !m_dirtyRect.isEmpty() && m_pPixels;
+		bool bPending = m_texture && (bDirty || !m_pulls.empty());
 
 		if( bPending && !m_bUploadPending )
 		{
@@ -227,44 +210,25 @@ namespace wax
 			m_bUploadPending = false;
 		}
 
-		// Copies are made in whole lines, see DX12Backend::_recordUploads().
+		int64_t bytes = 0;
 
-		int64_t bytes = bPending ? int64_t(m_dirtyRect.h) * m_pitch : 0;
+		if( bPending )
+		{
+			bytes = int64_t(_dirtyStagingBytes());
+
+			for( auto& pull : m_pulls )
+				bytes += int64_t(pull.rect.w) * pull.rect.h * m_pixelBytes;
+		}
 
 		s_pendingBytes += bytes - m_pendingBytes;
 		m_pendingBytes = bytes;
 	}
 
-	//____ _waitForUpload() _______________________________________________________
-	//
-	// An upload copies straight from our pixels, at whatever time the GPU gets to
-	// it. Called before the CPU is handed our pixels to write to.
-
-	void DX12Surface::_waitForUpload()
-	{
-		// Recorded but not yet submitted, the GPU hasn't started on it. Writing now
-		// only makes that copy newer, and the change goes up again after it, since
-		// whoever writes to us marks it with pullPixels().
-
-		if( m_pUploadRecordedBy || !m_uploadFence )
-			return;
-
-		// Nothing runs on a lost device, and its fences can't be trusted to get
-		// anywhere. A null event makes SetEventOnCompletion() block until the fence
-		// has reached the value.
-
-		if( m_uploadFence->GetCompletedValue() < m_uploadFenceValue && !DX12Backend::isDeviceLost() )
-			m_uploadFence->SetEventOnCompletion(m_uploadFenceValue, nullptr);
-
-		m_uploadFence = nullptr;
-		m_uploadFenceValue = 0;
-	}
-
 	//____ _forgetUpload() ________________________________________________________
 	//
 	// For when we go away or let go of the device. A backend that has recorded an
-	// upload of ours and not yet submitted it holds the texture and upload buffer
-	// itself, but must not tell us when it submits.
+	// upload of ours and not yet submitted it holds the texture and what it copies
+	// from itself, but must not tell us should it never get to submit.
 
 	void DX12Surface::_forgetUpload()
 	{
@@ -273,9 +237,23 @@ namespace wax
 			m_pUploadRecordedBy->_forgetRecordedUpload(this);
 			m_pUploadRecordedBy = nullptr;
 		}
+	}
 
-		m_uploadFence = nullptr;
-		m_uploadFenceValue = 0;
+	//____ _uploadAbandoned() _____________________________________________________
+	//
+	// The list a backend recorded our upload into was never submitted, so the
+	// texture didn't get it. Our pixels go again, whole. What was pulled from pixel
+	// buffers handed out is gone, which takes a lost device and a surface without
+	// pixels, that has lost its content anyway.
+
+	void DX12Surface::_uploadAbandoned()
+	{
+		m_pUploadRecordedBy = nullptr;
+
+		if( m_pPixels )
+			m_dirtyRect = RectI(0, 0, m_size.w, m_size.h);
+
+		_updatePending();
 	}
 
 	//____ _waitForCopyFence() _____________________________________________________
@@ -446,17 +424,8 @@ namespace wax
 	}
 
 	//____ constructor ________________________________________________________________
-	//
-	// D3D12 wants each line of a texture copy to start on a 256 byte boundary,
-	// so our pixels are stored with a padded pitch. PixelBuffer carries the
-	// pitch, so nothing outside needs to care.
-	//
-	// We pad to 512 rather than 256, since a copy that starts partway down the
-	// texture puts its offset at a whole number of lines, and that offset has
-	// to land on a 512 byte boundary (D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT).
-	// 512 is a multiple of 256, so both rules are satisfied at once.
 
-	DX12Surface::DX12Surface(const Blueprint& bp, const PixelSource& source) : GpuSurface(bp, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT)
+	DX12Surface::DX12Surface(const Blueprint& bp, const PixelSource& source) : GpuSurface(bp)
 	{
 		_link();
 		_setup(bp, source);
@@ -465,16 +434,11 @@ namespace wax
 	//____ _createDeviceObjects() ______________________________________________
 	//
 	// Everything the surface has on the device: the texture with its mip levels,
-	// the upload buffer holding our pixels, the views and, if palette based, the
-	// palette buffer. Either all of it is created or none of it is kept, so a
-	// surface is never left halfway onto a device.
-	//
-	// On success m_pPixels points into the new upload buffer, which holds
-	// whatever was in that memory. Filling it is up to the caller. Without a pixel
-	// buffer it is null, and GpuSurface::_needPixels() makes the buffer when it is
-	// asked for.
+	// the views and, if palette based, the palette buffer. Either all of it is
+	// created or none of it is kept, so a surface is never left halfway onto a
+	// device.
 
-	bool DX12Surface::_createDeviceObjects( bool bPixelBuffer )
+	bool DX12Surface::_createDeviceObjects()
 	{
 		const char * pFunc = __func__;
 
@@ -532,11 +496,6 @@ namespace wax
 		setObjectName( m_texture.Get(), m_bCanvas ? L"texture (canvas)" : L"texture", this, m_size );
 
 		m_resourceState = D3D12_RESOURCE_STATE_COMMON;
-
-		// Create the buffer holding our pixels, unless it can wait until they are asked for.
-
-		if( bPixelBuffer && !_createPixelBuffer() )
-			return fail( nullptr );
 
 		// Create the descriptor for the texture. It lives in a heap of its own and
 		// is copied into the shader visible heap by DX12Backend when used. Each mip
@@ -612,29 +571,46 @@ namespace wax
 		return true;
 	}
 
-	//____ _createPixelBuffer() ________________________________________________
+	//____ _stagingPitch() _____________________________________________________
 	//
-	// The buffer holding our pixels, mapped, which m_pPixels points into from here on.
-	// It holds whatever was in that memory. Reports its own failure.
-	//
-	// Not in an UPLOAD heap, although the GPU copies from it like from one. That
-	// memory is write-combined and uncached, often in VRAM behind the PCIe bus
-	// on a discrete GPU, and reading it from the CPU crawls: reading a 2100 x 440
-	// canvas back out of it took half a second on an AMD card. We read our pixels
-	// whenever someone asks for them, so they get the CPU cached memory the
-	// driver uses for READBACK heaps instead, as a custom heap the GPU can copy
-	// from.
+	// D3D12 wants each line of what a texture is copied from or to to start on a
+	// 256 byte boundary.
 
-	bool DX12Surface::_createPixelBuffer()
+	int DX12Surface::_stagingPitch( int width ) const
+	{
+		return (width * m_pixelBytes + D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1) & ~(D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1);
+	}
+
+	//____ _allocStaging() _____________________________________________________
+	//
+	// A buffer the GPU copies to our texture from, mapped. It holds whatever was
+	// in that memory. Reports its own failure.
+	//
+	// What is handed out as a PixelBuffer may be read, so it isn't in an UPLOAD
+	// heap, although the GPU copies from it like from one. That memory is
+	// write-combined and uncached, often in VRAM behind the PCIe bus on a discrete
+	// GPU, and reading it from the CPU crawls: reading a 2100 x 440 canvas back out
+	// of it took half a second on an AMD card. It gets the CPU cached memory the
+	// driver uses for READBACK heaps instead, as a custom heap the GPU can copy
+	// from. What we write once and never read is in an UPLOAD heap.
+
+	DX12Surface::Staging * DX12Surface::_allocStaging( SizeI size, bool bReadable )
 	{
 		if( !m_texture || !s_pDevice || DX12Backend::isDeviceLost() )
-			return false;
+			return nullptr;
 
-		D3D12_HEAP_PROPERTIES uploadProps = s_pDevice->GetCustomHeapProperties(0, D3D12_HEAP_TYPE_READBACK);
+		int pitch = _stagingPitch(size.w);
+
+		D3D12_HEAP_PROPERTIES heapProps = {};
+
+		if( bReadable )
+			heapProps = s_pDevice->GetCustomHeapProperties(0, D3D12_HEAP_TYPE_READBACK);
+		else
+			heapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
 
 		D3D12_RESOURCE_DESC bufDesc = {};
 		bufDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-		bufDesc.Width = UINT64(m_pitch) * m_size.h;
+		bufDesc.Width = UINT64(pitch) * size.h;
 		bufDesc.Height = 1;
 		bufDesc.DepthOrArraySize = 1;
 		bufDesc.MipLevels = 1;
@@ -645,41 +621,141 @@ namespace wax
 		// A buffer outside an UPLOAD heap starts out COMMON, and is promoted to a
 		// copy source by itself whenever it is copied from.
 
+		D3D12_RESOURCE_STATES state = bReadable ? D3D12_RESOURCE_STATE_COMMON : D3D12_RESOURCE_STATE_GENERIC_READ;
+
+		Microsoft::WRL::ComPtr<ID3D12Resource> buffer;
 		uint8_t * pMapped = nullptr;
 
-		if( FAILED(s_pDevice->CreateCommittedResource(&uploadProps, D3D12_HEAP_FLAG_NONE, &bufDesc,
-													  D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(m_uploadBuffer.ReleaseAndGetAddressOf()))) ||
-			FAILED(m_uploadBuffer->Map(0, nullptr, (void**) &pMapped)) )
+		if( FAILED(s_pDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufDesc, state, nullptr, IID_PPV_ARGS(buffer.GetAddressOf()))) ||
+			FAILED(buffer->Map(0, nullptr, (void**) &pMapped)) )
 		{
-			m_uploadBuffer = nullptr;
-
 			// A lost device is reported once by DX12Backend, not by every surface.
 
 			if( !DX12Backend::checkDeviceLost() )
-				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create pixel buffer for surface.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for pixels on their way to the texture of a surface.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
-			return false;
+			return nullptr;
 		}
 
-		setObjectName( m_uploadBuffer.Get(), L"upload buffer", this, m_size );
+		setObjectName( buffer.Get(), bReadable ? L"pixel buffer" : L"staging buffer", this, size );
 
-		m_pPixels = pMapped;
-		return true;
+		auto pStaging = new DX12Staging();
+
+		pStaging->buffer = buffer;
+		pStaging->size = size;
+		pStaging->pPixels = pMapped;
+		pStaging->pitch = pitch;
+
+		return pStaging;
+	}
+
+	//____ _pull() _____________________________________________________________
+	//
+	// The copy is recorded by a DX12Backend, see _updatePending(). We hold on to
+	// the buffer until then and the backend from there on, so whoever has the
+	// staging memory can let go of it.
+
+	void DX12Surface::_pull( Staging * pStaging, const RectI& rect, CoordI dest )
+	{
+		if( !m_texture )
+			return;
+
+		auto p = static_cast<DX12Staging*>(pStaging);
+
+		Pull pull;
+
+		pull.buffer = p->buffer;
+		pull.offset = 0;
+		pull.pitch = p->pitch;
+		pull.size = p->size;
+		pull.rect = rect;
+		pull.dest = dest;
+
+		m_pulls.push_back(pull);
+		_updatePending();
+	}
+
+	//____ _dirtyStagingBytes() ________________________________________________
+	//
+	// What m_dirtyRect takes of a buffer shared with other surfaces, where each
+	// starts on a 512 byte boundary (D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT).
+
+	UINT64 DX12Surface::_dirtyStagingBytes() const
+	{
+		if( m_dirtyRect.isEmpty() || !m_pPixels )
+			return 0;
+
+		UINT64 bytes = UINT64(_stagingPitch(m_dirtyRect.w)) * m_dirtyRect.h;
+
+		return (bytes + D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT - 1) & ~UINT64(D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT - 1);
+	}
+
+	//____ _stageDirtyInto() ___________________________________________________
+	//
+	// For DX12Backend, which has all surfaces of a batch staged in one buffer, as
+	// making a buffer takes far longer than filling a small one. Copies what
+	// m_dirtyRect covers of our pixels to the given offset of the buffer, which
+	// is only written to, and has it pulled from there.
+
+	void DX12Surface::_stageDirtyInto( ID3D12Resource * pBuffer, uint8_t * pMapped, UINT64 offset )
+	{
+		Pull pull;
+
+		pull.buffer = pBuffer;
+		pull.offset = offset;
+		pull.pitch = _stagingPitch(m_dirtyRect.w);
+		pull.size = m_dirtyRect.size();
+		pull.rect = RectI(0, 0, m_dirtyRect.w, m_dirtyRect.h);
+		pull.dest = m_dirtyRect.pos();
+
+		_fillStaging( m_dirtyRect, pMapped + offset, pull.pitch );
+
+		m_pulls.push_back(pull);
+		_dirtyStaged();
+	}
+
+	//____ _recordPulls() ______________________________________________________
+	//
+	// Records the copies of what we have had pulled into the given command list.
+	// The texture has to be one that can be copied to there, and whoever calls
+	// keeps the buffers until the GPU has copied.
+
+	void DX12Surface::_recordPulls( ID3D12GraphicsCommandList * pList )
+	{
+		D3D12_TEXTURE_COPY_LOCATION dst = {};
+		dst.pResource = m_texture.Get();
+		dst.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+		dst.SubresourceIndex = 0;
+
+		for( auto& pull : m_pulls )
+		{
+			D3D12_TEXTURE_COPY_LOCATION src = {};
+			src.pResource = pull.buffer.Get();
+			src.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+			src.PlacedFootprint.Offset = pull.offset;
+			src.PlacedFootprint.Footprint.Format = m_dxgiFormat;
+			src.PlacedFootprint.Footprint.Width = pull.size.w;
+			src.PlacedFootprint.Footprint.Height = pull.size.h;
+			src.PlacedFootprint.Footprint.Depth = 1;
+			src.PlacedFootprint.Footprint.RowPitch = pull.pitch;
+
+			D3D12_BOX box = { UINT(pull.rect.x), UINT(pull.rect.y), 0, UINT(pull.rect.x + pull.rect.w), UINT(pull.rect.y + pull.rect.h), 1 };
+
+			pList->CopyTextureRegion(&dst, pull.dest.x, pull.dest.y, 0, &src, &box);
+		}
 	}
 
 	//____ _dropDeviceObjects() ________________________________________________
 	//
-	// Lets go of everything _createDeviceObjects() made. Our pixels are in
-	// m_pFallbackPixels from here on, if anywhere. Releasing a resource unmaps it,
-	// which on a lost device is all that can be done with it anyway.
+	// Lets go of everything _createDeviceObjects() made, and of what was on its way
+	// to the texture.
 
 	void DX12Surface::_dropDeviceObjects()
 	{
 		_forgetUpload();
 
+		m_pulls.clear();
 		m_texture = nullptr;
-		m_uploadBuffer = nullptr;
-		m_readbackBuffer = nullptr;
 		DX12BufferPool::free(m_paletteBuffer);
 		m_srvHeap = nullptr;
 		m_rtvHeap = nullptr;
@@ -689,7 +765,6 @@ namespace wax
 		m_resourceState = D3D12_RESOURCE_STATE_COMMON;
 		m_bMipmapStale = false;
 
-		m_pPixels = m_pFallbackPixels;
 		m_pPaletteColors = nullptr;
 
 		_updatePending();				// Nothing to upload to any more.
@@ -697,83 +772,43 @@ namespace wax
 
 	//____ _evacuate() _________________________________________________________
 	//
-	// Moves our pixels into plain memory and lets go of the device. If the device
-	// still works, whatever was rendered into us is read back first. If it is
-	// lost, that went with it, and the pixels we last had will have to do. We are
-	// then marked as having lost our content, see Surface::isContentLost(), so
-	// whoever rendered into us knows to do it again.
+	// Lets go of the device. Our pixels are in plain memory and stay as they are.
+	// A canvas or a surface with restorer has none, see GpuSurface::_leaveDevice():
+	// what was rendered into a canvas without restorer is read back if the device
+	// still works. Otherwise the content went with the texture, and is put back by
+	// the restorer when we are on a device again, see migrateAll(). Without one the
+	// canvas is marked as having lost its content, see Surface::isContentLost(), so
+	// whoever rendered into it knows to do it again.
 	//
-	// Returns false if the pixels themselves were lost, which only happens if
-	// the mapping of our upload buffer went with the device.
-	//
-	// Any PixelBuffer handed out before this points into memory that is gone.
-	// That is why this only happens between frames, from DX12Backend::setDevice().
+	// A PixelBuffer of such a surface handed out before this is of the device we leave.
+	// Its memory stays, but what is written to it takes a copy more to get to the
+	// texture. That is why this only happens between frames, from
+	// DX12Backend::setDevice().
 
-	bool DX12Surface::_evacuate()
+	void DX12Surface::_evacuate()
 	{
 		if( !m_texture )
-			return true;						// Nothing on the device, our pixels are already ours.
+			return;						// Nothing on the device.
 
-		// A canvas without a pixel buffer gets one to read back into, if the device still
-		// works. If not, what was rendered into it is gone, and it has no pixels to lose.
-
-		bool bHadPixels = (m_pPixels != nullptr);
-
-		_needPixels();
-
-		if( !DX12Backend::isDeviceLost() )
-			_syncPixels();
-
-		// Still set if the device is lost, or the read back didn't happen. What
-		// was rendered into us since we last read back is gone.
-
-		if( m_bBufferNeedsSync )
-			m_bContentLost = true;
-
-		size_t nBytes = size_t(m_pitch) * m_size.h;
-
-		m_pFallbackPixels = new uint8_t[nBytes];
-
-		bool bCopied = m_pPixels && _copyFromMapping( m_pFallbackPixels, m_pPixels, nBytes );
-
-		if( !bCopied )
-		{
-			memset( m_pFallbackPixels, 0, nBytes );
-			m_bContentLost = true;
-		}
-
+		_leaveDevice( !DX12Backend::isDeviceLost() );
 		_dropDeviceObjects();
-
-		m_bBufferNeedsSync = false;
-		m_dirtyRect = RectI(0, 0, m_size.w, m_size.h);		// Uploaded once we are on a device again, see _migrate().
-		_updatePending();
-		return bCopied || !bHadPixels;
 	}
 
 	//____ _migrate() __________________________________________________________
 	//
 	// Puts us back on the device set since we were evacuated, or onto the first
-	// one we get if we were created while there was none. Surfaces D3D12 still
-	// won't take stay in plain memory.
+	// one we get if we were created while there was none. Our pixels are sent to
+	// the new texture, all of them. Surfaces D3D12 still won't take stay without.
 
 	void DX12Surface::_migrate()
 	{
-		if( m_texture || !m_pFallbackPixels )
+		if( m_texture )
 			return;
 
-		if( !_createDeviceObjects(true) )
+		if( !_createDeviceObjects() )
 			return;
 
-		memcpy( m_pPixels, m_pFallbackPixels, size_t(m_pitch) * m_size.h );
-
-		delete [] m_pFallbackPixels;
-		m_pFallbackPixels = nullptr;
-
-		// Everything goes to the new texture.
-
-		m_bBufferNeedsSync = false;
-		m_dirtyRect = RectI(0, 0, m_size.w, m_size.h);
-		_updatePending();
+		_enterDevice();
 	}
 
 	//____ _createPaletteBuffer() ______________________________________________
@@ -805,15 +840,13 @@ namespace wax
 		_unlink();
 
 		// Off the list of pending uploads, and out of reach of a backend that has
-		// recorded one of ours. That backend holds texture and upload buffer until
-		// the GPU is done with them.
+		// recorded one of ours. That backend holds the texture and what it copies
+		// from until the GPU is done with them.
 
 		_forgetUpload();
+		m_pulls.clear();
 		m_dirtyRect = RectI();
 		_updatePending();
-
-		if( m_uploadBuffer && m_pPixels && m_pPixels != m_pFallbackPixels )
-			m_uploadBuffer->Unmap(0, nullptr);
 
 		DX12BufferPool::free(m_paletteBuffer);
 	}
@@ -825,81 +858,26 @@ namespace wax
 		return TYPEINFO;
 	}
 
-	//____ _uploadSource() ____________________________________________________
-	//
-	// Where lines y1 to y2 of our pixels are copied to the texture from. Surfaces
-	// with alpha keep premultiplied colors in the texture, so that blending and
-	// filtering work on premultiplied colors, see DX12Backend::_createPipeline().
-	// Our pixels are the ones handed out, so unless all opaque or transparent black
-	// they are premultiplied into a buffer of their own, returned in temp, which the caller
-	// keeps until the GPU has copied from it. Otherwise it is our upload buffer.
-
-	ID3D12Resource * DX12Surface::_uploadSource( int y1, int y2, Microsoft::WRL::ComPtr<ID3D12Resource>& temp, UINT64& sourceOffset )
-	{
-		ID3D12Resource * pSource = m_uploadBuffer.Get();
-		sourceOffset = UINT64(y1) * m_pitch;
-
-		temp = nullptr;
-
-		RectI lines( 0, y1, m_size.w, y2 - y1 );
-
-		if( _needsPremultiplying(lines) )
-		{
-			size_t nBytes = size_t(m_pitch) * (y2 - y1);
-
-			D3D12_HEAP_PROPERTIES uploadProps = {};
-			uploadProps.Type = D3D12_HEAP_TYPE_UPLOAD;
-
-			D3D12_RESOURCE_DESC bufDesc = {};
-			bufDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-			bufDesc.Width = nBytes;
-			bufDesc.Height = 1;
-			bufDesc.DepthOrArraySize = 1;
-			bufDesc.MipLevels = 1;
-			bufDesc.Format = DXGI_FORMAT_UNKNOWN;
-			bufDesc.SampleDesc = { 1, 0 };
-			bufDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
-			uint8_t * pDest = nullptr;
-
-			if( FAILED(s_pDevice->CreateCommittedResource(&uploadProps, D3D12_HEAP_FLAG_NONE, &bufDesc,
-														  D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(temp.GetAddressOf()))) ||
-				FAILED(temp->Map(0, nullptr, (void**) &pDest)) )
-			{
-				if( !DX12Backend::checkDeviceLost() )
-					Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for premultiplied pixels, colors of transparent pixels will be off.",
-						this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			}
-			else
-			{
-				// Written once and never read, as the upload heap is write-combined.
-
-				_premultiply( lines, pDest, m_pitch );
-				temp->Unmap(0, nullptr);
-
-				pSource = temp.Get();
-				sourceOffset = 0;
-			}
-		}
-
-		return pSource;
-	}
-
 	//____ _uploadNowAndWait() _________________________________________________
 	//
-	// Uploads whatever has changed on the copy queue and waits for it. Only for
-	// _readBack(), which must have our pixels in the texture before it
-	// reads the texture back and is about to wait anyway. Everything else goes
-	// through DX12Backend, see _updatePending().
+	// Sends what we have for the texture on the copy queue and waits for it. Only
+	// for _readBack(), which must have it in the texture before it reads the
+	// texture back and is about to wait anyway. Everything else goes through
+	// DX12Backend, see _updatePending().
 
 	void DX12Surface::_uploadNowAndWait()
 	{
-		if( m_dirtyRect.isEmpty() || !m_texture || !s_copyList )
+		if( !m_texture || !s_copyList )
 			return;
 
-		// The texture is gone with the device. Our pixels stay as they are.
+		// The texture is gone with the device.
 
 		if( DX12Backend::isDeviceLost() )
+			return;
+
+		_stageDirty();				// In a buffer of its own.
+
+		if( m_pulls.empty() )
 			return;
 
 		// The copy queue can only touch a texture that rests in COMMON state.
@@ -913,37 +891,10 @@ namespace wax
 			return;
 		}
 
-		// Copy full lines, so the source offset stays aligned.
-
-		int y1 = m_dirtyRect.y;
-		int y2 = m_dirtyRect.y + m_dirtyRect.h;
-
-		// Premultiplied in a buffer of its own if need be, which goes when the copy
-		// is done, which we wait for.
-
-		Microsoft::WRL::ComPtr<ID3D12Resource> premultiplied;
-		UINT64 sourceOffset;
-		ID3D12Resource * pSource = _uploadSource( y1, y2, premultiplied, sourceOffset );
-
-		D3D12_TEXTURE_COPY_LOCATION dst = {};
-		dst.pResource = m_texture.Get();
-		dst.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-		dst.SubresourceIndex = 0;
-
-		D3D12_TEXTURE_COPY_LOCATION src = {};
-		src.pResource = pSource;
-		src.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-		src.PlacedFootprint.Offset = sourceOffset;
-		src.PlacedFootprint.Footprint.Format = m_dxgiFormat;
-		src.PlacedFootprint.Footprint.Width = m_size.w;
-		src.PlacedFootprint.Footprint.Height = y2 - y1;
-		src.PlacedFootprint.Footprint.Depth = 1;
-		src.PlacedFootprint.Footprint.RowPitch = m_pitch;
-
 		s_copyAllocator->Reset();
 		s_copyList->Reset(s_copyAllocator.Get(), nullptr);
 
-		s_copyList->CopyTextureRegion(&dst, 0, y1, 0, &src, nullptr);
+		_recordPulls( s_copyList.Get() );
 
 		s_copyList->Close();
 
@@ -960,6 +911,7 @@ namespace wax
 		s_copyQueue->Signal(s_copyFence.Get(), s_copyFenceValue);
 		_waitForCopyFence();
 
+		m_pulls.clear();			// The GPU has copied from them.
 		_uploaded();
 	}
 
@@ -981,57 +933,20 @@ namespace wax
 		return handle;
 	}
 
-	//____ _initReadbackBuffer() _______________________________________________
-
-	bool DX12Surface::_initReadbackBuffer()
-	{
-		if( m_readbackBuffer )
-			return true;
-
-		if( !s_pDevice )
-			return false;
-
-		D3D12_HEAP_PROPERTIES heapProps = {};
-		heapProps.Type = D3D12_HEAP_TYPE_READBACK;
-
-		D3D12_RESOURCE_DESC bufDesc = {};
-		bufDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-		bufDesc.Width = UINT64(m_pitch) * m_size.h;
-		bufDesc.Height = 1;
-		bufDesc.DepthOrArraySize = 1;
-		bufDesc.MipLevels = 1;
-		bufDesc.Format = DXGI_FORMAT_UNKNOWN;
-		bufDesc.SampleDesc = { 1, 0 };
-		bufDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
-		if( FAILED(s_pDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufDesc,
-													  D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(m_readbackBuffer.GetAddressOf()))) )
-		{
-			if( !DX12Backend::checkDeviceLost() )
-				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create readback buffer for canvas surface.",
-					this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			return false;
-		}
-
-		setObjectName( m_readbackBuffer.Get(), L"readback buffer", this, m_size );
-
-		return true;
-	}
-
 	//____ _readBack() _________________________________________________________
 	//
-	// Copies our texture into our pixel buffer. This stalls until the GPU is
-	// done, but only happens when someone actually asks to read a canvas surface.
+	// Copies a rectangle of our texture to pDest, by a buffer made for it. This
+	// stalls until the GPU is done, but only happens when someone asks for the
+	// pixels of a surface that has none of its own.
 
-	bool DX12Surface::_readBack()
+	bool DX12Surface::_readBack( const RectI& rect, uint8_t * pDest, int destPitch )
 	{
-		// What was rendered went with the device. A readback would only fill our
-		// pixels with garbage, so the last ones we had will have to do.
+		// What was rendered went with the device.
 
 		if( DX12Backend::isDeviceLost() )
 			return false;
 
-		if( !m_texture || !s_copyList || !_initReadbackBuffer() )
+		if( !m_texture || !s_pDevice || !s_copyList )
 			return false;
 
 		// Same rule as for uploads: the copy queue needs the texture at rest.
@@ -1044,22 +959,43 @@ namespace wax
 		}
 
 		// Rendering into us may still be sitting in a DX12Backend's command list,
-		// unsubmitted. It has to be on its way and finished before we look. So does
-		// an upload of ours a backend has recorded, since we are about to write the
-		// pixels it copies from.
+		// unsubmitted. It has to be on its way and finished before we look.
 		//
-		// _uploadNowAndWait() does that itself when it has something to upload, and
-		// its pixels are the newer ones, so they go in on top of what was rendered.
+		// _uploadNowAndWait() does that itself when it has something to upload,
+		// which is newer than what was rendered, so it goes in on top.
 
-		if( m_dirtyRect.isEmpty() )
-		{
+		if( m_pulls.empty() && _dirtyStagingBytes() == 0 )
 			DX12Backend::waitForCompletionOfAll();
-		}
 		else
 			_uploadNowAndWait();
 
-		m_uploadFence = nullptr;			// Waited for above.
-		m_uploadFenceValue = 0;
+		int pitch = _stagingPitch(rect.w);
+
+		D3D12_HEAP_PROPERTIES heapProps = {};
+		heapProps.Type = D3D12_HEAP_TYPE_READBACK;
+
+		D3D12_RESOURCE_DESC bufDesc = {};
+		bufDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+		bufDesc.Width = UINT64(pitch) * rect.h;
+		bufDesc.Height = 1;
+		bufDesc.DepthOrArraySize = 1;
+		bufDesc.MipLevels = 1;
+		bufDesc.Format = DXGI_FORMAT_UNKNOWN;
+		bufDesc.SampleDesc = { 1, 0 };
+		bufDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+		Microsoft::WRL::ComPtr<ID3D12Resource> buffer;
+
+		if( FAILED(s_pDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufDesc,
+													  D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(buffer.GetAddressOf()))) )
+		{
+			if( !DX12Backend::checkDeviceLost() )
+				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for reading back a surface.",
+					this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return false;
+		}
+
+		setObjectName( buffer.Get(), L"readback buffer", this, rect.size() );
 
 		D3D12_TEXTURE_COPY_LOCATION src = {};
 		src.pResource = m_texture.Get();
@@ -1067,19 +1003,21 @@ namespace wax
 		src.SubresourceIndex = 0;
 
 		D3D12_TEXTURE_COPY_LOCATION dst = {};
-		dst.pResource = m_readbackBuffer.Get();
+		dst.pResource = buffer.Get();
 		dst.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
 		dst.PlacedFootprint.Offset = 0;
 		dst.PlacedFootprint.Footprint.Format = m_dxgiFormat;
-		dst.PlacedFootprint.Footprint.Width = m_size.w;
-		dst.PlacedFootprint.Footprint.Height = m_size.h;
+		dst.PlacedFootprint.Footprint.Width = rect.w;
+		dst.PlacedFootprint.Footprint.Height = rect.h;
 		dst.PlacedFootprint.Footprint.Depth = 1;
-		dst.PlacedFootprint.Footprint.RowPitch = m_pitch;
+		dst.PlacedFootprint.Footprint.RowPitch = pitch;
+
+		D3D12_BOX box = { UINT(rect.x), UINT(rect.y), 0, UINT(rect.x + rect.w), UINT(rect.y + rect.h), 1 };
 
 		s_copyAllocator->Reset();
 		s_copyList->Reset(s_copyAllocator.Get(), nullptr);
 
-		s_copyList->CopyTextureRegion(&dst, 0, 0, 0, &src, nullptr);
+		s_copyList->CopyTextureRegion(&dst, 0, 0, 0, &src, &box);
 
 		s_copyList->Close();
 
@@ -1090,21 +1028,22 @@ namespace wax
 		s_copyQueue->Signal(s_copyFence.Get(), s_copyFenceValue);
 		_waitForCopyFence();
 
-		// Move it into the buffer our PixelBuffers point into. Both use the same
-		// padded pitch, so this is one straight copy.
-
-		size_t nBytes = size_t(m_pitch) * m_size.h;
-
-		uint8_t * pSrc = nullptr;
-		D3D12_RANGE readRange = { 0, nBytes };
-
-		if( FAILED(m_readbackBuffer->Map(0, &readRange, (void**) &pSrc)) )
+		if( DX12Backend::isDeviceLost() )
 			return false;
 
-		memcpy( m_pPixels, pSrc, nBytes );
+		uint8_t * pSrc = nullptr;
+		D3D12_RANGE readRange = { 0, SIZE_T(pitch) * rect.h };
+
+		if( FAILED(buffer->Map(0, &readRange, (void**) &pSrc)) )
+			return false;
+
+		int lineBytes = rect.w * m_pixelBytes;
+
+		for( int y = 0; y < rect.h; y++ )
+			memcpy( pDest + y * destPitch, pSrc + y * pitch, lineBytes );
 
 		D3D12_RANGE writtenRange = { 0, 0 };		// We only read.
-		m_readbackBuffer->Unmap(0, &writtenRange);
+		buffer->Unmap(0, &writtenRange);
 
 		return true;
 	}

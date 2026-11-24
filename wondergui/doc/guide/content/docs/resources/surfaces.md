@@ -27,7 +27,6 @@ You can get a callback when a surface is modified by adding an Observer.
 | --------------- | ------------------------------------------------------------ |
 | baggage         | Any object associated with the surface. Can be retrieved using baggage(). |
 | bigEndian       | Byte order of the pixels. Defaults to the byte order of the system. |
-| buffered        | Set to true if a copy in local system memory should be kept to allow for quick reading and writing of pixel data. Might affect performance depending on surface subtype. Defaults to false. |
 | canvas          | Must be set to true if surface might be used as canvas by the GfxDevice. This might affect performance. Defaults to false. |
 | colorSpace      | Color space of the pixels, sRGB or Linear. Defaults to sRGB. Colors given to WonderGUI are always sRGB, while blending always is done in linear space. |
 | fillColor       | The color a surface created without pixels is filled with. Defaults to HiColor::Undefined, in which case nothing is filled in and the content of the surface is unspecified until you have drawn or written to all of it. Ignored when pixels are supplied. |
@@ -39,12 +38,52 @@ You can get a callback when a surface is modified by adding an Observer.
 | format          | The pixel format for the surface. Default format is decided by the surface subtype but ARGB_8 is typical. |
 | identity        | An integer value that can be set to whatever and used to identify the surface at a later time. Defaults to 0. |
 | mipmap          | Set to true in order to enable mipmapping of the surface. Mipmapping allows for far better down-scaling but takes almost 50% more memory and slows down modifications of the surface. Defaults to false. |
+| restorer        | A function that puts the content of the surface back when a GPU has lost it, which lets the surface go without a copy of its pixels in system memory. See [below](#keeping-the-pixels-and-getting-them-back). Defaults to nullptr, in which case the pixels are kept. |
 | sampleMethod    | Sample method used when scaling graphics. Set to Nearest or Bilinear. Nearest gives blocky scaling with no interpolation between pixels but is way faster when using software rendering. Defaults to Bilinear on graphics subsystems where this doesn't slow down operations. |
 | scale           | Scale of the surface. Defaults to 64.                        |
 | size            | Size in pixels of the surface. Bitplane based formats must have a width that is a multiple of 16 pixels and some graphics subsystems (and hardware platforms) might place other limitations. |
 | tiling          | Must be set to true if GfxDevice::tile() operations should be used to blit graphics from the surface. Please not that some surface subtypes like SoftSurface puts limitations on the size of the surface when tiling. Defaults to false. |
 
 
+
+## Keeping the pixels and getting them back
+
+A surface of a graphics backend with a GPU (OpenGL, DirectX 12, Metal, Vulkan) has its pixels in a texture on the GPU. The texture can be lost, as when the graphics driver is restarted or updated, and reading it takes waiting for the GPU. So such a surface also keeps its pixels in system memory, *unless it is promised them back*:
+
+| Surface                      | Kept in system memory                         | When the texture is lost                            | Reading pixels              |
+| ---------------------------- | --------------------------------------------- | --------------------------------------------------- | --------------------------- |
+| Without restorer             | All pixels                                    | Sent again, nothing for you to do                   | At once                     |
+| With restorer                | The alpha channel, if not all of it is opaque | The restorer is called                              | Read back, waits for the GPU |
+| Alpha_8 and palette based    | All pixels, restorer or not                   | Sent again, nothing for you to do                   | At once                     |
+| Canvas                       | Nothing                                       | The restorer is called if there is one, see below   | Read back, waits for the GPU |
+
+So a surface in ARGB_8 takes 8 bytes for each pixel without restorer, 5 with one (4 if it is opaque) and 4 as a canvas.
+
+The rule of thumb: give a restorer to surfaces that you only write, such as graphics loaded from a file that can be loaded again or anything that is replaced all the time, and none to surfaces that you read.
+
+### The restorer
+
+The restorer is a pointer to a function that takes the surface and returns a bool. It is called between frames, when the GPU device has been replaced, and writes the content the surface is to have, using any of the methods of the surface:
+
+```c++
+bool restoreMyLogo( Surface * pSurface )
+{
+	auto pOriginal = loadMyLogoIntoSoftSurface();
+	return pSurface->copy( {0,0}, pOriginal );
+}
+
+auto pLogo = pFactory->createSurface({ .restorer = restoreMyLogo, .size = {256,64} }, pPixels );
+```
+
+The surface is all the function gets, so use its identity or baggage to tell surfaces sharing a restorer apart.
+
+* Return true when the content is back. It has to be what the surface held when it was lost, which isn't what it was created with if you have changed it since.
+* Return false when you did nothing. The surface is then transparent black and its isContentLost() returns true until all of it has been written. Use this when restoring takes time you don't want to spend in one go, and write the pixels when you have them.
+* Surface::declineRestore is a restorer that just returns false, for surfaces where everything is replaced all the time anyway, such as one showing video.
+
+A canvas without restorer says isContentLost() when what was rendered into it is lost, and whoever rendered into it needs to do that again. The widgets of WonderGUI that keep content in canvases do so themselves.
+
+Backends that have no GPU ignore the restorer, as they have nothing to lose. Of those with a GPU only the DirectX 12 backend can currently replace its device, but a restorer saves memory on all of them.
 
 ## Pixel formats
 

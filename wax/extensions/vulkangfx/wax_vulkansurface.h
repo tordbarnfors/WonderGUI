@@ -26,6 +26,9 @@
 #include <wax_gpusurface.h>
 #include <wax_vulkancontext.h>
 
+#include <memory>
+#include <vector>
+
 namespace wax
 {
 
@@ -37,8 +40,9 @@ namespace wax
 	/**
 	 * @brief Surface for VulkanBackend.
 	 *
-	 * Built on GpuSurface, which keeps our pixels and knows what the texture lacks of them. They
-	 * are in a buffer the CPU can read and write, and copied to the texture when it is used.
+	 * Built on GpuSurface, which has our pixels, if we keep any, and knows what the texture lacks
+	 * of them. What is to be sent is copied to the texture when it is used, by buffers made for
+	 * it, in the command buffer of the backend that uses it.
 	 *
 	 * Formats, as DX12Surface has them: ARGB_8 is B8G8R8A8, XRGB_8 and the 565 formats (widened
 	 * to XRGB_8) B8G8R8A8 read with alpha 1, Alpha_8 is R8 read as alpha, and palette based
@@ -92,10 +96,12 @@ namespace wax
 		VkImageLayout			layout() const { return m_layout; }
 		void					setLayout( VkImageLayout layout ) { m_layout = layout; }
 
-		// Sends what the CPU has written since the last call to the texture, if anything. Called
-		// by VulkanBackend before the surface is drawn from or into.
+		// For VulkanBackend, before the surface is drawn from or into: hasUploads() says if the
+		// CPU has written something the texture lacks, and recordUploads() records the copies of
+		// it into a command buffer, outside a render pass.
 
-		void					syncTexture();
+		bool					hasUploads() const { return !m_pulls.empty() || (m_pPixels && !m_dirtyRect.isEmpty()); }
+		void					recordUploads( VkCommandBuffer cmd );
 
 	protected:
 		VulkanSurface(const Blueprint& blueprint, const PixelSource& source);
@@ -104,14 +110,42 @@ namespace wax
 		// What GpuSurface has us do.
 
 		PixelFormat		_setTextureFormat( PixelFormat format ) override;	// Vulkan has no 565 we can count on, they are widened to XRGB_8.
-		bool			_createDeviceObjects( bool bPixelBuffer ) override;	// Image, views, pixel buffer and palette buffer. All or none.
-		bool			_createPixelBuffer() override;
-		bool			_readBack() override;
+		bool			_createDeviceObjects() override;					// Image, views and palette buffer. All or none.
+		Staging *		_allocStaging( SizeI size, bool bReadable ) override;
+		void			_pull( Staging * pStaging, const RectI& rect, CoordI dest ) override;
+		bool			_readBack( const RectI& rect, uint8_t * pDest, int destPitch ) override;
 
 		void			_dropDeviceObjects();
 
+		// Staging memory is a buffer of its own, which lives until the GPU is done with the
+		// last copy from it.
+
+		struct StagingBuffer
+		{
+			~StagingBuffer();
+
+			VulkanContext::Buffer	buffer;
+		};
+
+		struct VulkanStaging : public Staging
+		{
+			std::shared_ptr<StagingBuffer>	pBuffer;
+		};
+
+		// What is to be copied to the texture.
+
+		struct Pull
+		{
+			std::shared_ptr<StagingBuffer>	pBuffer;
+			VkDeviceSize	offset;				// Of the first pixel in the buffer.
+			int				pitch;
+			SizeI			size;
+			CoordI			dest;				// Where in the texture.
+		};
+
+		std::vector<Pull>		m_pulls;
+
 		VulkanContext::Image	m_image;
-		VulkanContext::Buffer	m_pixels;			// Our pixels, read and written by the CPU. A canvas may be without, see GpuSurface::_needPixels().
 		VulkanContext::Buffer	m_palette;			// Palette based surfaces only. Capacity, then the colors.
 
 		VkImageView		m_sampleView = VK_NULL_HANDLE;

@@ -132,7 +132,6 @@ namespace wg
 	void PluginSurfaceFactory::_convertBlueprint(wax_surfaceBP* pDest, const Surface::Blueprint* pSource)
 	{
 		pDest->byteOrder = pSource->bigEndian ? WAX_BYTEORDER_BIG_ENDIAN : WAX_BYTEORDER_LITTLE_ENDIAN;
-		pDest->buffered = pSource->buffered;
 		pDest->canvas = pSource->canvas;
 		pDest->colorSpace = (wax_colorSpace)pSource->colorSpace;
 		pDest->useFillColor = !pSource->fillColor.isUndefined();
@@ -147,6 +146,11 @@ namespace wg
 		pDest->format = (wax_pixelFormat)pSource->format;
 		pDest->identity = pSource->identity;
 		pDest->mipmap = pSource->mipmap;
+
+		// A restorer of the plugin would be called by the host with the surface of the host,
+		// which is no object of ours, so it isn't passed on. See KNOWN_ISSUES.md.
+
+		pDest->restorer = nullptr;
 		pDest->sampleMethod = (wax_sampleMethod)pSource->sampleMethod;
 		pDest->scale = pSource->scale;
 		pDest->size.w = pSource->size.w;

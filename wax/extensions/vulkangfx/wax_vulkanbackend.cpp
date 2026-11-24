@@ -736,11 +736,9 @@ namespace wax
 
 		if (pSurface)
 		{
-			// Gets any pixels the CPU wrote into the texture before we render over it, and marks
-			// our copy of them as the older one from here on. That can submit what we have
-			// recorded and continue in a new command buffer.
+			// Gets any pixels the CPU wrote into the texture before we render over it.
 
-			pSurface->syncTexture();
+			_recordUploads(pSurface);
 			pSurface->notifyRendered();
 
 			if (!m_bRecording)
@@ -1090,7 +1088,28 @@ namespace wax
 
 	void VulkanBackend::_prepareBlitSource( Surface * pSurface )
 	{
-		static_cast<VulkanSurface*>(pSurface)->syncTexture();
+		_recordUploads(static_cast<VulkanSurface*>(pSurface));
+	}
+
+	//____ _recordUploads() ______________________________________________________
+	//
+	// Has what the CPU has written to a surface copied to its texture, in our command buffer, so
+	// in front of what we record from here on and with no wait. Copies can't be inside a render
+	// pass, which the next draw begins again.
+	//
+	// Recorded but unsubmitted work of other backends might read the texture. It goes in front
+	// of our copies, as it would have had it been submitted already.
+
+	void VulkanBackend::_recordUploads( VulkanSurface * pSurface )
+	{
+		if (!m_bRecording || !pSurface->hasUploads())
+			return;
+
+		_endRendering();
+
+		VulkanContext::flushBackends(this);
+
+		pSurface->recordUploads(m_cmd);
 	}
 
 	//____ _bindBlitTexture() ____________________________________________________

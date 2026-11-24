@@ -184,6 +184,13 @@ namespace wax
 		}
 	}
 
+	//____ declineRestore() ___________________________________________________
+
+	bool Surface::declineRestore( Surface * pSurface )
+	{
+		return false;
+	}
+
 	//____ blueprint() ________________________________________________________
 
 	Surface::Blueprint Surface::blueprint() const
@@ -192,7 +199,6 @@ namespace wax
 
 		bp.baggage = m_pBaggage;
 		bp.bigEndian = m_bBigEndian;
-		bp.buffered = m_bBuffered;
 		bp.canvas = m_bCanvas;
 		bp.colorSpace = m_colorSpace;
 		bp.palette = m_pPalette;
@@ -200,6 +206,7 @@ namespace wax
 		bp.format = m_pixelFormat;
 		bp.identity = m_id;
 		bp.mipmap = m_bMipmapped;
+		bp.restorer = m_pRestorer;
 		bp.sampleMethod = m_sampleMethod;
 		bp.scale = m_scale;
 		bp.size = m_size;

@@ -228,8 +228,16 @@ MetalSurface sends pixels to its texture when the surface is used, in a command 
 ahead of the session, since e4e1e9b5. gfxdevicetester gives the same results as before, but it
 fills most of its surfaces once. An application that writes to surfaces every frame hasn't been
 run with it: widgetbench was only started and left on its first test, with nobody at it.
-MetalBackend calling `notifyRendered()` when it binds a canvas, in place of marking the canvases
-of a session when it ends, was changed after that and has not been compiled.
+
+### VulkanSurface and MetalSurface on staging memory are not compiled
+
+Both were rewritten with GpuSurface on 2026-11-24, see "GPU surfaces: staging and plain memory" in
+ROADMAP.md, on Windows, where neither builds. VulkanBackend now records the uploads of a surface
+in its own command buffer in the middle of a session, which nothing has run. GpuSurface has
+changed under them since, for surfaces with a restorer, and `unload()`, `reload()` and
+`isLoaded()` were taken out of MetalSurface, see "GPU surfaces: pixels kept once" there. To run:
+gfxdevicetester, where "Restorer", "Rectangles" and "WriteAllRestorer" of ReadbackTests and
+SurfaceFillTests read and write surfaces without pixels of their own.
 
 ## Graphics
 
@@ -271,36 +279,28 @@ Few pixels each, far off. Several are of nearest sampling by their names, so a g
 texel D3D12 and Metal pick at the border between two, where GL and Vulkan pick the other. Not
 looked into.
 
-### GPU surfaces keep their pixels twice, but for GlSurface
+### Surfaces of a plugin can't have a restorer, nor say that their content is lost
 
-DX12Surface, VulkanSurface and MetalSurface have the pixels of a surface in memory the CPU
-reads and writes besides the texture, whatever `buffered` of the Blueprint says, so a surface
-takes twice its pixels. Only a canvas that isn't buffered is without, until its pixels are asked
-for. GlSurface keeps none unless `buffered`, palette based or `Alpha_8`, and an alpha map of a
-byte per pixel for `alpha()` instead. So what `buffered` does, what a surface costs and what
-`allocPixelBuffer()` and `pushPixels()` cost depend on the backend. See "GPU surfaces on
-GpuSurface" in ROADMAP.md, and "GPU surfaces: pixels kept once" there for what is planned.
+`PluginSurfaceFactory` leaves the restorer of a Blueprint out when it has the host create the
+surface, so surfaces of a plugin keep their pixels on a GPU backend, as those without restorer
+do. The host would call the restorer with its own surface, which is no object of the plugin, so
+it takes a function of the plugin in between that finds the PluginSurface. `isContentLost()` of
+a PluginSurface is always false, as it isn't asked of the host: `wax_surfaceIsContentLost()` is
+in the C API but not in the calls a plugin gets. That matters for canvases of a plugin, which
+are cleared when DX12Backend loses its device.
 
-`GpuSurface::_setup()` in `wax/source/wax_gpusurface.cpp`, `wax/extensions/openglgfx/wax_glsurface.cpp`
+`PluginSurfaceFactory::_convertBlueprint()` in `wondergui/extensions/plugin/wg_pluginsurfacefactory.cpp`,
+`wg_surface_calls` in `wg_plugininterface.h`
 
-### GlSurface: reading part of a surface fails unless it keeps its pixels
-
-`pushPixels()` with a rectangle smaller than the surface returns false for a GlSurface without
-pixels of its own (not `buffered`, palette based or `Alpha_8`), as `glGetTexImage()` only reads a
-whole texture. The PixelBuffer is then left with whatever its memory held. Reading through a
-framebuffer would do it, which is part of "GPU surfaces: pixels kept once" in ROADMAP.md.
-
-`GlSurface::pushPixels()` in `wax/extensions/openglgfx/wax_glsurface.cpp`
-
-### MetalSurface: pixels asked for during a session miss what it rendered, and stay that way
+### MetalSurface: pixels asked for during a session miss what it rendered
 
 MetalBackend marks a canvas as rendered into when it binds it, as DX12Backend and VulkanBackend
 do, but what it renders isn't in the texture until its command buffer is committed, when the
-session ends. `pushPixels()`, `allocPixelBuffer()` on a canvas without pixel buffer or `alpha()`
-between the two reads the texture back as it was and takes the mark away, so the pixels stay
-without what the session rendered, also when asked for again afterwards, until the surface is
-rendered into the next time. DX12Surface and VulkanSurface have every backend submit what it has
-recorded before they read back, which MetalSurface has no way to ask for.
+session ends. `pushPixels()` between the two reads the texture back as it was. So does `alpha()`,
+and its alpha map then counts as up to date, so `alpha()` stays without what the session rendered
+until the surface is rendered into the next time. DX12Surface and VulkanSurface have every
+backend submit what it has recorded before they read back, which MetalSurface has no way to ask
+for.
 
 It can't happen through a device: DeviceGen2 opens and closes the session of a canvas update
 inside the call that ends it (`_doFlattenLayers()`), so nothing of the caller runs in between,
@@ -308,18 +308,7 @@ also with nested canvas updates. It takes code that drives the backend itself an
 between `beginSession()` and `endSession()`. The texture is right all along, so drawing from the
 surface is.
 
-`MetalBackend::_bindCanvas()`, `MetalSurface::_readBack()`
-
-### VulkanBackend stalls when pixels of a surface are uploaded
-
-VulkanSurface submits what every backend has recorded and waits for the GPU before and after
-copying pixels to a texture. Fine for surfaces filled while loading, slow for one updated every
-frame. DX12Backend records the uploads into its own command list instead, see
-`DX12Backend::submitUploads()`. Reading back a surface that has pixels to upload waits twice, once
-for the upload and once for the copy back, where one command buffer with both would wait once.
-Uploads that don't wait are part of "GPU surfaces: pixels kept once" in ROADMAP.md.
-
-`syncTexture()` and `_readBack()` in `wax_vulkansurface.cpp`
+`MetalBackend::_bindCanvas()`, `MetalSurface::_readBack()`, `GpuSurface::_readAlphaMap()`
 
 ### DX12Backend: canvas layers take 1.5-3 times as long as on GlBackend
 
@@ -379,13 +368,13 @@ CMake warns about it when a DX12 build is configured, if it finds a Python, and
 
 `wax/extensions/dx12gfx/compile_shaders.py`
 
-### DX12Surface: a small surface takes at least 128 KB
+### DX12Surface: a small surface takes at least 64 KB
 
-The texture of a DX12Surface and the buffer with its pixels are a committed resource each, which
-D3D12 makes at least 64 KB, and there are one or two descriptor heaps besides. A 32x32 icon has 4 KB of
-pixels. A canvas that isn't buffered has no pixel buffer until its pixels are asked for, so half. Edgemaps, Warpmaps and palettes had the same and get their buffers from DX12BufferPool
-since, see ROADMAP.md, but that is for buffers that are only written: the pixels are read by the
-CPU, so they would need blocks of cached memory, and textures a heap to be placed in.
+The texture of a DX12Surface is a committed resource, which D3D12 makes at least 64 KB, and there
+are one or two descriptor heaps besides. A 32x32 icon has 4 KB of pixels. Its pixels in plain
+memory take what they are since 2026-11-24, where they were a second committed resource. Edgemaps,
+Warpmaps and palettes get their buffers from DX12BufferPool, see ROADMAP.md, but textures would
+need a heap to be placed in.
 
 Accepted as it is (Tord, 2026-11): graphics is meant to be baked into larger surfaces, for
 performance too, so nothing is planned for this.

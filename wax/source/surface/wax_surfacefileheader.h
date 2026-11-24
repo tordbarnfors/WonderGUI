@@ -71,7 +71,7 @@ struct SurfaceFileHeader
 		uint16_t	flags					= 0;
 		struct
 		{
-			uint16_t		buffered: 1;
+			uint16_t		reserved0: 1;		// Was "buffered", which surfaces no longer have. Files may have it set.
 			uint16_t		canvas: 1;
 			uint16_t		dynamic: 1;
 			uint16_t		tiling: 1;

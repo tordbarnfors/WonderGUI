@@ -28,7 +28,6 @@ void convertSurfaceBlueprint(Surface::Blueprint* pDest, const wax_surfaceBP* pSo
 {
 	if( pSource->byteOrder != WAX_BYTEORDER_NATIVE )
 		pDest->bigEndian = (pSource->byteOrder == WAX_BYTEORDER_BIG_ENDIAN);
-	pDest->buffered = pSource->buffered;
 	pDest->canvas = pSource->canvas;
 	pDest->colorSpace = (ColorSpace)pSource->colorSpace;
 	pDest->fillColor = pSource->useFillColor ? HiColor(pSource->fillColor.r, pSource->fillColor.g, pSource->fillColor.b, pSource->fillColor.a) : HiColor::Undefined;
@@ -40,6 +39,7 @@ void convertSurfaceBlueprint(Surface::Blueprint* pDest, const wax_surfaceBP* pSo
 	pDest->format = (PixelFormat)pSource->format;
 	pDest->identity = pSource->identity;
 	pDest->mipmap = pSource->mipmap;
+	pDest->restorer = reinterpret_cast<Surface::Restorer>(pSource->restorer);
 	pDest->sampleMethod = (SampleMethod)pSource->sampleMethod;
 	pDest->scale = pSource->scale;
 	pDest->size.w = pSource->size.w;

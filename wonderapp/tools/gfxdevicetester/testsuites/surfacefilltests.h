@@ -1,7 +1,7 @@
 #include "testsuite.h"
 
 // Surfaces created without pixels but with a fill color, in different formats, as canvases
-// or not and buffered or not.
+// or not and with a restorer or not.
 //
 // Each is drawn blown up 4x, which should show its fill color and nothing else. The square
 // to its right is green if the pixels read back with pushPixels() are all the same and
@@ -26,9 +26,9 @@ public:
 			const Case& c = c_cases[i];
 			bool bIndexed = (c.format == PixelFormat::Index_8);
 
-			m_pSurfaces[i] = pFactory->createSurface(WGBP(Surface, _.size = { c_width, c_height }, _.format = c.format, _.canvas = c.bCanvas, _.buffered = c.bBuffered,
+			m_pSurfaces[i] = pFactory->createSurface(WGBP(Surface, _.size = { c_width, c_height }, _.format = c.format, _.canvas = c.bCanvas,
 														  _.fillColor = HiColor(c.color), _.palette = bIndexed ? c_palette : nullptr, _.paletteSize = bIndexed ? c_paletteSize : 0,
-														  _.sampleMethod = SampleMethod::Nearest));
+														  _.restorer = c.bRestorer ? Surface::declineRestore : nullptr, _.sampleMethod = SampleMethod::Nearest));
 			if (!m_pSurfaces[i])
 				return false;
 		}
@@ -95,7 +95,7 @@ private:
 		return bSame && std::abs(alpha - expected) <= 32;
 	}
 
-	struct Case { PixelFormat format; bool bCanvas; bool bBuffered; Color8 color; };
+	struct Case { PixelFormat format; bool bCanvas; bool bRestorer; Color8 color; };
 
 	static const int c_width = 16;
 	static const int c_height = 8;

@@ -25,6 +25,8 @@
 
 #include <wax_surface.h>
 
+#include <vector>
+
 namespace wax
 {
 
@@ -34,29 +36,43 @@ namespace wax
 
 	//____ GpuSurface __________________________________________________________
 	/**
-	 * @brief Base class of surfaces that keep their pixels beside their texture.
+	 * @brief Base class of surfaces with a texture on a GPU.
 	 *
-	 * The surface has its pixels in memory the CPU reads and writes, which PixelBuffers point
-	 * straight into, and a texture the GPU draws from and into. This class keeps track of which
-	 * of the two is the newer and where:
+	 * A surface keeps its pixels in plain memory besides its texture, unless it is promised
+	 * them back: by a restorer in its Blueprint, or by being a canvas, which whoever rendered
+	 * into renders again.
 	 *
-	 *   m_dirtyRect is what the CPU has written that the texture doesn't have. The backend sends
-	 *   it to the texture before the surface is drawn from or into, and calls _uploaded().
-	 *   m_bBufferNeedsSync says that something has been rendered into the texture since the
-	 *   pixels were last brought from it, see notifyRendered(). They are read back when someone
-	 *   asks for them.
+	 * Pixels that are kept are what a PixelBuffer points into. What the CPU has written that
+	 * the texture doesn't have is m_dirtyRect, which is sent before the surface is drawn from.
+	 * After a lost device all of it is sent again.
 	 *
-	 * Surfaces with alpha hold premultiplied colors in the texture and straight ones in the
-	 * pixels, converted on the way.
+	 * Without pixels of its own, a PixelBuffer is memory the GPU copies from, of just the
+	 * rectangle asked for, which pullPixels() has copied to the texture and pushPixels() reads
+	 * the texture back into, waiting for the GPU. alpha() reads a map of a byte for each pixel.
+	 * A surface with restorer writes it together with the pixels, and has none as long as all
+	 * that was written is opaque. A canvas reads the texture back for it, when first asked and
+	 * again when it has been rendered into since. Alpha_8 and palette based surfaces that are
+	 * no canvases keep their pixels with a restorer too, as an alpha map would take as much,
+	 * and the alpha of a palette based one changes with its palette.
 	 *
-	 * A canvas is drawn into and rarely asked for its pixels, so one that isn't buffered and is
-	 * created without pixels or fill color has none until they are asked for, see _needPixels().
-	 * A surface the API gives nothing for has its pixels in plain memory instead and no texture,
-	 * so it can still be read and written.
+	 * Such a surface still has pixels at times: what it was created with until that has been
+	 * sent, and what it is to hold while there is no device. They are let go of once they are
+	 * on their way to a texture.
 	 *
-	 * Subclasses pick the format of the texture, make it and what else is on the device, and do
-	 * the copying between pixels and texture. DX12Surface, MetalSurface and VulkanSurface are
-	 * built on it. GlSurface isn't, as it keeps no pixels unless it has to.
+	 * When the device is replaced, the restorer of a surface without pixels is called to write
+	 * them again, see _restore(). If there is none, or it declines, the surface is cleared and
+	 * says isContentLost(). A canvas without restorer is read back first when the device it
+	 * leaves still works.
+	 *
+	 * The GPU copies to the texture from staging memory, which the subclass makes and lets go
+	 * of when the GPU has passed the copy.
+	 *
+	 * Surfaces with alpha hold premultiplied colors in the texture and straight ones everywhere
+	 * else, converted on the way.
+	 *
+	 * Subclasses pick the format of the texture, make it and what else is on the device, make
+	 * staging memory and do the copying between that and the texture. DX12Surface, GlSurface,
+	 * MetalSurface and VulkanSurface are built on it.
 	 */
 
 	class GpuSurface : public Surface
@@ -97,8 +113,7 @@ namespace wax
 		void				clearMipmapStale() { m_bMipmapStale = false; }
 
 		// Called by the backend when the surface is about to be rendered into, once what the CPU
-		// has written is in the texture. Our pixels are the older copy from here on, until
-		// someone asks for them.
+		// has written is in the texture.
 
 		void				notifyRendered();
 
@@ -125,10 +140,7 @@ namespace wax
 
 		static bool			_isBlueprintValid( const Blueprint& bp, SizeI maxSize );
 
-		// pitchAlignment is what a line of our pixels has to be a multiple of for the API to copy
-		// between pixels and texture, a power of two.
-
-		GpuSurface( const Blueprint& bp, int pitchAlignment );
+		GpuSurface( const Blueprint& bp );
 		~GpuSurface();
 
 		// Called by the constructor of the subclass, as it calls what the subclass implements.
@@ -137,74 +149,145 @@ namespace wax
 
 		void				_setup( const Blueprint& bp, const PixelSource& source );
 
+		// Memory the GPU copies to a texture from, mapped. A subclass adds what it has it by and
+		// lets go of that in the destructor, where the GPU may still have a copy from it to do.
+
+		struct Staging
+		{
+			virtual ~Staging() {}
+
+			uint8_t *	pPixels = nullptr;
+			int			pitch = 0;					// Bytes per line, as the API wants it for copying.
+		};
+
 		//____ For subclasses to implement ____
 
 		// Picks the format of the texture for a surface asked to be of the given one, and returns
-		// the format our pixels are kept in, which is another when the API has no texture for the
-		// one asked for.
+		// the format our pixels are in, which is another when the API has no texture for the one
+		// asked for.
 
 		virtual PixelFormat	_setTextureFormat( PixelFormat format ) = 0;
 
-		// Makes the texture and what goes with it and, if bPixelBuffer, the buffer for our pixels,
-		// see _createPixelBuffer(). All or none: false leaves us with nothing on the device, and
-		// has been reported if it is news. Sets m_pPaletteColors for a palette based surface.
+		// Makes the texture and what goes with it. All or none: false leaves us with nothing on
+		// the device, and has been reported if it is news. Sets m_pPaletteColors for a palette
+		// based surface.
 
-		virtual bool		_createDeviceObjects( bool bPixelBuffer ) = 0;
+		virtual bool		_createDeviceObjects() = 0;
 
-		// Makes the buffer for our pixels and sets m_pPixels to it, m_pitch bytes per line. What
-		// it holds is whatever was in that memory. False if there is no texture to have pixels of.
+		// Makes staging memory for the given number of pixels, holding whatever was in that
+		// memory. bReadable is for what is handed out as a PixelBuffer, which may be read: memory
+		// that is slow to read, as write-combined is, is only for what we write once. Null if the
+		// device gives none, which has been reported if it is news.
 
-		virtual bool		_createPixelBuffer() = 0;
+		virtual Staging *	_allocStaging( SizeI size, bool bReadable ) = 0;
 
-		// Copies the texture into our pixels and waits for it, after sending m_dirtyRect to the
-		// texture if there is one, as what the CPU wrote is the newer. False if it couldn't,
-		// which leaves our pixels as they were.
+		// Has a rectangle of staging memory copied to the texture at dest, by the time the
+		// backend draws from or into us. The staging memory may be deleted right after the call.
+		// With m_bPullsAtOnce set it may be given pixels that aren't of _allocStaging(), as a
+		// plain Staging.
 
-		virtual bool		_readBack() = 0;
+		virtual void		_pull( Staging * pStaging, const RectI& rect, CoordI dest ) = 0;
 
-		// Called before our pixels are handed out to be written to, for a subclass whose uploads
-		// read them when the GPU gets to it and so have to be done first.
+		// Copies a rectangle of the texture as it is, premultiplied if it is, to pDest and waits
+		// for it, once what we have had pulled is in the texture. False if it couldn't.
 
-		virtual void		_waitForUpload() {}
+		virtual bool		_readBack( const RectI& rect, uint8_t * pDest, int destPitch ) = 0;
 
-		// Called when m_dirtyRect has changed, for a subclass that keeps track of the surfaces
-		// that have something to upload.
+		// Called when what we have to send to the texture has changed, for a subclass that
+		// keeps track of the surfaces that have something.
 
 		virtual void		_updatePending() {}
 
+		// Converts m_pPalette into m_pPaletteColors, when the palette has changed. For a
+		// subclass that has to send the colors on to override.
+
+		virtual void		_updatePaletteColors();
+
 		//____ For subclasses to use ____
 
-		void				_addDirtyRect( const RectI& rect );
-		void				_uploaded();							// m_dirtyRect is in the texture.
+		// Whether our pixels stay in plain memory for as long as we live.
 
-		bool				_needPixels();							// Makes the pixel buffer we were created without. False if we have no pixels and can't get any.
-		void				_syncPixels();							// Brings what was rendered into the texture to our pixels.
+		bool				_keepsPixels() const { return m_bIndexed || (!m_bCanvas && (!m_pRestorer || m_pixelFormat == PixelFormat::Alpha_8)); }
+		bool				_isOnDevice() const { return m_bOnDevice; }
+
+		void				_addDirtyRect( const RectI& rect );
+
+		// For the backend to call before it draws from or into us. _stageDirty() has m_dirtyRect
+		// pulled from staging memory of its own. A subclass that stages in another way copies
+		// with _fillStaging() and calls _dirtyStaged(). _uploaded() is for when all we have had
+		// pulled is on its way to the texture.
+
+		void				_stageDirty();
+		void				_fillStaging( const RectI& rect, uint8_t * pDest, int destPitch ) const;	// pDest is only written to.
+		void				_dirtyStaged();
+		void				_uploaded();
+
+		// Going off a device and onto one. _leaveDevice() is called while the texture is still
+		// there. Pixels we have are to be sent again, all of them. A surface without has lost
+		// its content, unless it is a canvas without restorer on a device that works, which is
+		// read back into pixels it has until it is on a device again. _enterDevice() is called
+		// when there is a texture again.
+		//
+		// _restore() is for when every surface is back on a device, as a restorer may use other
+		// surfaces. It gives a surface that lost its content what it is to hold: what its
+		// restorer writes, or transparent black and isContentLost(). The restorer is code of the
+		// application, which can create and let go of surfaces.
+
+		void				_leaveDevice( bool bDeviceWorks );
+		void				_enterDevice();
+
+		bool				_isRestorePending() const { return m_bRestorePending; }
+		void				_restore();
 
 		const PixelBuffer	_pixelBuffer( const RectI& rect ) const;	// Points into our pixels.
 
-		void				_updatePaletteColors();					// Converts m_pPalette into m_pPaletteColors.
-
-		// What is sent to the texture of a surface with alpha is premultiplied, in a buffer of its
-		// own unless the pixels are the same premultiplied.
-
 		bool				_isPremultiplied() const { return m_pixelFormat == PixelFormat::ARGB_8; }		// Texture holds premultiplied colors.
-		bool				_needsPremultiplying( const RectI& rect ) const;
-		void				_premultiply( const RectI& rect, uint8_t * pDest, int destPitch ) const;		// pDest is only written to.
 
-		uint8_t *			m_pPixels = nullptr;			// Our pixels: the pixel buffer of the subclass, or m_pFallbackPixels. Null for a canvas nobody has asked for the pixels of.
-		uint8_t *			m_pFallbackPixels = nullptr;	// Plain memory, when we have nothing on the device.
-		int					m_pitch = 0;					// Bytes per line, a multiple of m_pitchAlignment.
-		int					m_pitchAlignment;
+		uint8_t *			m_pPixels = nullptr;			// Our pixels, in plain memory. Null when only the texture has them.
+		int					m_pitch = 0;					// Bytes per line of them.
 		int					m_pixelBytes = 0;				// Bytes per pixel.
 		bool				m_bIndexed = false;
 
+		bool				m_bPullsAtOnce = false;			// Set by a subclass whose _pull() has copied when it returns, so it can be given our pixels as they are.
+
 		float *				m_pPaletteColors = nullptr;		// The palette as the shaders read it, see GpuTools::paletteToFloats(). Set by the subclass, only written to.
 
-		RectI				m_dirtyRect;					// Area not yet uploaded to the texture. Empty when in sync.
-		bool				m_bBufferNeedsSync = false;		// Texture has changes our pixels don't have yet.
+		RectI				m_dirtyRect;					// Area of our pixels the texture doesn't have. Empty when in sync.
 
 		int					m_mipLevels = 1;
 		bool				m_bMipmapStale = false;			// Level 0 has changed since the others were made from it.
+
+	private:
+
+		// A PixelBuffer handed out of a surface without pixels of its own.
+
+		struct Handout
+		{
+			uint8_t *	pPixels;				// What the PixelBuffer points to.
+			Staging *	pStaging;				// Null when the device gave none, the memory is plain then.
+			bool		bDeviceGone;			// Its device was let go of, so it can't be copied from.
+		};
+
+		int					_findHandout( const uint8_t * pPixels ) const;		// Index, or -1.
+		bool				_needsPremultiplying( const uint8_t * pPixels, int pitch, SizeI size ) const;
+		void				_convertInto( const uint8_t * pSrc, int srcPitch, SizeI size, uint8_t * pDest, int destPitch, bool bPremultiply ) const;
+		bool				_stageFrom( const uint8_t * pSrc, int srcPitch, SizeI size, CoordI dest, bool bPremultiply );		// False if there was no staging memory to be had.
+
+		void				_makeLostPixels();
+		void				_releaseSparePixels();
+
+		bool				_writesAlphaMap() const { return !m_bCanvas && !_keepsPixels() && m_pPixelDescription->A_mask != 0; }
+		bool				_writeAlphaMap( const uint8_t * pPixels, int pitch, const RectI& rect );		// True if all of it is known to be opaque.
+		bool				_readAlphaMap();
+
+		bool				m_bOnDevice = false;			// We have a texture.
+		bool				m_bRestorePending = false;		// The texture we had our content in is gone, see _restore().
+
+		std::vector<Handout>	m_handouts;
+		int					m_nInPlaceBuffers = 0;			// PixelBuffers out that point into our pixels.
+
+		uint8_t *			m_pAlphaMap = nullptr;			// For alpha() of a surface without pixels, a byte for each pixel. Null while all is opaque, if we write it.
+		bool				m_bAlphaMapStale = true;		// For a canvas, which reads it back.
 	};
 
 } // namespace wax

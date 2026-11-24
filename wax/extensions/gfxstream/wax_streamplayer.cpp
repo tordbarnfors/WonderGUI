@@ -628,7 +628,6 @@ namespace wax
 			}
 
 			bp.bigEndian = (bigEndian != 0);
-			bp.buffered = false;
 			bp.palette = nullptr;
 
 			if (objectId >= m_vObjects.size() )

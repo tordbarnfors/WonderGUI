@@ -80,11 +80,8 @@ namespace wax
 	}
 
 	//____ constructor ________________________________________________________________
-	//
-	// Lines start on four byte boundaries, which is a whole number of pixels for all our
-	// formats, as copies between buffer and image need.
 
-	VulkanSurface::VulkanSurface(const Blueprint& bp, const PixelSource& source) : GpuSurface(bp, 4)
+	VulkanSurface::VulkanSurface(const Blueprint& bp, const PixelSource& source) : GpuSurface(bp)
 	{
 		_setup(bp, source);
 	}
@@ -157,7 +154,7 @@ namespace wax
 
 	//____ _createDeviceObjects() ______________________________________________
 
-	bool VulkanSurface::_createDeviceObjects( bool bPixelBuffer )
+	bool VulkanSurface::_createDeviceObjects()
 	{
 		if( !VulkanContext::isReady() )
 		{
@@ -217,11 +214,6 @@ namespace wax
 			bOK = VulkanContext::check( vkCreateImageView( device, &viewInfo, nullptr, &m_attachmentView ), "vkCreateImageView", this, &TYPEINFO, __func__, __FILE__, __LINE__ );
 		}
 
-		// Our pixels, unless they can wait until they are asked for.
-
-		if( bOK && bPixelBuffer )
-			bOK = _createPixelBuffer();
-
 		// One float4 per palette entry, plus one in front holding the capacity, so that an index
 		// past the end of the palette - there is nothing stopping one - can be caught.
 
@@ -248,129 +240,187 @@ namespace wax
 		return bOK;
 	}
 
-	//____ _createPixelBuffer() ________________________________________________
-	//
-	// Our pixels, which are also where what is rendered into us is read back to.
-
-	bool VulkanSurface::_createPixelBuffer()
-	{
-		if( !m_image.image || !VulkanContext::isReady() || VulkanContext::isDeviceLost() )
-			return false;
-
-		if( !VulkanContext::createBuffer( VkDeviceSize(m_pitch) * m_size.h, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-										  VulkanContext::Memory::HostRead, m_pixels ) )
-			return false;
-
-		m_pPixels = (uint8_t*) m_pixels.pMapped;
-		return true;
-	}
-
 	//____ _dropDeviceObjects() ________________________________________________
 
 	void VulkanSurface::_dropDeviceObjects()
 	{
+		m_pulls.clear();
+
 		VulkanContext::destroyLater( m_sampleView );
 		VulkanContext::destroyLater( m_attachmentView );
 		VulkanContext::destroyLater( m_image );
-		VulkanContext::destroyLater( m_pixels );
 		VulkanContext::destroyLater( m_palette );
 
 		m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
 		m_bMipmapStale = false;
-		m_pPixels = m_pFallbackPixels;
 		m_pPaletteColors = nullptr;
 	}
 
-	//____ syncTexture() _______________________________________________________
-	//
-	// Uploads whatever has changed since the last call and waits for it. Called by VulkanBackend
-	// before the surface is used as blit source or rendered into.
-	//
-	//TODO: This stalls, as DX12Surface did. Fine for surfaces filled while loading, which is the
-	// normal case, but a surface updated every frame wants something better.
+	//____ StagingBuffer _______________________________________________________
 
-	void VulkanSurface::syncTexture()
+	VulkanSurface::StagingBuffer::~StagingBuffer()
 	{
-		if( m_dirtyRect.isEmpty() || !m_image.image || !m_pixels.buffer || VulkanContext::isDeviceLost() )
+		VulkanContext::destroyLater( buffer );
+	}
+
+	//____ _allocStaging() _____________________________________________________
+	//
+	// A buffer the GPU copies to our image from, mapped. Lines start on four byte boundaries,
+	// which is a whole number of pixels for all our formats, as copies between buffer and image
+	// need. What is handed out as a PixelBuffer may be read, so it prefers cached memory.
+
+	VulkanSurface::Staging * VulkanSurface::_allocStaging( SizeI size, bool bReadable )
+	{
+		if( !m_image.image || !VulkanContext::isReady() || VulkanContext::isDeviceLost() )
+			return nullptr;
+
+		int pitch = (size.w * m_pixelBytes + 3) & ~3;
+
+		auto pBuffer = std::make_shared<StagingBuffer>();
+
+		if( !VulkanContext::createBuffer( VkDeviceSize(pitch) * size.h, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+										  bReadable ? VulkanContext::Memory::HostRead : VulkanContext::Memory::HostWrite, pBuffer->buffer ) )
+		{
+			if( !VulkanContext::isDeviceLost() )
+				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for pixels on their way to the texture of a surface.",
+					this, &TYPEINFO, __func__, __FILE__, __LINE__);
+
+			return nullptr;
+		}
+
+		auto pStaging = new VulkanStaging();
+
+		pStaging->pBuffer = pBuffer;
+		pStaging->pPixels = pBuffer->buffer.pMapped;
+		pStaging->pitch = pitch;
+
+		return pStaging;
+	}
+
+	//____ _pull() _____________________________________________________________
+	//
+	// The copy is recorded when VulkanBackend is about to use us, see recordUploads(). The
+	// buffer is shared between the staging memory and us, as whoever has that may let go of it
+	// before then, and is destroyed when the GPU is done with what the last of us had recorded.
+
+	void VulkanSurface::_pull( Staging * pStaging, const RectI& rect, CoordI dest )
+	{
+		if( !m_image.image || rect.isEmpty() )
 			return;
 
-		// Full lines, so the source offset stays aligned.
+		auto p = static_cast<VulkanStaging*>(pStaging);
 
-		RectI lines( 0, m_dirtyRect.y, m_size.w, m_dirtyRect.h );
+		Pull pull;
 
-		// Surfaces with alpha keep premultiplied colors in the texture. Our pixels are the ones
-		// handed out, so they are premultiplied in a buffer of their own, unless they are the
-		// same premultiplied.
+		pull.pBuffer = p->pBuffer;
+		pull.offset = VkDeviceSize(rect.y) * p->pitch + rect.x * m_pixelBytes;
+		pull.pitch = p->pitch;
+		pull.size = rect.size();
+		pull.dest = dest;
 
-		VkBuffer source = m_pixels.buffer;
-		VkDeviceSize sourceOffset = VkDeviceSize(lines.y) * m_pitch;
+		// A copy that starts at an offset that isn't a multiple of four is more than Vulkan has
+		// promised to do with every queue, so such a rectangle goes by a buffer of its own.
 
-		VulkanContext::Buffer premultiplied;
-
-		if( _needsPremultiplying(lines) )
+		if( pull.offset % 4 != 0 )
 		{
-			if( VulkanContext::createBuffer( VkDeviceSize(m_pitch) * lines.h, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VulkanContext::Memory::HostWrite, premultiplied ) )
-			{
-				_premultiply( lines, (uint8_t*) premultiplied.pMapped, m_pitch );
+			auto pOwn = static_cast<VulkanStaging*>( _allocStaging( rect.size(), false ) );
 
-				source = premultiplied.buffer;
-				sourceOffset = 0;
-			}
-			else if( !VulkanContext::isDeviceLost() )
-				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for premultiplied pixels, colors of transparent pixels will be off.",
-					this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			if( !pOwn )
+				return;
+
+			int lineBytes = rect.w * m_pixelBytes;
+
+			for( int y = 0; y < rect.h; y++ )
+				memcpy( pOwn->pPixels + y * pOwn->pitch, p->pPixels + (rect.y + y) * p->pitch + rect.x * m_pixelBytes, lineBytes );
+
+			pull.pBuffer = pOwn->pBuffer;
+			pull.offset = 0;
+			pull.pitch = pOwn->pitch;
+
+			delete pOwn;
 		}
 
-		VkCommandBuffer cmd = VulkanContext::beginOneShot();
+		m_pulls.push_back(pull);
+	}
 
-		if( cmd )
+	//____ recordUploads() _____________________________________________________
+	//
+	// Records the copies of what the CPU has written since the last call into the given command
+	// buffer, which has to be outside a render pass. No wait: the copies happen where they are
+	// in the queue, after what was recorded before them and in front of what comes after.
+
+	void VulkanSurface::recordUploads( VkCommandBuffer cmd )
+	{
+		if( !cmd || !m_image.image || VulkanContext::isDeviceLost() )
+			return;
+
+		_stageDirty();				// Our own pixels that have changed, by a buffer made for it.
+
+		if( m_pulls.empty() )
+			return;
+
+		VkImageLayout restLayout = m_layout == VK_IMAGE_LAYOUT_UNDEFINED ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : m_layout;
+
+		// A partial upload must keep what is outside it, so only a fresh image may be
+		// discarded.
+
+		VulkanContext::transition( cmd, m_image.image, m_layout, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL );
+
+		for( auto& pull : m_pulls )
 		{
-			VkImageLayout restLayout = m_layout == VK_IMAGE_LAYOUT_UNDEFINED ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : m_layout;
-
-			// A partial upload must keep what is outside it, so only a fresh image may be
-			// discarded.
-
-			VulkanContext::transition( cmd, m_image.image, m_layout, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL );
-
 			VkBufferImageCopy region = {};
-			region.bufferOffset = sourceOffset;
-			region.bufferRowLength = uint32_t(m_pitch / m_pixelBytes);
+			region.bufferOffset = pull.offset;
+			region.bufferRowLength = uint32_t(pull.pitch / m_pixelBytes);
 			region.bufferImageHeight = 0;
 			region.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
-			region.imageOffset = { 0, lines.y, 0 };
-			region.imageExtent = { uint32_t(lines.w), uint32_t(lines.h), 1 };
+			region.imageOffset = { pull.dest.x, pull.dest.y, 0 };
+			region.imageExtent = { uint32_t(pull.size.w), uint32_t(pull.size.h), 1 };
 
-			vkCmdCopyBufferToImage( cmd, source, m_image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region );
-
-			VulkanContext::transition( cmd, m_image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, restLayout );
-			m_layout = restLayout;
-
-			VulkanContext::endOneShot( cmd );
+			vkCmdCopyBufferToImage( cmd, pull.pBuffer->buffer.buffer, m_image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region );
 		}
 
-		VulkanContext::destroyLater( premultiplied );
+		VulkanContext::transition( cmd, m_image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, restLayout );
+		m_layout = restLayout;
+
+		// Lets go of the buffers, which are destroyed when the GPU is done with what is being
+		// recorded.
+
+		m_pulls.clear();
 
 		_uploaded();
 	}
 
 	//____ _readBack() _________________________________________________________
 	//
-	// Copies our texture into our pixels. This stalls until the GPU is done, but only happens
-	// when someone actually asks to read a canvas surface.
+	// Copies a rectangle of our texture to pDest, by a buffer made for it. This stalls until the
+	// GPU is done, but only happens when someone asks for the pixels of a canvas.
 
-	bool VulkanSurface::_readBack()
+	bool VulkanSurface::_readBack( const RectI& rect, uint8_t * pDest, int destPitch )
 	{
-		if( VulkanContext::isDeviceLost() || !m_image.image || !m_pixels.buffer )
+		if( VulkanContext::isDeviceLost() || !m_image.image )
 			return false;
 
-		// Pixels written by the CPU since are the newer ones, so they go in on top of what was
-		// rendered before we read it all back.
+		int pitch = (rect.w * m_pixelBytes + 3) & ~3;
 
-		syncTexture();
+		VulkanContext::Buffer buffer;
+
+		if( !VulkanContext::createBuffer( VkDeviceSize(pitch) * rect.h, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VulkanContext::Memory::HostRead, buffer ) )
+			return false;
+
+		// Has every backend submit what it has recorded, so it comes before us.
 
 		VkCommandBuffer cmd = VulkanContext::beginOneShot();
+
 		if( !cmd )
+		{
+			VulkanContext::destroyLater( buffer );
 			return false;
+		}
+
+		// Pixels written by the CPU since are the newer ones, so they go in on top of what was
+		// rendered before we read it back, in the same command buffer.
+
+		recordUploads( cmd );
 
 		// A texture nothing has been sent to or rendered into has nothing to give us but what
 		// its memory holds, and comes to rest like the others.
@@ -381,13 +431,13 @@ namespace wax
 
 		VkBufferImageCopy region = {};
 		region.bufferOffset = 0;
-		region.bufferRowLength = uint32_t(m_pitch / m_pixelBytes);
+		region.bufferRowLength = uint32_t(pitch / m_pixelBytes);
 		region.bufferImageHeight = 0;
 		region.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
-		region.imageOffset = { 0, 0, 0 };
-		region.imageExtent = { uint32_t(m_size.w), uint32_t(m_size.h), 1 };
+		region.imageOffset = { rect.x, rect.y, 0 };
+		region.imageExtent = { uint32_t(rect.w), uint32_t(rect.h), 1 };
 
-		vkCmdCopyImageToBuffer( cmd, m_image.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_pixels.buffer, 1, &region );
+		vkCmdCopyImageToBuffer( cmd, m_image.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer.buffer, 1, &region );
 
 		VulkanContext::transition( cmd, m_image.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, restLayout );
 		m_layout = restLayout;
@@ -406,7 +456,18 @@ namespace wax
 
 		vkCmdPipelineBarrier2( cmd, &dep );
 
-		return VulkanContext::endOneShot( cmd );
+		bool bOK = VulkanContext::endOneShot( cmd );			// Waits for it.
+
+		if( bOK )
+		{
+			int lineBytes = rect.w * m_pixelBytes;
+
+			for( int y = 0; y < rect.h; y++ )
+				memcpy( pDest + y * destPitch, buffer.pMapped + y * pitch, lineBytes );
+		}
+
+		VulkanContext::destroyLater( buffer );
+		return bOK;
 	}
 
 } // namespace wax

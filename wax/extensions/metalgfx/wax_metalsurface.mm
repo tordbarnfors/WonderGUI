@@ -24,6 +24,8 @@
 #include <wax_metalbackend.h>
 #include <wax_base.h>
 
+#include <cstring>
+
 namespace wax
 {
 	const TypeInfo MetalSurface::TYPEINFO = { "MetalSurface", &GpuSurface::TYPEINFO };
@@ -72,11 +74,8 @@ namespace wax
 	}
 
 	//____ constructor _____________________________________________________________
-	//
-	// Metal copies between buffer and texture with any number of bytes per line, so our lines
-	// have no padding.
 
-	MetalSurface::MetalSurface(const Blueprint& bp, const PixelSource& source) : GpuSurface(bp, 1)
+	MetalSurface::MetalSurface(const Blueprint& bp, const PixelSource& source) : GpuSurface(bp)
 	{
 		_setup(bp, source);
 	}
@@ -97,8 +96,8 @@ namespace wax
 
 	//____ _setTextureFormat() _____________________________________________________
 	//
-	// Pixels are copied straight between our shared buffer and the texture, so layouts that
-	// Metal has no texture format for are kept as one it has. The color space stays and picks
+	// Pixels are copied straight between buffers and the texture, so layouts that Metal has
+	// no texture format for are kept as one it has. The color space stays and picks
 	// between the normal and _sRGB texture formats.
 
 	PixelFormat MetalSurface::_setTextureFormat( PixelFormat format )
@@ -149,7 +148,7 @@ namespace wax
 
 	//____ _createDeviceObjects() ______________________________________________
 
-	bool MetalSurface::_createDeviceObjects( bool bPixelBuffer )
+	bool MetalSurface::_createDeviceObjects()
 	{
 		if( MetalBackend::s_metalDevice == nil )
 		{
@@ -159,11 +158,6 @@ namespace wax
 		}
 
 		bool bOK = _createTexture();
-
-		// Our pixels, unless they can wait until they are asked for.
-
-		if( bOK && bPixelBuffer )
-			bOK = _createPixelBuffer();
 
 		// One float4 per palette entry, plus one in front holding the capacity, which the shaders
 		// keep indexes below.
@@ -250,98 +244,111 @@ namespace wax
 		return true;
 	}
 
-	//____ _createPixelBuffer() ________________________________________________
-	//
-	// Our pixels, which are also where what is rendered into us is read back to. Metal gives
-	// us the buffer zeroed.
-
-	bool MetalSurface::_createPixelBuffer()
-	{
-		if( m_texture == nil )
-			return false;
-
-		m_textureBuffer = [MetalBackend::s_metalDevice newBufferWithLength:size_t(m_pitch) * m_size.h options:MTLResourceStorageModeShared];
-
-		if( m_textureBuffer == nil )
-			return false;
-
-		m_pPixels = (uint8_t*) [m_textureBuffer contents];
-		return true;
-	}
-
 	//____ _dropDeviceObjects() ________________________________________________
 	//
 	// A command buffer that still reads any of it keeps it until it is done.
 
 	void MetalSurface::_dropDeviceObjects()
 	{
-		[m_lastUpload release];
+		_dropPulls();
+
 		[m_sampleTexture release];
 		[m_texture release];
-		[m_textureBuffer release];
 		[m_paletteColors release];
 
-		m_lastUpload = nil;
 		m_sampleTexture = nil;
 		m_texture = nil;
-		m_textureBuffer = nil;
 		m_paletteColors = nil;
 
 		m_bMipmapStale = false;
-		m_pPixels = m_pFallbackPixels;
 		m_pPaletteColors = nullptr;
 	}
 
-	//____ unload() ___________________________________________________________
+	//____ _dropPulls() ________________________________________________________
 
-	bool MetalSurface::unload()
+	void MetalSurface::_dropPulls()
 	{
-		[m_sampleTexture release];
-		[m_texture release];
+		for( auto& pull : m_pulls )
+			[pull.buffer release];
 
-		m_sampleTexture = nil;
-		m_texture = nil;
-
-		return true;
+		m_pulls.clear();
 	}
 
-	//____ isLoaded() _________________________________________________________
+	//____ MetalStaging ________________________________________________________
 
-	bool MetalSurface::isLoaded()
+	MetalSurface::MetalStaging::~MetalStaging()
 	{
-		return (m_texture != nil);
+		[buffer release];
 	}
 
-	//____ reload() _________________________________________________________
+	//____ _allocStaging() _____________________________________________________
+	//
+	// A shared buffer the GPU copies to our private texture from. Metal copies between buffer
+	// and texture with any number of bytes per line, so the lines have no padding, and shared
+	// memory reads as fast as any, so what is handed out is the same as what isn't.
 
-	void MetalSurface::reload()
+	MetalSurface::Staging * MetalSurface::_allocStaging( SizeI size, bool /*bReadable*/ )
 	{
-		if( m_texture != nil || MetalBackend::s_metalDevice == nil || m_pFallbackPixels )
-			return;
+		if( m_texture == nil || MetalBackend::s_metalDevice == nil )
+			return nullptr;
 
-		if( !_createTexture() )
+		int pitch = size.w * m_pixelBytes;
+
+		id<MTLBuffer> buffer = [MetalBackend::s_metalDevice newBufferWithLength:size_t(pitch) * size.h options:MTLResourceStorageModeShared];
+
+		if( buffer == nil )
 		{
-			unload();
-			return;
+			Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for pixels on their way to the texture of a surface.",
+				this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return nullptr;
 		}
 
-		// Everything we have goes to the new texture.
+		auto pStaging = new MetalStaging();
 
-		m_bBufferNeedsSync = false;
+		pStaging->buffer = buffer;
+		pStaging->pPixels = (uint8_t*) [buffer contents];
+		pStaging->pitch = pitch;
 
-		if( m_pPixels )
-			_addDirtyRect( RectI(m_size) );
+		return pStaging;
+	}
+
+	//____ _pull() _____________________________________________________________
+	//
+	// The copy is encoded when MetalBackend is about to use us, see syncTexture(). We keep the
+	// buffer until then, as whoever has the staging memory may let go of it before.
+
+	void MetalSurface::_pull( Staging * pStaging, const RectI& rect, CoordI dest )
+	{
+		if( m_texture == nil || rect.isEmpty() )
+			return;
+
+		auto p = static_cast<MetalStaging*>(pStaging);
+
+		Pull pull;
+
+		pull.buffer = [p->buffer retain];
+		pull.offset = rect.y * p->pitch + rect.x * m_pixelBytes;
+		pull.pitch = p->pitch;
+		pull.size = rect.size();
+		pull.dest = dest;
+
+		m_pulls.push_back(pull);
 	}
 
 	//____ syncTexture() _______________________________________________________
 	//
-	// The copy reads our pixels when the GPU gets to it, unless they had to be premultiplied
-	// first, so the CPU must not write to them until it is done. allocPixelBuffer() waits for
-	// that, see _waitForUpload().
+	// The copies read their buffers when the GPU gets to them, which the command buffer keeps
+	// until it is done. Nothing on the GPU reads our pixels, so they can be written to at any
+	// time.
 
 	void MetalSurface::syncTexture()
 	{
-		if( m_dirtyRect.isEmpty() || m_texture == nil || m_textureBuffer == nil )
+		if( m_texture == nil )
+			return;
+
+		_stageDirty();				// Our own pixels that have changed, by a buffer made for it.
+
+		if( m_pulls.empty() )
 			return;
 
 		@autoreleasepool {
@@ -349,16 +356,29 @@ namespace wax
 			commandBuffer.label = @"MetalSurface upload";
 
 			id<MTLBlitCommandEncoder> blitCommandEncoder = [commandBuffer blitCommandEncoder];
-			id<MTLBuffer> premultiplied = _encodeTextureUpload(blitCommandEncoder, m_dirtyRect);
+
+			for( auto& pull : m_pulls )
+			{
+				MTLSize textureSize = { (unsigned) pull.size.w, (unsigned) pull.size.h, 1 };
+				MTLOrigin textureOrigin = { (unsigned) pull.dest.x, (unsigned) pull.dest.y, 0 };
+
+				[blitCommandEncoder copyFromBuffer:	pull.buffer
+									  sourceOffset:	pull.offset
+								 sourceBytesPerRow:	pull.pitch
+							   sourceBytesPerImage:	0
+										sourceSize:	textureSize
+										 toTexture:	m_texture
+								  destinationSlice:	0
+								  destinationLevel:	0
+								 destinationOrigin:	textureOrigin];
+			}
+
 			[blitCommandEncoder endEncoding];
 
 			[commandBuffer commit];
-
-			[premultiplied release];			// The command buffer keeps it until it is done.
-
-			[m_lastUpload release];
-			m_lastUpload = [commandBuffer retain];
 		}
+
+		_dropPulls();				// The command buffer keeps the buffers until it is done.
 
 		// Level 0 has changed, MetalBackend draws the others from it before the surface is read,
 		// see MetalBackend::_generateMipmaps().
@@ -366,35 +386,30 @@ namespace wax
 		_uploaded();
 	}
 
-	//____ _waitForUpload() ____________________________________________________
-
-	void MetalSurface::_waitForUpload()
-	{
-		if( m_lastUpload == nil )
-			return;
-
-		[m_lastUpload waitUntilCompleted];
-		[m_lastUpload release];
-		m_lastUpload = nil;
-	}
-
 	//____ _readBack() _________________________________________________________
 	//
-	// Copies our texture into our pixels. This stalls until the GPU is done, but only happens
-	// when someone actually asks to read a canvas surface.
+	// Copies a rectangle of our texture to pDest, by a buffer made for it. This stalls until the
+	// GPU is done, but only happens when someone asks for the pixels of a canvas.
 
-	bool MetalSurface::_readBack()
+	bool MetalSurface::_readBack( const RectI& rect, uint8_t * pDest, int destPitch )
 	{
-		if( m_texture == nil || m_textureBuffer == nil )
+		if( m_texture == nil )
 			return false;
 
 		// Pixels written by the CPU since are the newer ones, so they go in on top of what was
-		// rendered before we read it all back.
+		// rendered before we read it back. They are ahead of us in the queue.
 
 		syncTexture();
 
-		MTLSize textureSize = { (unsigned) m_size.w, (unsigned) m_size.h, 1 };
-		MTLOrigin textureOrigin = { 0, 0, 0 };
+		int pitch = rect.w * m_pixelBytes;
+
+		id<MTLBuffer> buffer = [MetalBackend::s_metalDevice newBufferWithLength:size_t(pitch) * rect.h options:MTLResourceStorageModeShared];
+
+		if( buffer == nil )
+			return false;
+
+		MTLSize textureSize = { (unsigned) rect.w, (unsigned) rect.h, 1 };
+		MTLOrigin textureOrigin = { (unsigned) rect.x, (unsigned) rect.y, 0 };
 
 		@autoreleasepool {
 			id<MTLCommandBuffer> commandBuffer = [MetalBackend::s_metalCommandQueue commandBuffer];
@@ -406,72 +421,23 @@ namespace wax
 									sourceLevel:		0
 									sourceOrigin:		textureOrigin
 									sourceSize:			textureSize
-									toBuffer:			m_textureBuffer
+									toBuffer:			buffer
 									destinationOffset:	0
-									destinationBytesPerRow: m_pitch
-									destinationBytesPerImage: m_pitch * m_size.h ];
+									destinationBytesPerRow: pitch
+									destinationBytesPerImage: pitch * rect.h ];
 			[blitCommandEncoder endEncoding];
 
 			[commandBuffer commit];
 			[commandBuffer waitUntilCompleted];
 		}
 
-		// Any upload of ours was ahead of this in the queue, so it is done too.
+		const uint8_t * pSrc = (const uint8_t*) [buffer contents];
 
-		[m_lastUpload release];
-		m_lastUpload = nil;
+		for( int y = 0; y < rect.h; y++ )
+			memcpy( pDest + y * destPitch, pSrc + y * pitch, pitch );
 
+		[buffer release];
 		return true;
-	}
-
-	//____ _encodeTextureUpload() _______________________________________________
-	//
-	// Encodes a copy of a region of our pixels to the texture. Surfaces with alpha keep
-	// premultiplied colors in the texture, see MetalBackend::_compileRenderPipeline(), so their
-	// pixels are premultiplied on the way, in a buffer of their own, unless they are the same
-	// premultiplied. Returns that buffer or nil. The caller releases it once committed.
-
-	id<MTLBuffer> MetalSurface::_encodeTextureUpload( id<MTLBlitCommandEncoder> encoder, RectI region )
-	{
-		int pitch = m_pitch;
-		int offset = region.y * m_pitch + region.x * m_pixelBytes;
-
-		id<MTLBuffer> source = m_textureBuffer;
-		id<MTLBuffer> premultiplied = nil;
-
-		if( _needsPremultiplying(region) )
-		{
-			int rowBytes = region.w * m_pixelBytes;
-
-			premultiplied = [MetalBackend::s_metalDevice newBufferWithLength:size_t(rowBytes) * region.h options:MTLResourceStorageModeShared];
-
-			if( premultiplied != nil )
-			{
-				_premultiply( region, (uint8_t*) [premultiplied contents], rowBytes );
-
-				source = premultiplied;
-				offset = 0;
-				pitch = rowBytes;
-			}
-			else
-				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for premultiplied pixels, colors of transparent pixels will be off.",
-					this, &TYPEINFO, __func__, __FILE__, __LINE__);
-		}
-
-		MTLSize textureSize = { (unsigned) region.w, (unsigned) region.h, 1 };
-		MTLOrigin textureOrigin = { (unsigned) region.x, (unsigned) region.y, 0 };
-
-		[encoder copyFromBuffer:	source
-				   sourceOffset:	offset
-			  sourceBytesPerRow:	pitch
-			sourceBytesPerImage:	0
-					 sourceSize:	textureSize
-					  toTexture:	m_texture
-			   destinationSlice:	0
-			   destinationLevel:	0
-			  destinationOrigin:	textureOrigin];
-
-		return premultiplied;
 	}
 
 } // namespace wax
