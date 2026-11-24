@@ -17,7 +17,11 @@
 // beyond the palette is clamped to its last entry rather than read from
 // whatever lies past the end of the buffer.
 
+#ifdef WAX_SDLGPU
+Texture2D<float> blitSource : register(t2);         // R8_UNORM or R16_UNORM, see sdlgpu.hlsl.
+#else
 Texture2D<uint> blitSource : register(t2);
+#endif
 StructuredBuffer<float4> palette : register(t3);
 
 
@@ -45,7 +49,11 @@ float4 paletteTexel(int2 texel)
 
     texel = clamp(texel, int2(0, 0), size - int2(1, 1));
 
+#ifdef WAX_SDLGPU
+    uint index = waxPaletteIndex(blitSource.Load(int3(texel, 0)), palette[0].y);
+#else
     uint index = blitSource.Load(int3(texel, 0));
+#endif
     uint capacity = uint(palette[0].x);
 
     float4 color = palette[min(index, capacity - 1u) + 1u];

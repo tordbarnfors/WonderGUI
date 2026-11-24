@@ -1,0 +1,218 @@
+#include <metal_stdlib>
+#include <simd/simd.h>
+
+using namespace metal;
+
+struct type_PixelInfo
+{
+    int tintOfs;
+    uint outputMode;
+    uint canvasKind;
+    float morphFactor;
+};
+
+struct type_StructuredBuffer_v4float
+{
+    float4 _m0[1];
+};
+
+struct main0_out
+{
+    float4 out_var_SV_Target0 [[color(0)]];
+};
+
+struct main0_in
+{
+    float4 in_var_COLOR [[user(locn0)]];
+};
+
+fragment main0_out main0(main0_in in [[stage_in]], constant type_PixelInfo& PixelInfo [[buffer(1)]], const device type_StructuredBuffer_v4float& colors [[buffer(3)]], float4 gl_FragCoord [[position]])
+{
+    main0_out out = {};
+    float4 _244;
+    if (PixelInfo.tintOfs >= 0)
+    {
+        uint _65 = uint(max(PixelInfo.tintOfs, 0));
+        uint _68 = uint(((device float*)&colors._m0[_65])[0]);
+        uint _69 = _65 + 1u;
+        float4 _74;
+        _74 = float4(0.0);
+        uint _72;
+        float4 _75;
+        for (uint _71 = _69, _76 = 0u; _76 < _68; _71 = _72, _74 = _75, _76++)
+        {
+            uint _83 = _71 + 1u;
+            uint _90 = uint(colors._m0[_71].z);
+            uint _91 = _71 + 3u;
+            uint _94 = _91 + ((_90 + 3u) >> 2u);
+            if (_90 > 0u)
+            {
+                float _117;
+                if (colors._m0[_71].x < 0.5)
+                {
+                    _117 = ((colors._m0[_83].x * gl_FragCoord.x) + (colors._m0[_83].y * gl_FragCoord.y)) + colors._m0[_83].z;
+                }
+                else
+                {
+                    _117 = length((gl_FragCoord.xy - colors._m0[_83].xy) * colors._m0[_83].zw);
+                }
+                float _118 = fast::clamp(_117, -10000000.0, 10000000.0);
+                uint _120 = uint(colors._m0[_71].y);
+                float _140;
+                if (_120 == 0u)
+                {
+                    _140 = fast::clamp(_118, 0.0, 1.0);
+                }
+                else
+                {
+                    float _139;
+                    if (_120 == 1u)
+                    {
+                        _139 = _118 - floor(_118);
+                    }
+                    else
+                    {
+                        float _135 = _118 - (2.0 * floor(_118 * 0.5));
+                        _139 = (_135 > 1.0) ? (2.0 - _135) : _135;
+                    }
+                    _140 = _139;
+                }
+                int _142;
+                _142 = -1;
+                int _143;
+                for (uint _145 = 0u; _145 < _90; _142 = _143, _145++)
+                {
+                    uint _151 = _91 + (_145 >> 2u);
+                    uint _154 = _145 & 3u;
+                    if (((_154 == 0u) ? colors._m0[_151].x : ((_154 == 1u) ? colors._m0[_151].y : ((_154 == 2u) ? colors._m0[_151].z : colors._m0[_151].w))) <= _140)
+                    {
+                        _143 = int(_145);
+                    }
+                    else
+                    {
+                        _143 = _142;
+                    }
+                }
+                float4 _227;
+                if (_142 < 0)
+                {
+                    _227 = colors._m0[_94];
+                }
+                else
+                {
+                    uint _175 = uint(_142);
+                    float4 _226;
+                    if (_175 == (_90 - 1u))
+                    {
+                        _226 = colors._m0[_94 + _175];
+                    }
+                    else
+                    {
+                        uint _185 = _91 + (_175 >> 2u);
+                        uint _188 = _175 & 3u;
+                        float _198 = (_188 == 0u) ? colors._m0[_185].x : ((_188 == 1u) ? colors._m0[_185].y : ((_188 == 2u) ? colors._m0[_185].z : colors._m0[_185].w));
+                        uint _199 = _175 + 1u;
+                        uint _201 = _91 + (_199 >> 2u);
+                        uint _204 = _199 & 3u;
+                        uint _215 = _94 + _175;
+                        _226 = mix(colors._m0[_215], colors._m0[_215 + 1u], float4((_140 - _198) / (((_204 == 0u) ? colors._m0[_201].x : ((_204 == 1u) ? colors._m0[_201].y : ((_204 == 2u) ? colors._m0[_201].z : colors._m0[_201].w))) - _198)));
+                    }
+                    _227 = _226;
+                }
+                float4 _240;
+                if (((device float*)&colors._m0[_71 + 2u])[0] > 0.5)
+                {
+                    float3 _238 = mix(powr(abs((_227.xyz + float3(0.054999999701976776123046875)) * float3(0.947867333889007568359375)), float3(2.400000095367431640625)), _227.xyz * float3(0.077399380505084991455078125), step(_227.xyz, float3(0.040449999272823333740234375)));
+                    _240 = float4(_238.x, _238.y, _238.z, _227.w);
+                }
+                else
+                {
+                    _240 = _227;
+                }
+                _75 = _74 + (_240 * colors._m0[_71].w);
+            }
+            else
+            {
+                _75 = _74;
+            }
+            _72 = _94 + _90;
+        }
+        _244 = _74;
+    }
+    else
+    {
+        _244 = float4(1.0);
+    }
+    float4 _245 = in.in_var_COLOR * _244;
+    float _247 = _245.w;
+    float3 _248 = _245.xyz * _247;
+    float _249 = _248.x;
+    float4 _252 = float4(_249, _248.yz, _247);
+    float4 _319;
+    if (PixelInfo.canvasKind == 2u)
+    {
+        float4 _276;
+        if (PixelInfo.outputMode == 2u)
+        {
+            _276 = float4(_247);
+        }
+        else
+        {
+            float4 _275;
+            if (PixelInfo.outputMode == 1u)
+            {
+                _275 = float4(_247 * PixelInfo.morphFactor);
+            }
+            else
+            {
+                _275 = float4(_247);
+            }
+            _276 = _275;
+        }
+        _319 = _276;
+    }
+    else
+    {
+        float4 _318;
+        if (PixelInfo.outputMode == 3u)
+        {
+            _318 = float4(_249, _248.yz, precise::max(_249, precise::max(_248.y, _248.z)));
+        }
+        else
+        {
+            float4 _317;
+            if (PixelInfo.outputMode == 2u)
+            {
+                _317 = float4(float3(1.0 - _247) + _252.xyz, 1.0);
+            }
+            else
+            {
+                float4 _316;
+                if (PixelInfo.outputMode == 1u)
+                {
+                    float _313;
+                    if (PixelInfo.canvasKind == 1u)
+                    {
+                        float _309 = (1.0 - PixelInfo.morphFactor) + (_247 * PixelInfo.morphFactor);
+                        _313 = (_309 > 0.0) ? (1.0 / _309) : 0.0;
+                    }
+                    else
+                    {
+                        _313 = 1.0;
+                    }
+                    _316 = _252 * (PixelInfo.morphFactor * _313);
+                }
+                else
+                {
+                    _316 = _252;
+                }
+                _317 = _316;
+            }
+            _318 = _317;
+        }
+        _319 = _318;
+    }
+    out.out_var_SV_Target0 = _319;
+    return out;
+}
+

@@ -1,0 +1,797 @@
+#include <metal_stdlib>
+#include <simd/simd.h>
+
+using namespace metal;
+
+struct type_PixelInfo
+{
+    int tintOfs;
+    uint outputMode;
+    uint canvasKind;
+    float morphFactor;
+};
+
+struct type_StructuredBuffer_v4float
+{
+    float4 _m0[1];
+};
+
+struct main0_out
+{
+    float4 out_var_SV_Target0 [[color(0)]];
+};
+
+struct main0_in
+{
+    float4 in_var_COLOR [[user(locn0)]];
+    uint in_var_TEXCOORD1 [[user(locn1)]];
+};
+
+fragment main0_out main0(main0_in in [[stage_in]], constant type_PixelInfo& PixelInfo [[buffer(1)]], const device type_StructuredBuffer_v4float& colors [[buffer(3)]], const device type_StructuredBuffer_v4float& extras [[buffer(4)]], float4 gl_FragCoord [[position]])
+{
+    main0_out out = {};
+    uint _71 = in.in_var_TEXCOORD1 + 1u;
+    uint _74 = in.in_var_TEXCOORD1 + 2u;
+    float _81 = extras._m0[_71].x + extras._m0[_74].x;
+    float _86 = extras._m0[_71].y + extras._m0[_74].x;
+    float _139;
+    float2 _140;
+    bool _141;
+    if (((extras._m0[_74].x > 0.0) && (gl_FragCoord.x < _81)) && (gl_FragCoord.y < _86))
+    {
+        _139 = extras._m0[_74].x;
+        _140 = float2(_81, _86);
+        _141 = true;
+    }
+    else
+    {
+        float _96 = extras._m0[_71].z - extras._m0[_74].y;
+        float _99 = extras._m0[_71].y + extras._m0[_74].y;
+        float _136;
+        float2 _137;
+        bool _138;
+        if (((extras._m0[_74].y > 0.0) && (gl_FragCoord.x > _96)) && (gl_FragCoord.y < _99))
+        {
+            _136 = extras._m0[_74].y;
+            _137 = float2(_96, _99);
+            _138 = true;
+        }
+        else
+        {
+            float _108 = extras._m0[_71].z - extras._m0[_74].z;
+            float _112 = extras._m0[_71].w - extras._m0[_74].z;
+            float _133;
+            float2 _134;
+            bool _135;
+            if (((extras._m0[_74].z > 0.0) && (gl_FragCoord.x > _108)) && (gl_FragCoord.y > _112))
+            {
+                _133 = extras._m0[_74].z;
+                _134 = float2(_108, _112);
+                _135 = true;
+            }
+            else
+            {
+                float _121 = extras._m0[_71].x + extras._m0[_74].w;
+                float _124 = extras._m0[_71].w - extras._m0[_74].w;
+                bool _126 = ((extras._m0[_74].w > 0.0) && (gl_FragCoord.x < _121)) && (gl_FragCoord.y > _124);
+                float2 _131;
+                if (_126)
+                {
+                    _131 = float2(_121, _124);
+                }
+                else
+                {
+                    _131 = float2(0.0);
+                }
+                _133 = _126 ? extras._m0[_74].w : 0.0;
+                _134 = _131;
+                _135 = _126;
+            }
+            _136 = _133;
+            _137 = _134;
+            _138 = _135;
+        }
+        _139 = _136;
+        _140 = _137;
+        _141 = _138;
+    }
+    float _143 = gl_FragCoord.x + 0.5;
+    float _145 = gl_FragCoord.x - 0.5;
+    float _150 = gl_FragCoord.y + 0.5;
+    float _152 = gl_FragCoord.y - 0.5;
+    float _156 = fast::clamp(precise::min(_143, extras._m0[_71].z) - precise::max(_145, extras._m0[_71].x), 0.0, 1.0) * fast::clamp(precise::min(_150, extras._m0[_71].w) - precise::max(_152, extras._m0[_71].y), 0.0, 1.0);
+    float _220;
+    if (_141)
+    {
+        float2 _159 = gl_FragCoord.xy - _140;
+        float _160 = length(_159);
+        float _218;
+        if (_139 > 0.0)
+        {
+            float _165 = _139 - _160;
+            float2 _168 = abs(_159 / float2(_160));
+            float _169 = _168.x;
+            float _170 = _168.y;
+            float _171 = precise::max(_169, _170);
+            float _172 = precise::min(_169, _170);
+            float _173 = _171 + _172;
+            float _175 = _165 + (0.5 * _173);
+            float _214;
+            if (_172 < 0.001000000047497451305389404296875)
+            {
+                _214 = fast::clamp(_165 + 0.5, 0.0, 1.0);
+            }
+            else
+            {
+                float _213;
+                if (_175 >= _173)
+                {
+                    _213 = 1.0;
+                }
+                else
+                {
+                    float _212;
+                    if (_175 > 0.0)
+                    {
+                        float _211;
+                        if (_175 < _172)
+                        {
+                            _211 = (_175 * _175) / ((2.0 * _171) * _172);
+                        }
+                        else
+                        {
+                            float _210;
+                            if (_175 > _171)
+                            {
+                                float _201 = _173 - _175;
+                                _210 = 1.0 - ((_201 * _201) / ((2.0 * _171) * _172));
+                            }
+                            else
+                            {
+                                _210 = (_175 - (0.5 * _172)) / _171;
+                            }
+                            _211 = _210;
+                        }
+                        _212 = _211;
+                    }
+                    else
+                    {
+                        _212 = 0.0;
+                    }
+                    _213 = _212;
+                }
+                _214 = _213;
+            }
+            _218 = (_160 > 0.001000000047497451305389404296875) ? _214 : fast::clamp(_139 + 0.5, 0.0, 1.0);
+        }
+        else
+        {
+            _218 = 0.0;
+        }
+        _220 = precise::min(_156, _218);
+    }
+    else
+    {
+        _220 = _156;
+    }
+    float _373;
+    if ((int(((device float*)&extras._m0[in.in_var_TEXCOORD1])[1]) & 1) != 0)
+    {
+        uint _228 = in.in_var_TEXCOORD1 + 3u;
+        uint _231 = in.in_var_TEXCOORD1 + 4u;
+        float _237 = extras._m0[_228].x + extras._m0[_231].x;
+        float _241 = extras._m0[_228].y + extras._m0[_231].x;
+        float _294;
+        float2 _295;
+        bool _296;
+        if (((extras._m0[_231].x > 0.0) && (gl_FragCoord.x < _237)) && (gl_FragCoord.y < _241))
+        {
+            _294 = extras._m0[_231].x;
+            _295 = float2(_237, _241);
+            _296 = true;
+        }
+        else
+        {
+            float _251 = extras._m0[_228].z - extras._m0[_231].y;
+            float _254 = extras._m0[_228].y + extras._m0[_231].y;
+            float _291;
+            float2 _292;
+            bool _293;
+            if (((extras._m0[_231].y > 0.0) && (gl_FragCoord.x > _251)) && (gl_FragCoord.y < _254))
+            {
+                _291 = extras._m0[_231].y;
+                _292 = float2(_251, _254);
+                _293 = true;
+            }
+            else
+            {
+                float _263 = extras._m0[_228].z - extras._m0[_231].z;
+                float _267 = extras._m0[_228].w - extras._m0[_231].z;
+                float _288;
+                float2 _289;
+                bool _290;
+                if (((extras._m0[_231].z > 0.0) && (gl_FragCoord.x > _263)) && (gl_FragCoord.y > _267))
+                {
+                    _288 = extras._m0[_231].z;
+                    _289 = float2(_263, _267);
+                    _290 = true;
+                }
+                else
+                {
+                    float _276 = extras._m0[_228].x + extras._m0[_231].w;
+                    float _279 = extras._m0[_228].w - extras._m0[_231].w;
+                    bool _281 = ((extras._m0[_231].w > 0.0) && (gl_FragCoord.x < _276)) && (gl_FragCoord.y > _279);
+                    float2 _286;
+                    if (_281)
+                    {
+                        _286 = float2(_276, _279);
+                    }
+                    else
+                    {
+                        _286 = float2(0.0);
+                    }
+                    _288 = _281 ? extras._m0[_231].w : 0.0;
+                    _289 = _286;
+                    _290 = _281;
+                }
+                _291 = _288;
+                _292 = _289;
+                _293 = _290;
+            }
+            _294 = _291;
+            _295 = _292;
+            _296 = _293;
+        }
+        float _307 = fast::clamp(precise::min(_143, extras._m0[_228].z) - precise::max(_145, extras._m0[_228].x), 0.0, 1.0) * fast::clamp(precise::min(_150, extras._m0[_228].w) - precise::max(_152, extras._m0[_228].y), 0.0, 1.0);
+        float _371;
+        if (_296)
+        {
+            float2 _310 = gl_FragCoord.xy - _295;
+            float _311 = length(_310);
+            float _369;
+            if (_294 > 0.0)
+            {
+                float _316 = _294 - _311;
+                float2 _319 = abs(_310 / float2(_311));
+                float _320 = _319.x;
+                float _321 = _319.y;
+                float _322 = precise::max(_320, _321);
+                float _323 = precise::min(_320, _321);
+                float _324 = _322 + _323;
+                float _326 = _316 + (0.5 * _324);
+                float _365;
+                if (_323 < 0.001000000047497451305389404296875)
+                {
+                    _365 = fast::clamp(_316 + 0.5, 0.0, 1.0);
+                }
+                else
+                {
+                    float _364;
+                    if (_326 >= _324)
+                    {
+                        _364 = 1.0;
+                    }
+                    else
+                    {
+                        float _363;
+                        if (_326 > 0.0)
+                        {
+                            float _362;
+                            if (_326 < _323)
+                            {
+                                _362 = (_326 * _326) / ((2.0 * _322) * _323);
+                            }
+                            else
+                            {
+                                float _361;
+                                if (_326 > _322)
+                                {
+                                    float _352 = _324 - _326;
+                                    _361 = 1.0 - ((_352 * _352) / ((2.0 * _322) * _323));
+                                }
+                                else
+                                {
+                                    _361 = (_326 - (0.5 * _323)) / _322;
+                                }
+                                _362 = _361;
+                            }
+                            _363 = _362;
+                        }
+                        else
+                        {
+                            _363 = 0.0;
+                        }
+                        _364 = _363;
+                    }
+                    _365 = _364;
+                }
+                _369 = (_311 > 0.001000000047497451305389404296875) ? _365 : fast::clamp(_294 + 0.5, 0.0, 1.0);
+            }
+            else
+            {
+                _369 = 0.0;
+            }
+            _371 = precise::min(_307, _369);
+        }
+        else
+        {
+            _371 = _307;
+        }
+        _373 = precise::min(_220, _371);
+    }
+    else
+    {
+        _373 = _220;
+    }
+    uint _374 = in.in_var_TEXCOORD1 + 5u;
+    float _581;
+    float4 _582;
+    if (_373 > 0.0)
+    {
+        float _579;
+        float4 _580;
+        if (extras._m0[_374].x >= 0.0)
+        {
+            uint _384 = uint(extras._m0[_374].x);
+            float4 _570;
+            if (extras._m0[_374].y >= 0.0)
+            {
+                uint _392 = uint(precise::max(extras._m0[_374].y, 0.0));
+                uint _395 = uint(((device float*)&colors._m0[_392])[0]);
+                uint _396 = _392 + 1u;
+                float4 _401;
+                _401 = float4(0.0);
+                uint _399;
+                float4 _402;
+                for (uint _398 = _396, _403 = 0u; _403 < _395; _398 = _399, _401 = _402, _403++)
+                {
+                    uint _410 = _398 + 1u;
+                    uint _417 = uint(colors._m0[_398].z);
+                    uint _418 = _398 + 3u;
+                    uint _421 = _418 + ((_417 + 3u) >> 2u);
+                    if (_417 > 0u)
+                    {
+                        float _442;
+                        if (colors._m0[_398].x < 0.5)
+                        {
+                            _442 = ((colors._m0[_410].x * gl_FragCoord.x) + (colors._m0[_410].y * gl_FragCoord.y)) + colors._m0[_410].z;
+                        }
+                        else
+                        {
+                            _442 = length((gl_FragCoord.xy - colors._m0[_410].xy) * colors._m0[_410].zw);
+                        }
+                        float _443 = fast::clamp(_442, -10000000.0, 10000000.0);
+                        uint _445 = uint(colors._m0[_398].y);
+                        float _465;
+                        if (_445 == 0u)
+                        {
+                            _465 = fast::clamp(_443, 0.0, 1.0);
+                        }
+                        else
+                        {
+                            float _464;
+                            if (_445 == 1u)
+                            {
+                                _464 = _443 - floor(_443);
+                            }
+                            else
+                            {
+                                float _460 = _443 - (2.0 * floor(_443 * 0.5));
+                                _464 = (_460 > 1.0) ? (2.0 - _460) : _460;
+                            }
+                            _465 = _464;
+                        }
+                        int _467;
+                        _467 = -1;
+                        int _468;
+                        for (uint _470 = 0u; _470 < _417; _467 = _468, _470++)
+                        {
+                            uint _476 = _418 + (_470 >> 2u);
+                            uint _479 = _470 & 3u;
+                            if (((_479 == 0u) ? colors._m0[_476].x : ((_479 == 1u) ? colors._m0[_476].y : ((_479 == 2u) ? colors._m0[_476].z : colors._m0[_476].w))) <= _465)
+                            {
+                                _468 = int(_470);
+                            }
+                            else
+                            {
+                                _468 = _467;
+                            }
+                        }
+                        float4 _552;
+                        if (_467 < 0)
+                        {
+                            _552 = colors._m0[_421];
+                        }
+                        else
+                        {
+                            uint _500 = uint(_467);
+                            float4 _551;
+                            if (_500 == (_417 - 1u))
+                            {
+                                _551 = colors._m0[_421 + _500];
+                            }
+                            else
+                            {
+                                uint _510 = _418 + (_500 >> 2u);
+                                uint _513 = _500 & 3u;
+                                float _523 = (_513 == 0u) ? colors._m0[_510].x : ((_513 == 1u) ? colors._m0[_510].y : ((_513 == 2u) ? colors._m0[_510].z : colors._m0[_510].w));
+                                uint _524 = _500 + 1u;
+                                uint _526 = _418 + (_524 >> 2u);
+                                uint _529 = _524 & 3u;
+                                uint _540 = _421 + _500;
+                                _551 = mix(colors._m0[_540], colors._m0[_540 + 1u], float4((_465 - _523) / (((_529 == 0u) ? colors._m0[_526].x : ((_529 == 1u) ? colors._m0[_526].y : ((_529 == 2u) ? colors._m0[_526].z : colors._m0[_526].w))) - _523)));
+                            }
+                            _552 = _551;
+                        }
+                        float4 _565;
+                        if (((device float*)&colors._m0[_398 + 2u])[0] > 0.5)
+                        {
+                            float3 _563 = mix(powr(abs((_552.xyz + float3(0.054999999701976776123046875)) * float3(0.947867333889007568359375)), float3(2.400000095367431640625)), _552.xyz * float3(0.077399380505084991455078125), step(_552.xyz, float3(0.040449999272823333740234375)));
+                            _565 = float4(_563.x, _563.y, _563.z, _552.w);
+                        }
+                        else
+                        {
+                            _565 = _552;
+                        }
+                        _402 = _401 + (_565 * colors._m0[_398].w);
+                    }
+                    else
+                    {
+                        _402 = _401;
+                    }
+                    _399 = _421 + _417;
+                }
+                _570 = colors._m0[_384] * _401;
+            }
+            else
+            {
+                _570 = colors._m0[_384];
+            }
+            _579 = _373;
+            _580 = float4(_570.xyz * _570.w, _570.w) * _373;
+        }
+        else
+        {
+            _579 = 0.0;
+            _580 = float4(0.0);
+        }
+        _581 = _579;
+        _582 = _580;
+    }
+    else
+    {
+        _581 = 0.0;
+        _582 = float4(0.0);
+    }
+    uint _583 = in.in_var_TEXCOORD1 + 6u;
+    float _584 = _220 - _373;
+    float _793;
+    float4 _794;
+    if (_584 > 0.0)
+    {
+        float _791;
+        float4 _792;
+        if (extras._m0[_583].x >= 0.0)
+        {
+            uint _594 = uint(extras._m0[_583].x);
+            float4 _780;
+            if (extras._m0[_583].y >= 0.0)
+            {
+                uint _602 = uint(precise::max(extras._m0[_583].y, 0.0));
+                uint _605 = uint(((device float*)&colors._m0[_602])[0]);
+                uint _606 = _602 + 1u;
+                float4 _611;
+                _611 = float4(0.0);
+                uint _609;
+                float4 _612;
+                for (uint _608 = _606, _613 = 0u; _613 < _605; _608 = _609, _611 = _612, _613++)
+                {
+                    uint _620 = _608 + 1u;
+                    uint _627 = uint(colors._m0[_608].z);
+                    uint _628 = _608 + 3u;
+                    uint _631 = _628 + ((_627 + 3u) >> 2u);
+                    if (_627 > 0u)
+                    {
+                        float _652;
+                        if (colors._m0[_608].x < 0.5)
+                        {
+                            _652 = ((colors._m0[_620].x * gl_FragCoord.x) + (colors._m0[_620].y * gl_FragCoord.y)) + colors._m0[_620].z;
+                        }
+                        else
+                        {
+                            _652 = length((gl_FragCoord.xy - colors._m0[_620].xy) * colors._m0[_620].zw);
+                        }
+                        float _653 = fast::clamp(_652, -10000000.0, 10000000.0);
+                        uint _655 = uint(colors._m0[_608].y);
+                        float _675;
+                        if (_655 == 0u)
+                        {
+                            _675 = fast::clamp(_653, 0.0, 1.0);
+                        }
+                        else
+                        {
+                            float _674;
+                            if (_655 == 1u)
+                            {
+                                _674 = _653 - floor(_653);
+                            }
+                            else
+                            {
+                                float _670 = _653 - (2.0 * floor(_653 * 0.5));
+                                _674 = (_670 > 1.0) ? (2.0 - _670) : _670;
+                            }
+                            _675 = _674;
+                        }
+                        int _677;
+                        _677 = -1;
+                        int _678;
+                        for (uint _680 = 0u; _680 < _627; _677 = _678, _680++)
+                        {
+                            uint _686 = _628 + (_680 >> 2u);
+                            uint _689 = _680 & 3u;
+                            if (((_689 == 0u) ? colors._m0[_686].x : ((_689 == 1u) ? colors._m0[_686].y : ((_689 == 2u) ? colors._m0[_686].z : colors._m0[_686].w))) <= _675)
+                            {
+                                _678 = int(_680);
+                            }
+                            else
+                            {
+                                _678 = _677;
+                            }
+                        }
+                        float4 _762;
+                        if (_677 < 0)
+                        {
+                            _762 = colors._m0[_631];
+                        }
+                        else
+                        {
+                            uint _710 = uint(_677);
+                            float4 _761;
+                            if (_710 == (_627 - 1u))
+                            {
+                                _761 = colors._m0[_631 + _710];
+                            }
+                            else
+                            {
+                                uint _720 = _628 + (_710 >> 2u);
+                                uint _723 = _710 & 3u;
+                                float _733 = (_723 == 0u) ? colors._m0[_720].x : ((_723 == 1u) ? colors._m0[_720].y : ((_723 == 2u) ? colors._m0[_720].z : colors._m0[_720].w));
+                                uint _734 = _710 + 1u;
+                                uint _736 = _628 + (_734 >> 2u);
+                                uint _739 = _734 & 3u;
+                                uint _750 = _631 + _710;
+                                _761 = mix(colors._m0[_750], colors._m0[_750 + 1u], float4((_675 - _733) / (((_739 == 0u) ? colors._m0[_736].x : ((_739 == 1u) ? colors._m0[_736].y : ((_739 == 2u) ? colors._m0[_736].z : colors._m0[_736].w))) - _733)));
+                            }
+                            _762 = _761;
+                        }
+                        float4 _775;
+                        if (((device float*)&colors._m0[_608 + 2u])[0] > 0.5)
+                        {
+                            float3 _773 = mix(powr(abs((_762.xyz + float3(0.054999999701976776123046875)) * float3(0.947867333889007568359375)), float3(2.400000095367431640625)), _762.xyz * float3(0.077399380505084991455078125), step(_762.xyz, float3(0.040449999272823333740234375)));
+                            _775 = float4(_773.x, _773.y, _773.z, _762.w);
+                        }
+                        else
+                        {
+                            _775 = _762;
+                        }
+                        _612 = _611 + (_775 * colors._m0[_608].w);
+                    }
+                    else
+                    {
+                        _612 = _611;
+                    }
+                    _609 = _631 + _627;
+                }
+                _780 = colors._m0[_594] * _611;
+            }
+            else
+            {
+                _780 = colors._m0[_594];
+            }
+            _791 = _581 + _584;
+            _792 = _582 + (float4(_780.xyz * _780.w, _780.w) * _584);
+        }
+        else
+        {
+            _791 = _581;
+            _792 = _582;
+        }
+        _793 = _791;
+        _794 = _792;
+    }
+    else
+    {
+        _793 = _581;
+        _794 = _582;
+    }
+    if (_793 < 0.00390625)
+    {
+        discard_fragment();
+    }
+    float4 _981;
+    if (PixelInfo.tintOfs >= 0)
+    {
+        uint _804 = uint(max(PixelInfo.tintOfs, 0));
+        uint _807 = uint(((device float*)&colors._m0[_804])[0]);
+        uint _808 = _804 + 1u;
+        float4 _813;
+        _813 = float4(0.0);
+        uint _811;
+        float4 _814;
+        for (uint _810 = _808, _815 = 0u; _815 < _807; _810 = _811, _813 = _814, _815++)
+        {
+            uint _822 = _810 + 1u;
+            uint _829 = uint(colors._m0[_810].z);
+            uint _830 = _810 + 3u;
+            uint _833 = _830 + ((_829 + 3u) >> 2u);
+            if (_829 > 0u)
+            {
+                float _854;
+                if (colors._m0[_810].x < 0.5)
+                {
+                    _854 = ((colors._m0[_822].x * gl_FragCoord.x) + (colors._m0[_822].y * gl_FragCoord.y)) + colors._m0[_822].z;
+                }
+                else
+                {
+                    _854 = length((gl_FragCoord.xy - colors._m0[_822].xy) * colors._m0[_822].zw);
+                }
+                float _855 = fast::clamp(_854, -10000000.0, 10000000.0);
+                uint _857 = uint(colors._m0[_810].y);
+                float _877;
+                if (_857 == 0u)
+                {
+                    _877 = fast::clamp(_855, 0.0, 1.0);
+                }
+                else
+                {
+                    float _876;
+                    if (_857 == 1u)
+                    {
+                        _876 = _855 - floor(_855);
+                    }
+                    else
+                    {
+                        float _872 = _855 - (2.0 * floor(_855 * 0.5));
+                        _876 = (_872 > 1.0) ? (2.0 - _872) : _872;
+                    }
+                    _877 = _876;
+                }
+                int _879;
+                _879 = -1;
+                int _880;
+                for (uint _882 = 0u; _882 < _829; _879 = _880, _882++)
+                {
+                    uint _888 = _830 + (_882 >> 2u);
+                    uint _891 = _882 & 3u;
+                    if (((_891 == 0u) ? colors._m0[_888].x : ((_891 == 1u) ? colors._m0[_888].y : ((_891 == 2u) ? colors._m0[_888].z : colors._m0[_888].w))) <= _877)
+                    {
+                        _880 = int(_882);
+                    }
+                    else
+                    {
+                        _880 = _879;
+                    }
+                }
+                float4 _964;
+                if (_879 < 0)
+                {
+                    _964 = colors._m0[_833];
+                }
+                else
+                {
+                    uint _912 = uint(_879);
+                    float4 _963;
+                    if (_912 == (_829 - 1u))
+                    {
+                        _963 = colors._m0[_833 + _912];
+                    }
+                    else
+                    {
+                        uint _922 = _830 + (_912 >> 2u);
+                        uint _925 = _912 & 3u;
+                        float _935 = (_925 == 0u) ? colors._m0[_922].x : ((_925 == 1u) ? colors._m0[_922].y : ((_925 == 2u) ? colors._m0[_922].z : colors._m0[_922].w));
+                        uint _936 = _912 + 1u;
+                        uint _938 = _830 + (_936 >> 2u);
+                        uint _941 = _936 & 3u;
+                        uint _952 = _833 + _912;
+                        _963 = mix(colors._m0[_952], colors._m0[_952 + 1u], float4((_877 - _935) / (((_941 == 0u) ? colors._m0[_938].x : ((_941 == 1u) ? colors._m0[_938].y : ((_941 == 2u) ? colors._m0[_938].z : colors._m0[_938].w))) - _935)));
+                    }
+                    _964 = _963;
+                }
+                float4 _977;
+                if (((device float*)&colors._m0[_810 + 2u])[0] > 0.5)
+                {
+                    float3 _975 = mix(powr(abs((_964.xyz + float3(0.054999999701976776123046875)) * float3(0.947867333889007568359375)), float3(2.400000095367431640625)), _964.xyz * float3(0.077399380505084991455078125), step(_964.xyz, float3(0.040449999272823333740234375)));
+                    _977 = float4(_975.x, _975.y, _975.z, _964.w);
+                }
+                else
+                {
+                    _977 = _964;
+                }
+                _814 = _813 + (_977 * colors._m0[_810].w);
+            }
+            else
+            {
+                _814 = _813;
+            }
+            _811 = _833 + _829;
+        }
+        _981 = _813;
+    }
+    else
+    {
+        _981 = float4(1.0);
+    }
+    float4 _982 = in.in_var_COLOR * _981;
+    float _984 = _982.w;
+    float4 _990 = _794 * float4(_982.xyz * _984, _984);
+    float4 _1068;
+    if (PixelInfo.canvasKind == 2u)
+    {
+        float _997 = _990.w;
+        float4 _1017;
+        if (PixelInfo.outputMode == 2u)
+        {
+            _1017 = float4((1.0 - _793) + _997);
+        }
+        else
+        {
+            float4 _1016;
+            if (PixelInfo.outputMode == 1u)
+            {
+                _1016 = float4(_997 * PixelInfo.morphFactor);
+            }
+            else
+            {
+                _1016 = float4(_997);
+            }
+            _1017 = _1016;
+        }
+        _1068 = _1017;
+    }
+    else
+    {
+        float4 _1067;
+        if (PixelInfo.outputMode == 3u)
+        {
+            float _1024 = _990.x;
+            _1067 = float4(_1024, _990.yz, precise::max(_1024, precise::max(_990.y, _990.z)));
+        }
+        else
+        {
+            float4 _1066;
+            if (PixelInfo.outputMode == 2u)
+            {
+                _1066 = float4(float3(1.0 - _990.w) + _990.xyz, 1.0);
+            }
+            else
+            {
+                float4 _1065;
+                if (PixelInfo.outputMode == 1u)
+                {
+                    float _1062;
+                    if (PixelInfo.canvasKind == 1u)
+                    {
+                        float _1058 = (1.0 - PixelInfo.morphFactor) + (((_793 > 0.0) ? (_990.w / _793) : 0.0) * PixelInfo.morphFactor);
+                        _1062 = (_1058 > 0.0) ? (1.0 / _1058) : 0.0;
+                    }
+                    else
+                    {
+                        _1062 = 1.0;
+                    }
+                    _1065 = _990 * (PixelInfo.morphFactor * _1062);
+                }
+                else
+                {
+                    _1065 = _990;
+                }
+                _1066 = _1065;
+            }
+            _1067 = _1066;
+        }
+        _1068 = _1067;
+    }
+    out.out_var_SV_Target0 = _1068;
+    return out;
+}
+

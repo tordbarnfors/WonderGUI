@@ -222,6 +222,16 @@ slow on Windows" below.
 
 Only run on Linux, with lavapipe and Intel UHD 770 (Mesa).
 
+### SdlGpuBackend on D3D12 and Metal
+
+Only run with Vulkan, on Linux, with lavapipe and Intel UHD 770 (Mesa). Its DXIL is compiled and
+signed on Linux and its MSL made by SPIRV-Cross, but no device has been given either. SDL_GPU
+binds storage buffers as raw buffer views on D3D12, where the shaders declare StructuredBuffers,
+which is how SDL's own examples have it, but may not be what every driver takes. To run:
+gfxdevicetester with `wappsdl3gpu` on Windows and on a Mac.
+
+`wax/extensions/sdlgpugfx`
+
 ### MetalSurface with surfaces that change while drawing
 
 MetalSurface sends pixels to its texture when the surface is used, in a command buffer committed
@@ -229,7 +239,7 @@ ahead of the session, since e4e1e9b5. gfxdevicetester gives the same results as 
 fills most of its surfaces once. An application that writes to surfaces every frame hasn't been
 run with it: widgetbench was only started and left on its first test, with nobody at it.
 
-### VulkanSurface and MetalSurface on staging memory are not compiled
+### MetalSurface on staging memory is not compiled
 
 Both were rewritten with GpuSurface on 2026-11-24, see "GPU surfaces: staging and plain memory" in
 ROADMAP.md, on Windows, where neither builds. VulkanBackend now records the uploads of a surface
@@ -238,6 +248,10 @@ changed under them since, for surfaces with a restorer, and `unload()`, `reload(
 `isLoaded()` were taken out of MetalSurface, see "GPU surfaces: pixels kept once" there. To run:
 gfxdevicetester, where "Restorer", "Rectangles" and "WriteAllRestorer" of ReadbackTests and
 SurfaceFillTests read and write surfaces without pixels of their own.
+
+VulkanSurface has since been built and run on Linux, at ce68e1e9 with SdlGpuBackend added
+(Release, Intel UHD 770): gfxdevicetester has the 4 tests differ of the two entries under
+Graphics, as before, and the four tests above OK.
 
 ## Graphics
 
@@ -433,7 +447,19 @@ makes the driver wait.
 ### Edgemaps and Warpmaps of GPU backends have one buffer for two frames in flight
 
 Changing an edgemap or a Warpmap writes into the buffer the GPU may still be reading for the
-previous frame, so it can show the new content early. DX12, Metal and Vulkan alike.
+previous frame, so it can show the new content early. DX12, Metal and Vulkan alike, not
+SdlGpuBackend, whose uploads get a buffer of their own while the GPU reads the old one.
+
+### SdlGpuBackend: Replace and Morph are two draws
+
+SDL_GPU has no dual-source blending, so a Replace that covers pixels partly, and a Morph, first
+take away what of the canvas the source replaces and then add the source, each draw command of
+them as a whole, see "SdlGpuBackend" in ROADMAP.md. Where two triangles of one draw cover the
+same pixel, as two rectangles sharing an edge on a subpixel position do, the result isn't what
+blending one after the other gives. Each draw also rounds to the canvas, which makes
+MorphTransparency of BlendRuleTests differ by up to 2 rather than 1 from ReferenceBackend.
+
+`wax/extensions/sdlgpugfx/wax_sdlgpubackend.cpp`, `wax/extensions/hlsl/sdlgpu_dual.hlsl`
 
 ### VulkanBackend: a lost device stops rendering for good
 

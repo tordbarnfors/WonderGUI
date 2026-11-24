@@ -67,6 +67,15 @@ For VulkanBackend, still to do:
   well within limits for a GUI, but Windows drivers can have as few as 4096 allocations.
 - **wappsdl2vk,** a Win32 framework, and running on Windows at all.
 
+For SdlGpuBackend, still to do, see "SdlGpuBackend" under Decided:
+
+- **Running it on D3D12 and Metal.** Only Vulkan on Linux has drawn with it. The DXIL is signed
+  by DXC and the MSL made by SPIRV-Cross, but neither has been given to a device, see
+  KNOWN_ISSUES.md.
+- **Timing on other GPUs than Intel UHD 770,** where it is as fast as VulkanBackend but for the
+  fixed cost of a session, about 0.1 ms more, from a command buffer of its own.
+- **A lost device,** which SDL_GPU doesn't tell us about. Restorers are never called.
+
 ### GPU surfaces: left after "pixels kept once"
 
 "GPU surfaces: pixels kept once" under Decided is done but for this:
@@ -1136,3 +1145,48 @@ it.
 - **Not for many instances as such.** Instances of one plugin share the statics of DX12Backend,
   and each plugin has a copy of its own. All DX12Backends of a module are taken to draw on one
   thread: `s_backends` and DX12BufferPool have no locks.
+
+
+### SdlGpuBackend (2026-11)
+
+A backend on the GPU API of SDL 3 (`wax/extensions/sdlgpugfx`), so that an application on SDL3
+can use Wax without picking a backend for each platform: SDL_GPU draws with Vulkan, D3D12 or
+Metal as it finds them. WonderApp has it as `wappsdl3gpu`, which renders each window into a canvas
+of its own and copies that to the swap chain, as `wappsdl3gl` does. Built on GpuBackend,
+GpuSurface and GpuEdgemap like the other GPU backends, with SdlGpuSurface, SdlGpuEdgemap,
+SdlGpuWarpmap and their factories. All share one device, set by `SdlGpuBackend::setDevice()`.
+
+- **A session is recorded and played back when it ends,** into a command buffer of its own,
+  which is submitted then, as GlBackend plays back its sessions. SDL_GPU has no buffers the CPU
+  writes to where the GPU reads them, and copies only in copy passes, outside render passes, so
+  what a session writes and what has changed of the surfaces, edgemaps and Warpmaps it draws is
+  uploaded in a copy pass in front of its render passes. That is when the Wax design says the
+  objects are read. A command buffer per session also puts every session in front of what comes
+  after it, so reading back needs no flushing of other backends. It costs about 0.1 ms per session
+  more than VulkanBackend on Intel UHD 770, which otherwise is as fast.
+- **The same HLSL,** compiled to SPIR-V, DXIL and MSL by `sdlgpugfx/compile_shaders.py` and
+  checked in, as for the other backends. Each platform has the formats SDL_GPU can have a device
+  for there: SPIR-V everywhere but on Apple's, which have MSL, and DXIL too on Windows. SDL_GPU
+  binds by slots of its own for each stage, kind and shader, so the script moves the registers to
+  them and writes what each shader binds to `wax_sdlgpushaders.cpp`. The constants are the three
+  cbuffers of DX12Backend as uniform buffers, as SDL_GPU has no push constants.
+- **No dual-source blending:** Replace and Morph draw twice, the first taking away the part of
+  the canvas the second color says, the second adding the color, see `hlsl/sdlgpu_dual.hlsl`.
+  Multiply puts the two colors together in the shader and draws once: BlendModeMultiply of
+  gfxdevicetester takes 18 us on Intel UHD 770, against 34 us on VulkanBackend. Two draws round twice and differ from one where triangles
+  of a draw overlap, see KNOWN_ISSUES.md.
+- **No swizzles, border colors or sampled integer textures,** so the shaders do what they are
+  for on the other backends, see `hlsl/sdlgpu.hlsl`: Alpha_8 is R8 with the value moved to
+  alpha, XRGB_8 reads alpha 1, clipping multiplies a texel clamped to the edge by the part of its
+  footprint inside the source, which is what a transparent border gives, and palette indexes are
+  in R8_UNORM or R16_UNORM, turned back into indexes by the largest index, which SdlGpuSurface
+  puts in the header of the palette. The A8 of SDL_GPU wasn't an option: it is R8 with a swizzle
+  on Vulkan, which a render target must not have, and Metal can't render into it.
+- **Edgemaps and Warpmaps are uploaded whole when they have changed,** cycling the buffer, so
+  sessions still in flight keep what they had, unlike on the other GPU backends.
+- **Mipmaps** are made by SDL_GenerateMipmapsForGPUTexture(), as VulkanBackend blits them.
+
+gfxdevicetester on Linux, Release, with Vulkan: on Intel UHD 770 (Mesa) 266 tests, 4 differ, the
+same ones and by the same amounts as on VulkanBackend: Mipmapped_0.4, ReplaceVerticalAndFlat,
+Readback and Rectangles of ReadbackTests, see KNOWN_ISSUES.md. The same four on lavapipe. In debug
+mode of SDL_GPU, with the validation layer of Vulkan, no messages.

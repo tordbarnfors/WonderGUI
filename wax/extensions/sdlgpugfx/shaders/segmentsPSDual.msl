@@ -1,0 +1,578 @@
+#include <metal_stdlib>
+#include <simd/simd.h>
+
+using namespace metal;
+
+struct type_CanvasInfo
+{
+    float2 canvasScale;
+    float2 _textureSize;
+    uint flags;
+    uint blurOfs;
+    uint edgemapEdges;
+    uint edgemapPitch;
+};
+
+struct type_PixelInfo
+{
+    int tintOfs;
+    uint outputMode;
+    uint canvasKind;
+    float morphFactor;
+};
+
+struct type_StructuredBuffer_v4float
+{
+    float4 _m0[1];
+};
+
+struct type_SdlOutputInfo
+{
+    uint sdlOutput;
+};
+
+struct main0_out
+{
+    float4 out_var_SV_Target0 [[color(0)]];
+};
+
+struct main0_in
+{
+    float4 in_var_COLOR [[user(locn0)]];
+    float2 in_var_TEXCOORD0 [[user(locn1)]];
+    uint2 in_var_TEXCOORD1 [[user(locn2)]];
+    float2 in_var_TEXCOORD2 [[user(locn3), flat]];
+};
+
+fragment main0_out main0(main0_in in [[stage_in]], constant type_CanvasInfo& CanvasInfo [[buffer(0)]], constant type_PixelInfo& PixelInfo [[buffer(1)]], constant type_SdlOutputInfo& SdlOutputInfo [[buffer(3)]], const device type_StructuredBuffer_v4float& colors [[buffer(4)]], const device type_StructuredBuffer_v4float& edgemap [[buffer(5)]], float4 gl_FragCoord [[position]])
+{
+    main0_out out = {};
+    float2 _99;
+    if (in.in_var_TEXCOORD2.x > 0.0)
+    {
+        float2 _92 = float2(floor(in.in_var_TEXCOORD0.x), floor(in.in_var_TEXCOORD0.y + 0.5));
+        _99 = in.in_var_TEXCOORD0 + ((_92 - (in.in_var_TEXCOORD2 * floor(_92 / in.in_var_TEXCOORD2))) - _92);
+    }
+    else
+    {
+        _99 = in.in_var_TEXCOORD0;
+    }
+    uint _102 = uint(_99.x) * CanvasInfo.edgemapPitch;
+    float _104 = floor(_99.x) + 0.5;
+    float _106 = _99.y + 0.5;
+    float2 _107 = float2(_104, _106);
+    float4 _294;
+    if (PixelInfo.tintOfs >= 0)
+    {
+        uint _115 = uint(max(PixelInfo.tintOfs, 0));
+        uint _118 = uint(((device float*)&colors._m0[_115])[0]);
+        uint _119 = _115 + 1u;
+        float4 _124;
+        _124 = float4(0.0);
+        uint _122;
+        float4 _125;
+        for (uint _121 = _119, _126 = 0u; _126 < _118; _121 = _122, _124 = _125, _126++)
+        {
+            uint _133 = _121 + 1u;
+            uint _140 = uint(colors._m0[_121].z);
+            uint _141 = _121 + 3u;
+            uint _144 = _141 + ((_140 + 3u) >> 2u);
+            if (_140 > 0u)
+            {
+                float _167;
+                if (colors._m0[_121].x < 0.5)
+                {
+                    _167 = ((colors._m0[_133].x * gl_FragCoord.x) + (colors._m0[_133].y * gl_FragCoord.y)) + colors._m0[_133].z;
+                }
+                else
+                {
+                    _167 = length((gl_FragCoord.xy - colors._m0[_133].xy) * colors._m0[_133].zw);
+                }
+                float _168 = fast::clamp(_167, -10000000.0, 10000000.0);
+                uint _170 = uint(colors._m0[_121].y);
+                float _190;
+                if (_170 == 0u)
+                {
+                    _190 = fast::clamp(_168, 0.0, 1.0);
+                }
+                else
+                {
+                    float _189;
+                    if (_170 == 1u)
+                    {
+                        _189 = _168 - floor(_168);
+                    }
+                    else
+                    {
+                        float _185 = _168 - (2.0 * floor(_168 * 0.5));
+                        _189 = (_185 > 1.0) ? (2.0 - _185) : _185;
+                    }
+                    _190 = _189;
+                }
+                int _192;
+                _192 = -1;
+                int _193;
+                for (uint _195 = 0u; _195 < _140; _192 = _193, _195++)
+                {
+                    uint _201 = _141 + (_195 >> 2u);
+                    uint _204 = _195 & 3u;
+                    if (((_204 == 0u) ? colors._m0[_201].x : ((_204 == 1u) ? colors._m0[_201].y : ((_204 == 2u) ? colors._m0[_201].z : colors._m0[_201].w))) <= _190)
+                    {
+                        _193 = int(_195);
+                    }
+                    else
+                    {
+                        _193 = _192;
+                    }
+                }
+                float4 _277;
+                if (_192 < 0)
+                {
+                    _277 = colors._m0[_144];
+                }
+                else
+                {
+                    uint _225 = uint(_192);
+                    float4 _276;
+                    if (_225 == (_140 - 1u))
+                    {
+                        _276 = colors._m0[_144 + _225];
+                    }
+                    else
+                    {
+                        uint _235 = _141 + (_225 >> 2u);
+                        uint _238 = _225 & 3u;
+                        float _248 = (_238 == 0u) ? colors._m0[_235].x : ((_238 == 1u) ? colors._m0[_235].y : ((_238 == 2u) ? colors._m0[_235].z : colors._m0[_235].w));
+                        uint _249 = _225 + 1u;
+                        uint _251 = _141 + (_249 >> 2u);
+                        uint _254 = _249 & 3u;
+                        uint _265 = _144 + _225;
+                        _276 = mix(colors._m0[_265], colors._m0[_265 + 1u], float4((_190 - _248) / (((_254 == 0u) ? colors._m0[_251].x : ((_254 == 1u) ? colors._m0[_251].y : ((_254 == 2u) ? colors._m0[_251].z : colors._m0[_251].w))) - _248)));
+                    }
+                    _277 = _276;
+                }
+                float4 _290;
+                if (((device float*)&colors._m0[_121 + 2u])[0] > 0.5)
+                {
+                    float3 _288 = mix(powr(abs((_277.xyz + float3(0.054999999701976776123046875)) * float3(0.947867333889007568359375)), float3(2.400000095367431640625)), _277.xyz * float3(0.077399380505084991455078125), step(_277.xyz, float3(0.040449999272823333740234375)));
+                    _290 = float4(_288.x, _288.y, _288.z, _277.w);
+                }
+                else
+                {
+                    _290 = _277;
+                }
+                _125 = _124 + (_290 * colors._m0[_121].w);
+            }
+            else
+            {
+                _125 = _124;
+            }
+            _122 = _144 + _140;
+        }
+        _294 = _124;
+    }
+    else
+    {
+        _294 = float4(1.0);
+    }
+    float4 _295 = in.in_var_COLOR * _294;
+    float _297 = _295.w;
+    float4 _302 = float4(_295.xyz * _297, _297);
+    float4 _304;
+    float _307;
+    float _309;
+    _304 = float4(0.0);
+    _307 = 0.0;
+    _309 = 1.0;
+    float4 _305;
+    float _310;
+    float _308;
+    for (uint _311 = 0u; _311 < CanvasInfo.edgemapEdges; _304 = _305, _307 = _308, _309 = _310, _311++)
+    {
+        int _321 = int(((device float*)&edgemap._m0[in.in_var_TEXCOORD1.y + _311])[0]);
+        float4 _509;
+        if (_321 < 0)
+        {
+            _509 = edgemap._m0[in.in_var_TEXCOORD1.x + _311];
+        }
+        else
+        {
+            uint _332 = uint(max(_321, 0));
+            uint _335 = uint(((device float*)&edgemap._m0[_332])[0]);
+            uint _336 = _332 + 1u;
+            float4 _341;
+            _341 = float4(0.0);
+            uint _339;
+            float4 _342;
+            for (uint _338 = _336, _343 = 0u; _343 < _335; _338 = _339, _341 = _342, _343++)
+            {
+                uint _350 = _338 + 1u;
+                uint _357 = uint(edgemap._m0[_338].z);
+                uint _358 = _338 + 3u;
+                uint _361 = _358 + ((_357 + 3u) >> 2u);
+                if (_357 > 0u)
+                {
+                    float _382;
+                    if (edgemap._m0[_338].x < 0.5)
+                    {
+                        _382 = ((edgemap._m0[_350].x * _104) + (edgemap._m0[_350].y * _106)) + edgemap._m0[_350].z;
+                    }
+                    else
+                    {
+                        _382 = length((_107 - edgemap._m0[_350].xy) * edgemap._m0[_350].zw);
+                    }
+                    float _383 = fast::clamp(_382, -10000000.0, 10000000.0);
+                    uint _385 = uint(edgemap._m0[_338].y);
+                    float _405;
+                    if (_385 == 0u)
+                    {
+                        _405 = fast::clamp(_383, 0.0, 1.0);
+                    }
+                    else
+                    {
+                        float _404;
+                        if (_385 == 1u)
+                        {
+                            _404 = _383 - floor(_383);
+                        }
+                        else
+                        {
+                            float _400 = _383 - (2.0 * floor(_383 * 0.5));
+                            _404 = (_400 > 1.0) ? (2.0 - _400) : _400;
+                        }
+                        _405 = _404;
+                    }
+                    int _407;
+                    _407 = -1;
+                    int _408;
+                    for (uint _410 = 0u; _410 < _357; _407 = _408, _410++)
+                    {
+                        uint _416 = _358 + (_410 >> 2u);
+                        uint _419 = _410 & 3u;
+                        if (((_419 == 0u) ? edgemap._m0[_416].x : ((_419 == 1u) ? edgemap._m0[_416].y : ((_419 == 2u) ? edgemap._m0[_416].z : edgemap._m0[_416].w))) <= _405)
+                        {
+                            _408 = int(_410);
+                        }
+                        else
+                        {
+                            _408 = _407;
+                        }
+                    }
+                    float4 _492;
+                    if (_407 < 0)
+                    {
+                        _492 = edgemap._m0[_361];
+                    }
+                    else
+                    {
+                        uint _440 = uint(_407);
+                        float4 _491;
+                        if (_440 == (_357 - 1u))
+                        {
+                            _491 = edgemap._m0[_361 + _440];
+                        }
+                        else
+                        {
+                            uint _450 = _358 + (_440 >> 2u);
+                            uint _453 = _440 & 3u;
+                            float _463 = (_453 == 0u) ? edgemap._m0[_450].x : ((_453 == 1u) ? edgemap._m0[_450].y : ((_453 == 2u) ? edgemap._m0[_450].z : edgemap._m0[_450].w));
+                            uint _464 = _440 + 1u;
+                            uint _466 = _358 + (_464 >> 2u);
+                            uint _469 = _464 & 3u;
+                            uint _480 = _361 + _440;
+                            _491 = mix(edgemap._m0[_480], edgemap._m0[_480 + 1u], float4((_405 - _463) / (((_469 == 0u) ? edgemap._m0[_466].x : ((_469 == 1u) ? edgemap._m0[_466].y : ((_469 == 2u) ? edgemap._m0[_466].z : edgemap._m0[_466].w))) - _463)));
+                        }
+                        _492 = _491;
+                    }
+                    float4 _505;
+                    if (((device float*)&edgemap._m0[_338 + 2u])[0] > 0.5)
+                    {
+                        float3 _503 = mix(powr(abs((_492.xyz + float3(0.054999999701976776123046875)) * float3(0.947867333889007568359375)), float3(2.400000095367431640625)), _492.xyz * float3(0.077399380505084991455078125), step(_492.xyz, float3(0.040449999272823333740234375)));
+                        _505 = float4(_503.x, _503.y, _503.z, _492.w);
+                    }
+                    else
+                    {
+                        _505 = _492;
+                    }
+                    _342 = _341 + (_505 * edgemap._m0[_338].w);
+                }
+                else
+                {
+                    _342 = _341;
+                }
+                _339 = _361 + _357;
+            }
+            _509 = _341;
+        }
+        uint _510 = _102 + _311;
+        float _516 = (_99.y - edgemap._m0[_510].x) * edgemap._m0[_510].y;
+        float _529;
+        if (_516 < 0.0)
+        {
+            _529 = edgemap._m0[_510].z;
+        }
+        else
+        {
+            float _528;
+            if ((_516 + edgemap._m0[_510].y) > 1.0)
+            {
+                _528 = edgemap._m0[_510].w;
+            }
+            else
+            {
+                _528 = edgemap._m0[_510].y * 0.5;
+            }
+            _529 = _528;
+        }
+        _310 = precise::min(fast::clamp(_516 + _529, 0.0, 1.0), _309);
+        float4 _539 = float4(_509.xyz * _509.w, _509.w) * _302;
+        float _540 = _309 - _310;
+        float4 _564;
+        if ((PixelInfo.outputMode == 1u) && (PixelInfo.canvasKind == 1u))
+        {
+            float _553 = 1.0 - PixelInfo.morphFactor;
+            float _556 = _553 + (_539.w * PixelInfo.morphFactor);
+            float _559 = (_556 > 0.0) ? (_540 / _556) : 0.0;
+            _308 = _307 + (_559 * _553);
+            _564 = _539 * (_559 * PixelInfo.morphFactor);
+        }
+        else
+        {
+            _308 = _307;
+            _564 = _539 * _540;
+        }
+        _305 = _304 + _564;
+    }
+    int _570 = int(((device float*)&edgemap._m0[in.in_var_TEXCOORD1.y + CanvasInfo.edgemapEdges])[0]);
+    float4 _758;
+    if (_570 < 0)
+    {
+        _758 = edgemap._m0[in.in_var_TEXCOORD1.x + CanvasInfo.edgemapEdges];
+    }
+    else
+    {
+        uint _581 = uint(max(_570, 0));
+        uint _584 = uint(((device float*)&edgemap._m0[_581])[0]);
+        uint _585 = _581 + 1u;
+        float4 _590;
+        _590 = float4(0.0);
+        uint _588;
+        float4 _591;
+        for (uint _587 = _585, _592 = 0u; _592 < _584; _587 = _588, _590 = _591, _592++)
+        {
+            uint _599 = _587 + 1u;
+            uint _606 = uint(edgemap._m0[_587].z);
+            uint _607 = _587 + 3u;
+            uint _610 = _607 + ((_606 + 3u) >> 2u);
+            if (_606 > 0u)
+            {
+                float _631;
+                if (edgemap._m0[_587].x < 0.5)
+                {
+                    _631 = ((edgemap._m0[_599].x * _104) + (edgemap._m0[_599].y * _106)) + edgemap._m0[_599].z;
+                }
+                else
+                {
+                    _631 = length((_107 - edgemap._m0[_599].xy) * edgemap._m0[_599].zw);
+                }
+                float _632 = fast::clamp(_631, -10000000.0, 10000000.0);
+                uint _634 = uint(edgemap._m0[_587].y);
+                float _654;
+                if (_634 == 0u)
+                {
+                    _654 = fast::clamp(_632, 0.0, 1.0);
+                }
+                else
+                {
+                    float _653;
+                    if (_634 == 1u)
+                    {
+                        _653 = _632 - floor(_632);
+                    }
+                    else
+                    {
+                        float _649 = _632 - (2.0 * floor(_632 * 0.5));
+                        _653 = (_649 > 1.0) ? (2.0 - _649) : _649;
+                    }
+                    _654 = _653;
+                }
+                int _656;
+                _656 = -1;
+                int _657;
+                for (uint _659 = 0u; _659 < _606; _656 = _657, _659++)
+                {
+                    uint _665 = _607 + (_659 >> 2u);
+                    uint _668 = _659 & 3u;
+                    if (((_668 == 0u) ? edgemap._m0[_665].x : ((_668 == 1u) ? edgemap._m0[_665].y : ((_668 == 2u) ? edgemap._m0[_665].z : edgemap._m0[_665].w))) <= _654)
+                    {
+                        _657 = int(_659);
+                    }
+                    else
+                    {
+                        _657 = _656;
+                    }
+                }
+                float4 _741;
+                if (_656 < 0)
+                {
+                    _741 = edgemap._m0[_610];
+                }
+                else
+                {
+                    uint _689 = uint(_656);
+                    float4 _740;
+                    if (_689 == (_606 - 1u))
+                    {
+                        _740 = edgemap._m0[_610 + _689];
+                    }
+                    else
+                    {
+                        uint _699 = _607 + (_689 >> 2u);
+                        uint _702 = _689 & 3u;
+                        float _712 = (_702 == 0u) ? edgemap._m0[_699].x : ((_702 == 1u) ? edgemap._m0[_699].y : ((_702 == 2u) ? edgemap._m0[_699].z : edgemap._m0[_699].w));
+                        uint _713 = _689 + 1u;
+                        uint _715 = _607 + (_713 >> 2u);
+                        uint _718 = _713 & 3u;
+                        uint _729 = _610 + _689;
+                        _740 = mix(edgemap._m0[_729], edgemap._m0[_729 + 1u], float4((_654 - _712) / (((_718 == 0u) ? edgemap._m0[_715].x : ((_718 == 1u) ? edgemap._m0[_715].y : ((_718 == 2u) ? edgemap._m0[_715].z : edgemap._m0[_715].w))) - _712)));
+                    }
+                    _741 = _740;
+                }
+                float4 _754;
+                if (((device float*)&edgemap._m0[_587 + 2u])[0] > 0.5)
+                {
+                    float3 _752 = mix(powr(abs((_741.xyz + float3(0.054999999701976776123046875)) * float3(0.947867333889007568359375)), float3(2.400000095367431640625)), _741.xyz * float3(0.077399380505084991455078125), step(_741.xyz, float3(0.040449999272823333740234375)));
+                    _754 = float4(_752.x, _752.y, _752.z, _741.w);
+                }
+                else
+                {
+                    _754 = _741;
+                }
+                _591 = _590 + (_754 * edgemap._m0[_587].w);
+            }
+            else
+            {
+                _591 = _590;
+            }
+            _588 = _610 + _606;
+        }
+        _758 = _590;
+    }
+    float4 _766 = float4(_758.xyz * _758.w, _758.w) * _302;
+    bool _770 = PixelInfo.outputMode == 1u;
+    bool _773 = PixelInfo.canvasKind == 1u;
+    bool _774 = _770 && _773;
+    float _790;
+    float4 _791;
+    if (_774)
+    {
+        float _779 = 1.0 - PixelInfo.morphFactor;
+        float _782 = _779 + (_766.w * PixelInfo.morphFactor);
+        float _785 = (_782 > 0.0) ? (_309 / _782) : 0.0;
+        _790 = _307 + (_785 * _779);
+        _791 = _766 * (_785 * PixelInfo.morphFactor);
+    }
+    else
+    {
+        _790 = _307;
+        _791 = _766 * _309;
+    }
+    float4 _792 = _304 + _791;
+    float4 _868;
+    float4 _869;
+    if (PixelInfo.canvasKind == 2u)
+    {
+        float _797 = _792.w;
+        float4 _814;
+        float4 _815;
+        if (PixelInfo.outputMode == 2u)
+        {
+            _814 = float4(0.0);
+            _815 = float4(_797);
+        }
+        else
+        {
+            float4 _812;
+            float4 _813;
+            if (_770)
+            {
+                _812 = float4(PixelInfo.morphFactor);
+                _813 = float4(_797 * PixelInfo.morphFactor);
+            }
+            else
+            {
+                float4 _811 = float4(_797);
+                _812 = _811;
+                _813 = _811;
+            }
+            _814 = _812;
+            _815 = _813;
+        }
+        _868 = _814;
+        _869 = _815;
+    }
+    else
+    {
+        float4 _866;
+        float4 _867;
+        if (PixelInfo.outputMode == 3u)
+        {
+            float _820 = _792.x;
+            _866 = float4(0.0);
+            _867 = float4(_820, _792.yz, precise::max(_820, precise::max(_792.y, _792.z)));
+        }
+        else
+        {
+            float4 _864;
+            float4 _865;
+            if (PixelInfo.outputMode == 2u)
+            {
+                _864 = float4(0.0);
+                _865 = float4(float3(1.0 - _792.w) + _792.xyz, 1.0);
+            }
+            else
+            {
+                float4 _862;
+                float4 _863;
+                if (_770)
+                {
+                    float _853;
+                    if (_773)
+                    {
+                        float _849 = (1.0 - PixelInfo.morphFactor) + (_792.w * PixelInfo.morphFactor);
+                        _853 = (_849 > 0.0) ? (1.0 / _849) : 0.0;
+                    }
+                    else
+                    {
+                        _853 = 1.0;
+                    }
+                    _862 = float4(1.0 - ((1.0 - PixelInfo.morphFactor) * _853));
+                    _863 = _792 * (PixelInfo.morphFactor * _853);
+                }
+                else
+                {
+                    _862 = float4(_792.w);
+                    _863 = _792;
+                }
+                _864 = _862;
+                _865 = _863;
+            }
+            _866 = _864;
+            _867 = _865;
+        }
+        _868 = _866;
+        _869 = _867;
+    }
+    float4 _874;
+    if (_774)
+    {
+        _874 = float4(1.0 - _790);
+    }
+    else
+    {
+        _874 = _868;
+    }
+    out.out_var_SV_Target0 = select((select(_869, _792, bool4(_774)) + float4(1.0)) - _874, _874, bool4(SdlOutputInfo.sdlOutput == 1u));
+    return out;
+}
+

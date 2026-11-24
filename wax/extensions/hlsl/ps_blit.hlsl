@@ -24,6 +24,15 @@ PS_OUTPUT main(PS_INPUT input)
 {
     float4 texel = blitSource.Sample(blitSampler, input.texUV);
 
+#ifdef WAX_SDLGPU
+
+    // SDL_GPU has no border colors and no swizzles, see sdlgpu.hlsl, which gives the clipped
+    // texel of a source without alpha what the code below does.
+
+    texel = waxSourceTexel(texel, input.texUV);
+
+#else
+
     // A source without alpha (B8G8R8X8) reads alpha 1 also from the transparent
     // border that clips a ClipBlit. So its alpha is worked out from the position:
     // 1 inside and 0 outside with nearest sampling, and the part of the bilinear
@@ -45,6 +54,8 @@ PS_OUTPUT main(PS_INPUT input)
         else
             texel.a = (any(input.texUV < 0.0f) || any(input.texUV >= 1.0f)) ? 0.0f : 1.0f;
     }
+
+#endif
 
     // An alpha only source has no color of its own, it just modulates the tint.
 

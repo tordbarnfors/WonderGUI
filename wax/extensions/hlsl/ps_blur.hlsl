@@ -44,6 +44,10 @@ PS_OUTPUT main(PS_INPUT input)
 
         float4 tap = blitSource.Sample(blitSampler, input.texUV + ofs);
 
+#ifdef WAX_SDLGPU
+        tap = waxSourceTexel(tap, input.texUV + ofs);       // See sdlgpu.hlsl.
+#endif
+
         if (bAlphaOnly)
             tap = float4(1.0f, 1.0f, 1.0f, tap.a);
         else

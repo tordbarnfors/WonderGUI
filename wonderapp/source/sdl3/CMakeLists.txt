@@ -171,6 +171,31 @@ if(WAPPLIB STREQUAL "wappsdl3metal")
 endif()
 
 
+### SDL GPU version, rendering with Vulkan, DirectX 12 or Metal as SDL picks
+
+if(WAPPLIB STREQUAL "wappsdl3gpu")
+
+	add_library(wappsdl3gpu STATIC
+		${SOURCES}
+		backend_sdlgpu.cpp
+	)
+
+	target_include_directories(wappsdl3gpu PRIVATE
+		${INCDIRS}
+		${WAXSDLGPUGFX_INCDIRS}
+	)
+
+	target_link_libraries(wappsdl3gpu PRIVATE
+		waxsdlgpugfx
+		waxfreetypefont
+		wondergui
+		wgdebugger
+		${SDL3_LIBS}
+	)
+
+endif()
+
+
 set(WAPP_SOURCES ${SOURCES} PARENT_SCOPE)
 set(WAPP_INCDIRS ${INCDIRS} PARENT_SCOPE)
 

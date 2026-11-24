@@ -1,0 +1,1048 @@
+#include <metal_stdlib>
+#include <simd/simd.h>
+
+using namespace metal;
+
+struct type_CanvasInfo
+{
+    float2 canvasScale;
+    float2 _textureSize;
+    uint flags;
+    uint blurOfs;
+    uint edgemapEdges;
+    uint edgemapPitch;
+};
+
+struct type_PixelInfo
+{
+    int tintOfs;
+    uint outputMode;
+    uint canvasKind;
+    float morphFactor;
+};
+
+struct type_StructuredBuffer_v4float
+{
+    float4 _m0[1];
+};
+
+struct type_SdlOutputInfo
+{
+    uint sdlOutput;
+};
+
+struct main0_out
+{
+    float4 out_var_SV_Target0 [[color(0)]];
+};
+
+struct main0_in
+{
+    float4 in_var_COLOR [[user(locn0)]];
+    float2 in_var_TEXCOORD0 [[user(locn1)]];
+};
+
+fragment main0_out main0(main0_in in [[stage_in]], constant type_CanvasInfo& CanvasInfo [[buffer(0)]], constant type_PixelInfo& PixelInfo [[buffer(1)]], constant type_SdlOutputInfo& SdlOutputInfo [[buffer(3)]], const device type_StructuredBuffer_v4float& colors [[buffer(4)]], const device type_StructuredBuffer_v4float& extras [[buffer(5)]], const device type_StructuredBuffer_v4float& palette [[buffer(6)]], texture2d<float> blitSource [[texture(0)]], float4 gl_FragCoord [[position]])
+{
+    main0_out out = {};
+    float2 _110 = (in.in_var_TEXCOORD0 + extras._m0[CanvasInfo.blurOfs + 9u].xy) * CanvasInfo._textureSize;
+    bool _114 = (CanvasInfo.flags & 2u) != 0u;
+    float4 _390;
+    if (_114)
+    {
+        float2 _118 = _110 - float2(0.5);
+        float2 _119 = floor(_118);
+        float2 _120 = _118 - _119;
+        int2 _121 = int2(_119);
+        int2 _122 = int2(CanvasInfo._textureSize);
+        bool _124 = (CanvasInfo.flags & 4u) != 0u;
+        int2 _155;
+        if (_124)
+        {
+            uint2 _128 = uint2(_122);
+            uint2 _131 = uint2(abs(_121)) % _128;
+            uint _134 = _131.x;
+            uint _144 = _131.y;
+            _155 = int2(((_121.x >= 0) || (_134 == 0u)) ? int(_134) : int(_128.x - _134), ((_121.y >= 0) || (_144 == 0u)) ? int(_144) : int(_128.y - _144));
+        }
+        else
+        {
+            _155 = clamp(_121, int2(0), _122 - int2(1));
+        }
+        int2 _176 = _121 + int2(1, 0);
+        int2 _207;
+        if (_124)
+        {
+            uint2 _180 = uint2(_122);
+            uint2 _183 = uint2(abs(_176)) % _180;
+            uint _186 = _183.x;
+            uint _196 = _183.y;
+            _207 = int2(((_176.x >= 0) || (_186 == 0u)) ? int(_186) : int(_180.x - _186), ((_176.y >= 0) || (_196 == 0u)) ? int(_196) : int(_180.y - _196));
+        }
+        else
+        {
+            _207 = clamp(_176, int2(0), _122 - int2(1));
+        }
+        int2 _226 = _121 + int2(0, 1);
+        int2 _257;
+        if (_124)
+        {
+            uint2 _230 = uint2(_122);
+            uint2 _233 = uint2(abs(_226)) % _230;
+            uint _236 = _233.x;
+            uint _246 = _233.y;
+            _257 = int2(((_226.x >= 0) || (_236 == 0u)) ? int(_236) : int(_230.x - _236), ((_226.y >= 0) || (_246 == 0u)) ? int(_246) : int(_230.y - _246));
+        }
+        else
+        {
+            _257 = clamp(_226, int2(0), _122 - int2(1));
+        }
+        int2 _276 = _121 + int2(1);
+        int2 _307;
+        if (_124)
+        {
+            uint2 _280 = uint2(_122);
+            uint2 _283 = uint2(abs(_276)) % _280;
+            uint _286 = _283.x;
+            uint _296 = _283.y;
+            _307 = int2(((_276.x >= 0) || (_286 == 0u)) ? int(_286) : int(_280.x - _286), ((_276.y >= 0) || (_296 == 0u)) ? int(_296) : int(_280.y - _296));
+        }
+        else
+        {
+            _307 = clamp(_276, int2(0), _122 - int2(1));
+        }
+        float4 _327 = float4(_120.x);
+        _390 = mix(mix(palette._m0[min(uint((blitSource.read(uint2(int3(_155, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], palette._m0[min(uint((blitSource.read(uint2(int3(_207, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], _327), mix(palette._m0[min(uint((blitSource.read(uint2(int3(_257, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], palette._m0[min(uint((blitSource.read(uint2(int3(_307, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], _327), float4(_120.y));
+    }
+    else
+    {
+        int2 _335 = int2(floor(_110 + float2(0.00390625)));
+        int2 _336 = int2(CanvasInfo._textureSize);
+        int2 _369;
+        if ((CanvasInfo.flags & 4u) != 0u)
+        {
+            uint2 _342 = uint2(_336);
+            uint2 _345 = uint2(abs(_335)) % _342;
+            uint _348 = _345.x;
+            uint _358 = _345.y;
+            _369 = int2(((_335.x >= 0) || (_348 == 0u)) ? int(_348) : int(_342.x - _348), ((_335.y >= 0) || (_358 == 0u)) ? int(_358) : int(_342.y - _358));
+        }
+        else
+        {
+            _369 = clamp(_335, int2(0), _336 - int2(1));
+        }
+        _390 = palette._m0[min(uint((blitSource.read(uint2(int3(_369, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u];
+    }
+    float3 _397 = select(float3(0.0), _390.xyz / float3(_390.w), bool3(_390.w > 0.0));
+    float2 _407 = (in.in_var_TEXCOORD0 + extras._m0[CanvasInfo.blurOfs + 10u].xy) * CanvasInfo._textureSize;
+    float4 _683;
+    if (_114)
+    {
+        float2 _468 = _407 - float2(0.5);
+        float2 _469 = floor(_468);
+        float2 _470 = _468 - _469;
+        int2 _471 = int2(_469);
+        int2 _472 = int2(CanvasInfo._textureSize);
+        bool _474 = (CanvasInfo.flags & 4u) != 0u;
+        int2 _505;
+        if (_474)
+        {
+            uint2 _480 = uint2(_472);
+            uint2 _483 = uint2(abs(_471)) % _480;
+            uint _486 = _483.x;
+            uint _496 = _483.y;
+            _505 = int2(((_471.x >= 0) || (_486 == 0u)) ? int(_486) : int(_480.x - _486), ((_471.y >= 0) || (_496 == 0u)) ? int(_496) : int(_480.y - _496));
+        }
+        else
+        {
+            _505 = clamp(_471, int2(0), _472 - int2(1));
+        }
+        int2 _526 = _471 + int2(1, 0);
+        int2 _557;
+        if (_474)
+        {
+            uint2 _532 = uint2(_472);
+            uint2 _535 = uint2(abs(_526)) % _532;
+            uint _538 = _535.x;
+            uint _548 = _535.y;
+            _557 = int2(((_526.x >= 0) || (_538 == 0u)) ? int(_538) : int(_532.x - _538), ((_526.y >= 0) || (_548 == 0u)) ? int(_548) : int(_532.y - _548));
+        }
+        else
+        {
+            _557 = clamp(_526, int2(0), _472 - int2(1));
+        }
+        int2 _576 = _471 + int2(0, 1);
+        int2 _607;
+        if (_474)
+        {
+            uint2 _582 = uint2(_472);
+            uint2 _585 = uint2(abs(_576)) % _582;
+            uint _588 = _585.x;
+            uint _598 = _585.y;
+            _607 = int2(((_576.x >= 0) || (_588 == 0u)) ? int(_588) : int(_582.x - _588), ((_576.y >= 0) || (_598 == 0u)) ? int(_598) : int(_582.y - _598));
+        }
+        else
+        {
+            _607 = clamp(_576, int2(0), _472 - int2(1));
+        }
+        int2 _626 = _471 + int2(1);
+        int2 _657;
+        if (_474)
+        {
+            uint2 _632 = uint2(_472);
+            uint2 _635 = uint2(abs(_626)) % _632;
+            uint _638 = _635.x;
+            uint _648 = _635.y;
+            _657 = int2(((_626.x >= 0) || (_638 == 0u)) ? int(_638) : int(_632.x - _638), ((_626.y >= 0) || (_648 == 0u)) ? int(_648) : int(_632.y - _648));
+        }
+        else
+        {
+            _657 = clamp(_626, int2(0), _472 - int2(1));
+        }
+        float4 _677 = float4(_470.x);
+        _683 = mix(mix(palette._m0[min(uint((blitSource.read(uint2(int3(_505, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], palette._m0[min(uint((blitSource.read(uint2(int3(_557, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], _677), mix(palette._m0[min(uint((blitSource.read(uint2(int3(_607, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], palette._m0[min(uint((blitSource.read(uint2(int3(_657, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], _677), float4(_470.y));
+    }
+    else
+    {
+        int2 _413 = int2(floor(_407 + float2(0.00390625)));
+        int2 _414 = int2(CanvasInfo._textureSize);
+        int2 _447;
+        if ((CanvasInfo.flags & 4u) != 0u)
+        {
+            uint2 _422 = uint2(_414);
+            uint2 _425 = uint2(abs(_413)) % _422;
+            uint _428 = _425.x;
+            uint _438 = _425.y;
+            _447 = int2(((_413.x >= 0) || (_428 == 0u)) ? int(_428) : int(_422.x - _428), ((_413.y >= 0) || (_438 == 0u)) ? int(_438) : int(_422.y - _438));
+        }
+        else
+        {
+            _447 = clamp(_413, int2(0), _414 - int2(1));
+        }
+        _683 = palette._m0[min(uint((blitSource.read(uint2(int3(_447, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u];
+    }
+    float3 _690 = select(float3(0.0), _683.xyz / float3(_683.w), bool3(_683.w > 0.0));
+    float2 _702 = (in.in_var_TEXCOORD0 + extras._m0[CanvasInfo.blurOfs + 11u].xy) * CanvasInfo._textureSize;
+    float4 _978;
+    if (_114)
+    {
+        float2 _763 = _702 - float2(0.5);
+        float2 _764 = floor(_763);
+        float2 _765 = _763 - _764;
+        int2 _766 = int2(_764);
+        int2 _767 = int2(CanvasInfo._textureSize);
+        bool _769 = (CanvasInfo.flags & 4u) != 0u;
+        int2 _800;
+        if (_769)
+        {
+            uint2 _775 = uint2(_767);
+            uint2 _778 = uint2(abs(_766)) % _775;
+            uint _781 = _778.x;
+            uint _791 = _778.y;
+            _800 = int2(((_766.x >= 0) || (_781 == 0u)) ? int(_781) : int(_775.x - _781), ((_766.y >= 0) || (_791 == 0u)) ? int(_791) : int(_775.y - _791));
+        }
+        else
+        {
+            _800 = clamp(_766, int2(0), _767 - int2(1));
+        }
+        int2 _821 = _766 + int2(1, 0);
+        int2 _852;
+        if (_769)
+        {
+            uint2 _827 = uint2(_767);
+            uint2 _830 = uint2(abs(_821)) % _827;
+            uint _833 = _830.x;
+            uint _843 = _830.y;
+            _852 = int2(((_821.x >= 0) || (_833 == 0u)) ? int(_833) : int(_827.x - _833), ((_821.y >= 0) || (_843 == 0u)) ? int(_843) : int(_827.y - _843));
+        }
+        else
+        {
+            _852 = clamp(_821, int2(0), _767 - int2(1));
+        }
+        int2 _871 = _766 + int2(0, 1);
+        int2 _902;
+        if (_769)
+        {
+            uint2 _877 = uint2(_767);
+            uint2 _880 = uint2(abs(_871)) % _877;
+            uint _883 = _880.x;
+            uint _893 = _880.y;
+            _902 = int2(((_871.x >= 0) || (_883 == 0u)) ? int(_883) : int(_877.x - _883), ((_871.y >= 0) || (_893 == 0u)) ? int(_893) : int(_877.y - _893));
+        }
+        else
+        {
+            _902 = clamp(_871, int2(0), _767 - int2(1));
+        }
+        int2 _921 = _766 + int2(1);
+        int2 _952;
+        if (_769)
+        {
+            uint2 _927 = uint2(_767);
+            uint2 _930 = uint2(abs(_921)) % _927;
+            uint _933 = _930.x;
+            uint _943 = _930.y;
+            _952 = int2(((_921.x >= 0) || (_933 == 0u)) ? int(_933) : int(_927.x - _933), ((_921.y >= 0) || (_943 == 0u)) ? int(_943) : int(_927.y - _943));
+        }
+        else
+        {
+            _952 = clamp(_921, int2(0), _767 - int2(1));
+        }
+        float4 _972 = float4(_765.x);
+        _978 = mix(mix(palette._m0[min(uint((blitSource.read(uint2(int3(_800, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], palette._m0[min(uint((blitSource.read(uint2(int3(_852, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], _972), mix(palette._m0[min(uint((blitSource.read(uint2(int3(_902, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], palette._m0[min(uint((blitSource.read(uint2(int3(_952, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], _972), float4(_765.y));
+    }
+    else
+    {
+        int2 _708 = int2(floor(_702 + float2(0.00390625)));
+        int2 _709 = int2(CanvasInfo._textureSize);
+        int2 _742;
+        if ((CanvasInfo.flags & 4u) != 0u)
+        {
+            uint2 _717 = uint2(_709);
+            uint2 _720 = uint2(abs(_708)) % _717;
+            uint _723 = _720.x;
+            uint _733 = _720.y;
+            _742 = int2(((_708.x >= 0) || (_723 == 0u)) ? int(_723) : int(_717.x - _723), ((_708.y >= 0) || (_733 == 0u)) ? int(_733) : int(_717.y - _733));
+        }
+        else
+        {
+            _742 = clamp(_708, int2(0), _709 - int2(1));
+        }
+        _978 = palette._m0[min(uint((blitSource.read(uint2(int3(_742, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u];
+    }
+    float3 _985 = select(float3(0.0), _978.xyz / float3(_978.w), bool3(_978.w > 0.0));
+    float2 _997 = (in.in_var_TEXCOORD0 + extras._m0[CanvasInfo.blurOfs + 12u].xy) * CanvasInfo._textureSize;
+    float4 _1273;
+    if (_114)
+    {
+        float2 _1058 = _997 - float2(0.5);
+        float2 _1059 = floor(_1058);
+        float2 _1060 = _1058 - _1059;
+        int2 _1061 = int2(_1059);
+        int2 _1062 = int2(CanvasInfo._textureSize);
+        bool _1064 = (CanvasInfo.flags & 4u) != 0u;
+        int2 _1095;
+        if (_1064)
+        {
+            uint2 _1070 = uint2(_1062);
+            uint2 _1073 = uint2(abs(_1061)) % _1070;
+            uint _1076 = _1073.x;
+            uint _1086 = _1073.y;
+            _1095 = int2(((_1061.x >= 0) || (_1076 == 0u)) ? int(_1076) : int(_1070.x - _1076), ((_1061.y >= 0) || (_1086 == 0u)) ? int(_1086) : int(_1070.y - _1086));
+        }
+        else
+        {
+            _1095 = clamp(_1061, int2(0), _1062 - int2(1));
+        }
+        int2 _1116 = _1061 + int2(1, 0);
+        int2 _1147;
+        if (_1064)
+        {
+            uint2 _1122 = uint2(_1062);
+            uint2 _1125 = uint2(abs(_1116)) % _1122;
+            uint _1128 = _1125.x;
+            uint _1138 = _1125.y;
+            _1147 = int2(((_1116.x >= 0) || (_1128 == 0u)) ? int(_1128) : int(_1122.x - _1128), ((_1116.y >= 0) || (_1138 == 0u)) ? int(_1138) : int(_1122.y - _1138));
+        }
+        else
+        {
+            _1147 = clamp(_1116, int2(0), _1062 - int2(1));
+        }
+        int2 _1166 = _1061 + int2(0, 1);
+        int2 _1197;
+        if (_1064)
+        {
+            uint2 _1172 = uint2(_1062);
+            uint2 _1175 = uint2(abs(_1166)) % _1172;
+            uint _1178 = _1175.x;
+            uint _1188 = _1175.y;
+            _1197 = int2(((_1166.x >= 0) || (_1178 == 0u)) ? int(_1178) : int(_1172.x - _1178), ((_1166.y >= 0) || (_1188 == 0u)) ? int(_1188) : int(_1172.y - _1188));
+        }
+        else
+        {
+            _1197 = clamp(_1166, int2(0), _1062 - int2(1));
+        }
+        int2 _1216 = _1061 + int2(1);
+        int2 _1247;
+        if (_1064)
+        {
+            uint2 _1222 = uint2(_1062);
+            uint2 _1225 = uint2(abs(_1216)) % _1222;
+            uint _1228 = _1225.x;
+            uint _1238 = _1225.y;
+            _1247 = int2(((_1216.x >= 0) || (_1228 == 0u)) ? int(_1228) : int(_1222.x - _1228), ((_1216.y >= 0) || (_1238 == 0u)) ? int(_1238) : int(_1222.y - _1238));
+        }
+        else
+        {
+            _1247 = clamp(_1216, int2(0), _1062 - int2(1));
+        }
+        float4 _1267 = float4(_1060.x);
+        _1273 = mix(mix(palette._m0[min(uint((blitSource.read(uint2(int3(_1095, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], palette._m0[min(uint((blitSource.read(uint2(int3(_1147, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], _1267), mix(palette._m0[min(uint((blitSource.read(uint2(int3(_1197, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], palette._m0[min(uint((blitSource.read(uint2(int3(_1247, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], _1267), float4(_1060.y));
+    }
+    else
+    {
+        int2 _1003 = int2(floor(_997 + float2(0.00390625)));
+        int2 _1004 = int2(CanvasInfo._textureSize);
+        int2 _1037;
+        if ((CanvasInfo.flags & 4u) != 0u)
+        {
+            uint2 _1012 = uint2(_1004);
+            uint2 _1015 = uint2(abs(_1003)) % _1012;
+            uint _1018 = _1015.x;
+            uint _1028 = _1015.y;
+            _1037 = int2(((_1003.x >= 0) || (_1018 == 0u)) ? int(_1018) : int(_1012.x - _1018), ((_1003.y >= 0) || (_1028 == 0u)) ? int(_1028) : int(_1012.y - _1028));
+        }
+        else
+        {
+            _1037 = clamp(_1003, int2(0), _1004 - int2(1));
+        }
+        _1273 = palette._m0[min(uint((blitSource.read(uint2(int3(_1037, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u];
+    }
+    float3 _1280 = select(float3(0.0), _1273.xyz / float3(_1273.w), bool3(_1273.w > 0.0));
+    float2 _1292 = (in.in_var_TEXCOORD0 + extras._m0[CanvasInfo.blurOfs + 13u].xy) * CanvasInfo._textureSize;
+    float4 _1568;
+    if (_114)
+    {
+        float2 _1353 = _1292 - float2(0.5);
+        float2 _1354 = floor(_1353);
+        float2 _1355 = _1353 - _1354;
+        int2 _1356 = int2(_1354);
+        int2 _1357 = int2(CanvasInfo._textureSize);
+        bool _1359 = (CanvasInfo.flags & 4u) != 0u;
+        int2 _1390;
+        if (_1359)
+        {
+            uint2 _1365 = uint2(_1357);
+            uint2 _1368 = uint2(abs(_1356)) % _1365;
+            uint _1371 = _1368.x;
+            uint _1381 = _1368.y;
+            _1390 = int2(((_1356.x >= 0) || (_1371 == 0u)) ? int(_1371) : int(_1365.x - _1371), ((_1356.y >= 0) || (_1381 == 0u)) ? int(_1381) : int(_1365.y - _1381));
+        }
+        else
+        {
+            _1390 = clamp(_1356, int2(0), _1357 - int2(1));
+        }
+        int2 _1411 = _1356 + int2(1, 0);
+        int2 _1442;
+        if (_1359)
+        {
+            uint2 _1417 = uint2(_1357);
+            uint2 _1420 = uint2(abs(_1411)) % _1417;
+            uint _1423 = _1420.x;
+            uint _1433 = _1420.y;
+            _1442 = int2(((_1411.x >= 0) || (_1423 == 0u)) ? int(_1423) : int(_1417.x - _1423), ((_1411.y >= 0) || (_1433 == 0u)) ? int(_1433) : int(_1417.y - _1433));
+        }
+        else
+        {
+            _1442 = clamp(_1411, int2(0), _1357 - int2(1));
+        }
+        int2 _1461 = _1356 + int2(0, 1);
+        int2 _1492;
+        if (_1359)
+        {
+            uint2 _1467 = uint2(_1357);
+            uint2 _1470 = uint2(abs(_1461)) % _1467;
+            uint _1473 = _1470.x;
+            uint _1483 = _1470.y;
+            _1492 = int2(((_1461.x >= 0) || (_1473 == 0u)) ? int(_1473) : int(_1467.x - _1473), ((_1461.y >= 0) || (_1483 == 0u)) ? int(_1483) : int(_1467.y - _1483));
+        }
+        else
+        {
+            _1492 = clamp(_1461, int2(0), _1357 - int2(1));
+        }
+        int2 _1511 = _1356 + int2(1);
+        int2 _1542;
+        if (_1359)
+        {
+            uint2 _1517 = uint2(_1357);
+            uint2 _1520 = uint2(abs(_1511)) % _1517;
+            uint _1523 = _1520.x;
+            uint _1533 = _1520.y;
+            _1542 = int2(((_1511.x >= 0) || (_1523 == 0u)) ? int(_1523) : int(_1517.x - _1523), ((_1511.y >= 0) || (_1533 == 0u)) ? int(_1533) : int(_1517.y - _1533));
+        }
+        else
+        {
+            _1542 = clamp(_1511, int2(0), _1357 - int2(1));
+        }
+        float4 _1562 = float4(_1355.x);
+        _1568 = mix(mix(palette._m0[min(uint((blitSource.read(uint2(int3(_1390, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], palette._m0[min(uint((blitSource.read(uint2(int3(_1442, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], _1562), mix(palette._m0[min(uint((blitSource.read(uint2(int3(_1492, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], palette._m0[min(uint((blitSource.read(uint2(int3(_1542, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], _1562), float4(_1355.y));
+    }
+    else
+    {
+        int2 _1298 = int2(floor(_1292 + float2(0.00390625)));
+        int2 _1299 = int2(CanvasInfo._textureSize);
+        int2 _1332;
+        if ((CanvasInfo.flags & 4u) != 0u)
+        {
+            uint2 _1307 = uint2(_1299);
+            uint2 _1310 = uint2(abs(_1298)) % _1307;
+            uint _1313 = _1310.x;
+            uint _1323 = _1310.y;
+            _1332 = int2(((_1298.x >= 0) || (_1313 == 0u)) ? int(_1313) : int(_1307.x - _1313), ((_1298.y >= 0) || (_1323 == 0u)) ? int(_1323) : int(_1307.y - _1323));
+        }
+        else
+        {
+            _1332 = clamp(_1298, int2(0), _1299 - int2(1));
+        }
+        _1568 = palette._m0[min(uint((blitSource.read(uint2(int3(_1332, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u];
+    }
+    float3 _1575 = select(float3(0.0), _1568.xyz / float3(_1568.w), bool3(_1568.w > 0.0));
+    float2 _1587 = (in.in_var_TEXCOORD0 + extras._m0[CanvasInfo.blurOfs + 14u].xy) * CanvasInfo._textureSize;
+    float4 _1863;
+    if (_114)
+    {
+        float2 _1648 = _1587 - float2(0.5);
+        float2 _1649 = floor(_1648);
+        float2 _1650 = _1648 - _1649;
+        int2 _1651 = int2(_1649);
+        int2 _1652 = int2(CanvasInfo._textureSize);
+        bool _1654 = (CanvasInfo.flags & 4u) != 0u;
+        int2 _1685;
+        if (_1654)
+        {
+            uint2 _1660 = uint2(_1652);
+            uint2 _1663 = uint2(abs(_1651)) % _1660;
+            uint _1666 = _1663.x;
+            uint _1676 = _1663.y;
+            _1685 = int2(((_1651.x >= 0) || (_1666 == 0u)) ? int(_1666) : int(_1660.x - _1666), ((_1651.y >= 0) || (_1676 == 0u)) ? int(_1676) : int(_1660.y - _1676));
+        }
+        else
+        {
+            _1685 = clamp(_1651, int2(0), _1652 - int2(1));
+        }
+        int2 _1706 = _1651 + int2(1, 0);
+        int2 _1737;
+        if (_1654)
+        {
+            uint2 _1712 = uint2(_1652);
+            uint2 _1715 = uint2(abs(_1706)) % _1712;
+            uint _1718 = _1715.x;
+            uint _1728 = _1715.y;
+            _1737 = int2(((_1706.x >= 0) || (_1718 == 0u)) ? int(_1718) : int(_1712.x - _1718), ((_1706.y >= 0) || (_1728 == 0u)) ? int(_1728) : int(_1712.y - _1728));
+        }
+        else
+        {
+            _1737 = clamp(_1706, int2(0), _1652 - int2(1));
+        }
+        int2 _1756 = _1651 + int2(0, 1);
+        int2 _1787;
+        if (_1654)
+        {
+            uint2 _1762 = uint2(_1652);
+            uint2 _1765 = uint2(abs(_1756)) % _1762;
+            uint _1768 = _1765.x;
+            uint _1778 = _1765.y;
+            _1787 = int2(((_1756.x >= 0) || (_1768 == 0u)) ? int(_1768) : int(_1762.x - _1768), ((_1756.y >= 0) || (_1778 == 0u)) ? int(_1778) : int(_1762.y - _1778));
+        }
+        else
+        {
+            _1787 = clamp(_1756, int2(0), _1652 - int2(1));
+        }
+        int2 _1806 = _1651 + int2(1);
+        int2 _1837;
+        if (_1654)
+        {
+            uint2 _1812 = uint2(_1652);
+            uint2 _1815 = uint2(abs(_1806)) % _1812;
+            uint _1818 = _1815.x;
+            uint _1828 = _1815.y;
+            _1837 = int2(((_1806.x >= 0) || (_1818 == 0u)) ? int(_1818) : int(_1812.x - _1818), ((_1806.y >= 0) || (_1828 == 0u)) ? int(_1828) : int(_1812.y - _1828));
+        }
+        else
+        {
+            _1837 = clamp(_1806, int2(0), _1652 - int2(1));
+        }
+        float4 _1857 = float4(_1650.x);
+        _1863 = mix(mix(palette._m0[min(uint((blitSource.read(uint2(int3(_1685, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], palette._m0[min(uint((blitSource.read(uint2(int3(_1737, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], _1857), mix(palette._m0[min(uint((blitSource.read(uint2(int3(_1787, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], palette._m0[min(uint((blitSource.read(uint2(int3(_1837, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], _1857), float4(_1650.y));
+    }
+    else
+    {
+        int2 _1593 = int2(floor(_1587 + float2(0.00390625)));
+        int2 _1594 = int2(CanvasInfo._textureSize);
+        int2 _1627;
+        if ((CanvasInfo.flags & 4u) != 0u)
+        {
+            uint2 _1602 = uint2(_1594);
+            uint2 _1605 = uint2(abs(_1593)) % _1602;
+            uint _1608 = _1605.x;
+            uint _1618 = _1605.y;
+            _1627 = int2(((_1593.x >= 0) || (_1608 == 0u)) ? int(_1608) : int(_1602.x - _1608), ((_1593.y >= 0) || (_1618 == 0u)) ? int(_1618) : int(_1602.y - _1618));
+        }
+        else
+        {
+            _1627 = clamp(_1593, int2(0), _1594 - int2(1));
+        }
+        _1863 = palette._m0[min(uint((blitSource.read(uint2(int3(_1627, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u];
+    }
+    float3 _1870 = select(float3(0.0), _1863.xyz / float3(_1863.w), bool3(_1863.w > 0.0));
+    float2 _1882 = (in.in_var_TEXCOORD0 + extras._m0[CanvasInfo.blurOfs + 15u].xy) * CanvasInfo._textureSize;
+    float4 _2158;
+    if (_114)
+    {
+        float2 _1943 = _1882 - float2(0.5);
+        float2 _1944 = floor(_1943);
+        float2 _1945 = _1943 - _1944;
+        int2 _1946 = int2(_1944);
+        int2 _1947 = int2(CanvasInfo._textureSize);
+        bool _1949 = (CanvasInfo.flags & 4u) != 0u;
+        int2 _1980;
+        if (_1949)
+        {
+            uint2 _1955 = uint2(_1947);
+            uint2 _1958 = uint2(abs(_1946)) % _1955;
+            uint _1961 = _1958.x;
+            uint _1971 = _1958.y;
+            _1980 = int2(((_1946.x >= 0) || (_1961 == 0u)) ? int(_1961) : int(_1955.x - _1961), ((_1946.y >= 0) || (_1971 == 0u)) ? int(_1971) : int(_1955.y - _1971));
+        }
+        else
+        {
+            _1980 = clamp(_1946, int2(0), _1947 - int2(1));
+        }
+        int2 _2001 = _1946 + int2(1, 0);
+        int2 _2032;
+        if (_1949)
+        {
+            uint2 _2007 = uint2(_1947);
+            uint2 _2010 = uint2(abs(_2001)) % _2007;
+            uint _2013 = _2010.x;
+            uint _2023 = _2010.y;
+            _2032 = int2(((_2001.x >= 0) || (_2013 == 0u)) ? int(_2013) : int(_2007.x - _2013), ((_2001.y >= 0) || (_2023 == 0u)) ? int(_2023) : int(_2007.y - _2023));
+        }
+        else
+        {
+            _2032 = clamp(_2001, int2(0), _1947 - int2(1));
+        }
+        int2 _2051 = _1946 + int2(0, 1);
+        int2 _2082;
+        if (_1949)
+        {
+            uint2 _2057 = uint2(_1947);
+            uint2 _2060 = uint2(abs(_2051)) % _2057;
+            uint _2063 = _2060.x;
+            uint _2073 = _2060.y;
+            _2082 = int2(((_2051.x >= 0) || (_2063 == 0u)) ? int(_2063) : int(_2057.x - _2063), ((_2051.y >= 0) || (_2073 == 0u)) ? int(_2073) : int(_2057.y - _2073));
+        }
+        else
+        {
+            _2082 = clamp(_2051, int2(0), _1947 - int2(1));
+        }
+        int2 _2101 = _1946 + int2(1);
+        int2 _2132;
+        if (_1949)
+        {
+            uint2 _2107 = uint2(_1947);
+            uint2 _2110 = uint2(abs(_2101)) % _2107;
+            uint _2113 = _2110.x;
+            uint _2123 = _2110.y;
+            _2132 = int2(((_2101.x >= 0) || (_2113 == 0u)) ? int(_2113) : int(_2107.x - _2113), ((_2101.y >= 0) || (_2123 == 0u)) ? int(_2123) : int(_2107.y - _2123));
+        }
+        else
+        {
+            _2132 = clamp(_2101, int2(0), _1947 - int2(1));
+        }
+        float4 _2152 = float4(_1945.x);
+        _2158 = mix(mix(palette._m0[min(uint((blitSource.read(uint2(int3(_1980, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], palette._m0[min(uint((blitSource.read(uint2(int3(_2032, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], _2152), mix(palette._m0[min(uint((blitSource.read(uint2(int3(_2082, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], palette._m0[min(uint((blitSource.read(uint2(int3(_2132, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], _2152), float4(_1945.y));
+    }
+    else
+    {
+        int2 _1888 = int2(floor(_1882 + float2(0.00390625)));
+        int2 _1889 = int2(CanvasInfo._textureSize);
+        int2 _1922;
+        if ((CanvasInfo.flags & 4u) != 0u)
+        {
+            uint2 _1897 = uint2(_1889);
+            uint2 _1900 = uint2(abs(_1888)) % _1897;
+            uint _1903 = _1900.x;
+            uint _1913 = _1900.y;
+            _1922 = int2(((_1888.x >= 0) || (_1903 == 0u)) ? int(_1903) : int(_1897.x - _1903), ((_1888.y >= 0) || (_1913 == 0u)) ? int(_1913) : int(_1897.y - _1913));
+        }
+        else
+        {
+            _1922 = clamp(_1888, int2(0), _1889 - int2(1));
+        }
+        _2158 = palette._m0[min(uint((blitSource.read(uint2(int3(_1922, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u];
+    }
+    float3 _2165 = select(float3(0.0), _2158.xyz / float3(_2158.w), bool3(_2158.w > 0.0));
+    float2 _2177 = (in.in_var_TEXCOORD0 + extras._m0[CanvasInfo.blurOfs + 16u].xy) * CanvasInfo._textureSize;
+    float4 _2453;
+    if (_114)
+    {
+        float2 _2238 = _2177 - float2(0.5);
+        float2 _2239 = floor(_2238);
+        float2 _2240 = _2238 - _2239;
+        int2 _2241 = int2(_2239);
+        int2 _2242 = int2(CanvasInfo._textureSize);
+        bool _2244 = (CanvasInfo.flags & 4u) != 0u;
+        int2 _2275;
+        if (_2244)
+        {
+            uint2 _2250 = uint2(_2242);
+            uint2 _2253 = uint2(abs(_2241)) % _2250;
+            uint _2256 = _2253.x;
+            uint _2266 = _2253.y;
+            _2275 = int2(((_2241.x >= 0) || (_2256 == 0u)) ? int(_2256) : int(_2250.x - _2256), ((_2241.y >= 0) || (_2266 == 0u)) ? int(_2266) : int(_2250.y - _2266));
+        }
+        else
+        {
+            _2275 = clamp(_2241, int2(0), _2242 - int2(1));
+        }
+        int2 _2296 = _2241 + int2(1, 0);
+        int2 _2327;
+        if (_2244)
+        {
+            uint2 _2302 = uint2(_2242);
+            uint2 _2305 = uint2(abs(_2296)) % _2302;
+            uint _2308 = _2305.x;
+            uint _2318 = _2305.y;
+            _2327 = int2(((_2296.x >= 0) || (_2308 == 0u)) ? int(_2308) : int(_2302.x - _2308), ((_2296.y >= 0) || (_2318 == 0u)) ? int(_2318) : int(_2302.y - _2318));
+        }
+        else
+        {
+            _2327 = clamp(_2296, int2(0), _2242 - int2(1));
+        }
+        int2 _2346 = _2241 + int2(0, 1);
+        int2 _2377;
+        if (_2244)
+        {
+            uint2 _2352 = uint2(_2242);
+            uint2 _2355 = uint2(abs(_2346)) % _2352;
+            uint _2358 = _2355.x;
+            uint _2368 = _2355.y;
+            _2377 = int2(((_2346.x >= 0) || (_2358 == 0u)) ? int(_2358) : int(_2352.x - _2358), ((_2346.y >= 0) || (_2368 == 0u)) ? int(_2368) : int(_2352.y - _2368));
+        }
+        else
+        {
+            _2377 = clamp(_2346, int2(0), _2242 - int2(1));
+        }
+        int2 _2396 = _2241 + int2(1);
+        int2 _2427;
+        if (_2244)
+        {
+            uint2 _2402 = uint2(_2242);
+            uint2 _2405 = uint2(abs(_2396)) % _2402;
+            uint _2408 = _2405.x;
+            uint _2418 = _2405.y;
+            _2427 = int2(((_2396.x >= 0) || (_2408 == 0u)) ? int(_2408) : int(_2402.x - _2408), ((_2396.y >= 0) || (_2418 == 0u)) ? int(_2418) : int(_2402.y - _2418));
+        }
+        else
+        {
+            _2427 = clamp(_2396, int2(0), _2242 - int2(1));
+        }
+        float4 _2447 = float4(_2240.x);
+        _2453 = mix(mix(palette._m0[min(uint((blitSource.read(uint2(int3(_2275, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], palette._m0[min(uint((blitSource.read(uint2(int3(_2327, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], _2447), mix(palette._m0[min(uint((blitSource.read(uint2(int3(_2377, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], palette._m0[min(uint((blitSource.read(uint2(int3(_2427, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], _2447), float4(_2240.y));
+    }
+    else
+    {
+        int2 _2183 = int2(floor(_2177 + float2(0.00390625)));
+        int2 _2184 = int2(CanvasInfo._textureSize);
+        int2 _2217;
+        if ((CanvasInfo.flags & 4u) != 0u)
+        {
+            uint2 _2192 = uint2(_2184);
+            uint2 _2195 = uint2(abs(_2183)) % _2192;
+            uint _2198 = _2195.x;
+            uint _2208 = _2195.y;
+            _2217 = int2(((_2183.x >= 0) || (_2198 == 0u)) ? int(_2198) : int(_2192.x - _2198), ((_2183.y >= 0) || (_2208 == 0u)) ? int(_2208) : int(_2192.y - _2208));
+        }
+        else
+        {
+            _2217 = clamp(_2183, int2(0), _2184 - int2(1));
+        }
+        _2453 = palette._m0[min(uint((blitSource.read(uint2(int3(_2217, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u];
+    }
+    float3 _2460 = select(float3(0.0), _2453.xyz / float3(_2453.w), bool3(_2453.w > 0.0));
+    float2 _2472 = (in.in_var_TEXCOORD0 + extras._m0[CanvasInfo.blurOfs + 17u].xy) * CanvasInfo._textureSize;
+    float4 _2748;
+    if (_114)
+    {
+        float2 _2533 = _2472 - float2(0.5);
+        float2 _2534 = floor(_2533);
+        float2 _2535 = _2533 - _2534;
+        int2 _2536 = int2(_2534);
+        int2 _2537 = int2(CanvasInfo._textureSize);
+        bool _2539 = (CanvasInfo.flags & 4u) != 0u;
+        int2 _2570;
+        if (_2539)
+        {
+            uint2 _2545 = uint2(_2537);
+            uint2 _2548 = uint2(abs(_2536)) % _2545;
+            uint _2551 = _2548.x;
+            uint _2561 = _2548.y;
+            _2570 = int2(((_2536.x >= 0) || (_2551 == 0u)) ? int(_2551) : int(_2545.x - _2551), ((_2536.y >= 0) || (_2561 == 0u)) ? int(_2561) : int(_2545.y - _2561));
+        }
+        else
+        {
+            _2570 = clamp(_2536, int2(0), _2537 - int2(1));
+        }
+        int2 _2591 = _2536 + int2(1, 0);
+        int2 _2622;
+        if (_2539)
+        {
+            uint2 _2597 = uint2(_2537);
+            uint2 _2600 = uint2(abs(_2591)) % _2597;
+            uint _2603 = _2600.x;
+            uint _2613 = _2600.y;
+            _2622 = int2(((_2591.x >= 0) || (_2603 == 0u)) ? int(_2603) : int(_2597.x - _2603), ((_2591.y >= 0) || (_2613 == 0u)) ? int(_2613) : int(_2597.y - _2613));
+        }
+        else
+        {
+            _2622 = clamp(_2591, int2(0), _2537 - int2(1));
+        }
+        int2 _2641 = _2536 + int2(0, 1);
+        int2 _2672;
+        if (_2539)
+        {
+            uint2 _2647 = uint2(_2537);
+            uint2 _2650 = uint2(abs(_2641)) % _2647;
+            uint _2653 = _2650.x;
+            uint _2663 = _2650.y;
+            _2672 = int2(((_2641.x >= 0) || (_2653 == 0u)) ? int(_2653) : int(_2647.x - _2653), ((_2641.y >= 0) || (_2663 == 0u)) ? int(_2663) : int(_2647.y - _2663));
+        }
+        else
+        {
+            _2672 = clamp(_2641, int2(0), _2537 - int2(1));
+        }
+        int2 _2691 = _2536 + int2(1);
+        int2 _2722;
+        if (_2539)
+        {
+            uint2 _2697 = uint2(_2537);
+            uint2 _2700 = uint2(abs(_2691)) % _2697;
+            uint _2703 = _2700.x;
+            uint _2713 = _2700.y;
+            _2722 = int2(((_2691.x >= 0) || (_2703 == 0u)) ? int(_2703) : int(_2697.x - _2703), ((_2691.y >= 0) || (_2713 == 0u)) ? int(_2713) : int(_2697.y - _2713));
+        }
+        else
+        {
+            _2722 = clamp(_2691, int2(0), _2537 - int2(1));
+        }
+        float4 _2742 = float4(_2535.x);
+        _2748 = mix(mix(palette._m0[min(uint((blitSource.read(uint2(int3(_2570, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], palette._m0[min(uint((blitSource.read(uint2(int3(_2622, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], _2742), mix(palette._m0[min(uint((blitSource.read(uint2(int3(_2672, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], palette._m0[min(uint((blitSource.read(uint2(int3(_2722, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u], _2742), float4(_2535.y));
+    }
+    else
+    {
+        int2 _2478 = int2(floor(_2472 + float2(0.00390625)));
+        int2 _2479 = int2(CanvasInfo._textureSize);
+        int2 _2512;
+        if ((CanvasInfo.flags & 4u) != 0u)
+        {
+            uint2 _2487 = uint2(_2479);
+            uint2 _2490 = uint2(abs(_2478)) % _2487;
+            uint _2493 = _2490.x;
+            uint _2503 = _2490.y;
+            _2512 = int2(((_2478.x >= 0) || (_2493 == 0u)) ? int(_2493) : int(_2487.x - _2493), ((_2478.y >= 0) || (_2503 == 0u)) ? int(_2503) : int(_2487.y - _2503));
+        }
+        else
+        {
+            _2512 = clamp(_2478, int2(0), _2479 - int2(1));
+        }
+        _2748 = palette._m0[min(uint((blitSource.read(uint2(int3(_2512, 0).xy), 0).x * ((device float*)&palette._m0[0u])[1]) + 0.5), (uint(((device float*)&palette._m0[0u])[0]) - 1u)) + 1u];
+    }
+    float3 _2755 = select(float3(0.0), _2748.xyz / float3(_2748.w), bool3(_2748.w > 0.0));
+    float4 _2761 = ((((((((float4(_397.x, _397.y, _397.z, _390.w) * extras._m0[CanvasInfo.blurOfs]) + (float4(_690.x, _690.y, _690.z, _683.w) * extras._m0[CanvasInfo.blurOfs + 1u])) + (float4(_985.x, _985.y, _985.z, _978.w) * extras._m0[CanvasInfo.blurOfs + 2u])) + (float4(_1280.x, _1280.y, _1280.z, _1273.w) * extras._m0[CanvasInfo.blurOfs + 3u])) + (float4(_1575.x, _1575.y, _1575.z, _1568.w) * extras._m0[CanvasInfo.blurOfs + 4u])) + (float4(_1870.x, _1870.y, _1870.z, _1863.w) * extras._m0[CanvasInfo.blurOfs + 5u])) + (float4(_2165.x, _2165.y, _2165.z, _2158.w) * extras._m0[CanvasInfo.blurOfs + 6u])) + (float4(_2460.x, _2460.y, _2460.z, _2453.w) * extras._m0[CanvasInfo.blurOfs + 7u])) + (float4(_2755.x, _2755.y, _2755.z, _2748.w) * extras._m0[CanvasInfo.blurOfs + 8u]);
+    float3 _2763 = fast::clamp(_2761.xyz, float3(0.0), float3(1.0));
+    float4 _2952;
+    if (PixelInfo.tintOfs >= 0)
+    {
+        uint _2773 = uint(max(PixelInfo.tintOfs, 0));
+        uint _2776 = uint(((device float*)&colors._m0[_2773])[0]);
+        uint _2777 = _2773 + 1u;
+        float4 _2782;
+        _2782 = float4(0.0);
+        uint _2780;
+        float4 _2783;
+        for (uint _2779 = _2777, _2784 = 0u; _2784 < _2776; _2779 = _2780, _2782 = _2783, _2784++)
+        {
+            uint _2791 = _2779 + 1u;
+            uint _2798 = uint(colors._m0[_2779].z);
+            uint _2799 = _2779 + 3u;
+            uint _2802 = _2799 + ((_2798 + 3u) >> 2u);
+            if (_2798 > 0u)
+            {
+                float _2825;
+                if (colors._m0[_2779].x < 0.5)
+                {
+                    _2825 = ((colors._m0[_2791].x * gl_FragCoord.x) + (colors._m0[_2791].y * gl_FragCoord.y)) + colors._m0[_2791].z;
+                }
+                else
+                {
+                    _2825 = length((gl_FragCoord.xy - colors._m0[_2791].xy) * colors._m0[_2791].zw);
+                }
+                float _2826 = fast::clamp(_2825, -10000000.0, 10000000.0);
+                uint _2828 = uint(colors._m0[_2779].y);
+                float _2848;
+                if (_2828 == 0u)
+                {
+                    _2848 = fast::clamp(_2826, 0.0, 1.0);
+                }
+                else
+                {
+                    float _2847;
+                    if (_2828 == 1u)
+                    {
+                        _2847 = _2826 - floor(_2826);
+                    }
+                    else
+                    {
+                        float _2843 = _2826 - (2.0 * floor(_2826 * 0.5));
+                        _2847 = (_2843 > 1.0) ? (2.0 - _2843) : _2843;
+                    }
+                    _2848 = _2847;
+                }
+                int _2850;
+                _2850 = -1;
+                int _2851;
+                for (uint _2853 = 0u; _2853 < _2798; _2850 = _2851, _2853++)
+                {
+                    uint _2859 = _2799 + (_2853 >> 2u);
+                    uint _2862 = _2853 & 3u;
+                    if (((_2862 == 0u) ? colors._m0[_2859].x : ((_2862 == 1u) ? colors._m0[_2859].y : ((_2862 == 2u) ? colors._m0[_2859].z : colors._m0[_2859].w))) <= _2848)
+                    {
+                        _2851 = int(_2853);
+                    }
+                    else
+                    {
+                        _2851 = _2850;
+                    }
+                }
+                float4 _2935;
+                if (_2850 < 0)
+                {
+                    _2935 = colors._m0[_2802];
+                }
+                else
+                {
+                    uint _2883 = uint(_2850);
+                    float4 _2934;
+                    if (_2883 == (_2798 - 1u))
+                    {
+                        _2934 = colors._m0[_2802 + _2883];
+                    }
+                    else
+                    {
+                        uint _2893 = _2799 + (_2883 >> 2u);
+                        uint _2896 = _2883 & 3u;
+                        float _2906 = (_2896 == 0u) ? colors._m0[_2893].x : ((_2896 == 1u) ? colors._m0[_2893].y : ((_2896 == 2u) ? colors._m0[_2893].z : colors._m0[_2893].w));
+                        uint _2907 = _2883 + 1u;
+                        uint _2909 = _2799 + (_2907 >> 2u);
+                        uint _2912 = _2907 & 3u;
+                        uint _2923 = _2802 + _2883;
+                        _2934 = mix(colors._m0[_2923], colors._m0[_2923 + 1u], float4((_2848 - _2906) / (((_2912 == 0u) ? colors._m0[_2909].x : ((_2912 == 1u) ? colors._m0[_2909].y : ((_2912 == 2u) ? colors._m0[_2909].z : colors._m0[_2909].w))) - _2906)));
+                    }
+                    _2935 = _2934;
+                }
+                float4 _2948;
+                if (((device float*)&colors._m0[_2779 + 2u])[0] > 0.5)
+                {
+                    float3 _2946 = mix(powr(abs((_2935.xyz + float3(0.054999999701976776123046875)) * float3(0.947867333889007568359375)), float3(2.400000095367431640625)), _2935.xyz * float3(0.077399380505084991455078125), step(_2935.xyz, float3(0.040449999272823333740234375)));
+                    _2948 = float4(_2946.x, _2946.y, _2946.z, _2935.w);
+                }
+                else
+                {
+                    _2948 = _2935;
+                }
+                _2783 = _2782 + (_2948 * colors._m0[_2779].w);
+            }
+            else
+            {
+                _2783 = _2782;
+            }
+            _2780 = _2802 + _2798;
+        }
+        _2952 = _2782;
+    }
+    else
+    {
+        _2952 = float4(1.0);
+    }
+    float4 _2953 = (float4(_2763.x, _2763.y, _2763.z, _2761.w) * in.in_var_COLOR) * _2952;
+    float _2955 = _2953.w;
+    float3 _2956 = _2953.xyz * _2955;
+    float _2957 = _2956.x;
+    float4 _2960 = float4(_2957, _2956.yz, _2955);
+    float4 _3038;
+    float4 _3039;
+    if (PixelInfo.canvasKind == 2u)
+    {
+        float4 _2986;
+        float4 _2987;
+        if (PixelInfo.outputMode == 2u)
+        {
+            _2986 = float4(0.0);
+            _2987 = float4(_2955);
+        }
+        else
+        {
+            float4 _2984;
+            float4 _2985;
+            if (PixelInfo.outputMode == 1u)
+            {
+                _2984 = float4(PixelInfo.morphFactor);
+                _2985 = float4(_2955 * PixelInfo.morphFactor);
+            }
+            else
+            {
+                float4 _2983 = float4(_2955);
+                _2984 = _2983;
+                _2985 = _2983;
+            }
+            _2986 = _2984;
+            _2987 = _2985;
+        }
+        _3038 = _2986;
+        _3039 = _2987;
+    }
+    else
+    {
+        float4 _3036;
+        float4 _3037;
+        if (PixelInfo.outputMode == 3u)
+        {
+            _3036 = float4(0.0);
+            _3037 = float4(_2957, _2956.yz, precise::max(_2957, precise::max(_2956.y, _2956.z)));
+        }
+        else
+        {
+            float4 _3034;
+            float4 _3035;
+            if (PixelInfo.outputMode == 2u)
+            {
+                _3034 = float4(0.0);
+                _3035 = float4(float3(1.0 - _2955) + _2960.xyz, 1.0);
+            }
+            else
+            {
+                float4 _3032;
+                float4 _3033;
+                if (PixelInfo.outputMode == 1u)
+                {
+                    float _3024;
+                    if (PixelInfo.canvasKind == 1u)
+                    {
+                        float _3020 = (1.0 - PixelInfo.morphFactor) + (_2955 * PixelInfo.morphFactor);
+                        _3024 = (_3020 > 0.0) ? (1.0 / _3020) : 0.0;
+                    }
+                    else
+                    {
+                        _3024 = 1.0;
+                    }
+                    _3032 = float4(1.0 - ((1.0 - PixelInfo.morphFactor) * _3024));
+                    _3033 = _2960 * (PixelInfo.morphFactor * _3024);
+                }
+                else
+                {
+                    _3032 = float4(_2955);
+                    _3033 = _2960;
+                }
+                _3034 = _3032;
+                _3035 = _3033;
+            }
+            _3036 = _3034;
+            _3037 = _3035;
+        }
+        _3038 = _3036;
+        _3039 = _3037;
+    }
+    out.out_var_SV_Target0 = select((_3039 + float4(1.0)) - _3038, _3038, bool4(SdlOutputInfo.sdlOutput == 1u));
+    return out;
+}
+

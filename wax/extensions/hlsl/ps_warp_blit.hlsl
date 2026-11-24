@@ -29,6 +29,10 @@ PS_OUTPUT main(PS_INPUT input)
 
     float4 texel = blitSource.SampleGrad(blitSampler, s / textureSize, dx / textureSize, dy / textureSize);
 
+#ifdef WAX_SDLGPU
+    texel = waxSourceChannels(texel);       // See sdlgpu.hlsl, warps never clip.
+#endif
+
     // An alpha only source has no color of its own, it just modulates the tint.
 
     if ((flags & 1u) != 0u)

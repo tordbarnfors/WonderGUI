@@ -1,8 +1,8 @@
 # HLSL shaders
 
 The shaders of DX12Backend (`../dx12gfx`), GlBackend (`../openglgfx`), MetalBackend
-(`../metalgfx`) and VulkanBackend (`../vulkangfx`). All four draw with the same shaders, so a
-change here changes them all.
+(`../metalgfx`), VulkanBackend (`../vulkangfx`) and SdlGpuBackend (`../sdlgpugfx`). All five draw
+with the same shaders, so a change here changes them all.
 
 ## How they are put together
 
@@ -42,10 +42,23 @@ checked in. It checks the GLSL with glslangValidator if there is one:
 
     python3 wax/extensions/openglgfx/compile_shaders.py --dxc path/to/dxc
 
+SdlGpuBackend gets them as SPIR-V, DXIL and MSL, one of which SDL_GPU takes depending on its
+device, compiled by DXC (and SPIRV-Cross for MSL) into `sdlgpugfx/shaders`, which are checked in,
+together with what each binds in `sdlgpugfx/wax_sdlgpushaders.cpp`. They are compiled with
+`WAX_SDLGPU`, the pixel shaders with `sdlgpu.hlsl` in front of the shader itself, and the Dual
+ones with `sdlgpu_dual.hlsl` after it, as SDL_GPU has no push constants, swizzles, border colors,
+samplers of integer textures or dual-source blending, see those files.
+`sdlgpugfx/compile_shaders.py` moves the registers to the slots SDL_GPU binds by:
+
+    python3 wax/extensions/sdlgpugfx/compile_shaders.py --dxc path/to/dxc
+
+DXC has to find libdxil (dxil.dll on Windows) next to it to sign the DXIL, which D3D12 needs.
+The script stops if it is left unsigned.
+
 A new shader is added to the list in `vulkangfx/compile_shaders.py`, and to
 `GpuBackend::_vertexShaderName()` or `_pixelShaderName()` for the kind of pipeline it draws.
 
-## Rules that keep them working on all four
+## Rules that keep them working on all five
 
 - **Constants** come from `constants.hlsl`. DX12 has them as three cbuffers of root constants,
   Vulkan and Metal as one block of push constants, whose members get their usual names with
@@ -54,7 +67,9 @@ A new shader is added to the list in `vulkangfx/compile_shaders.py`, and to
 - **Registers** become Vulkan bindings with the same number, in one descriptor set: `t0`-`t4`
   are bindings 0-4, and `s0` is binding 5 (compiled with `-fvk-s-shift 5 0`). For Metal, `t0`-`t4`
   are shifted by one (`-fvk-t-shift 1 0`), which makes them buffers 1-5 and the blit source
-  texture 3, with the constants in buffer 0 and `s0` sampler 0.
+  texture 3, with the constants in buffer 0 and `s0` sampler 0. SdlGpuBackend binds by slots
+  that `sdlgpugfx/compile_shaders.py` moves the registers to, and a storage buffer of a new
+  register needs a name there and in `SdlGpuShaders::Resource`.
 - **Vertex inputs** get their locations in the order they are declared, so they are always
   declared in the order `POSITION`, `COLOROFS`, `EXTRASOFS`, `TEXCOORD0`, leaving out the ones not
   needed from the end only.
@@ -64,7 +79,9 @@ A new shader is added to the list in `vulkangfx/compile_shaders.py`, and to
 - **Dual-source blending** needs the second output as index 1 of location 0 in Vulkan, see
   `PS_OUTPUT` in `output.hlsl`.
 - Code only for Vulkan, Metal and GL goes inside `#ifdef __spirv__`, which DXC defines when it
-  compiles to SPIR-V, and code only for GL inside `#ifdef WAX_GLSL`.
+  compiles to SPIR-V, code only for GL inside `#ifdef WAX_GLSL` and code only for SdlGpuBackend
+  inside `#ifdef WAX_SDLGPU`. SdlGpuBackend's SPIR-V is compiled with `__spirv__` too, so a
+  `__spirv__` path that isn't for it checks `!defined(WAX_SDLGPU)`, as in `constants.hlsl`.
 - **Functions return once, at their end.** FXC can take an early return as leaving the result
   uninitialized, and in the generated GLSL an early return turns into a `do { } while (false)`
   around the inlined function, a construct old drivers handle badly. The AMD driver of macOS

@@ -10,10 +10,14 @@
 // order: CanvasInfo at byte 0, PixelInfo at byte 32 and WarpInfo at byte 48. There can only be
 // one block of push constants, so its members are given their usual names with defines.
 //
-// Changing them means changing both backends: DX12Backend::_createRootSignature() and the
-// structs and offsets in VulkanBackend.
+// SdlGpuBackend (WAX_SDLGPU) has the three cbuffers as uniform buffers 0-2 of each stage, also
+// in SPIR-V, as SDL_GPU has no push constants. ../sdlgpugfx/compile_shaders.py moves the registers
+// to where SDL_GPU wants them.
+//
+// Changing them means changing the backends: DX12Backend::_createRootSignature(), the structs and
+// offsets in VulkanBackend and the blocks of SdlGpuBackend.
 
-#ifdef __spirv__
+#if defined(__spirv__) && !defined(WAX_SDLGPU)
 
 struct WaxConstants
 {

@@ -12,7 +12,11 @@
 // rectangle by warpBlitCoverage(). Coverage takes care of the borders of the source.
 
 
+#ifdef WAX_SDLGPU
+Texture2D<float> blitSource : register(t2);         // R8_UNORM or R16_UNORM, see sdlgpu.hlsl.
+#else
 Texture2D<uint> blitSource : register(t2);
+#endif
 StructuredBuffer<float4> palette : register(t3);
 
 
@@ -35,7 +39,11 @@ float4 paletteTexel(int2 texel)
 
     pos = clamp(pos, int2(0, 0), size - int2(1, 1));
 
+#ifdef WAX_SDLGPU
+    uint index = waxPaletteIndex(blitSource.Load(int3(pos, 0)), palette[0].y);
+#else
     uint index = blitSource.Load(int3(pos, 0));
+#endif
     uint capacity = uint(palette[0].x);
 
     return palette[min(index, capacity - 1u) + 1u];

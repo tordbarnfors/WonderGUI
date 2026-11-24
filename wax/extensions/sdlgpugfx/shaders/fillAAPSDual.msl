@@ -1,0 +1,245 @@
+#include <metal_stdlib>
+#include <simd/simd.h>
+
+using namespace metal;
+
+struct type_PixelInfo
+{
+    int tintOfs;
+    uint outputMode;
+    uint canvasKind;
+    float morphFactor;
+};
+
+struct type_StructuredBuffer_v4float
+{
+    float4 _m0[1];
+};
+
+struct type_SdlOutputInfo
+{
+    uint sdlOutput;
+};
+
+struct main0_out
+{
+    float4 out_var_SV_Target0 [[color(0)]];
+};
+
+struct main0_in
+{
+    float4 in_var_COLOR [[user(locn0)]];
+    float4 in_var_TEXCOORD0 [[user(locn1)]];
+};
+
+fragment main0_out main0(main0_in in [[stage_in]], constant type_PixelInfo& PixelInfo [[buffer(1)]], constant type_SdlOutputInfo& SdlOutputInfo [[buffer(3)]], const device type_StructuredBuffer_v4float& colors [[buffer(4)]], float4 gl_FragCoord [[position]])
+{
+    main0_out out = {};
+    float2 _72 = fast::clamp(in.in_var_TEXCOORD0.zw - abs(gl_FragCoord.xy - in.in_var_TEXCOORD0.xy), float2(0.0), float2(1.0));
+    float _75 = _72.x * _72.y;
+    float4 _261;
+    if (PixelInfo.tintOfs >= 0)
+    {
+        uint _82 = uint(max(PixelInfo.tintOfs, 0));
+        uint _85 = uint(((device float*)&colors._m0[_82])[0]);
+        uint _86 = _82 + 1u;
+        float4 _91;
+        _91 = float4(0.0);
+        uint _89;
+        float4 _92;
+        for (uint _88 = _86, _93 = 0u; _93 < _85; _88 = _89, _91 = _92, _93++)
+        {
+            uint _100 = _88 + 1u;
+            uint _107 = uint(colors._m0[_88].z);
+            uint _108 = _88 + 3u;
+            uint _111 = _108 + ((_107 + 3u) >> 2u);
+            if (_107 > 0u)
+            {
+                float _134;
+                if (colors._m0[_88].x < 0.5)
+                {
+                    _134 = ((colors._m0[_100].x * gl_FragCoord.x) + (colors._m0[_100].y * gl_FragCoord.y)) + colors._m0[_100].z;
+                }
+                else
+                {
+                    _134 = length((gl_FragCoord.xy - colors._m0[_100].xy) * colors._m0[_100].zw);
+                }
+                float _135 = fast::clamp(_134, -10000000.0, 10000000.0);
+                uint _137 = uint(colors._m0[_88].y);
+                float _157;
+                if (_137 == 0u)
+                {
+                    _157 = fast::clamp(_135, 0.0, 1.0);
+                }
+                else
+                {
+                    float _156;
+                    if (_137 == 1u)
+                    {
+                        _156 = _135 - floor(_135);
+                    }
+                    else
+                    {
+                        float _152 = _135 - (2.0 * floor(_135 * 0.5));
+                        _156 = (_152 > 1.0) ? (2.0 - _152) : _152;
+                    }
+                    _157 = _156;
+                }
+                int _159;
+                _159 = -1;
+                int _160;
+                for (uint _162 = 0u; _162 < _107; _159 = _160, _162++)
+                {
+                    uint _168 = _108 + (_162 >> 2u);
+                    uint _171 = _162 & 3u;
+                    if (((_171 == 0u) ? colors._m0[_168].x : ((_171 == 1u) ? colors._m0[_168].y : ((_171 == 2u) ? colors._m0[_168].z : colors._m0[_168].w))) <= _157)
+                    {
+                        _160 = int(_162);
+                    }
+                    else
+                    {
+                        _160 = _159;
+                    }
+                }
+                float4 _244;
+                if (_159 < 0)
+                {
+                    _244 = colors._m0[_111];
+                }
+                else
+                {
+                    uint _192 = uint(_159);
+                    float4 _243;
+                    if (_192 == (_107 - 1u))
+                    {
+                        _243 = colors._m0[_111 + _192];
+                    }
+                    else
+                    {
+                        uint _202 = _108 + (_192 >> 2u);
+                        uint _205 = _192 & 3u;
+                        float _215 = (_205 == 0u) ? colors._m0[_202].x : ((_205 == 1u) ? colors._m0[_202].y : ((_205 == 2u) ? colors._m0[_202].z : colors._m0[_202].w));
+                        uint _216 = _192 + 1u;
+                        uint _218 = _108 + (_216 >> 2u);
+                        uint _221 = _216 & 3u;
+                        uint _232 = _111 + _192;
+                        _243 = mix(colors._m0[_232], colors._m0[_232 + 1u], float4((_157 - _215) / (((_221 == 0u) ? colors._m0[_218].x : ((_221 == 1u) ? colors._m0[_218].y : ((_221 == 2u) ? colors._m0[_218].z : colors._m0[_218].w))) - _215)));
+                    }
+                    _244 = _243;
+                }
+                float4 _257;
+                if (((device float*)&colors._m0[_88 + 2u])[0] > 0.5)
+                {
+                    float3 _255 = mix(powr(abs((_244.xyz + float3(0.054999999701976776123046875)) * float3(0.947867333889007568359375)), float3(2.400000095367431640625)), _244.xyz * float3(0.077399380505084991455078125), step(_244.xyz, float3(0.040449999272823333740234375)));
+                    _257 = float4(_255.x, _255.y, _255.z, _244.w);
+                }
+                else
+                {
+                    _257 = _244;
+                }
+                _92 = _91 + (_257 * colors._m0[_88].w);
+            }
+            else
+            {
+                _92 = _91;
+            }
+            _89 = _111 + _107;
+        }
+        _261 = _91;
+    }
+    else
+    {
+        _261 = float4(1.0);
+    }
+    float4 _262 = in.in_var_COLOR * _261;
+    float _264 = _262.w;
+    float4 _270 = float4(_262.xyz * _264, _264) * _75;
+    float4 _362;
+    float4 _363;
+    if (PixelInfo.canvasKind == 2u)
+    {
+        float _277 = _270.w;
+        float4 _300;
+        float4 _301;
+        if (PixelInfo.outputMode == 2u)
+        {
+            _300 = float4(0.0);
+            _301 = float4((1.0 - _75) + _277);
+        }
+        else
+        {
+            float4 _298;
+            float4 _299;
+            if (PixelInfo.outputMode == 1u)
+            {
+                _298 = float4(_75 * PixelInfo.morphFactor);
+                _299 = float4(_277 * PixelInfo.morphFactor);
+            }
+            else
+            {
+                float4 _297 = float4(_277);
+                _298 = _297;
+                _299 = _297;
+            }
+            _300 = _298;
+            _301 = _299;
+        }
+        _362 = _300;
+        _363 = _301;
+    }
+    else
+    {
+        float4 _360;
+        float4 _361;
+        if (PixelInfo.outputMode == 3u)
+        {
+            float _308 = _270.x;
+            _360 = float4(0.0);
+            _361 = float4(_308, _270.yz, precise::max(_308, precise::max(_270.y, _270.z)));
+        }
+        else
+        {
+            float4 _358;
+            float4 _359;
+            if (PixelInfo.outputMode == 2u)
+            {
+                _358 = float4(0.0);
+                _359 = float4(float3(1.0 - _270.w) + _270.xyz, 1.0);
+            }
+            else
+            {
+                float4 _356;
+                float4 _357;
+                if (PixelInfo.outputMode == 1u)
+                {
+                    float _346;
+                    if (PixelInfo.canvasKind == 1u)
+                    {
+                        float _342 = (1.0 - PixelInfo.morphFactor) + (((_75 > 0.0) ? (_270.w / _75) : 0.0) * PixelInfo.morphFactor);
+                        _346 = (_342 > 0.0) ? (1.0 / _342) : 0.0;
+                    }
+                    else
+                    {
+                        _346 = 1.0;
+                    }
+                    _356 = float4(_75 * (1.0 - ((1.0 - PixelInfo.morphFactor) * _346)));
+                    _357 = _270 * (PixelInfo.morphFactor * _346);
+                }
+                else
+                {
+                    _356 = float4(_270.w);
+                    _357 = _270;
+                }
+                _358 = _356;
+                _359 = _357;
+            }
+            _360 = _358;
+            _361 = _359;
+        }
+        _362 = _360;
+        _363 = _361;
+    }
+    out.out_var_SV_Target0 = select((_363 + float4(1.0)) - _362, _362, bool4(SdlOutputInfo.sdlOutput == 1u));
+    return out;
+}
+

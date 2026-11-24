@@ -1,0 +1,744 @@
+#include <metal_stdlib>
+#include <simd/simd.h>
+
+using namespace metal;
+
+struct type_CanvasInfo
+{
+    float2 canvasScale;
+    float2 _textureSize;
+    uint flags;
+    uint blurOfs;
+    uint edgemapEdges;
+    uint edgemapPitch;
+};
+
+struct type_PixelInfo
+{
+    int tintOfs;
+    uint outputMode;
+    uint canvasKind;
+    float morphFactor;
+};
+
+struct type_StructuredBuffer_v4float
+{
+    float4 _m0[1];
+};
+
+struct type_SdlOutputInfo
+{
+    uint sdlOutput;
+};
+
+struct main0_out
+{
+    float4 out_var_SV_Target0 [[color(0)]];
+};
+
+struct main0_in
+{
+    float4 in_var_COLOR [[user(locn0)]];
+    float2 in_var_TEXCOORD0 [[user(locn1)]];
+};
+
+fragment main0_out main0(main0_in in [[stage_in]], constant type_CanvasInfo& CanvasInfo [[buffer(0)]], constant type_PixelInfo& PixelInfo [[buffer(1)]], constant type_SdlOutputInfo& SdlOutputInfo [[buffer(3)]], const device type_StructuredBuffer_v4float& colors [[buffer(4)]], const device type_StructuredBuffer_v4float& extras [[buffer(5)]], texture2d<float> blitSource [[texture(0)]], sampler blitSampler [[sampler(0)]], float4 gl_FragCoord [[position]])
+{
+    main0_out out = {};
+    bool _101 = (CanvasInfo.flags & 1u) != 0u;
+    float2 _110 = in.in_var_TEXCOORD0 + extras._m0[CanvasInfo.blurOfs + 9u].xy;
+    float4 _112 = blitSource.sample(blitSampler, _110);
+    float4 _117;
+    if (_101)
+    {
+        float4 _116 = _112;
+        _116.w = _112.x;
+        _117 = _116;
+    }
+    else
+    {
+        _117 = _112;
+    }
+    bool _119 = (CanvasInfo.flags & 16u) != 0u;
+    float4 _123;
+    if (_119)
+    {
+        float4 _122 = _117;
+        _122.w = 1.0;
+        _123 = _122;
+    }
+    else
+    {
+        _123 = _117;
+    }
+    bool _125 = (CanvasInfo.flags & 8u) != 0u;
+    float4 _152;
+    if (_125)
+    {
+        float _150;
+        if ((CanvasInfo.flags & 2u) != 0u)
+        {
+            float2 _135 = _110 * CanvasInfo._textureSize;
+            float2 _140 = fast::clamp(precise::min(_135 + float2(0.5), (CanvasInfo._textureSize - _135) + float2(0.5)), float2(0.0), float2(1.0));
+            _150 = _140.x * _140.y;
+        }
+        else
+        {
+            _150 = (any(_110 < float2(0.0)) || any(_110 >= float2(1.0))) ? 0.0 : 1.0;
+        }
+        _152 = _123 * _150;
+    }
+    else
+    {
+        _152 = _123;
+    }
+    float4 _166;
+    if (_101)
+    {
+        _166 = float4(1.0, 1.0, 1.0, _152.w);
+    }
+    else
+    {
+        float3 _164 = select(float3(0.0), _152.xyz / float3(_152.w), bool3(_152.w > 0.0));
+        _166 = float4(_164.x, _164.y, _164.z, _152.w);
+    }
+    float2 _176 = in.in_var_TEXCOORD0 + extras._m0[CanvasInfo.blurOfs + 10u].xy;
+    float4 _178 = blitSource.sample(blitSampler, _176);
+    float4 _183;
+    if (_101)
+    {
+        float4 _182 = _178;
+        _182.w = _178.x;
+        _183 = _182;
+    }
+    else
+    {
+        _183 = _178;
+    }
+    float4 _187;
+    if (_119)
+    {
+        float4 _186 = _183;
+        _186.w = 1.0;
+        _187 = _186;
+    }
+    else
+    {
+        _187 = _183;
+    }
+    float4 _214;
+    if (_125)
+    {
+        float _212;
+        if ((CanvasInfo.flags & 2u) != 0u)
+        {
+            float2 _203 = _176 * CanvasInfo._textureSize;
+            float2 _208 = fast::clamp(precise::min(_203 + float2(0.5), (CanvasInfo._textureSize - _203) + float2(0.5)), float2(0.0), float2(1.0));
+            _212 = _208.x * _208.y;
+        }
+        else
+        {
+            _212 = (any(_176 < float2(0.0)) || any(_176 >= float2(1.0))) ? 0.0 : 1.0;
+        }
+        _214 = _187 * _212;
+    }
+    else
+    {
+        _214 = _187;
+    }
+    float4 _228;
+    if (_101)
+    {
+        _228 = float4(1.0, 1.0, 1.0, _214.w);
+    }
+    else
+    {
+        float3 _224 = select(float3(0.0), _214.xyz / float3(_214.w), bool3(_214.w > 0.0));
+        _228 = float4(_224.x, _224.y, _224.z, _214.w);
+    }
+    float2 _240 = in.in_var_TEXCOORD0 + extras._m0[CanvasInfo.blurOfs + 11u].xy;
+    float4 _242 = blitSource.sample(blitSampler, _240);
+    float4 _247;
+    if (_101)
+    {
+        float4 _246 = _242;
+        _246.w = _242.x;
+        _247 = _246;
+    }
+    else
+    {
+        _247 = _242;
+    }
+    float4 _251;
+    if (_119)
+    {
+        float4 _250 = _247;
+        _250.w = 1.0;
+        _251 = _250;
+    }
+    else
+    {
+        _251 = _247;
+    }
+    float4 _278;
+    if (_125)
+    {
+        float _276;
+        if ((CanvasInfo.flags & 2u) != 0u)
+        {
+            float2 _267 = _240 * CanvasInfo._textureSize;
+            float2 _272 = fast::clamp(precise::min(_267 + float2(0.5), (CanvasInfo._textureSize - _267) + float2(0.5)), float2(0.0), float2(1.0));
+            _276 = _272.x * _272.y;
+        }
+        else
+        {
+            _276 = (any(_240 < float2(0.0)) || any(_240 >= float2(1.0))) ? 0.0 : 1.0;
+        }
+        _278 = _251 * _276;
+    }
+    else
+    {
+        _278 = _251;
+    }
+    float4 _292;
+    if (_101)
+    {
+        _292 = float4(1.0, 1.0, 1.0, _278.w);
+    }
+    else
+    {
+        float3 _288 = select(float3(0.0), _278.xyz / float3(_278.w), bool3(_278.w > 0.0));
+        _292 = float4(_288.x, _288.y, _288.z, _278.w);
+    }
+    float2 _304 = in.in_var_TEXCOORD0 + extras._m0[CanvasInfo.blurOfs + 12u].xy;
+    float4 _306 = blitSource.sample(blitSampler, _304);
+    float4 _311;
+    if (_101)
+    {
+        float4 _310 = _306;
+        _310.w = _306.x;
+        _311 = _310;
+    }
+    else
+    {
+        _311 = _306;
+    }
+    float4 _315;
+    if (_119)
+    {
+        float4 _314 = _311;
+        _314.w = 1.0;
+        _315 = _314;
+    }
+    else
+    {
+        _315 = _311;
+    }
+    float4 _342;
+    if (_125)
+    {
+        float _340;
+        if ((CanvasInfo.flags & 2u) != 0u)
+        {
+            float2 _331 = _304 * CanvasInfo._textureSize;
+            float2 _336 = fast::clamp(precise::min(_331 + float2(0.5), (CanvasInfo._textureSize - _331) + float2(0.5)), float2(0.0), float2(1.0));
+            _340 = _336.x * _336.y;
+        }
+        else
+        {
+            _340 = (any(_304 < float2(0.0)) || any(_304 >= float2(1.0))) ? 0.0 : 1.0;
+        }
+        _342 = _315 * _340;
+    }
+    else
+    {
+        _342 = _315;
+    }
+    float4 _356;
+    if (_101)
+    {
+        _356 = float4(1.0, 1.0, 1.0, _342.w);
+    }
+    else
+    {
+        float3 _352 = select(float3(0.0), _342.xyz / float3(_342.w), bool3(_342.w > 0.0));
+        _356 = float4(_352.x, _352.y, _352.z, _342.w);
+    }
+    float2 _368 = in.in_var_TEXCOORD0 + extras._m0[CanvasInfo.blurOfs + 13u].xy;
+    float4 _370 = blitSource.sample(blitSampler, _368);
+    float4 _375;
+    if (_101)
+    {
+        float4 _374 = _370;
+        _374.w = _370.x;
+        _375 = _374;
+    }
+    else
+    {
+        _375 = _370;
+    }
+    float4 _379;
+    if (_119)
+    {
+        float4 _378 = _375;
+        _378.w = 1.0;
+        _379 = _378;
+    }
+    else
+    {
+        _379 = _375;
+    }
+    float4 _406;
+    if (_125)
+    {
+        float _404;
+        if ((CanvasInfo.flags & 2u) != 0u)
+        {
+            float2 _395 = _368 * CanvasInfo._textureSize;
+            float2 _400 = fast::clamp(precise::min(_395 + float2(0.5), (CanvasInfo._textureSize - _395) + float2(0.5)), float2(0.0), float2(1.0));
+            _404 = _400.x * _400.y;
+        }
+        else
+        {
+            _404 = (any(_368 < float2(0.0)) || any(_368 >= float2(1.0))) ? 0.0 : 1.0;
+        }
+        _406 = _379 * _404;
+    }
+    else
+    {
+        _406 = _379;
+    }
+    float4 _420;
+    if (_101)
+    {
+        _420 = float4(1.0, 1.0, 1.0, _406.w);
+    }
+    else
+    {
+        float3 _416 = select(float3(0.0), _406.xyz / float3(_406.w), bool3(_406.w > 0.0));
+        _420 = float4(_416.x, _416.y, _416.z, _406.w);
+    }
+    float2 _432 = in.in_var_TEXCOORD0 + extras._m0[CanvasInfo.blurOfs + 14u].xy;
+    float4 _434 = blitSource.sample(blitSampler, _432);
+    float4 _439;
+    if (_101)
+    {
+        float4 _438 = _434;
+        _438.w = _434.x;
+        _439 = _438;
+    }
+    else
+    {
+        _439 = _434;
+    }
+    float4 _443;
+    if (_119)
+    {
+        float4 _442 = _439;
+        _442.w = 1.0;
+        _443 = _442;
+    }
+    else
+    {
+        _443 = _439;
+    }
+    float4 _470;
+    if (_125)
+    {
+        float _468;
+        if ((CanvasInfo.flags & 2u) != 0u)
+        {
+            float2 _459 = _432 * CanvasInfo._textureSize;
+            float2 _464 = fast::clamp(precise::min(_459 + float2(0.5), (CanvasInfo._textureSize - _459) + float2(0.5)), float2(0.0), float2(1.0));
+            _468 = _464.x * _464.y;
+        }
+        else
+        {
+            _468 = (any(_432 < float2(0.0)) || any(_432 >= float2(1.0))) ? 0.0 : 1.0;
+        }
+        _470 = _443 * _468;
+    }
+    else
+    {
+        _470 = _443;
+    }
+    float4 _484;
+    if (_101)
+    {
+        _484 = float4(1.0, 1.0, 1.0, _470.w);
+    }
+    else
+    {
+        float3 _480 = select(float3(0.0), _470.xyz / float3(_470.w), bool3(_470.w > 0.0));
+        _484 = float4(_480.x, _480.y, _480.z, _470.w);
+    }
+    float2 _496 = in.in_var_TEXCOORD0 + extras._m0[CanvasInfo.blurOfs + 15u].xy;
+    float4 _498 = blitSource.sample(blitSampler, _496);
+    float4 _503;
+    if (_101)
+    {
+        float4 _502 = _498;
+        _502.w = _498.x;
+        _503 = _502;
+    }
+    else
+    {
+        _503 = _498;
+    }
+    float4 _507;
+    if (_119)
+    {
+        float4 _506 = _503;
+        _506.w = 1.0;
+        _507 = _506;
+    }
+    else
+    {
+        _507 = _503;
+    }
+    float4 _534;
+    if (_125)
+    {
+        float _532;
+        if ((CanvasInfo.flags & 2u) != 0u)
+        {
+            float2 _523 = _496 * CanvasInfo._textureSize;
+            float2 _528 = fast::clamp(precise::min(_523 + float2(0.5), (CanvasInfo._textureSize - _523) + float2(0.5)), float2(0.0), float2(1.0));
+            _532 = _528.x * _528.y;
+        }
+        else
+        {
+            _532 = (any(_496 < float2(0.0)) || any(_496 >= float2(1.0))) ? 0.0 : 1.0;
+        }
+        _534 = _507 * _532;
+    }
+    else
+    {
+        _534 = _507;
+    }
+    float4 _548;
+    if (_101)
+    {
+        _548 = float4(1.0, 1.0, 1.0, _534.w);
+    }
+    else
+    {
+        float3 _544 = select(float3(0.0), _534.xyz / float3(_534.w), bool3(_534.w > 0.0));
+        _548 = float4(_544.x, _544.y, _544.z, _534.w);
+    }
+    float2 _560 = in.in_var_TEXCOORD0 + extras._m0[CanvasInfo.blurOfs + 16u].xy;
+    float4 _562 = blitSource.sample(blitSampler, _560);
+    float4 _567;
+    if (_101)
+    {
+        float4 _566 = _562;
+        _566.w = _562.x;
+        _567 = _566;
+    }
+    else
+    {
+        _567 = _562;
+    }
+    float4 _571;
+    if (_119)
+    {
+        float4 _570 = _567;
+        _570.w = 1.0;
+        _571 = _570;
+    }
+    else
+    {
+        _571 = _567;
+    }
+    float4 _598;
+    if (_125)
+    {
+        float _596;
+        if ((CanvasInfo.flags & 2u) != 0u)
+        {
+            float2 _587 = _560 * CanvasInfo._textureSize;
+            float2 _592 = fast::clamp(precise::min(_587 + float2(0.5), (CanvasInfo._textureSize - _587) + float2(0.5)), float2(0.0), float2(1.0));
+            _596 = _592.x * _592.y;
+        }
+        else
+        {
+            _596 = (any(_560 < float2(0.0)) || any(_560 >= float2(1.0))) ? 0.0 : 1.0;
+        }
+        _598 = _571 * _596;
+    }
+    else
+    {
+        _598 = _571;
+    }
+    float4 _612;
+    if (_101)
+    {
+        _612 = float4(1.0, 1.0, 1.0, _598.w);
+    }
+    else
+    {
+        float3 _608 = select(float3(0.0), _598.xyz / float3(_598.w), bool3(_598.w > 0.0));
+        _612 = float4(_608.x, _608.y, _608.z, _598.w);
+    }
+    float2 _624 = in.in_var_TEXCOORD0 + extras._m0[CanvasInfo.blurOfs + 17u].xy;
+    float4 _626 = blitSource.sample(blitSampler, _624);
+    float4 _631;
+    if (_101)
+    {
+        float4 _630 = _626;
+        _630.w = _626.x;
+        _631 = _630;
+    }
+    else
+    {
+        _631 = _626;
+    }
+    float4 _635;
+    if (_119)
+    {
+        float4 _634 = _631;
+        _634.w = 1.0;
+        _635 = _634;
+    }
+    else
+    {
+        _635 = _631;
+    }
+    float4 _662;
+    if (_125)
+    {
+        float _660;
+        if ((CanvasInfo.flags & 2u) != 0u)
+        {
+            float2 _651 = _624 * CanvasInfo._textureSize;
+            float2 _656 = fast::clamp(precise::min(_651 + float2(0.5), (CanvasInfo._textureSize - _651) + float2(0.5)), float2(0.0), float2(1.0));
+            _660 = _656.x * _656.y;
+        }
+        else
+        {
+            _660 = (any(_624 < float2(0.0)) || any(_624 >= float2(1.0))) ? 0.0 : 1.0;
+        }
+        _662 = _635 * _660;
+    }
+    else
+    {
+        _662 = _635;
+    }
+    float4 _676;
+    if (_101)
+    {
+        _676 = float4(1.0, 1.0, 1.0, _662.w);
+    }
+    else
+    {
+        float3 _672 = select(float3(0.0), _662.xyz / float3(_662.w), bool3(_662.w > 0.0));
+        _676 = float4(_672.x, _672.y, _672.z, _662.w);
+    }
+    float4 _681 = ((((((((_166 * extras._m0[CanvasInfo.blurOfs]) + (_228 * extras._m0[CanvasInfo.blurOfs + 1u])) + (_292 * extras._m0[CanvasInfo.blurOfs + 2u])) + (_356 * extras._m0[CanvasInfo.blurOfs + 3u])) + (_420 * extras._m0[CanvasInfo.blurOfs + 4u])) + (_484 * extras._m0[CanvasInfo.blurOfs + 5u])) + (_548 * extras._m0[CanvasInfo.blurOfs + 6u])) + (_612 * extras._m0[CanvasInfo.blurOfs + 7u])) + (_676 * extras._m0[CanvasInfo.blurOfs + 8u]);
+    float3 _683 = fast::clamp(_681.xyz, float3(0.0), float3(1.0));
+    float4 _872;
+    if (PixelInfo.tintOfs >= 0)
+    {
+        uint _693 = uint(max(PixelInfo.tintOfs, 0));
+        uint _696 = uint(((device float*)&colors._m0[_693])[0]);
+        uint _697 = _693 + 1u;
+        float4 _702;
+        _702 = float4(0.0);
+        uint _700;
+        float4 _703;
+        for (uint _699 = _697, _704 = 0u; _704 < _696; _699 = _700, _702 = _703, _704++)
+        {
+            uint _711 = _699 + 1u;
+            uint _718 = uint(colors._m0[_699].z);
+            uint _719 = _699 + 3u;
+            uint _722 = _719 + ((_718 + 3u) >> 2u);
+            if (_718 > 0u)
+            {
+                float _745;
+                if (colors._m0[_699].x < 0.5)
+                {
+                    _745 = ((colors._m0[_711].x * gl_FragCoord.x) + (colors._m0[_711].y * gl_FragCoord.y)) + colors._m0[_711].z;
+                }
+                else
+                {
+                    _745 = length((gl_FragCoord.xy - colors._m0[_711].xy) * colors._m0[_711].zw);
+                }
+                float _746 = fast::clamp(_745, -10000000.0, 10000000.0);
+                uint _748 = uint(colors._m0[_699].y);
+                float _768;
+                if (_748 == 0u)
+                {
+                    _768 = fast::clamp(_746, 0.0, 1.0);
+                }
+                else
+                {
+                    float _767;
+                    if (_748 == 1u)
+                    {
+                        _767 = _746 - floor(_746);
+                    }
+                    else
+                    {
+                        float _763 = _746 - (2.0 * floor(_746 * 0.5));
+                        _767 = (_763 > 1.0) ? (2.0 - _763) : _763;
+                    }
+                    _768 = _767;
+                }
+                int _770;
+                _770 = -1;
+                int _771;
+                for (uint _773 = 0u; _773 < _718; _770 = _771, _773++)
+                {
+                    uint _779 = _719 + (_773 >> 2u);
+                    uint _782 = _773 & 3u;
+                    if (((_782 == 0u) ? colors._m0[_779].x : ((_782 == 1u) ? colors._m0[_779].y : ((_782 == 2u) ? colors._m0[_779].z : colors._m0[_779].w))) <= _768)
+                    {
+                        _771 = int(_773);
+                    }
+                    else
+                    {
+                        _771 = _770;
+                    }
+                }
+                float4 _855;
+                if (_770 < 0)
+                {
+                    _855 = colors._m0[_722];
+                }
+                else
+                {
+                    uint _803 = uint(_770);
+                    float4 _854;
+                    if (_803 == (_718 - 1u))
+                    {
+                        _854 = colors._m0[_722 + _803];
+                    }
+                    else
+                    {
+                        uint _813 = _719 + (_803 >> 2u);
+                        uint _816 = _803 & 3u;
+                        float _826 = (_816 == 0u) ? colors._m0[_813].x : ((_816 == 1u) ? colors._m0[_813].y : ((_816 == 2u) ? colors._m0[_813].z : colors._m0[_813].w));
+                        uint _827 = _803 + 1u;
+                        uint _829 = _719 + (_827 >> 2u);
+                        uint _832 = _827 & 3u;
+                        uint _843 = _722 + _803;
+                        _854 = mix(colors._m0[_843], colors._m0[_843 + 1u], float4((_768 - _826) / (((_832 == 0u) ? colors._m0[_829].x : ((_832 == 1u) ? colors._m0[_829].y : ((_832 == 2u) ? colors._m0[_829].z : colors._m0[_829].w))) - _826)));
+                    }
+                    _855 = _854;
+                }
+                float4 _868;
+                if (((device float*)&colors._m0[_699 + 2u])[0] > 0.5)
+                {
+                    float3 _866 = mix(powr(abs((_855.xyz + float3(0.054999999701976776123046875)) * float3(0.947867333889007568359375)), float3(2.400000095367431640625)), _855.xyz * float3(0.077399380505084991455078125), step(_855.xyz, float3(0.040449999272823333740234375)));
+                    _868 = float4(_866.x, _866.y, _866.z, _855.w);
+                }
+                else
+                {
+                    _868 = _855;
+                }
+                _703 = _702 + (_868 * colors._m0[_699].w);
+            }
+            else
+            {
+                _703 = _702;
+            }
+            _700 = _722 + _718;
+        }
+        _872 = _702;
+    }
+    else
+    {
+        _872 = float4(1.0);
+    }
+    float4 _873 = (float4(_683.x, _683.y, _683.z, _681.w) * in.in_var_COLOR) * _872;
+    float _875 = _873.w;
+    float3 _876 = _873.xyz * _875;
+    float _877 = _876.x;
+    float4 _880 = float4(_877, _876.yz, _875);
+    float4 _958;
+    float4 _959;
+    if (PixelInfo.canvasKind == 2u)
+    {
+        float4 _906;
+        float4 _907;
+        if (PixelInfo.outputMode == 2u)
+        {
+            _906 = float4(0.0);
+            _907 = float4(_875);
+        }
+        else
+        {
+            float4 _904;
+            float4 _905;
+            if (PixelInfo.outputMode == 1u)
+            {
+                _904 = float4(PixelInfo.morphFactor);
+                _905 = float4(_875 * PixelInfo.morphFactor);
+            }
+            else
+            {
+                float4 _903 = float4(_875);
+                _904 = _903;
+                _905 = _903;
+            }
+            _906 = _904;
+            _907 = _905;
+        }
+        _958 = _906;
+        _959 = _907;
+    }
+    else
+    {
+        float4 _956;
+        float4 _957;
+        if (PixelInfo.outputMode == 3u)
+        {
+            _956 = float4(0.0);
+            _957 = float4(_877, _876.yz, precise::max(_877, precise::max(_876.y, _876.z)));
+        }
+        else
+        {
+            float4 _954;
+            float4 _955;
+            if (PixelInfo.outputMode == 2u)
+            {
+                _954 = float4(0.0);
+                _955 = float4(float3(1.0 - _875) + _880.xyz, 1.0);
+            }
+            else
+            {
+                float4 _952;
+                float4 _953;
+                if (PixelInfo.outputMode == 1u)
+                {
+                    float _944;
+                    if (PixelInfo.canvasKind == 1u)
+                    {
+                        float _940 = (1.0 - PixelInfo.morphFactor) + (_875 * PixelInfo.morphFactor);
+                        _944 = (_940 > 0.0) ? (1.0 / _940) : 0.0;
+                    }
+                    else
+                    {
+                        _944 = 1.0;
+                    }
+                    _952 = float4(1.0 - ((1.0 - PixelInfo.morphFactor) * _944));
+                    _953 = _880 * (PixelInfo.morphFactor * _944);
+                }
+                else
+                {
+                    _952 = float4(_875);
+                    _953 = _880;
+                }
+                _954 = _952;
+                _955 = _953;
+            }
+            _956 = _954;
+            _957 = _955;
+        }
+        _958 = _956;
+        _959 = _957;
+    }
+    out.out_var_SV_Target0 = select((_959 + float4(1.0)) - _958, _958, bool4(SdlOutputInfo.sdlOutput == 1u));
+    return out;
+}
+
