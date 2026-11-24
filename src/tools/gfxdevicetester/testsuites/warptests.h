@@ -92,6 +92,27 @@ public:
 
 		// Surfaces: a pattern with partly transparent pixels, tiling and not.
 
+		{
+			const int w = 64, h = 32;
+			std::vector<Color8> pixels(w * h);
+
+			for (int y = 0; y < h; y++)
+			{
+				for (int x = 0; x < w; x++)
+				{
+					bool bChecker = ((x / 8) + (y / 8)) & 1;
+					pixels[y * w + x] = Color8(uint8_t(255 - y * 6), uint8_t(x * 4), bChecker ? 40 : 230, uint8_t(255 - ((x * 7 + y * 3) % 5) * 30));
+				}
+			}
+
+			m_pTiling = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear, _.tiling = true),
+													   (uint8_t*)pixels.data(), PixelFormat::ARGB_8);
+			m_pNearest = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Nearest),
+														(uint8_t*)pixels.data(), PixelFormat::ARGB_8);
+			m_pBilinear = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear),
+														 (uint8_t*)pixels.data(), PixelFormat::ARGB_8);
+		}
+
 		// A reel strip of 8 slots, each a colored diamond between dark separators, and the same
 		// turned on its side as a label. Even slots that get closer towards the rims is what shows
 		// a cylinder. Sizes are powers of two, as tiling surfaces need to wrap the same everywhere.
@@ -139,6 +160,7 @@ public:
 		m_pIdentity = _gridWarpmap(pWarpmapFactory, m_pSmall->pixelSize(), { 9, 9 }, [](int x, int y) { return CoordSPX(x * 64, y * 64); });
 		m_pIdentityBlit = _gridWarpmap(pWarpmapFactory, { 64, 32 }, { 7, 7 }, [](int x, int y) { return CoordSPX(x * 64, y * 64); });
 
+		return m_pGauge && m_pTintedGauge && m_pSmall && m_pTiling && m_pNearest && m_pBilinear && m_pReelStrip && m_pReelLabel &&
 			   m_forGauge.ring && m_forGauge.wave && m_forGauge.stripes;
 	}
 
