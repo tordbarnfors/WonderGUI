@@ -352,6 +352,9 @@ namespace wax
 		int					_addExtras( const Extras& first, const Extras& second );
 		int					_addBlurExtras();										// Returns offset to 18 entries, -1 if full.
 
+		void				_addQuad( const CoordF corners[4], int colorOfs, int extrasOfs, const CoordF * pUV = nullptr );		// Six vertices, corners in order around the quad.
+		void				_addQuad( float x1, float y1, float x2, float y2, int colorOfs, int extrasOfs );
+
 		void				_drawFillRects( const RectSPX * pRects, int nRects, HiColor color );
 		void				_drawFillRun( PipelineKind kind, int firstVertex, int nRects );
 		void				_drawBlitRects( const uint16_t*& pCmd, const RectSPX*& pRects, int nRects, int version, PipelineKind kind, bool bClip );
@@ -362,7 +365,31 @@ namespace wax
 		void				_drawShape( ShapeKind kind, const uint16_t * pPayload, const RectSPX * pRects, int nRects, const HiColor * pColors );
 		void				_drawWarp( Command cmd, const WarpParams& params, const RectSPX * pRects );
 
-		void				_reportBufferFull( const char * pBuffer, const char * pWhat, bool& bReported );
+		// What we tell the error handler of once for each backend, as it would come again with
+		// every frame otherwise.
+
+		enum class Report
+		{
+			UnknownCommand,
+			BadEdgemap,
+			BadWarp,
+			BuffersShort,
+			VerticesUnderestimated,			// These three in the order _checkSessionUsage() has them.
+			ColorsUnderestimated,
+			ExtrasUnderestimated,
+			FillsDropped,					// From here on in the order _reportBufferFull() names them.
+			LinesDropped,
+			DrawsDropped,
+			TintsDropped,
+			BlitsDropped,
+			BlursDropped,
+			EdgemapsDropped,
+			ShapesDropped,
+			WarpsDropped
+		};
+
+		bool				_firstReport( Report what );								// True the first time it is called for what.
+		void				_reportBufferFull( const char * pBuffer, Report dropped );
 
 		static BlendMode	_normalizeBlendMode( BlendMode blendMode );
 		static bool			_isOfType( const TypeInfo& type, const TypeInfo& base );
@@ -436,6 +463,9 @@ namespace wax
 		Extras *			m_pSessionExtrasBeg = nullptr;
 		bool				m_bSessionInfoGiven = false;
 		bool				m_bSessionBuffersShort = false;
+		bool				m_bSessionHasBuffers = false;	// All three of m_buffers are there. A session without draws nothing.
+
+		uint32_t			m_reported = 0;					// A bit for each Report made, see _firstReport().
 
 		// State set by StateChange commands.
 

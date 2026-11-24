@@ -372,6 +372,7 @@ namespace wax
 		HANDLE 												m_fenceEvent = nullptr;
 		bool												m_bCommandListOpen = false;
 		bool												m_bDeviceObjectsOK = false;		// Command list, allocators and fence were all created.
+		bool												m_bOutOfDescriptorsReported = false;	// Said once for each backend, as it would come again with every frame.
 
 		// Canvas surfaces we have barriered out of COMMON to read as blit source.
 		// They go back before the session ends or the command list is closed, so

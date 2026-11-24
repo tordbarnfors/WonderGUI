@@ -1514,12 +1514,11 @@ namespace wax
 		{
 			if (frame.nSRVDescriptors >= frame.srvCapacity && !_growSRVHeap())
 			{
-				static bool bReported = false;
-				if (!bReported && !s_bDeviceLost)
+				if (!m_bOutOfDescriptorsReported && !s_bDeviceLost)
 				{
 					Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Out of blit source descriptors and couldn't make room for more, blits dropped.",
 						this, &TYPEINFO, __func__, __FILE__, __LINE__);
-					bReported = true;
+					m_bOutOfDescriptorsReported = true;
 				}
 
 				return false;

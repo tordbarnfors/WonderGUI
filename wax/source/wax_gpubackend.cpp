@@ -355,17 +355,32 @@ namespace wax
 		return false;
 	}
 
+	//____ _firstReport() ________________________________________________________
+
+	bool GpuBackend::_firstReport( Report what )
+	{
+		uint32_t bit = 1u << int(what);
+
+		if( m_reported & bit )
+			return false;
+
+		m_reported |= bit;
+		return true;
+	}
+
 	//____ _reportBufferFull() ___________________________________________________
 
-	void GpuBackend::_reportBufferFull( const char * pBuffer, const char * pWhat, bool& bReported )
+	void GpuBackend::_reportBufferFull( const char * pBuffer, Report dropped )
 	{
-		if( bReported || !_blameSessionInfo() )
+		static const char * const c_names[] = { "fills", "lines", "draws", "tints", "blits", "blurs", "edgemaps", "shapes", "warps" };
+
+		if( !_blameSessionInfo() || !_firstReport(dropped) )
 			return;
 
 		char buffer[256];
-		snprintf(buffer, sizeof(buffer), "%s buffer full, %s dropped. SessionInfo underestimated what the session needs.", pBuffer, pWhat);
+		snprintf(buffer, sizeof(buffer), "%s buffer full, %s dropped. SessionInfo underestimated what the session needs.",
+				 pBuffer, c_names[int(dropped) - int(Report::FillsDropped)]);
 		Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, buffer, this, &typeInfo(), __func__, __FILE__, __LINE__);
-		bReported = true;
 	}
 
 	//____ beginSession() ________________________________________________________
@@ -573,12 +588,13 @@ namespace wax
 
 	void GpuBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int version)
 	{
-		// Nothing can be recorded: the device is lost, beginRender() was never called, or
-		// recording broke. Every draw would fail on its own and many would say so, so the commands
-		// are dropped here, quietly. The streams are set again before the next call, so there is
-		// no need to step through them.
+		// Nothing can be recorded: the device is lost, beginRender() was never called, recording
+		// broke, or the session is without one of its buffers, which _reserveBuffers() has said.
+		// Every draw would fail on its own and many would say so, so the commands are dropped
+		// here, quietly. The streams are set again before the next call, so there is no need to
+		// step through them.
 
-		if (!m_bInSession || !_isRecording())
+		if (!m_bInSession || !m_bSessionHasBuffers || !_isRecording())
 			return;
 
 		const RectSPX*	pRects = m_pRectsPtr;
@@ -682,13 +698,11 @@ namespace wax
 					// payload is, so there is no way to find the next one and the rest of the
 					// session has to go.
 
-					static bool bReported = false;
-					if (!bReported)
+					if (_firstReport(Report::UnknownCommand))
 					{
 						char buffer[128];
 						snprintf(buffer, sizeof(buffer), "Command %d is unknown, rest of session dropped.", (int)cmd);
 						Base::throwError(ErrorLevel::Error, ErrorCode::Other, buffer, this, &typeInfo(), __func__, __FILE__, __LINE__);
-						bReported = true;
 					}
 
 					p = pEnd;
@@ -746,6 +760,36 @@ namespace wax
 		}
 	}
 
+	//____ _addQuad() ____________________________________________________________
+	//
+	// Writes the six vertices of a quad, two triangles, from its corners in order around it. The
+	// caller has made sure there is room for them. Only edgemaps have u and v.
+
+	void GpuBackend::_addQuad( const CoordF corners[4], int colorOfs, int extrasOfs, const CoordF * pUV )
+	{
+		static const int c_order[6] = { 0, 1, 2, 0, 2, 3 };
+
+		for (int i = 0; i < 6; i++)
+		{
+			int corner = c_order[i];
+			Vertex * pV = m_buffers.pVertexPtr++;
+
+			pV->x = corners[corner].x;
+			pV->y = corners[corner].y;
+			pV->colorOfs = (uint32_t) colorOfs;
+			pV->extrasOfs = (uint32_t) extrasOfs;
+			pV->u = pUV ? pUV[corner].x : 0.f;
+			pV->v = pUV ? pUV[corner].y : 0.f;
+		}
+	}
+
+	void GpuBackend::_addQuad( float x1, float y1, float x2, float y2, int colorOfs, int extrasOfs )
+	{
+		const CoordF corners[4] = { {x1, y1}, {x2, y1}, {x2, y2}, {x1, y2} };
+
+		_addQuad(corners, colorOfs, extrasOfs);
+	}
+
 	//____ _drawFillRects() ______________________________________________________
 	//
 	// A rectangle that lands on whole pixels is just a quad. One that doesn't needs the coverage
@@ -754,7 +798,7 @@ namespace wax
 
 	void GpuBackend::_drawFillRects(const RectSPX* pRects, int nRects, HiColor color)
 	{
-		if (nRects <= 0 || !m_buffers.pVertexPtr)
+		if (nRects <= 0)
 			return;
 
 		// One color for the whole command, the vertices only carry its offset.
@@ -788,8 +832,7 @@ namespace wax
 
 			if (m_buffers.pVertexEnd - m_buffers.pVertexPtr < 6)
 			{
-				static bool bReported = false;
-				_reportBufferFull("Vertex", "fills", bReported);
+				_reportBufferFull("Vertex", Report::FillsDropped);
 				break;
 			}
 
@@ -826,20 +869,7 @@ namespace wax
 				y2 = float((y2spx + 63) >> 6);
 			}
 
-			const float coords[6][2] = { {x1,y1}, {x2,y1}, {x2,y2},
-										 {x1,y1}, {x2,y2}, {x1,y2} };
-
-			for (int vertex = 0; vertex < 6; vertex++)
-			{
-				Vertex * pV = m_buffers.pVertexPtr++;
-
-				pV->x = coords[vertex][0];
-				pV->y = coords[vertex][1];
-				pV->colorOfs = (uint32_t) colorOfs;
-				pV->extrasOfs = (uint32_t) extrasOfs;
-				pV->u = 0.f;
-				pV->v = 0.f;
-			}
+			_addQuad(x1, y1, x2, y2, colorOfs, extrasOfs);
 
 			nRectsInRun++;
 		}
@@ -872,18 +902,16 @@ namespace wax
 
 	void GpuBackend::_drawLines(const uint16_t*& pCmd, const RectSPX*& pRects, const HiColor*& pColors, int nClipRects, int nLines)
 	{
-		bool bDraw = m_buffers.pVertexPtr != nullptr;
-
 		const RectSPX* pClipRects = pRects;
 		pRects += nClipRects;
 
-		int firstVertex = bDraw ? int(m_buffers.pVertexPtr - m_buffers.pVertexBeg) : 0;
+		int firstVertex = int(m_buffers.pVertexPtr - m_buffers.pVertexBeg);
 		int nLinesDrawn = 0;
 
 		for (int i = 0; i < nLines; i++)
 		{
-			// Even when we can't draw we have to step through the command's data, or we lose track
-			// of where we are in the command stream.
+			// The data of a line we can't draw has to be stepped through too, or we lose track of
+			// where we are in the command stream.
 
 			HiColor col = *pColors++;
 
@@ -907,13 +935,9 @@ namespace wax
 				continue;
 			}
 
-			if (!bDraw)
-				continue;
-
 			if (m_buffers.pVertexEnd - m_buffers.pVertexPtr < 6)
 			{
-				static bool bReported = false;
-				_reportBufferFull("Vertex", "lines", bReported);
+				_reportBufferFull("Vertex", Report::LinesDropped);
 				continue;
 			}
 
@@ -931,19 +955,12 @@ namespace wax
 			if (colorOfs < 0)
 				continue;
 
-			const int corners[6] = { 0, 1, 2, 0, 2, 3 };
+			CoordF corners[4];
 
-			for (int vertex = 0; vertex < 6; vertex++)
-			{
-				Vertex * pV = m_buffers.pVertexPtr++;
+			for (int corner = 0; corner < 4; corner++)
+				corners[corner] = { float(quad.corners[corner].x), float(quad.corners[corner].y) };
 
-				pV->x = float(quad.corners[corners[vertex]].x);
-				pV->y = float(quad.corners[corners[vertex]].y);
-				pV->colorOfs = (uint32_t) colorOfs;
-				pV->extrasOfs = (uint32_t) extrasOfs;
-				pV->u = 0.f;
-				pV->v = 0.f;
-			}
+			_addQuad(corners, colorOfs, extrasOfs);
 
 			nLinesDrawn++;
 		}
@@ -994,7 +1011,7 @@ namespace wax
 
 	void GpuBackend::_drawCappedLines(const RectSPX* pClipRects, int nClipRects)
 	{
-		if (!m_buffers.pVertexPtr || !m_buffers.pColorPtr || !m_buffers.pExtrasPtr || !_setPipeline(PipelineKind::ShapeLine))
+		if (!_setPipeline(PipelineKind::ShapeLine))
 			return;
 
 		int colorOfs = _addColor(HiColor::White);
@@ -1009,8 +1026,7 @@ namespace wax
 			if (m_buffers.pExtrasEnd - m_buffers.pExtrasPtr < GpuShapes::c_lineEntries || m_buffers.pVertexEnd - m_buffers.pVertexPtr < 6
 				|| m_buffers.pColorPtr == m_buffers.pColorEnd)
 			{
-				static bool bReported = false;
-				_reportBufferFull("A", "lines", bReported);
+				_reportBufferFull("A", Report::LinesDropped);
 				break;
 			}
 
@@ -1028,20 +1044,7 @@ namespace wax
 			int extrasOfs = int(pEntries - m_buffers.pExtrasBeg);
 			m_buffers.pExtrasPtr += nEntries;
 
-			const int corners[6] = { 0, 1, 2, 0, 2, 3 };
-
-			for (int vertex = 0; vertex < 6; vertex++)
-			{
-				const CoordF& corner = quad[corners[vertex]];
-				Vertex * pV = m_buffers.pVertexPtr++;
-
-				pV->x = corner.x;
-				pV->y = corner.y;
-				pV->colorOfs = (uint32_t) colorOfs;
-				pV->extrasOfs = (uint32_t) extrasOfs;
-				pV->u = 0.f;
-				pV->v = 0.f;
-			}
+			_addQuad(quad, colorOfs, extrasOfs);
 
 			nLinesDrawn++;
 		}
@@ -1054,13 +1057,9 @@ namespace wax
 
 	int GpuBackend::_addColor(HiColor color)
 	{
-		if (!m_buffers.pColorPtr)
-			return -1;
-
 		if (m_buffers.pColorPtr == m_buffers.pColorEnd)
 		{
-			static bool bReported = false;
-			_reportBufferFull("Color", "draws", bReported);
+			_reportBufferFull("Color", Report::DrawsDropped);
 			return -1;
 		}
 
@@ -1090,10 +1089,9 @@ namespace wax
 	{
 		int blockSize = TintTools::gpuTintBlockSize(tint);
 
-		if (!m_buffers.pColorPtr || m_buffers.pColorEnd - m_buffers.pColorPtr < blockSize)
+		if (m_buffers.pColorEnd - m_buffers.pColorPtr < blockSize)
 		{
-			static bool bReported = false;
-			_reportBufferFull("Color", "tints", bReported);
+			_reportBufferFull("Color", Report::TintsDropped);
 
 			_clearTint();
 			return;
@@ -1149,12 +1147,9 @@ namespace wax
 
 	int GpuBackend::_addExtras(const Extras& extras)
 	{
-		if (!m_buffers.pExtrasPtr || m_buffers.pExtrasPtr == m_buffers.pExtrasEnd)
+		if (m_buffers.pExtrasPtr == m_buffers.pExtrasEnd)
 		{
-			static bool bReported = false;
-			if (m_buffers.pExtrasPtr)
-				_reportBufferFull("Extras", "draws", bReported);
-
+			_reportBufferFull("Extras", Report::DrawsDropped);
 			return -1;
 		}
 
@@ -1167,13 +1162,9 @@ namespace wax
 
 	int GpuBackend::_addExtras(const Extras& first, const Extras& second)
 	{
-		if (!m_buffers.pExtrasPtr)
-			return -1;
-
 		if (m_buffers.pExtrasEnd - m_buffers.pExtrasPtr < 2)
 		{
-			static bool bReported = false;
-			_reportBufferFull("Extras", "blits", bReported);
+			_reportBufferFull("Extras", Report::BlitsDropped);
 			return -1;
 		}
 
@@ -1191,12 +1182,9 @@ namespace wax
 	{
 		const int nEntries = 18;			// Nine color matrices, then nine offsets.
 
-		if (!m_buffers.pExtrasPtr || m_buffers.pExtrasEnd - m_buffers.pExtrasPtr < nEntries)
+		if (m_buffers.pExtrasEnd - m_buffers.pExtrasPtr < nEntries)
 		{
-			static bool bReported = false;
-			if (m_buffers.pExtrasPtr)
-				_reportBufferFull("Extras", "blurs", bReported);
-
+			_reportBufferFull("Extras", Report::BlursDropped);
 			return -1;
 		}
 
@@ -1334,7 +1322,7 @@ namespace wax
 		// Even when we can't draw we have to step through the command's data, or we lose track of
 		// where we are in the stream.
 
-		bool bDraw = m_buffers.pVertexPtr != nullptr && _bindBlitSource();
+		bool bDraw = _bindBlitSource();
 
 		// The source may be bound for a different kind of blit.
 
@@ -1398,8 +1386,7 @@ namespace wax
 
 			if (m_buffers.pVertexEnd - m_buffers.pVertexPtr < 6)
 			{
-				static bool bReported = false;
-				_reportBufferFull("Vertex", "blits", bReported);
+				_reportBufferFull("Vertex", Report::BlitsDropped);
 				continue;
 			}
 
@@ -1445,20 +1432,7 @@ namespace wax
 			float x2 = x1 + float(dest.w >> 6);
 			float y2 = y1 + float(dest.h >> 6);
 
-			const float coords[6][2] = { {x1,y1}, {x2,y1}, {x2,y2},
-										 {x1,y1}, {x2,y2}, {x1,y2} };
-
-			for (int vertex = 0; vertex < 6; vertex++)
-			{
-				Vertex * pV = m_buffers.pVertexPtr++;
-
-				pV->x = coords[vertex][0];
-				pV->y = coords[vertex][1];
-				pV->colorOfs = (uint32_t) colorOfs;
-				pV->extrasOfs = (uint32_t) extrasOfs;
-				pV->u = 0.f;
-				pV->v = 0.f;
-			}
+			_addQuad(x1, y1, x2, y2, colorOfs, extrasOfs);
 
 			nRectsDrawn++;
 		}
@@ -1490,10 +1464,9 @@ namespace wax
 
 		GpuEdgemap * pEdgemap = _isNativeEdgemap(pObject) ? static_cast<GpuEdgemap*>(pObject) : nullptr;
 
-		if (!pEdgemap || !pEdgemap->m_pGpuData || !m_buffers.pVertexPtr || flip < 0 || flip >= GfxFlip_size)
+		if (!pEdgemap || !pEdgemap->m_pGpuData || flip < 0 || flip >= GfxFlip_size)
 		{
-			static bool bReported = false;
-			if (!bReported && m_buffers.pVertexPtr)
+			if (_firstReport(Report::BadEdgemap))
 			{
 				const char * pReason = !pEdgemap ? "it is not an edgemap of this backend" :
 									   !pEdgemap->m_pGpuData ? "it has no buffer" : "the flip value is out of range";
@@ -1501,7 +1474,6 @@ namespace wax
 				char buffer[256];
 				snprintf(buffer, sizeof(buffer), "Can't draw edgemap, %s.", pReason);
 				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &typeInfo(), __func__, __FILE__, __LINE__);
-				bReported = true;
 			}
 
 			pRects += nRects;
@@ -1593,8 +1565,7 @@ namespace wax
 
 		if (m_buffers.pVertexEnd - m_buffers.pVertexPtr < nRects * 6)
 		{
-			static bool bReported = false;
-			_reportBufferFull("Vertex", "edgemaps", bReported);
+			_reportBufferFull("Vertex", Report::EdgemapsDropped);
 
 			pRects += nRects;
 			return;
@@ -1628,25 +1599,12 @@ namespace wax
 			float u4 = float(uTopLeft + (patch.x - dest.x) * mtx.xx + (patch.y + patch.h - dest.y) * mtx.yx);
 			float v4 = float(vTopLeft + (patch.x - dest.x) * mtx.xy + (patch.y + patch.h - dest.y) * mtx.yy);
 
-			const float uv[4][2] = { { u1, v1 - 0.5f }, { u2, v2 - 0.5f }, { u3, v3 - 0.5f }, { u4, v4 - 0.5f } };
+			const CoordF uv[4] = { { u1, v1 - 0.5f }, { u2, v2 - 0.5f }, { u3, v3 - 0.5f }, { u4, v4 - 0.5f } };
 
-			const float coords[4][2] = { { float(dx1), float(dy1) }, { float(dx2), float(dy1) },
-										 { float(dx2), float(dy2) }, { float(dx1), float(dy2) } };
+			const CoordF corners[4] = { { float(dx1), float(dy1) }, { float(dx2), float(dy1) },
+										{ float(dx2), float(dy2) }, { float(dx1), float(dy2) } };
 
-			const int corners[6] = { 0, 1, 2, 0, 2, 3 };
-
-			for (int vertex = 0; vertex < 6; vertex++)
-			{
-				int corner = corners[vertex];
-				Vertex * pV = m_buffers.pVertexPtr++;
-
-				pV->x = coords[corner][0];
-				pV->y = coords[corner][1];
-				pV->colorOfs = (uint32_t) colorOfs;
-				pV->extrasOfs = (uint32_t) extrasOfs;
-				pV->u = uv[corner][0];
-				pV->v = uv[corner][1];
-			}
+			_addQuad(corners, colorOfs, extrasOfs, uv);
 		}
 
 		if (!_setPipeline(PipelineKind::Segments))
@@ -1685,16 +1643,14 @@ namespace wax
 			return;
 		}
 
-		if (!m_buffers.pVertexPtr || !m_buffers.pColorPtr || !m_buffers.pExtrasPtr || !_setPipeline(kind == ShapeKind::Ring ? PipelineKind::ShapeRing : PipelineKind::ShapeBox))
+		if (!_setPipeline(kind == ShapeKind::Ring ? PipelineKind::ShapeRing : PipelineKind::ShapeBox))
 			return;
 
-		static bool bReported = false;
-
 		if (m_buffers.pExtrasEnd - m_buffers.pExtrasPtr < maxEntries)
-			return _reportBufferFull("Extras", "shapes", bReported);
+			return _reportBufferFull("Extras", Report::ShapesDropped);
 
 		if (m_buffers.pVertexEnd - m_buffers.pVertexPtr < nRects * 6)
-			return _reportBufferFull("Vertex", "shapes", bReported);
+			return _reportBufferFull("Vertex", Report::ShapesDropped);
 
 		// _addColor() multiplies by the tint color, so white is what gets it applied exactly once.
 
@@ -1720,7 +1676,7 @@ namespace wax
 				continue;
 
 			if (m_buffers.pColorPtr == m_buffers.pColorEnd)
-				return _reportBufferFull("Color", "shapes", bReported);
+				return _reportBufferFull("Color", Report::ShapesDropped);
 
 			Extras& entry = pEntries[seg.entry];
 
@@ -1736,7 +1692,7 @@ namespace wax
 
 				int blockSize = TintTools::gpuTintBlockSize(tint);
 				if (m_buffers.pColorEnd - m_buffers.pColorPtr < blockSize)
-					return _reportBufferFull("Color", "shapes", bReported);
+					return _reportBufferFull("Color", Report::ShapesDropped);
 
 				entry.y = float(m_buffers.pColorPtr - m_buffers.pColorBeg);
 				TintTools::writeGpuTintBlock(tint, (float*) m_buffers.pColorPtr);
@@ -1755,23 +1711,7 @@ namespace wax
 		{
 			RectI patch = pRects[i] / 64;
 
-			const float coords[4][2] = { { float(patch.x), float(patch.y) }, { float(patch.x + patch.w), float(patch.y) },
-										 { float(patch.x + patch.w), float(patch.y + patch.h) }, { float(patch.x), float(patch.y + patch.h) } };
-
-			const int corners[6] = { 0, 1, 2, 0, 2, 3 };
-
-			for (int vertex = 0; vertex < 6; vertex++)
-			{
-				int corner = corners[vertex];
-				Vertex * pV = m_buffers.pVertexPtr++;
-
-				pV->x = coords[corner][0];
-				pV->y = coords[corner][1];
-				pV->colorOfs = (uint32_t) colorOfs;
-				pV->extrasOfs = (uint32_t) extrasOfs;
-				pV->u = 0.f;
-				pV->v = 0.f;
-			}
+			_addQuad(float(patch.x), float(patch.y), float(patch.x + patch.w), float(patch.y + patch.h), colorOfs, extrasOfs);
 		}
 
 		_draw(firstVertex, nRects * 6);
@@ -1796,8 +1736,7 @@ namespace wax
 
 		if (!pWarpmap || (bEdgemap && (!pEdgemap || !pEdgemap->m_pGpuData)))
 		{
-			static bool bReported = false;
-			if (!bReported)
+			if (_firstReport(Report::BadWarp))
 			{
 				const char * pReason = !pWarpmap ? "the warpmap is not one of this backend" :
 									   !pEdgemap ? "the edgemap is not one of this backend" : "the edgemap has no buffer";
@@ -1805,14 +1744,10 @@ namespace wax
 				char buffer[256];
 				snprintf(buffer, sizeof(buffer), "Can't draw warp, %s.", pReason);
 				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &typeInfo(), __func__, __FILE__, __LINE__);
-				bReported = true;
 			}
 
 			return;
 		}
-
-		if (!m_buffers.pVertexPtr || !m_buffers.pExtrasPtr)
-			return;
 
 		// A blit reads around the source rather than clipping to it, the shaders take care of its
 		// borders. A palette based source has a shader of its own.
@@ -1836,10 +1771,7 @@ namespace wax
 			return;
 
 		if (m_buffers.pExtrasEnd - m_buffers.pExtrasPtr < 3)
-		{
-			static bool bReported = false;
-			return _reportBufferFull("Extras", "warps", bReported);
-		}
+			return _reportBufferFull("Extras", Report::WarpsDropped);
 
 		// _addColor() multiplies by the tint color, so white is what gets it applied exactly once.
 
@@ -2002,18 +1934,19 @@ namespace wax
 
 		m_bSessionBuffersShort = !bOK;
 
-		if (!bOK && _isRecording())
+		if (!bOK && _isRecording() && _firstReport(Report::BuffersShort))
 		{
-			static bool bReported = false;
-			if (!bReported)
-			{
-				char buffer[256];
-				snprintf(buffer, sizeof(buffer), "Couldn't make room for %d vertices, %d colors and %d extras, draws that don't fit are dropped.",
-						 nVertices, nColors, nExtras);
-				Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, buffer, this, &typeInfo(), __func__, __FILE__, __LINE__);
-				bReported = true;
-			}
+			char buffer[256];
+			snprintf(buffer, sizeof(buffer), "Couldn't make room for %d vertices, %d colors and %d extras, draws that don't fit are dropped.",
+					 nVertices, nColors, nExtras);
+			Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, buffer, this, &typeInfo(), __func__, __FILE__, __LINE__);
 		}
+
+		// A buffer that couldn't grow is still there, smaller than asked for. One that isn't there
+		// at all leaves next to nothing to draw, so such a session draws nothing, and no draw has
+		// to look for its buffers.
+
+		m_bSessionHasBuffers = m_buffers.pVertexPtr && m_buffers.pColorPtr && m_buffers.pExtrasPtr;
 
 		// What _checkSessionUsage() measures the session against.
 
@@ -2045,17 +1978,14 @@ namespace wax
 			{ "colors",		m_pSessionColorBeg ? int(m_buffers.pColorPtr - m_pSessionColorBeg) : 0,			m_sessionColors },
 			{ "extras",		m_pSessionExtrasBeg ? int(m_buffers.pExtrasPtr - m_pSessionExtrasBeg) : 0,		m_sessionExtras } };
 
-		static bool bReported[3] = { false, false, false };
-
 		for (int i = 0; i < 3; i++)
 		{
-			if (usage[i].used > usage[i].reserved && !bReported[i])
+			if (usage[i].used > usage[i].reserved && _firstReport(Report(int(Report::VerticesUnderestimated) + i)))
 			{
 				char buffer[256];
 				snprintf(buffer, sizeof(buffer), "SessionInfo underestimated what the session needs: room was made for %d %s, the session wrote %d.",
 						 usage[i].reserved, usage[i].pWhat, usage[i].used);
 				Base::throwError(ErrorLevel::Warning, ErrorCode::Internal, buffer, this, &typeInfo(), __func__, __FILE__, __LINE__);
-				bReported[i] = true;
 			}
 		}
 

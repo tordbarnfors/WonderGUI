@@ -445,6 +445,22 @@ For VulkanBackend, still to do:
   results as before the change on all four: DX12Backend and GlBackend on Windows (Arc B580),
   VulkanBackend on Linux (Intel UHD 770 with Mesa, validation layer on and silent) and
   MetalBackend on a Mac (x86_64, Debug), each at bcf58e51 against d155b18a.
+- **What GpuBackend tells the error handler of once, it says once for each backend**
+  (`_firstReport()`, a bit for each kind in `m_reported`). They were statics of the functions, 17
+  of them, so once for the process: a second backend said nothing, nor did one that came after a
+  device was replaced. A buffer that is full is told of once for each kind of draw it drops.
+- **A session without one of its three frame buffers draws nothing** (`m_bSessionHasBuffers`, set
+  by `_reserveBuffers()`, which is what says so). Each draw looked for the buffers it writes to,
+  to draw what could be drawn without the missing one. A backend only leaves a buffer out when it
+  couldn't make it, and next to nothing draws without all three. A buffer that couldn't grow is
+  still there and still draws what fits.
+- **One `_addQuad()` writes the six vertices of a quad,** which fills, blits, lines with and
+  without caps, edgemaps and shapes each did in a loop of their own. Timed with DX12Backend
+  (Arc B580, gfxdevicetester, two runs each): the median of the 262 tests is 0.999 of what it
+  was, each between 0.93 and 1.04.
+- **Left as it is:** blits, lines and edgemaps step through their part of the command stream
+  themselves, as they read it one rectangle or line at a time, where the other draws are handed
+  what processCommands() has read.
 - **Decided with Tord: edgemaps keep a GPU buffer of their own,** as surfaces have their
   textures. Copying what a frame draws of them into its extras buffer was considered and turned
   down: an edgemap can be drawn many times a frame, and a resource shouldn't fill up the buffers
