@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.4)
+cmake_minimum_required(VERSION 4.2.3...4.4)
 
 include(GenerateExportHeader)
 
@@ -88,9 +88,10 @@ if(NOT SDL2_FOUND AND WONDERGUI_FETCH_DEPS)
     # With MSVC, SDL2 builds without the C runtime by default and links its DLL
     # with /NODEFAULTLIB. It keeps runtime checks (/RTC1), which need the C
     # runtime, out by removing them from CMAKE_C_FLAGS_DEBUG. CMake 4 (policy
-    # CMP0184, NEW for everything since we require 4.4) adds them through the
-    # MSVC_RUNTIME_CHECKS target property instead, so they stay and the link
-    # fails on _RTC_CheckStackVars. Building SDL2 with the C runtime avoids it.
+    # CMP0184, NEW for everything since we require 4.2.3 or later) adds them
+    # through the MSVC_RUNTIME_CHECKS target property instead, so they stay and
+    # the link fails on _RTC_CheckStackVars. Building SDL2 with the C runtime
+    # avoids it.
 
     set(SDL_LIBC ON CACHE BOOL "Use the system C library" FORCE)
 
