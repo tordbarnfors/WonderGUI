@@ -279,9 +279,18 @@ takes twice its pixels. Only a canvas that isn't buffered is without, until its 
 for. GlSurface keeps none unless `buffered`, palette based or `Alpha_8`, and an alpha map of a
 byte per pixel for `alpha()` instead. So what `buffered` does, what a surface costs and what
 `allocPixelBuffer()` and `pushPixels()` cost depend on the backend. See "GPU surfaces on
-GpuSurface" in ROADMAP.md.
+GpuSurface" in ROADMAP.md, and "GPU surfaces: pixels kept once" there for what is planned.
 
 `GpuSurface::_setup()` in `wax/source/wax_gpusurface.cpp`, `wax/extensions/openglgfx/wax_glsurface.cpp`
+
+### GlSurface: reading part of a surface fails unless it keeps its pixels
+
+`pushPixels()` with a rectangle smaller than the surface returns false for a GlSurface without
+pixels of its own (not `buffered`, palette based or `Alpha_8`), as `glGetTexImage()` only reads a
+whole texture. The PixelBuffer is then left with whatever its memory held. Reading through a
+framebuffer would do it, which is part of "GPU surfaces: pixels kept once" in ROADMAP.md.
+
+`GlSurface::pushPixels()` in `wax/extensions/openglgfx/wax_glsurface.cpp`
 
 ### MetalSurface: pixels asked for during a session miss what it rendered, and stay that way
 
@@ -308,6 +317,7 @@ copying pixels to a texture. Fine for surfaces filled while loading, slow for on
 frame. DX12Backend records the uploads into its own command list instead, see
 `DX12Backend::submitUploads()`. Reading back a surface that has pixels to upload waits twice, once
 for the upload and once for the copy back, where one command buffer with both would wait once.
+Uploads that don't wait are part of "GPU surfaces: pixels kept once" in ROADMAP.md.
 
 `syncTexture()` and `_readBack()` in `wax_vulkansurface.cpp`
 
