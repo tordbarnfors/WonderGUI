@@ -40,7 +40,7 @@ namespace wax
 
 	using namespace std;
 
-	const TypeInfo DX12Surface::TYPEINFO = { "DX12Surface", &Surface::TYPEINFO };
+	const TypeInfo DX12Surface::TYPEINFO = { "DX12Surface", &GpuSurface::TYPEINFO };
 
 	ID3D12Device *										DX12Surface::s_pDevice = nullptr;
 
@@ -92,62 +92,6 @@ namespace wax
 		wchar_t name[128];
 		swprintf( name, 128, L"Wax DX12Surface %p %dx%d: %ls", pSurface, size.w, size.h, pWhat );
 		pObject->SetName( name );
-	}
-
-	//____ _premultiply() / _unpremultiply() ______________________________________
-	// Colors of a pixel times or divided by its alpha (1 -> 255), in linear light for sRGB pixels.
-	// (std::min) since windows.h may define min() as a macro.
-
-	static inline void _premultiply(uint8_t& b, uint8_t& g, uint8_t& r, int a, bool bSRGB)
-	{
-		if (bSRGB)
-		{
-			b = HiColor::packSRGBTab[(HiColor::unpackSRGBTab[b] * a + 127) / 255];
-			g = HiColor::packSRGBTab[(HiColor::unpackSRGBTab[g] * a + 127) / 255];
-			r = HiColor::packSRGBTab[(HiColor::unpackSRGBTab[r] * a + 127) / 255];
-		}
-		else
-		{
-			b = uint8_t((b * a + 127) / 255);
-			g = uint8_t((g * a + 127) / 255);
-			r = uint8_t((r * a + 127) / 255);
-		}
-	}
-
-	static inline void _unpremultiply(uint8_t& b, uint8_t& g, uint8_t& r, int a, bool bSRGB)
-	{
-		if (bSRGB)
-		{
-			b = HiColor::packSRGBTab[(std::min)(4096, (HiColor::unpackSRGBTab[b] * 255 + a / 2) / a)];
-			g = HiColor::packSRGBTab[(std::min)(4096, (HiColor::unpackSRGBTab[g] * 255 + a / 2) / a)];
-			r = HiColor::packSRGBTab[(std::min)(4096, (HiColor::unpackSRGBTab[r] * 255 + a / 2) / a)];
-		}
-		else
-		{
-			b = uint8_t((std::min)(255, (b * 255 + a / 2) / a));
-			g = uint8_t((std::min)(255, (g * 255 + a / 2) / a));
-			r = uint8_t((std::min)(255, (r * 255 + a / 2) / a));
-		}
-	}
-
-	//____ _isSamePremultiplied() ____________________________________________________
-	// Checks if ARGB_8 pixels are the same premultiplied, which they are when each is
-	// opaque or transparent black, as a canvas is when made. Pixels are 32-bit words in
-	// native byte order with alpha in the high byte.
-
-	static bool _isSamePremultiplied(const uint8_t* pPixels, int pitch, int width, int height)
-	{
-		for (int y = 0; y < height; y++)
-		{
-			auto p = (const uint32_t*)(pPixels + y * pitch);
-			for (int x = 0; x < width; x++)
-			{
-				uint32_t a = p[x] >> 24;
-				if (a != 255 && p[x] != 0)
-					return false;
-			}
-		}
-		return true;
 	}
 
 	//____ maxSize() _______________________________________________________________
@@ -285,7 +229,7 @@ namespace wax
 
 		// Copies are made in whole lines, see DX12Backend::_recordUploads().
 
-		int64_t bytes = bPending ? int64_t(m_dirtyRect.h) * m_uploadPitch : 0;
+		int64_t bytes = bPending ? int64_t(m_dirtyRect.h) * m_pitch : 0;
 
 		s_pendingBytes += bytes - m_pendingBytes;
 		m_pendingBytes = bytes;
@@ -404,26 +348,21 @@ namespace wax
 		return true;
 	}
 
-	//____ _setPixelDetails() ______________________________________________________
+	//____ _setTextureFormat() _____________________________________________________
 	//
-	// Settles on a pixel layout D3D12 can actually hold, which is not always the
-	// one that was asked for. The 565 formats are widened to XRGB_8, as MetalSurface
-	// does, and pixels are kept in native byte order. PixelTools does the conversion
-	// when the pixels are copied in. The color space stays.
+	// D3D12 has no texture for the 565 formats, so they are widened to XRGB_8.
+	// PixelTools does the conversion when the pixels are copied in. The color
+	// space stays.
 	//
-	// An sRGB surface gets an _SRGB texture format, as MetalSurface gives one a
-	// _sRGB Metal format. Our shaders work in linear, so the hardware has to convert
-	// on the way in and on the way out: sRGB to linear when a texel is sampled,
-	// linear to sRGB when a pixel is written.
+	// An sRGB surface gets an _SRGB texture format. Our shaders work in linear, so
+	// the hardware has to convert on the way in and on the way out: sRGB to linear
+	// when a texel is sampled, linear to sRGB when a pixel is written.
 	//
 	// Alpha is linear in every format Wax has, so Alpha_8 stays plain.
 
-	bool DX12Surface::_setPixelDetails()
+	PixelFormat DX12Surface::_setTextureFormat( PixelFormat format )
 	{
-		bool bSupported = true;
 		bool bSRGB = (m_colorSpace == ColorSpace::sRGB);
-
-		PixelFormat format = m_pixelFormat;
 
 		switch( format )
 		{
@@ -452,7 +391,7 @@ namespace wax
 
 			// The texture holds the indexes, as integers the pixel shader looks up
 			// in the palette. The color space is the palette's, and is dealt with
-			// when the palette is converted, see _updatePaletteBuffer().
+			// when the palette is converted, see GpuTools::paletteToFloats().
 
 			case PixelFormat::Index_8:
 				m_dxgiFormat = DXGI_FORMAT_R8_UINT;
@@ -463,213 +402,64 @@ namespace wax
 				break;
 
 			default:
-			{
-				char buffer[256];
-				sprintf_s(buffer, "Pixel format %s is not supported by DX12Backend. The surface will have no texture.", toString(format));
-				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
-
-				m_dxgiFormat = DXGI_FORMAT_UNKNOWN;
-				bSupported = false;
+				m_dxgiFormat = DXGI_FORMAT_UNKNOWN;			// create() turns other formats away.
 				break;
-			}
 		}
 
-		// We may have picked a different layout than we were given, so the size and
-		// description have to follow along. This is filled in even for a format we
-		// can't hold, so that the surface can still hand out pixels.
-
-		m_pixelFormat = format;
-		m_bBigEndian = (WAX_IS_BIG_ENDIAN == 1);
-		m_pixelDescription = Util::pixelFormatToDescription(format, m_bBigEndian);
-		m_pixelSize = m_pPixelDescription->bits / 8;
 		m_bAlphaOnly = (m_dxgiFormat == DXGI_FORMAT_A8_UNORM);
-		m_bIndexed = (m_dxgiFormat == DXGI_FORMAT_R8_UINT || m_dxgiFormat == DXGI_FORMAT_R16_UINT);
 
-		return bSupported;
-	}
-
-	//____ _allocFallbackPixels() __________________________________________________
-	//
-	// A surface with no texture is of no use to the GPU, but it still has to behave
-	// like a surface: hand out pixel buffers, be readable, be writable. Anything
-	// else turns one unsupported format into a crash somewhere else entirely.
-
-	bool DX12Surface::_allocFallbackPixels()
-	{
-		if( m_pUploadData )
-			return true;
-
-		if( m_uploadPitch <= 0 || m_size.h <= 0 )
-			return false;
-
-		m_pFallbackData = new uint8_t[size_t(m_uploadPitch) * m_size.h];
-		m_pUploadData = m_pFallbackData;
-
-		memset( m_pUploadData, 0, size_t(m_uploadPitch) * m_size.h );
-
-		return true;
+		return format;
 	}
 
 	//____ Create ______________________________________________________________
 
 	DX12Surface_p DX12Surface::create(const Blueprint& blueprint)
 	{
-		return DX12Surface_p(new DX12Surface(blueprint));
+		if( !_isBlueprintValid(blueprint, maxSize()) )
+			return DX12Surface_p();
+
+		return DX12Surface_p(new DX12Surface(blueprint, PixelSource()));
 	}
 
 	DX12Surface_p DX12Surface::create(const Blueprint& blueprint, Blob* pBlob, int pitch)
 	{
-		return DX12Surface_p(new DX12Surface(blueprint, pBlob, pitch));
+		if( !_isBlueprintValid(blueprint, maxSize()) )
+			return DX12Surface_p();
+
+		return DX12Surface_p(new DX12Surface(blueprint, _source(blueprint, pBlob, pitch)));
 	}
 
 	DX12Surface_p DX12Surface::create(const Blueprint& blueprint, const uint8_t* pPixels, const PixelDescription& pixelDescription, int pitch, const Color8* pPalette, int paletteSize)
 	{
-		return DX12Surface_p(new DX12Surface(blueprint, pPixels, pixelDescription, pitch, pPalette, paletteSize));
+		if( !_isBlueprintValid(blueprint, maxSize()) )
+			return DX12Surface_p();
+
+		return DX12Surface_p(new DX12Surface(blueprint, _source(blueprint, pPixels, pixelDescription, pitch, pPalette, paletteSize)));
 	}
 
 	DX12Surface_p DX12Surface::create(const Blueprint& blueprint, const uint8_t* pPixels, PixelFormat format, int pitch, const Color8* pPalette, int paletteSize)
 	{
-		return DX12Surface_p(new DX12Surface(blueprint, pPixels, format, pitch, pPalette, paletteSize));
+		if( !_isBlueprintValid(blueprint, maxSize()) )
+			return DX12Surface_p();
+
+		return DX12Surface_p(new DX12Surface(blueprint, _source(blueprint, pPixels, format, pitch, pPalette, paletteSize)));
 	}
 
 	//____ constructor ________________________________________________________________
 	//
-	// Default sample method is Bilinear, same as GlSurface and MetalSurface. Code
-	// that creates surfaces without specifying one expects that, and Nearest
-	// samples on texel corners for 1:1 blits, which float precision in tall
-	// textures makes land on the texel above every now and then.
+	// D3D12 wants each line of a texture copy to start on a 256 byte boundary,
+	// so our pixels are stored with a padded pitch. PixelBuffer carries the
+	// pitch, so nothing outside needs to care.
+	//
+	// We pad to 512 rather than 256, since a copy that starts partway down the
+	// texture puts its offset at a whole number of lines, and that offset has
+	// to land on a 512 byte boundary (D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT).
+	// 512 is a multiple of 256, so both rules are satisfied at once.
 
-	DX12Surface::DX12Surface(const Blueprint& bp) : Surface(bp, PixelFormat::ARGB_8, SampleMethod::Bilinear)
+	DX12Surface::DX12Surface(const Blueprint& bp, const PixelSource& source) : GpuSurface(bp, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT)
 	{
 		_link();
-
-		m_bMipmapped = bp.mipmap;
-		_setupTexture( nullptr, 0, nullptr, nullptr, bp.palette, 0, bp.fillColor );
-	}
-
-	DX12Surface::DX12Surface(const Blueprint& bp, Blob* pBlob, int pitch) : Surface(bp, PixelFormat::ARGB_8, SampleMethod::Bilinear)
-	{
-		_link();
-
-		m_bMipmapped = bp.mipmap;
-
-		// The blob holds the layout that was asked for, which is not always the one
-		// we end up with, so take note of it before _setupTexture() settles that.
-
-		PixelDescription srcDesc = m_pixelDescription;
-
-		if( pitch == 0 )
-			pitch = PixelTools::bytesPerLine(srcDesc, m_size.w);
-
-		_setupTexture( pBlob ? pBlob->data() : nullptr, pitch, &srcDesc, bp.palette, bp.palette, 0 );
-	}
-
-	DX12Surface::DX12Surface(const Blueprint& bp, const uint8_t* pPixels,
-		PixelFormat format, int pitch, const Color8* pPalette, int paletteSize) : Surface(bp, PixelFormat::ARGB_8, SampleMethod::Bilinear)
-	{
-		_link();
-
-		m_bMipmapped = bp.mipmap;
-
-		// Source pixels are in the byte order and color space of the blueprint.
-
-		if( format == PixelFormat::Undefined )
-			format = m_pixelFormat;
-
-		auto srcDesc = Util::pixelFormatToDescription(format, bp.bigEndian);
-
-		if( pitch == 0 )
-			pitch = PixelTools::bytesPerLine(srcDesc, m_size.w);
-
-		_fixSrcParam(srcDesc, pPalette, paletteSize);
-		_setupTexture( pPixels, pitch, &srcDesc, pPalette, bp.palette, paletteSize );
-	}
-
-
-	DX12Surface::DX12Surface(const Blueprint& bp, const uint8_t* pPixels,
-		const PixelDescription& pixelDescription, int pitch, const Color8* pPalette, int paletteSize) : Surface(bp, PixelFormat::ARGB_8, SampleMethod::Bilinear)
-	{
-		_link();
-
-		m_bMipmapped = bp.mipmap;
-
-		if( pitch == 0 )
-			pitch = PixelTools::bytesPerLine(pixelDescription, m_size.w);
-
-		_fixSrcParam(pixelDescription, pPalette, paletteSize);
-		_setupTexture( pPixels, pitch, &pixelDescription, pPalette, bp.palette, paletteSize );
-	}
-
-	//____ _setupTexture() _____________________________________________________
-
-	void DX12Surface::_setupTexture( const void * pPixels, int pitch, const PixelDescription * pSrcPixelDesc,
-									 const Color8 * pSrcPalette, const Color8 * pDstPalette, int srcPaletteSize, HiColor fillColor )
-	{
-		bool bFormatSupported = _setPixelDetails();
-
-		// Surface leaves the palette to us. It has to exist before any pixels are
-		// copied in, since converting to a palette based format fills it in. It
-		// holds as many entries as the blueprint's palette capacity, which Surface
-		// has already worked out.
-
-		if( m_pPixelDescription->type == PixelType::Index && m_paletteCapacity > 0 )
-		{
-			m_pPalette = new Color8[m_paletteCapacity];
-			memset( m_pPalette, 0, sizeof(Color8) * m_paletteCapacity );
-
-			if( pDstPalette && m_paletteSize > 0 )
-				memcpy( m_pPalette, pDstPalette, sizeof(Color8) * m_paletteSize );
-		}
-
-		if( m_pixelSize <= 0 || m_size.w <= 0 || m_size.h <= 0 )
-		{
-			// Nothing sensible to hand out, not even a pixel buffer.
-
-			char buffer[256];
-			sprintf_s(buffer, "Can't create a %dx%d surface with %d bits per pixel.", m_size.w, m_size.h, m_pPixelDescription->bits);
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			return;
-		}
-
-		// D3D12 wants each line of a texture copy to start on a 256 byte boundary,
-		// so our pixels are stored with a padded pitch. PixelBuffer carries the
-		// pitch, so nothing outside this class needs to care.
-		//
-		// We pad to 512 rather than 256, since a copy that starts partway down the
-		// texture puts its offset at a whole number of lines, and that offset has
-		// to land on a 512 byte boundary (D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT).
-		// 512 is a multiple of 256, so both rules are satisfied at once.
-
-		const int uploadAlignment = D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT;
-
-		m_uploadPitch = (m_size.w * m_pixelSize + uploadAlignment - 1) & ~(uploadAlignment - 1);
-
-		// From here on the surface can always hand out pixels, whether or not D3D12
-		// gives us what we ask for below.
-
-		// On a lost device every call below would fail, and each failure costs an
-		// exception inside the D3D12 runtime. Go straight to plain pixels. Should a
-		// new device be set, migrateAll() moves them onto it.
-
-		// A canvas is drawn to, and rarely asked for its pixels, so one that isn't buffered and
-		// is given nothing to start out with gets no pixel buffer until someone asks for its
-		// pixels, see _needPixels(). That is half its memory, and a third of the time it takes
-		// to make it, which matters for canvas layers, made for every canvas update. An indexed
-		// canvas can't be drawn to and is written by the CPU like any other surface.
-
-		bool bPixelBuffer = pPixels || !fillColor.isUndefined() || !m_bCanvas || m_bBuffered || m_bIndexed;
-
-		if( !bFormatSupported || DX12Backend::isDeviceLost() || !_initCopyResources() || !_createDeviceObjects(bPixelBuffer) )
-		{
-			if( !_allocFallbackPixels() )
-				return;
-
-			_copyInPixels( pPixels, pitch, pSrcPixelDesc, pSrcPalette, srcPaletteSize, fillColor );
-			return;
-		}
-
-		_copyInPixels( pPixels, pitch, pSrcPixelDesc, pSrcPalette, srcPaletteSize, fillColor );
-		_updatePaletteBuffer();
+		_setup(bp, source);
 	}
 
 	//____ _createDeviceObjects() ______________________________________________
@@ -679,9 +469,10 @@ namespace wax
 	// palette buffer. Either all of it is created or none of it is kept, so a
 	// surface is never left halfway onto a device.
 	//
-	// On success m_pUploadData points into the new upload buffer, which holds
+	// On success m_pPixels points into the new upload buffer, which holds
 	// whatever was in that memory. Filling it is up to the caller. Without a pixel
-	// buffer it is null, and _needPixels() makes the buffer when it is asked for.
+	// buffer it is null, and GpuSurface::_needPixels() makes the buffer when it is
+	// asked for.
 
 	bool DX12Surface::_createDeviceObjects( bool bPixelBuffer )
 	{
@@ -699,20 +490,17 @@ namespace wax
 			return false;
 		};
 
+		// On a lost device every call below would fail, and each failure costs an
+		// exception inside the D3D12 runtime. Should a new device be set,
+		// migrateAll() moves us onto it.
+
+		if( DX12Backend::isDeviceLost() || !_initCopyResources() )
+			return false;
+
 		DXGI_FORMAT dxgiFormat = m_dxgiFormat;
 
-		// A mipmapped surface gets levels all the way down to 1x1. They are drawn
-		// by DX12Backend, so the texture has to be a render target even when the
-		// surface is no canvas. Palette based surfaces can't be mipmapped, Surface
-		// turns such a blueprint away, and an average of indexes means nothing.
-
-		m_mipLevels = 1;
-
-		if( m_bMipmapped && !m_bIndexed )
-		{
-			for( int size = m_size.w > m_size.h ? m_size.w : m_size.h; size > 1; size >>= 1 )
-				m_mipLevels++;
-		}
+		// The mip levels are drawn by DX12Backend, so the texture has to be a render
+		// target even when the surface is no canvas.
 
 		bool bRenderTarget = (m_bCanvas && !m_bIndexed) || m_mipLevels > 1;
 
@@ -826,7 +614,7 @@ namespace wax
 
 	//____ _createPixelBuffer() ________________________________________________
 	//
-	// The buffer holding our pixels, mapped, which m_pUploadData points into from here on.
+	// The buffer holding our pixels, mapped, which m_pPixels points into from here on.
 	// It holds whatever was in that memory. Reports its own failure.
 	//
 	// Not in an UPLOAD heap, although the GPU copies from it like from one. That
@@ -839,11 +627,14 @@ namespace wax
 
 	bool DX12Surface::_createPixelBuffer()
 	{
+		if( !m_texture || !s_pDevice || DX12Backend::isDeviceLost() )
+			return false;
+
 		D3D12_HEAP_PROPERTIES uploadProps = s_pDevice->GetCustomHeapProperties(0, D3D12_HEAP_TYPE_READBACK);
 
 		D3D12_RESOURCE_DESC bufDesc = {};
 		bufDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-		bufDesc.Width = UINT64(m_uploadPitch) * m_size.h;
+		bufDesc.Width = UINT64(m_pitch) * m_size.h;
 		bufDesc.Height = 1;
 		bufDesc.DepthOrArraySize = 1;
 		bufDesc.MipLevels = 1;
@@ -872,34 +663,14 @@ namespace wax
 
 		setObjectName( m_uploadBuffer.Get(), L"upload buffer", this, m_size );
 
-		m_pUploadData = pMapped;
-		return true;
-	}
-
-	//____ _needPixels() _______________________________________________________
-	//
-	// Called before our pixels are handed out or read. A canvas created without a pixel
-	// buffer, see _setupTexture(), gets it here. What it has is in the texture, so the
-	// buffer starts out as the older copy, to be read back into before it is read.
-	//
-	// Returns false if we have no pixels and can't get any.
-
-	bool DX12Surface::_needPixels()
-	{
-		if( m_pUploadData )
-			return true;
-
-		if( !m_texture || !s_pDevice || DX12Backend::isDeviceLost() || !_createPixelBuffer() )
-			return false;
-
-		m_bBufferNeedsSync = true;
+		m_pPixels = pMapped;
 		return true;
 	}
 
 	//____ _dropDeviceObjects() ________________________________________________
 	//
 	// Lets go of everything _createDeviceObjects() made. Our pixels are in
-	// m_pFallbackData from here on, if anywhere. Releasing a resource unmaps it,
+	// m_pFallbackPixels from here on, if anywhere. Releasing a resource unmaps it,
 	// which on a lost device is all that can be done with it anyway.
 
 	void DX12Surface::_dropDeviceObjects()
@@ -916,11 +687,10 @@ namespace wax
 		m_srvHandle = {};
 		m_rtvHandle = {};
 		m_resourceState = D3D12_RESOURCE_STATE_COMMON;
-		m_mipLevels = 1;
 		m_bMipmapStale = false;
 
-		m_pUploadData = m_pFallbackData;
-		m_pPaletteData = nullptr;
+		m_pPixels = m_pFallbackPixels;
+		m_pPaletteColors = nullptr;
 
 		_updatePending();				// Nothing to upload to any more.
 	}
@@ -947,12 +717,12 @@ namespace wax
 		// A canvas without a pixel buffer gets one to read back into, if the device still
 		// works. If not, what was rendered into it is gone, and it has no pixels to lose.
 
-		bool bHadPixels = (m_pUploadData != nullptr);
+		bool bHadPixels = (m_pPixels != nullptr);
 
 		_needPixels();
 
-		if( m_bBufferNeedsSync && !DX12Backend::isDeviceLost() )
-			_syncBufferAndWait();
+		if( !DX12Backend::isDeviceLost() )
+			_syncPixels();
 
 		// Still set if the device is lost, or the read back didn't happen. What
 		// was rendered into us since we last read back is gone.
@@ -960,15 +730,15 @@ namespace wax
 		if( m_bBufferNeedsSync )
 			m_bContentLost = true;
 
-		size_t nBytes = size_t(m_uploadPitch) * m_size.h;
+		size_t nBytes = size_t(m_pitch) * m_size.h;
 
-		m_pFallbackData = new uint8_t[nBytes];
+		m_pFallbackPixels = new uint8_t[nBytes];
 
-		bool bCopied = m_pUploadData && _copyFromMapping( m_pFallbackData, m_pUploadData, nBytes );
+		bool bCopied = m_pPixels && _copyFromMapping( m_pFallbackPixels, m_pPixels, nBytes );
 
 		if( !bCopied )
 		{
-			memset( m_pFallbackData, 0, nBytes );
+			memset( m_pFallbackPixels, 0, nBytes );
 			m_bContentLost = true;
 		}
 
@@ -983,23 +753,21 @@ namespace wax
 	//____ _migrate() __________________________________________________________
 	//
 	// Puts us back on the device set since we were evacuated, or onto the first
-	// one we get if we were created while there was none. A format D3D12 can't
-	// hold stays in plain memory, as do surfaces D3D12 still won't take.
+	// one we get if we were created while there was none. Surfaces D3D12 still
+	// won't take stay in plain memory.
 
 	void DX12Surface::_migrate()
 	{
-		if( m_texture || !m_pFallbackData || m_dxgiFormat == DXGI_FORMAT_UNKNOWN )
+		if( m_texture || !m_pFallbackPixels )
 			return;
 
-		if( !_initCopyResources() || !_createDeviceObjects() )
+		if( !_createDeviceObjects(true) )
 			return;
 
-		memcpy( m_pUploadData, m_pFallbackData, size_t(m_uploadPitch) * m_size.h );
+		memcpy( m_pPixels, m_pFallbackPixels, size_t(m_pitch) * m_size.h );
 
-		delete [] m_pFallbackData;
-		m_pFallbackData = nullptr;
-
-		_updatePaletteBuffer();
+		delete [] m_pFallbackPixels;
+		m_pFallbackPixels = nullptr;
 
 		// Everything goes to the new texture.
 
@@ -1017,108 +785,17 @@ namespace wax
 	bool DX12Surface::_createPaletteBuffer()
 	{
 		DX12BufferPool::free(m_paletteBuffer);
-		m_pPaletteData = nullptr;
+		m_pPaletteColors = nullptr;
 
 		// From the pool, which reports if it fails, unless the device is lost.
 
 		if( !DX12BufferPool::alloc( (m_paletteCapacity + 1) * 4 * int(sizeof(float)), m_paletteBuffer ) )
 			return false;
 
-		m_pPaletteData = (float*) m_paletteBuffer.pData;
+		m_pPaletteColors = (float*) m_paletteBuffer.pData;
 
-		memset( m_pPaletteData, 0, size_t(m_paletteCapacity + 1) * 4 * sizeof(float) );
-
-		m_pPaletteData[0] = float(m_paletteCapacity);		// Exact, far below where floats lose integers.
+		_updatePaletteColors();
 		return true;
-	}
-
-	//____ _updatePaletteBuffer() ______________________________________________
-	//
-	// The palette goes to the GPU converted to linear, the same way SoftSurface
-	// unpacks it, and premultiplied, like the pixels of surfaces with alpha, so the
-	// shader can use the colors as they are and interpolate between them. An sRGB
-	// texture would have had the hardware convert, but only for colors read from
-	// the texture, and ours are indexes.
-	//
-	// The buffer is read by the GPU where it is. Should the palette change while
-	// a frame using it is still in flight, that frame may see the new colors.
-
-	void DX12Surface::_updatePaletteBuffer()
-	{
-		if( !m_pPaletteData || !m_pPalette )
-			return;
-
-		// Palette entries are in the color space of the surface.
-
-		bool bLinear = (m_colorSpace == ColorSpace::Linear);
-
-		// Worked out here and then written, as the buffer is in write-combined memory, which is
-		// very slow to read back from.
-
-		float * p = m_pPaletteData + 4;			// Past the capacity.
-
-		for( int i = 0; i < m_paletteCapacity; i++ )
-		{
-			HiColor col = m_pPalette[i];		// Same color space, just more bits.
-
-			float c[4];
-
-			if( bLinear )
-			{
-				c[0] = col.r / 4096.f;
-				c[1] = col.g / 4096.f;
-				c[2] = col.b / 4096.f;
-				c[3] = col.a / 4096.f;
-			}
-			else
-				col.toLinearFloat(c);
-
-			p[0] = c[0] * c[3];
-			p[1] = c[1] * c[3];
-			p[2] = c[2] * c[3];
-			p[3] = c[3];
-			p += 4;
-		}
-	}
-
-	//____ _copyInPixels() _____________________________________________________
-	//
-	// Copies the pixels we were handed at creation into our own buffer, converting
-	// them to our format on the way. Our format is not always the one that was
-	// asked for, see _setPixelDetails(). Without pixels the buffer is filled with
-	// fillColor, and without that too it is left as it is, as is the texture: the
-	// content of such a surface is unspecified.
-
-	void DX12Surface::_copyInPixels( const void * pPixels, int pitch, const PixelDescription * pSrcPixelDesc,
-									 const Color8 * pSrcPalette, int srcPaletteSize, HiColor fillColor )
-	{
-		if( !m_pUploadData )
-			return;
-
-		if( pPixels && pSrcPixelDesc )
-		{
-			if( srcPaletteSize == 0 )
-				srcPaletteSize = m_paletteSize;
-
-			int dstLineMargin = m_uploadPitch - m_size.w * m_pixelSize;
-
-			PixelTools::copyPixels(m_size.w, m_size.h, (const uint8_t*) pPixels, * pSrcPixelDesc, m_colorSpace, pitch - PixelTools::bytesPerLine(*pSrcPixelDesc, m_size.w),
-								   pSrcPalette, srcPaletteSize,
-								   m_pUploadData, m_pixelFormat, m_colorSpace, m_bBigEndian, dstLineMargin,
-								   m_pPalette, m_paletteSize, m_paletteCapacity);
-		}
-		else if( !fillColor.isUndefined() )
-		{
-			PixelTools::fillBitmap(m_pUploadData, m_pixelFormat, m_colorSpace, m_bBigEndian, m_uploadPitch, RectI(m_size),
-								   fillColor, m_pPalette, m_paletteSize);
-		}
-		else
-			return;
-
-		// Everything we have goes to the texture, at the latest before we are drawn.
-
-		m_dirtyRect = RectI(0, 0, m_size.w, m_size.h);
-		_updatePending();
 	}
 
 	//____ Destructor ______________________________________________________________
@@ -1135,14 +812,10 @@ namespace wax
 		m_dirtyRect = RectI();
 		_updatePending();
 
-		if( m_uploadBuffer && m_pUploadData && m_pUploadData != m_pFallbackData )
+		if( m_uploadBuffer && m_pPixels && m_pPixels != m_pFallbackPixels )
 			m_uploadBuffer->Unmap(0, nullptr);
 
-		delete [] m_pFallbackData;
-
 		DX12BufferPool::free(m_paletteBuffer);
-
-		delete [] m_pPalette;
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -1150,19 +823,6 @@ namespace wax
 	const TypeInfo& DX12Surface::typeInfo(void) const
 	{
 		return TYPEINFO;
-	}
-
-	//____ _addDirtyRect() _____________________________________________________
-
-	void DX12Surface::_addDirtyRect( const RectI& rect )
-	{
-		if( rect.isEmpty() )
-			return;
-
-		//TODO: Keep a list of rectangles instead of growing one to cover them all.
-
-		m_dirtyRect = m_dirtyRect.isEmpty() ? rect : RectI::bounds(m_dirtyRect, rect);
-		_updatePending();
 	}
 
 	//____ _uploadSource() ____________________________________________________
@@ -1177,13 +837,15 @@ namespace wax
 	ID3D12Resource * DX12Surface::_uploadSource( int y1, int y2, Microsoft::WRL::ComPtr<ID3D12Resource>& temp, UINT64& sourceOffset )
 	{
 		ID3D12Resource * pSource = m_uploadBuffer.Get();
-		sourceOffset = UINT64(y1) * m_uploadPitch;
+		sourceOffset = UINT64(y1) * m_pitch;
 
 		temp = nullptr;
 
-		if( _isPremultiplied() && !_isSamePremultiplied(m_pUploadData + sourceOffset, m_uploadPitch, m_size.w, y2 - y1) )
+		RectI lines( 0, y1, m_size.w, y2 - y1 );
+
+		if( _needsPremultiplying(lines) )
 		{
-			size_t nBytes = size_t(m_uploadPitch) * (y2 - y1);
+			size_t nBytes = size_t(m_pitch) * (y2 - y1);
 
 			D3D12_HEAP_PROPERTIES uploadProps = {};
 			uploadProps.Type = D3D12_HEAP_TYPE_UPLOAD;
@@ -1212,7 +874,7 @@ namespace wax
 			{
 				// Written once and never read, as the upload heap is write-combined.
 
-				_convertAlpha( m_pUploadData + sourceOffset, pDest, m_uploadPitch, m_size.w, y2 - y1, true );
+				_premultiply( lines, pDest, m_pitch );
 				temp->Unmap(0, nullptr);
 
 				pSource = temp.Get();
@@ -1226,7 +888,7 @@ namespace wax
 	//____ _uploadNowAndWait() _________________________________________________
 	//
 	// Uploads whatever has changed on the copy queue and waits for it. Only for
-	// _syncBufferAndWait(), which must have our pixels in the texture before it
+	// _readBack(), which must have our pixels in the texture before it
 	// reads the texture back and is about to wait anyway. Everything else goes
 	// through DX12Backend, see _updatePending().
 
@@ -1276,7 +938,7 @@ namespace wax
 		src.PlacedFootprint.Footprint.Width = m_size.w;
 		src.PlacedFootprint.Footprint.Height = y2 - y1;
 		src.PlacedFootprint.Footprint.Depth = 1;
-		src.PlacedFootprint.Footprint.RowPitch = m_uploadPitch;
+		src.PlacedFootprint.Footprint.RowPitch = m_pitch;
 
 		s_copyAllocator->Reset();
 		s_copyList->Reset(s_copyAllocator.Get(), nullptr);
@@ -1298,25 +960,7 @@ namespace wax
 		s_copyQueue->Signal(s_copyFence.Get(), s_copyFenceValue);
 		_waitForCopyFence();
 
-		m_dirtyRect = RectI();
-		_updatePending();
-
-		if( m_mipLevels > 1 )
-			m_bMipmapStale = true;
-	}
-
-	//____ notifyRendered() ____________________________________________________
-	//
-	// Called by DX12Backend when this surface is about to be rendered into, after
-	// it has recorded the upload of anything the CPU wrote. Our pixels are the
-	// older copy from here on, until someone asks for them.
-
-	void DX12Surface::notifyRendered()
-	{
-		m_bBufferNeedsSync = true;
-
-		if( m_mipLevels > 1 )
-			m_bMipmapStale = true;
+		_uploaded();
 	}
 
 	//____ mipSourceSRV() ______________________________________________________
@@ -1352,7 +996,7 @@ namespace wax
 
 		D3D12_RESOURCE_DESC bufDesc = {};
 		bufDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-		bufDesc.Width = UINT64(m_uploadPitch) * m_size.h;
+		bufDesc.Width = UINT64(m_pitch) * m_size.h;
 		bufDesc.Height = 1;
 		bufDesc.DepthOrArraySize = 1;
 		bufDesc.MipLevels = 1;
@@ -1374,25 +1018,21 @@ namespace wax
 		return true;
 	}
 
-	//____ _syncBufferAndWait() ________________________________________________
+	//____ _readBack() _________________________________________________________
 	//
-	// Brings whatever was rendered into our texture back into our pixel buffer.
-	// This stalls until the GPU is done, but only happens when someone actually
-	// asks to read a canvas surface.
+	// Copies our texture into our pixel buffer. This stalls until the GPU is
+	// done, but only happens when someone actually asks to read a canvas surface.
 
-	void DX12Surface::_syncBufferAndWait()
+	bool DX12Surface::_readBack()
 	{
-		if( !m_bBufferNeedsSync )
-			return;
-
 		// What was rendered went with the device. A readback would only fill our
 		// pixels with garbage, so the last ones we had will have to do.
 
 		if( DX12Backend::isDeviceLost() )
-			return;
+			return false;
 
-		if( !m_texture || !m_pUploadData || !s_copyList || !_initReadbackBuffer() )
-			return;			// Leaves the flag set, so we try again rather than hand out stale pixels.
+		if( !m_texture || !s_copyList || !_initReadbackBuffer() )
+			return false;
 
 		// Same rule as for uploads: the copy queue needs the texture at rest.
 
@@ -1400,7 +1040,7 @@ namespace wax
 		{
 			Base::throwError(ErrorLevel::Error, ErrorCode::Internal,
 				"Can't read back a surface that is in use by the backend.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			return;
+			return false;
 		}
 
 		// Rendering into us may still be sitting in a DX12Backend's command list,
@@ -1421,8 +1061,6 @@ namespace wax
 		m_uploadFence = nullptr;			// Waited for above.
 		m_uploadFenceValue = 0;
 
-		m_bBufferNeedsSync = false;
-
 		D3D12_TEXTURE_COPY_LOCATION src = {};
 		src.pResource = m_texture.Get();
 		src.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
@@ -1436,7 +1074,7 @@ namespace wax
 		dst.PlacedFootprint.Footprint.Width = m_size.w;
 		dst.PlacedFootprint.Footprint.Height = m_size.h;
 		dst.PlacedFootprint.Footprint.Depth = 1;
-		dst.PlacedFootprint.Footprint.RowPitch = m_uploadPitch;
+		dst.PlacedFootprint.Footprint.RowPitch = m_pitch;
 
 		s_copyAllocator->Reset();
 		s_copyList->Reset(s_copyAllocator.Get(), nullptr);
@@ -1455,157 +1093,20 @@ namespace wax
 		// Move it into the buffer our PixelBuffers point into. Both use the same
 		// padded pitch, so this is one straight copy.
 
-		size_t nBytes = size_t(m_uploadPitch) * m_size.h;
+		size_t nBytes = size_t(m_pitch) * m_size.h;
 
 		uint8_t * pSrc = nullptr;
 		D3D12_RANGE readRange = { 0, nBytes };
 
-		if( SUCCEEDED(m_readbackBuffer->Map(0, &readRange, (void**) &pSrc)) )
-		{
-			memcpy( m_pUploadData, pSrc, nBytes );
-
-			D3D12_RANGE writtenRange = { 0, 0 };		// We only read.
-			m_readbackBuffer->Unmap(0, &writtenRange);
-
-			// The texture holds premultiplied colors, see _uploadSource().
-
-			if( _isPremultiplied() )
-				_convertAlpha( m_pUploadData, m_pUploadData, m_uploadPitch, m_size.w, m_size.h, false );
-		}
-
-		m_dirtyRect = RectI();			// Our pixels and the texture are identical now.
-		_updatePending();
-	}
-
-	//____ _convertAlpha() ____________________________________________________
-	//
-	// Premultiplies or unpremultiplies ARGB_8 pixels from pSrc into pDst, which may be the
-	// same. Every pixel of pDst is written and none read, so pDst can be write-combined
-	// memory. Pixels are 32-bit words in native byte order with alpha in the high byte.
-
-	void DX12Surface::_convertAlpha( const uint8_t * pSrc, uint8_t * pDst, int pitch, int width, int height, bool bPremultiply ) const
-	{
-		bool bSRGB = (m_colorSpace == ColorSpace::sRGB);
-
-		for( int y = 0 ; y < height ; y++ )
-		{
-			auto pIn = (const uint32_t*)(pSrc + y * pitch);
-			auto pOut = (uint32_t*)(pDst + y * pitch);
-
-			for( int x = 0 ; x < width ; x++ )
-			{
-				uint32_t v = pIn[x];
-				int a = v >> 24;
-
-				if( a == 0 )
-					v = 0;
-				else if( a != 255 )
-				{
-					uint8_t b = uint8_t(v), g = uint8_t(v >> 8), r = uint8_t(v >> 16);
-
-					if( bPremultiply )
-						_premultiply(b, g, r, a, bSRGB);
-					else
-						_unpremultiply(b, g, r, a, bSRGB);
-
-					v = (uint32_t(a) << 24) | (uint32_t(r) << 16) | (uint32_t(g) << 8) | b;
-				}
-
-				pOut[x] = v;
-			}
-		}
-	}
-
-	//____ alpha() _______________________________________________________________
-
-	int DX12Surface::alpha(CoordSPX coord)
-	{
-		if( !_needPixels() )
-			return 0;
-
-		if( m_bBufferNeedsSync )
-			_syncBufferAndWait();
-
-		// No need to free the PixelBuffer, we know how our pixel buffer works. We
-		// only read, so an upload copying from the same pixels is no concern.
-
-		return _alpha(coord, _pixelBuffer(RectI(m_size)));
-	}
-
-	//____ allocPixelBuffer() _________________________________________________
-	//
-	// Our pixels live in a CPU accessible buffer, so this just points into it, once
-	// a canvas that was created without has got one. Note that the pitch is padded,
-	// see _setupTexture().
-	//
-	// Whoever gets it may write to it, so an upload the GPU is still copying from
-	// it has to be finished first.
-
-	const PixelBuffer DX12Surface::allocPixelBuffer(const RectI& rect)
-	{
-		_needPixels();
-		_waitForUpload();
-		return _pixelBuffer(rect);
-	}
-
-	//____ _pixelBuffer() _____________________________________________________
-
-	const PixelBuffer DX12Surface::_pixelBuffer(const RectI& rect)
-	{
-		PixelBuffer	buf;
-
-		buf.format = m_pixelFormat;
-		buf.colorSpace = m_colorSpace;
-		buf.bigEndian = m_bBigEndian;
-		buf.palette = m_pPalette;
-		buf.pitch = m_uploadPitch;
-		buf.pixels = m_pUploadData ? m_pUploadData + rect.y * m_uploadPitch + rect.x * m_pixelSize : nullptr;
-		buf.rect = rect;
-
-		return buf;
-	}
-
-	//____ pushPixels() _______________________________________________________
-
-	bool DX12Surface::pushPixels(const PixelBuffer& buffer, const RectI& bufferRect)
-	{
-		// The buffer is our pixels, so it is already up to date unless something
-		// has been rendered into us since we last looked.
-
-		//TODO: Only read back the lines asked for, not the whole texture.
-
-		if( !_needPixels() )
+		if( FAILED(m_readbackBuffer->Map(0, &readRange, (void**) &pSrc)) )
 			return false;
 
-		if( m_bBufferNeedsSync )
-			_syncBufferAndWait();
+		memcpy( m_pPixels, pSrc, nBytes );
+
+		D3D12_RANGE writtenRange = { 0, 0 };		// We only read.
+		m_readbackBuffer->Unmap(0, &writtenRange);
 
 		return true;
-	}
-
-	//____ pullPixels() _______________________________________________________
-
-	void DX12Surface::pullPixels(const PixelBuffer& buffer, const RectI& bufferRect, bool bAutoNotify)
-	{
-		_addDirtyRect( bufferRect + buffer.rect.pos() );
-
-		// KLUDGE: Surface::copy() into a palette based surface can append colors to
-		// the palette through PixelTools::copyPixels(), then calls pullPixels(), so
-		// we reconvert the whole palette on every pullPixels() to catch that. The
-		// intended solution is Surface methods for updating (parts of) the palette,
-		// API not yet designed. Replace this once they exist.
-
-		if( m_bIndexed )
-			_updatePaletteBuffer();
-
-		Surface::pullPixels(buffer, bufferRect, bAutoNotify);
-	}
-
-	//____ freePixelBuffer() __________________________________________________
-
-	void DX12Surface::freePixelBuffer(const PixelBuffer& buffer)
-	{
-		// Nothing to do here.
 	}
 
 } // namespace wax

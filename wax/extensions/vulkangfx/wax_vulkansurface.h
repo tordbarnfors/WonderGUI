@@ -23,7 +23,7 @@
 #define WAX_VULKANSURFACE_DOT_H
 #pragma once
 
-#include <wax_surface.h>
+#include <wax_gpusurface.h>
 #include <wax_vulkancontext.h>
 
 namespace wax
@@ -37,10 +37,8 @@ namespace wax
 	/**
 	 * @brief Surface for VulkanBackend.
 	 *
-	 * Pixels are kept in a buffer the CPU can read and write, which PixelBuffers point into, and
-	 * copied to the texture when it is used, as DX12Surface does. Surfaces with alpha hold
-	 * premultiplied colors in the texture. What is rendered into a canvas surface is read back
-	 * when someone asks for its pixels.
+	 * Built on GpuSurface, which keeps our pixels and knows what the texture lacks of them. They
+	 * are in a buffer the CPU can read and write, and copied to the texture when it is used.
 	 *
 	 * Formats, as DX12Surface has them: ARGB_8 is B8G8R8A8, XRGB_8 and the 565 formats (widened
 	 * to XRGB_8) B8G8R8A8 read with alpha 1, Alpha_8 is R8 read as alpha, and palette based
@@ -48,10 +46,12 @@ namespace wax
 	 * sRGB surfaces have _SRGB formats. Pixels are always little endian.
 	 *
 	 * Between uses the texture rests in SHADER_READ_ONLY_OPTIMAL. layout() is what it is in at the
-	 * end of what has been recorded, which VulkanBackend keeps up to date as it records.
+	 * end of what has been recorded, which VulkanBackend keeps up to date as it records. A texture
+	 * nothing has been sent to or rendered into is still in UNDEFINED, which it can be taken out
+	 * of like any other, with whatever it holds.
 	 */
 
-	class VulkanSurface : public Surface
+	class VulkanSurface : public GpuSurface
 	{
 		friend class VulkanBackend;
 
@@ -79,21 +79,6 @@ namespace wax
 
 		static SizeI			maxSize();
 
-		//.____ Content _______________________________________________________
-
-		int						alpha(CoordSPX coord) override;
-
-		//.____ Control _______________________________________________________
-
-		using Surface::allocPixelBuffer;
-		using Surface::pullPixels;
-		using Surface::pushPixels;
-
-		const PixelBuffer		allocPixelBuffer(const RectI& rect) override;
-		bool					pushPixels(const PixelBuffer& buffer, const RectI& bufferRect) override;
-		void					pullPixels(const PixelBuffer& buffer, const RectI& bufferRect, bool bAutoNotify = true) override;
-		void					freePixelBuffer(const PixelBuffer& buffer) override;
-
 		//.____ Misc __________________________________________________________
 
 		// Used by VulkanBackend.
@@ -103,45 +88,30 @@ namespace wax
 		VkImageView				attachmentView() const { return m_attachmentView; }	// Null unless a canvas.
 		VkFormat				vkFormat() const { return m_vkFormat; }
 		VkBuffer				paletteBuffer() const { return m_palette.buffer; }
-		bool					isIndexed() const { return m_bIndexed; }
 
 		VkImageLayout			layout() const { return m_layout; }
 		void					setLayout( VkImageLayout layout ) { m_layout = layout; }
 
-		int						mipLevels() const { return m_mipLevels; }
-		bool					isMipmapStale() const { return m_bMipmapStale; }
-		void					clearMipmapStale() { m_bMipmapStale = false; }
+		// Sends what the CPU has written since the last call to the texture, if anything. Called
+		// by VulkanBackend before the surface is drawn from or into.
 
-		void					syncTexture();			// Uploads pending pixel changes, if any.
-		void					notifyRendered();		// Called by VulkanBackend before it renders into us.
+		void					syncTexture();
 
 	protected:
-		VulkanSurface(const Blueprint& blueprint);
-		VulkanSurface(const Blueprint& blueprint, Blob* pBlob, int pitch);
-		VulkanSurface(const Blueprint& blueprint, const uint8_t* pPixels, PixelFormat format, int pitch, const Color8* pPalette, int paletteSize);
-		VulkanSurface(const Blueprint& blueprint, const uint8_t* pPixels, const PixelDescription& pixelDescription, int pitch, const Color8* pPalette, int paletteSize);
-
+		VulkanSurface(const Blueprint& blueprint, const PixelSource& source);
 		~VulkanSurface();
 
-		void			_setupTexture( const void * pPixels, int pitch, const PixelDescription * pSrcPixelDesc,
-									   const Color8 * pSrcPalette, const Color8 * pDstPalette, int srcPaletteSize,
-									   HiColor fillColor = HiColor::Undefined );
+		// What GpuSurface has us do.
 
-		bool			_setPixelDetails();			// Settles on a layout Vulkan can hold.
-		bool			_createDeviceObjects();		// Image, views, pixel buffer and palette buffer. All or none.
+		PixelFormat		_setTextureFormat( PixelFormat format ) override;	// Vulkan has no 565 we can count on, they are widened to XRGB_8.
+		bool			_createDeviceObjects( bool bPixelBuffer ) override;	// Image, views, pixel buffer and palette buffer. All or none.
+		bool			_createPixelBuffer() override;
+		bool			_readBack() override;
+
 		void			_dropDeviceObjects();
 
-		void			_copyInPixels( const void * pPixels, int pitch, const PixelDescription * pSrcPixelDesc,
-									   const Color8 * pSrcPalette, int srcPaletteSize );
-
-		void			_addDirtyRect( const RectI& rect );
-		void			_syncBufferAndWait();		// Brings anything rendered into us back to our pixels.
-		void			_updatePaletteBuffer();		// Converts m_pPalette into the palette buffer.
-
-		bool			_isPremultiplied() const { return m_pixelFormat == PixelFormat::ARGB_8; }
-
 		VulkanContext::Image	m_image;
-		VulkanContext::Buffer	m_pixels;			// Our pixels, read and written by the CPU.
+		VulkanContext::Buffer	m_pixels;			// Our pixels, read and written by the CPU. A canvas may be without, see GpuSurface::_needPixels().
 		VulkanContext::Buffer	m_palette;			// Palette based surfaces only. Capacity, then the colors.
 
 		VkImageView		m_sampleView = VK_NULL_HANDLE;
@@ -149,18 +119,6 @@ namespace wax
 
 		VkFormat		m_vkFormat = VK_FORMAT_UNDEFINED;
 		VkImageLayout	m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-		uint8_t *		m_pPixels = nullptr;		// m_pixels mapped, or m_pFallbackPixels.
-		uint8_t *		m_pFallbackPixels = nullptr;	// Plain memory, when Vulkan wouldn't give us a buffer.
-		int				m_pitch = 0;				// Bytes per line, aligned for copies.
-		int				m_pixelBytes = 0;			// Bytes per pixel.
-		bool			m_bIndexed = false;
-
-		RectI			m_dirtyRect;				// Area not yet uploaded to the texture. Empty when in sync.
-		bool			m_bBufferNeedsSync = false;	// Texture has changes our pixels don't have yet.
-
-		int				m_mipLevels = 1;
-		bool			m_bMipmapStale = false;		// Level 0 has changed since the others were made from it.
 	};
 
 } // namespace wax

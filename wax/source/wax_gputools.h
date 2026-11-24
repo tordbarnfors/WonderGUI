@@ -111,13 +111,32 @@ namespace wax
 		/**
 		 * GPU backends keep the colors of surfaces with alpha premultiplied in their textures, so
 		 * that blending and filtering work on premultiplied colors, and hand them out straight.
-		 * These convert ARGB_8 pixels, 32-bit words in native byte order with alpha in the high
-		 * byte, in place, in linear light for sRGB pixels.
+		 * This converts ARGB_8 pixels, 32-bit words with alpha in the high byte, from pSrc into
+		 * pDst, which may be the same, in linear light for sRGB pixels. Every pixel of pDst is
+		 * written and none read, so pDst can be in memory that is slow to read. bSwapBytes is for
+		 * pixels that aren't in the byte order of the CPU.
 		 */
 
-		void	convertAlpha( uint8_t * pPixels, int pitch, int width, int height, bool bPremultiply, bool bSRGB );
+		void	convertAlpha( const uint8_t * pSrc, int srcPitch, uint8_t * pDst, int dstPitch, int width, int height,
+							  bool bPremultiply, bool bSRGB, bool bSwapBytes = false );
 
-		bool	isOpaque( const uint8_t * pPixels, int pitch, int width, int height );		// All ARGB_8 pixels have alpha 255.
+		/**
+		 * Whether ARGB_8 pixels are the same premultiplied, which they are when each is opaque or
+		 * transparent black, as a canvas is when made. Such pixels can be sent to a texture as
+		 * they are.
+		 */
+
+		bool	isSamePremultiplied( const uint8_t * pPixels, int pitch, int width, int height, bool bSwapBytes = false );
+
+		/**
+		 * A palette as the shaders read it: a float4 holding the capacity, so that an index past
+		 * the end can be caught, followed by a float4 per entry, converted to linear the way
+		 * SoftSurface unpacks it and premultiplied, like the pixels of surfaces with alpha, so
+		 * the shaders can use the colors as they are and interpolate between them. Entries are in
+		 * colorSpace. pDest gets capacity + 1 float4 and is only written to.
+		 */
+
+		void	paletteToFloats( const Color8 * pPalette, int capacity, ColorSpace colorSpace, float * pDest );
 
 
 		//____ Lines __________________________________________________________

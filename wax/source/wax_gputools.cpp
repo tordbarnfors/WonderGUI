@@ -123,57 +123,109 @@ namespace wax
 
 		//____ convertAlpha() _________________________________________________
 
-		void convertAlpha( uint8_t * pPixels, int pitch, int width, int height, bool bPremultiply, bool bSRGB )
+		void convertAlpha( const uint8_t * pSrc, int srcPitch, uint8_t * pDst, int dstPitch, int width, int height,
+						   bool bPremultiply, bool bSRGB, bool bSwapBytes )
 		{
 			for( int y = 0 ; y < height ; y++ )
 			{
-				auto p = (uint32_t*)(pPixels + y * pitch);
+				auto pIn = (const uint32_t*)(pSrc + y * srcPitch);
+				auto pOut = (uint32_t*)(pDst + y * dstPitch);
 
 				for( int x = 0 ; x < width ; x++ )
 				{
-					uint32_t v = p[x];
+					uint32_t v = pIn[x];
+
+					if( bSwapBytes )
+						v = Util::endianSwap(v);
 
 					int a = v >> 24;
-					if( a == 255 )
-						continue;
 
 					if( a == 0 )
+						v = 0;
+					else if( a != 255 )
 					{
-						p[x] = 0;
-						continue;
-					}
+						int c[3] = { int(v & 0xFF), int((v >> 8) & 0xFF), int((v >> 16) & 0xFF) };
 
-					int c[3] = { int(v & 0xFF), int((v >> 8) & 0xFF), int((v >> 16) & 0xFF) };
-
-					for( int i = 0; i < 3; i++ )
-					{
-						if( bSRGB )
+						for( int i = 0; i < 3; i++ )
 						{
-							int linear = HiColor::unpackSRGBTab[c[i]];
-							linear = bPremultiply ? (linear * a + 127) / 255 : std::min(4096, (linear * 255 + a / 2) / a);
-							c[i] = HiColor::packSRGBTab[linear];
+							if( bSRGB )
+							{
+								int linear = HiColor::unpackSRGBTab[c[i]];
+								linear = bPremultiply ? (linear * a + 127) / 255 : (std::min)(4096, (linear * 255 + a / 2) / a);
+								c[i] = HiColor::packSRGBTab[linear];
+							}
+							else
+								c[i] = bPremultiply ? (c[i] * a + 127) / 255 : (std::min)(255, (c[i] * 255 + a / 2) / a);
 						}
-						else
-							c[i] = bPremultiply ? (c[i] * a + 127) / 255 : std::min(255, (c[i] * 255 + a / 2) / a);
+
+						v = (uint32_t(a) << 24) | (uint32_t(c[2]) << 16) | (uint32_t(c[1]) << 8) | uint32_t(c[0]);
 					}
 
-					p[x] = (uint32_t(a) << 24) | (uint32_t(c[2]) << 16) | (uint32_t(c[1]) << 8) | uint32_t(c[0]);
+					if( bSwapBytes )
+						v = Util::endianSwap(v);
+
+					pOut[x] = v;
 				}
 			}
 		}
 
-		//____ isOpaque() _____________________________________________________
+		//____ isSamePremultiplied() __________________________________________
 
-		bool isOpaque( const uint8_t * pPixels, int pitch, int width, int height )
+		bool isSamePremultiplied( const uint8_t * pPixels, int pitch, int width, int height, bool bSwapBytes )
 		{
+			// Zero is zero in any byte order, so only alpha needs to be found.
+
+			int alphaShift = bSwapBytes ? 0 : 24;
+
 			for( int y = 0; y < height; y++ )
 			{
 				auto p = (const uint32_t*)(pPixels + y * pitch);
+
 				for( int x = 0; x < width; x++ )
-					if( (p[x] >> 24) != 255 )
+				{
+					if( ((p[x] >> alphaShift) & 0xFF) != 255 && p[x] != 0 )
 						return false;
+				}
 			}
 			return true;
+		}
+
+		//____ paletteToFloats() ______________________________________________
+
+		void paletteToFloats( const Color8 * pPalette, int capacity, ColorSpace colorSpace, float * pDest )
+		{
+			bool bLinear = (colorSpace == ColorSpace::Linear);
+
+			pDest[0] = float(capacity);			// Exact, far below where floats lose integers.
+			pDest[1] = 0.f;
+			pDest[2] = 0.f;
+			pDest[3] = 0.f;
+			pDest += 4;
+
+			// Worked out here and then written, as pDest may be in memory that is slow to read.
+
+			for( int i = 0; i < capacity; i++ )
+			{
+				HiColor col = pPalette[i];			// Same color space, just more bits.
+
+				float c[4];
+
+				if( bLinear )
+				{
+					c[0] = col.r / 4096.f;
+					c[1] = col.g / 4096.f;
+					c[2] = col.b / 4096.f;
+					c[3] = col.a / 4096.f;
+				}
+				else
+					col.toLinearFloat(c);
+
+				pDest[0] = c[0] * c[3];
+				pDest[1] = c[1] * c[3];
+				pDest[2] = c[2] * c[3];
+				pDest[3] = c[3];
+				pDest += 4;
+			}
 		}
 
 		//____ scaleLineThickness() ___________________________________________

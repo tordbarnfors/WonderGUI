@@ -42,6 +42,8 @@ set( SOURCES
 	source/wax_gpubackend.h
 	source/wax_gpuedgemap.cpp
 	source/wax_gpuedgemap.h
+	source/wax_gpusurface.cpp
+	source/wax_gpusurface.h
 	source/wax_memheap.cpp
 	source/wax_memheap.h
 	source/wax_mempool.cpp

@@ -673,8 +673,8 @@ what is left.
   much as they are written: by whoever has a PixelBuffer, by `alpha()`, by the premultiplying copy
   for uploads and the unpremultiplying after readback. In the upload heap, write-combined on a GPU
   of its own, reading took around 60 ns per pixel. The GPU only ever copies from these pixels.
-- **Premultiplying writes its buffer once and never reads it** (`_convertAlpha()` from one buffer
-  into another), as that buffer is in the upload heap. Uploads copy straight from the pixels when
+- **Premultiplying writes its buffer once and never reads it** (`GpuTools::convertAlpha()` from
+  one buffer into another), as that buffer is in the upload heap. Uploads copy straight from the pixels when
   they are all opaque or transparent black, as a new canvas is, without a buffer of their own.
 - **No buffers kept for Warpmaps that might be made.** Each DX12Warpmap makes a committed
   resource, about 250 us. Keeping the buffers of Warpmaps that go away for new ones, up to 32 MB,
@@ -683,6 +683,52 @@ what is left.
   took the cost away since, see below. WarpTests make their Warpmaps in `init()`, as
   the other suites do with what they draw, so they compare drawing. "Cylinders made each run"
   makes them for each run.
+
+### GPU surfaces on GpuSurface (2026-11)
+
+Decided with Tord. DX12Surface and VulkanSurface were the same class twice on the CPU side, and
+all four GPU surfaces had their own constructors, palette conversion and premultiplying.
+
+- **GpuSurface (`wax/source/wax_gpusurface.h`) is the base of DX12Surface, VulkanSurface and
+  MetalSurface.** It has the pixels the CPU reads and writes, which of pixels and texture is the
+  newer and where (`m_dirtyRect`, `m_bBufferNeedsSync`), the palette, the pixels in plain memory
+  of a surface the API gives nothing for, and the pixel buffer a canvas gets when its pixels are
+  first asked for. A subclass picks the format of the texture, makes what is on the device and
+  copies between pixels and texture: `_setTextureFormat()`, `_createDeviceObjects()`,
+  `_createPixelBuffer()` and `_readBack()`, and `_waitForUpload()` and `_updatePending()` if its
+  uploads need them. That follows the line of GpuBackend: lifetime of resources,
+  synchronization and device loss stay with each backend, as does when an upload happens.
+- **A surface is made by one sequence** (`GpuSurface::_setup()`), called by the constructor of the
+  subclass as it calls what the subclass implements. The four `create()` of each class turn their
+  arguments into a `PixelSource`, so each class has one constructor.
+- **`create()` returns null for a blueprint that isn't valid or a format without a texture,** on
+  all four, as GlSurface and MetalSurface did. DX12Surface and VulkanSurface gave a surface
+  without a texture and an error. Pixels in plain memory are for when the device gives nothing:
+  none set, lost, or out of memory.
+- **Pixels are little endian,** as the texture formats are laid out by byte. DX12Surface and
+  MetalSurface said native, which is the same on what they run on.
+- **Premultiplying and the palette as the shaders read it are in GpuTools,** used by all four.
+  What is sent to a texture gets no premultiplied copy when every pixel is opaque or transparent
+  black, which only DX12Surface looked for.
+- **MetalSurface sends pixels to its texture when it is used,** where `pullPixels()` committed a
+  command buffer and waited for the GPU every time, and creating a surface with pixels did too.
+  MetalBackend has it done before the surface is drawn from or into (`syncTexture()`), in a
+  command buffer of its own committed there, so ahead of the session in the queue. The copy reads
+  the pixels when the GPU gets to it, so `allocPixelBuffer()` waits for the last one. The palette
+  is in plain memory, where it was in a Metal buffer nothing on the GPU read.
+- **GlSurface isn't built on GpuSurface.** It keeps no pixels unless `buffered`, palette based or
+  `Alpha_8`: the texture is the only copy, `allocPixelBuffer()` makes a buffer for the call and
+  `alpha()` reads an alpha map of a byte per pixel. That is the leanest of the four and another
+  model, so a base class would only have been in its way. It uses the helpers in GpuTools. Making
+  the other three as lean, which is what `buffered` says, is a decision of its own, not taken.
+- **Left in:** `unload()`, `reload()` and `isLoaded()` of GlSurface and MetalSurface and the two
+  pixel counters of GlSurface. Nothing in the repository calls them, but they are public API, so
+  taking them out belongs on breaking-changes.
+
+Tested on Windows (Arc B580): gfxdevicetester gives the same results as before on all 262 tests
+with DX12Backend and GlBackend, unittester passes, and in a Debug build 51 tests of canvases,
+layers, readback, mipmaps, palettes and warps give the same with the device removed and replaced
+before they run.
 
 ### DX12Surface: canvases without a pixel buffer (2026-11)
 
@@ -694,7 +740,7 @@ DeviceGen2 clears with a fill right after.
 
 - **A canvas that isn't `buffered` and is created without pixels or fill color has no pixel
   buffer** until its pixels are asked for: `allocPixelBuffer()`, `pushPixels()` and `alpha()` make
-  it (`_needPixels()`), marked as older than the texture, so it is read back into before it is
+  it (`GpuSurface::_needPixels()`), marked as older than the texture, so it is read back into before it is
   read. That is what `buffered` of the Blueprint says, which DX12Surface didn't look at. It is
   half the memory of a canvas nobody reads, and with the upload gone CanvasLayerTest1 takes
   0.76 ms where it took 2.45 ms. Other surfaces are written by the CPU and keep their buffer, as
@@ -712,8 +758,10 @@ DeviceGen2 clears with a fill right after.
   about 350 us at 512x512. Placed in a heap that is there already it takes 21 us, but Tord doesn't
   want canvases or memory for them kept behind the scenes. If it is to be solved, by layer
   surfaces that whoever owns the canvas supplies or keeps.
-- VulkanSurface still sends the unspecified pixels of a new surface to its texture, as that is
-  what takes the image out of the layout it is created in.
+- VulkanSurface and MetalSurface have the same since they were built on GpuSurface, see "GPU
+  surfaces on GpuSurface" below. VulkanSurface no longer sends the unspecified pixels of a new
+  surface to its texture: an image nothing has been sent to stays in the layout it was created
+  in, which VulkanBackend takes it out of like any other.
 
 Tested on Windows (Arc B580): gfxdevicetester gives the same results as before on all 262 tests,
 and in a Debug build the same for 43 tests of canvases, layers, readback, mipmaps and warps with

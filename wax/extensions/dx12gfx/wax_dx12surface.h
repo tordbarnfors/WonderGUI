@@ -24,7 +24,7 @@
 #define WAX_DX12SURFACE_DOT_H
 #pragma once
 
-#include <wax_surface.h>
+#include <wax_gpusurface.h>
 #include <wax_dx12bufferpool.h>
 
 #include <wrl.h>
@@ -43,8 +43,15 @@ namespace wax
 	typedef	WeakPtr<DX12Surface>	DX12Surface_wp;
 
 	//____ Class DX12Surface _____________________________________________________________________
+	/**
+	 * @brief Surface for DX12Backend.
+	 *
+	 * Built on GpuSurface, which keeps our pixels and knows what the texture lacks of them. Here
+	 * is what is on the device, how pixels get to the texture and back, and what happens when the
+	 * device is replaced.
+	 */
 
-	class DX12Surface : public Surface
+	class DX12Surface : public GpuSurface
 	{
 		friend class DX12Backend;		// Records our uploads, see "Uploads" below.
 
@@ -71,21 +78,6 @@ namespace wax
 		//.____ Geometry _________________________________________________
 
 		static SizeI			maxSize();
-
-		//.____ Content _______________________________________________________
-
-		int						alpha(CoordSPX coord) override;
-
-		//.____ Control _______________________________________________________
-
-		using Surface::allocPixelBuffer;
-		using Surface::pullPixels;
-		using Surface::pushPixels;
-
-		const PixelBuffer		allocPixelBuffer(const RectI& rect) override;
-		bool					pushPixels(const PixelBuffer& buffer, const RectI& bufferRect) override;
-		void					pullPixels(const PixelBuffer& buffer, const RectI& bufferRect, bool bAutoNotify = true) override;
-		void					freePixelBuffer(const PixelBuffer& buffer) override;
 
 		//.____ Misc __________________________________________________________
 
@@ -116,7 +108,7 @@ namespace wax
 		// Palette based surfaces hold 8 or 16 bit indexes in the texture and their
 		// palette, converted to linear, in a buffer of float4 the pixel shader reads.
 		// The first entry holds the palette's capacity, the colors follow.
-		bool						isIndexed() const { return m_bIndexed; }
+
 		D3D12_GPU_VIRTUAL_ADDRESS	paletteGPUAddress() const { return DX12BufferPool::isValid(m_paletteBuffer) ? m_paletteBuffer.gpuAddress : 0; }
 
 		// Resource state of the texture at the end of the command list DX12Backend
@@ -125,21 +117,12 @@ namespace wax
 		D3D12_RESOURCE_STATES	resourceState() const { return m_resourceState; }
 		void					setResourceState( D3D12_RESOURCE_STATES state ) { m_resourceState = state; }
 
-		// A mipmapped surface has a full chain of mip levels, which DX12Backend
-		// draws from level 0 before the surface is read with stale ones, see
-		// DX12Backend::_generateMipmaps(). D3D12 has nothing that does it for us.
-		// mipSourceSRV(level) views level - 1 alone, mipRTV(level) level alone.
+		// DX12Backend draws the mip levels from level 0, see DX12Backend::_generateMipmaps().
+		// D3D12 has nothing that does it for us. mipSourceSRV(level) views level - 1 alone,
+		// mipRTV(level) level alone.
 
-		int							mipLevels() const { return m_mipLevels; }
-		bool						isMipmapStale() const { return m_bMipmapStale; }
-		void						clearMipmapStale() { m_bMipmapStale = false; }
 		D3D12_CPU_DESCRIPTOR_HANDLE	mipSourceSRV( int level ) const;
 		D3D12_CPU_DESCRIPTOR_HANDLE	mipRTV( int level ) const;
-
-		// Called by DX12Backend before it renders into us, once anything the CPU
-		// wrote has been uploaded.
-
-		void					notifyRendered();
 
 		// Total size of the uploads waiting to be recorded, for all surfaces.
 
@@ -147,29 +130,22 @@ namespace wax
 
 
 	protected:
-		DX12Surface(const Blueprint& blueprint);
-		DX12Surface(const Blueprint& blueprint, Blob* pBlob, int pitch);
-		DX12Surface(const Blueprint& blueprint, const uint8_t* pPixels, PixelFormat format, int pitch, const Color8* pPalette, int paletteSize);
-		DX12Surface(const Blueprint& blueprint, const uint8_t* pPixels, const PixelDescription& pixelDescription, int pitch, const Color8* pPalette, int paletteSize);
-
+		DX12Surface(const Blueprint& blueprint, const PixelSource& source);
 		~DX12Surface();
 
-		void			_setupTexture( const void * pPixels, int pitch, const PixelDescription * pSrcPixelDesc,
-									   const Color8 * pSrcPalette, const Color8 * pDstPalette, int srcPaletteSize,
-									   HiColor fillColor = HiColor::Undefined );
+		// What GpuSurface has us do.
 
-		void			_addDirtyRect( const RectI& rect );
+		PixelFormat		_setTextureFormat( PixelFormat format ) override;	// D3D12 has no 565, they are widened to XRGB_8.
+		bool			_createDeviceObjects( bool bPixelBuffer ) override;	// Texture, pixel buffer, views and palette buffer. All or none.
+		bool			_createPixelBuffer() override;						// The buffer of our pixels, mapped.
+		bool			_readBack() override;
+		void			_waitForUpload() override;							// Until the GPU has read our pixels for an upload already submitted.
+		void			_updatePending() override;							// Puts us on or takes us off the list, as m_dirtyRect says.
 
-		void			_copyInPixels( const void * pPixels, int pitch, const PixelDescription * pSrcPixelDesc,
-									   const Color8 * pSrcPalette, int srcPaletteSize, HiColor fillColor );
-
-		void			_syncBufferAndWait();			// Brings anything rendered into us back to our pixels.
 		bool			_initReadbackBuffer();
-		void			_uploadNowAndWait();			// On the copy queue, for _syncBufferAndWait() only.
+		void			_uploadNowAndWait();			// On the copy queue, for _readBack() only.
 
 		ID3D12Resource *	_uploadSource( int y1, int y2, Microsoft::WRL::ComPtr<ID3D12Resource>& temp, UINT64& sourceOffset );	// Premultiplied if need be.
-
-		const PixelBuffer	_pixelBuffer( const RectI& rect );	// Points into our pixels, without _waitForUpload().
 
 		// Uploads. Pixels the CPU writes are not sent to the texture right away.
 		// The surface goes on a list of pending uploads instead, in the order they
@@ -184,15 +160,8 @@ namespace wax
 		// _uploadSource(). So the CPU must not write to them between submission
 		// and completion. allocPixelBuffer() waits for that, see _waitForUpload().
 
-		void			_updatePending();				// Puts us on or takes us off the list, as m_dirtyRect says.
-		void			_waitForUpload();				// Until the GPU has read our pixels for an upload already submitted.
 		void			_forgetUpload();				// Drops what DX12Backend knows of an upload of ours.
 
-		bool			_setPixelDetails();		// Settles on a layout D3D12 can hold.
-		bool			_allocFallbackPixels();						// Plain memory, for when D3D12 wouldn't play along.
-		bool			_createDeviceObjects( bool bPixelBuffer = true );	// Texture, pixel buffer, views and palette buffer. All or none.
-		bool			_createPixelBuffer();						// The buffer of our pixels, mapped.
-		bool			_needPixels();								// Makes the pixel buffer a canvas was created without.
 		void			_dropDeviceObjects();
 		bool			_evacuate();						// False if our pixels went with the device.
 		void			_migrate();
@@ -200,17 +169,13 @@ namespace wax
 		void			_link();							// Into the list of live surfaces.
 		void			_unlink();
 		bool			_createPaletteBuffer();
-		void			_updatePaletteBuffer();						// Converts m_pPalette into the palette buffer.
-
-		bool			_isPremultiplied() const { return m_pixelFormat == PixelFormat::ARGB_8; }		// Texture holds premultiplied colors.
-		void			_convertAlpha( const uint8_t * pSrc, uint8_t * pDst, int pitch, int width, int height, bool bPremultiply ) const;
 
 		static bool			_initCopyResources();
 		static void			_waitForCopyFence();
 
 
 		Microsoft::WRL::ComPtr<ID3D12Resource>			m_texture;			// Rests in COMMON state, promoted on use.
-		Microsoft::WRL::ComPtr<ID3D12Resource>			m_uploadBuffer;		// Holds our pixels, readable and writable by the CPU. A canvas may be without, see _needPixels().
+		Microsoft::WRL::ComPtr<ID3D12Resource>			m_uploadBuffer;		// Holds our pixels, readable and writable by the CPU. A canvas may be without, see GpuSurface::_needPixels().
 		Microsoft::WRL::ComPtr<ID3D12Resource>			m_readbackBuffer;	// Created on first read back from a canvas surface.
 		DX12BufferPool::Buffer							m_paletteBuffer;	// Palette based surfaces only, see _createPaletteBuffer().
 		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	m_srvHeap;			// Holds this surface's SRV, then one per mip level but the last. Not shader visible.
@@ -222,19 +187,7 @@ namespace wax
 		DXGI_FORMAT		m_dxgiFormat = DXGI_FORMAT_UNKNOWN;
 		D3D12_RESOURCE_STATES m_resourceState = D3D12_RESOURCE_STATE_COMMON;
 
-		uint8_t *		m_pUploadData = nullptr;		// Our pixels: the mapped upload buffer, or m_pFallbackData. Null for a canvas nobody has asked for the pixels of.
-		uint8_t *		m_pFallbackData = nullptr;		// Plain memory, only used when we have no upload buffer.
-		int				m_uploadPitch = 0;				// Bytes per line, aligned as D3D12 requires for texture copies.
-		int				m_pixelSize = 0;				// Bytes per pixel.
 		bool			m_bAlphaOnly = false;			// Alpha_8, no color channels.
-		bool			m_bIndexed = false;				// Index_8 or Index_16, colors come from the palette.
-		float *			m_pPaletteData = nullptr;		// Mapped palette buffer, see paletteGPUAddress().
-
-		RectI			m_dirtyRect;					// Area not yet uploaded to the texture. Empty when in sync.
-		bool			m_bBufferNeedsSync = false;		// Texture has changes our pixels don't have yet.
-
-		int				m_mipLevels = 1;
-		bool			m_bMipmapStale = false;			// Level 0 has changed since the others were drawn from it.
 
 		// On the list of pending uploads, see _updatePending(). Linked through
 		// ourselves, oldest first.

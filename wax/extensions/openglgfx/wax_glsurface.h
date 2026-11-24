@@ -107,8 +107,8 @@ namespace wax
 		inline	GLuint	getTexture() const { return m_texture; }
 		inline	GLuint	getPaletteTexture() const { return m_paletteTexture; }		// Buffer texture of float4, see _uploadPalette().
 
-        static unsigned int totalTexturePixels() { return g_texturePixels; }
-        static unsigned int totalBackingPixels() { return g_backingPixels; }
+		static unsigned int totalTexturePixels() { return g_texturePixels; }
+		static unsigned int totalBackingPixels() { return g_backingPixels; }
 
 
 	private:
@@ -129,9 +129,7 @@ namespace wax
 
 		bool		_isPremultiplied() const { return m_pixelFormat == PixelFormat::ARGB_8; }		// Texture holds premultiplied colors.
 		const uint8_t* _premultiplied(const uint8_t* pPixels, int& pitch, int width, int height, std::vector<uint8_t>& buffer) const;
-		void		_convertAlpha(uint8_t* pPixels, int pitch, int width, int height, bool bPremultiply) const;
 
-		int			m_bPendingReads = false;					// Set if there are queued GL commands that will use surface as source. Active GlGfxDevice needs to be flushed before we modify.
 		bool		m_bBackingBufferStale = false;				// Set when there are modifications (in texture or queued GL commands) for this surface.
 		bool        m_bMipmapStale = false;
 
@@ -154,10 +152,10 @@ namespace wax
 		GLenum		m_pixelDataType;
 		static SizeI	s_maxSize;
 
-        static unsigned int    g_texturePixels;
-        static unsigned int    g_backingPixels;
+		static unsigned int    g_texturePixels;
+		static unsigned int    g_backingPixels;
 
-        
+		
 		uint8_t*	m_pAlphaMap = nullptr;
 	};
 } // namespace wax

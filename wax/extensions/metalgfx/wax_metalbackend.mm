@@ -453,6 +453,11 @@ bool MetalBackend::_bindCanvas( Surface * pCanvas, SizeI& size, CanvasKind& kind
 
 	if( pSurface )
 	{
+		// Anything the CPU has written goes in before we render over it, in a command buffer
+		// that is ahead of ours in the queue.
+
+		pSurface->syncTexture();
+
 		m_targetFormat = pSurface->m_texture.pixelFormat;
 		m_targetSize = pSurface->pixelSize();
 		kind = _canvasKind(pSurface);
@@ -860,10 +865,12 @@ void MetalBackend::_resetScissor()
 
 //____ _prepareBlitSource() __________________________________________________
 //
-// MetalSurface copies what is written to its pixels to the texture right away.
+// What the CPU has written to the pixels of the surface is sent to its texture, in a command
+// buffer of its own that is committed here, and so ahead of ours in the queue.
 
 void MetalBackend::_prepareBlitSource( Surface * pSurface )
 {
+	static_cast<MetalSurface*>(pSurface)->syncTexture();
 }
 
 //____ _bindBlitTexture() ____________________________________________________

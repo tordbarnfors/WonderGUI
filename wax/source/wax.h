@@ -82,6 +82,7 @@
 #include <wax_gputools.h>
 #include <wax_gpubackend.h>
 #include <wax_gpuedgemap.h>
+#include <wax_gpusurface.h>
 #include <wax_surface.h>
 #include <wax_surfacefactory.h>
 #include <wax_surfacefileheader.h>

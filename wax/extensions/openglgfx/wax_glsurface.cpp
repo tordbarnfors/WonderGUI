@@ -23,6 +23,7 @@
 
 #include <wax_glsurface.h>
 #include <wax_glbackend.h>
+#include <wax_gputools.h>
 #include <wax_util.h>
 #include <wax_pixeltools.h>
 #include <wax_blob.h>
@@ -43,43 +44,8 @@ namespace wax
 
 #define HANDLE_GLERROR(check) { GLenum err = check; if(err != 0) GlBackend::onGlError(err, this, &TYPEINFO, __func__, __FILE__, __LINE__ ); }
 
-    unsigned int    GlSurface::g_texturePixels = 0;
-    unsigned int    GlSurface::g_backingPixels = 0;
-
-	//____ _premultiply() / _unpremultiply() ______________________________________
-	// Colors of a pixel times or divided by its alpha (1 -> 255), in linear light for sRGB pixels.
-
-	static inline void _premultiply(uint8_t& b, uint8_t& g, uint8_t& r, int a, bool bSRGB)
-	{
-		if (bSRGB)
-		{
-			b = HiColor::packSRGBTab[(HiColor::unpackSRGBTab[b] * a + 127) / 255];
-			g = HiColor::packSRGBTab[(HiColor::unpackSRGBTab[g] * a + 127) / 255];
-			r = HiColor::packSRGBTab[(HiColor::unpackSRGBTab[r] * a + 127) / 255];
-		}
-		else
-		{
-			b = uint8_t((b * a + 127) / 255);
-			g = uint8_t((g * a + 127) / 255);
-			r = uint8_t((r * a + 127) / 255);
-		}
-	}
-
-	static inline void _unpremultiply(uint8_t& b, uint8_t& g, uint8_t& r, int a, bool bSRGB)
-	{
-		if (bSRGB)
-		{
-			b = HiColor::packSRGBTab[std::min(4096, (HiColor::unpackSRGBTab[b] * 255 + a / 2) / a)];
-			g = HiColor::packSRGBTab[std::min(4096, (HiColor::unpackSRGBTab[g] * 255 + a / 2) / a)];
-			r = HiColor::packSRGBTab[std::min(4096, (HiColor::unpackSRGBTab[r] * 255 + a / 2) / a)];
-		}
-		else
-		{
-			b = uint8_t(std::min(255, (b * 255 + a / 2) / a));
-			g = uint8_t(std::min(255, (g * 255 + a / 2) / a));
-			r = uint8_t(std::min(255, (r * 255 + a / 2) / a));
-		}
-	}
+	unsigned int    GlSurface::g_texturePixels = 0;
+	unsigned int    GlSurface::g_backingPixels = 0;
 
 	//____ maxSize() _______________________________________________________________
 
@@ -111,8 +77,8 @@ namespace wax
 		if (!_isBlueprintValid(bp, maxSize()) || !_isFormatSupported(bp.format) )
 			return GlSurface_p();
 
-        int realPitch = pitch > 0 ? pitch : bp.size.w * Util::pixelFormatToDescription( bp.format == PixelFormat::Undefined ? PixelFormat::ARGB_8 : bp.format ).bits/8;
-        
+		int realPitch = pitch > 0 ? pitch : bp.size.w * Util::pixelFormatToDescription( bp.format == PixelFormat::Undefined ? PixelFormat::ARGB_8 : bp.format ).bits/8;
+		
 		if ( !pBlob || realPitch % 4 != 0 )
 			return GlSurface_p();
 
@@ -151,18 +117,18 @@ namespace wax
 		m_pPalette = nullptr;
 
 		if (bp.buffered || _needsBackingBuffer())
-        {
-            g_backingPixels += m_size.w*m_size.h;
-            m_pitch = ((m_size.w * m_pPixelDescription->bits / 8) + 3) & 0xFFFFFFFC;
-            m_pBlob = Blob::create(m_pitch * m_size.h + m_paletteCapacity*sizeof(Color8));
+		{
+			g_backingPixels += m_size.w*m_size.h;
+			m_pitch = ((m_size.w * m_pPixelDescription->bits / 8) + 3) & 0xFFFFFFFC;
+			m_pBlob = Blob::create(m_pitch * m_size.h + m_paletteCapacity*sizeof(Color8));
 
-            if (m_paletteCapacity > 0)
+			if (m_paletteCapacity > 0)
 			{
 				m_pPalette = (Color8*)((uint8_t*)m_pBlob->data() + m_pitch * m_size.h);
 				memcpy(m_pPalette, bp.palette, m_paletteSize*sizeof(Color8));
-            }
-        }
-        else
+			}
+		}
+		else
 		{
 			m_pitch = 0;
 
@@ -234,13 +200,13 @@ namespace wax
 		if (pitch == 0)
 			pitch = bp.size.w * m_pPixelDescription->bits / 8;
 
-        if (bp.buffered || _needsBackingBuffer())
-        {
-            g_backingPixels += m_size.w*m_size.h;
-            m_pitch = pitch;
-            m_pBlob = pBlob;
-        }
-        else
+		if (bp.buffered || _needsBackingBuffer())
+		{
+			g_backingPixels += m_size.w*m_size.h;
+			m_pitch = pitch;
+			m_pBlob = pBlob;
+		}
+		else
 		{
 			m_pitch = 0;
 
@@ -293,14 +259,14 @@ namespace wax
 		if( pitch == 0 )
 			pitch = PixelTools::bytesPerLine(pixelDescription, m_size.w);
 		
-        if (bp.buffered || _needsBackingBuffer())
-        {
-            g_backingPixels += m_size.w*m_size.h;
+		if (bp.buffered || _needsBackingBuffer())
+		{
+			g_backingPixels += m_size.w*m_size.h;
 
 			// Create our blob
 			
-            m_pitch = ((m_size.w * m_pPixelDescription->bits / 8) + 3) & 0xFFFFFFFC;
-            m_pBlob = Blob::create(m_pitch * m_size.h + m_paletteCapacity*sizeof(Color8));
+			m_pitch = ((m_size.w * m_pPixelDescription->bits / 8) + 3) & 0xFFFFFFFC;
+			m_pBlob = Blob::create(m_pitch * m_size.h + m_paletteCapacity*sizeof(Color8));
 
 			// Setup palette
 
@@ -322,9 +288,9 @@ namespace wax
 
 			// Setup GL-texture
 			
-            _setupGlTexture(m_pBlob->data(), m_pitch);
-        }
-        else
+			_setupGlTexture(m_pBlob->data(), m_pitch);
+		}
+		else
 		{
 			m_pitch = 0;
 
@@ -353,7 +319,7 @@ namespace wax
 
 			// Setup GL-texture
 
-            _setupGlTexture(pTempPixelBuffer, tempBufPitch);
+			_setupGlTexture(pTempPixelBuffer, tempBufPitch);
 
 			//
 			
@@ -389,7 +355,7 @@ namespace wax
 		GLint oldBinding;
 		glGetIntegerv(GL_TEXTURE_BINDING_2D, &oldBinding);
 
-        g_texturePixels += m_size.w*m_size.h;
+		g_texturePixels += m_size.w*m_size.h;
 
 		// Create and bind texture
 
@@ -412,11 +378,11 @@ namespace wax
 			pUpload = _premultiplied((const uint8_t*)pUpload, pitch, m_size.w, m_size.h, premultiplied);
 
 		HANDLE_GLERROR(glGetError());
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch/m_pixelSize);
-        glPixelStorei(GL_UNPACK_SWAP_BYTES, m_bSwapBytes);
-        glTexImage2D(GL_TEXTURE_2D, 0, m_internalFormat, m_size.w, m_size.h, 0, m_accessFormat, m_pixelDataType, pUpload);
-        glPixelStorei(GL_UNPACK_SWAP_BYTES, GL_FALSE);
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+		glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch/m_pixelSize);
+		glPixelStorei(GL_UNPACK_SWAP_BYTES, m_bSwapBytes);
+		glTexImage2D(GL_TEXTURE_2D, 0, m_internalFormat, m_size.w, m_size.h, 0, m_accessFormat, m_pixelDataType, pUpload);
+		glPixelStorei(GL_UNPACK_SWAP_BYTES, GL_FALSE);
+		glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 		HANDLE_GLERROR(glGetError());
 
 		//
@@ -617,10 +583,7 @@ namespace wax
 
 	//____ _uploadPalette() ______________________________________________________
 	/*
-		The palette goes to the GPU converted to linear, the same way SoftSurface unpacks it, and
-		premultiplied, like the pixels of surfaces with alpha, so the shaders can use the colors as
-		they are and interpolate between them. One float4 per entry, plus one in front holding the
-		capacity, which the shaders keep indexes below. Done as DX12Surface does it.
+		The palette as the shaders read it, see GpuTools::paletteToFloats().
 	*/
 
 	void GlSurface::_uploadPalette()
@@ -628,35 +591,9 @@ namespace wax
 		if (!m_pPalette || m_paletteBuffer == 0)
 			return;
 
-		std::vector<GLfloat> colors(size_t(m_paletteCapacity + 1) * 4, 0.f);
+		std::vector<GLfloat> colors(size_t(m_paletteCapacity + 1) * 4);
 
-		colors[0] = GLfloat(m_paletteCapacity);		// Exact, far below where floats lose integers.
-
-		// Palette entries are in the color space of the surface.
-
-		bool bLinear = (m_colorSpace == ColorSpace::Linear);
-
-		float * p = colors.data() + 4;
-
-		for (int i = 0; i < m_paletteCapacity; i++)
-		{
-			HiColor col = m_pPalette[i];		// Same color space, just more bits.
-
-			if (bLinear)
-			{
-				p[0] = col.r / 4096.f;
-				p[1] = col.g / 4096.f;
-				p[2] = col.b / 4096.f;
-				p[3] = col.a / 4096.f;
-			}
-			else
-				col.toLinearFloat(p);
-
-			p[0] *= p[3];
-			p[1] *= p[3];
-			p[2] *= p[3];
-			p += 4;
-		}
+		GpuTools::paletteToFloats(m_pPalette, m_paletteCapacity, m_colorSpace, colors.data());
 
 		glBindBuffer(GL_TEXTURE_BUFFER, m_paletteBuffer);
 		glBufferSubData(GL_TEXTURE_BUFFER, 0, GLsizeiptr(colors.size() * sizeof(GLfloat)), colors.data());
@@ -667,11 +604,11 @@ namespace wax
 
 	GlSurface::~GlSurface()
 	{
-        
-        g_texturePixels -= m_size.w*m_size.h;
+		
+		g_texturePixels -= m_size.w*m_size.h;
 
-        if( m_pBlob )
-            g_backingPixels -= m_size.w*m_size.h;
+		if( m_pBlob )
+			g_backingPixels -= m_size.w*m_size.h;
 
 		if( m_bCanvas )
 			glDeleteFramebuffers(1, &m_framebufferId);
@@ -724,7 +661,7 @@ namespace wax
 			pixbuf.bigEndian = m_bBigEndian;
 			pixbuf.palette = m_pPalette;
 			pixbuf.pitch = ((rect.w * m_pPixelDescription->bits / 8) + 3) & 0xFFFFFFFC;
-            pixbuf.pixels = new uint8_t[rect.h * pixbuf.pitch];
+			pixbuf.pixels = new uint8_t[rect.h * pixbuf.pitch];
 			pixbuf.rect = rect;
 		}
 		return pixbuf;
@@ -741,15 +678,15 @@ namespace wax
 
 			return true;
 		}
-        else if( bufferRect.size() == m_size )
+		else if( bufferRect.size() == m_size )
 		{
-            // This is OpenGL pre 4.5, we can only read back a whole texture :(
-            
-            _readBackTexture(buffer.pixels, buffer.pitch);
+			// This is OpenGL pre 4.5, we can only read back a whole texture :(
+			
+			_readBackTexture(buffer.pixels, buffer.pitch);
 			return true;
 		}
-        else
-            return false;
+		else
+			return false;
 	}
 
 	//____ pullPixels() _______________________________________________________
@@ -1020,7 +957,10 @@ namespace wax
 		HANDLE_GLERROR(glGetError());
 
 		if (_isPremultiplied())
-			_convertAlpha((uint8_t*)pDest, pitch, m_size.w, m_size.h, false);
+		{
+			GpuTools::convertAlpha((uint8_t*)pDest, pitch, (uint8_t*)pDest, pitch, m_size.w, m_size.h, false,
+								   m_colorSpace == ColorSpace::sRGB, m_bSwapBytes);
+		}
 
 		m_bBackingBufferStale = false;
 	}
@@ -1033,83 +973,22 @@ namespace wax
 	/*
 		Surfaces with alpha keep their pixels premultiplied in the texture, so that blending
 		and filtering work on premultiplied colors. Returns the pixels to upload, which are the
-		pixels themselves if they are all opaque, otherwise a premultiplied copy in buffer with
-		a pitch of width pixels, set in pitch.
+		pixels themselves if they are the same premultiplied, otherwise a premultiplied copy in
+		buffer with a pitch of width pixels, set in pitch.
 	*/
 
 	const uint8_t* GlSurface::_premultiplied(const uint8_t* pPixels, int& pitch, int width, int height, std::vector<uint8_t>& buffer) const
 	{
-		int alphaByte = (m_bSwapBytes != (WAX_IS_BIG_ENDIAN == 1)) ? 0 : 3;		// Alpha is the high byte of the pixel.
-
-		bool bOpaque = true;
-		for (int y = 0; y < height && bOpaque; y++)
-		{
-			const uint8_t* p = pPixels + y * pitch + alphaByte;
-			for (int x = 0; x < width; x++)
-				if (p[x * 4] != 255)
-				{
-					bOpaque = false;
-					break;
-				}
-		}
-
-		if (bOpaque)
+		if (GpuTools::isSamePremultiplied(pPixels, pitch, width, height, m_bSwapBytes))
 			return pPixels;
 
 		int rowBytes = width * m_pixelSize;
 		buffer.resize(rowBytes * height);
 
-		for (int y = 0; y < height; y++)
-			memcpy(buffer.data() + y * rowBytes, pPixels + y * pitch, rowBytes);
-
-		_convertAlpha(buffer.data(), rowBytes, width, height, true);
+		GpuTools::convertAlpha(pPixels, pitch, buffer.data(), rowBytes, width, height, true, m_colorSpace == ColorSpace::sRGB, m_bSwapBytes);
 
 		pitch = rowBytes;
 		return buffer.data();
 	}
 
-	//____ _convertAlpha() ____________________________________________________
-	/*
-		Premultiplies or unpremultiplies ARGB_8 pixels in place. Pixels are 32-bit words with
-		alpha in the high byte, in the byte order of the surface.
-	*/
-
-	void GlSurface::_convertAlpha(uint8_t* pPixels, int pitch, int width, int height, bool bPremultiply) const
-	{
-		bool bSRGB = (m_colorSpace == ColorSpace::sRGB);
-
-		for (int y = 0; y < height; y++)
-		{
-			uint32_t* p = (uint32_t*)(pPixels + y * pitch);
-
-			for (int x = 0; x < width; x++)
-			{
-				uint32_t v = p[x];
-				if (m_bSwapBytes)
-					v = Util::endianSwap(v);
-
-				int a = v >> 24;
-				if (a == 255)
-					continue;
-
-				if (a == 0)
-					v = 0;
-				else
-				{
-					uint8_t b = uint8_t(v), g = uint8_t(v >> 8), r = uint8_t(v >> 16);
-
-					if (bPremultiply)
-						_premultiply(b, g, r, a, bSRGB);
-					else
-						_unpremultiply(b, g, r, a, bSRGB);
-
-					v = (uint32_t(a) << 24) | (uint32_t(r) << 16) | (uint32_t(g) << 8) | b;
-				}
-
-				if (m_bSwapBytes)
-					v = Util::endianSwap(v);
-				p[x] = v;
-			}
-		}
-	}
 } // namespace wax

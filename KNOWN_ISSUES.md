@@ -262,6 +262,18 @@ Few pixels each, far off. Several are of nearest sampling by their names, so a g
 texel D3D12 and Metal pick at the border between two, where GL and Vulkan pick the other. Not
 looked into.
 
+### GPU surfaces keep their pixels twice, but for GlSurface
+
+DX12Surface, VulkanSurface and MetalSurface have the pixels of a surface in memory the CPU
+reads and writes besides the texture, whatever `buffered` of the Blueprint says, so a surface
+takes twice its pixels. Only a canvas that isn't buffered is without, until its pixels are asked
+for. GlSurface keeps none unless `buffered`, palette based or `Alpha_8`, and an alpha map of a
+byte per pixel for `alpha()` instead. So what `buffered` does, what a surface costs and what
+`allocPixelBuffer()` and `pushPixels()` cost depend on the backend. See "GPU surfaces on
+GpuSurface" in ROADMAP.md.
+
+`GpuSurface::_setup()` in `wax/source/wax_gpusurface.cpp`, `wax/extensions/openglgfx/wax_glsurface.cpp`
+
 ### VulkanBackend stalls when pixels of a surface are uploaded
 
 VulkanSurface submits what every backend has recorded and waits for the GPU before and after

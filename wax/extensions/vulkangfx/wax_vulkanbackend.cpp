@@ -740,6 +740,7 @@ namespace wax
 			// our copy of them as the older one from here on. That can submit what we have
 			// recorded and continue in a new command buffer.
 
+			pSurface->syncTexture();
 			pSurface->notifyRendered();
 
 			if (!m_bRecording)

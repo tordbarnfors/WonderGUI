@@ -2269,8 +2269,8 @@ namespace wax
 
 		for (auto p : m_uploadBatch)
 		{
-			// Full lines, so the source offset stays aligned. See
-			// DX12Surface::_setupTexture().
+			// Full lines, so the source offset stays aligned. See the constructor
+			// of DX12Surface.
 
 			int y1 = p->m_dirtyRect.y;
 			int y2 = p->m_dirtyRect.y + p->m_dirtyRect.h;
@@ -2298,7 +2298,7 @@ namespace wax
 			src.PlacedFootprint.Footprint.Width = p->m_size.w;
 			src.PlacedFootprint.Footprint.Height = y2 - y1;
 			src.PlacedFootprint.Footprint.Depth = 1;
-			src.PlacedFootprint.Footprint.RowPitch = p->m_uploadPitch;
+			src.PlacedFootprint.Footprint.RowPitch = p->m_pitch;
 
 			m_commandList->CopyTextureRegion(&dst, 0, y1, 0, &src, nullptr);
 		}
@@ -2320,14 +2320,10 @@ namespace wax
 			_holdUntilDone(p->m_texture.Get());
 			_holdUntilDone(p->m_uploadBuffer.Get());
 
-			p->m_dirtyRect = RectI();
-			p->_updatePending();
+			// Level 0 has changed, so the others are stale. They are drawn from it
+			// before the surface is read, see _generateMipmaps().
 
-			// Level 0 has changed, the others are drawn from it before the surface
-			// is read, see _generateMipmaps().
-
-			if (p->m_mipLevels > 1)
-				p->m_bMipmapStale = true;
+			p->_uploaded();
 
 			// Told the fence value once we have submitted. Any fence it had is for
 			// an earlier upload, which the CPU has waited for before writing the

@@ -25,7 +25,7 @@
 
 #import "MetalKit/MetalKit.h"
 
-#include <wax_surface.h>
+#include <wax_gpusurface.h>
 
 namespace wax
 {
@@ -35,23 +35,34 @@ namespace wax
 	typedef	WeakPtr<MetalSurface>	MetalSurface_wp;
 
 	//____ MetalSurface _____________________________________________________________
+	/**
+	 * @brief Surface for MetalBackend.
+	 *
+	 * Built on GpuSurface, which keeps our pixels and knows what the texture lacks of them. They
+	 * are in a shared buffer, and copied to the private texture when it is used.
+	 *
+	 * Formats: ARGB_8 and XRGB_8 are BGRA8Unorm, the latter read with alpha 1, the 565 formats are
+	 * widened to XRGB_8, Alpha_8 is R8Unorm read as alpha, and palette based surfaces hold their
+	 * indexes in R8Uint or R16Uint with the palette in a buffer of float4. sRGB surfaces have
+	 * _sRGB formats.
+	 */
 
-	class MetalSurface : public Surface
+	class MetalSurface : public GpuSurface
 	{
-        
-        friend class MetalSurfaceFactory;
+		friend class MetalSurfaceFactory;
 		friend class MetalBackend;
 
 	public:
+
 		//.____ Creation __________________________________________
 
 		static MetalSurface_p	create(const Blueprint& blueprint);
 		static MetalSurface_p	create(const Blueprint& blueprint, Blob* pBlob, int pitch = 0 );
-		
+
 		static MetalSurface_p	create(const Blueprint& blueprint, const uint8_t* pPixels,
 									   PixelFormat format = PixelFormat::Undefined, int pitch = 0,
 									   const Color8 * pPalette = nullptr, int paletteSize = 0);
-		
+
 		static MetalSurface_p	create(const Blueprint& blueprint, const uint8_t* pPixels,
 									   const PixelDescription& pixelDescription, int pitch = 0,
 									   const Color8 * pPalette = nullptr, int paletteSize = 0);
@@ -65,25 +76,14 @@ namespace wax
 
 		static SizeI	maxSize();
 
-		//.____ Content _______________________________________________________
+		//.____ Control _______________________________________________________
 
-		int		    alpha(CoordSPX coord) override;
-
-        //.____ Control _______________________________________________________
-
-		using Surface::allocPixelBuffer;
-		using Surface::pullPixels;
-		using Surface::pushPixels;
-
-        const PixelBuffer allocPixelBuffer(const RectI& rect) override;
-        bool        pushPixels(const PixelBuffer& buffer, const RectI& bufferRect) override;
-        void        pullPixels(const PixelBuffer& buffer, const RectI& bufferRect, bool bAutoNotify = true) override;
-        void        freePixelBuffer(const PixelBuffer& buffer) override;
+		// Lets go of the texture and makes it again from our pixels. What was rendered into it
+		// and hasn't been asked for since is lost.
 
 		bool		unload();
 		bool		isLoaded();
 		void		reload();
-
 
 		//.____ Misc __________________________________________________________
 
@@ -91,59 +91,43 @@ namespace wax
 
 		// What the shaders read: the texture, through a view that reads Alpha_8 from red into
 		// alpha and gives XRGB_8 alpha 1, and for palette based surfaces their palette, see
-		// _updatePaletteColors().
+		// GpuTools::paletteToFloats().
 
 		inline	id<MTLTexture>	sampleTexture() const { return m_sampleTexture ? m_sampleTexture : m_texture; }
 		inline	id<MTLBuffer>	paletteColors() const { return m_paletteColors; }
 
+		// Sends what the CPU has written since the last call to the texture, if anything, in a
+		// command buffer of its own that is committed at once. Called by MetalBackend before the
+		// surface is drawn from or into, which puts it ahead of the drawing in the queue.
+
+		void					syncTexture();
+
 	private:
 
-		MetalSurface(const Blueprint& blueprint);
-		MetalSurface(const Blueprint& blueprint, Blob* pBlob, int pitch);
-		MetalSurface(const Blueprint& blueprint, const uint8_t* pPixels, PixelFormat format, int pitch, const Color8 * pPalette, int paletteSize);
-		MetalSurface(const Blueprint& blueprint, const uint8_t* pPixels, const PixelDescription& pixelDescription, int pitch, const Color8 * pPalette, int paletteSize);
-
-
+		MetalSurface(const Blueprint& blueprint, const PixelSource& source);
 		~MetalSurface();
 
-		static bool		_isFormatSupported( PixelFormat format );
-		void		    _setPixelDetails();
-		void 			_setupMetalTexture(const void * pPixels, int pitch, const PixelDescription * pSrcPixelDesc,
-										   const Color8 * pSrcPalette, int srcPaletteSize, const Color8 * pDstPalette,
-										   HiColor fillColor = HiColor::Undefined );
+		// What GpuSurface has us do.
 
-		void			_updatePaletteColors();
+		PixelFormat		_setTextureFormat( PixelFormat format ) override;	// Metal has no 565 on macOS, they are widened to XRGB_8.
+		bool			_createDeviceObjects( bool bPixelBuffer ) override;	// Texture, its view, pixel buffer and palette buffer. All or none.
+		bool			_createPixelBuffer() override;
+		bool			_readBack() override;
+		void			_waitForUpload() override;							// Until the GPU has read our pixels for an upload already committed.
 
-        void            _createAndSyncTextures( bool bHasTextureData );
+		bool			_createTexture();									// The texture and its view for the shaders.
+		void			_dropDeviceObjects();
 
-		bool			_isPremultiplied() const { return m_pixelFormat == PixelFormat::ARGB_8; }		// Texture holds premultiplied colors.
 		id<MTLBuffer>	_encodeTextureUpload( id<MTLBlitCommandEncoder> encoder, RectI region );
-		void			_convertAlpha( uint8_t * pPixels, int pitch, int width, int height, bool bPremultiply ) const;
-        
-        void            _syncBufferAndWait();
-        void            _syncTexture( RectI region );
-        void            _waitForSyncedTexture();
 
-		int			    m_bPendingReads = false;					// Set if there are queued commands that will use surface as source. Active MetalGfxDevice needs to be flushed before we modify.
-
-        bool            m_bBufferNeedsSync = false;                 // Texture has changes that have not been synced to buffer yet.
-        std::atomic<bool>  m_bTextureSyncInProgress;           // Texture is being updated with changes from buffer.
-
-
-        id<MTLBuffer>   m_paletteBuffer = nil;         // Shared buffer holding the palette, m_pPalette points into it.
-        id<MTLBuffer>   m_paletteColors = nil;         // The palette as the shaders read it, see _updatePaletteColors().
-        
 		id<MTLTexture>	m_texture = nil;			// Private texture, only accessed by GPU.
 		id<MTLTexture>	m_sampleTexture = nil;		// Swizzled view of it for the shaders, nil if they read it as it is.
-        id<MTLBuffer>   m_textureBuffer = nil;      // Shared buffer, containing texture data accessible to CPU.
-        
-        MTLPixelFormat  m_internalFormat;
+		id<MTLBuffer>	m_textureBuffer = nil;		// Shared buffer with our pixels. A canvas may be without, see GpuSurface::_needPixels().
+		id<MTLBuffer>	m_paletteColors = nil;		// The palette as the shaders read it.
 
-		uint32_t	    m_pixelSize;		// Size in bytes of a pixel.
-		static SizeI	s_maxSize;
+		id<MTLCommandBuffer>	m_lastUpload = nil;	// Reads our pixels when the GPU gets to it, see _waitForUpload().
 
-        bool            m_bMipmapStale = false;
-
+		MTLPixelFormat	m_internalFormat = MTLPixelFormatInvalid;
 	};
 } // namespace wax
 #endif //WAX_METALSURFACE_DOT_H
