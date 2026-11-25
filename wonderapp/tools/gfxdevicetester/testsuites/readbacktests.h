@@ -22,7 +22,9 @@
 // device of a GPU backend has been replaced.
 //
 // "WriteAll" and "WriteAllRestorer" are for timing: a surface that has all its pixels written
-// each time, as one showing a stream has, without and with restorer.
+// each time, as one showing a stream has, without and with restorer. Mind that the tester runs
+// a test many times in one canvas update, where a backend that collects what was written sends
+// it once for all of them, so the two can't be told apart by their times on such a backend.
 
 class ReadbackTests : public TestSuite
 {

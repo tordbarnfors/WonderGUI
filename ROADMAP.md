@@ -1014,11 +1014,33 @@ with a restorer that declines were cleared.
 
 Everything builds for wappwin32dx12 and wappsdl3gl, and unittester passes.
 
-Not timed: runs of `gfxdevicetester --performance` were started and stopped, as other work was
-running on the machine (Tord). To do on a quiet one: GlBackend against the commit before
-(7842e2ee), as GlSurface now keeps pixels where it had none and reads the alpha of a canvas
-another way, the 263 tests on DX12Backend against "GPU surfaces: staging and plain memory", and
-"WriteAll" against "WriteAllRestorer" on each backend, which is what a restorer is to gain.
+Timed on Windows (Arc B580) with `gfxdevicetester --performance`, each backend against a build
+of the commit before all three steps (7842e2ee), two runs of each taken in turn. Run to run, nine
+tests of ten are within 1% on DX12Backend, and within 4% before and 14% after on GlBackend, whose
+second run after was the uneven one.
+
+- **DX12Backend: the median of the 262 tests is 1.002 of before.** The three blur tests take
+  95-100 us where they took 181-187, "A8_Fills" 4.6 us where 7.5 and the four tests of drawing
+  into a canvas 1.3 us where 1.6. That was there with step 1 already and taken for noise between
+  sessions then. Why hasn't been looked into: all of them draw into canvases that are drawn from
+  in turn.
+- **Reading canvases costs more with DX12Backend,** as step 1 found: "Readback" 5.2 ms where it
+  took 3.2, and "FillColor" 1.15 ms where it took 9 us, as four of its surfaces are read back
+  each run where all seven had their pixels at hand.
+- **GlBackend: the median is 0.995 of before.** "Readback" takes 2.9 ms where it took 2.2, as
+  `alpha()` of a canvas now reads all of it back. The two canvas layer tests and "FillColor" take
+  14-23% less, the first most likely as a canvas no longer gets a framebuffer for reading when
+  it is made. "GradientBlur" took 13% more in both runs, where the other two blur tests didn't,
+  which I take for noise.
+- **Writing all of a 256 x 256 surface: "WriteAllRestorer" takes 150 us with DX12Backend and
+  80 us with GlBackend.** With D3D12 that is the time it takes to make a buffer, which is made
+  for each PixelBuffer of a surface without pixels. "WriteAll", without restorer, shows 5 us with
+  DX12Backend and 80 us with GlBackend, but the 5 us is not what a stream pays: the tester runs
+  a test many times in one canvas update, and DX12Backend sends what was written once for all of
+  them, in a buffer it makes outside what is timed. A surface written once a frame pays for a
+  buffer either way, and for one copy more without restorer. So with D3D12 a restorer gains
+  memory and a copy, not the buffer, and with OpenGL memory only. Timing one write a frame takes
+  another kind of test.
 
 Not done: VulkanSurface and MetalSurface are not compiled. No application has been run with
 it, only gfxdevicetester and unittester. What the debug layer of D3D12 says hasn't been looked
