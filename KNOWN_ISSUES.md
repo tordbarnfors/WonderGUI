@@ -164,6 +164,16 @@ wappsdl3gl renders into a surface per window and swaps it in, which wappsdl2gl c
 
 `wonderapp/source/sdl2/backend_opengl.cpp`
 
+### gfxdevicetester with wappsdl3gpu ends with its device alive
+
+With `WAPP_GPU_DEBUG=1` and D3D12, the debug layer lists 467 live objects when gfxdevicetester
+ends ("Process is terminating", Arc B580, e5d6c4ae). `backend_specific_exit()` leaves the device
+to the process when `SdlGpuBackend::setDevice(nullptr)` says no, which it does while surfaces and
+such are alive, so something outlives the backend: of gfxdevicetester, or of WonderApp, in which
+case every application has it. Harmless at exit, but it would hide a real leak. Not looked into.
+
+`wonderapp/source/sdl3/backend_sdlgpu.cpp`
+
 ### macOS: example01 and streamanalyzer embed SDL frameworks that aren't there
 
 With the Xcode generator both fail in a step that copies a framework into the bundle, after they
@@ -232,13 +242,14 @@ slow on Windows" below.
 
 Only run on Linux, with lavapipe and Intel UHD 770 (Mesa).
 
-### SdlGpuBackend on D3D12 and Metal
+### SdlGpuBackend on few GPUs
 
-Only run with Vulkan, on Linux, with lavapipe and Intel UHD 770 (Mesa). Its DXIL is compiled and
-signed on Linux and its MSL made by SPIRV-Cross, but no device has been given either. SDL_GPU
-binds storage buffers as raw buffer views on D3D12, where the shaders declare StructuredBuffers,
-which is how SDL's own examples have it, but may not be what every driver takes. To run:
-gfxdevicetester with `wappsdl3gpu` on Windows and on a Mac.
+gfxdevicetester has run it with Vulkan on Linux (lavapipe and Intel UHD 770), with D3D12 and
+Vulkan on Windows (Arc B580, e5d6c4ae) and with Metal on one Mac (x86_64, d9508fe6, so before
+"GPU vertices without u and v"), nothing else. SDL_GPU binds storage buffers as raw buffer views
+on D3D12, where the shaders declare StructuredBuffers, which is how SDL's own examples have it and
+what the driver of the Arc B580 takes without a word from the debug layer, but may not be what
+every driver takes. See under Graphics for what differs with Metal and with Vulkan on Windows.
 
 `wax/extensions/sdlgpugfx`
 
@@ -276,11 +287,34 @@ SdlGpuBackend with Vulkan.
 
 On a Mac (x86_64, Debug, d9508fe6), where SDL_GPU picks Metal, Readback differs by max 170, mean
 2.731 over 45324 pixels and Rectangles by max 251, mean 1.030 over 11655, against max 28 for both
-on MetalBackend on the same Mac and on SdlGpuBackend with Vulkan, see the entry above. So it is
-something of SdlGpuBackend, or of SDL_GPU, on Metal only. Not looked into: what the images look
-like would be the first thing to see.
+on MetalBackend on the same Mac and on SdlGpuBackend with Vulkan and with D3D12, see the entry
+above. So it is something of SdlGpuBackend, or of SDL_GPU, on Metal only. Not looked into: what
+the images look like would be the first thing to see.
 
 `wax/extensions/sdlgpugfx`, `wonderapp/tools/gfxdevicetester/testsuites/readbacktests.h`
+
+### SdlGpuBackend with Vulkan on Windows: blend modes and alpha canvases differ
+
+With `SDL_GPU_DRIVER=vulkan` on Windows (Arc B580, driver 101.9033, Release, e5d6c4ae) 13 of 266
+tests differ, where the same build has 10 with D3D12 and Linux has 4 with Vulkan (Intel UHD 770,
+Mesa). Besides Mipmapped_0.4, ReplaceVerticalAndFlat and the two of ReadbackTests:
+
+    A8Tests         A8_Fills             max  38  mean 0.664  over  22389
+    BlendRuleTests  MorphTransparency    max  84  mean 0.860  over  16264
+    BlendRuleTests  AlphaCanvasEffects   max 208  mean 1.210  over  18280
+    BlendRuleTests  CanvasWithoutAlpha   max 255  mean 0.599  over   4368
+    BlendRuleTests  PaintEdges           max  44  mean 0.432  over  10392
+    RoundedBoxTests BlendModes           max 255  mean 2.808  over  19817
+    RingTests       BlendModes           max 255  mean 2.282  over  13309
+    WarpTests       BlendModes           max 255  mean 4.579  over  35934
+    LineCapTests    BlendModes           max 255  mean 1.373  over   9746
+
+All are about blending, none about what was drawn, so a guess is a blend factor or operation
+this driver does differently, or that SDL_GPU sets up differently for it. Not looked into, and
+not run before e5d6c4ae, so that it is the driver and not that commit is taken from Linux, where
+Vulkan gives the same lines before and after. VulkanBackend has not run on Windows at all.
+
+`wax/extensions/sdlgpugfx`
 
 ### gfxdevicetester: tests that differ on DX12Backend and MetalBackend alike
 
@@ -307,7 +341,7 @@ looked into.
 
 At d9508fe6 MetalBackend has the same twelve, and Rectangles of ReadbackTests, which is new.
 SdlGpuBackend with Metal has the six of BlitGridNear, SamplingTests and WarpTests by the same
-amounts, and specks for the three of palettes.
+amounts, and specks for the three of palettes. So has SdlGpuBackend with D3D12 (Arc B580).
 
 ### PluginSurfaceFactory drops the baggage and the finalizer of a Blueprint
 

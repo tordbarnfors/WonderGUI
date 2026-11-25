@@ -69,9 +69,9 @@ For VulkanBackend, still to do:
 
 For SdlGpuBackend, still to do, see "SdlGpuBackend" under Decided:
 
-- **Running it on D3D12 and Metal.** Only Vulkan on Linux has drawn with it. The DXIL is signed
-  by DXC and the MSL made by SPIRV-Cross, but neither has been given to a device, see
-  KNOWN_ISSUES.md.
+- **What differs with Metal and with Vulkan on Windows,** see KNOWN_ISSUES.md: ReadbackTests with
+  Metal, and the tests of blend modes with the Vulkan driver of an Arc B580. It has drawn with
+  D3D12 and Metal since 2026-11-25, see "SdlGpuBackend" under Decided.
 - **Timing on other GPUs than Intel UHD 770,** where it is as fast as VulkanBackend but for the
   fixed cost of a session, about 0.1 ms more, from a command buffer of its own.
 - **A lost device,** which SDL_GPU doesn't tell us about. Restorers are never called.
@@ -1279,6 +1279,20 @@ same ones and by the same amounts as on VulkanBackend: Mipmapped_0.4, ReplaceVer
 Readback and Rectangles of ReadbackTests, see KNOWN_ISSUES.md. The same four on lavapipe. In debug
 mode of SDL_GPU, with the validation layer of Vulkan, no messages.
 
+With D3D12 and Metal, 2026-11-25:
+
+- **D3D12** (Windows, Arc B580, Release, e5d6c4ae): 266 tests, 10 differ, none fail. The ten are
+  the four above and the six of nearest sampling that DX12Backend and MetalBackend have, by the
+  same amounts, see KNOWN_ISSUES.md. In debug mode the debug layer of D3D12 says nothing while
+  drawing, only that objects are alive when the process ends. Before "GPU vertices without u and
+  v" below it couldn't make the pipelines of shapes, which the Cybersim gen2 application found
+  as the first to draw with it on D3D12, and worked around to draw its pages within 4 of 255 of
+  SoftBackend.
+- **Metal** (a Mac, x86_64, Debug, d9508fe6): 266 tests, 10 differ, none fail. The same ten by
+  name, but Readback and Rectangles by far more than anywhere else, see KNOWN_ISSUES.md.
+- **Vulkan on Windows** (the same Arc B580, e5d6c4ae): 13 differ, nine of them tests of blending
+  that are OK with D3D12 on the same build and with Vulkan on Linux, see KNOWN_ISSUES.md.
+
 ### GPU vertices without u and v (2026-11-25)
 
 A vertex of GpuBackend is a position, a color offset and an extras offset, 16 bytes. It had u and
@@ -1297,6 +1311,12 @@ the others the unused input was gone from what DXC and SPIRV-Cross made, so only
   more for each edgemap drawn. `_addQuad()` takes no u and v, `_nbVertexAttributes()` is 2 for
   plain fills and 3 for the rest, and no vertex shader declares an input another kind lacks.
 - **The values are the same:** whole pixels and a half, which a float holds exactly on either
-  side. gfxdevicetester gives the same lines as before with DX12Backend (Arc B580, Release).
+  side. gfxdevicetester gives the same lines as before, the worst pixel aside, with DX12Backend
+  and GlBackend on Windows (Arc B580, Release) and with VulkanBackend, SdlGpuBackend and GlBackend
+  on Linux (Intel UHD 770 and llvmpipe, Debug), the validation layer of Vulkan silent. Not run on
+  a Mac yet, where `wax_metalbackend.mm` isn't compiled with it either.
+- **Compiled in two places:** the shaders of DX12Backend on Windows, which has FXC, and the rest
+  on Linux, which has DXC with SPIR-V and SPIRV-Cross (e5d6c4ae). Only segmentsVS changed, and
+  shapeVS where the unused input had stayed: in the bytecode of FXC and in the DXIL.
 - **Rule for the shaders,** in `hlsl/README.md`: a vertex shader declares only the inputs it
   reads.
