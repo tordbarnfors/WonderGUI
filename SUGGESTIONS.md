@@ -83,6 +83,19 @@ is 3.28, adds them directly. That has only been run with CMake 4.4, so whether t
 need anything from 4.x is not known. If they don't, a lower minimum for them would help
 products that build with a distribution's own CMake.
 
+### New SDL GPU shaders need CMake to configure again
+
+`wax/extensions/sdlgpugfx/CMakeLists.txt` turns the shaders in `shaders/` into arrays in
+`wax_sdlgpushadercode.cpp` of the build directory when CMake configures. The `CONFIGURE_DEPENDS`
+glob only notices shaders that are added or removed, so after a change to a shader, such as
+a pull that brings new ones, a build in an existing build directory (from Xcode, say) keeps the
+old ones until `cmake --preset ...` is run again. On the Mac, the new vertex layout of
+`vertices-without-uv` with the old `segmentsVS` failed with "Vertex attribute
+in_var_TEXCOORD0(3) is missing from the vertex descriptor", and 60 tests of
+`gfxdevicetester --accuracy` differed. Adding the shader files to the `CMAKE_CONFIGURE_DEPENDS`
+directory property would make the build configure again when one changes. Making the source
+file in an `add_custom_command()` that depends on the shaders would leave configuring out of it.
+
 ## API
 
 ### `Size`, `Border` and `Corners` can't be `constexpr`
