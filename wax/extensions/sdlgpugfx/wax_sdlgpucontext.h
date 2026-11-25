@@ -61,6 +61,13 @@ namespace wax
 
 		static SDL_GPUShaderFormat	shaderFormat() { return s_shaderFormat; }
 
+		// True when an upload to a texture must come from rows exactly as long as the region
+		// written. The Metal driver of SDL_GPU (3.4.18) ignores pixels_per_row of an upload and
+		// takes the length of a row from the width of the region instead, which shears any upload
+		// from a wider buffer.
+
+		static bool				tightUploadRows() { return s_bTightUploadRows; }
+
 		// SDL_GPU has no query for it. D3D12 and Metal have at least this, and so do Vulkan
 		// drivers for desktop GPUs.
 
@@ -121,6 +128,7 @@ namespace wax
 
 		static SDL_GPUDevice *		s_pDevice;
 		static SDL_GPUShaderFormat	s_shaderFormat;
+		static bool					s_bTightUploadRows;
 		static int					s_nBackends;
 	};
 

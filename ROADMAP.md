@@ -69,9 +69,9 @@ For VulkanBackend, still to do:
 
 For SdlGpuBackend, still to do, see "SdlGpuBackend" under Decided:
 
-- **What differs with Metal and with Vulkan on Windows,** see KNOWN_ISSUES.md: ReadbackTests with
-  Metal, and the tests of blend modes with the Vulkan driver of an Arc B580. It has drawn with
-  D3D12 and Metal since 2026-11-25, see "SdlGpuBackend" under Decided.
+- **What differs with Vulkan on Windows,** see KNOWN_ISSUES.md: the tests of blend modes with the
+  Vulkan driver of an Arc B580. It has drawn with D3D12 and Metal since 2026-11-25, see
+  "SdlGpuBackend" under Decided.
 - **Timing on other GPUs than Intel UHD 770,** where it is as fast as VulkanBackend but for the
   fixed cost of a session, about 0.1 ms more, from a command buffer of its own.
 - **A lost device,** which SDL_GPU doesn't tell us about. Restorers are never called.
@@ -1105,8 +1105,8 @@ On Linux and on a Mac, at d9508fe6 (2026-11-25, Debug), all of it compiled with 
   `macos-wappsdl3gpu`, but for two bundle steps, see KNOWN_ISSUES.md. That is the first time
   MetalSurface compiled on GpuSurface. unittester passes with each. gfxdevicetester: MetalBackend
   13 differ of 266 with both frameworks, where the 261 tests of bcf58e51 are unchanged and the
-  13th is Rectangles of the new ReadbackTests, and SdlGpuBackend 10, see KNOWN_ISSUES.md for its
-  ReadbackTests.
+  13th is Rectangles of the new ReadbackTests, and SdlGpuBackend 10, with ReadbackTests sheared
+  until uploads on Metal had tight rows, see "SdlGpuBackend" under Decided.
 
 Not done: of applications only pluginworkbench has been run with it, besides gfxdevicetester and
 unittester, and that run is the only one where the debug layer of D3D12 was listened to, see
@@ -1273,6 +1273,14 @@ SdlGpuWarpmap and their factories. All share one device, set by `SdlGpuBackend::
 - **Edgemaps and Warpmaps are uploaded whole when they have changed,** cycling the buffer, so
   sessions still in flight keep what they had, unlike on the other GPU backends.
 - **Mipmaps** are made by SDL_GenerateMipmapsForGPUTexture(), as VulkanBackend blits them.
+- **On Metal, uploads to textures come from rows as long as the region written.** The Metal
+  driver of SDL_GPU (3.4.18) ignores `pixels_per_row` of SDL_UploadToGPUTexture() and takes the
+  length of a row from the width of the region, which sheared every upload of a rectangle from a
+  wider pixel buffer. So with that driver `SdlGpuContext::tightUploadRows()` is true, staging
+  memory has no padding at the end of a row, and `SdlGpuSurface::_pull()` copies a rectangle
+  narrower than its buffer to a buffer of its own, as it already does for offsets that aren't a
+  multiple of four. Downloads are not affected. Other drivers are left as they were, so the copy
+  is not made for them. If SDL fixes it, the flag can go.
 
 gfxdevicetester on Linux, Release, with Vulkan: on Intel UHD 770 (Mesa) 266 tests, 4 differ, the
 same ones and by the same amounts as on VulkanBackend: Mipmapped_0.4, ReplaceVerticalAndFlat,
@@ -1288,8 +1296,10 @@ With D3D12 and Metal, 2026-11-25:
   v" below it couldn't make the pipelines of shapes, which the Cybersim gen2 application found
   as the first to draw with it on D3D12, and worked around to draw its pages within 4 of 255 of
   SoftBackend.
-- **Metal** (a Mac, x86_64, Debug, d9508fe6): 266 tests, 10 differ, none fail. The same ten by
-  name, but Readback and Rectangles by far more than anywhere else, see KNOWN_ISSUES.md.
+- **Metal** (a Mac, x86_64, Debug, d9508fe6 and e5d6c4ae): 266 tests, 10 differ, none fail. The
+  same ten by name. Readback and Rectangles differed by far more than anywhere else (max 170 and
+  251), as uploads of rectangles were sheared, until the rows of uploads were made tight on Metal
+  (see above). Since then they differ by max 28 as everywhere else, and no other line changed.
 - **Vulkan on Windows** (the same Arc B580, e5d6c4ae): 13 differ, nine of them tests of blending
   that are OK with D3D12 on the same build and with Vulkan on Linux, see KNOWN_ISSUES.md.
 

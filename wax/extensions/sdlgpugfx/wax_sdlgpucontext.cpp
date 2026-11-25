@@ -34,6 +34,7 @@ namespace wax
 {
 	SDL_GPUDevice *		SdlGpuContext::s_pDevice = nullptr;
 	SDL_GPUShaderFormat	SdlGpuContext::s_shaderFormat = SDL_GPU_SHADERFORMAT_INVALID;
+	bool				SdlGpuContext::s_bTightUploadRows = false;
 	int					SdlGpuContext::s_nBackends = 0;
 
 	//____ init() ________________________________________________________________
@@ -61,6 +62,10 @@ namespace wax
 			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, buffer, nullptr, nullptr, __func__, __FILE__, __LINE__);
 			return false;
 		}
+
+		const char * pDriver = SDL_GetGPUDeviceDriver(pDevice);
+
+		s_bTightUploadRows = pDriver && strcmp(pDriver, "metal") == 0;
 
 		s_pDevice = pDevice;
 		return true;

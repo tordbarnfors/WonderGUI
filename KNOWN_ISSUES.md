@@ -281,17 +281,7 @@ The RGB_565 canvas is kept as XRGB_8, as on DX12Backend and MetalBackend, which 
 colors a Replace leaves in a linear canvas, where RGB_565 rounds them to black. Expected, see the
 comment in `readbacktests.h`. Readback (max 28, mean 0.796) and Rectangles (max 28, mean 0.276,
 worst pixel the same) differ for it, by the same amounts on VulkanBackend, MetalBackend and
-SdlGpuBackend with Vulkan.
-
-### SdlGpuBackend with Metal: ReadbackTests differs far more than on MetalBackend
-
-On a Mac (x86_64, Debug, d9508fe6), where SDL_GPU picks Metal, Readback differs by max 170, mean
-2.731 over 45324 pixels and Rectangles by max 251, mean 1.030 over 11655, against max 28 for both
-on MetalBackend on the same Mac and on SdlGpuBackend with Vulkan and with D3D12, see the entry
-above. So it is something of SdlGpuBackend, or of SDL_GPU, on Metal only. Not looked into: what
-the images look like would be the first thing to see.
-
-`wax/extensions/sdlgpugfx`, `wonderapp/tools/gfxdevicetester/testsuites/readbacktests.h`
+SdlGpuBackend with Vulkan, D3D12 and Metal.
 
 ### SdlGpuBackend with Vulkan on Windows: blend modes and alpha canvases differ
 

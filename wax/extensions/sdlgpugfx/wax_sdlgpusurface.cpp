@@ -286,7 +286,9 @@ namespace wax
 	//____ _allocStaging() _____________________________________________________
 	//
 	// A transfer buffer, mapped. Lines start on four byte boundaries, which is a whole number of
-	// pixels for all our formats. Transfer buffers for uploading are all of one kind, read or not.
+	// pixels for all our formats, except on Metal, where they must follow each other without
+	// padding, see SdlGpuContext::tightUploadRows(). Transfer buffers for uploading are all of one
+	// kind, read or not.
 	//
 	// What is handed out as a PixelBuffer stays mapped while it is copied from, which all devices
 	// of SDL_GPU allow, as they keep transfer buffers mapped or map them where they are.
@@ -300,7 +302,7 @@ namespace wax
 		if( !m_pTexture || !pDevice )
 			return nullptr;
 
-		int pitch = (size.w * m_pixelBytes + 3) & ~3;
+		int pitch = SdlGpuContext::tightUploadRows() ? size.w * m_pixelBytes : (size.w * m_pixelBytes + 3) & ~3;
 
 		SDL_GPUTransferBufferCreateInfo info = {};
 		info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
@@ -350,10 +352,13 @@ namespace wax
 		pull.size = rect.size();
 		pull.dest = dest;
 
-		// Vulkan only promises copies from offsets that are a multiple of four, so such a
+		// Vulkan only promises copies from offsets that are a multiple of four, and Metal reads
+		// rows as long as the rectangle, see SdlGpuContext::tightUploadRows(), so such a
 		// rectangle goes by a buffer of its own.
 
-		if( pull.offset % 4 != 0 )
+		bool bRowsTooLong = SdlGpuContext::tightUploadRows() && p->pitch != rect.w * m_pixelBytes;
+
+		if( pull.offset % 4 != 0 || bRowsTooLong )
 		{
 			auto pOwn = static_cast<SdlGpuStaging*>( _allocStaging( rect.size(), false ) );
 
