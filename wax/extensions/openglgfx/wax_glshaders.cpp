@@ -133,7 +133,6 @@ uniform uvec4 waxConstants[6];
 layout(location = 0) in vec2 in_var_POSITION;
 layout(location = 1) in uint in_var_COLOROFS;
 layout(location = 2) in uint in_var_EXTRASOFS;
-layout(location = 3) in vec2 in_var_TEXCOORD0;
 out vec4 wax_COLOR;
 out vec2 wax_TEXCOORD0;
 flat out uvec2 wax_TEXCOORD1;
@@ -141,11 +140,16 @@ flat out vec2 wax_TEXCOORD2;
 
 void main()
 {
+    uint _59 = in_var_EXTRASOFS + 1u;
+    vec2 _63 = in_var_POSITION - texelFetch(waxBuffer1, int(in_var_EXTRASOFS)).zw;
+    float _65 = _63.x;
+    float _69 = _63.y;
+    uint _81 = in_var_EXTRASOFS + 2u;
     gl_Position = vec4((in_var_POSITION.x * (uintBitsToFloat(waxConstants[0].xy)).x) - 1.0, 1.0 - (in_var_POSITION.y * (uintBitsToFloat(waxConstants[0].xy)).y), 0.0, 1.0);
     wax_COLOR = texelFetch(waxBuffer0, int(in_var_COLOROFS));
-    wax_TEXCOORD0 = in_var_TEXCOORD0;
-    wax_TEXCOORD1 = uvec2(texelFetch(waxBuffer1, int(in_var_EXTRASOFS)).xy);
-    wax_TEXCOORD2 = texelFetch(waxBuffer1, int(in_var_EXTRASOFS + 1u)).xy;
+    wax_TEXCOORD0 = vec2((texelFetch(waxBuffer1, int(in_var_EXTRASOFS)).x + (_65 * texelFetch(waxBuffer1, int(_59)).x)) + (_69 * texelFetch(waxBuffer1, int(_59)).z), (texelFetch(waxBuffer1, int(in_var_EXTRASOFS)).y + (_65 * texelFetch(waxBuffer1, int(_59)).y)) + (_69 * texelFetch(waxBuffer1, int(_59)).w));
+    wax_TEXCOORD1 = uvec2(texelFetch(waxBuffer1, int(_81)).xy);
+    wax_TEXCOORD2 = texelFetch(waxBuffer1, int(_81)).zw;
     gl_Position.y *= (uintBitsToFloat(waxConstants[5])).x;
 }
 )glsl" },

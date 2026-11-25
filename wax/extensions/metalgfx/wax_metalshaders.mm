@@ -282,17 +282,21 @@ struct segmentsVS_in
     float2 in_var_POSITION [[attribute(0)]];
     uint in_var_COLOROFS [[attribute(1)]];
     uint in_var_EXTRASOFS [[attribute(2)]];
-    float2 in_var_TEXCOORD0 [[attribute(3)]];
 };
 
 vertex segmentsVS_out segmentsVS(segmentsVS_in in [[stage_in]], constant type_PushConstant_WaxConstants& waxConstants [[buffer(0)]], const device type_StructuredBuffer_v4float& colors [[buffer(1)]], const device type_StructuredBuffer_v4float& extras [[buffer(2)]])
 {
     segmentsVS_out out = {};
+    uint _59 = in.in_var_EXTRASOFS + 1u;
+    float2 _63 = in.in_var_POSITION - extras._m0[in.in_var_EXTRASOFS].zw;
+    float _65 = _63.x;
+    float _69 = _63.y;
+    uint _81 = in.in_var_EXTRASOFS + 2u;
     out.gl_Position = float4((in.in_var_POSITION.x * waxConstants.canvasScale.x) - 1.0, 1.0 - (in.in_var_POSITION.y * waxConstants.canvasScale.y), 0.0, 1.0);
     out.out_var_COLOR = colors._m0[in.in_var_COLOROFS];
-    out.out_var_TEXCOORD0 = in.in_var_TEXCOORD0;
-    out.out_var_TEXCOORD1 = uint2(extras._m0[in.in_var_EXTRASOFS].xy);
-    out.out_var_TEXCOORD2 = extras._m0[in.in_var_EXTRASOFS + 1u].xy;
+    out.out_var_TEXCOORD0 = float2((extras._m0[in.in_var_EXTRASOFS].x + (_65 * extras._m0[_59].x)) + (_69 * extras._m0[_59].z), (extras._m0[in.in_var_EXTRASOFS].y + (_65 * extras._m0[_59].y)) + (_69 * extras._m0[_59].w));
+    out.out_var_TEXCOORD1 = uint2(extras._m0[_81].xy);
+    out.out_var_TEXCOORD2 = extras._m0[_81].zw;
     return out;
 }
 )msl" },

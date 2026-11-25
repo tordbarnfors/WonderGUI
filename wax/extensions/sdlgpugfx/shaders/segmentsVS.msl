@@ -32,17 +32,21 @@ struct main0_in
     float2 in_var_POSITION [[attribute(0)]];
     uint in_var_COLOROFS [[attribute(1)]];
     uint in_var_EXTRASOFS [[attribute(2)]];
-    float2 in_var_TEXCOORD0 [[attribute(3)]];
 };
 
 vertex main0_out main0(main0_in in [[stage_in]], constant type_CanvasInfo& CanvasInfo [[buffer(0)]], const device type_StructuredBuffer_v4float& colors [[buffer(3)]], const device type_StructuredBuffer_v4float& extras [[buffer(4)]])
 {
     main0_out out = {};
+    uint _58 = in.in_var_EXTRASOFS + 1u;
+    float2 _62 = in.in_var_POSITION - extras._m0[in.in_var_EXTRASOFS].zw;
+    float _64 = _62.x;
+    float _68 = _62.y;
+    uint _80 = in.in_var_EXTRASOFS + 2u;
     out.gl_Position = float4((in.in_var_POSITION.x * CanvasInfo.canvasScale.x) - 1.0, 1.0 - (in.in_var_POSITION.y * CanvasInfo.canvasScale.y), 0.0, 1.0);
     out.out_var_COLOR = colors._m0[in.in_var_COLOROFS];
-    out.out_var_TEXCOORD0 = in.in_var_TEXCOORD0;
-    out.out_var_TEXCOORD1 = uint2(extras._m0[in.in_var_EXTRASOFS].xy);
-    out.out_var_TEXCOORD2 = extras._m0[in.in_var_EXTRASOFS + 1u].xy;
+    out.out_var_TEXCOORD0 = float2((extras._m0[in.in_var_EXTRASOFS].x + (_64 * extras._m0[_58].x)) + (_68 * extras._m0[_58].z), (extras._m0[in.in_var_EXTRASOFS].y + (_64 * extras._m0[_58].y)) + (_68 * extras._m0[_58].w));
+    out.out_var_TEXCOORD1 = uint2(extras._m0[_80].xy);
+    out.out_var_TEXCOORD2 = extras._m0[_80].zw;
     return out;
 }
 
