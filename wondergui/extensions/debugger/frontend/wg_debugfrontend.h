@@ -158,6 +158,7 @@ namespace wg
 		// Modes
 
 		bool			m_bSelectMode = false;
+		bool			m_bActive = true;			// False from deactivate() to activate(), when capsules aren't in select mode.
 
 
 		// Resources

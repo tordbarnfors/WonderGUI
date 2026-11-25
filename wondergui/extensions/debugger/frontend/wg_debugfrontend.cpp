@@ -85,6 +85,8 @@ namespace wg
 
 	void DebugFrontend::activate()
 	{
+		m_bActive = true;
+
 		for (auto pCapsule : m_capsules)
 		{
 			pCapsule->_setSelectMode(m_bSelectMode);
@@ -96,12 +98,18 @@ namespace wg
 	}
 
 	//____ deactivate() __________________________________________________________
+	//
+	// The capsules leave select mode, as they would otherwise keep taking the clicks
+	// of their windows with no debugger to show what was picked. Our own select mode
+	// is kept and is given back to them by activate().
 
 	void DebugFrontend::deactivate()
 	{
+		m_bActive = false;
+
 		for (auto pCapsule : m_capsules)
 		{
-			pCapsule->_setSelectMode(m_bSelectMode);
+			pCapsule->_setSelectMode(false);
 			pCapsule->_widgetSelected(nullptr);
 		}
 	}
@@ -111,7 +119,7 @@ namespace wg
 
 	void DebugFrontend::_addDebugCapsule( DebugCapsule * pCapsule )
 	{
-		pCapsule->_setSelectMode(m_bSelectMode);
+		pCapsule->_setSelectMode(m_bActive && m_bSelectMode);
 		m_capsules.push_back(pCapsule);
 
 		// Each capsule gets a message log of its own, logging from the router of
@@ -240,7 +248,7 @@ namespace wg
 		{
 			m_bSelectMode = selectMode;
 			for( auto capsule : m_capsules )
-				capsule->_setSelectMode(selectMode);
+				capsule->_setSelectMode(m_bActive && selectMode);
 		}
 	}
 
