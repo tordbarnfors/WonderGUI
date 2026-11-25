@@ -84,8 +84,10 @@ For SdlGpuBackend, still to do, see "SdlGpuBackend" under Decided:
   2026-11-24: "just move on with 2 and 3 locally", 2026-11-25: "you can merge branch to v4").
   breaking-changes has none of it: not the restorer, `buffered` leaving, nor what went out of
   GlSurface and MetalSurface.
-- **VulkanSurface and MetalSurface are not compiled,** see KNOWN_ISSUES.md. To be built and run
-  on Linux and Mac when all of it is in place (Tord).
+- **MetalSurface is not compiled,** see KNOWN_ISSUES.md. To be built and run on a Mac when all
+  of it is in place (Tord). VulkanSurface was built and run on Linux at ce68e1e9, which is
+  before the restorer became a `std::function` and plugins got theirs. Neither that nor
+  SdlGpuSurface has been compiled with it.
 - **`loadSurface()` of WonderApp gives no restorer,** so what it loads keeps its pixels (Tord,
   who plans to change its API). Until then, what an application loads through it takes twice its
   pixels on all backends, which on GlBackend is more than before.
@@ -1095,9 +1097,10 @@ second run after was the uneven one.
   memory and a copy, not the buffer, and with OpenGL memory only. Timing one write a frame takes
   another kind of test.
 
-Not done: VulkanSurface and MetalSurface are not compiled. Of applications only pluginworkbench
-has been run with it, besides gfxdevicetester and unittester, and that run is the only one
-where the debug layer of D3D12 was listened to, see Plugins above.
+Not done: MetalSurface is not compiled, and VulkanSurface only as it was at ce68e1e9, see
+KNOWN_ISSUES.md. Of applications only pluginworkbench has been run with it, besides
+gfxdevicetester and unittester, and that run is the only one where the debug layer of D3D12 was
+listened to, see Plugins above.
 
 ### GPU backends: no shaders compiled at startup (2026-11)
 
