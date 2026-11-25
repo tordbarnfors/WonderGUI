@@ -82,13 +82,22 @@ namespace wg
 		int					addObserver(const std::function<void(int nRects, const RectI* pRects)>& func) override;
 		bool				removeObserver(int observerId) override;
 
+		bool				isContentLost() const override;
+
 		inline wax_obj		cObject() { return m_cSurface; }
 
 	private:
-		PluginSurface( wax_obj object );
+
+		// A PluginSurface is made ahead of the surface of the host and attached to it after,
+		// as the host gets a pointer to it with the Blueprint when there is a restorer.
+
+		PluginSurface( const Restorer& restorer );
 		~PluginSurface();
 
-		wax_obj		m_cSurface;
+		void			_attach( wax_obj object );
+		static uint8_t	_restoreFromHost( wax_obj surface, void * pData );
+
+		wax_obj		m_cSurface = nullptr;
 		int			m_cObserverId = 0;
 
 	};

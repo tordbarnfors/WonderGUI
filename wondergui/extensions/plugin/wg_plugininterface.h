@@ -421,6 +421,8 @@ typedef struct wg_surface_calls_struct
 	wax_surfaceBP		(*getSurfaceBlueprint)(wax_obj surface);
 	wax_colorSpace		(*surfaceColorSpace)(wax_obj surface);
 	int					(*surfaceIsBigEndian)(wax_obj surface);
+	int					(*surfaceIsContentLost)(wax_obj surface);
+	void				(*dropSurfaceRestorer)(wax_obj surface);
 
 } wg_surface_calls;
 

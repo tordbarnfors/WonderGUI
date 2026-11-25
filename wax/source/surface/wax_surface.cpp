@@ -191,6 +191,14 @@ namespace wax
 		return false;
 	}
 
+	//____ dropRestorer() _____________________________________________________
+
+	void Surface::dropRestorer()
+	{
+		if( m_restorer )
+			m_restorer = declineRestore;
+	}
+
 	//____ blueprint() ________________________________________________________
 
 	Surface::Blueprint Surface::blueprint() const
@@ -206,7 +214,7 @@ namespace wax
 		bp.format = m_pixelFormat;
 		bp.identity = m_id;
 		bp.mipmap = m_bMipmapped;
-		bp.restorer = m_pRestorer;
+		bp.restorer = m_restorer;
 		bp.sampleMethod = m_sampleMethod;
 		bp.scale = m_scale;
 		bp.size = m_size;

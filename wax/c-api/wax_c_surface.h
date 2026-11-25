@@ -83,6 +83,7 @@ typedef struct wax_surfaceBP_struct			// NOT BINARY EQUIVALENT!
 	int					identity;
 	uint8_t				mipmap;
 	wax_restorer_func	restorer;				// Called to put the content back when the texture is lost, see Surface::Blueprint. Null to have the surface keep its pixels.
+	void *				restorerData;			// Passed to restorer. Has to be valid for as long as the surface is, or until wax_dropSurfaceRestorer().
 	wax_sampleMethod		sampleMethod;
 	int					scale;
 	wax_sizeI			size;					// Mandatory, except when creating from other surface.
@@ -132,7 +133,8 @@ WAX_EXPORT int				wax_surfaceIsOpaque(wax_obj surface);				///< @brief Check if 
 WAX_EXPORT int				wax_surfaceCanBeCanvas(wax_obj surface);
 
 WAX_EXPORT int				wax_surfaceIsContentLost(wax_obj surface);			///< @brief Check if the surface lost its content with the device of a GPU backend.
-WAX_EXPORT uint8_t			wax_declineSurfaceRestore(wax_obj surface);			///< @brief A restorer that does nothing, for wax_surfaceBP.
+WAX_EXPORT uint8_t			wax_declineSurfaceRestore(wax_obj surface, void * pData);	///< @brief A restorer that does nothing, for wax_surfaceBP.
+WAX_EXPORT void				wax_dropSurfaceRestorer(wax_obj surface);			///< @brief Have a surface with a restorer decline from now on, for when the restorer or its data is going away.
 
 //____ Control _______________________________________________________
 
@@ -163,7 +165,7 @@ WAX_EXPORT wax_obj			wax_getSurfaceBaggage(wax_obj surface);
 WAX_EXPORT int				wax_addSurfaceObserver(wax_obj surface, wax_surfaceObserver_func, void* pData, int data);
 WAX_EXPORT int				wax_removeSurfaceObserver(wax_obj surface, int observerId);
 
-WAX_EXPORT wax_surfaceBP		wax_getSurfaceBlueprint(wax_obj surface);
+WAX_EXPORT wax_surfaceBP		wax_getSurfaceBlueprint(wax_obj surface);			///< @brief Get a blueprint of the surface. It is without the restorer, which can't be given as a function of C.
 
 
 

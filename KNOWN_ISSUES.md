@@ -293,18 +293,32 @@ Few pixels each, far off. Several are of nearest sampling by their names, so a g
 texel D3D12 and Metal pick at the border between two, where GL and Vulkan pick the other. Not
 looked into.
 
-### Surfaces of a plugin can't have a restorer, nor say that their content is lost
+### PluginSurfaceFactory drops the baggage and the finalizer of a Blueprint
 
-`PluginSurfaceFactory` leaves the restorer of a Blueprint out when it has the host create the
-surface, so surfaces of a plugin keep their pixels on a GPU backend, as those without restorer
-do. The host would call the restorer with its own surface, which is no object of the plugin, so
-it takes a function of the plugin in between that finds the PluginSurface. `isContentLost()` of
-a PluginSurface is always false, as it isn't asked of the host: `wax_surfaceIsContentLost()` is
-in the C API but not in the calls a plugin gets. That matters for canvases of a plugin, which
-are cleared when DX12Backend loses its device.
+`_convertBlueprint()` has nothing to put them in, as `wax_surfaceBP` has neither, and the
+PluginSurface is made from an empty Blueprint, so a surface a plugin creates with `baggage` or
+`finalizer` in its Blueprint has no baggage and its finalizer is never called. `setBaggage()`
+and `setFinalizer()` on the surface afterwards work, on the PluginSurface. Found 2026-11-25 when
+restorers were passed on, which are in the same place.
 
-`PluginSurfaceFactory::_convertBlueprint()` in `wondergui/extensions/plugin/wg_pluginsurfacefactory.cpp`,
-`wg_surface_calls` in `wg_plugininterface.h`
+`PluginSurfaceFactory::_prepareSurface()` in `wondergui/extensions/plugin/wg_pluginsurfacefactory.cpp`
+
+### A surface with no height gets past `_isBlueprintValid()`, and pluginworkbench aborts on it
+
+`Surface::_isBlueprintValid()` turns down a size that `isEmpty()`, which a SizeI only is when
+both width and height are zero. So 64 x 0 and 390 x -51 get through. DX12Surface then fails to
+make its texture and GpuSurface asks for pixels of a negative size, which ends in `std::bad_alloc`
+and an abort. Not tried on the other backends.
+
+That is how pluginworkbench ends in its first frame on wappwin32dx12 (2026-11-25, the first
+time it ran a plugin on Win32): the CanvasCapsule of `canvasCapsuleGlowTest()` in the test plugin
+asks for a canvas of 390 x -51 pixels, as its skin takes more room than it is given. So there are
+two things: the check, and CanvasCapsule asking for a canvas when it has no room for one. With
+the check alone fixed CanvasCapsule gets no canvas, which it then begins a canvas update with.
+Whether pluginworkbench does the same on SDL hasn't been tried.
+
+`Surface::_isBlueprintValid()` in `wax/source/surface/wax_surface.cpp`,
+`CanvasCapsule::_renderCanvas()` in `wondergui/source/widgets/capsules/wg_canvascapsule.cpp`
 
 ### MetalSurface: pixels asked for during a session miss what it rendered
 

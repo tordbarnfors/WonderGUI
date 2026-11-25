@@ -207,7 +207,7 @@ namespace wax
 
 		// Whether our pixels stay in plain memory for as long as we live.
 
-		bool				_keepsPixels() const { return m_bIndexed || (!m_bCanvas && (!m_pRestorer || m_pixelFormat == PixelFormat::Alpha_8)); }
+		bool				_keepsPixels() const { return m_bIndexed || (!m_bCanvas && (!m_restorer || m_pixelFormat == PixelFormat::Alpha_8)); }
 		bool				_isOnDevice() const { return m_bOnDevice; }
 
 		void				_addDirtyRect( const RectI& rect );

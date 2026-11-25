@@ -39,7 +39,15 @@ void convertSurfaceBlueprint(Surface::Blueprint* pDest, const wax_surfaceBP* pSo
 	pDest->format = (PixelFormat)pSource->format;
 	pDest->identity = pSource->identity;
 	pDest->mipmap = pSource->mipmap;
-	pDest->restorer = reinterpret_cast<Surface::Restorer>(pSource->restorer);
+
+	if( pSource->restorer )
+	{
+		wax_restorer_func pFunc = pSource->restorer;
+		void * pData = pSource->restorerData;
+
+		pDest->restorer = [pFunc,pData](Surface * pSurface) { return pFunc( static_cast<Object*>(pSurface), pData ) != 0; };
+	}
+
 	pDest->sampleMethod = (SampleMethod)pSource->sampleMethod;
 	pDest->scale = pSource->scale;
 	pDest->size.w = pSource->size.w;

@@ -328,6 +328,8 @@ static void populateBody(wg_c_calls_body * pBody)
 	pBody->surface.getSurfaceBlueprint		= LOCKED(wax_getSurfaceBlueprint);
 	pBody->surface.surfaceColorSpace		= LOCKED(wax_surfaceColorSpace);
 	pBody->surface.surfaceIsBigEndian		= LOCKED(wax_surfaceIsBigEndian);
+	pBody->surface.surfaceIsContentLost		= LOCKED(wax_surfaceIsContentLost);
+	pBody->surface.dropSurfaceRestorer		= LOCKED(wax_dropSurfaceRestorer);
 
 
 	pBody->surfaceFactory.structSize		= sizeof(wg_surfacefactory_calls);

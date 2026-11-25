@@ -32,12 +32,21 @@ namespace wg
 
 	PluginSurface_p PluginSurface::create( wax_obj object)
 	{
-		return PluginSurface_p(new PluginSurface(object));
+		PluginSurface_p pSurface = new PluginSurface(nullptr);
+		pSurface->_attach(object);
+		return pSurface;
 	}
 
 	//____ constructor _____________________________________________________________
 
-	PluginSurface::PluginSurface(wax_obj object) : Surface( Blueprint(), PixelFormat::ARGB_8, SampleMethod::Bilinear )
+	PluginSurface::PluginSurface( const Restorer& restorer ) : Surface( Blueprint(), PixelFormat::ARGB_8, SampleMethod::Bilinear )
+	{
+		m_restorer = restorer;
+	}
+
+	//____ _attach() _______________________________________________________________
+
+	void PluginSurface::_attach(wax_obj object)
 	{
 		PluginCalls::object->retain(object);
 
@@ -68,10 +77,38 @@ namespace wg
 
 	PluginSurface::~PluginSurface()
 	{
+		if (!m_cSurface)
+			return;									// The host never created its surface.
+
 		if (m_cObserverId != 0)
 			PluginCalls::surface->removeSurfaceObserver(m_cSurface,m_cObserverId);
 
+		// The surface of the host may outlive us, held by a font of the host or by what is
+		// about to be rendered, and it calls _restoreFromHost() with a pointer to us.
+
+		if (m_restorer)
+			PluginCalls::surface->dropSurfaceRestorer(m_cSurface);
+
 		PluginCalls::object->release(m_cSurface);
+	}
+
+	//____ _restoreFromHost() ______________________________________________________
+
+	// The restorer the host gets for a surface of ours that has one. It runs when the host
+	// has replaced the device of its backend, on the thread the host does that on.
+
+	uint8_t PluginSurface::_restoreFromHost( wax_obj surface, void * pData )
+	{
+		PluginSurface_p pSurface = static_cast<PluginSurface*>(pData);		// Kept while its restorer runs.
+
+		return pSurface->m_restorer && pSurface->m_restorer(pSurface);
+	}
+
+	//____ isContentLost() _________________________________________________________
+
+	bool PluginSurface::isContentLost() const
+	{
+		return PluginCalls::surface->surfaceIsContentLost(m_cSurface) != 0;
 	}
 
 	//____ typeInfo() _________________________________________________________

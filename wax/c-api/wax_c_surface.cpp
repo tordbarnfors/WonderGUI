@@ -179,9 +179,15 @@ int wax_surfaceIsContentLost(wax_obj surface)
 }
 
 
-uint8_t wax_declineSurfaceRestore(wax_obj surface)
+uint8_t wax_declineSurfaceRestore(wax_obj surface, void * pData)
 {
 	return 0;
+}
+
+
+void wax_dropSurfaceRestorer(wax_obj surface)
+{
+	getPtr(surface)->dropRestorer();
 }
 
 
@@ -295,7 +301,8 @@ wax_surfaceBP wax_getSurfaceBlueprint(wax_obj surface)
 	dest.format			= (wax_pixelFormat) src.format;
 	dest.identity		= src.identity;
 	dest.mipmap			= src.mipmap;
-	dest.restorer		= reinterpret_cast<wax_restorer_func>(src.restorer);
+	dest.restorer		= nullptr;			// A std::function, which can't be given as a function of C.
+	dest.restorerData	= nullptr;
 	dest.sampleMethod	= (wax_sampleMethod) src.sampleMethod;
 	dest.scale			= src.scale;
 	dest.size.w			= src.size.w;

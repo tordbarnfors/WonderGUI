@@ -63,7 +63,7 @@ The rule of thumb: give a restorer to surfaces that you only write, such as grap
 
 ### The restorer
 
-The restorer is a pointer to a function that takes the surface and returns a bool. It is called between frames, when the GPU device has been replaced, and writes the content the surface is to have, using any of the methods of the surface:
+The restorer is a function that takes the surface and returns a bool. It is called between frames, when the GPU device has been replaced, and writes the content the surface is to have, using any of the methods of the surface:
 
 ```c++
 bool restoreMyLogo( Surface * pSurface )
@@ -75,7 +75,15 @@ bool restoreMyLogo( Surface * pSurface )
 auto pLogo = pFactory->createSurface({ .restorer = restoreMyLogo, .size = {256,64} }, pPixels );
 ```
 
-The surface is all the function gets, so use its identity or baggage to tell surfaces sharing a restorer apart.
+It is held as a std::function, so it can also be a lambda that captures what it needs, such as the path of the file to load:
+
+```c++
+auto pIcon = pFactory->createSurface({ .restorer = [path]( Surface * pSurface ) { return loadInto( pSurface, path ); }, .size = {64,64} }, pPixels );
+```
+
+A plain function only gets the surface, and can use its identity or baggage to tell surfaces sharing a restorer apart.
+
+Whatever a restorer captures or uses has to be there for as long as the surface is, which can be longer than you think: a font or a frame being rendered may hold on to the surface after you let go of it. If a restorer points at something that is going away before the surface, call dropRestorer() on the surface first. The surface then behaves as if its restorer returned false.
 
 * Return true when the content is back. It has to be what the surface held when it was lost, which isn't what it was created with if you have changed it since.
 * Return false when you did nothing. The surface is then transparent black and its isContentLost() returns true until all of it has been written. Use this when restoring takes time you don't want to spend in one go, and write the pixels when you have them.

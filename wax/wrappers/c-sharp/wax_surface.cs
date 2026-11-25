@@ -69,6 +69,7 @@ public class Surface : Objekt
 		public int Identity = 0;
 		public bool Mipmap = false;
 		public IntPtr Restorer = IntPtr.Zero;                       // Pointer to a native wax_restorer_func, such as Surface.DeclineRestore. Zero has the surface keep its pixels.
+		public IntPtr RestorerData = IntPtr.Zero;                   // Passed to Restorer.
 		public SampleMethod SampleMethod = SampleMethod.Undefined;
 		public int Scale = 0;
 		public SizeI Size;                  // Mandatory, except when creating from other surface.
@@ -150,6 +151,11 @@ public class Surface : Objekt
 
     public static IntPtr DeclineRestore => NativeLibrary.GetExport(NativeLibrary.Load(NativeLib), "wax_declineSurfaceRestore");
 
+	//____ DropRestorer() _____________________________________________________
+	// Has a surface with a restorer decline from now on, for when the restorer or its data is going away.
+
+	public void DropRestorer() => wax_dropSurfaceRestorer(_obj);
+
 	//____ AllocPixelBuffer() _________________________________________________
 	public PixelBuffer AllocPixelBuffer()
 	{
@@ -196,6 +202,7 @@ public class Surface : Objekt
 		public int identity;
 		public byte mipmap;
 		public IntPtr restorer;
+		public IntPtr restorerData;
 		public SampleMethod sampleMethod;
 		public int scale;
 		public SizeI size;                   // Mandatory, except when creating from other surface.
@@ -219,6 +226,7 @@ public class Surface : Objekt
 		converted.identity = org.Identity;
 		converted.mipmap = (byte)(org.Mipmap ? 1 : 0);
 		converted.restorer = org.Restorer;
+		converted.restorerData = org.RestorerData;
 		converted.sampleMethod = org.SampleMethod;
 		converted.scale = org.Scale;
 		converted.size = new SizeI(org.Size.W, org.Size.H);
@@ -229,6 +237,9 @@ public class Surface : Objekt
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
 	private static extern int wax_surfaceIsContentLost(IntPtr surface);
+
+	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+	private static extern void wax_dropSurfaceRestorer(IntPtr surface);
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
 	private static extern void wax_setSurfaceIdentity(IntPtr surface, int id);

@@ -522,7 +522,7 @@ namespace wax
 			// done for a surface with restorer: it would be every such texture at once, with
 			// colors of low alpha losing precision on the way.
 
-			if( !m_pRestorer && bDeviceWorks )
+			if( !m_restorer && bDeviceWorks )
 			{
 				m_pPixels = new uint8_t[size_t(m_pitch) * m_size.h];
 
@@ -548,7 +548,7 @@ namespace wax
 			{
 				m_bRestorePending = true;
 
-				if( !m_pRestorer )
+				if( !m_restorer )
 					m_bContentLost = true;
 			}
 		}
@@ -583,7 +583,11 @@ namespace wax
 
 		m_bRestorePending = false;
 
-		if( m_pRestorer && m_pRestorer(this) )
+		// Called through a copy, as it may end in dropRestorer() for this surface.
+
+		Restorer restorer = m_restorer;
+
+		if( restorer && restorer(this) )
 		{
 			m_bContentLost = false;
 			return;

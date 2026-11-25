@@ -82,23 +82,17 @@ namespace wg
 	Surface_p PluginSurfaceFactory::createSurface(const Surface::Blueprint& blueprint)
 	{
 		wax_surfaceBP	bp;
-		_convertBlueprint(&bp, &blueprint);
+		PluginSurface_p pSurf = _prepareSurface(&bp, &blueprint);
 
-		auto obj = PluginCalls::surfaceFactory->createSurface(m_cFactory, &bp);
-		auto pSurf = PluginSurface::create(obj);
-		PluginCalls::object->release(obj);
-		return pSurf;
+		return _attachSurface( pSurf, PluginCalls::surfaceFactory->createSurface(m_cFactory, &bp) );
 	}
 
 	Surface_p PluginSurfaceFactory::createSurface(const Surface::Blueprint& blueprint, Blob * pBlob, int pitch )
 	{
 		wax_surfaceBP	bp;
-		_convertBlueprint(&bp, &blueprint);
+		PluginSurface_p pSurf = _prepareSurface(&bp, &blueprint);
 
-		auto obj = PluginCalls::surfaceFactory->createSurfaceFromBlob(m_cFactory, &bp, static_cast<Object*>(pBlob), pitch );
-		auto pSurf = PluginSurface::create(obj);
-		PluginCalls::object->release(obj);
-		return pSurf;
+		return _attachSurface( pSurf, PluginCalls::surfaceFactory->createSurfaceFromBlob(m_cFactory, &bp, static_cast<Object*>(pBlob), pitch ) );
 	}
 
 
@@ -106,23 +100,50 @@ namespace wg
 		PixelFormat format, int pitch, const Color8* pPalette, int paletteSize)
 	{
 		wax_surfaceBP	bp;
-		_convertBlueprint(&bp, &blueprint);
+		PluginSurface_p pSurf = _prepareSurface(&bp, &blueprint);
 
-		auto obj = PluginCalls::surfaceFactory->createSurfaceFromBitmap(m_cFactory, &bp, pPixels, wax_pixelFormat(format), pitch, (const wax_color8*) pPalette, paletteSize);
-		auto pSurf = PluginSurface::create(obj);
-		PluginCalls::object->release(obj);
-		return pSurf;
+		return _attachSurface( pSurf, PluginCalls::surfaceFactory->createSurfaceFromBitmap(m_cFactory, &bp, pPixels, wax_pixelFormat(format), pitch, (const wax_color8*) pPalette, paletteSize) );
 	}
 
 	Surface_p PluginSurfaceFactory::createSurface(const Surface::Blueprint& blueprint, const uint8_t* pPixels,
 		const PixelDescription& pixelDescription, int pitch, const Color8* pPalette, int paletteSize)
 	{
 		wax_surfaceBP	bp;
-		_convertBlueprint(&bp, &blueprint);
+		PluginSurface_p pSurf = _prepareSurface(&bp, &blueprint);
 
-		auto obj = PluginCalls::surfaceFactory->createSurfaceFromRawData(m_cFactory, &bp, pPixels, 
-					(const wax_pixelDescription*) &pixelDescription, pitch, (const wax_color8*)pPalette, paletteSize);
-		auto pSurf = PluginSurface::create(obj);
+		return _attachSurface( pSurf, PluginCalls::surfaceFactory->createSurfaceFromRawData(m_cFactory, &bp, pPixels,
+					(const wax_pixelDescription*) &pixelDescription, pitch, (const wax_color8*)pPalette, paletteSize) );
+	}
+
+	//____ _prepareSurface() __________________________________________________
+
+	// Makes the PluginSurface and the Blueprint for the host. The host can't call the
+	// restorer of a Blueprint, which takes a surface of ours, so it gets a function that
+	// does, with the PluginSurface to call it for.
+
+	PluginSurface_p PluginSurfaceFactory::_prepareSurface(wax_surfaceBP* pDest, const Surface::Blueprint* pSource)
+	{
+		PluginSurface_p pSurf = new PluginSurface(pSource->restorer);
+
+		_convertBlueprint(pDest, pSource);
+
+		if( pSource->restorer )
+		{
+			pDest->restorer = PluginSurface::_restoreFromHost;
+			pDest->restorerData = pSurf.rawPtr();
+		}
+
+		return pSurf;
+	}
+
+	//____ _attachSurface() ___________________________________________________
+
+	Surface_p PluginSurfaceFactory::_attachSurface(PluginSurface* pSurf, wax_obj obj)
+	{
+		if( !obj )
+			return nullptr;
+
+		pSurf->_attach(obj);
 		PluginCalls::object->release(obj);
 		return pSurf;
 	}
@@ -146,11 +167,8 @@ namespace wg
 		pDest->format = (wax_pixelFormat)pSource->format;
 		pDest->identity = pSource->identity;
 		pDest->mipmap = pSource->mipmap;
-
-		// A restorer of the plugin would be called by the host with the surface of the host,
-		// which is no object of ours, so it isn't passed on. See KNOWN_ISSUES.md.
-
-		pDest->restorer = nullptr;
+		pDest->restorer = nullptr;				// Set by _prepareSurface().
+		pDest->restorerData = nullptr;
 		pDest->sampleMethod = (wax_sampleMethod)pSource->sampleMethod;
 		pDest->scale = pSource->scale;
 		pDest->size.w = pSource->size.w;

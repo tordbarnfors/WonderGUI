@@ -24,6 +24,8 @@
 #pragma once
 //==============================================================================
 
+#include <functional>
+
 #include <wax_types.h>
 #include <wax_geo.h>
 #include <wax_color.h>
@@ -174,9 +176,10 @@ namespace wax
 
 	public:
 
-		// Puts back the content of a surface that lost it, see Blueprint::restorer.
+		// Puts back the content of a surface that lost it, see Blueprint::restorer. What it
+		// captures has to be there for as long as the surface is, or until dropRestorer().
 
-		typedef bool (*Restorer)( Surface * pSurface );
+		typedef std::function<bool( Surface * pSurface )>	Restorer;
 
 		//.____ Blueprint _________________________________________
 
@@ -304,13 +307,18 @@ namespace wax
 		// and it goes back to false when all of the surface has been written.
 		// For a canvas the easiest is to replace the surface.
 
-		inline bool			isContentLost() const { return m_bContentLost; }
+		virtual bool		isContentLost() const { return m_bContentLost; }	// Virtual for PluginSurface.
 
 		// A restorer that does nothing, for a surface whose content is replaced
 		// all the time, as that of a stream, or by someone who looks at
 		// isContentLost() in their own time.
 
 		static bool			declineRestore( Surface * pSurface );
+
+		// Has a surface with a restorer decline from now on, for when what the restorer
+		// needs is going away ahead of the surface. The surface stays one with a restorer.
+
+		void				dropRestorer();
 
 	protected:
 
@@ -332,7 +340,7 @@ namespace wax
 			m_bTiling = bp.tiling;
 			m_bCanvas = bp.canvas;
 			m_bDynamic = bp.dynamic;
-			m_pRestorer = bp.restorer;
+			m_restorer = bp.restorer;
 			m_id = bp.identity;
 			m_pBaggage = bp.baggage;
 
@@ -385,7 +393,7 @@ namespace wax
 		bool				m_bCanvas = false;
 		bool				m_bDynamic = false;
 		bool				m_bContentLost = false;			// Set by backends, see isContentLost().
-		Restorer			m_pRestorer = nullptr;
+		Restorer			m_restorer;
 //		bool				m_bOpaque = false;
 
 		Color8 *			m_pPalette = nullptr;					// Pointer at color lookup table. Always 256 entries long.

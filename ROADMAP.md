@@ -80,10 +80,10 @@ For SdlGpuBackend, still to do, see "SdlGpuBackend" under Decided:
 
 "GPU surfaces: pixels kept once" under Decided is done but for this:
 
-- **It is on gl-shape-performance,** in one piece with what has no API change (Tord, 2026-11-24:
-  "just move on with 2 and 3 locally"). The restorer, `buffered` leaving and what went out of
-  GlSurface and MetalSurface change the API, which is for breaking-changes and v4. That takes
-  breaking-changes building and working first.
+- **It went into v4 from gl-shape-performance,** in one piece with what has no API change (Tord,
+  2026-11-24: "just move on with 2 and 3 locally", 2026-11-25: "you can merge branch to v4").
+  breaking-changes has none of it: not the restorer, `buffered` leaving, nor what went out of
+  GlSurface and MetalSurface.
 - **VulkanSurface and MetalSurface are not compiled,** see KNOWN_ISSUES.md. To be built and run
   on Linux and Mac when all of it is in place (Tord).
 - **`loadSurface()` of WonderApp gives no restorer,** so what it loads keeps its pixels (Tord,
@@ -92,7 +92,6 @@ For SdlGpuBackend, still to do, see "SdlGpuBackend" under Decided:
 - **Restorers are only called by DX12Backend,** which is the one that replaces its device. On
   the others a restorer says the same about what to keep, and is called once they can replace
   theirs, see "VulkanBackend: a lost device stops rendering for good" in KNOWN_ISSUES.md.
-- **Surfaces of a plugin** can't have one, see KNOWN_ISSUES.md.
 - **Alpha in one pass:** pixels with alpha written to a surface with restorer are gone through
   twice, for the alpha map and for premultiplying, where one function could do both.
 - **Alpha without the second pass:** a flag for pixels the producer has premultiplied, or a
@@ -948,9 +947,17 @@ Surfaces without pixels of their own:
 
 The restorer:
 
-- **A pointer to a function** that takes the surface and returns a bool, `Surface::Restorer`, as
-  `finalizer` is one (Tord, over an object with a `restore()` to override). What it has to go by
-  is the surface, with its `identity` and its `baggage`.
+- **A `std::function`** that takes the surface and returns a bool, `Surface::Restorer` (Tord,
+  2026-11-25). It was a pointer to a function for a day, as `finalizer` is one, which Tord had
+  picked over an object with a `restore()` to override. A plain function has the surface to go
+  by, with its `identity` and its `baggage`. A lambda captures what it needs, which is what a
+  plugin takes, see below, and what the observers of a surface already had. It is a member of
+  Surface, so every surface is larger for it on all backends: 64 bytes for a `std::function`
+  with MSVC as I recall, not measured, where the pointer was 8.
+- **What a restorer captures has to be there as long as the surface,** which can be longer than
+  whoever made it: a font or what is about to be rendered may hold the surface.
+  `Surface::dropRestorer()` is for that. The surface declines from then on and stays one with a
+  restorer, as what it keeps in memory was settled when it was made.
 - **Called when the device has been replaced,** between frames, by `DX12Surface::migrateAll()`
   once every surface is on the new device, as a restorer may use other surfaces. The surfaces to
   call are held by strong pointers meanwhile, as a restorer may let go of surfaces. Not when the
@@ -974,9 +981,55 @@ The restorer:
 `buffered` is gone from the Blueprint, the C API (`wax_surfaceBP`, and `WAX_SAVE_BUFFERED_FLAG`,
 whose value 8 is left unused), SurfaceWriter, the C# wrapper and the surface factory of the
 plugin. The header of `.surf` files keeps the bit as reserved, so files written with it load.
-`wax_surfaceBP` got `restorer` (`wax_restorer_func`, passed on as it is), and the C API
-`wax_declineSurfaceRestore()` and `wax_surfaceIsContentLost()`. The layout of `wax_surfaceBP`
-changed, as it did for `fillColor`, so plugins have to be built again.
+`wax_surfaceBP` got `restorer` and `restorerData`: a `wax_restorer_func` takes the surface and
+the data, and the C API wraps the two in a lambda, as it does for the observers of a surface.
+`wax_getSurfaceBlueprint()` gives no restorer, as a `std::function` can't be handed back as a
+function of C. New calls are `wax_declineSurfaceRestore()`, `wax_dropSurfaceRestorer()` and
+`wax_surfaceIsContentLost()`. The layout of `wax_surfaceBP` changed, as it did for `fillColor`,
+so plugins have to be built again.
+
+Plugins (2026-11-25). A surface of a plugin is a PluginSurface in the plugin, which passes
+every call on to a surface in the host. The host can't call the restorer of the plugin, which
+takes the PluginSurface, so:
+
+- **The host gets `PluginSurface::_restoreFromHost()` as restorer and the PluginSurface as its
+  data,** which calls the restorer of the Blueprint with the PluginSurface. A table from surfaces
+  of the host to PluginSurfaces was the other way, with the restorer still a pointer (Tord asked
+  why not a capture).
+- **PluginSurfaceFactory makes the PluginSurface first** and attaches it to the surface of the
+  host when that is made, as the host needs the pointer with the Blueprint. It was made from
+  the host's surface before. A host that fails to make its surface now gives null, where the
+  factory went on with a null object.
+- **The destructor of a PluginSurface drops the restorer** of the host's surface, which may
+  outlive it.
+- **`isContentLost()` is virtual** and PluginSurface asks the host, so CanvasCapsule, Glow and
+  the charts of a plugin see that their canvases were cleared.
+- **`surfaceIsContentLost` and `dropSurfaceRestorer` are new at the end of `wg_surface_calls`,**
+  so a plugin built with them doesn't start in a host from before.
+- **The restorer of a plugin runs on the thread the host replaces its device on,** between
+  frames, as the host calls it. That is where pluginworkbench calls the plugin anyway. Whether
+  it is for every host hasn't been looked into.
+
+Tested on Windows (Arc B580, 2026-11-25): gfxdevicetester gives the same results as before on
+all 266 tests with DX12Backend and GlBackend, and unittester passes. Plugins were run with
+pluginworkbench on wappwin32dx12 in a Debug build, with surfaces added to the test plugin as a
+temporary change and the device removed every three seconds:
+
+- The restorer of a surface, a lambda with a capture, was called with the PluginSurface and
+  filled it. The surface read back as before the loss and said no lost content.
+- A surface that declines and a canvas without restorer said `isContentLost()` and read back
+  cleared. A surface without restorer never said it. Its pixels weren't read after the loss.
+- A surface with a restorer that was let go of at once never had it called.
+- A CanvasCapsule in the plugin didn't crash. Whether it painted again wasn't looked at.
+- The debug layer of D3D12 said nothing but that the device was removed.
+
+Not run: a surface of the host that outlives its PluginSurface, which is what dropping the
+restorer is for (the call is made, with the surface going away right after), the C# wrapper,
+which nothing here builds, and VulkanSurface, MetalSurface and SdlGpuSurface, which take the
+restorer from GpuSurface. To get pluginworkbench to run a plugin on Win32, `Win32API` got its
+`openLibrary()`, `loadSymbol()` and `closeLibrary()`, which were left to do. It then aborted in
+its first frame for another reason, see "A surface with no height gets past
+`_isBlueprintValid()`" in KNOWN_ISSUES.md.
 
 GlSurface on GpuSurface:
 
@@ -1042,9 +1095,9 @@ second run after was the uneven one.
   memory and a copy, not the buffer, and with OpenGL memory only. Timing one write a frame takes
   another kind of test.
 
-Not done: VulkanSurface and MetalSurface are not compiled. No application has been run with
-it, only gfxdevicetester and unittester. What the debug layer of D3D12 says hasn't been looked
-at.
+Not done: VulkanSurface and MetalSurface are not compiled. Of applications only pluginworkbench
+has been run with it, besides gfxdevicetester and unittester, and that run is the only one
+where the debug layer of D3D12 was listened to, see Plugins above.
 
 ### GPU backends: no shaders compiled at startup (2026-11)
 

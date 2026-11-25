@@ -24,6 +24,7 @@
 #pragma once
 
 #include <wax_surfacefactory.h>
+#include <wg_pluginsurface.h>
 #include <wg_types.h>
 
 #include <vector>
@@ -73,7 +74,9 @@ namespace wg
 		PluginSurfaceFactory( wax_obj cFactory );
 		~PluginSurfaceFactory();
 
-		void _convertBlueprint(wax_surfaceBP* pDest, const Surface::Blueprint* pSource);
+		void			_convertBlueprint(wax_surfaceBP* pDest, const Surface::Blueprint* pSource);
+		PluginSurface_p	_prepareSurface(wax_surfaceBP* pDest, const Surface::Blueprint* pSource);
+		Surface_p		_attachSurface(PluginSurface* pSurf, wax_obj obj);
 
 
 		wax_obj	m_cFactory;
