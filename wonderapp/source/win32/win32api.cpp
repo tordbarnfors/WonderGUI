@@ -363,24 +363,21 @@ WindowAPI::Result Win32API::_createWindow(Window* pAPI, wg::Placement origin, wg
 
 LibId Win32API::openLibrary(const std::string& path)
 {
-	//TODO: Implement!!!
-	return nullptr;
+	return (void*)LoadLibraryA(path.c_str());
 }
 
 //____ loadSymbol() ___________________________________________________________
 
 void* Win32API::loadSymbol(LibId lib, const std::string& symbol)
 {
-	//TODO: Implement!!!
-	return nullptr;
+	return (void*)GetProcAddress((HMODULE)lib, symbol.c_str());
 }
 
 //____ closeLibrary() _________________________________________________________
 
 bool Win32API::closeLibrary(LibId lib)
 {
-	//TODO: Implement!!!
-	return false;
+	return FreeLibrary((HMODULE)lib) != 0;
 }
 
 //____ resourceDirectory() ____________________________________________________
