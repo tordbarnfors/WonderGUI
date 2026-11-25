@@ -910,11 +910,10 @@ namespace wax
 
 		VkVertexInputBindingDescription vertexBinding = { 0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX };
 
-		VkVertexInputAttributeDescription attributes[4] = {
+		VkVertexInputAttributeDescription attributes[3] = {
 			{ 0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, x) },
 			{ 1, 0, VK_FORMAT_R32_UINT, offsetof(Vertex, colorOfs) },
-			{ 2, 0, VK_FORMAT_R32_UINT, offsetof(Vertex, extrasOfs) },
-			{ 3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, u) }
+			{ 2, 0, VK_FORMAT_R32_UINT, offsetof(Vertex, extrasOfs) }
 		};
 
 		uint32_t nAttributes = uint32_t(_nbVertexAttributes(kind));

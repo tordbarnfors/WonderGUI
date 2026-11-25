@@ -164,6 +164,16 @@ wappsdl3gl renders into a surface per window and swaps it in, which wappsdl2gl c
 
 `wonderapp/source/sdl2/backend_opengl.cpp`
 
+### macOS: example01 and streamanalyzer embed SDL frameworks that aren't there
+
+With the Xcode generator both fail in a step that copies a framework into the bundle, after they
+have compiled and linked: example01 embeds `${WG_ROOT}/SDL3.framework`, which isn't in the
+repository, and streamanalyzer lists `${WG_ROOT}/SDL2.framework`, left from SDL2. Xcode stops at
+the first, so the rest only builds with `-IDEBuildingContinueBuildingAfterErrors=YES`. Seen with
+the presets `macos-wappcocoametal`, `macos-wappsdl3gpu` and `macos-wappsdl3metal` at d9508fe6.
+
+`wondergui/examples/example01/CMakeLists.txt`, `wonderapp/tools/streamanalyzer/CMakeLists.txt`
+
 ## Documentation and scripts
 
 ### The guide doesn't build with Hugo 0.169
@@ -239,20 +249,6 @@ ahead of the session, since e4e1e9b5. gfxdevicetester gives the same results as 
 fills most of its surfaces once. An application that writes to surfaces every frame hasn't been
 run with it: widgetbench was only started and left on its first test, with nobody at it.
 
-### MetalSurface on staging memory is not compiled
-
-Both were rewritten with GpuSurface on 2026-11-24, see "GPU surfaces: staging and plain memory" in
-ROADMAP.md, on Windows, where neither builds. VulkanBackend now records the uploads of a surface
-in its own command buffer in the middle of a session, which nothing has run. GpuSurface has
-changed under them since, for surfaces with a restorer, and `unload()`, `reload()` and
-`isLoaded()` were taken out of MetalSurface, see "GPU surfaces: pixels kept once" there. To run:
-gfxdevicetester, where "Restorer", "Rectangles" and "WriteAllRestorer" of ReadbackTests and
-SurfaceFillTests read and write surfaces without pixels of their own.
-
-VulkanSurface has since been built and run on Linux, at ce68e1e9 with SdlGpuBackend added
-(Release, Intel UHD 770): gfxdevicetester has the 4 tests differ of the two entries under
-Graphics, as before, and the four tests above OK.
-
 ## Graphics
 
 ### gfxdevicetester: tests that differ on GlBackend and VulkanBackend alike
@@ -262,13 +258,29 @@ from ReferenceBackend by the same amounts on GlBackend (llvmpipe) and VulkanBack
 Intel UHD 770), so it is likely something they have in common with each other, and maybe with the
 other GPU backends, rather than a bug of one backend. Not looked into yet. At bcf58e51 (2026-11)
 Circles was no longer among those that differ on VulkanBackend (Intel UHD 770) or MetalBackend,
-the other two were, on both.
+the other two were, on both. The same at d9508fe6, and on SdlGpuBackend with Vulkan and with Metal.
+
+On llvmpipe GlBackend has a third: CanvasFormatTests DrawToRGB_565_linear (max 72, mean 0.010,
+over 129), at d95b33a1 and d9508fe6 alike. On Windows (Arc B580) it has specks (max 50, over 4).
+Not looked into.
 
 ### gfxdevicetester's ReadbackTests differs on VulkanBackend
 
 The RGB_565 canvas is kept as XRGB_8, as on DX12Backend and MetalBackend, which keeps the dark
 colors a Replace leaves in a linear canvas, where RGB_565 rounds them to black. Expected, see the
-comment in `readbacktests.h`. MetalBackend differs the same way (max 28, mean 0.796).
+comment in `readbacktests.h`. Readback (max 28, mean 0.796) and Rectangles (max 28, mean 0.276,
+worst pixel the same) differ for it, by the same amounts on VulkanBackend, MetalBackend and
+SdlGpuBackend with Vulkan.
+
+### SdlGpuBackend with Metal: ReadbackTests differs far more than on MetalBackend
+
+On a Mac (x86_64, Debug, d9508fe6), where SDL_GPU picks Metal, Readback differs by max 170, mean
+2.731 over 45324 pixels and Rectangles by max 251, mean 1.030 over 11655, against max 28 for both
+on MetalBackend on the same Mac and on SdlGpuBackend with Vulkan, see the entry above. So it is
+something of SdlGpuBackend, or of SDL_GPU, on Metal only. Not looked into: what the images look
+like would be the first thing to see.
+
+`wax/extensions/sdlgpugfx`, `wonderapp/tools/gfxdevicetester/testsuites/readbacktests.h`
 
 ### gfxdevicetester: tests that differ on DX12Backend and MetalBackend alike
 
@@ -292,6 +304,10 @@ are OK and the other five have specks:
 Few pixels each, far off. Several are of nearest sampling by their names, so a guess is which
 texel D3D12 and Metal pick at the border between two, where GL and Vulkan pick the other. Not
 looked into.
+
+At d9508fe6 MetalBackend has the same twelve, and Rectangles of ReadbackTests, which is new.
+SdlGpuBackend with Metal has the six of BlitGridNear, SamplingTests and WarpTests by the same
+amounts, and specks for the three of palettes.
 
 ### PluginSurfaceFactory drops the baggage and the finalizer of a Blueprint
 

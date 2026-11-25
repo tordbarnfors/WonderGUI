@@ -138,11 +138,6 @@ namespace wax
 			float		x, y;			// Canvas pixels, origin top left. Subpixel positions allowed.
 			uint32_t	colorOfs;		// Offset into the color buffer.
 			uint32_t	extrasOfs;		// Offset into the extras buffer. Not used by plain fills.
-
-			// Only edgemaps use these. They cost every other primitive eight bytes a vertex, the
-			// alternative being a second vertex format and a second buffer to keep in step with it.
-
-			float		u, v;			// Column, and distance down the column.
 		};
 
 		struct Color
@@ -243,8 +238,8 @@ namespace wax
 
 		static uint64_t		_pipelineKey( uint64_t canvasFormat, CanvasKind canvasKind, PipelineKind kind, BlendMode blendMode );
 
-		// Vertex inputs the vertex shader of a kind reads, of position, color offset, extras offset
-		// and u, v in that order, see ../extensions/hlsl/README.md, for APIs that want only those.
+		// Vertex inputs the vertex shader of a kind reads, of position, color offset and extras
+		// offset in that order, see ../extensions/hlsl/README.md, for APIs that want only those.
 		// None for warps, which read the vertices of the Warpmap.
 
 		static int			_nbVertexAttributes( PipelineKind kind );
@@ -350,9 +345,10 @@ namespace wax
 
 		int					_addExtras( const Extras& extras );						// Returns offset, -1 if full.
 		int					_addExtras( const Extras& first, const Extras& second );
+		int					_addExtras( const Extras& first, const Extras& second, const Extras& third );
 		int					_addBlurExtras();										// Returns offset to 18 entries, -1 if full.
 
-		void				_addQuad( const CoordF corners[4], int colorOfs, int extrasOfs, const CoordF * pUV = nullptr );		// Six vertices, corners in order around the quad.
+		void				_addQuad( const CoordF corners[4], int colorOfs, int extrasOfs );		// Six vertices, corners in order around the quad.
 		void				_addQuad( float x1, float y1, float x2, float y2, int colorOfs, int extrasOfs );
 
 		void				_drawFillRects( const RectSPX * pRects, int nRects, HiColor color );

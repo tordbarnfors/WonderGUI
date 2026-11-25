@@ -146,9 +146,8 @@ GlBackend::GlBackend( int uboBindingPoint )
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*) offsetof(Vertex, x));
 	glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, sizeof(Vertex), (void*) offsetof(Vertex, colorOfs));
 	glVertexAttribIPointer(2, 1, GL_UNSIGNED_INT, sizeof(Vertex), (void*) offsetof(Vertex, extrasOfs));
-	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*) offsetof(Vertex, u));
 
-	for( int i = 0 ; i < 4 ; i++ )
+	for( int i = 0 ; i < 3 ; i++ )
 		glEnableVertexAttribArray(i);
 
 	glBindVertexArray(0);

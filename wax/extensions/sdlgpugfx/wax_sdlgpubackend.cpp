@@ -584,11 +584,10 @@ namespace wax
 		vertexBuffer.pitch = sizeof(Vertex);
 		vertexBuffer.input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX;
 
-		SDL_GPUVertexAttribute attributes[4] = {
+		SDL_GPUVertexAttribute attributes[3] = {
 			{ 0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2, uint32_t(offsetof(Vertex, x)) },
 			{ 1, 0, SDL_GPU_VERTEXELEMENTFORMAT_UINT, uint32_t(offsetof(Vertex, colorOfs)) },
-			{ 2, 0, SDL_GPU_VERTEXELEMENTFORMAT_UINT, uint32_t(offsetof(Vertex, extrasOfs)) },
-			{ 3, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2, uint32_t(offsetof(Vertex, u)) }
+			{ 2, 0, SDL_GPU_VERTEXELEMENTFORMAT_UINT, uint32_t(offsetof(Vertex, extrasOfs)) }
 		};
 
 		uint32_t nAttributes = uint32_t(_nbVertexAttributes(kind));

@@ -144,12 +144,7 @@ namespace wax
 		if( _isWarp(kind) )
 			return 0;
 
-		switch( kind )
-		{
-			case PipelineKind::Fill:		return 2;
-			case PipelineKind::Segments:	return 4;
-			default:						return 3;
-		}
+		return kind == PipelineKind::Fill ? 2 : 3;
 	}
 
 	//____ _pipelineKey() ________________________________________________________
@@ -763,9 +758,9 @@ namespace wax
 	//____ _addQuad() ____________________________________________________________
 	//
 	// Writes the six vertices of a quad, two triangles, from its corners in order around it. The
-	// caller has made sure there is room for them. Only edgemaps have u and v.
+	// caller has made sure there is room for them.
 
-	void GpuBackend::_addQuad( const CoordF corners[4], int colorOfs, int extrasOfs, const CoordF * pUV )
+	void GpuBackend::_addQuad( const CoordF corners[4], int colorOfs, int extrasOfs )
 	{
 		static const int c_order[6] = { 0, 1, 2, 0, 2, 3 };
 
@@ -778,8 +773,6 @@ namespace wax
 			pV->y = corners[corner].y;
 			pV->colorOfs = (uint32_t) colorOfs;
 			pV->extrasOfs = (uint32_t) extrasOfs;
-			pV->u = pUV ? pUV[corner].x : 0.f;
-			pV->v = pUV ? pUV[corner].y : 0.f;
 		}
 	}
 
@@ -1176,6 +1169,23 @@ namespace wax
 		return ofs;
 	}
 
+	int GpuBackend::_addExtras(const Extras& first, const Extras& second, const Extras& third)
+	{
+		if (m_buffers.pExtrasEnd - m_buffers.pExtrasPtr < 3)
+		{
+			_reportBufferFull("Extras", Report::EdgemapsDropped);
+			return -1;
+		}
+
+		int ofs = int(m_buffers.pExtrasPtr - m_buffers.pExtrasBeg);
+
+		*m_buffers.pExtrasPtr++ = first;
+		*m_buffers.pExtrasPtr++ = second;
+		*m_buffers.pExtrasPtr++ = third;
+
+		return ofs;
+	}
+
 	//____ _addBlurExtras() ______________________________________________________
 
 	int GpuBackend::_addBlurExtras()
@@ -1549,13 +1559,18 @@ namespace wax
 
 		int colorOfs = _addColor(HiColor::White);
 
-		// Where the segment colors are in the edgemap's buffer: flat colors and the table of tint
-		// blocks, see GpuEdgemap. Then the size of the edgemap when tiled, in columns and pixels,
-		// which the shader wraps positions outside of it by. Zero when not.
+		// What the vertex shader gets the place in the edgemap from, as for a blit: the column (u)
+		// and the distance down it (v) at the top left corner with where that corner is, and the
+		// flip as a transform. V is half a pixel back, so that the shader works from pixel centers.
+		//
+		// Then where the segment colors are in the edgemap's buffer: flat colors and the table of
+		// tint blocks, see GpuEdgemap, with the size of the edgemap when tiled, in columns and
+		// pixels, which the shader wraps positions outside of it by. Zero when not.
 
-		Extras tileSize = { bTile ? float(pEdgemap->m_size.w) : 0.f, bTile ? float(pEdgemap->m_size.h) : 0.f, 0.f, 0.f };
-
-		int extrasOfs = _addExtras({ float(pEdgemap->_flatColorsOfs()), float(pEdgemap->_tintTableOfs()), 0.f, 0.f }, tileSize);
+		int extrasOfs = _addExtras({ float(uTopLeft), float(vTopLeft) - 0.5f, float(dest.x), float(dest.y) },
+								   { float(mtx.xx), float(mtx.xy), float(mtx.yx), float(mtx.yy) },
+								   { float(pEdgemap->_flatColorsOfs()), float(pEdgemap->_tintTableOfs()),
+									 bTile ? float(pEdgemap->m_size.w) : 0.f, bTile ? float(pEdgemap->m_size.h) : 0.f });
 
 		if (colorOfs < 0 || extrasOfs < 0)
 		{
@@ -1579,32 +1594,7 @@ namespace wax
 
 			RectI patch = Util::roundToPixels(patchSpx);		// Rounded like the position of the edgemap.
 
-			int dx1 = patch.x;
-			int dy1 = patch.y;
-			int dx2 = patch.x + patch.w;
-			int dy2 = patch.y + patch.h;
-
-			// U is which column of the edgemap, V how far down that column. Half a pixel back, so
-			// that the shader works from pixel centers.
-
-			float u1 = float(uTopLeft + (patch.x - dest.x) * mtx.xx + (patch.y - dest.y) * mtx.yx);
-			float v1 = float(vTopLeft + (patch.x - dest.x) * mtx.xy + (patch.y - dest.y) * mtx.yy);
-
-			float u2 = float(uTopLeft + (patch.x + patch.w - dest.x) * mtx.xx + (patch.y - dest.y) * mtx.yx);
-			float v2 = float(vTopLeft + (patch.x + patch.w - dest.x) * mtx.xy + (patch.y - dest.y) * mtx.yy);
-
-			float u3 = float(uTopLeft + (patch.x + patch.w - dest.x) * mtx.xx + (patch.y + patch.h - dest.y) * mtx.yx);
-			float v3 = float(vTopLeft + (patch.x + patch.w - dest.x) * mtx.xy + (patch.y + patch.h - dest.y) * mtx.yy);
-
-			float u4 = float(uTopLeft + (patch.x - dest.x) * mtx.xx + (patch.y + patch.h - dest.y) * mtx.yx);
-			float v4 = float(vTopLeft + (patch.x - dest.x) * mtx.xy + (patch.y + patch.h - dest.y) * mtx.yy);
-
-			const CoordF uv[4] = { { u1, v1 - 0.5f }, { u2, v2 - 0.5f }, { u3, v3 - 0.5f }, { u4, v4 - 0.5f } };
-
-			const CoordF corners[4] = { { float(dx1), float(dy1) }, { float(dx2), float(dy1) },
-										{ float(dx2), float(dy2) }, { float(dx1), float(dy2) } };
-
-			_addQuad(corners, colorOfs, extrasOfs, uv);
+			_addQuad(float(patch.x), float(patch.y), float(patch.x + patch.w), float(patch.y + patch.h), colorOfs, extrasOfs);
 		}
 
 		if (!_setPipeline(PipelineKind::Segments))

@@ -8,7 +8,6 @@ struct VS_INPUT
     float2 position : POSITION;         // Canvas pixels, origin top left.
     uint colorOfs : COLOROFS;           // Offset into the color buffer, of the tint color.
     uint extrasOfs : EXTRASOFS;         // Offset into the extras buffer, of the shape.
-    float2 texUV : TEXCOORD0;           // Not used here.
 };
 
 

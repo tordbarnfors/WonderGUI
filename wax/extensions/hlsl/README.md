@@ -71,8 +71,10 @@ A new shader is added to the list in `vulkangfx/compile_shaders.py`, and to
   that `sdlgpugfx/compile_shaders.py` moves the registers to, and a storage buffer of a new
   register needs a name there and in `SdlGpuShaders::Resource`.
 - **Vertex inputs** get their locations in the order they are declared, so they are always
-  declared in the order `POSITION`, `COLOROFS`, `EXTRASOFS`, `TEXCOORD0`, leaving out the ones not
-  needed from the end only.
+  declared in the order `POSITION`, `COLOROFS`, `EXTRASOFS`, leaving out the ones not needed from
+  the end only. A vertex shader declares only the inputs it reads: D3D12 takes no pipeline whose
+  layout lacks an input the shader declares, and the backends give each kind of pipeline the inputs
+  of `GpuBackend::_nbVertexAttributes()`.
 - **Between vertex and pixel shader**, Vulkan matches by location, not by semantic as DX12 does,
   and locations also follow the order of declaration. So `PS_INPUT` declares the same members in
   the same order as the `VS_OUTPUT` of its vertex shader.

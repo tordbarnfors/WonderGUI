@@ -666,8 +666,8 @@ id<MTLRenderPipelineState> MetalBackend::_createPipeline( PipelineKind kind, con
 	{
 		pVertexDescriptor = [[MTLVertexDescriptor alloc] init];
 
-		const MTLVertexFormat formats[4] = { MTLVertexFormatFloat2, MTLVertexFormatUInt, MTLVertexFormatUInt, MTLVertexFormatFloat2 };
-		const NSUInteger offsets[4] = { offsetof(Vertex, x), offsetof(Vertex, colorOfs), offsetof(Vertex, extrasOfs), offsetof(Vertex, u) };
+		const MTLVertexFormat formats[3] = { MTLVertexFormatFloat2, MTLVertexFormatUInt, MTLVertexFormatUInt };
+		const NSUInteger offsets[3] = { offsetof(Vertex, x), offsetof(Vertex, colorOfs), offsetof(Vertex, extrasOfs) };
 
 		for( int i = 0 ; i < nAttributes ; i++ )
 		{

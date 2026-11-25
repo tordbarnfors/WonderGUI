@@ -2844,7 +2844,7 @@ namespace wax
 		desc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
 
 		// One vertex layout for all but warps, whose vertex shader reads the vertices of
-		// the Warpmap itself, see DX12Warpmap. All four inputs, as D3D12 wants each one
+		// the Warpmap itself, see DX12Warpmap. All three inputs, as D3D12 wants each one
 		// a vertex shader declares, also those it doesn't read, and the layout is
 		// allowed to offer more than a shader declares.
 
@@ -2854,8 +2854,6 @@ namespace wax
 			{ "COLOROFS", 0, DXGI_FORMAT_R32_UINT, 0, 8,
 			D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 			{ "EXTRASOFS", 0, DXGI_FORMAT_R32_UINT, 0, 12,
-			D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 16,
 			D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 		};
 
@@ -2863,7 +2861,7 @@ namespace wax
 
 		bool bWarp = _isWarp(kind);
 
-		inputLayout.NumElements = bWarp ? 0 : 4;
+		inputLayout.NumElements = bWarp ? 0 : 3;
 		inputLayout.pInputElementDescs = bWarp ? nullptr : elements;
 
 

@@ -84,10 +84,6 @@ For SdlGpuBackend, still to do, see "SdlGpuBackend" under Decided:
   2026-11-24: "just move on with 2 and 3 locally", 2026-11-25: "you can merge branch to v4").
   breaking-changes has none of it: not the restorer, `buffered` leaving, nor what went out of
   GlSurface and MetalSurface.
-- **MetalSurface is not compiled,** see KNOWN_ISSUES.md. To be built and run on a Mac when all
-  of it is in place (Tord). VulkanSurface was built and run on Linux at ce68e1e9, which is
-  before the restorer became a `std::function` and plugins got theirs. Neither that nor
-  SdlGpuSurface has been compiled with it.
 - **`loadSurface()` of WonderApp gives no restorer,** so what it loads keeps its pixels (Tord,
   who plans to change its API). Until then, what an application loads through it takes twice its
   pixels on all backends, which on GlBackend is more than before.
@@ -1097,10 +1093,24 @@ second run after was the uneven one.
   memory and a copy, not the buffer, and with OpenGL memory only. Timing one write a frame takes
   another kind of test.
 
-Not done: MetalSurface is not compiled, and VulkanSurface only as it was at ce68e1e9, see
-KNOWN_ISSUES.md. Of applications only pluginworkbench has been run with it, besides
-gfxdevicetester and unittester, and that run is the only one where the debug layer of D3D12 was
-listened to, see Plugins above.
+On Linux and on a Mac, at d9508fe6 (2026-11-25, Debug), all of it compiled with no fix:
+
+- **Linux** (Intel UHD 770, GL on llvmpipe): all targets with `linux-wappsdl3vk`,
+  `linux-wappsdl3gpu` and `linux-wappsdl3gl`, unittester passes with each. gfxdevicetester:
+  VulkanBackend 4 differ and SdlGpuBackend the same 4, GlBackend 3, of 266. What was there before
+  is unchanged, and of the new ReadbackTests Restorer, WriteAll and WriteAllRestorer are OK on all
+  three. No messages from the validation layer of Vulkan, with VulkanBackend or with SDL_GPU in
+  debug mode.
+- **Mac** (x86_64): all targets with `macos-wappcocoametal`, `macos-wappsdl3metal` and
+  `macos-wappsdl3gpu`, but for two bundle steps, see KNOWN_ISSUES.md. That is the first time
+  MetalSurface compiled on GpuSurface. unittester passes with each. gfxdevicetester: MetalBackend
+  13 differ of 266 with both frameworks, where the 261 tests of bcf58e51 are unchanged and the
+  13th is Rectangles of the new ReadbackTests, and SdlGpuBackend 10, see KNOWN_ISSUES.md for its
+  ReadbackTests.
+
+Not done: of applications only pluginworkbench has been run with it, besides gfxdevicetester and
+unittester, and that run is the only one where the debug layer of D3D12 was listened to, see
+Plugins above. Restorers through a replaced device have only run with DX12Backend.
 
 ### GPU backends: no shaders compiled at startup (2026-11)
 
@@ -1268,3 +1278,25 @@ gfxdevicetester on Linux, Release, with Vulkan: on Intel UHD 770 (Mesa) 266 test
 same ones and by the same amounts as on VulkanBackend: Mipmapped_0.4, ReplaceVerticalAndFlat,
 Readback and Rectangles of ReadbackTests, see KNOWN_ISSUES.md. The same four on lavapipe. In debug
 mode of SDL_GPU, with the validation layer of Vulkan, no messages.
+
+### GPU vertices without u and v (2026-11-25)
+
+A vertex of GpuBackend is a position, a color offset and an extras offset, 16 bytes. It had u and
+v too, 24 bytes, which only edgemaps read. Decided with Tord 2026-11-25 ("Yes, remove it all"),
+after SdlGpuBackend couldn't make the pipelines of shapes on D3D12: `vs_shape.hlsl` declared the
+u and v it didn't read, D3D12 takes no pipeline whose layout lacks an input the vertex shader
+declares, and shapes are given three inputs. DX12Backend offered all four to every shader, and for
+the others the unused input was gone from what DXC and SPIRV-Cross made, so only DXIL showed it.
+
+- **The column and the distance down it are worked out by `vs_segments.hlsl`,** from the
+  position, as `vs_blit.hlsl` gets the place in its source: they are the offset from the top left
+  corner run through the flip, the same for every patch of a draw. An edgemap draw has three
+  extras entries for it where it had two: the two of a blit, and the offsets of its colors with
+  the tile size, which had an entry each with half of it unused.
+- **What it gives:** every quad is 96 bytes where it was 144, to write and to upload, at 16 bytes
+  more for each edgemap drawn. `_addQuad()` takes no u and v, `_nbVertexAttributes()` is 2 for
+  plain fills and 3 for the rest, and no vertex shader declares an input another kind lacks.
+- **The values are the same:** whole pixels and a half, which a float holds exactly on either
+  side. gfxdevicetester gives the same lines as before with DX12Backend (Arc B580, Release).
+- **Rule for the shaders,** in `hlsl/README.md`: a vertex shader declares only the inputs it
+  reads.
