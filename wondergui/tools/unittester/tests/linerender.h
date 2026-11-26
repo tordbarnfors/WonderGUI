@@ -22,4 +22,9 @@ private:
 	bool blendModesTest(std::ostream& output);
 	bool streamTest(std::ostream& output);
 	bool cApiTest(std::ostream& output);
+	bool polylineTest(std::ostream& output);
+	bool polylineJointTest(std::ostream& output);
+	bool polylineCrossingTest(std::ostream& output);
+	bool polylinePointsTest(std::ostream& output);
+	bool polylineBackendsTest(std::ostream& output);
 };

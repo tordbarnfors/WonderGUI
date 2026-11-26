@@ -136,6 +136,42 @@ namespace
 		return pixels;
 	}
 
+	//____ renderStreamed() _____________________________________________________
+	// Renders a scene with SoftBackend through StreamBackend and StreamPlayer.
+
+	Pixels renderStreamed(const Scene& scene)
+	{
+		Pixels streamed(c_canvasSize.w * c_canvasSize.h * 4, 0);
+
+		auto pCanvas = SoftSurface::create(WGBP(Surface, _.size = c_canvasSize, _.format = PixelFormat::ARGB_8, _.colorSpace = ColorSpace::Linear, _.canvas = true));
+
+		auto pBackend = SoftBackend::create();
+		addDefaultSoftKernels(pBackend);
+		pBackend->defineCanvas(CanvasRef::Default, pCanvas);
+
+		auto pStreamPlayer = StreamPlayer::create(pBackend, SoftSurfaceFactory::create(), SoftEdgemapFactory::create());
+		auto pStreamEncoder = StreamEncoder::create({ pStreamPlayer, pStreamPlayer->input });
+		auto pStreamBackend = StreamBackend::create(pStreamEncoder);
+		pStreamBackend->defineCanvas(CanvasRef::Default, c_canvasSize, PixelFormat::ARGB_8, 64, ColorSpace::Linear);
+
+		auto pStreamDevice = GfxDeviceGen2::create(pStreamBackend);
+
+		pStreamDevice->beginRender();
+		pStreamDevice->beginCanvasUpdate(CanvasRef::Default);
+		pStreamDevice->fill(c_background);
+		scene(pStreamDevice);
+		pStreamDevice->endCanvasUpdate();
+		pStreamDevice->endRender();
+
+		auto buffer = pCanvas->allocPixelBuffer();
+		pCanvas->pushPixels(buffer);
+		for (int y = 0; y < c_canvasSize.h; y++)
+			std::memcpy(streamed.data() + y * c_canvasSize.w * 4, buffer.pixels + y * buffer.pitch, c_canvasSize.w * 4);
+		pCanvas->freePixelBuffer(buffer);
+
+		return streamed;
+	}
+
 	//____ Recorded lines _____________________________________________________
 
 	struct RecordedLine
@@ -291,6 +327,11 @@ LineRenderTest::LineRenderTest()
 	ADD_TEST(blendModesTest);
 	ADD_TEST(streamTest);
 	ADD_TEST(cApiTest);
+	ADD_TEST(polylineTest);
+	ADD_TEST(polylineJointTest);
+	ADD_TEST(polylineCrossingTest);
+	ADD_TEST(polylinePointsTest);
+	ADD_TEST(polylineBackendsTest);
 }
 
 LineRenderTest::~LineRenderTest()
@@ -576,37 +617,7 @@ bool LineRenderTest::streamTest(std::ostream& output)
 		pDevice->drawLine({ 64 * 3, 64 * 250 }, { 64 * 250, 64 * 251 }, c_lineColor, 64 * 2);		// Without caps.
 	};
 
-	auto direct = render(TestBackend::Soft, scene);
-
-	Pixels streamed(c_canvasSize.w * c_canvasSize.h * 4, 0);
-
-	auto pCanvas = SoftSurface::create(WGBP(Surface, _.size = c_canvasSize, _.format = PixelFormat::ARGB_8, _.colorSpace = ColorSpace::Linear, _.canvas = true));
-
-	auto pBackend = SoftBackend::create();
-	addDefaultSoftKernels(pBackend);
-	pBackend->defineCanvas(CanvasRef::Default, pCanvas);
-
-	auto pStreamPlayer = StreamPlayer::create(pBackend, SoftSurfaceFactory::create(), SoftEdgemapFactory::create());
-	auto pStreamEncoder = StreamEncoder::create({ pStreamPlayer, pStreamPlayer->input });
-	auto pStreamBackend = StreamBackend::create(pStreamEncoder);
-	pStreamBackend->defineCanvas(CanvasRef::Default, c_canvasSize, PixelFormat::ARGB_8, 64, ColorSpace::Linear);
-
-	auto pStreamDevice = GfxDeviceGen2::create(pStreamBackend);
-
-	pStreamDevice->beginRender();
-	pStreamDevice->beginCanvasUpdate(CanvasRef::Default);
-	pStreamDevice->fill(c_background);
-	scene(pStreamDevice);
-	pStreamDevice->endCanvasUpdate();
-	pStreamDevice->endRender();
-
-	auto buffer = pCanvas->allocPixelBuffer();
-	pCanvas->pushPixels(buffer);
-	for (int y = 0; y < c_canvasSize.h; y++)
-		std::memcpy(streamed.data() + y * c_canvasSize.w * 4, buffer.pixels + y * buffer.pitch, c_canvasSize.w * 4);
-	pCanvas->freePixelBuffer(buffer);
-
-	return compare(output, "Streamed lines", streamed, "streamed", direct, "direct", 0);
+	return compare(output, "Streamed lines", renderStreamed(scene), "streamed", render(TestBackend::Soft, scene), "direct", 0);
 }
 
 //____ cApiTest() _____________________________________________________________
@@ -629,6 +640,262 @@ bool LineRenderTest::cApiTest(std::ostream& output)
 		wax_drawLineWithCaps(device, { 64 * 10, 64 * 10 }, { 64 * 200 + 13, 64 * 60 + 40 }, color, 64 * 5 + 7, { WAX_LINECAP_ROUND, 200 }, { WAX_LINECAP_SPEAR, 175 });
 		wax_drawStraightLineWithCaps(device, { 64 * 20, 64 * 100 }, WAX_DIR_RIGHT, 64 * 150, color, 64 * 4, { WAX_LINECAP_SQUARE, 200 }, { WAX_LINECAP_VERTICAL, 200 });
 		wax_drawLine(device, { 64 * 30, 64 * 120 }, { 64 * 230, 64 * 200 }, color, 64 * 3);
+	};
+
+	return compare(output, "C API", render(TestBackend::Soft, c), "C API", render(TestBackend::Soft, cpp), "C++", 0);
+}
+
+//____ Polylines ______________________________________________________________
+
+namespace
+{
+	// Polyline through coordinates x, y in pixels.
+
+	void drawPolylineAt(GfxDevice* pDevice, const std::vector<double>& coords, double thickness, LineCaps caps, Color color = c_lineColor)
+	{
+		std::vector<CoordSPX> points;
+
+		for (size_t i = 0; i + 1 < coords.size(); i += 2)
+			points.push_back({ spx(std::lround(coords[i] * 64)), spx(std::lround(coords[i + 1] * 64)) });
+
+		pDevice->drawPolyline(int(points.size()), points.data(), color, spx(std::lround(thickness * 64)), caps);
+	}
+
+	// Polylines that neither cross themselves nor turn back within less than their thickness:
+	// wires along x and y, turns of all kinds in thin and thick lines, and a curve of short segments.
+
+	void polylineScene(GfxDevice* pDevice)
+	{
+		drawPolylineAt(pDevice, { 10.3, 12.6,  22.3, 12.6,  90.7, 12.6,  90.7, 60.2,  150.4, 60.2,  162.4, 60.2 }, 3.0, LineCap::Flat);
+		drawPolylineAt(pDevice, { 12.5, 30.5,  60.5, 30.5,  60.5, 80.5,  20.5, 80.5 }, 1.0, LineCap::None);
+
+		int i = 0;
+
+		for (double turn : { 10.0, -40.0, 75.0, -90.0, 120.0, -140.0 })
+		{
+			double cx = 30.2 + i * 38.0, cy = 120.7;
+			double first = (i * 50 + 15) * 3.14159265358979323846 / 180;
+			double second = first + turn * 3.14159265358979323846 / 180;
+
+			drawPolylineAt(pDevice, { cx - std::cos(first) * 16, cy - std::sin(first) * 16,  cx, cy,  cx + std::cos(second) * 16, cy + std::sin(second) * 16 },
+						   1.2 + i * 1.4, i % 2 ? LineCaps(LineCap::Round, LineCap::Square) : LineCaps(LineCap::Spear(150), LineCap::Flat));
+			i++;
+		}
+
+		std::vector<double> curve;
+
+		for (int k = 0; k <= 60; k++)
+		{
+			curve.push_back(14.4 + k * 3.8);
+			curve.push_back(200.3 + std::sin(k * 0.2) * 30);
+		}
+
+		drawPolylineAt(pDevice, curve, 6.0, LineCap::Round);
+	}
+}
+
+//____ polylineTest() _________________________________________________________
+// SoftBackend draws polylines as ReferenceBackend does.
+
+bool LineRenderTest::polylineTest(std::ostream& output)
+{
+	return compareToReference(output, "Polylines", polylineScene);
+}
+
+//____ polylineJointTest() ____________________________________________________
+// A joint is blended once: no pixel of a polyline in a semi-transparent color gets more of the
+// color than the pixels in the middle of its segments do, and the pixels at its joints get as
+// much. Lines drawn one after another do get more where they overlap.
+
+bool LineRenderTest::polylineJointTest(std::ostream& output)
+{
+	const double c_points[] = { 40.3, 50.6,  128.7, 50.6,  128.7, 140.2,  60.2, 200.4,  200.5, 215.3 };
+
+	for (TestBackend backend : { TestBackend::Soft, TestBackend::Reference })
+	{
+		const char* pName = backend == TestBackend::Soft ? "SoftBackend" : "ReferenceBackend";
+
+		auto joined = render(backend, [&](GfxDevice* pDevice)
+		{
+			drawPolylineAt(pDevice, std::vector<double>(std::begin(c_points), std::end(c_points)), 11.0, LineCap::Round);
+		});
+
+		auto separate = render(backend, [&](GfxDevice* pDevice)
+		{
+			for (int i = 0; i < 4; i++)
+				drawLineAt(pDevice, (c_points[i * 2] + c_points[i * 2 + 2]) / 2, (c_points[i * 2 + 1] + c_points[i * 2 + 3]) / 2,
+						   std::atan2(c_points[i * 2 + 3] - c_points[i * 2 + 1], c_points[i * 2 + 2] - c_points[i * 2]) * 180 / 3.14159265358979323846,
+						   std::hypot(c_points[i * 2 + 2] - c_points[i * 2], c_points[i * 2 + 3] - c_points[i * 2 + 1]), 11.0, LineCap::Round);
+		});
+
+		g_lines.clear();
+
+		auto at = [&](const Pixels& pixels, int x, int y, int channel) { return int(pixels[(y * c_canvasSize.w + x) * 4 + channel]); };
+
+		// In the middle of the first segment, fully covered.
+
+		int full[4], background[4];
+
+		for (int ch = 0; ch < 4; ch++)
+		{
+			full[ch] = at(joined, 84, 50, ch);
+			background[ch] = at(joined, 2, 2, ch);
+		}
+
+		int mostBeyond = 0;
+
+		for (int y = 0; y < c_canvasSize.h; y++)
+		{
+			for (int x = 0; x < c_canvasSize.w; x++)
+			{
+				for (int ch = 0; ch < 3; ch++)
+				{
+					const int lo = std::min(full[ch], background[ch]) - 1, hi = std::max(full[ch], background[ch]) + 1;
+					const int value = at(joined, x, y, ch);
+
+					if (value < lo || value > hi)
+					{
+						output << pName << ": pixel " << x << "," << y << " channel " << ch << " is " << value << ", outside what background ("
+							   << background[ch] << ") and a fully covered pixel (" << full[ch] << ") span." << std::endl;
+						return false;
+					}
+
+					const int other = at(separate, x, y, ch);
+					mostBeyond = std::max(mostBeyond, std::max(lo - other, other - hi));
+				}
+			}
+		}
+
+		for (int joint = 1; joint < 4; joint++)
+		{
+			const int x = int(c_points[joint * 2]), y = int(c_points[joint * 2 + 1]);
+
+			for (int ch = 0; ch < 3; ch++)
+			{
+				if (std::abs(at(joined, x, y, ch) - full[ch]) > 1)
+				{
+					output << pName << ": pixel " << x << "," << y << " at a joint, channel " << ch << ", is " << at(joined, x, y, ch)
+						   << ", a fully covered pixel " << full[ch] << "." << std::endl;
+					return false;
+				}
+			}
+		}
+
+		// The test would say nothing if lines overlapping didn't show.
+
+		TEST_ASSERT(mostBeyond > 10);
+	}
+
+	return true;
+}
+
+//____ polylineCrossingTest() _________________________________________________
+// Polylines crossing themselves and turning back within less than their thickness, in an opaque
+// color: SoftBackend covers what ReferenceBackend does, but for pixels on the edges where parts
+// that aren't joined overlap or meet, which it blends once and ReferenceBackend twice. Two parts
+// covering half a pixel each cover three quarters of it blended one after the other, so pixels
+// differ by up to a quarter of the color range there.
+
+bool LineRenderTest::polylineCrossingTest(std::ostream& output)
+{
+	auto scene = [&](GfxDevice* pDevice)
+	{
+		Color color = Color(4096, 3000, 1200, 4096);
+
+		drawPolylineAt(pDevice, { 20.3, 20.6,  120.7, 100.2,  20.3, 100.2,  120.7, 20.6,  70.5, 130.4 }, 9.0, LineCap::Round, color);
+
+		std::vector<double> zigzag;
+
+		for (int i = 0; i < 24; i++)
+		{
+			zigzag.push_back(140.3 + i * 4.0 * (1.0 - i * 0.02));
+			zigzag.push_back((i & 1) ? 110.6 : 20.2);
+		}
+
+		drawPolylineAt(pDevice, zigzag, 7.0, LineCap::Flat, color);
+
+		std::vector<double> spiral;
+
+		for (int k = 0; k < 90; k++)
+		{
+			spiral.push_back(128.2 + std::cos(k * 0.4) * (2 + k * 0.6));
+			spiral.push_back(190.4 + std::sin(k * 0.4) * (2 + k * 0.6));
+		}
+
+		drawPolylineAt(pDevice, spiral, 10.0, LineCap::Square, color);
+	};
+
+	Pixels reference = render(TestBackend::Reference, scene);
+	Pixels soft = render(TestBackend::Soft, scene);
+
+	return compare(output, "Crossing polylines", soft, "SoftBackend", reference, "ReferenceBackend", c_tolerance, 1000, 66);
+}
+
+//____ polylinePointsTest() ___________________________________________________
+// Points that repeat are left out, and polylines of one segment or none are lines.
+
+bool LineRenderTest::polylinePointsTest(std::ostream& output)
+{
+	const CoordSPX a = { 64 * 20 + 11, 64 * 30 + 5 }, b = { 64 * 120 + 40, 64 * 70 + 9 }, c = { 64 * 90 + 3, 64 * 180 + 60 };
+	const spx thickness = 64 * 6 + 20;
+
+	auto compareScenes = [&](const char* pWhat, const Scene& polyline, const Scene& expected)
+	{
+		bool bSame = compare(output, pWhat, render(TestBackend::Soft, polyline), "polyline", render(TestBackend::Soft, expected), "expected", 0);
+		g_lines.clear();
+		return bSame;
+	};
+
+	for (LineCaps caps : { LineCaps(LineCap::None), LineCaps(LineCap::Round, LineCap::Spear(200)) })
+	{
+		TEST_ASSERT(compareScenes("Repeated points",
+			[&](GfxDevice* pDevice) { CoordSPX points[7] = { a, a, b, b, b, c, c }; pDevice->drawPolyline(7, points, c_lineColor, thickness, caps); },
+			[&](GfxDevice* pDevice) { CoordSPX points[3] = { a, b, c }; pDevice->drawPolyline(3, points, c_lineColor, thickness, caps); }));
+
+		TEST_ASSERT(compareScenes("One segment",
+			[&](GfxDevice* pDevice) { CoordSPX points[3] = { a, b, b }; pDevice->drawPolyline(3, points, c_lineColor, thickness, caps); },
+			[&](GfxDevice* pDevice) { pDevice->drawLine(a, b, c_lineColor, thickness, caps); }));
+
+		TEST_ASSERT(compareScenes("One point",
+			[&](GfxDevice* pDevice) { CoordSPX points[2] = { a, a }; pDevice->drawPolyline(2, points, c_lineColor, thickness, caps); },
+			[&](GfxDevice* pDevice) { pDevice->drawLine(a, a, c_lineColor, thickness, caps); }));
+	}
+
+	// Nothing to draw.
+
+	TEST_ASSERT(compareScenes("No points",
+		[&](GfxDevice* pDevice) { CoordSPX points[3] = { a, b, c }; pDevice->drawPolyline(0, points, c_lineColor, thickness); pDevice->drawPolyline(3, points, c_lineColor, 0); },
+		[&](GfxDevice* pDevice) {}));
+
+	return true;
+}
+
+//____ polylineBackendsTest() _________________________________________________
+// LinearBackend, a stream and the C API draw polylines as SoftBackend does directly.
+
+bool LineRenderTest::polylineBackendsTest(std::ostream& output)
+{
+	// The wire crosses the boundary between the update rectangles of LinearBackend.
+
+	Pixels direct = render(TestBackend::Soft, polylineScene);
+
+	TEST_ASSERT(compare(output, "LinearBackend", render(TestBackend::Linear, polylineScene), "LinearBackend", direct, "SoftBackend", 0));
+	TEST_ASSERT(compare(output, "Streamed polylines", renderStreamed(polylineScene), "streamed", direct, "direct", 0));
+
+	const CoordSPX points[4] = { { 64 * 10 + 7, 64 * 20 }, { 64 * 100, 64 * 20 }, { 64 * 100, 64 * 150 + 30 }, { 64 * 220 + 9, 64 * 200 } };
+
+	auto cpp = [&](GfxDevice* pDevice)
+	{
+		pDevice->drawPolyline(4, points, c_lineColor, 64 * 5 + 7, { LineCap::Round, LineCap::Spear(175) });
+	};
+
+	auto c = [&](GfxDevice* pDevice)
+	{
+		wax_obj device = (wax_obj) static_cast<Object*>(pDevice);
+		wax_color color;
+		std::memcpy(&color, &c_lineColor, sizeof(color));
+
+		wax_drawPolyline(device, 4, (const wax_coordSPX*) points, color, 64 * 5 + 7, { WAX_LINECAP_ROUND, 200 }, { WAX_LINECAP_SPEAR, 175 });
 	};
 
 	return compare(output, "C API", render(TestBackend::Soft, c), "C API", render(TestBackend::Soft, cpp), "C++", 0);
