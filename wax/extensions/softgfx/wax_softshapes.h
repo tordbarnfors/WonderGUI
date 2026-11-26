@@ -251,6 +251,33 @@ namespace wax
 
 		void	rasterizeLinePart(int part, const RectI& clip, RowSink* pSink);
 
+		//____ Polyline _______________________________________________________
+
+		/**
+		 * Prepares a polyline, see Polylines in wax_device.h, for rasterizePolyline(): a line
+		 * through nPoints points, none the same as the one before it, with round joins and
+		 * caps that are not LineCap::None. Returns false if there is nothing to draw.
+		 *
+		 * The polyline becomes its outline: the caps, and along each side the sides of the
+		 * segments, joined on the outside of a joint by the arc of its round join and on the
+		 * inside where the sides meet. Where segments are too short for their sides to meet,
+		 * the outline goes by way of the point of the joint instead and crosses itself.
+		 *
+		 * Arcs are flattened as round caps are, vertices are rounded to whole spx.
+		 */
+
+		bool	preparePolyline(int nPoints, const CoordSPX* pPoints, spx thickness, LineCaps caps);
+
+		/**
+		 * Rasterizes the polyline from preparePolyline() into rows within clip (pixels).
+		 * One segment, 0.
+		 *
+		 * What is inside the outline, by its winding number, is covered once, also where the
+		 * polyline crosses itself.
+		 */
+
+		void	rasterizePolyline(const RectI& clip, RowSink* pSink);
+
 		//.____ Buffers ___________________________________________________________
 
 		/**
@@ -331,6 +358,7 @@ namespace wax
 		class RingShape;
 		class BoxShape;
 		class PolygonShape;
+		class PathShape;
 
 		template<class Shape>
 		void	_rasterize(Shape& shape, int nSegments, int rowBeg, int rowEnd, int clipBeg, int clipEnd, RowSink* pSink);
@@ -475,6 +503,42 @@ namespace wax
 		std::vector<int32_t>		m_smallVertexY;
 		LinePart					m_lineParts[2];
 		bool						m_bLineAlongX = true;
+
+		// Polyline
+
+		// Part of the outline of a polyline going steadily down or up the canvas, as an edge
+		// with its vertices in order of increasing y.
+
+		struct Chain
+		{
+			Polyline	polyline;
+			int64_t		top, bottom;
+			int			winding;			// 1 if the outline goes down along it, -1 if up.
+		};
+
+		void	_roundJoinArc(int32_t r);
+		void	_addOutlinePoint(int64_t x, int64_t y);
+		void	_addJoin(int64_t x, int64_t y, const int32_t* pDirA, const int32_t* pDirB, int32_t r, int side, bool bReversed, bool bArc, int32_t inset, bool bInsetOK);
+		void	_makeChains();
+		void	_addCrossingSplits();
+
+		std::vector<ProfilePoint>	m_arc;				// Half circle of a round join, as a round cap.
+		std::vector<int32_t>		m_arcCos;			// Cosine of the angle of each of its points, 2.30.
+		std::vector<int32_t>		m_segmentDirs;		// Of each segment: direction scaled, then of length 1 (2.30).
+		std::vector<int64_t>		m_segmentLengths;	// 1/16 spx.
+		std::vector<int64_t>		m_joinInsets;		// How far from each joint the sides meet on its inside, 1/16 spx.
+		std::vector<int8_t>			m_joinSides;		// Side that is the inside of each joint, 0 if straight.
+		std::vector<int64_t>		m_outlineX;
+		std::vector<int64_t>		m_outlineY;
+		std::vector<int64_t>		m_joinX;
+		std::vector<int64_t>		m_joinY;
+		std::vector<int64_t>		m_chainX;
+		std::vector<int64_t>		m_chainY;
+		std::vector<Chain>			m_chains;			// In order of top.
+		std::vector<int64_t>		m_chainSplits;
+		std::vector<int>			m_activeChains;
+		std::vector<int64_t>		m_activeKeys;
+		int64_t						m_outlineBounds[4] = { 0, 0, 0, 0 };	// Left, top, right, bottom, spx.
 
 		void	_setupRingAngles(const Ring& ring);
 		int		_elementAt(int64_t x, int64_t y) const;

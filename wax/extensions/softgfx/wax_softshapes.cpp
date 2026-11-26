@@ -3617,4 +3617,712 @@ namespace wax
 		}
 	}
 
+	//____ Polylines __________________________________________________________
+	/*
+		A polyline, see Polylines in wax_device.h, is rasterized as its outline: the cap of its
+		first end, one side of its segments up to the cap of its last end, and the other side
+		back again. As for lines, positions are a along a segment and w across it, to the left of
+		its direction as seen on the canvas (y pointing down), in 1/16 spx, with the side at
+		w = r called 1 and the one at w = -r called -1.
+
+		At a joint the polyline turns towards one of the sides, its inside. There the sides of
+		the two segments meet, r * tan(angle / 2) before and after the joint, the angle being
+		how much the polyline turns. On the other side they are r apart and the outline follows
+		the round join between them, an arc flattened as round caps are. A joint where the
+		polyline goes straight on adds nothing to the outline.
+
+		When a segment is too short for its side to reach the points where it meets the sides
+		of its neighbors, or the polyline turns straight back, the outline goes from the side of
+		one segment to the point of the joint and on to the side of the next instead. It crosses
+		itself then, but covers the same as the sides would, counted by winding number.
+
+		The outline is rasterized as its chains: the parts of it going steadily down or up the
+		canvas, each an edge of its own. What is right of an edge is inside if the edges left of
+		it, counted 1 for those going down and -1 for those going up, don't add up to zero.
+		Rows are split where chains begin and end and where two of them cross, so that edges
+		are in the same order all through a sub-row.
+
+		An end whose cut reaches beyond the other end of its segment, as a Vertical end on a
+		steep and short one can, is cut off there.
+	*/
+
+	namespace
+	{
+		// Direction of a segment from the difference between its points: scaled by a power of
+		// two to 2^29 -> 2^30 (dir), which is exact for differences below 2^30, and of length
+		// 1 as 2.30 (unit). Returns the length of the segment in spx shifted up by unitShift.
+
+		inline int64_t segmentDirection(int64_t dx, int64_t dy, int unitShift, int32_t dir[2], int32_t unit[2])
+		{
+			int down = 0;
+
+			while (std::max(std::abs(dx), std::abs(dy)) >= (int64_t(1) << 30))
+			{
+				dx /= 2;
+				dy /= 2;
+				down++;
+			}
+
+			const uint32_t largest = std::max(uint32_t(std::abs(dx)), uint32_t(std::abs(dy)));
+			const int up = 29 - highestBit(largest);
+
+			dir[0] = int32_t(dx) * (int32_t(1) << up);
+			dir[1] = int32_t(dy) * (int32_t(1) << up);
+
+			const int64_t length = isqrt(uint64_t(int64_t(dir[0]) * dir[0] + int64_t(dir[1]) * dir[1]));
+
+			unit[0] = int32_t(int64_t(dir[0]) * (int64_t(1) << 30) / length);
+			unit[1] = int32_t(int64_t(dir[1]) * (int64_t(1) << 30) / length);
+
+			const int shift = down + unitShift - up;
+			return shift >= 0 ? length << shift : length >> -shift;
+		}
+
+		// x of an edge at y, between its vertices before and at index.
+
+		inline int64_t chainX(const int64_t* pY, const int64_t* pX, int index, int64_t y)
+		{
+			const int64_t ya = pY[index - 1], yb = pY[index];
+
+			if (y <= ya)
+				return pX[index - 1];
+
+			if (y >= yb)
+				return pX[index];
+
+			return pX[index - 1] + (pX[index] - pX[index - 1]) * (y - ya) / (yb - ya);
+		}
+
+		inline int sign(int64_t value)
+		{
+			return value > 0 ? 1 : value < 0 ? -1 : 0;
+		}
+	}
+
+	//____ PathShape __________________________________________________________
+	/*
+		An outline as chains, see Polylines above. Ids of edges are the chains. Sub-rows have
+		to come in order down the canvas.
+	*/
+
+	class SoftShapes::PathShape : public SoftShapes::EdgeShape
+	{
+	public:
+		Chain*		pChains = nullptr;			// In order of top.
+		int			nChains = 0;
+		int*		pActive = nullptr;			// Chains crossing the latest sub-row, in order along it...
+		int64_t*	pKeys = nullptr;			// ...and what they are ordered by.
+		int			nActive = 0;
+		int			next = 0;					// Next chain to begin.
+		int64_t		lastY = INT64_MIN;
+
+		int edges(int64_t ya, int64_t yb, EdgeDef* pEdges)
+		{
+			if (ya < lastY)
+			{
+				nActive = 0;
+				next = 0;
+			}
+
+			lastY = ya;
+
+			while (next < nChains && pChains[next].top <= ya)
+				pActive[nActive++] = next++;
+
+			// Those that have ended are dropped, the rest put in order of where they are at
+			// the top and bottom of the sub-row together, which they mostly are already.
+
+			int n = 0;
+
+			for (int i = 0; i < nActive; i++)
+			{
+				const int id = pActive[i];
+				Chain& chain = pChains[id];
+
+				if (chain.bottom < yb)
+					continue;
+
+				const int64_t key = _polylineX(chain.polyline, ya) + _polylineX(chain.polyline, yb);
+
+				int k = n;
+				while (k > 0 && pKeys[k - 1] > key)
+				{
+					pKeys[k] = pKeys[k - 1];
+					pActive[k] = pActive[k - 1];
+					k--;
+				}
+
+				pKeys[k] = key;
+				pActive[k] = id;
+				n++;
+			}
+
+			nActive = n;
+
+			// Edges are the chains between inside and outside.
+
+			int winding = 0;
+			int nEdges = 0;
+
+			for (int i = 0; i < nActive; i++)
+			{
+				Chain& chain = pChains[pActive[i]];
+				const int after = winding + chain.winding;
+
+				if ((winding == 0) != (after == 0))
+					pEdges[nEdges++] = { pActive[i], after != 0 ? 0 : -1, true, -1, 0, &chain.polyline };
+
+				winding = after;
+			}
+
+			return nEdges;
+		}
+
+		int64_t x(const EdgeDef& edge, int64_t y)
+		{
+			return _polylineX(pChains[edge.id].polyline, y);
+		}
+
+		bool split(const EdgeDef& edge, int64_t ya, int64_t xa, int64_t yb, int64_t xb, int64_t& y)
+		{
+			return false;
+		}
+
+		int uniformEnd(int row) const
+		{
+			return row + 1;
+		}
+	};
+
+	//____ _roundJoinArc() ____________________________________________________
+	/*
+		The half circle of a round join in m_arc, the profile of a round cap, and the cosine
+		of the angle of each of its points in m_arcCos, from 1 at the first to -1 at the last.
+	*/
+
+	void SoftShapes::_roundJoinArc(int32_t r)
+	{
+		_capProfile(LineCap(LineCapShape::Round), r, 1, 0, m_arc);
+
+		const int n = int(m_arc.size()) - 1;
+		m_arcCos.resize(n + 1);
+
+		// Angles as in _capProfile().
+
+		const uint32_t step = 0x80000000u / n;
+		const uint32_t stepRest = 0x80000000u - step * n;
+
+		uint32_t angle = 0;
+		uint32_t angleRest = 0;
+
+		for (int k = 0; k <= n; k++)
+		{
+			m_arcCos[k] = _sin30(angle + 0x40000000);
+
+			angle += step;
+			angleRest += stepRest;
+
+			if (angleRest >= uint32_t(n))
+			{
+				angleRest -= n;
+				angle++;
+			}
+		}
+
+		m_arcCos[0] = int32_t(1) << 30;
+		m_arcCos[n] = -(int32_t(1) << 30);
+	}
+
+	//____ _addOutlinePoint() _________________________________________________
+
+	void SoftShapes::_addOutlinePoint(int64_t x, int64_t y)
+	{
+		if (!m_outlineX.empty() && m_outlineX.back() == x && m_outlineY.back() == y)
+			return;
+
+		m_outlineX.push_back(x);
+		m_outlineY.push_back(y);
+	}
+
+	//____ _addJoin() _________________________________________________________
+	/*
+		Adds the outline of one side of the joint at x, y between a segment with direction
+		pDirA and the next with pDirB, both of length 1. In order along the polyline, or
+		the other way if bReversed.
+
+		With bArc the side is the outside of the joint and gets the arc of the round join.
+		Otherwise it gets the point inset before the joint where the sides meet, if bInsetOK,
+		and else goes by way of the joint.
+	*/
+
+	void SoftShapes::_addJoin(int64_t x, int64_t y, const int32_t* pDirA, const int32_t* pDirB, int32_t r, int side, bool bReversed, bool bArc, int32_t inset, bool bInsetOK)
+	{
+		m_joinX.clear();
+		m_joinY.clear();
+
+		auto add = [&](int32_t ux, int32_t uy, int32_t a, int32_t w)
+		{
+			int64_t px, py;
+			lineToCanvas(x, y, ux, uy, a, w, px, py);
+			m_joinX.push_back(px);
+			m_joinY.push_back(py);
+		};
+
+		if (bArc)
+		{
+			// The arc is in the frame of the end of the first segment, where it starts at the
+			// first point of m_arc on side 1 and at the last on side -1. It ends where it has
+			// turned as much as the polyline does.
+
+			const int n = int(m_arc.size()) - 1;
+			const int64_t cosTurn = (int64_t(pDirA[0]) * pDirB[0] + int64_t(pDirA[1]) * pDirB[1]) >> 30;
+
+			add(pDirA[0], pDirA[1], 0, side * r);
+
+			if (side > 0)
+			{
+				for (int k = 1; k < n && m_arcCos[k] > cosTurn; k++)
+					add(-pDirA[0], -pDirA[1], m_arc[k].a, m_arc[k].w);
+			}
+			else
+			{
+				for (int k = n - 1; k > 0 && -int64_t(m_arcCos[k]) > cosTurn; k--)
+					add(-pDirA[0], -pDirA[1], m_arc[k].a, m_arc[k].w);
+			}
+
+			add(pDirB[0], pDirB[1], 0, side * r);
+		}
+		else if (bInsetOK)
+			add(pDirA[0], pDirA[1], -inset, side * r);
+		else
+		{
+			add(pDirA[0], pDirA[1], 0, side * r);
+			m_joinX.push_back(x);
+			m_joinY.push_back(y);
+			add(pDirB[0], pDirB[1], 0, side * r);
+		}
+
+		const int nPoints = int(m_joinX.size());
+
+		for (int i = 0; i < nPoints; i++)
+		{
+			const int k = bReversed ? nPoints - 1 - i : i;
+			_addOutlinePoint(m_joinX[k], m_joinY[k]);
+		}
+	}
+
+	//____ _makeChains() ______________________________________________________
+	/*
+		Makes the chains of the outline, and the splits where they begin and end.
+	*/
+
+	void SoftShapes::_makeChains()
+	{
+		const int n = int(m_outlineX.size());
+
+		m_chains.clear();
+		m_chainX.clear();
+		m_chainY.clear();
+		m_chainSplits.clear();
+
+		// Chains as they come along the outline, with where their vertices start instead of
+		// pointers to them until all are in place. Level edges belong to none.
+
+		int first = -1;						// Vertex the chain being followed starts at...
+		int direction = 0;					// ...and its direction, 0 if there is none.
+
+		auto close = [&](int last)
+		{
+			if (direction == 0)
+				return;
+
+			const int count = last - first + 1;
+			const int start = int(m_chainY.size());
+
+			for (int i = 0; i < count; i++)
+			{
+				const int vertex = (direction > 0 ? first + i : last - i) % n;
+				m_chainX.push_back(m_outlineX[vertex]);
+				m_chainY.push_back(m_outlineY[vertex]);
+			}
+
+			Chain chain;
+			chain.polyline = { nullptr, nullptr, count, start };
+			chain.top = m_chainY[start];
+			chain.bottom = m_chainY[start + count - 1];
+			chain.winding = direction;
+			m_chains.push_back(chain);
+
+			m_chainSplits.push_back(chain.top);
+			m_chainSplits.push_back(chain.bottom);
+
+			direction = 0;
+		};
+
+		for (int i = 0; i < n; i++)
+		{
+			const int64_t dy = m_outlineY[(i + 1) % n] - m_outlineY[i];
+			const int edgeDirection = dy > 0 ? 1 : dy < 0 ? -1 : 0;
+
+			if (edgeDirection != direction)
+			{
+				close(i);
+				first = i;
+				direction = edgeDirection;
+			}
+		}
+
+		close(n);
+
+		for (Chain& chain : m_chains)
+		{
+			const int start = chain.polyline.line;
+			chain.polyline.pY = m_chainY.data() + start;
+			chain.polyline.pX = m_chainX.data() + start;
+			chain.polyline.line = 0;
+		}
+
+		std::sort(m_chains.begin(), m_chains.end(), [](const Chain& a, const Chain& b) { return a.top < b.top; });
+
+		std::sort(m_chainSplits.begin(), m_chainSplits.end());
+		m_chainSplits.erase(std::unique(m_chainSplits.begin(), m_chainSplits.end()), m_chainSplits.end());
+
+		if (m_activeChains.size() < m_chains.size())
+		{
+			m_activeChains.resize(m_chains.size());
+			m_activeKeys.resize(m_chains.size());
+		}
+	}
+
+	//____ _addCrossingSplits() _______________________________________________
+	/*
+		Adds splits where two chains cross each other, so that no sub-row has edges changing
+		order within it. Crossings between whole spx get a split on each side.
+
+		Chains are compared two and two between each pair of splits, where both go all the
+		way, by following them from vertex to vertex.
+	*/
+
+	void SoftShapes::_addCrossingSplits()
+	{
+		const int nChains = int(m_chains.size());
+		const int nSplits = int(m_chainSplits.size());
+
+		const Chain* pChains = m_chains.data();
+		int* pActive = m_activeChains.data();
+
+		int nActive = 0;
+		int next = 0;
+
+		const int64_t c_none = INT64_MIN;
+
+		for (int k = 0; k + 1 < nSplits; k++)
+		{
+			const int64_t y0 = m_chainSplits[k];
+			const int64_t y1 = m_chainSplits[k + 1];
+
+			while (next < nChains && pChains[next].top <= y0)
+				pActive[nActive++] = next++;
+
+			int n = 0;
+			for (int i = 0; i < nActive; i++)
+				if (pChains[pActive[i]].bottom >= y1)
+					pActive[n++] = pActive[i];
+
+			nActive = n;
+
+			for (int i = 0; i < nActive; i++)
+			{
+				const Polyline& a = pChains[pActive[i]].polyline;
+				const int firstA = int(std::upper_bound(a.pY, a.pY + a.n, y0) - a.pY);
+
+				for (int j = i + 1; j < nActive; j++)
+				{
+					const Polyline& b = pChains[pActive[j]].polyline;
+
+					int ia = firstA;
+					int ib = int(std::upper_bound(b.pY, b.pY + b.n, y0) - b.pY);
+
+					int64_t y = y0;
+					int64_t distance = chainX(a.pY, a.pX, ia, y) - chainX(b.pY, b.pX, ib, y);
+					int side = sign(distance);				// Side a was last on, 0 if none yet.
+					int64_t meetY = c_none;					// Where they have met since.
+
+					while (y < y1)
+					{
+						const int64_t nextY = std::min(std::min(a.pY[ia], b.pY[ib]), y1);
+						const int64_t nextDistance = chainX(a.pY, a.pX, ia, nextY) - chainX(b.pY, b.pX, ib, nextY);
+						const int nextSide = sign(nextDistance);
+
+						if (nextSide == 0)
+						{
+							if (meetY == c_none)
+								meetY = nextY;
+						}
+						else
+						{
+							if (side != 0 && nextSide != side)
+							{
+								int64_t crossY = meetY;
+								bool bBetween = false;
+
+								if (crossY == c_none)
+								{
+									const int64_t before = std::abs(distance), after = std::abs(nextDistance);
+									const int64_t scaled = (nextY - y) * before;
+
+									crossY = y + scaled / (before + after);
+									bBetween = scaled % (before + after) != 0;
+								}
+
+								if (crossY > y0 && crossY < y1)
+									m_chainSplits.push_back(crossY);
+
+								if (bBetween && crossY + 1 < y1)
+									m_chainSplits.push_back(crossY + 1);
+							}
+
+							side = nextSide;
+							meetY = c_none;
+						}
+
+						distance = nextDistance;
+						y = nextY;
+
+						if (a.pY[ia] == y && ia < a.n - 1)
+							ia++;
+
+						if (b.pY[ib] == y && ib < b.n - 1)
+							ib++;
+					}
+				}
+			}
+		}
+
+		if (int(m_chainSplits.size()) > nSplits)
+		{
+			std::sort(m_chainSplits.begin(), m_chainSplits.end());
+			m_chainSplits.erase(std::unique(m_chainSplits.begin(), m_chainSplits.end()), m_chainSplits.end());
+		}
+	}
+
+	//____ preparePolyline() __________________________________________________
+
+	bool SoftShapes::preparePolyline(int nPoints, const CoordSPX* pPoints, spx thickness, LineCaps caps)
+	{
+		m_chains.clear();
+
+		if (nPoints < 2 || thickness <= 0 || thickness > c_maxLineThickness)
+			return false;
+
+		const int nSegments = nPoints - 1;
+		const int32_t r = thickness << (c_lineUnitShift - 1);
+
+		// Directions and lengths of segments.
+
+		m_segmentDirs.resize(nSegments * 4);
+		m_segmentLengths.resize(nSegments);
+
+		int32_t* pDirs = m_segmentDirs.data();
+		int64_t* pLengths = m_segmentLengths.data();
+
+		for (int i = 0; i < nSegments; i++)
+		{
+			const int64_t dx = int64_t(pPoints[i + 1].x) - pPoints[i].x;
+			const int64_t dy = int64_t(pPoints[i + 1].y) - pPoints[i].y;
+
+			if (dx == 0 && dy == 0)
+				return false;
+
+			pLengths[i] = segmentDirection(dx, dy, c_lineUnitShift, pDirs + i * 4, pDirs + i * 4 + 2);
+		}
+
+		// Caps, of the first end from its first point at w = -r to its last at w = r and of the
+		// last end the other way, as seen along the polyline.
+
+		const int32_t* pFirstDir = pDirs;
+		const int32_t* pLastDir = pDirs + (nSegments - 1) * 4;
+
+		LineCap capOf[2] = { caps.begin, caps.end };
+		const int32_t* pCapDirs[2] = { pFirstDir, pLastDir };
+
+		for (int e = 0; e < 2; e++)
+		{
+			const int32_t* pDir = pCapDirs[e];
+			LineCap& cap = capOf[e];
+
+			if (cap.shape == LineCapShape::None)
+				cap.shape = std::abs(pDir[0]) > std::abs(pDir[1]) ? LineCapShape::Vertical : LineCapShape::Horizontal;
+
+			if ((cap.shape == LineCapShape::Vertical && pDir[0] == 0) || (cap.shape == LineCapShape::Horizontal && pDir[1] == 0))
+				return false;
+
+			_capProfile(cap, r, pDir[0], pDir[1], m_profiles[e]);
+
+			// Cut off where it reaches beyond the other end of its segment.
+
+			const int64_t length = pLengths[e == 0 ? 0 : nSegments - 1];
+			std::vector<ProfilePoint>& profile = m_profiles[e];
+
+			for (size_t i = 0; i < profile.size(); i++)
+			{
+				if (i > 0 && (profile[i - 1].a > length) != (profile[i].a > length))
+				{
+					const ProfilePoint from = profile[i - 1], to = profile[i];
+					const int32_t w = int32_t(from.w + int64_t(to.w - from.w) * (length - from.a) / (to.a - from.a));
+
+					profile.insert(profile.begin() + i, { w, int32_t(length) });
+					i++;
+				}
+			}
+
+			for (ProfilePoint& point : profile)
+				if (point.a > length)
+					point.a = int32_t(length);
+		}
+
+		_roundJoinArc(r);
+
+		// Joints: the side that is the inside and how far from the joint the sides meet there.
+		// A polyline turning straight back has no such point.
+
+		const int64_t c_noInset = int64_t(1) << 60;
+
+		m_joinSides.resize(nPoints);
+		m_joinInsets.resize(nPoints);
+
+		for (int j = 1; j < nSegments; j++)
+		{
+			const int32_t* pA = pDirs + (j - 1) * 4;
+			const int32_t* pB = pDirs + j * 4;
+
+			const int64_t cross = int64_t(pA[0]) * pB[1] - int64_t(pA[1]) * pB[0];
+			const int64_t dot = int64_t(pA[0]) * pB[0] + int64_t(pA[1]) * pB[1];
+
+			if (cross == 0 && dot > 0)
+			{
+				m_joinSides[j] = 0;
+				m_joinInsets[j] = 0;
+			}
+			else if (cross == 0)
+			{
+				m_joinSides[j] = -1;
+				m_joinInsets[j] = c_noInset;
+			}
+			else
+			{
+				const int64_t sinTurn = (int64_t(pA[2]) * pB[3] - int64_t(pA[3]) * pB[2]) >> 30;
+				const int64_t cosTurn = (int64_t(pA[2]) * pB[2] + int64_t(pA[3]) * pB[3]) >> 30;
+				const int64_t denominator = (int64_t(1) << 30) + cosTurn;
+
+				m_joinSides[j] = cross > 0 ? 1 : -1;
+				m_joinInsets[j] = denominator > 0 ? std::min(int64_t(r) * std::abs(sinTurn) / denominator, c_noInset) : c_noInset;
+			}
+		}
+
+		// What the cap or joint at a point takes of a side of its segments.
+
+		auto taken = [&](int point, int side) -> int64_t
+		{
+			if (point == 0)
+				return std::max(side > 0 ? m_profiles[0].back().a : m_profiles[0].front().a, 0);
+
+			if (point == nPoints - 1)
+				return std::max(side > 0 ? m_profiles[1].front().a : m_profiles[1].back().a, 0);
+
+			return m_joinSides[point] == side ? m_joinInsets[point] : 0;
+		};
+
+		auto insetOK = [&](int j)
+		{
+			const int64_t inset = m_joinInsets[j];
+			const int side = m_joinSides[j];
+
+			return inset < (int64_t(1) << 30) && inset <= pLengths[j - 1] - taken(j - 1, side) && inset <= pLengths[j] - taken(j + 1, side);
+		};
+
+		// The outline.
+
+		m_outlineX.clear();
+		m_outlineY.clear();
+
+		auto addCap = [&](int e, CoordSPX end, int32_t ux, int32_t uy)
+		{
+			for (const ProfilePoint& point : m_profiles[e])
+			{
+				int64_t x, y;
+				lineToCanvas(end.x, end.y, ux, uy, point.a, point.w, x, y);
+				_addOutlinePoint(x, y);
+			}
+		};
+
+		auto addJoin = [&](int j, int side, bool bReversed)
+		{
+			if (m_joinSides[j] == 0)
+				return;
+
+			const bool bInside = m_joinSides[j] == side;
+			const bool bOK = bInside && insetOK(j);
+
+			_addJoin(pPoints[j].x, pPoints[j].y, pDirs + (j - 1) * 4 + 2, pDirs + j * 4 + 2, r, side, bReversed, !bInside, bOK ? int32_t(m_joinInsets[j]) : 0, bOK);
+		};
+
+		addCap(0, pPoints[0], pFirstDir[2], pFirstDir[3]);
+
+		for (int j = 1; j < nSegments; j++)
+			addJoin(j, 1, false);
+
+		addCap(1, pPoints[nPoints - 1], -pLastDir[2], -pLastDir[3]);
+
+		for (int j = nSegments - 1; j >= 1; j--)
+			addJoin(j, -1, true);
+
+		while (m_outlineX.size() > 1 && m_outlineX.back() == m_outlineX.front() && m_outlineY.back() == m_outlineY.front())
+		{
+			m_outlineX.pop_back();
+			m_outlineY.pop_back();
+		}
+
+		if (m_outlineX.size() < 3)
+			return false;
+
+		m_outlineBounds[0] = *std::min_element(m_outlineX.begin(), m_outlineX.end());
+		m_outlineBounds[1] = *std::min_element(m_outlineY.begin(), m_outlineY.end());
+		m_outlineBounds[2] = *std::max_element(m_outlineX.begin(), m_outlineX.end());
+		m_outlineBounds[3] = *std::max_element(m_outlineY.begin(), m_outlineY.end());
+
+		_makeChains();
+		_addCrossingSplits();
+
+		return !m_chains.empty();
+	}
+
+	//____ rasterizePolyline() ________________________________________________
+
+	void SoftShapes::rasterizePolyline(const RectI& clip, RowSink* pSink)
+	{
+		if (m_chains.empty())
+			return;
+
+		const int clipBeg = std::max(clip.x, floorPixel(m_outlineBounds[0]));
+		const int clipEnd = std::min(clip.x + clip.w, ceilPixel(m_outlineBounds[2]));
+		const int rowBeg = std::max(clip.y, floorPixel(m_outlineBounds[1]));
+		const int rowEnd = std::min(clip.y + clip.h, ceilPixel(m_outlineBounds[3]));
+
+		for (Chain& chain : m_chains)
+			chain.polyline.line = 0;
+
+		PathShape shape;
+		shape.pChains = m_chains.data();
+		shape.nChains = int(m_chains.size());
+		shape.pActive = m_activeChains.data();
+		shape.pKeys = m_activeKeys.data();
+		shape.pSplits = m_chainSplits.data();
+		shape.nSplits = int(m_chainSplits.size());
+		shape.maxEdges = shape.nChains;
+		shape.nIds = shape.nChains;
+
+		_rasterize(shape, 1, rowBeg, rowEnd, clipBeg, clipEnd, pSink);
+	}
+
 }

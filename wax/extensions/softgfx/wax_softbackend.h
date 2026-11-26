@@ -525,6 +525,7 @@ namespace wax
 		SoftShapes::Ring			m_ring;
 		std::vector<uint32_t>		m_ringSliceSizes;
 		Backend::ShapeKind		m_shapeKind;
+		std::vector<CoordSPX>	m_polylinePoints;
 		std::vector<ShapeSegment>	m_shapeSegments;
 		std::vector<Color>		m_shapeBuffers[2];				// Colors of a segment (0) and the device tint (1) along a row.
 		std::vector<std::vector<int16_t>>	m_shapeMixBuffers;		// Colors of segments that aren't flat, for coverage pixels.

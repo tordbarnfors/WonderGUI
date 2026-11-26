@@ -2540,7 +2540,7 @@ namespace wax
 		if (m_blendMode == BlendMode::Ignore)
 			return false;
 
-		if (kind != ShapeKind::RoundedBox && kind != ShapeKind::Ring)
+		if (kind != ShapeKind::RoundedBox && kind != ShapeKind::Ring && !(kind == ShapeKind::Polyline && pPayload[2] == 0))
 		{
 			Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, "Failed DrawShape operation. Unsupported kind of shape.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
@@ -2566,7 +2566,28 @@ namespace wax
 		m_shapeKind = kind;
 		m_pShapeCoverageOp = pKernels->pCoverageKernels[(int)m_blendMode];
 
-		if (kind == ShapeKind::RoundedBox)
+		if (kind == ShapeKind::Polyline)
+		{
+			// One segment in the color of the polyline. Points are copied, as they are only
+			// aligned to 16 bits where they are.
+
+			const PolylinePayload polyline = decodePolyline(pPayload);
+
+			m_polylinePoints.resize(polyline.nPoints);
+			for (int i = 0; i < polyline.nPoints; i++)
+				m_polylinePoints[i] = polyline.point(i);
+
+			if (!m_shapes.preparePolyline(polyline.nPoints, m_polylinePoints.data(), polyline.thickness, polyline.resolvedCaps()))
+				return false;
+
+			if (m_shapeSegments.empty())
+				m_shapeSegments.resize(1);
+
+			const uint16_t* pNoTint = nullptr;
+			const Color* pNoTintColors = nullptr;
+			_setupShapeSegment(m_shapeSegments[0], true, *pColors, false, pNoTint, pNoTintColors);
+		}
+		else if (kind == ShapeKind::RoundedBox)
 		{
 			const RoundedBoxPayload box = decodeRoundedBox(pPayload);
 			auto has = [&box](RoundedBoxFlags flag) { return (box.flags & uint16_t(flag)) != 0; };
@@ -2656,7 +2677,9 @@ namespace wax
 		sink.pitch = pitch;
 		sink.rowEnd = clip.y + clip.h;
 
-		if (m_shapeKind == ShapeKind::RoundedBox)
+		if (m_shapeKind == ShapeKind::Polyline)
+			m_shapes.rasterizePolyline(clip, &sink);
+		else if (m_shapeKind == ShapeKind::RoundedBox)
 			m_shapes.rasterizeRoundedBox(m_roundedBox, clip, &sink);
 		else
 			m_shapes.rasterizeRing(m_ring, clip, &sink);
