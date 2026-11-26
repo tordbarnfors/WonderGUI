@@ -42,9 +42,14 @@ using namespace wax;
 //____ SDLWindowVulkan ________________________________________________________
 //
 // Wax renders into an image of our own, the default canvas, which keeps what was
-// rendered between frames, as only the dirty rects are drawn. Each frame that
-// rendered anything is copied to an image of the swap chain and presented, since
-// those don't keep their content.
+// rendered between frames, as only the dirty rects are drawn. What a frame rendered
+// is copied to an image of the swap chain, which is presented.
+//
+// An image of a swap chain keeps its content while it is presented, but it is some
+// frames old when we get it back, by as many as the swap chain has images. So each
+// image has a list of what has changed of the canvas since it was last copied to,
+// and that is what is copied, not the whole canvas. Widgets are only drawn once
+// that way, into the canvas, however many images there are.
 //
 // Environment variables:
 //
@@ -74,6 +79,7 @@ private:
 	bool	_createCanvas();
 	void	_destroyCanvas();
 	void	_setDefaultCanvas();
+	void	_addChanged( const RectSPX * pRects, int nRects );
 	void	_present();
 
 	VkSurfaceKHR				m_surface = VK_NULL_HANDLE;
@@ -83,6 +89,16 @@ private:
 	std::vector<VkImage>		m_swapchainImages;
 	std::vector<VkSemaphore>	m_renderDone;			// One per swap chain image, signalled for presenting it.
 	bool						m_bSwapchainStale = false;
+
+	// What has changed of the canvas since each image of the swap chain was last copied to,
+	// in pixels. An image that has never been copied to, or whose list got too long, gets
+	// all of the canvas.
+
+	static const int			c_maxChangedRects = 64;
+
+	std::vector<PatchesI>		m_changed;				// One per swap chain image.
+	std::vector<bool>			m_bAllChanged;			// One per swap chain image.
+	std::vector<VkImageCopy>	m_copyRegions;			// Of the frame being presented, kept for its memory.
 
 	// Our canvas, which Wax renders into and which is copied to the swap chain.
 
@@ -651,6 +667,11 @@ bool SDLWindowVulkan::_createSwapchain()
 	for (auto& semaphore : m_renderDone)
 		vkCreateSemaphore(g_device, &semInfo, nullptr, &semaphore);
 
+	// New images have nothing in them.
+
+	m_changed.resize(count);
+	m_bAllChanged.assign(count, true);
+
 	m_bSwapchainStale = false;
 	m_bHidden = false;
 	return true;
@@ -665,6 +686,8 @@ void SDLWindowVulkan::_destroySwapchain()
 
 	m_renderDone.clear();
 	m_swapchainImages.clear();
+	m_changed.clear();
+	m_bAllChanged.clear();
 
 	if (m_swapchain)
 		vkDestroySwapchainKHR(g_device, m_swapchain, nullptr);
@@ -756,12 +779,47 @@ void SDLWindowVulkan::render()
 	_setDefaultCanvas();
 	m_pRootPanel->render();
 
+	_addChanged(m_pRootPanel->firstUpdatedRect(), m_pRootPanel->nbUpdatedRects());
 	_present();
+}
+
+//____ _addChanged() __________________________________________________________
+//
+// Adds what a frame rendered to the list of every image of the swap chain, as none of them
+// has it yet.
+
+void SDLWindowVulkan::_addChanged( const RectSPX * pRects, int nRects )
+{
+	for (size_t image = 0; image < m_changed.size(); image++)
+	{
+		if (m_bAllChanged[image])
+			continue;
+
+		PatchesI& changed = m_changed[image];
+
+		for (int i = 0; i < nRects; i++)
+		{
+			// Whole pixels, within the canvas.
+
+			int x1 = std::max(int(pRects[i].x) >> 6, 0);
+			int y1 = std::max(int(pRects[i].y) >> 6, 0);
+			int x2 = std::min((int(pRects[i].x + pRects[i].w) + 63) >> 6, int(m_extent.width));
+			int y2 = std::min((int(pRects[i].y + pRects[i].h) + 63) >> 6, int(m_extent.height));
+
+			changed.add( RectI(x1, y1, x2 - x1, y2 - y1) );
+		}
+
+		if (changed.size() > c_maxChangedRects)
+		{
+			changed.clear();
+			m_bAllChanged[image] = true;
+		}
+	}
 }
 
 //____ _present() _____________________________________________________________
 //
-// Copies our canvas to the next image of the swap chain and presents it.
+// Copies what has changed of our canvas to the next image of the swap chain and presents it.
 
 void SDLWindowVulkan::_present()
 {
@@ -795,7 +853,12 @@ void SDLWindowVulkan::_present()
 
 	VkImage target = m_swapchainImages[imageIndex];
 
-	VulkanContext::transition(cmd, target, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	// An image that gets all of the canvas is taken from UNDEFINED, which lets go of what it
+	// had. The others have been presented and keep theirs.
+
+	bool bAll = m_bAllChanged[imageIndex];
+
+	VulkanContext::transition(cmd, target, bAll ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 	// Waits for Wax's rendering into the canvas, which came before us in the queue.
 
@@ -813,9 +876,31 @@ void SDLWindowVulkan::_present()
 	VkImageCopy region = {};
 	region.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
 	region.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
-	region.extent = { m_extent.width, m_extent.height, 1 };
 
-	vkCmdCopyImage(cmd, m_canvas.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, target, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+	m_copyRegions.clear();
+
+	if (bAll)
+	{
+		region.extent = { m_extent.width, m_extent.height, 1 };
+		m_copyRegions.push_back(region);
+	}
+	else
+	{
+		for (const RectI& rect : m_changed[imageIndex])
+		{
+			region.srcOffset = { rect.x, rect.y, 0 };
+			region.dstOffset = { rect.x, rect.y, 0 };
+			region.extent = { uint32_t(rect.w), uint32_t(rect.h), 1 };
+			m_copyRegions.push_back(region);
+		}
+	}
+
+	if (!m_copyRegions.empty())
+		vkCmdCopyImage(cmd, m_canvas.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, target, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					   uint32_t(m_copyRegions.size()), m_copyRegions.data());
+
+	m_changed[imageIndex].clear();
+	m_bAllChanged[imageIndex] = false;
 
 	VulkanContext::transition(cmd, target, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 

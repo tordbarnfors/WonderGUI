@@ -1422,3 +1422,58 @@ Not run: DX12Backend with RENDER_TARGET as resting state, direct mode on a displ
 GPU on Linux, and an application that commits command buffers of its own to the queue it gives
 MetalBackend. So of the backends, only SdlGpuBackend has drawn on top of an application's own
 graphics.
+
+### How WonderApp's windows get to the screen (2026-11-26)
+
+All thirteen frameworks were read for steps they don't need between Wax and the screen. A window
+of WonderApp is redrawn where it has changed only, which takes something to draw into that
+keeps what it had. What a swap chain gives back decides how each framework does it:
+
+- **wappwin32dx12 and wappsdl3dx12** draw the dirty rects straight into the back buffer and give
+  them to `Present1()`: a flip-sequential swap chain keeps its buffers, and DXGI brings them up
+  to date.
+- **wappsdl3sw, wappsdl2sw and wappwin32sw** draw into the pixels of the window itself, and
+  **wappsdl2gl** into the front buffer of a window with one buffer.
+- **wappsdl3vk, the three with Metal, wappsdl3gl and wappsdl3gpu** draw into a canvas of their
+  own and copy it to the window. **wappcocoasw** does the same in plain memory, copying what
+  changed.
+
+Decided with Tord 2026-11-26, for the canvases:
+
+- **Vulkan keeps its canvas, and copies only what has changed.** An image of a swap chain keeps
+  its content while it is presented, by the specification of `vkQueuePresentKHR`, and we are
+  told which image we get. Drawing straight into the images would have saved the canvas, but
+  each change would have been drawn once for every image ("so we don't have to redraw same
+  widgets three times", Tord). So each image has a list of what has changed of the canvas since
+  it was last copied to, and that is copied. An image that has never been copied to, or whose
+  list has grown past 64 rects, gets all of it, taken from UNDEFINED, the others from
+  PRESENT_SRC.
+- **Metal is not changed yet.** Its three frameworks copy all of the canvas to a drawable for
+  every change, with a Wax session that blits it with the blend mode a session starts with, onto
+  a drawable whose content isn't loaded, so it also reads pixels that aren't there where the
+  canvas isn't opaque. Tord wanted a plain copy in its place, with a blit encoder. That is
+  written and held back: it needs `framebufferOnly` turned off for the layer, which Apple says is
+  "at a cost to performance", and it still copies everything, as nothing from Apple says that
+  the texture of a drawable still has what was presented in it when it comes back.
+- **Only documented ways** (Tord): nothing is built on how it happens to work on the machines we
+  test on. For wappcocoametal that leaves a layer on buffers of our own (IOSurface) with Metal
+  textures on them, whose content we would know, so that only what has changed is sent and no
+  canvas is needed. Whether a layer may show an IOSurface is not on Apple's page for
+  `CALayer.contents`, which names CGImage and NSImage, so the headers of the SDK are being read
+  on a Mac before anything is written.
+- **wappsdl3gl has a canvas without alpha,** XRGB_8, which is GL_SRGB8. Copied to the window it
+  leaves alpha at 1, so the pass over the whole window that made it opaque after each copy is
+  gone. Asking for a window without alpha was tried first and isn't the way: the Arc B580 gave a
+  window with 10 bits for each color and 2 of alpha for it.
+- **wappsdl3gpu is as it was.** SDL_GPU doesn't tell the textures of a swap chain apart either,
+  so it is a canvas and a copy, or all widgets drawn for every change, which
+  `WAPP_GPU_DIRECT=1` does and an application with few widgets on graphics of its own wants.
+
+With wappsdl3gl on Windows (Arc B580, Release) widgetbench, helloworld and editera show the same
+windows as before, pixel for pixel, gfxdevicetester gives the same lines and unittester passes.
+
+Not compiled: the change for Vulkan, which Windows has nothing to build with.
+
+Also seen, and not changed: the main loops wait a fixed time each turn, 10 ms with SDL3, which
+keeps a window under 100 frames a second, 1 ms with Win32, and up to 10 ms for an event with
+Cocoa, so all three wake many times a second with nothing to do.
