@@ -118,7 +118,7 @@ namespace wax
 
 //		char temp[128];
 //		snprintf(temp, 128, "Added %d credits.", credits);
-//		Base::throwError(ErrorLevel::Warning, ErrorCode::Other, temp, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+//		Base::reportError(ErrorLevel::Warning, ErrorCode::Other, temp, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
 
@@ -569,7 +569,7 @@ namespace wax
 
 //						char temp[128];
 //						snprintf(temp, 128, "Sending a fence as part of flow control. Id = %d, Value = %d. %d credits left", m_fenceId, m_fenceValueSent, m_credits);
-//						Base::throwError(ErrorLevel::Warning, ErrorCode::Other, temp, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+//						Base::reportError(ErrorLevel::Warning, ErrorCode::Other, temp, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					}
 
 				}

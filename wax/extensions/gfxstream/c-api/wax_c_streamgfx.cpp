@@ -187,7 +187,7 @@ wax_obj wax_createStreamEdgemap(wax_obj streamEncoder, const wax_edgemapBP* blue
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wax_obj wax_createStreamEdgemapFromFloats(wax_obj streamEncoder, const wax_edgemapBP* blueprint, wax_sampleOrigo origo, const float * pSamples, int edges, int edgePitch, int samplePitch)
+wax_obj wax_createStreamEdgemapFromFloats(wax_obj streamEncoder, const wax_edgemapBP* blueprint, wax_sampleOrigin origin, const float * pSamples, int edges, int edgePitch, int samplePitch)
 {
 	Edgemap::Blueprint	bp;
 
@@ -197,7 +197,7 @@ wax_obj wax_createStreamEdgemapFromFloats(wax_obj streamEncoder, const wax_edgem
 	convertEdgemapBlueprint(&bp, blueprint, tintArea);
 
 	auto pEncoder = static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder));
-	auto p = StreamEdgemap::create(pEncoder, bp, (SampleOrigo) origo, pSamples, edges, edgePitch, samplePitch);
+	auto p = StreamEdgemap::create(pEncoder, bp, (SampleOrigin) origin, pSamples, edges, edgePitch, samplePitch);
 	if( !p )
 		return nullptr;
 
@@ -205,7 +205,7 @@ wax_obj wax_createStreamEdgemapFromFloats(wax_obj streamEncoder, const wax_edgem
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wax_obj wax_createStreamEdgemapFromSpx(wax_obj streamEncoder, const wax_edgemapBP* blueprint, wax_sampleOrigo origo, const wax_spx * pSamples, int edges, int edgePitch, int samplePitch)
+wax_obj wax_createStreamEdgemapFromSpx(wax_obj streamEncoder, const wax_edgemapBP* blueprint, wax_sampleOrigin origin, const wax_spx * pSamples, int edges, int edgePitch, int samplePitch)
 {
 	Edgemap::Blueprint	bp;
 
@@ -215,7 +215,7 @@ wax_obj wax_createStreamEdgemapFromSpx(wax_obj streamEncoder, const wax_edgemapB
 	convertEdgemapBlueprint(&bp, blueprint, tintArea);
 
 	auto pEncoder = static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder));
-	auto p = StreamEdgemap::create(pEncoder, bp, (SampleOrigo) origo, pSamples, edges, edgePitch, samplePitch);
+	auto p = StreamEdgemap::create(pEncoder, bp, (SampleOrigin) origin, pSamples, edges, edgePitch, samplePitch);
 	if( !p )
 		return nullptr;
 

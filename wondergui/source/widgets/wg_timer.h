@@ -50,7 +50,6 @@ namespace wg
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			bool			disabled = false;
 			bool			dropTarget = false;
 			int				duration = 1000;
@@ -68,6 +67,7 @@ namespace wg
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			std::string			tooltip;
+			Object_p		userData;
 			int				value = 0;
 		};
 

@@ -49,7 +49,6 @@ namespace wg
 
 		struct Blueprint
 		{
-			Object_p			baggage;
 			Coord				buttonOfs;
 			Placement			buttonPlacement = Placement::West;
 			Size				buttonSize;
@@ -73,6 +72,7 @@ namespace wg
 			std::string				tooltip;
 			ValueTransition_p	transition;
 			bool				usePickHandles = false;
+			Object_p			userData;
 		};
 		
 		//.____ Creation __________________________________________
@@ -91,7 +91,7 @@ namespace wg
 
 		//.____ Appearance ____________________________________________________
 
-		void				setButton(Skin* pSkin, Placement origo = Placement::West, Coord ofs = Coord(), Size size = Size() );
+		void				setButton(Skin* pSkin, Placement origin = Placement::West, Coord ofs = Coord(), Size size = Size() );
 
 		//.____ Behaviour ____________________________________________
 

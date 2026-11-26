@@ -159,8 +159,8 @@ WAX_EXPORT int				wax_copySurfaceRect(wax_obj destSurface, wax_coordI dst, wax_o
 
 //____ Misc _________________________________________________________
 
-WAX_EXPORT void				wax_setSurfaceBaggage(wax_obj surface, wax_obj baggage);
-WAX_EXPORT wax_obj			wax_getSurfaceBaggage(wax_obj surface);
+WAX_EXPORT void				wax_setSurfaceUserData(wax_obj surface, wax_obj userData);
+WAX_EXPORT wax_obj			wax_getSurfaceUserData(wax_obj surface);
 
 WAX_EXPORT int				wax_addSurfaceObserver(wax_obj surface, wax_surfaceObserver_func, void* pData, int data);
 WAX_EXPORT int				wax_removeSurfaceObserver(wax_obj surface, int observerId);

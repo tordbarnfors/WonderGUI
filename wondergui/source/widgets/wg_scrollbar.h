@@ -55,7 +55,6 @@ namespace wg
 		struct Blueprint
 		{
 			Axis			axis = Axis::X;
-			Object_p		baggage;
 			pts				contentLength = 0;
 			bool			disabled = false;
 			bool			dropTarget = false;
@@ -74,6 +73,7 @@ namespace wg
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			std::string			tooltip;
+			Object_p		userData;
 			pts				viewLength = 0;
 			pts				viewPos = 0;
 			pts				wheelRollMovement = 8 * 3;

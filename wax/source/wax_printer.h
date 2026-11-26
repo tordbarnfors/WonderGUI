@@ -77,8 +77,8 @@ namespace wax
 		void		setFont(Font * pFont);
 		Font_p		font() const { return m_pFont;  }
 		
-		void		setCursorOrigo( CoordSPX origo );
-		CoordSPX	cursorOrigo() const { return m_cursorOrigo;  }
+		void		setCursorOrigin( CoordSPX origin );
+		CoordSPX	cursorOrigin() const { return m_cursorOrigin;  }
 
 		void		setLineWidth( spx width );		// Needed for printJustifiedLine()
 		spx			lineWidth() const { return m_lineWidth; }
@@ -111,7 +111,7 @@ namespace wax
 	
 		
 		uint32_t 	_parseChar( const char *& pStr );
-		CoordSPX	_print( CoordSPX pos, const char * pBegin, const char * pEnd, spx origoX, bool bWrap = false, spx wrappedLinesIndent = 0 );
+		CoordSPX	_print( CoordSPX pos, const char * pBegin, const char * pEnd, spx originX, bool bWrap = false, spx wrappedLinesIndent = 0 );
 		CoordSPX	_printAligned( CoordSPX pos, spx lineWidth, Placement xAlignment, const char * pBegin );
 
 		const char * _lineEnd( const char * pPos );
@@ -121,7 +121,7 @@ namespace wax
 		Font_p		m_pFont;
 		
 		CoordSPX	m_cursorPos;
-		CoordSPX	m_cursorOrigo;
+		CoordSPX	m_cursorOrigin;
 		
 		spx			m_lineWidth = 100*64;
 		int			m_tabSize = 8;

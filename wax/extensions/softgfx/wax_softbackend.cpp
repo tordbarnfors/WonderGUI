@@ -431,7 +431,7 @@ namespace wax
 						toString(mode),
 						toString(m_canvasSoftFormat));
 
-					Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Base::reportError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				};
 
 				// Fills a rectangle of whole pixels with given kernel, taking tint into account.
@@ -609,7 +609,7 @@ namespace wax
 						toString(m_blendMode),
 						toString(m_canvasSoftFormat));
 
-					Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Base::reportError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					return;
 				}
 
@@ -808,7 +808,7 @@ namespace wax
 			case Command::DrawEdgemap:
 			case Command::TileEdgemap:
 			{
-				bool bTile = (cmd == Command::TileEdgemap);		// Origo is for one of the copies, rects give area to fill.
+				bool bTile = (cmd == Command::TileEdgemap);		// Origin is for one of the copies, rects give area to fill.
 
 				int32_t nRects = *p++;
 				int32_t	flip = *p++;
@@ -958,7 +958,7 @@ namespace wax
 						toString(m_blendMode),
 						toString(m_canvasSoftFormat));
 
-					Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Base::reportError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					break;
 				}
 
@@ -1567,7 +1567,7 @@ namespace wax
 				toString(m_canvasSoftFormat));
 		}
 
-		Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
 	//____ _dummyTransformBlit() ________________________________________________
@@ -1609,7 +1609,7 @@ namespace wax
 			toString(m_blendMode),
 			toString(m_canvasSoftFormat));
 
-		Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 	}
 
@@ -2214,7 +2214,7 @@ namespace wax
 		static bool bWarned = false;
 		if (!bWarned)
 		{
-			Base::throwError(ErrorLevel::Warning, ErrorCode::RenderFailure, "Kernels for tinted edgemaps missing, tints on edgemaps are approximated with flat colors.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Warning, ErrorCode::RenderFailure, "Kernels for tinted edgemaps missing, tints on edgemaps are approximated with flat colors.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			bWarned = true;
 		}
 	}
@@ -2225,7 +2225,7 @@ namespace wax
 
 		dest is the edgemap rectangle on the canvas and start the canvas pixel of the edgemap's
 		first sample column and row, see simpleTransform in _tintEdgemapColumn(). When tiling,
-		dest and start are for the copy at the origo given to the command. Other copies are found
+		dest and start are for the copy at the origin given to the command. Other copies are found
 		by stepping whole edgemaps in edgemap space, the patch can be anywhere.
 
 		pBase is a pointer to canvas pixel baseCoord, pixels are found from it using xPitch and yPitch.
@@ -2542,7 +2542,7 @@ namespace wax
 
 		if (kind != ShapeKind::RoundedBox && kind != ShapeKind::Ring)
 		{
-			Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, "Failed DrawShape operation. Unsupported kind of shape.",
+			Base::reportError(ErrorLevel::SilentError, ErrorCode::RenderFailure, "Failed DrawShape operation. Unsupported kind of shape.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
@@ -2559,7 +2559,7 @@ namespace wax
 				toString(m_blendMode),
 				toString(m_canvasSoftFormat));
 
-			Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -3098,7 +3098,7 @@ namespace wax
 				toString(m_blendMode),
 				toString(m_canvasSoftFormat));
 
-			Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 

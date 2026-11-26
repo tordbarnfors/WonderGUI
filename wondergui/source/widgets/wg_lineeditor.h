@@ -42,7 +42,6 @@ namespace wg
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			spx				defaultLengthInChars = 20;		// Set to zero for returning default width calculated from actual text in field.
 			bool			disabled = false;
 			bool			dropTarget = false;
@@ -60,6 +59,7 @@ namespace wg
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			std::string			tooltip;
+			Object_p		userData;
 		};
 
 		//.____ Creation __________________________________________

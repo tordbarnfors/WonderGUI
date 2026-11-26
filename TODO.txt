@@ -176,5 +176,5 @@ GFXDEVICES
 
 LAYOUT
 ======
-* PosX()/PosY() should be renamed OfsX()/OfsY() with new PosX()/PosY() methods returning parent relative position, not origo offset?
+* PosX()/PosY() should be renamed OfsX()/OfsY() with new PosX()/PosY() methods returning parent relative position, not origin offset?
 

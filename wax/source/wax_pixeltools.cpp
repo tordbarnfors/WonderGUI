@@ -960,19 +960,19 @@ bool copyPixels(int width, int height,
 
 	if (bSrcHasPalette && pSrcPalette == nullptr)
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Source pixels need a palette.", nullptr, nullptr, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Source pixels need a palette.", nullptr, nullptr, __func__, __FILE__, __LINE__);
 		return false;
 	}
 
 	if (bDstHasPalette && pDstPalette == nullptr)
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Destination pixels need a palette.", nullptr, nullptr, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Destination pixels need a palette.", nullptr, nullptr, __func__, __FILE__, __LINE__);
 		return false;
 	}
 
 	if (srcDesc.type == PixelType::Chunky && srcDesc.bits != 8 && srcDesc.bits != 16 && srcDesc.bits != 24 && srcDesc.bits != 32 && srcDesc.bits != 64)
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Chunky pixels need to be 8, 16, 24, 32 or 64 bits.", nullptr, nullptr, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Chunky pixels need to be 8, 16, 24, 32 or 64 bits.", nullptr, nullptr, __func__, __FILE__, __LINE__);
 		return false;
 	}
 
@@ -1182,7 +1182,7 @@ bool copyPixels(int width, int height,
 
 	if (!bOk)
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Out of entries in destination palette. All colors can not be represented. Some pixels copied to destination, but operation aborted.", nullptr, nullptr, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Out of entries in destination palette. All colors can not be represented. Some pixels copied to destination, but operation aborted.", nullptr, nullptr, __func__, __FILE__, __LINE__);
 		return false;
 	}
 

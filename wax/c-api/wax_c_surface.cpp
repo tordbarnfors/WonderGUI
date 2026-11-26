@@ -261,15 +261,15 @@ int wax_copySurface(wax_obj destSurface, wax_coordI dest, wax_obj sourceSurface)
 }
 
 
-void wax_setSurfaceBaggage(wax_obj surface, wax_obj baggage)
+void wax_setSurfaceUserData(wax_obj surface, wax_obj userData)
 {
-	getPtr(surface)->setBaggage(reinterpret_cast<Object*>(baggage));
+	getPtr(surface)->setUserData(reinterpret_cast<Object*>(userData));
 }
 
 
-wax_obj wax_getSurfaceBaggage(wax_obj surface)
+wax_obj wax_getSurfaceUserData(wax_obj surface)
 {
-	return (wax_obj)getPtr(surface)->baggage().rawPtr();
+	return (wax_obj)getPtr(surface)->userData().rawPtr();
 }
 
 

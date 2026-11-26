@@ -150,7 +150,7 @@ namespace wax
 		static char *		memStackAlloc( int bytes );
 		static void			memStackFree( int bytes );
 
-		static void			throwError( ErrorLevel severity, ErrorCode code, const char * pMsg, const Object * pObject, const TypeInfo * pClassType, const char * pFunction, const char * pFile, int line );
+		static void			reportError( ErrorLevel severity, ErrorCode code, const char * pMsg, const Object * pObject, const TypeInfo * pClassType, const char * pFunction, const char * pFile, int line );
 
 		static void			beginObjectTracking();
 		static void			endObjectTracking();

@@ -38,7 +38,7 @@ Window_p Window::create(API* pAPI, const Blueprint& blueprint)
 {
 	if (!pAPI)
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Window::create() - pAPI is nullptr.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Window::create() - pAPI is nullptr.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return nullptr;
 	}
 
@@ -67,7 +67,7 @@ Window::Window(API* pAPI, const Blueprint& blueprint)
 
 	if( !result.success )
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::Internal, result.errorMsg.c_str(), this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::Internal, result.errorMsg.c_str(), this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		m_pSysCalls = nullptr;
 		return;
 	}

@@ -321,8 +321,8 @@ static void populateBody(wg_c_calls_body * pBody)
 	pBody->surface.fillSurfaceRect			= LOCKED(wax_fillSurfaceRect);
 	pBody->surface.copySurface				= LOCKED(wax_copySurface);
 	pBody->surface.copySurfaceRect			= LOCKED(wax_copySurfaceRect);
-	pBody->surface.setSurfaceBaggage		= LOCKED(wax_setSurfaceBaggage);
-	pBody->surface.getSurfaceBaggage		= LOCKED(wax_getSurfaceBaggage);
+	pBody->surface.setSurfaceUserData		= LOCKED(wax_setSurfaceUserData);
+	pBody->surface.getSurfaceUserData		= LOCKED(wax_getSurfaceUserData);
 	pBody->surface.addSurfaceObserver		= LOCKED(wax_addSurfaceObserver);
 	pBody->surface.removeSurfaceObserver	= LOCKED(wax_removeSurfaceObserver);
 	pBody->surface.getSurfaceBlueprint		= LOCKED(wax_getSurfaceBlueprint);

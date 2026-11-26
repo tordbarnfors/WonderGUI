@@ -107,7 +107,6 @@ namespace wg
 		struct Blueprint
 		{
 			Axis			axis			= Axis::X;
-			Object_p		baggage;
 			bool			dropTarget 		= false;
 			bool			disabled 		= false;
 			Finalizer_p		finalizer 		= nullptr;
@@ -130,6 +129,7 @@ namespace wg
 			bool			takesFocusFromChild = true;
 			std::string			tooltip;
 			bool			usePickHandles	= false;
+			Object_p		userData;
 		};
 		
 		//.____ Creation __________________________________________

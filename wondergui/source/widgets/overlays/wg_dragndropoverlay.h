@@ -60,7 +60,6 @@ namespace wg
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			bool			disabled = false;
 			bool			dropTarget = false;
 			Finalizer_p		finalizer = nullptr;
@@ -77,6 +76,7 @@ namespace wg
 			bool			takesFocusFromChild = false;
 			std::string			tooltip;
 			bool			usePickHandles = false;
+			Object_p		userData;
 		};
 
 		//.____ Creation __________________________________________
@@ -153,7 +153,7 @@ namespace wg
 
 		pts				m_dragStartTreshold;
 		CoordSPX		m_dragWidgetOfs;                // Drag widgets offset from pointer.
-		CoordSPX		m_hotspotOfs;					// Hotspot offset from pointer.
+		CoordSPX		m_pivotOfs;					// Pivot offset from pointer.
 
 		Widget_wp       m_pProbed;                     // Last widget we sent a DropProbeMsg to. To avoid sending multiple messages in a row to same while hovering.
 		Widget_wp       m_pTargeted;                   // Widget targeted while in state Targeting.

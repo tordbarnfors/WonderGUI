@@ -85,21 +85,21 @@ namespace wg
 		return pEdgemap;
 	}
 
-	Edgemap_p PluginEdgemapFactory::createEdgemap(const Edgemap::Blueprint& blueprint, SampleOrigo origo, const float* pSamples, int edges, int edgePitch, int samplePitch)
+	Edgemap_p PluginEdgemapFactory::createEdgemap(const Edgemap::Blueprint& blueprint, SampleOrigin origin, const float* pSamples, int edges, int edgePitch, int samplePitch)
 	{
 		bpTranslator cBP(blueprint);
 
-		auto obj = PluginCalls::edgemapFactory->createEdgemapFromFloats(m_cFactory, cBP.bp(), (wax_sampleOrigo) origo, pSamples, edges, edgePitch, samplePitch);
+		auto obj = PluginCalls::edgemapFactory->createEdgemapFromFloats(m_cFactory, cBP.bp(), (wax_sampleOrigin) origin, pSamples, edges, edgePitch, samplePitch);
 		auto pEdgemap = PluginEdgemap::create(obj);
 		PluginCalls::object->release(obj);
 		return pEdgemap;
 	}
 
-	Edgemap_p PluginEdgemapFactory::createEdgemap(const Edgemap::Blueprint& blueprint, SampleOrigo origo, const spx* pSamples, int edges, int edgePitch, int samplePitch)
+	Edgemap_p PluginEdgemapFactory::createEdgemap(const Edgemap::Blueprint& blueprint, SampleOrigin origin, const spx* pSamples, int edges, int edgePitch, int samplePitch)
 	{
 		bpTranslator cBP(blueprint);
 
-		auto obj = PluginCalls::edgemapFactory->createEdgemapFromSpx(m_cFactory, cBP.bp(), (wax_sampleOrigo)origo, pSamples, edges, edgePitch, samplePitch);
+		auto obj = PluginCalls::edgemapFactory->createEdgemapFromSpx(m_cFactory, cBP.bp(), (wax_sampleOrigin)origin, pSamples, edges, edgePitch, samplePitch);
 		auto pEdgemap = PluginEdgemap::create(obj);
 		PluginCalls::object->release(obj);
 		return pEdgemap;

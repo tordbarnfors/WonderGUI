@@ -25,7 +25,7 @@ You can get a callback when a surface is modified by adding an Observer.
 
 | Property        | Description                                                  |
 | --------------- | ------------------------------------------------------------ |
-| baggage         | Any object associated with the surface. Can be retrieved using baggage(). |
+| userData        | Any object associated with the surface. Can be retrieved using userData(). |
 | bigEndian       | Byte order of the pixels. Defaults to the byte order of the system. |
 | canvas          | Must be set to true if surface might be used as canvas by the GfxDevice. This might affect performance. Defaults to false. |
 | colorSpace      | Color space of the pixels, sRGB or Linear. Defaults to sRGB. Colors given to WonderGUI are always sRGB, while blending always is done in linear space. |
@@ -81,7 +81,7 @@ It is held as a std::function, so it can also be a lambda that captures what it 
 auto pIcon = pFactory->createSurface({ .restorer = [path]( Surface * pSurface ) { return loadInto( pSurface, path ); }, .size = {64,64} }, pPixels );
 ```
 
-A plain function only gets the surface, and can use its identity or baggage to tell surfaces sharing a restorer apart.
+A plain function only gets the surface, and can use its identity or user data to tell surfaces sharing a restorer apart.
 
 Whatever a restorer captures or uses has to be there for as long as the surface is, which can be longer than you think: a font or a frame being rendered may hold on to the surface after you let go of it. If a restorer points at something that is going away before the surface, call dropRestorer() on the surface first. The surface then behaves as if its restorer returned false.
 

@@ -289,7 +289,7 @@ namespace wax
 			// was reported then, and is no news to every surface created after.
 
 			if( !DX12Backend::isDeviceLost() )
-				Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
+				Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
 					"No D3D12 device set. Call DX12Backend::setDevice() before creating any surface.",
 					nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
@@ -309,7 +309,7 @@ namespace wax
 			// The same goes for the failures further down.
 
 			if( !DX12Backend::checkDeviceLost() )
-				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create resources for surface uploads.",
+				Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create resources for surface uploads.",
 					nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
@@ -449,7 +449,7 @@ namespace wax
 			// A lost device is reported once by DX12Backend, not by every surface.
 
 			if( pMessage && !DX12Backend::checkDeviceLost() )
-				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, pMessage, this, &TYPEINFO, pFunc, __FILE__, __LINE__);
+				Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, pMessage, this, &TYPEINFO, pFunc, __FILE__, __LINE__);
 
 			return false;
 		};
@@ -632,7 +632,7 @@ namespace wax
 			// A lost device is reported once by DX12Backend, not by every surface.
 
 			if( !DX12Backend::checkDeviceLost() )
-				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for pixels on their way to the texture of a surface.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for pixels on their way to the texture of a surface.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 			return nullptr;
 		}
@@ -886,7 +886,7 @@ namespace wax
 
 		if( m_resourceState != D3D12_RESOURCE_STATE_COMMON )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::Internal,
+			Base::reportError(ErrorLevel::Error, ErrorCode::Internal,
 				"Can't upload to a surface that is in use by the backend.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
@@ -953,7 +953,7 @@ namespace wax
 
 		if( m_resourceState != D3D12_RESOURCE_STATE_COMMON )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::Internal,
+			Base::reportError(ErrorLevel::Error, ErrorCode::Internal,
 				"Can't read back a surface that is in use by the backend.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
@@ -990,7 +990,7 @@ namespace wax
 													  D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(buffer.GetAddressOf()))) )
 		{
 			if( !DX12Backend::checkDeviceLost() )
-				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for reading back a surface.",
+				Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for reading back a surface.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}

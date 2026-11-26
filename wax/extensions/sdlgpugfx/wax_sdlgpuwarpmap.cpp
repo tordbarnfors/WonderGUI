@@ -56,7 +56,7 @@ namespace wax
 
 		if (!SdlGpuContext::isReady())
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
 				"No SDL_GPU device set. SdlGpuBackend::setDevice() must be called before any warpmap is created.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;

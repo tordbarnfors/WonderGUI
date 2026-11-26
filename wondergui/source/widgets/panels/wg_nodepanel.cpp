@@ -282,7 +282,7 @@ namespace wg
 		}
 		else
 		{
-			Base::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "Attempt to remove observer not in list. Ignoring.", this, &NodePanel::TYPEINFO, __func__, __FILE__, __LINE__ );
+			Base::reportError(ErrorLevel::Warning, ErrorCode::InvalidParam, "Attempt to remove observer not in list. Ignoring.", this, &NodePanel::TYPEINFO, __func__, __FILE__, __LINE__ );
 			return false;
 		}
 	}
@@ -488,7 +488,7 @@ namespace wg
 {
 		if( pNewChild == nullptr )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Slot in NodePanel must contain pointer to widget and not nullptr.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Slot in NodePanel must contain pointer to widget and not nullptr.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 

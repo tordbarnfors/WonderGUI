@@ -341,7 +341,7 @@ namespace wax
 						toString(mode),
 						toString(m_canvasSoftFormat));
 
-					Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Base::reportError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				};
 
 				bool bRuns;
@@ -536,7 +536,7 @@ namespace wax
 						toString(m_blendMode),
 						toString(m_canvasSoftFormat));
 
-					Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Base::reportError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					return;
 				}
 
@@ -801,7 +801,7 @@ namespace wax
 			case Command::DrawEdgemap:
 			case Command::TileEdgemap:
 			{
-				bool bTile = (cmd == Command::TileEdgemap);		// Origo is for one of the copies, rects give area to fill.
+				bool bTile = (cmd == Command::TileEdgemap);		// Origin is for one of the copies, rects give area to fill.
 
 				int32_t nRects = *p++;
 				int32_t	flip = *p++;
@@ -949,7 +949,7 @@ namespace wax
 						toString(m_blendMode),
 						toString(m_canvasSoftFormat));
 
-					Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Base::reportError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					break;
 				}
 

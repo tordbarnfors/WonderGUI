@@ -94,7 +94,7 @@ int RLECompressor::compress( void * pDest, const void * pBegin, const void * pEn
 {
 	if( (((int8_t*) pEnd) - ((int8_t*) pBegin)) % m_primSize != 0 )
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Size of data to compress is not a multiple of primSize.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Size of data to compress is not a multiple of primSize.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return -1;
 	}
 

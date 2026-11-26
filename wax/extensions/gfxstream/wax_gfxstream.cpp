@@ -170,7 +170,7 @@ int GfxStream::loadDecompressData( DataInfo& dataInfo, uint8_t * pBuffer, const 
 				return pCompressor->decompress(pBuffer, pBuffer + dataInfo.dataStart, pBuffer + dataInfo.bufferSize);
 			else
 			{
-				Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Don't know how to decompress data in chunk, add matching decompressor to Base.", nullptr, nullptr, __func__, __FILE__, __LINE__ );
+				Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Don't know how to decompress data in chunk, add matching decompressor to Base.", nullptr, nullptr, __func__, __FILE__, __LINE__ );
 				return -1;
 			}
 		}

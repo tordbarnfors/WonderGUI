@@ -39,7 +39,7 @@ SoftEdgemap_p	SoftEdgemap::create( const Blueprint& blueprint )
 	return SoftEdgemap_p( new SoftEdgemap(blueprint) );
 }
 
-SoftEdgemap_p SoftEdgemap::create( const Blueprint& blueprint, SampleOrigo origo, const float * pSamples, int edges, int edgePitch, int samplePitch)
+SoftEdgemap_p SoftEdgemap::create( const Blueprint& blueprint, SampleOrigin origin, const float * pSamples, int edges, int edgePitch, int samplePitch)
 {
 	if( !_validateBlueprint(blueprint) )
 		return nullptr;
@@ -49,13 +49,13 @@ SoftEdgemap_p SoftEdgemap::create( const Blueprint& blueprint, SampleOrigo origo
 
 	auto p = SoftEdgemap_p( new SoftEdgemap(blueprint) );
 
-	p->_importSamples(origo, pSamples, 0, edges, 0, p->samples(), edgePitch, samplePitch);
+	p->_importSamples(origin, pSamples, 0, edges, 0, p->samples(), edgePitch, samplePitch);
 	p->m_nbRenderSegments = edges+1;
 	
 	return p;
 }
 
-SoftEdgemap_p SoftEdgemap::create( const Blueprint& blueprint, SampleOrigo origo, const spx * pSamples, int edges, int edgePitch, int samplePitch)
+SoftEdgemap_p SoftEdgemap::create( const Blueprint& blueprint, SampleOrigin origin, const spx * pSamples, int edges, int edgePitch, int samplePitch)
 {
 	if( !_validateBlueprint(blueprint) )
 		return nullptr;
@@ -65,7 +65,7 @@ SoftEdgemap_p SoftEdgemap::create( const Blueprint& blueprint, SampleOrigo origo
 	
 	auto p = SoftEdgemap_p( new SoftEdgemap(blueprint) );
 
-	p->_importSamples(origo, pSamples, 0, edges, 0, p->samples(), edgePitch, samplePitch);
+	p->_importSamples(origin, pSamples, 0, edges, 0, p->samples(), edgePitch, samplePitch);
 	p->m_nbRenderSegments = edges+1;
 	
 	return p;

@@ -268,7 +268,7 @@ namespace wg
 				_.bottomOutlineThickness = entry.m_bottomOutlineThickness*m_scale,
 				_.color = entry.m_fillColor,
 				_.factory = m_pEdgemapFactory,
-				_.origo = SampleOrigo::Top,
+				_.origin = SampleOrigin::Top,
 				_.outlineColor = entry.m_outlineColor,
 				_.outlineTint = entry.m_pOutlineTint,
 				_.size = waveSize*64,

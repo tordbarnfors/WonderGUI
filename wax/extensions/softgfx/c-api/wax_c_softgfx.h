@@ -46,8 +46,8 @@ WAX_EXPORT wax_obj	wax_createSoftSurfaceFactory(void);
 
 
 WAX_EXPORT wax_obj	wax_createSoftEdgemap( const wax_edgemapBP* blueprint );
-WAX_EXPORT wax_obj	wax_createSoftEdgemapFromFloats( const wax_edgemapBP* blueprint, wax_sampleOrigo origo, const float * pSamples, int edges, int edgePitch, int samplePitch);
-WAX_EXPORT wax_obj	wax_createSoftEdgemapFromSpx( const wax_edgemapBP* blueprint, wax_sampleOrigo origo, const wax_spx * pSamples, int edges, int edgePitch, int samplePitch);
+WAX_EXPORT wax_obj	wax_createSoftEdgemapFromFloats( const wax_edgemapBP* blueprint, wax_sampleOrigin origin, const float * pSamples, int edges, int edgePitch, int samplePitch);
+WAX_EXPORT wax_obj	wax_createSoftEdgemapFromSpx( const wax_edgemapBP* blueprint, wax_sampleOrigin origin, const wax_spx * pSamples, int edges, int edgePitch, int samplePitch);
 
 WAX_EXPORT wax_obj	wax_createSoftEdgemapFactory(void);
 WAX_EXPORT wax_obj	wax_createSoftWarpmapFactory(void);

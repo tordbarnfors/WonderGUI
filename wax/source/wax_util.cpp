@@ -58,7 +58,7 @@ namespace wax
 															{ 0,-1,-1,0 },			// Rot270FlipX
 															{ 0,1,1,0 } };			// Rot270FlipY
 /*
-	const int Util::_flipOrigoMatrix[GfxFlip_size][2] = {	{ 0,0 },				// Normal
+	const int Util::_flipOriginMatrix[GfxFlip_size][2] = {	{ 0,0 },				// Normal
 															{ 1,0 },				// FlipX
 															{ 0,1 },				// FlipY
 															{ 0,1 },				// Rot90
@@ -72,7 +72,7 @@ namespace wax
 															{ 0,0 } };				// Rot270FlipY
 */
 
-const Util::Matrix22 Util::_flipOrigoMatrix[GfxFlip_size] = {	{ 0,0,0,0 },				// Normal
+const Util::Matrix22 Util::_flipOriginMatrix[GfxFlip_size] = {	{ 0,0,0,0 },				// Normal
 																{ 1,0,0,0 },				// FlipX
 																{ 0,0,0,1 },				// FlipY
 																{ 0,1,0,0 },				// Rot90
@@ -85,7 +85,7 @@ const Util::Matrix22 Util::_flipOrigoMatrix[GfxFlip_size] = {	{ 0,0,0,0 },				//
 																{ 0,1,1,0 },				// Rot270FlipX
 																{ 0,0,0,0 } };				// Rot270FlipY
 
-const Util::Matrix22 Util::_unflipOrigoMatrix[GfxFlip_size] = {	{ 0,0,0,0 },				// Normal
+const Util::Matrix22 Util::_unflipOriginMatrix[GfxFlip_size] = {	{ 0,0,0,0 },				// Normal
 																{ 1,0,0,0 },				// FlipX
 																{ 0,0,0,1 },				// FlipY
 																{ 0,0,1,0 },				// Rot90

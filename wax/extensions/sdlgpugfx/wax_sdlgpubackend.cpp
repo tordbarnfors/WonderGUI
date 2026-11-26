@@ -51,7 +51,7 @@ namespace wax
 	{
 		if (!SdlGpuContext::isReady())
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
 				"No SDL_GPU device set. Call SdlGpuBackend::setDevice() before creating a backend.",
 				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
@@ -69,7 +69,7 @@ namespace wax
 
 		if (SdlGpuContext::nbBackends() > 0)
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::IllegalCall,
+			Base::reportError(ErrorLevel::Error, ErrorCode::IllegalCall,
 				"Can't change SDL_GPU device while SdlGpuBackends exist.",
 				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
@@ -96,7 +96,7 @@ namespace wax
 		m_bDeviceObjectsOK = _createDeviceObjects();
 
 		if (!m_bDeviceObjectsOK)
-			Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create the SDL_GPU objects of the backend, nothing will render.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create the SDL_GPU objects of the backend, nothing will render.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
@@ -413,7 +413,7 @@ namespace wax
 
 		if (pSurface && (!pSurface->m_bCanvas || !pSurface->texture()))
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Surface can not be used as canvas, rendering to default canvas instead.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Surface can not be used as canvas, rendering to default canvas instead.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			pSurface = nullptr;
 		}
@@ -532,7 +532,7 @@ namespace wax
 
 			if (!bMultiply && blend.srcColor != BlendFactor::One)
 			{
-				Base::throwError(ErrorLevel::Error, ErrorCode::Internal, "Blending with a second color that SdlGpuBackend has no draws for.",
+				Base::reportError(ErrorLevel::Error, ErrorCode::Internal, "Blending with a second color that SdlGpuBackend has no draws for.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				return pipeline;
 			}
@@ -683,7 +683,7 @@ namespace wax
 
 		char buffer[128];
 		snprintf(buffer, sizeof(buffer), "Shader %s is missing, run compile_shaders.py.", pName ? pName : "without a name");
-		Base::throwError(ErrorLevel::Error, ErrorCode::Internal, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::Internal, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return nullptr;
 	}
@@ -1260,7 +1260,7 @@ namespace wax
 				m_defaultCanvas.format = PixelFormat::Undefined;
 				m_pDefaultTexture = nullptr;
 
-				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Default canvas has a format that isn't supported.",
+				Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Default canvas has a format that isn't supported.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				return false;
 		}
@@ -1275,7 +1275,7 @@ namespace wax
 		if (ref == CanvasRef::Default)
 			return &m_defaultCanvas;
 
-		Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only Default canvas is supported.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only Default canvas is supported.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return &m_dummyCanvas;
 	}
 

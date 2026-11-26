@@ -38,7 +38,7 @@ namespace wg
 	const TypeInfo FlexPanel::TYPEINFO = { "FlexPanel", &Panel::TYPEINFO };
 	const TypeInfo FlexPanelSlot::TYPEINFO = { "FlexPanelSlot", &PanelSlot::TYPEINFO };
 
-	float	FlexPos::s_origoTab[Placement_size][2] = {	-1.f, -1.f,			// Signals undefined.
+	float	FlexPos::s_originTab[Placement_size][2] = {	-1.f, -1.f,			// Signals undefined.
 														0.f, 0.f,
 														0.5f, 0.f,
 														1.f, 0.f,
@@ -55,7 +55,7 @@ namespace wg
 
 	bool FlexPanelSlot::_setBlueprint( const Blueprint& bp )
 	{
-		if(bp.pin1.origo.x >= 0.f && bp.pin2.origo.x >= 0.f )
+		if(bp.pin1.origin.x >= 0.f && bp.pin2.origin.x >= 0.f )
 		{
 			m_bPinned = true;
 			m_topLeftPin = bp.pin1;
@@ -64,8 +64,8 @@ namespace wg
 		else
 		{
 			m_placementGeo = Rect( bp.pos, bp.size );
-			m_origo = bp.origo;
-			m_hotspot = bp.hotspot.origo.x < 0 ? bp.origo : bp.hotspot;
+			m_origin = bp.origin;
+			m_pivot = bp.pivot.origin.x < 0 ? bp.origin : bp.pivot;
 
 		}
 		
@@ -102,7 +102,7 @@ namespace wg
 
 	//____ FlexPanelSlot::setMovable() _______________________________________________
 
-	void FlexPanelSlot::setMovable(const FlexPos& origo, const FlexPos& hotspot)
+	void FlexPanelSlot::setMovable(const FlexPos& origin, const FlexPos& pivot)
 	{
 		if (m_bPinned)
 		{
@@ -111,44 +111,44 @@ namespace wg
 
 
 			m_bPinned = false;
-			m_origo = origo;
-			m_hotspot = hotspot.origo.x < 0 ? origo : hotspot;
-			m_placementGeo = geo - origo.pos(static_cast<FlexPanel*>(_holder())->size()) + hotspot.pos(geo);
+			m_origin = origin;
+			m_pivot = pivot.origin.x < 0 ? origin : pivot;
+			m_placementGeo = geo - origin.pos(static_cast<FlexPanel*>(_holder())->size()) + pivot.pos(geo);
 
 			static_cast<FlexPanel*>(_holder())->_refreshRealGeo(this);
 		}
 	}
 
-	void FlexPanelSlot::setMovable(const Rect& geometry, const FlexPos& origo, const FlexPos& hotspot)
+	void FlexPanelSlot::setMovable(const Rect& geometry, const FlexPos& origin, const FlexPos& pivot)
 	{
 		m_bPinned = false;
-		m_origo = origo;
-		m_hotspot = hotspot.origo.x < 0 ? origo : hotspot;
+		m_origin = origin;
+		m_pivot = pivot.origin.x < 0 ? origin : pivot;
 		m_placementGeo = geometry;
 
 		static_cast<FlexPanel*>(_holder())->_refreshRealGeo(this);
 	}
 
-	//____ FlexPanelSlot::setOrigo() __________________________________________________
+	//____ FlexPanelSlot::setOrigin() __________________________________________________
 
-	bool FlexPanelSlot::setOrigo(const FlexPos& origo)
+	bool FlexPanelSlot::setOrigin(const FlexPos& origin)
 	{
 		if (m_bPinned)
 			return false;
 
-		m_origo = origo;
+		m_origin = origin;
 		static_cast<FlexPanel*>(_holder())->_refreshRealGeo(this);
 		return true;
 	}
 
-	//____ FlexPanelSlot::setHotspot() _________________________________________________
+	//____ FlexPanelSlot::setPivot() _________________________________________________
 
-	bool FlexPanelSlot::setHotspot(const FlexPos& hotspot)
+	bool FlexPanelSlot::setPivot(const FlexPos& pivot)
 	{
 		if (m_bPinned)
 			return false;
 
-		m_hotspot = hotspot;
+		m_pivot = pivot;
 		static_cast<FlexPanel*>(_holder())->_refreshRealGeo(this);
 		return true;
 	}
@@ -488,7 +488,7 @@ namespace wg
 	{
 		if( pNewChild == nullptr )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Slot in FlexPanel must contain pointer to widget and not nullptr.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Slot in FlexPanel must contain pointer to widget and not nullptr.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 
@@ -556,8 +556,8 @@ namespace wg
 
 			// Calculate position
 
-			CoordSPX pos = pSlot->m_origo._pos( m_size, m_scale );		// Placement,
-			pos -= pSlot->m_hotspot._pos(sz, m_scale);				// hotspot
+			CoordSPX pos = pSlot->m_origin._pos( m_size, m_scale );		// Placement,
+			pos -= pSlot->m_pivot._pos(sz, m_scale);				// pivot
 			pos += ptsToSpx(pSlot->m_placementGeo.pos(),m_scale);				// and Offset.
 
 			// Limit size/pos according to parent
@@ -634,8 +634,8 @@ namespace wg
 			sz += SizeSPX( pSlot->m_topLeftPin.offset.x, pSlot->m_topLeftPin.offset.y );
 			sz -= SizeSPX( pSlot->m_bottomRightPin.offset.x, pSlot->m_bottomRightPin.offset.y );
 
-			auto dividerX = (pSlot->m_bottomRightPin.origo.x - pSlot->m_topLeftPin.origo.x);
-			auto dividerY = (pSlot->m_bottomRightPin.origo.y - pSlot->m_topLeftPin.origo.y);
+			auto dividerX = (pSlot->m_bottomRightPin.origin.x - pSlot->m_topLeftPin.origin.x);
+			auto dividerY = (pSlot->m_bottomRightPin.origin.y - pSlot->m_topLeftPin.origin.y);
 
 			if( dividerX > 0.f )
 				sz.w /= dividerX;
@@ -647,30 +647,30 @@ namespace wg
 		{
 			RectSPX geo = ptsToSpx(pSlot->m_placementGeo,scale);
 
-			CoordSPX hotspot = pSlot->m_hotspot._pos(geo.size(), scale);
-			CoordSPX offset = geo.pos() + ptsToSpx(pSlot->m_origo.offset,scale) - hotspot;
+			CoordSPX pivot = pSlot->m_pivot._pos(geo.size(), scale);
+			CoordSPX offset = geo.pos() + ptsToSpx(pSlot->m_origin.offset,scale) - pivot;
 
-			spx leftOfOrigo = 0 - offset.x;
-			spx rightOfOrigo = offset.x + geo.w;
-			spx aboveOrigo = 0 - offset.y;
-			spx belowOrigo = offset.y + geo.h;
+			spx leftOfOrigin = 0 - offset.x;
+			spx rightOfOrigin = offset.x + geo.w;
+			spx aboveOrigin = 0 - offset.y;
+			spx belowOrigin = offset.y + geo.h;
 
-			if( leftOfOrigo > 0 )
-				sz.w = leftOfOrigo / pSlot->m_origo.origo.x;
+			if( leftOfOrigin > 0 )
+				sz.w = leftOfOrigin / pSlot->m_origin.origin.x;
 
-			if( rightOfOrigo > 0 )
+			if( rightOfOrigin > 0 )
 			{
-				int w = rightOfOrigo / (1.f - pSlot->m_origo.origo.x);
+				int w = rightOfOrigin / (1.f - pSlot->m_origin.origin.x);
 				if( sz.w < w )
 					sz.w = w;
 			}
 
-			if( aboveOrigo > 0 )
-				sz.h = aboveOrigo / pSlot->m_origo.origo.y;
+			if( aboveOrigin > 0 )
+				sz.h = aboveOrigin / pSlot->m_origin.origin.y;
 
-			if( belowOrigo > 0 )
+			if( belowOrigin > 0 )
 			{
-				int h = belowOrigo / (1.f - pSlot->m_origo.origo.y);
+				int h = belowOrigin / (1.f - pSlot->m_origin.origin.y);
 				if( sz.h < h )
 					sz.h = h;
 			}

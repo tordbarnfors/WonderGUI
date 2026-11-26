@@ -101,16 +101,16 @@ namespace wax
 		// is the step between samples of an edge (1 if 0) and edgePitch between edges (samplePitch
 		// times the number of samples if 0). Float samples are fractions of the height.
 
-		bool 			importSamples( SampleOrigo origo, const spx * pSource, int edgeBegin, int edgeEnd,
+		bool 			importSamples( SampleOrigin origin, const spx * pSource, int edgeBegin, int edgeEnd,
 									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 );
 
-		bool 			importSamples( SampleOrigo origo, const float * pSource, int edgeBegin, int edgeEnd,
+		bool 			importSamples( SampleOrigin origin, const float * pSource, int edgeBegin, int edgeEnd,
 									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 );
 
-		bool 			exportSamples( SampleOrigo origo, spx * pDestination, int edgeBegin, int edgeEnd,
+		bool 			exportSamples( SampleOrigin origin, spx * pDestination, int edgeBegin, int edgeEnd,
 									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 );
 
-		bool 			exportSamples( SampleOrigo origo, float * pDestination, int edgeBegin, int edgeEnd,
+		bool 			exportSamples( SampleOrigin origin, float * pDestination, int edgeBegin, int edgeEnd,
 									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 );
 
 		virtual void	exportBounds( spx * pMinMaxOutput, int nSections, int sectionWidth,
@@ -118,16 +118,16 @@ namespace wax
 
 		//.____ Misc __________________________________________________________
 
-		// Convert samples given relative to origo into spx from the top, as edgemaps store them.
-		// Float samples are fractions of height (half the height for the middle origos).
+		// Convert samples given relative to origin into spx from the top, as edgemaps store them.
+		// Float samples are fractions of height (half the height for the middle origins).
 
-		static void		convertSamples( spx * pDest, const spx * pSource, SampleOrigo origo, spx height, int nEdges, int nSamples,
+		static void		convertSamples( spx * pDest, const spx * pSource, SampleOrigin origin, spx height, int nEdges, int nSamples,
 										int srcEdgePitch, int srcSamplePitch, int destEdgePitch, int destSamplePitch );
-		static void		convertSamples( spx * pDest, const float * pSource, SampleOrigo origo, spx height, int nEdges, int nSamples,
+		static void		convertSamples( spx * pDest, const float * pSource, SampleOrigin origin, spx height, int nEdges, int nSamples,
 										int srcEdgePitch, int srcSamplePitch, int destEdgePitch, int destSamplePitch );
 
-		static spx		convertSample( spx sample, SampleOrigo origo, spx height );
-		static spx		convertSample( float sample, SampleOrigo origo, spx height );
+		static spx		convertSample( spx sample, SampleOrigin origin, spx height );
+		static spx		convertSample( float sample, SampleOrigin origin, spx height );
 
 	protected:
 
@@ -139,10 +139,10 @@ namespace wax
 
 		void			_mirrorFirstColumn(int edgeBegin, int edgeEnd, int sampleBegin);
 
-		virtual void 	_importSamples(SampleOrigo origo, const spx* pSource, int edgeBegin, int edgeEnd,
+		virtual void 	_importSamples(SampleOrigin origin, const spx* pSource, int edgeBegin, int edgeEnd,
 									   int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
 
-		virtual void 	_importSamples(SampleOrigo origo, const float* pSource, int edgeBegin, int edgeEnd,
+		virtual void 	_importSamples(SampleOrigin origin, const float* pSource, int edgeBegin, int edgeEnd,
 									   int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
 
 		// Typically these two methods is all that you need to override when subclassing.

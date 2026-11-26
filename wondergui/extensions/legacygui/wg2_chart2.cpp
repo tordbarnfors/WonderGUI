@@ -1029,7 +1029,7 @@ void WgChart2::_renderWave( Wave& wave, wg::GfxDevice * pDevice, const WgRect& w
 												_.bottomOutlineThickness = wave.bottomLineThickness*64*m_scale/WG_SCALE_BASE;
 												_.outlineColor = wave.lineColor,
 												_.topOutlineThickness = wave.topLineThickness*64*m_scale/WG_SCALE_BASE;
-												_.origo = wg::SampleOrigo::Top;
+												_.origin = wg::SampleOrigin::Top;
 		));
 	}
 

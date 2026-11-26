@@ -129,7 +129,7 @@ namespace wax
 
 		char buffer[256];
 		snprintf( buffer, sizeof(buffer), "%s failed, VkResult = %d", pWhat, int(result) );
-		Base::throwError( ErrorLevel::Error, ErrorCode::RenderFailure, buffer, pObject, pClassType, func, file, line );
+		Base::reportError( ErrorLevel::Error, ErrorCode::RenderFailure, buffer, pObject, pClassType, func, file, line );
 		return false;
 	}
 
@@ -142,7 +142,7 @@ namespace wax
 
 		s_bDeviceLost = true;
 
-		Base::throwError( ErrorLevel::Error, ErrorCode::RenderFailure,
+		Base::reportError( ErrorLevel::Error, ErrorCode::RenderFailure,
 			"Vulkan device lost. Vulkan rendering stops, a new device can't be set yet.",
 			nullptr, &s_typeInfo, __func__, __FILE__, __LINE__ );
 	}

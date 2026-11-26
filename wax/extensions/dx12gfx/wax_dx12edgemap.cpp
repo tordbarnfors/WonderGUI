@@ -49,7 +49,7 @@ namespace wax
 		return DX12Edgemap_p(new DX12Edgemap(blueprint));
 	}
 
-	DX12Edgemap_p DX12Edgemap::create(const Blueprint& blueprint, SampleOrigo origo, const float* pSamples, int edges, int edgePitch, int samplePitch)
+	DX12Edgemap_p DX12Edgemap::create(const Blueprint& blueprint, SampleOrigin origin, const float* pSamples, int edges, int edgePitch, int samplePitch)
 	{
 		if (!_validateBlueprint(blueprint))
 			return nullptr;
@@ -59,13 +59,13 @@ namespace wax
 
 		auto p = DX12Edgemap_p(new DX12Edgemap(blueprint));
 
-		p->_importSamples(origo, pSamples, 0, edges, 0, p->samples(), edgePitch, samplePitch);
+		p->_importSamples(origin, pSamples, 0, edges, 0, p->samples(), edgePitch, samplePitch);
 		p->m_nbRenderSegments = edges + 1;
 
 		return p;
 	}
 
-	DX12Edgemap_p DX12Edgemap::create(const Blueprint& blueprint, SampleOrigo origo, const spx* pSamples, int edges, int edgePitch, int samplePitch)
+	DX12Edgemap_p DX12Edgemap::create(const Blueprint& blueprint, SampleOrigin origin, const spx* pSamples, int edges, int edgePitch, int samplePitch)
 	{
 		if (!_validateBlueprint(blueprint))
 			return nullptr;
@@ -75,7 +75,7 @@ namespace wax
 
 		auto p = DX12Edgemap_p(new DX12Edgemap(blueprint));
 
-		p->_importSamples(origo, pSamples, 0, edges, 0, p->samples(), edgePitch, samplePitch);
+		p->_importSamples(origin, pSamples, 0, edges, 0, p->samples(), edgePitch, samplePitch);
 		p->m_nbRenderSegments = edges + 1;
 
 		return p;
@@ -96,7 +96,7 @@ namespace wax
 
 		if( !DX12Backend::device() )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
 				"No D3D12 device set. DX12Backend must be created before any edgemap.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;

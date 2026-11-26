@@ -55,8 +55,8 @@ namespace wax
 		//.____ Misc _______________________________________________________
 
 		virtual Edgemap_p createEdgemap( const Edgemap::Blueprint& blueprint) = 0;
-		virtual Edgemap_p createEdgemap( const Edgemap::Blueprint& blueprint, SampleOrigo origo, const float * pSamples, int edges, int edgePitch = 0, int samplePitch = 0) = 0;
-		virtual Edgemap_p createEdgemap( const Edgemap::Blueprint& blueprint, SampleOrigo origo, const spx * pSamples, int edges, int edgePitch = 0, int samplePitch = 0) = 0;
+		virtual Edgemap_p createEdgemap( const Edgemap::Blueprint& blueprint, SampleOrigin origin, const float * pSamples, int edges, int edgePitch = 0, int samplePitch = 0) = 0;
+		virtual Edgemap_p createEdgemap( const Edgemap::Blueprint& blueprint, SampleOrigin origin, const spx * pSamples, int edges, int edgePitch = 0, int samplePitch = 0) = 0;
 
 	protected:
 		EdgemapFactory() {}

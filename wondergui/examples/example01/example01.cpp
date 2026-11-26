@@ -149,7 +149,7 @@ int main ( int argc, char** argv )
 
 		Button_p pButton = Button::create();
 		pButton->setSkin(BlockSkin::create( { .axis = Axis::X, .frame = Border(3,3,3,3), .states = { State::Hovered, {}, State::Pressed, {}, State::Disabled, {} }, .surface = pButtonSurface }));
-		pFlexPanel->slots.pushFront(pButton, { .origo = Placement::Center, .size = {80,33} });
+		pFlexPanel->slots.pushFront(pButton, { .origin = Placement::Center, .size = {80,33} });
 
 		// Finally we add a callback to the click-event of the button.
 

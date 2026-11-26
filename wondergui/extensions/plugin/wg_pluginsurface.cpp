@@ -70,7 +70,7 @@ namespace wg
 		m_pPalette			= (Color8*)PluginCalls::surface->surfacePalette(object);
 		m_paletteSize		= PluginCalls::surface->surfacePaletteSize(object);
 		m_paletteCapacity	= PluginCalls::surface->surfacePaletteCapacity(object);
-		m_pBaggage			= reinterpret_cast<Object*>(PluginCalls::surface->getSurfaceBaggage(object));
+		m_pUserData			= reinterpret_cast<Object*>(PluginCalls::surface->getSurfaceUserData(object));
 	}
 
 	//____ Destructor ______________________________________________________________

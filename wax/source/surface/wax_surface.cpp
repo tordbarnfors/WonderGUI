@@ -205,7 +205,7 @@ namespace wax
 	{
 		Blueprint bp;
 
-		bp.baggage = m_pBaggage;
+		bp.userData = m_pUserData;
 		bp.bigEndian = m_bBigEndian;
 		bp.canvas = m_bCanvas;
 		bp.colorSpace = m_colorSpace;
@@ -289,7 +289,7 @@ namespace wax
 		bool bPushed = pSrcSurface->pushPixels(srcbuf);
 		if (!bPushed)
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to access pixels of source surface.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to access pixels of source surface.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			//TODO: Error handling.
 		}
@@ -325,7 +325,7 @@ namespace wax
 
 		if (!pFactory)
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No surface factory available for surface conversion.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No surface factory available for surface conversion.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return Surface_p();
 		}

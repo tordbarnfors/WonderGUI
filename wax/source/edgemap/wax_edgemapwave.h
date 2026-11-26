@@ -66,7 +66,7 @@ namespace wax
 			Finalizer_p			finalizer = nullptr;
 			GfxFlip				flip = GfxFlip::None;					// Flip of the wave, which runs along x before it. Fixed once created.
 			bool				optimize = true;						// Check for re-setting of same values to minimize updated regions.
-			SampleOrigo			origo = SampleOrigo::Top;
+			SampleOrigin			origin = SampleOrigin::Top;
 			Color				outlineColor = Color::DarkGrey;
 			Tint_p				outlineTint;							// Overrides outlineColor when set.
 			SizeSPX				size;									// Mandatory. Size before flip. Rounded to whole pixels.
@@ -156,7 +156,7 @@ namespace wax
 
 		SizeI		m_size;
 
-		SampleOrigo	m_origo;
+		SampleOrigin	m_origin;
 
 		bool		m_bHasOutlines;
 		bool		m_bColorsChanged = false;		// Colors or tints set since last generate().

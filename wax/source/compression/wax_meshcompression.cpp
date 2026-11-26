@@ -338,7 +338,7 @@ int MeshDecompressor::decompress( void * _pDest, const void * _pBegin, const voi
 
 	auto fail = [&](const char* pMessage, int written)
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, pMessage, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, pMessage, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return written;
 	};
 

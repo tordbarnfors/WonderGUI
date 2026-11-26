@@ -45,14 +45,14 @@ namespace wax
 		return GlEdgemap::create(blueprint);
 	}	
 
-	Edgemap_p GlEdgemapFactory::createEdgemap( const Edgemap::Blueprint& blueprint, SampleOrigo origo, const float * pSamples, int edges, int edgePitch, int samplePitch )
+	Edgemap_p GlEdgemapFactory::createEdgemap( const Edgemap::Blueprint& blueprint, SampleOrigin origin, const float * pSamples, int edges, int edgePitch, int samplePitch )
 	{
-		return GlEdgemap::create(blueprint, origo, pSamples, edges, edgePitch, samplePitch);
+		return GlEdgemap::create(blueprint, origin, pSamples, edges, edgePitch, samplePitch);
 	}
 
-	Edgemap_p GlEdgemapFactory::createEdgemap( const Edgemap::Blueprint& blueprint, SampleOrigo origo, const spx * pSamples, int edges, int edgePitch, int samplePitch )
+	Edgemap_p GlEdgemapFactory::createEdgemap( const Edgemap::Blueprint& blueprint, SampleOrigin origin, const spx * pSamples, int edges, int edgePitch, int samplePitch )
 	{
-		return GlEdgemap::create(blueprint, origo, pSamples, edges, edgePitch, samplePitch);
+		return GlEdgemap::create(blueprint, origin, pSamples, edges, edgePitch, samplePitch);
 	}
 
 

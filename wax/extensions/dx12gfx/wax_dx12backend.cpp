@@ -91,7 +91,7 @@ namespace wax
 
 			char buffer[256];
 			sprintf_s(buffer, "%s failed, HRESULT = 0x%08lX", what, (unsigned long)hr);
-			Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, pObject, pClassType, func, file, line);
+			Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, pObject, pClassType, func, file, line);
 			assert(false);
 			return false;
 		}
@@ -119,7 +119,7 @@ namespace wax
 	{
 		if (!s_pDevice || !s_pCommandQueue)
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
 				"No D3D12 device set. Call DX12Backend::setDevice() before creating a backend.",
 				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
@@ -138,7 +138,7 @@ namespace wax
 		}
 		else if (s_pDevice.Get() != pDX12Device || s_pCommandQueue.Get() != pDX12CommandQueue)
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam,
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam,
 				"All backends must share the device and command queue set by DX12Backend::setDevice().",
 				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
@@ -153,7 +153,7 @@ namespace wax
 	{
 		if ((pDX12Device == nullptr) != (pDX12CommandQueue == nullptr))
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam,
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam,
 				"Device and command queue must both be set or both be null.",
 				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
@@ -165,7 +165,7 @@ namespace wax
 
 			if (pDX12Device && s_pDevice)
 			{
-				Base::throwError(ErrorLevel::Error, ErrorCode::IllegalCall,
+				Base::reportError(ErrorLevel::Error, ErrorCode::IllegalCall,
 					"Can't change D3D12 device while DX12Backends exist without first releasing it with setDevice(nullptr, nullptr).",
 					nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 				return false;
@@ -175,7 +175,7 @@ namespace wax
 			{
 				if (pBackend->m_bCommandListOpen || pBackend->m_bInSession)
 				{
-					Base::throwError(ErrorLevel::Error, ErrorCode::IllegalCall,
+					Base::reportError(ErrorLevel::Error, ErrorCode::IllegalCall,
 						"Can't change D3D12 device in the middle of a frame.",
 						nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 					return false;
@@ -377,7 +377,7 @@ namespace wax
 		sprintf_s(buffer, "D3D12 device lost: 0x%08lX, %s. DX12 rendering stops until a new device is set.",
 				  (unsigned long)reason, pMeaning);
 
-		Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
 	//____ _dumpDRED() ___________________________________________________________
@@ -605,7 +605,7 @@ namespace wax
 		if (!_createPipelineResources())
 		{
 			if (!s_bDeviceLost)
-				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create pipeline resources, nothing will render.",
+				Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create pipeline resources, nothing will render.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
@@ -1360,7 +1360,7 @@ namespace wax
 
 		if (pSurface && (!pSurface->texture() || !pSurface->canBeCanvas() || pSurface->renderTargetView().ptr == 0))
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Surface can not be used as canvas, rendering to default canvas instead.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Surface can not be used as canvas, rendering to default canvas instead.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			pSurface = nullptr;
 		}
@@ -1518,7 +1518,7 @@ namespace wax
 			{
 				if (!m_bOutOfDescriptorsReported && !s_bDeviceLost)
 				{
-					Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Out of blit source descriptors and couldn't make room for more, blits dropped.",
+					Base::reportError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Out of blit source descriptors and couldn't make room for more, blits dropped.",
 						this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					m_bOutOfDescriptorsReported = true;
 				}
@@ -2045,7 +2045,7 @@ namespace wax
 			return &m_defaultCanvas;
 		else
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only Default canvas is supported.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only Default canvas is supported.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return &m_dummyCanvas;
 		}
 	}
@@ -2126,7 +2126,7 @@ namespace wax
 	{
 		if (m_bInSession)
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "submitUploads() can't be called during a session.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::IllegalCall, "submitUploads() can't be called during a session.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return DX12Surface::pendingUploadBytes();
 		}
@@ -2569,7 +2569,7 @@ namespace wax
 
 		char buffer[128];
 		sprintf_s(buffer, "Shader %s is missing, run compile_shaders.py.", pName ? pName : "without a name");
-		Base::throwError(ErrorLevel::Error, ErrorCode::Internal, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::Internal, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return { nullptr, 0 };
 	}
@@ -2684,7 +2684,7 @@ namespace wax
 			const char* pErrorMsg = pErrorBlob ? (const char*)pErrorBlob->GetBufferPointer() : "Unknown error";
 			char buffer[512];
 			sprintf_s(buffer, "D3D12SerializeVersionedRootSignature failed, HRESULT = 0x%08lX: %s", (unsigned long)hr, pErrorMsg);
-			Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			assert(false);
 			return false;
 		}

@@ -38,27 +38,27 @@ namespace wax
 		return VulkanEdgemap_p(new VulkanEdgemap(blueprint));
 	}
 
-	VulkanEdgemap_p VulkanEdgemap::create(const Blueprint& blueprint, SampleOrigo origo, const float* pSamples, int edges, int edgePitch, int samplePitch)
+	VulkanEdgemap_p VulkanEdgemap::create(const Blueprint& blueprint, SampleOrigin origin, const float* pSamples, int edges, int edgePitch, int samplePitch)
 	{
 		if (!_validateBlueprint(blueprint) || edges >= blueprint.segments)
 			return nullptr;
 
 		auto p = VulkanEdgemap_p(new VulkanEdgemap(blueprint));
 
-		p->_importSamples(origo, pSamples, 0, edges, 0, p->samples(), edgePitch, samplePitch);
+		p->_importSamples(origin, pSamples, 0, edges, 0, p->samples(), edgePitch, samplePitch);
 		p->m_nbRenderSegments = edges + 1;
 
 		return p;
 	}
 
-	VulkanEdgemap_p VulkanEdgemap::create(const Blueprint& blueprint, SampleOrigo origo, const spx* pSamples, int edges, int edgePitch, int samplePitch)
+	VulkanEdgemap_p VulkanEdgemap::create(const Blueprint& blueprint, SampleOrigin origin, const spx* pSamples, int edges, int edgePitch, int samplePitch)
 	{
 		if (!_validateBlueprint(blueprint) || edges >= blueprint.segments)
 			return nullptr;
 
 		auto p = VulkanEdgemap_p(new VulkanEdgemap(blueprint));
 
-		p->_importSamples(origo, pSamples, 0, edges, 0, p->samples(), edgePitch, samplePitch);
+		p->_importSamples(origin, pSamples, 0, edges, 0, p->samples(), edgePitch, samplePitch);
 		p->m_nbRenderSegments = edges + 1;
 
 		return p;
@@ -72,7 +72,7 @@ namespace wax
 
 		if( !VulkanContext::isReady() )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
 				"No Vulkan device set. VulkanBackend::setDevice() must be called before any edgemap is created.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
@@ -108,7 +108,7 @@ namespace wax
 		if( !VulkanContext::createBuffer( bytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VulkanContext::Memory::HostWrite, m_newBuffer ) )
 		{
 			if( !VulkanContext::isDeviceLost() )
-				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for edgemap.",
+				Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for edgemap.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}

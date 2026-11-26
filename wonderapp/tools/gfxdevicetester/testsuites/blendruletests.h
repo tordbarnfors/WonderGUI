@@ -91,7 +91,7 @@ public:
 			_.size = { c_edgemapWidth, c_edgemapHeight },
 			_.segments = 3,
 			_.colors = colors),
-			SampleOrigo::Top, samples[0], nEdges, c_edgemapWidth + 1);
+			SampleOrigin::Top, samples[0], nEdges, c_edgemapWidth + 1);
 
 		return m_pLayer && m_pAlphaCanvas && m_pOpaqueCanvas && m_pSpot && m_pEdgemap;
 	}

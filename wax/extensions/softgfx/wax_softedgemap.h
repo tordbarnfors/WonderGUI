@@ -44,8 +44,8 @@ public:
 	//.____ Creation __________________________________________
 	
 	static SoftEdgemap_p	create( const Blueprint& blueprint );
-	static SoftEdgemap_p	create( const Blueprint& blueprint, SampleOrigo origo, const float * pSamples, int edges, int edgePitch = 0, int samplePitch = 0);
-	static SoftEdgemap_p	create( const Blueprint& blueprint, SampleOrigo origo, const spx * pSamples, int edges, int edgePitch = 0, int samplePitch = 0);
+	static SoftEdgemap_p	create( const Blueprint& blueprint, SampleOrigin origin, const float * pSamples, int edges, int edgePitch = 0, int samplePitch = 0);
+	static SoftEdgemap_p	create( const Blueprint& blueprint, SampleOrigin origin, const spx * pSamples, int edges, int edgePitch = 0, int samplePitch = 0);
 	
 	
 	//.____ Identification __________________________________________

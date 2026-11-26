@@ -50,7 +50,6 @@ namespace wg
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			bool			disabled	= false;
 			Axis			dragAxis = Axis::Y;
 			pts				dragRange = 200;
@@ -69,6 +68,7 @@ namespace wg
 			bool			stickyFocus = false;
 			bool			tabLock		= false;
 			std::string			tooltip;
+			Object_p		userData;
 			float			value = 0.f;
 			float			wheelStepSize = 0.01f;
 		};

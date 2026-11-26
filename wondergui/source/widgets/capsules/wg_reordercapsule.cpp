@@ -161,7 +161,7 @@ namespace wg
 					pSizeCapsule->slot = pWidget;
 
 					pMsg->setDragWidget(pSizeCapsule, offset );
-					pMsg->setHotspot(Placement::Center);
+					pMsg->setPivot(Placement::Center);
 
 					if( !m_bDragOutside )
 					{

@@ -202,15 +202,15 @@ namespace wg
 					case DragState::Dragging:
 					{
 						CoordSPX pointerPos = pMsg->pointerSpxPos();
-						CoordSPX hotspotSPX =  pointerPos + m_hotspotOfs;
+						CoordSPX pivotSPX =  pointerPos + m_pivotOfs;
 
 						if( m_dragRestriction != RectSPX(0,0,0,0) )
 						{
-							hotspotSPX = m_dragRestriction.limit(hotspotSPX);
-							pointerPos = hotspotSPX - m_hotspotOfs;
+							pivotSPX = m_dragRestriction.limit(pivotSPX);
+							pointerPos = pivotSPX - m_pivotOfs;
 						}
 
-						Coord    hotspotPTS = spxToPts(hotspotSPX, _root()->scale());
+						Coord    pivotPTS = spxToPts(pivotSPX, _root()->scale());
 
 						// Move the drag-widget onscreen.
 
@@ -223,7 +223,7 @@ namespace wg
 
 // MOVE TO TICK!						// Check if we entered/left a (possible) target.
 
-						CoordSPX ofs = _toLocal(hotspotSPX);
+						CoordSPX ofs = _toLocal(pivotSPX);
 
 						Widget * pProbed = _findWidget(ofs, SearchMode::ActionTarget );
 
@@ -233,7 +233,7 @@ namespace wg
 						if( pProbed && pProbed != this && pProbed != m_pProbed )
 						{
 							m_pProbed = pProbed;
-							Base::msgRouter()->post(new DropProbeMsg(pProbed, m_dropType, m_category, m_pDataset, m_pPicked, this, pMsg->modKeys(), hotspotPTS ));
+							Base::msgRouter()->post(new DropProbeMsg(pProbed, m_dropType, m_category, m_pDataset, m_pPicked, this, pMsg->modKeys(), pivotPTS ));
 						}
 
 						break;
@@ -242,15 +242,15 @@ namespace wg
 					case DragState::Targeting:
 					{
 						CoordSPX pointerPos = pMsg->pointerSpxPos();
-						CoordSPX hotspotSPX =  pointerPos + m_hotspotOfs;
+						CoordSPX pivotSPX =  pointerPos + m_pivotOfs;
 
 						if( m_dragRestriction != RectSPX(0,0,0,0) )
 						{
-							hotspotSPX = m_dragRestriction.limit(hotspotSPX);
-							pointerPos = hotspotSPX - m_hotspotOfs;
+							pivotSPX = m_dragRestriction.limit(pivotSPX);
+							pointerPos = pivotSPX - m_pivotOfs;
 						}
 
-						Coord    hotspotPTS = spxToPts(hotspotSPX, _root()->scale());
+						Coord    pivotPTS = spxToPts(pivotSPX, _root()->scale());
 
 						// Move the drag-widget onscreen.
 
@@ -263,7 +263,7 @@ namespace wg
 
 // MOVE TO TICK!                        // Check if our target has changed
 
-						CoordSPX ofs = _toLocal(hotspotSPX);
+						CoordSPX ofs = _toLocal(pivotSPX);
 
 						Widget * pHovered = _findWidget(ofs, SearchMode::ActionTarget );
 
@@ -276,7 +276,7 @@ namespace wg
 
 							if( m_pTargeted )
 							{
-								Base::msgRouter()->post(new DropLeaveMsg(m_pTargeted, m_dropType, m_category, m_pDataset, m_pPicked, pMsg->modKeys(), hotspotPTS));
+								Base::msgRouter()->post(new DropLeaveMsg(m_pTargeted, m_dropType, m_category, m_pDataset, m_pPicked, pMsg->modKeys(), pivotPTS));
 								Base::msgRouter()->post(new PickedLeaveMsg(m_pPicked,m_pTargeted));
 							}
 
@@ -288,7 +288,7 @@ namespace wg
 
 						if( m_pTargeted )                                   // Check our weak pointer just in case it has been deleted...
 						{
-							Base::msgRouter()->post(new DropMoveMsg(m_pTargeted, m_dropType, m_category, m_pDataset, m_pPicked, m_dragSlot._widget(), this, pMsg->modKeys(), hotspotPTS));
+							Base::msgRouter()->post(new DropMoveMsg(m_pTargeted, m_dropType, m_category, m_pDataset, m_pPicked, m_dragSlot._widget(), this, pMsg->modKeys(), pivotPTS));
 						}
 
 						break;
@@ -361,17 +361,17 @@ namespace wg
 						if( m_pTargeted )
 						{
 							CoordSPX pointerPos = pMsg->pointerSpxPos();
-							CoordSPX hotspotSPX =  pointerPos + m_hotspotOfs;
+							CoordSPX pivotSPX =  pointerPos + m_pivotOfs;
 
 							if( m_dragRestriction != RectSPX(0,0,0,0) )
 							{
-								hotspotSPX = m_dragRestriction.limit(hotspotSPX);
-								pointerPos = hotspotSPX - m_hotspotOfs;
+								pivotSPX = m_dragRestriction.limit(pivotSPX);
+								pointerPos = pivotSPX - m_pivotOfs;
 							}
 
-							Coord    hotspotPTS = spxToPts(hotspotSPX, _root()->scale());
+							Coord    pivotPTS = spxToPts(pivotSPX, _root()->scale());
 
-							Base::msgRouter()->post(new DropDeliverMsg(m_pTargeted, m_dropType, m_category, m_pDataset, m_pPicked, this, pMsg->modKeys(), hotspotPTS));
+							Base::msgRouter()->post(new DropDeliverMsg(m_pTargeted, m_dropType, m_category, m_pDataset, m_pPicked, this, pMsg->modKeys(), pivotPTS));
 							m_dragState = DragState::Delivering;
 //							Base::msgRouter()->post(new DropLeaveMsg(m_pTargeted, m_dropType, m_category, m_pDataset, m_pPicked, pMsg->modKeys(), pMsg->pointerPos()));
 							m_pTargeted = nullptr;
@@ -416,10 +416,10 @@ namespace wg
 
 						m_dragSlot._setWidget(pDragWidget);
 
-						if( pMsg->hotspot() == Placement::Undefined )
-							m_hotspotOfs.clear();
+						if( pMsg->pivot() == Placement::Undefined )
+							m_pivotOfs.clear();
 						else
-							m_hotspotOfs = Util::placementToOfs(pMsg->hotspot(), {m_dragWidgetOfs, dragWidgetSize} );
+							m_pivotOfs = Util::placementToOfs(pMsg->pivot(), {m_dragWidgetOfs, dragWidgetSize} );
 					}
 					else
 					{

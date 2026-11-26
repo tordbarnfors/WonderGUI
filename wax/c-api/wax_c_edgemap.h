@@ -68,19 +68,19 @@ extern "C" {
 
 	WAX_EXPORT int	wax_edgemapSamples(wax_obj edgemap);
 
-	WAX_EXPORT int 	wax_importSpxSamples(wax_obj edgemap, wax_sampleOrigo origo, const wax_spx* pSource,
+	WAX_EXPORT int 	wax_importSpxSamples(wax_obj edgemap, wax_sampleOrigin origin, const wax_spx* pSource,
 										int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, 
 										int edgePitch, int samplePitch);
 
-	WAX_EXPORT int 	wax_importFloatSamples(	wax_obj edgemap, wax_sampleOrigo origo, const float* pSource,
+	WAX_EXPORT int 	wax_importFloatSamples(	wax_obj edgemap, wax_sampleOrigin origin, const float* pSource,
 											int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, 
 											int edgePitch, int samplePitch);
 
-	WAX_EXPORT int 	wax_exportSpxSamples(wax_obj edgemap, wax_sampleOrigo origo, wax_spx* pDestination,
+	WAX_EXPORT int 	wax_exportSpxSamples(wax_obj edgemap, wax_sampleOrigin origin, wax_spx* pDestination,
 										int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, 
 										int edgePitch, int samplePitch);
 
-	WAX_EXPORT int 	wax_exportFloatSamples(	wax_obj edgemap, wax_sampleOrigo origo, float* pDestination,
+	WAX_EXPORT int 	wax_exportFloatSamples(	wax_obj edgemap, wax_sampleOrigin origin, float* pDestination,
 											int edgeBegin, int edgeEnd,	int sampleBegin, int sampleEnd, 
 											int edgePitch, int samplePitch);
 

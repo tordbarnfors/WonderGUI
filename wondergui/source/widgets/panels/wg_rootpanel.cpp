@@ -55,7 +55,7 @@ namespace wg
 	{
 		if (!pCanvas)
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Provided canvas is null.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Provided canvas is null.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -66,20 +66,20 @@ namespace wg
 	{
 		if( ref < CanvasRef_min || ref > CanvasRef_max || ref == CanvasRef::None )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Provided CanvasRef is invalid.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Provided CanvasRef is invalid.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
 		GfxDevice* pUseDevice = pDevice ? pDevice : Base::defaultDevice().rawPtr();
 		if (pUseDevice == nullptr)
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "No GfxDevice provided and no default GfxDevice set.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "No GfxDevice provided and no default GfxDevice set.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
 		if(pUseDevice->canvas(ref).size.isEmpty() )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Provided CanvasRef does not refer to a valid canvas.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Provided CanvasRef does not refer to a valid canvas.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -264,13 +264,13 @@ namespace wg
 
         if( !pGfxDevice )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "No GfxDevice provided and no default GfxDevice set.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "No GfxDevice provided and no default GfxDevice set.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
 		if( pGfxDevice->canvas(canvasRef).size.isEmpty() )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Provided CanvasRef does not refer to a valid canvas.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Provided CanvasRef does not refer to a valid canvas.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -466,7 +466,7 @@ namespace wg
 
 		if( !pGfxDevice )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No GfxDevice provided and no default GfxDevice set.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No GfxDevice provided and no default GfxDevice set.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;						// No GFX-device or no widgets to render.
 		}
 
@@ -530,7 +530,7 @@ namespace wg
 
 		if (!m_bRendering)
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "GfxDevice not in rendering state. Did you forget to call beginRender()?", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "GfxDevice not in rendering state. Did you forget to call beginRender()?", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -619,7 +619,7 @@ namespace wg
 
 		if (!m_bRendering)
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "GfxDevice not in rendering state. Did you forget to call beginRender()?", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "GfxDevice not in rendering state. Did you forget to call beginRender()?", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 

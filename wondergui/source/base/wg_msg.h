@@ -705,8 +705,8 @@ namespace wg
 
 		void				setContent( DropType type, int category, BasicDataset * pDataset );
 
-		void				setHotspot( Placement hotspot );		// Placement::Undefined gives hotspot on cursor.
-		Placement			hotspot() const { return m_hotspot; }
+		void				setPivot( Placement pivot );		// Placement::Undefined gives pivot on cursor.
+		Placement			pivot() const { return m_pivot; }
 
 		void				setDragWidget( Widget * pWidget, Coord pointerOfs );
 		bool				hasDragWidget() const { return m_pDragWidget; }
@@ -731,7 +731,7 @@ namespace wg
 		Widget_p            m_pDragWidget;
 		Coord				m_dragWidgetPointerOfs;
 		Coord               m_pickOfs;
-		Placement			m_hotspot = Placement::Undefined;
+		Placement			m_pivot = Placement::Undefined;
 		wg::Rect			m_dragConfinement = {0, 0, 0, 0};
 
 		DropType			m_dropType = DropType::Undefined;	// Type of data in m_pDataset.
@@ -813,7 +813,7 @@ namespace wg
 		int                 m_category;			// User defined category.
 		BasicDataset_p      m_pDataset;			// Contains data being dropped.
 
-		Coord				m_dropPos;			// Global drop position, either position of pointer or hotspot if set.
+		Coord				m_dropPos;			// Global drop position, either position of pointer or pivot if set.
 		ModKeys				m_modKeys;			// Modifier keys pressed when message posted.
 		Widget_p            m_pPickedFrom;
 	 };

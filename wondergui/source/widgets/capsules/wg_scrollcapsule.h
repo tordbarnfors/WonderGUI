@@ -45,7 +45,6 @@ namespace wg
 		{
 			bool				autoHideScrollbars = true;
 			Axis				autoScrollAxis = Axis::Undefined;
-			Object_p			baggage;
 			Widget_p			child;
 			Skin_p				cornerSkin;
 			bool				disabled = false;
@@ -75,6 +74,7 @@ namespace wg
 			CoordTransition_p	transition;
 			bool				usePickHandles = false;
 
+			Object_p			userData;
 			Axis				wheelAxis = Axis::Y;						// Scroll direction of primary mouse wheel. Secondary mouse wheel is the oposite.
 			ModKeys				wheelAxisModifier = ModKeys::Shift;		// Flips the scroll direction of primary mouse wheel.
 			ModKeys				wheelAccelerator = ModKeys::Alt;

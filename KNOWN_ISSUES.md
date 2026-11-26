@@ -366,11 +366,11 @@ At d9508fe6 MetalBackend has the same twelve, and Rectangles of ReadbackTests, w
 SdlGpuBackend with Metal has the six of BlitGridNear, SamplingTests and WarpTests by the same
 amounts, and specks for the three of palettes. So has SdlGpuBackend with D3D12 (Arc B580).
 
-### PluginSurfaceFactory drops the baggage and the finalizer of a Blueprint
+### PluginSurfaceFactory drops the user data and the finalizer of a Blueprint
 
 `_convertBlueprint()` has nothing to put them in, as `wax_surfaceBP` has neither, and the
-PluginSurface is made from an empty Blueprint, so a surface a plugin creates with `baggage` or
-`finalizer` in its Blueprint has no baggage and its finalizer is never called. `setBaggage()`
+PluginSurface is made from an empty Blueprint, so a surface a plugin creates with `userData` or
+`finalizer` in its Blueprint has no user data and its finalizer is never called. `setUserData()`
 and `setFinalizer()` on the surface afterwards work, on the PluginSurface. Found 2026-11-25 when
 restorers were passed on, which are in the same place.
 

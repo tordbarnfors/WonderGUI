@@ -50,14 +50,14 @@ wax_obj wax_createEdgemap(wax_obj factory, const wax_edgemapBP* pCBP)
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wax_obj wax_createEdgemapFromFloats(wax_obj factory, const wax_edgemapBP* pCBP, wax_sampleOrigo origo,
+wax_obj wax_createEdgemapFromFloats(wax_obj factory, const wax_edgemapBP* pCBP, wax_sampleOrigin origin,
 	const float* pSamples, int edges, int edgePitch, int samplePitch)
 {
 	Edgemap::Blueprint	cppBP;
 	Tint_p tints[Edgemap::maxSegments];
 	convertBP(pCBP,cppBP,tints);
 
-	auto p = getPtr(factory)->createEdgemap(cppBP, (SampleOrigo) origo, pSamples, edges, edgePitch, samplePitch);
+	auto p = getPtr(factory)->createEdgemap(cppBP, (SampleOrigin) origin, pSamples, edges, edgePitch, samplePitch);
 	if( !p )
 		return nullptr;
 
@@ -65,14 +65,14 @@ wax_obj wax_createEdgemapFromFloats(wax_obj factory, const wax_edgemapBP* pCBP, 
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wax_obj wax_createEdgemapFromSpx(wax_obj factory, const wax_edgemapBP* pCBP, wax_sampleOrigo origo,
+wax_obj wax_createEdgemapFromSpx(wax_obj factory, const wax_edgemapBP* pCBP, wax_sampleOrigin origin,
 	const wax_spx* pSamples, int edges, int edgePitch, int samplePitch)
 {
 	Edgemap::Blueprint	cppBP;
 	Tint_p tints[Edgemap::maxSegments];
 	convertBP(pCBP,cppBP,tints);
 
-	auto p = getPtr(factory)->createEdgemap(cppBP, (SampleOrigo)origo, (const spx*) pSamples, edges, edgePitch, samplePitch);
+	auto p = getPtr(factory)->createEdgemap(cppBP, (SampleOrigin)origin, (const spx*) pSamples, edges, edgePitch, samplePitch);
 	if( !p )
 		return nullptr;
 

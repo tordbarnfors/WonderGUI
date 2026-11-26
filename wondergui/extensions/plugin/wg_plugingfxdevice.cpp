@@ -665,7 +665,7 @@ namespace wg
     {
         if (!pWarpmap || !pWarpmap->isInstanceOf(PluginWarpmap::TYPEINFO))
         {
-            wax::Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Warpmap not created by the WarpmapFactory of the device.",
+            wax::Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Warpmap not created by the WarpmapFactory of the device.",
                                 pCaller, &PluginGfxDevice::TYPEINFO, pFunc, __FILE__, __LINE__);
             return nullptr;
         }
@@ -816,7 +816,7 @@ namespace wg
 
 			if (bounds.x < 0 || bounds.y < 0 || bounds.w > sz.w || bounds.h > sz.h)
 			{
-				wax::Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "UpdateRects contains rectangels outside canvas.",
+				wax::Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "UpdateRects contains rectangels outside canvas.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				return false;
 			}

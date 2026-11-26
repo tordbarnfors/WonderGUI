@@ -58,14 +58,14 @@ wax_obj wax_printerFont(wax_obj printer)
 }
 
 
-void wax_setPrinterOrigo( wax_obj printer, wax_coordSPX coord )
+void wax_setPrinterOrigin( wax_obj printer, wax_coordSPX coord )
 {
-	getPtr(printer)->setCursorOrigo({coord.x, coord.y});
+	getPtr(printer)->setCursorOrigin({coord.x, coord.y});
 }
 
-wax_coordSPX	wax_printerOrigo(wax_obj printer)
+wax_coordSPX	wax_printerOrigin(wax_obj printer)
 {
-	auto coord = getPtr(printer)->cursorOrigo();
+	auto coord = getPtr(printer)->cursorOrigin();
 	return { coord.x,coord.y };
 }
 

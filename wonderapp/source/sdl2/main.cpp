@@ -799,7 +799,7 @@ bool MyAppAPI::initDefaultWidgetKit()
 
 		if (!wkit::init(pFont1, pFont2, pFont3, pFont4))
 		{
-			wg::Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to init default widget kit", nullptr, nullptr, __func__, __FILE__, __LINE__);
+			wg::Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to init default widget kit", nullptr, nullptr, __func__, __FILE__, __LINE__);
 			return false;
 		}
 	}
@@ -912,7 +912,7 @@ wapp::DialogButton	MyAppAPI::messageBox(	const std::string& title, const std::st
 
 wrongDefaultButton:
 	
-	wg::Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Default button isn't a button of specified dialog type", nullptr, nullptr, __func__, __FILE__, __LINE__);
+	wg::Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Default button isn't a button of specified dialog type", nullptr, nullptr, __func__, __FILE__, __LINE__);
 	
 	return wapp::DialogButton::Undefined;
 

@@ -127,7 +127,7 @@ namespace wax
 		{
 			char	msg[64];
 			snprintf( msg, 64, "StreamBuffer reallocated to %d bytes", bufferSizeNeeded);
-			Base::throwError(ErrorLevel::Warning, ErrorCode::Performance, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Warning, ErrorCode::Performance, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 			_resizeBuffer(bufferSizeNeeded);
 		}

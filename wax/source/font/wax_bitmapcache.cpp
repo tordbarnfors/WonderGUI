@@ -78,7 +78,7 @@ namespace wax
 	{
 		if (maxBytes < 0)
 		{
-			Base::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "You can not set cache to a negative size!", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "You can not set cache to a negative size!", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 

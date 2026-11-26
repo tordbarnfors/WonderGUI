@@ -51,7 +51,7 @@ with a font, a text field and keyboard input would be the template most hosts ne
 
 ### Errors go nowhere unless a handler is set
 
-`Base::throwError()` does nothing when no error handler has been set, so a host that hasn't
+`Base::reportError()` does nothing when no error handler has been set, so a host that hasn't
 called `Base::setErrorHandler()` never sees the warnings WonderGUI gives. Printing to stderr
 by default, at least in debug builds, would make first-time mistakes visible.
 

@@ -51,7 +51,6 @@ namespace wg
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			bool			disabled = false;
 			bool			dropTarget = false;
 			Finalizer_p		finalizer = nullptr;
@@ -71,6 +70,7 @@ namespace wg
 			Placement		surfacePlacement = Placement::Center;
 			bool			tabLock = false;
 			std::string			tooltip;
+			Object_p		userData;
 			float			zoom = 1.f;
 			bool			zoomToFit = false;
 		};

@@ -103,10 +103,10 @@ public:
 		size.w = std::min(size.w, 512);			// We have samples for this much.
 
 		m_pSegmentEdgemap = pFactory->createEdgemap( WGBP(Edgemap, _.size = size, _.segments = c_segments, _.colors = m_segmentColors, _.tints = m_segmentTints ),
-													 SampleOrigo::Top, samples[0], c_segments-1, 512+1 );
+													 SampleOrigin::Top, samples[0], c_segments-1, 512+1 );
 
 		m_pSegmentMixEdgemap = pFactory->createEdgemap( WGBP(Edgemap, _.size = size, _.segments = c_segments, _.colors = m_segmentColors, _.tints = m_segmentMixTints ),
-													 SampleOrigo::Top, samples[0], c_segments-1, 512+1 );
+													 SampleOrigin::Top, samples[0], c_segments-1, 512+1 );
 
 		return m_pSegmentEdgemap && m_pSegmentMixEdgemap;
 	}

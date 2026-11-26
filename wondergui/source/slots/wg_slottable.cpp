@@ -30,7 +30,7 @@ DynamicSlot& SlotTable::at(int row, int column)
 {
 	if( row < 0 || row >= m_nRows || column < 0 || column >= m_nColumns )
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::OutOfRange, "Row or column is out of range.", m_pTableHolder->_object(), nullptr, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::OutOfRange, "Row or column is out of range.", m_pTableHolder->_object(), nullptr, __func__, __FILE__, __LINE__);
 		return m_dummySlot;
 	}
 	
@@ -41,7 +41,7 @@ const DynamicSlot& SlotTable::at(int row, int column) const
 {
 	if( row < 0 || row >= m_nRows || column < 0 || column >= m_nColumns )
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::OutOfRange, "Row or column is out of range.", m_pTableHolder->_object(), nullptr, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::OutOfRange, "Row or column is out of range.", m_pTableHolder->_object(), nullptr, __func__, __FILE__, __LINE__);
 		return m_dummySlot;
 	}
 	
@@ -54,7 +54,7 @@ int SlotTable::replaceRow(int index, const std::initializer_list<Widget_p>& widg
 {
 	if( index < 0 || index >= m_nRows )
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::OutOfRange, "Row index is out of range.", m_pTableHolder->_object(), nullptr, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::OutOfRange, "Row index is out of range.", m_pTableHolder->_object(), nullptr, __func__, __FILE__, __LINE__);
 		return 0;
 	}
 	
@@ -78,7 +78,7 @@ int SlotTable::replaceColumn(int index, const std::initializer_list<Widget_p>& w
 {
 	if( index < 0 || index >= m_nColumns )
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::OutOfRange, "Column index is out of range.", m_pTableHolder->_object(), nullptr, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::OutOfRange, "Column index is out of range.", m_pTableHolder->_object(), nullptr, __func__, __FILE__, __LINE__);
 		return 0;
 	}
 	
@@ -102,7 +102,7 @@ void SlotTable::clearRows(int index, int nb )
 {
 	if( index < 0 || index + nb > m_nRows )
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::OutOfRange, "Specified range is out of range.", m_pTableHolder->_object(), nullptr, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::OutOfRange, "Specified range is out of range.", m_pTableHolder->_object(), nullptr, __func__, __FILE__, __LINE__);
 		return;
 	}
 
@@ -127,7 +127,7 @@ void SlotTable::clearColumns(int index, int nb )
 {
 	if( index < 0 || index + nb > m_nColumns )
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::OutOfRange, "Specified range is out of range.", m_pTableHolder->_object(), nullptr, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::OutOfRange, "Specified range is out of range.", m_pTableHolder->_object(), nullptr, __func__, __FILE__, __LINE__);
 		return;
 	}
 	
@@ -196,7 +196,7 @@ void SlotTable::clearWidgets(iterator it, Axis axis, int nb )
 
 	if (ofs + nb > m_slots.size())
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::OutOfRange, "Specified range is out of range.", m_pTableHolder->_object(), nullptr, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::OutOfRange, "Specified range is out of range.", m_pTableHolder->_object(), nullptr, __func__, __FILE__, __LINE__);
 		return;
 	}
 

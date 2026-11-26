@@ -59,8 +59,8 @@ namespace wax
 
 		extern const Matrix22 _flipMatrix[GfxFlip_size];
 		extern const Matrix22 _unflipMatrix[GfxFlip_size];
-		extern const Matrix22 _flipOrigoMatrix[GfxFlip_size];
-		extern const Matrix22 _unflipOrigoMatrix[GfxFlip_size];
+		extern const Matrix22 _flipOriginMatrix[GfxFlip_size];
+		extern const Matrix22 _unflipOriginMatrix[GfxFlip_size];
 
 		inline const Matrix22& flipMatrix(GfxFlip flip)
 		{
@@ -84,7 +84,7 @@ namespace wax
 		inline CoordI flipCoord(CoordI coord, GfxFlip flip, SizeI canvasSize )
 		{
 			const Matrix22& mtx = _flipMatrix[(int)flip];
-			const Matrix22& omtx = _flipOrigoMatrix[(int)flip];
+			const Matrix22& omtx = _flipOriginMatrix[(int)flip];
 
 			int ofsX = canvasSize.w * omtx.xx + canvasSize.h * omtx.xy;
 			int ofsY = canvasSize.w * omtx.yx + canvasSize.h * omtx.yy;
@@ -95,7 +95,7 @@ namespace wax
 		inline CoordI unflipCoord(CoordI coord, GfxFlip flip, SizeI canvasSize )
 		{
 			const Matrix22& mtx = _unflipMatrix[(int)flip];
-			const Matrix22& omtx = _unflipOrigoMatrix[(int)flip];
+			const Matrix22& omtx = _unflipOriginMatrix[(int)flip];
 
 			int ofsX = canvasSize.w * omtx.xx + canvasSize.h * omtx.xy;
 			int ofsY = canvasSize.w * omtx.yx + canvasSize.h * omtx.yy;
@@ -106,7 +106,7 @@ namespace wax
 		inline RectI flipRect(RectI rect, GfxFlip flip, SizeI canvasSize )
 		{
 			const Matrix22& mtx = _flipMatrix[(int)flip];
-			const Matrix22& omtx = _flipOrigoMatrix[(int)flip];
+			const Matrix22& omtx = _flipOriginMatrix[(int)flip];
 
 			int ofsX = canvasSize.w * omtx.xx + canvasSize.h * omtx.xy;
 			int ofsY = canvasSize.w * omtx.yx + canvasSize.h * omtx.yy;
@@ -126,7 +126,7 @@ namespace wax
 		inline RectI unflipRect(RectI rect, GfxFlip flip, SizeI canvasSize )
 		{
 			const Matrix22& mtx = _unflipMatrix[(int)flip];
-			const Matrix22& omtx = _unflipOrigoMatrix[(int)flip];
+			const Matrix22& omtx = _unflipOriginMatrix[(int)flip];
 
 			int ofsX = canvasSize.w * omtx.xx + canvasSize.h * omtx.xy;
 			int ofsY = canvasSize.w * omtx.yx + canvasSize.h * omtx.yy;

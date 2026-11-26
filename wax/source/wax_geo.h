@@ -458,10 +458,10 @@ namespace wax
 
 
 		Position is specified through the members x and y, containing the horizontal
-		and vertical offset from an origo position while members w and h specifies
+		and vertical offset from an origin position while members w and h specifies
 		the width and height.
 
-		Origo is normally the top-left corner of a parent rectangle, screen surface or
+		Origin is normally the top-left corner of a parent rectangle, screen surface or
 		bitmap and position normally specifies the position of the top-left corner of the rectangle, although
 		this might differ depending on context.
 

@@ -317,7 +317,7 @@ namespace wax
 		void _transformBlitSimple(const RectSPX& _dest, CoordSPX src, int transformOfs, Command cmd);
 		void _transformBlitComplex(const RectSPX& _dest, CoordI _src, const Transform& matrix, Command cmd);
 
-		void _encodeEdgemapDraw(const RectSPX& area, CoordSPX origo, Edgemap* pEdgemap, GfxFlip flip, Command cmd);
+		void _encodeEdgemapDraw(const RectSPX& area, CoordSPX origin, Edgemap* pEdgemap, GfxFlip flip, Command cmd);
 		void _encodeWarp(CoordSPX dest, Warpmap* pWarpmap, Edgemap* pEdgemap, const RectSPX* pSource, CoordSPX sourceOffset);
 
 		void _stretchBlitWithRigidPartX(const RectSPX& src, const RectSPX& dst, spx rigidPartOfs, spx rigidPartLength, spx rigidPartLengthDst);

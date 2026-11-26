@@ -73,7 +73,7 @@ auto pNewSurface = pMySurface->convert( WGOVR(pMySurface->blueprint(),
 ));
 ```
 
-However, be aware that  this will copy the content of the **whole** blueprint, including things you might not have intended such as id, baggage, finalizers and the restorer.
+However, be aware that  this will copy the content of the **whole** blueprint, including things you might not have intended such as id, user data, finalizers and the restorer.
 
 
 

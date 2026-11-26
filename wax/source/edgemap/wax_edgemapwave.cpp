@@ -46,7 +46,7 @@ namespace wax
 		m_pTint(bp.tint),
 		m_bOptimizeDirtRange(bp.optimize),
 		m_pOutlineTint(bp.outlineTint),
-		m_origo(bp.origo),
+		m_origin(bp.origin),
 		m_pFactory(bp.factory),
 		m_size(Util::roundToPixels(bp.size))
 	{
@@ -214,10 +214,10 @@ namespace wax
 		else
 		{
 			if( pTopSamples )
-				Edgemap::convertSamples(m_pTopSamples + sampleBegin, pTopSamples, m_origo, m_size.h*64, 1, sampleEnd-sampleBegin, 0, 1, 0, 1);
+				Edgemap::convertSamples(m_pTopSamples + sampleBegin, pTopSamples, m_origin, m_size.h*64, 1, sampleEnd-sampleBegin, 0, 1, 0, 1);
 
 			if( pBottomSamples )
-				Edgemap::convertSamples(m_pBottomSamples + sampleBegin, pBottomSamples, m_origo, m_size.h*64, 1, sampleEnd-sampleBegin, 0, 1, 0, 1);
+				Edgemap::convertSamples(m_pBottomSamples + sampleBegin, pBottomSamples, m_origin, m_size.h*64, 1, sampleEnd-sampleBegin, 0, 1, 0, 1);
 
 			m_dirtBegin = std::min(sampleBegin,m_dirtBegin);
 			m_dirtEnd = std::max(sampleEnd,m_dirtEnd);
@@ -243,10 +243,10 @@ namespace wax
 		else
 		{
 			if( pTopSamples )
-				Edgemap::convertSamples(m_pTopSamples + sampleBegin, pTopSamples, m_origo, m_size.h*64, 1, sampleEnd-sampleBegin, 0, 1, 0, 1);
+				Edgemap::convertSamples(m_pTopSamples + sampleBegin, pTopSamples, m_origin, m_size.h*64, 1, sampleEnd-sampleBegin, 0, 1, 0, 1);
 
 			if( pBottomSamples )
-				Edgemap::convertSamples(m_pBottomSamples + sampleBegin, pBottomSamples, m_origo, m_size.h*64, 1, sampleEnd-sampleBegin, 0, 1, 0, 1);
+				Edgemap::convertSamples(m_pBottomSamples + sampleBegin, pBottomSamples, m_origin, m_size.h*64, 1, sampleEnd-sampleBegin, 0, 1, 0, 1);
 
 			m_dirtBegin = std::min(sampleBegin,m_dirtBegin);
 			m_dirtEnd = std::max(sampleEnd,m_dirtEnd);
@@ -263,7 +263,7 @@ namespace wax
 		int nbSamples = int(pDestEnd - pDestBegin);
 		int allocBytes= nbSamples * sizeof(spx);
 		spx * pConverted = (spx*) Base::memStackAlloc(allocBytes);
-		Edgemap::convertSamples(pConverted, pSource, m_origo, m_size.h*64, 1, nbSamples, 0, 1, 0, 1);
+		Edgemap::convertSamples(pConverted, pSource, m_origin, m_size.h*64, 1, nbSamples, 0, 1, 0, 1);
 
 		int bufferBeg = 0;
 		int bufferEnd = nbSamples;
@@ -299,7 +299,7 @@ namespace wax
 		int nbSamples = int(pDestEnd - pDestBegin);
 		int allocBytes= nbSamples * sizeof(spx);
 		spx * pConverted = (spx*) Base::memStackAlloc(allocBytes);
-		Edgemap::convertSamples(pConverted, pSource, m_origo, m_size.h*64, 1, nbSamples, 0, 1, 0, 1);
+		Edgemap::convertSamples(pConverted, pSource, m_origin, m_size.h*64, 1, nbSamples, 0, 1, 0, 1);
 
 		int bufferBeg = 0;
 		int bufferEnd = nbSamples;
@@ -332,14 +332,14 @@ namespace wax
 
 	void EdgemapWave::setFlatTopLine( int sampleBegin, int sampleEnd, spx sample )
 	{
-		spx out = Edgemap::convertSample(sample, m_origo, m_size.h*64);
+		spx out = Edgemap::convertSample(sample, m_origin, m_size.h*64);
 
 		_setFlatLine(m_pTopSamples, sampleBegin, sampleEnd, out);
 	}
 
 	void EdgemapWave::setFlatTopLine( int sampleBegin, int sampleEnd, float sample )
 	{
-		spx out = Edgemap::convertSample(sample, m_origo, m_size.h*64);
+		spx out = Edgemap::convertSample(sample, m_origin, m_size.h*64);
 
 		_setFlatLine(m_pTopSamples, sampleBegin, sampleEnd, out);
 	}
@@ -348,14 +348,14 @@ namespace wax
 
 	void EdgemapWave::setFlatBottomLine( int sampleBegin, int sampleEnd, spx sample )
 	{
-		spx out = Edgemap::convertSample(sample, m_origo, m_size.h*64);
+		spx out = Edgemap::convertSample(sample, m_origin, m_size.h*64);
 
 		_setFlatLine(m_pBottomSamples, sampleBegin, sampleEnd, out);
 	}
 
 	void EdgemapWave::setFlatBottomLine( int sampleBegin, int sampleEnd, float sample )
 	{
-		spx out = Edgemap::convertSample(sample, m_origo, m_size.h*64);
+		spx out = Edgemap::convertSample(sample, m_origin, m_size.h*64);
 
 		_setFlatLine(m_pBottomSamples, sampleBegin, sampleEnd, out);
 	}
@@ -446,8 +446,8 @@ namespace wax
 
 			// Update edgemap.
 
-			pEdgemap->importSamples(SampleOrigo::Top, pBuffer, 0, 1, dirtBegin, dirtEnd);
-			pEdgemap->importSamples(SampleOrigo::Top, pBuffer + dirtSize, 1, 2, dirtBegin, dirtEnd);
+			pEdgemap->importSamples(SampleOrigin::Top, pBuffer, 0, 1, dirtBegin, dirtEnd);
+			pEdgemap->importSamples(SampleOrigin::Top, pBuffer + dirtSize, 1, 2, dirtBegin, dirtEnd);
 
 			Base::memStackFree(allocated);
 		}
@@ -484,8 +484,8 @@ namespace wax
 
 			// Update edgemap.
 
-			pEdgemap->importSamples(SampleOrigo::Top, pBuffer, 0, 2, dirtBegin, dirtEnd);
-			pEdgemap->importSamples(SampleOrigo::Top, pBuffer + dirtSize*2, 2, 4, dirtBegin, dirtEnd);
+			pEdgemap->importSamples(SampleOrigin::Top, pBuffer, 0, 2, dirtBegin, dirtEnd);
+			pEdgemap->importSamples(SampleOrigin::Top, pBuffer + dirtSize*2, 2, 4, dirtBegin, dirtEnd);
 
 			Base::memStackFree(allocated);
 		}

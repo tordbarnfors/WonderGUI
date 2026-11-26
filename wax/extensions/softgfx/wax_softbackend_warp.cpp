@@ -349,7 +349,7 @@ namespace wax
 				toString(m_blendMode),
 				toString(m_canvasSoftFormat));
 
-			Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -520,7 +520,7 @@ namespace wax
 				snprintf(errorMsg, 1024, "Failed WarpBlit operation. SoftBackend is missing transform kernel reading %s into Color buffer.",
 					toString(srcFormat));
 
-				Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::reportError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				return false;
 			}
 

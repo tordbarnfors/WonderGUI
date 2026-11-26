@@ -236,7 +236,7 @@ namespace
 		bp.tints = bTinted ? tints : nullptr;
 		bp.tiling = bTiling;
 
-		return pDevice->edgemapFactory()->createEdgemap(bp, SampleOrigo::Top, samples.data(), nEdges, w + 1);
+		return pDevice->edgemapFactory()->createEdgemap(bp, SampleOrigin::Top, samples.data(), nEdges, w + 1);
 	}
 
 	// A surface with a pattern that has no two neighbors alike.

@@ -53,7 +53,6 @@ namespace wg
 
 		struct Blueprint
 		{
-			Object_p			baggage;
 			Widget_p			child;
 			bool				disabled		= false;
 			bool				dragOutside		= false;
@@ -75,6 +74,7 @@ namespace wg
 			int					transitionDelay = 200000;
 			Skin_p				transitionSkin;
 			bool				usePickHandles = false;
+			Object_p			userData;
 
 		};
 

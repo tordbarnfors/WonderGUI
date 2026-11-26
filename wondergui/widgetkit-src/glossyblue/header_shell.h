@@ -37,7 +37,7 @@
 // Surface::Blueprint.scale = 128 for correct hidpi sizing.
 
 #include <wg_base.h>				// Base::setDefaultStyle() / setDefaultTextLayout()
-#include <wax_base.h>			// wax::Base::throwError() for the scale check in init()
+#include <wax_base.h>			// wax::Base::reportError() for the scale check in init()
 #include <wax_font.h>
 #include <wg_textstyle.h>
 #include <wg_plaintextlayout.h>
@@ -225,7 +225,7 @@ namespace wg::glossyblue
 
 		if( pSkinBlocks->scale() != 128 )
 		{
-			wax::Base::throwError( ErrorLevel::Error, ErrorCode::InvalidParam,
+			wax::Base::reportError( ErrorLevel::Error, ErrorCode::InvalidParam,
 				"glossyblue: skinblocks surface must be created with scale = 128. "
 				"It is a 2x-density atlas, and at any other scale every block is "
 				"sampled from the wrong place. Add _.scale = 128 to its Surface blueprint.",
@@ -534,7 +534,6 @@ namespace wg::glossyblue
 	public:
 		struct Blueprint
 		{
-			Object_p		baggage;
 			bool			disabled = false;
 			bool			dropTarget = false;
 			Finalizer_p		finalizer = nullptr;
@@ -552,6 +551,7 @@ namespace wg::glossyblue
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			std::string			tooltip;
+			Object_p		userData;
 		};
 
 		inline static wg::Button_p	create() { return new Button(Blueprint()); }
@@ -577,7 +577,6 @@ namespace wg::glossyblue
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			bool			checked = false;
 			ClickArea		clickArea = ClickArea::Default;
 			bool			disabled = false;
@@ -597,6 +596,7 @@ namespace wg::glossyblue
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			std::string			tooltip;
+			Object_p		userData;
 		};
 
 		inline static wg::ToggleButton_p	create() { return new ToggleButton(Blueprint()); }
@@ -621,7 +621,6 @@ namespace wg::glossyblue
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			bool			checked = false;
 			ClickArea		clickArea = ClickArea::Default;
 			bool			disabled = false;
@@ -641,6 +640,7 @@ namespace wg::glossyblue
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			std::string			tooltip;
+			Object_p		userData;
 		};
 
 		inline static wg::ToggleButton_p	create() { return new Checkbox(Blueprint()); }
@@ -665,7 +665,6 @@ namespace wg::glossyblue
 	public:
 		struct Blueprint
 		{
-			Object_p		baggage;
 			bool			checked = false;
 			ClickArea		clickArea = ClickArea::Default;
 			bool			disabled = false;
@@ -690,6 +689,7 @@ namespace wg::glossyblue
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			std::string			tooltip;
+			Object_p		userData;
 		};
 
 		inline static wg::ToggleButton_p	create(const Blueprint& blueprint) { return new RadioButton(blueprint); }
@@ -714,7 +714,6 @@ namespace wg::glossyblue
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			Widget_p		child;
 			bool			disabled = false;
 			bool			dropTarget = true;
@@ -735,6 +734,7 @@ namespace wg::glossyblue
 			bool			takesFocusFromChild = true;
 			std::string			tooltip;
 			bool			usePickHandles = false;
+			Object_p		userData;
 
 		};
 
@@ -761,7 +761,6 @@ namespace wg::glossyblue
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			Widget_p		child;
 			bool			disabled = false;
 			bool			dropTarget = true;
@@ -782,6 +781,7 @@ namespace wg::glossyblue
 			bool			takesFocusFromChild = true;
 			std::string			tooltip;
 			bool			usePickHandles = false;
+			Object_p		userData;
 
 		};
 
@@ -810,7 +810,6 @@ namespace wg::glossyblue
 		{
 			bool				autoHideScrollbars = true;
 			Axis				autoScrollAxis = Axis::Undefined;
-			Object_p			baggage;
 			Widget_p			child;
 			Skin_p				cornerSkin = Skins::PlateNoBevel;
 			bool				disabled = false;
@@ -846,6 +845,7 @@ namespace wg::glossyblue
 			CoordTransition_p	transition;
 			bool				usePickHandles = false;
 
+			Object_p			userData;
 			Axis				wheelAxis = Axis::Y;						// Scroll direction of primary mouse wheel. Secondary mouse wheel is the oposite.
 			ModKeys				wheelAxisModifier = ModKeys::Shift;		// Flips the scroll direction of primary mouse wheel.
 			ModKeys				wheelAccelerator = ModKeys::Alt;
@@ -877,7 +877,6 @@ namespace wg::glossyblue
 		{
 			bool				autoHideScrollbars = true;
 			Axis				autoScrollAxis = Axis::Undefined;
-			Object_p			baggage;
 			Widget_p			child;
 			Skin_p				cornerSkin = Skins::PlateNoBevel;
 			bool				disabled = false;
@@ -913,6 +912,7 @@ namespace wg::glossyblue
 			CoordTransition_p	transition;
 			bool				usePickHandles = false;
 
+			Object_p			userData;
 			Axis				wheelAxis = Axis::Y;						// Scroll direction of primary mouse wheel. Secondary mouse wheel is the oposite.
 			ModKeys				wheelAxisModifier = ModKeys::Shift;		// Flips the scroll direction of primary mouse wheel.
 			ModKeys				wheelAccelerator = ModKeys::Alt;
@@ -944,7 +944,6 @@ namespace wg::glossyblue
 		{
 			bool				autoHideScrollbars = true;
 			Axis				autoScrollAxis = Axis::Undefined;
-			Object_p			baggage;
 			Widget_p			child;
 			Skin_p				cornerSkin = Skins::PlateNoBevel;
 			bool				disabled = false;
@@ -980,6 +979,7 @@ namespace wg::glossyblue
 			CoordTransition_p	transition;
 			bool				usePickHandles = false;
 
+			Object_p			userData;
 			Axis				wheelAxis = Axis::Y;						// Scroll direction of primary mouse wheel. Secondary mouse wheel is the oposite.
 			ModKeys				wheelAxisModifier = ModKeys::Shift;		// Flips the scroll direction of primary mouse wheel.
 			ModKeys				wheelAccelerator = ModKeys::Alt;
@@ -1009,7 +1009,6 @@ namespace wg::glossyblue
 		struct Blueprint
 		{
 			Axis			axis = Axis::X;
-			Object_p		baggage;
 			bool			disabled = false;
 			bool			dropTarget = false;
 			Finalizer_p		finalizer = nullptr;
@@ -1030,6 +1029,7 @@ namespace wg::glossyblue
 			bool			takesFocusFromChild = false;
 			std::string			tooltip;
 			bool			usePickHandles = false;
+			Object_p		userData;
 
 		};
 
@@ -1050,7 +1050,6 @@ namespace wg::glossyblue
 		struct Blueprint
 		{
 			Axis			axis = Axis::Y;
-			Object_p		baggage;
 			bool			disabled = false;
 			bool			dropTarget = false;
 			Finalizer_p		finalizer = nullptr;
@@ -1071,6 +1070,7 @@ namespace wg::glossyblue
 			bool			takesFocusFromChild = false;
 			std::string			tooltip;
 			bool			usePickHandles = false;
+			Object_p		userData;
 
 		};
 
@@ -1090,7 +1090,6 @@ namespace wg::glossyblue
 
 		struct Blueprint
 		{
-			Object_p			baggage;
 			Coord				buttonOfs;
 			Placement			buttonPlacement = Placement::West;
 			Size				buttonSize = Size{ 12, 12 };			// Must match PlusMinusToggle's size_pts. The skin is drawn
@@ -1115,6 +1114,7 @@ namespace wg::glossyblue
 			std::string				tooltip;
 			ValueTransition_p	transition = Transitions::openClose;
 			bool				usePickHandles = false;
+			Object_p			userData;
 		};
 
 		inline static wg::DrawerPanel_p	create() { return new TreeListDrawer(Blueprint()); }
@@ -1134,7 +1134,6 @@ namespace wg::glossyblue
 		struct Blueprint
 		{
 
-			Object_p		baggage;
 			Widget_p		child;
 			bool			disabled = false;
 			bool			dropTarget = false;
@@ -1153,6 +1152,7 @@ namespace wg::glossyblue
 			bool			takesFocusFromChild = true;
 			std::string			tooltip;
 			bool			usePickHandles = false;
+			Object_p		userData;
 		};
 
 		inline static wg::PaddingCapsule_p	create() { return new TreeListEntry(Blueprint()); }
@@ -1170,7 +1170,6 @@ namespace wg::glossyblue
 	public:
 		struct Blueprint
 		{
-			Object_p		baggage;
 
 			PackLayout_p	columnLayout;
 			int				columns = 2;
@@ -1207,6 +1206,7 @@ namespace wg::glossyblue
 			bool			takesFocusFromChild = true;
 			std::string			tooltip;
 			bool			usePickHandles = false;
+			Object_p		userData;
 
 		};
 
@@ -1229,7 +1229,6 @@ namespace wg::glossyblue
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			bool			disabled = false;
 			bool			dropTarget = false;
 			EditableText::Blueprint	editor = WGBP(EditableText, _.style = TextStyles::NormalDark );
@@ -1246,6 +1245,7 @@ namespace wg::glossyblue
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			std::string			tooltip;
+			Object_p		userData;
 		};
 
 		inline static wg::TextEditor_p	create() { return new TextEditor(Blueprint()); }
@@ -1271,7 +1271,6 @@ namespace wg::glossyblue
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			spx				defaultLengthInChars = 20;		// Set to zero for returning default width calculated from actual text in field.
 			bool			disabled = false;
 			bool			dropTarget = false;
@@ -1289,6 +1288,7 @@ namespace wg::glossyblue
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			std::string			tooltip;
+			Object_p		userData;
 		};
 
 		inline static wg::LineEditor_p	create() { return new LineEditor(Blueprint()); }
@@ -1311,7 +1311,6 @@ namespace wg::glossyblue
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			bool			disabled = false;
 
 			// The CLOSED box. Separate from `entryTextStyle` below on purpose, and
@@ -1340,6 +1339,7 @@ namespace wg::glossyblue
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			std::string			tooltip;
+			Object_p		userData;
 		};
 
 		inline static wg::SelectBox_p	create() { return new SelectBox(Blueprint()); }
@@ -1374,7 +1374,6 @@ namespace wg::glossyblue
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			bool			disabled = false;
 			DynamicText::Blueprint	display = WGBP(DynamicText, _.layout = TextLayouts::CenteredNoWrap, _.style = TextStyles::Heading5 );
 			bool			dropTarget = false;
@@ -1390,6 +1389,7 @@ namespace wg::glossyblue
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			std::string			tooltip;
+			Object_p		userData;
 		};
 
 		inline static wg::TextDisplay_p	create() { return new WindowTitleBar(Blueprint()); }

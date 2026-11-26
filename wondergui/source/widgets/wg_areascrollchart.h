@@ -183,7 +183,6 @@ namespace wg
     public:
 		struct Blueprint
 		{
-			Object_p		baggage;
 
 			Placement		bottomLabelPlacement = Placement::South;
 			pts				bottomLabelSpacing = 1;
@@ -240,6 +239,7 @@ namespace wg
 
 			Placement		topLabelPlacement = Placement::North;
 			pts				topLabelSpacing = 1;
+			Object_p		userData;
 
 		};
 

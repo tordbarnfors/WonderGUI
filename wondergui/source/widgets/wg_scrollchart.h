@@ -40,7 +40,6 @@ namespace wg
 	public:
 		struct Blueprint
 		{
-			Object_p		baggage;
 
 			Placement		bottomLabelPlacement = Placement::South;
 			pts				bottomLabelSpacing = 1;
@@ -94,6 +93,7 @@ namespace wg
 
 			int				displayTime = 4000000;    // microsec of samples displayed.
 			int				latency = 10000;
+			Object_p		userData;
 		};
 
 		//.____ Identification __________________________________________

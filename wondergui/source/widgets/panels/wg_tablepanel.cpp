@@ -421,7 +421,7 @@ bool TablePanel::setRowSkins( Skin * pSkin1, Skin * pSkin2 )
 {
 	if( pSkin1 == nullptr && pSkin2 != nullptr )
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Setting two skins, but the first one is null.",
+		Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Setting two skins, but the first one is null.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return false;
 	}
@@ -436,7 +436,7 @@ bool TablePanel::setRowSkins( Skin * pSkin1, Skin * pSkin2 )
 	{
 		if( pSkin1->margin() + pSkin1->padding() != pSkin2->margin() + pSkin2->padding() )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "When setting different skins for odd and even rows, their combined margin+padding must be equal.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "When setting different skins for odd and even rows, their combined margin+padding must be equal.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}

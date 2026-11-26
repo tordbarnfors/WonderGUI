@@ -38,8 +38,8 @@ WAX_EXPORT wax_obj		wax_printerDevice( wax_obj printer );
 WAX_EXPORT void			wax_setPrinterFont( wax_obj printer, wax_obj font );
 WAX_EXPORT wax_obj		wax_printerFont( wax_obj printer );
 
-WAX_EXPORT void			wax_setPrinterOrigo( wax_obj printer, wax_coordSPX coord );
-WAX_EXPORT wax_coordSPX	wax_printerOrigo( wax_obj printer );
+WAX_EXPORT void			wax_setPrinterOrigin( wax_obj printer, wax_coordSPX coord );
+WAX_EXPORT wax_coordSPX	wax_printerOrigin( wax_obj printer );
 
 WAX_EXPORT void			wax_setPrinterLineWidth( wax_obj printer, wax_spx width );		// Needed for printJustifiedLine()
 WAX_EXPORT wax_spx		wax_printerLineWidth( wax_obj printer );

@@ -139,18 +139,18 @@ namespace wg
 
 	//____ _importSamples() ______________________________________________________
 
-	void  PluginEdgemap::_importSamples(SampleOrigo origo, const spx* pSource, int edgeBegin, int edgeEnd,
+	void  PluginEdgemap::_importSamples(SampleOrigin origin, const spx* pSource, int edgeBegin, int edgeEnd,
 								   int sampleBegin, int sampleEnd, int edgePitch, int samplePitch)
 	{
-		PluginCalls::edgemap->importSpxSamples(m_cEdgemap, (wax_sampleOrigo) origo, (const wax_spx*) pSource, edgeBegin, edgeEnd,
+		PluginCalls::edgemap->importSpxSamples(m_cEdgemap, (wax_sampleOrigin) origin, (const wax_spx*) pSource, edgeBegin, edgeEnd,
 			sampleBegin, sampleEnd, edgePitch, samplePitch);
 
 	}
 
-	void  PluginEdgemap::_importSamples(SampleOrigo origo, const float* pSource, int edgeBegin, int edgeEnd,
+	void  PluginEdgemap::_importSamples(SampleOrigin origin, const float* pSource, int edgeBegin, int edgeEnd,
 								   int sampleBegin, int sampleEnd, int edgePitch, int samplePitch)
 	{
-		PluginCalls::edgemap->importFloatSamples(m_cEdgemap, (wax_sampleOrigo) origo, pSource, edgeBegin, edgeEnd,
+		PluginCalls::edgemap->importFloatSamples(m_cEdgemap, (wax_sampleOrigin) origin, pSource, edgeBegin, edgeEnd,
 			sampleBegin, sampleEnd, edgePitch, samplePitch);
 	}
 
@@ -166,7 +166,7 @@ namespace wg
 
 		spx * pSource = m_pSamples + edgeBegin + sampleBegin * samplePitch;
 		
-		PluginCalls::edgemap->importSpxSamples(m_cEdgemap, WG_WAVEORIGO_TOP, pSource, edgeBegin, edgeEnd,
+		PluginCalls::edgemap->importSpxSamples(m_cEdgemap, WG_WAVEORIGIN_TOP, pSource, edgeBegin, edgeEnd,
 			sampleBegin, sampleEnd, 1, samplePitch);
  */
 	}

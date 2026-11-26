@@ -234,7 +234,7 @@ namespace wax
 			{
 				char buffer[128];
 				snprintf(buffer, sizeof(buffer), "BlendMode %d has no blending of its own, using Blend.", (int) blendMode);
-				Base::throwError(ErrorLevel::Warning, ErrorCode::Other, buffer, nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::reportError(ErrorLevel::Warning, ErrorCode::Other, buffer, nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 				dst = BlendFactor::InvSrcAlpha;
 				break;
@@ -375,7 +375,7 @@ namespace wax
 		char buffer[256];
 		snprintf(buffer, sizeof(buffer), "%s buffer full, %s dropped. SessionInfo underestimated what the session needs.",
 				 pBuffer, c_names[int(dropped) - int(Report::FillsDropped)]);
-		Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, buffer, this, &typeInfo(), __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::ResourceExhausted, buffer, this, &typeInfo(), __func__, __FILE__, __LINE__);
 	}
 
 	//____ beginSession() ________________________________________________________
@@ -389,7 +389,7 @@ namespace wax
 			if (_isNativeSurface(pCanvas))
 				pCanvasSurface = pCanvas;
 			else
-				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Canvas is not a surface of this backend, rendering to default canvas instead.",
+				Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Canvas is not a surface of this backend, rendering to default canvas instead.",
 					this, &typeInfo(), __func__, __FILE__, __LINE__);
 		}
 
@@ -442,7 +442,7 @@ namespace wax
 	{
 		if (pSurface && !_isNativeSurface(pSurface))
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Canvas is not a surface of this backend.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Canvas is not a surface of this backend.",
 				this, &typeInfo(), __func__, __FILE__, __LINE__);
 			return;
 		}
@@ -465,7 +465,7 @@ namespace wax
 			}
 		}
 		else
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only CanvasRef::Default is supported.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only CanvasRef::Default is supported.",
 				this, &typeInfo(), __func__, __FILE__, __LINE__);
 	}
 
@@ -697,7 +697,7 @@ namespace wax
 					{
 						char buffer[128];
 						snprintf(buffer, sizeof(buffer), "Command %d is unknown, rest of session dropped.", (int)cmd);
-						Base::throwError(ErrorLevel::Error, ErrorCode::Other, buffer, this, &typeInfo(), __func__, __FILE__, __LINE__);
+						Base::reportError(ErrorLevel::Error, ErrorCode::Other, buffer, this, &typeInfo(), __func__, __FILE__, __LINE__);
 					}
 
 					p = pEnd;
@@ -1231,7 +1231,7 @@ namespace wax
 
 		if (pSurface == m_pActiveCanvas)
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
 				"Can't blit from the surface we are rendering into.", this, &typeInfo(), __func__, __FILE__, __LINE__);
 			m_pBlitSource = nullptr;
 			return;
@@ -1483,7 +1483,7 @@ namespace wax
 
 				char buffer[256];
 				snprintf(buffer, sizeof(buffer), "Can't draw edgemap, %s.", pReason);
-				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &typeInfo(), __func__, __FILE__, __LINE__);
+				Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &typeInfo(), __func__, __FILE__, __LINE__);
 			}
 
 			pRects += nRects;
@@ -1628,7 +1628,7 @@ namespace wax
 
 		if (maxEntries == 0)
 		{
-			Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, "Failed DrawShape operation. Unsupported kind of shape.",
+			Base::reportError(ErrorLevel::SilentError, ErrorCode::RenderFailure, "Failed DrawShape operation. Unsupported kind of shape.",
 				this, &typeInfo(), __func__, __FILE__, __LINE__);
 			return;
 		}
@@ -1733,7 +1733,7 @@ namespace wax
 
 				char buffer[256];
 				snprintf(buffer, sizeof(buffer), "Can't draw warp, %s.", pReason);
-				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &typeInfo(), __func__, __FILE__, __LINE__);
+				Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &typeInfo(), __func__, __FILE__, __LINE__);
 			}
 
 			return;
@@ -1929,7 +1929,7 @@ namespace wax
 			char buffer[256];
 			snprintf(buffer, sizeof(buffer), "Couldn't make room for %d vertices, %d colors and %d extras, draws that don't fit are dropped.",
 					 nVertices, nColors, nExtras);
-			Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, buffer, this, &typeInfo(), __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::ResourceExhausted, buffer, this, &typeInfo(), __func__, __FILE__, __LINE__);
 		}
 
 		// A buffer that couldn't grow is still there, smaller than asked for. One that isn't there
@@ -1975,7 +1975,7 @@ namespace wax
 				char buffer[256];
 				snprintf(buffer, sizeof(buffer), "SessionInfo underestimated what the session needs: room was made for %d %s, the session wrote %d.",
 						 usage[i].reserved, usage[i].pWhat, usage[i].used);
-				Base::throwError(ErrorLevel::Warning, ErrorCode::Internal, buffer, this, &typeInfo(), __func__, __FILE__, __LINE__);
+				Base::reportError(ErrorLevel::Warning, ErrorCode::Internal, buffer, this, &typeInfo(), __func__, __FILE__, __LINE__);
 			}
 		}
 

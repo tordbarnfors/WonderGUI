@@ -56,7 +56,7 @@ namespace wg
 			ptsRow   ( "Height (pts): ",      [](Widget* w) { return w->size().h; } ),
 			intRow   ( "Scale: ",             [](Widget* w) { return w->scale(); } ),
 			textRow  ( "State: ",             [](Widget* w) { return toString(w->state().value()); } ),
-			objectRow( "Baggage: ",           [](Widget* w) -> Object* { return w->baggage().rawPtr(); } ),
+			objectRow( "User data: ",           [](Widget* w) -> Object* { return w->userData().rawPtr(); } ),
 			objectRow( "Parent: ",            [](Widget* w) -> Object* { return w->parent().rawPtr(); } ),
 			objectRow( "Skin: ",              [](Widget* w) -> Object* { return w->skin().rawPtr(); } ),
 			textRow  ( "Tooltip: ",           [](Widget* w) { return w->tooltip(); } ),

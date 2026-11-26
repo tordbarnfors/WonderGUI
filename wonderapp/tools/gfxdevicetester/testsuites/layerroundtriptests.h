@@ -64,7 +64,7 @@ public:
 			_.size = { c_edgemapWidth, c_edgemapHeight },
 			_.segments = 4,
 			_.colors = colors),
-			SampleOrigo::Top, samples[0], nEdges, c_edgemapWidth + 1);
+			SampleOrigin::Top, samples[0], nEdges, c_edgemapWidth + 1);
 
 		// Tint going from opaque to transparent.
 

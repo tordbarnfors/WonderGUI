@@ -67,8 +67,8 @@ bool EdgemapTest::importSamplesTest(std::ostream& output)
 	TestEdgemap spxMap({ .segments = c_segments, .size = c_size });
 	TestEdgemap floatMap({ .segments = c_segments, .size = c_size });
 
-	TEST_ASSERT(spxMap.importSamples(SampleOrigo::Top, spxSource.data(), edgeBegin, edgeEnd, sampleBegin, sampleEnd));
-	TEST_ASSERT(floatMap.importSamples(SampleOrigo::Top, floatSource.data(), edgeBegin, edgeEnd, sampleBegin, sampleEnd));
+	TEST_ASSERT(spxMap.importSamples(SampleOrigin::Top, spxSource.data(), edgeBegin, edgeEnd, sampleBegin, sampleEnd));
+	TEST_ASSERT(floatMap.importSamples(SampleOrigin::Top, floatSource.data(), edgeBegin, edgeEnd, sampleBegin, sampleEnd));
 
 	for (int edge = 0; edge < c_segments - 1; edge++)
 		for (int sample = 0; sample < spxMap.samples(); sample++)
@@ -87,14 +87,14 @@ bool EdgemapTest::importSamplesTest(std::ostream& output)
 		fromBottom.push_back(1.f - f);
 
 	TestEdgemap bottomMap({ .segments = c_segments, .size = c_size });
-	TEST_ASSERT(bottomMap.importSamples(SampleOrigo::Bottom, fromBottom.data(), edgeBegin, edgeEnd, sampleBegin, sampleEnd));
+	TEST_ASSERT(bottomMap.importSamples(SampleOrigin::Bottom, fromBottom.data(), edgeBegin, edgeEnd, sampleBegin, sampleEnd));
 
 	for (int edge = edgeBegin; edge < edgeEnd; edge++)
 		for (int sample = sampleBegin; sample < sampleEnd; sample++)
 			TEST_ASSERT(std::abs(bottomMap.sample(edge, sample) - value(edge, sample)) <= 1);
 
-	TEST_ASSERT(Edgemap::convertSample(0.25f, SampleOrigo::Top, height) == height / 4);
-	TEST_ASSERT(Edgemap::convertSample(0.25f, SampleOrigo::Bottom, height) == height * 3 / 4);
+	TEST_ASSERT(Edgemap::convertSample(0.25f, SampleOrigin::Top, height) == height / 4);
+	TEST_ASSERT(Edgemap::convertSample(0.25f, SampleOrigin::Bottom, height) == height * 3 / 4);
 
 	return true;
 }
@@ -123,8 +123,8 @@ bool EdgemapTest::importSamplesPitchTest(std::ostream& output)
 	TestEdgemap spxMap({ .segments = c_segments, .size = c_size });
 	TestEdgemap floatMap({ .segments = c_segments, .size = c_size });
 
-	TEST_ASSERT(spxMap.importSamples(SampleOrigo::Top, spxSource.data(), edgeBegin, edgeEnd, sampleBegin, sampleEnd, 1, nEdges));
-	TEST_ASSERT(floatMap.importSamples(SampleOrigo::Top, floatSource.data(), edgeBegin, edgeEnd, sampleBegin, sampleEnd, 1, nEdges));
+	TEST_ASSERT(spxMap.importSamples(SampleOrigin::Top, spxSource.data(), edgeBegin, edgeEnd, sampleBegin, sampleEnd, 1, nEdges));
+	TEST_ASSERT(floatMap.importSamples(SampleOrigin::Top, floatSource.data(), edgeBegin, edgeEnd, sampleBegin, sampleEnd, 1, nEdges));
 
 	for (int edge = edgeBegin; edge < edgeEnd; edge++)
 		for (int sample = sampleBegin; sample < sampleEnd; sample++)

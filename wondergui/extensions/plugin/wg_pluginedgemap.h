@@ -76,10 +76,10 @@ namespace wg
 		PluginEdgemap( wax_obj object );
 		~PluginEdgemap();
 
-		void 	_importSamples(SampleOrigo origo, const spx* pSource, int edgeBegin, int edgeEnd,
+		void 	_importSamples(SampleOrigin origin, const spx* pSource, int edgeBegin, int edgeEnd,
 							   int sampleBegin, int sampleEnd, int edgePitch, int samplePitch) override;
 
-		void 	_importSamples(SampleOrigo origo, const float* pSource, int edgeBegin, int edgeEnd,
+		void 	_importSamples(SampleOrigin origin, const float* pSource, int edgeBegin, int edgeEnd,
 							   int sampleBegin, int sampleEnd, int edgePitch, int samplePitch) override;
 
 		void	_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd) override;

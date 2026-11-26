@@ -360,15 +360,15 @@ typedef enum
 	WAX_CANVAS_32
 } wax_canvasRef;
 
-//____ wax_sampleOrigo _____________________________________________________________
+//____ wax_sampleOrigin _____________________________________________________________
 
 typedef enum
 {
-	WAX_SAMPLEORIGO_TOP = 0,				// Origo at top, increasing values goes down.
-	WAX_SAMPLEORIGO_MIDDLE_UP = 1,		// Origo at middle, increasing values goes up.
-	WAX_SAMPLEORIGO_MIDDLE_DOWN = 2,		// Origo at middle, increasing values goes down.
-	WAX_SAMPLEORIGO_BOTTOM = 3			// Origo at bottom, increasing values goes up.
-} wax_sampleOrigo;
+	WAX_SAMPLEORIGIN_TOP = 0,				// Origin at top, increasing values goes down.
+	WAX_SAMPLEORIGIN_MIDDLE_UP = 1,		// Origin at middle, increasing values goes up.
+	WAX_SAMPLEORIGIN_MIDDLE_DOWN = 2,		// Origin at middle, increasing values goes down.
+	WAX_SAMPLEORIGIN_BOTTOM = 3			// Origin at bottom, increasing values goes up.
+} wax_sampleOrigin;
 
 
 #ifdef __cplusplus

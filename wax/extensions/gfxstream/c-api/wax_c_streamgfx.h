@@ -74,8 +74,8 @@ extern "C" {
 
 
 	WAX_EXPORT wax_obj	wax_createStreamEdgemap( wax_obj streamEncoder, const wax_edgemapBP* blueprint );
-	WAX_EXPORT wax_obj	wax_createStreamEdgemapFromFloats( wax_obj streamEncoder, const wax_edgemapBP* blueprint, wax_sampleOrigo origo, const float * pSamples, int edges, int edgePitch, int samplePitch);
-	WAX_EXPORT wax_obj	wax_createStreamEdgemapFromSpx( wax_obj streamEncoder, const wax_edgemapBP* blueprint, wax_sampleOrigo origo, const wax_spx * pSamples, int edges, int edgePitch, int samplePitch);
+	WAX_EXPORT wax_obj	wax_createStreamEdgemapFromFloats( wax_obj streamEncoder, const wax_edgemapBP* blueprint, wax_sampleOrigin origin, const float * pSamples, int edges, int edgePitch, int samplePitch);
+	WAX_EXPORT wax_obj	wax_createStreamEdgemapFromSpx( wax_obj streamEncoder, const wax_edgemapBP* blueprint, wax_sampleOrigin origin, const wax_spx * pSamples, int edges, int edgePitch, int samplePitch);
 
 	WAX_EXPORT wax_obj	wax_createStreamEdgemapFactory(wax_obj streamEncoder);
 	WAX_EXPORT wax_obj	wax_createStreamWarpmapFactory(wax_obj streamEncoder);

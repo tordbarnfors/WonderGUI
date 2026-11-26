@@ -181,7 +181,7 @@ namespace wg
 
 		if (nb1 == c_maxLevels-1 || nb2 == c_maxLevels-1)
 		{
-			Base::throwError(ErrorLevel::SilentError, ErrorCode::Internal, "Widget hierarchy too deep for operation.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::SilentError, ErrorCode::Internal, "Widget hierarchy too deep for operation.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -408,25 +408,25 @@ namespace wg
 			_requestResize();
 	}
 
-	//____ setBaggage() _______________________________________________________
+	//____ setUserData() _______________________________________________________
 
-	void Widget::setBaggage(Object * pBaggage)
+	void Widget::setUserData(Object * pUserData)
 	{
-		m_pBaggage = pBaggage;
+		m_pUserData = pUserData;
 	}
 
-	//____ hasBaggage() _______________________________________________________
+	//____ hasUserData() _______________________________________________________
 
-	bool Widget::hasBaggage() const
+	bool Widget::hasUserData() const
 	{
-		return m_pBaggage;
+		return m_pUserData;
 	}
 
-	//____ baggage() __________________________________________________________
+	//____ userData() __________________________________________________________
 
-	Object_p Widget::baggage() const
+	Object_p Widget::userData() const
 	{
-		return m_pBaggage;
+		return m_pUserData;
 	}
 
 	//____ bringIntoView() _______________________________________________________
@@ -758,7 +758,7 @@ namespace wg
 		
 		if(m_receivingUpdateCounter == 0 )
 		{
-			Base::throwError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, "_stopReceiveUpdates() called but counter is already at 0. Ignoring.", 
+			Base::reportError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, "_stopReceiveUpdates() called but counter is already at 0. Ignoring.", 
 							 this, &TYPEINFO, __func__, __FILE__, __LINE__ );
 
 			m_receivingUpdateCounter = 0;

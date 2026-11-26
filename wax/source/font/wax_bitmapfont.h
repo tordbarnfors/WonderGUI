@@ -92,8 +92,8 @@ namespace wax
 
 			Surface_p 	pSurface;			// Set to null if no bitmap for glyph could be found.
 			RectSPX		rect;
-			spx			bearingX = 0;			// x offset when rendering the glyph (negated offset to glyph origo)
-			spx			bearingY = 0;			// y offset when rendering the glyph (negated offset to glyph origo)
+			spx			bearingX = 0;			// x offset when rendering the glyph (negated offset to glyph origin)
+			spx			bearingY = 0;			// y offset when rendering the glyph (negated offset to glyph origin)
 		};
 
 		Surface_p	m_pSurface;

@@ -153,7 +153,7 @@ namespace wax
 
 		if( !pDevice )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No SDL_GPU device set. Call SdlGpuBackend::setDevice() before creating any surface.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No SDL_GPU device set. Call SdlGpuBackend::setDevice() before creating any surface.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
@@ -176,7 +176,7 @@ namespace wax
 			char buffer[256];
 			snprintf(buffer, sizeof(buffer), "The SDL_GPU device (%s) has no texture of the format a surface of pixel format %d needs%s.",
 					 SDL_GetGPUDeviceDriver(pDevice), int(m_pixelFormat), m_bCanvas ? " for a canvas" : (m_mipLevels > 1 ? " for mipmapping" : ""));
-			Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -210,7 +210,7 @@ namespace wax
 		{
 			_dropDeviceObjects();
 
-			Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create the SDL_GPU objects of a surface, it will have no texture.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create the SDL_GPU objects of a surface, it will have no texture.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		}
 

@@ -152,7 +152,7 @@ namespace wax
 	{
 		if( MetalBackend::s_metalDevice == nil )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No Metal device set. Call MetalBackend::setMetalDevice() before creating any surface.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No Metal device set. Call MetalBackend::setMetalDevice() before creating any surface.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
@@ -179,7 +179,7 @@ namespace wax
 		{
 			_dropDeviceObjects();
 
-			Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create the Metal objects of a surface, it will have no texture.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create the Metal objects of a surface, it will have no texture.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		}
 
@@ -298,7 +298,7 @@ namespace wax
 
 		if( buffer == nil )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for pixels on their way to the texture of a surface.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for pixels on their way to the texture of a surface.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}

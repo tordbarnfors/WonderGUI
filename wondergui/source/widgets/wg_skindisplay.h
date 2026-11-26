@@ -55,7 +55,6 @@ namespace wg
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			bool			disabled = false;
 			Skin_p			displaySkin;
 			State			displayState = State::Default;
@@ -75,6 +74,7 @@ namespace wg
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			std::string			tooltip;
+			Object_p		userData;
 		};
 
 

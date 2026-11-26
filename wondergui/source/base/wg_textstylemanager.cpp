@@ -44,7 +44,7 @@ namespace wg
 	{
 		if (handle == 0 || handle >= s_capacity)
 		{
-			Base::throwError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, "TextStyle handle out of bounds. TextStyle does not exist. Returning nullptr.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, "TextStyle handle out of bounds. TextStyle does not exist. Returning nullptr.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -86,7 +86,7 @@ namespace wg
 	{
 		if( s_instanceCounter == 0 )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::SystemIntegrity, "Exiting TextStyleManager more times than it has been initialized.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::SystemIntegrity, "Exiting TextStyleManager more times than it has been initialized.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 
@@ -98,7 +98,7 @@ namespace wg
 
 			if (s_size > 0)
 			{
-				Base::throwError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, "Exiting TextStyleManager before all TextStyles have been deleted. This can cause crashes later on.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::reportError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, "Exiting TextStyleManager before all TextStyles have been deleted. This can cause crashes later on.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 				return;
 			}
 
@@ -123,7 +123,7 @@ namespace wg
 		{
 			if (s_capacity == c_maxCapacity)
 			{
-				Base::throwError(ErrorLevel::Critical, ErrorCode::ResourceExhausted, "Maximum number of TextStyles already created. Can have no more than 65535. Will return 0.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::reportError(ErrorLevel::Critical, ErrorCode::ResourceExhausted, "Maximum number of TextStyles already created. Can have no more than 65535. Will return 0.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 				return 0;
 			}
 
@@ -162,7 +162,7 @@ namespace wg
 
         if( s_pLookupTable == nullptr )
         {
-			Base::throwError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, "TextStyle destroyed after TextStyleManager has exited (or possibly before being initialized).", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, "TextStyle destroyed after TextStyleManager has exited (or possibly before being initialized).", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
             return;
         }
 
@@ -170,7 +170,7 @@ namespace wg
 
 		if (idx < 0 || idx >= s_capacity)
 		{
-			Base::throwError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, "Attempt to release invalid TextStyle-handle. Something has gone wrong.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, "Attempt to release invalid TextStyle-handle. Something has gone wrong.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 

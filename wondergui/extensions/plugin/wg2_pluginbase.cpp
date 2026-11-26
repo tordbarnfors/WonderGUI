@@ -61,7 +61,7 @@ bool WgPluginBase::exit()
 {
 	if( s_pContext == nullptr )
 	{
-		throwError(ErrorLevel::SilentError, ErrorCode::IllegalCall, "Call to WgPluginBase::exit() ignored, not initialized or already exited.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+		reportError(ErrorLevel::SilentError, ErrorCode::IllegalCall, "Call to WgPluginBase::exit() ignored, not initialized or already exited.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return false;
 	}
 	

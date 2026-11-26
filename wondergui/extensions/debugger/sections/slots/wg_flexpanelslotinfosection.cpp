@@ -31,7 +31,7 @@ namespace wg
 	static std::string flexPosToString(const FlexPos& pos)
 	{
 		char temp[256];
-		snprintf(temp, sizeof(temp), "Relative (%f,%f) + (%f,%f) pts", pos.origo.x, pos.origo.y, pos.offset.x, pos.offset.y);
+		snprintf(temp, sizeof(temp), "Relative (%f,%f) + (%f,%f) pts", pos.origin.x, pos.origin.y, pos.offset.x, pos.offset.y);
 		return std::string(temp);
 	}
 
@@ -46,8 +46,8 @@ namespace wg
 	{
 		this->slot = _createRows({
 			textRow( "Mode: ",             [](FlexPanelSlot* s) { return s->isPinned() ? "Pinned" : "Movable"; } ),
-			textRow( "Origo: ",            [](FlexPanelSlot* s) { return flexPosToString(s->origo()); } ),
-			textRow( "Hotspot: ",          [](FlexPanelSlot* s) { return flexPosToString(s->hotspot()); } ),
+			textRow( "Origin: ",            [](FlexPanelSlot* s) { return flexPosToString(s->origin()); } ),
+			textRow( "Pivot: ",          [](FlexPanelSlot* s) { return flexPosToString(s->pivot()); } ),
 			ptsRow ( "Offset X (pts): ",   [](FlexPanelSlot* s) { return s->offset().x; } ),
 			ptsRow ( "Offset Y (pts): ",   [](FlexPanelSlot* s) { return s->offset().y; } ),
 			textRow( "TopLeft pin: ",      [](FlexPanelSlot* s) { return flexPosToString(s->topLeftPin()); } ),
@@ -75,7 +75,7 @@ namespace wg
 
 	//____ _updateRowVisibility() _____________________________________________
 	//
-	// Movable slots are placed by origo, hotspot and offset, pinned ones by
+	// Movable slots are placed by origin, pivot and offset, pinned ones by
 	// their two pins. Only show the rows that apply.
 
 	void FlexPanelSlotInfoSection::_updateRowVisibility()

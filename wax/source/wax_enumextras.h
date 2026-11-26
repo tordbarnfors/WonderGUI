@@ -55,7 +55,7 @@ namespace wax
 	const static GfxFlip         GfxFlip_min         = GfxFlip::None;
 	const static TransitionCurve TransitionCurve_min = TransitionCurve::Linear;
 	const static CanvasRef       CanvasRef_min       = CanvasRef::None;
-	const static SampleOrigo     SampleOrigo_min     = SampleOrigo::Top;
+	const static SampleOrigin     SampleOrigin_min     = SampleOrigin::Top;
 	const static Compression     Compression_min     = Compression::None;
 	const static LineCapShape    LineCapShape_min    = LineCapShape::None;
 
@@ -77,7 +77,7 @@ namespace wax
 	const static GfxFlip         GfxFlip_max         = GfxFlip::Rot270FlipY;
 	const static TransitionCurve TransitionCurve_max = TransitionCurve::Parametric;
 	const static CanvasRef       CanvasRef_max       = CanvasRef::Canvas_32;
-	const static SampleOrigo     SampleOrigo_max     = SampleOrigo::Bottom;
+	const static SampleOrigin     SampleOrigin_max     = SampleOrigin::Bottom;
 	const static Compression     Compression_max     = Compression::Spx16I;
 	const static LineCapShape    LineCapShape_max    = LineCapShape::Spear;
 
@@ -99,7 +99,7 @@ namespace wax
 	const static int             GfxFlip_size        = (int)GfxFlip::Rot270FlipY + 1;
 	const static int             TransitionCurve_size= (int)TransitionCurve::Parametric + 1;
 	const static int             CanvasRef_size      = (int)CanvasRef::Canvas_32 + 1;
-	const static int             SampleOrigo_size    = (int)SampleOrigo::Bottom + 1;
+	const static int             SampleOrigin_size    = (int)SampleOrigin::Bottom + 1;
 	const static int             Compression_size    = (int)Compression::Spx16I + 1;
 	const static int             LineCapShape_size   = (int)LineCapShape::Spear + 1;
 
@@ -121,7 +121,7 @@ namespace wax
 	const char * toString(GfxFlip);
 	const char * toString(TransitionCurve);
 	const char * toString(CanvasRef);
-	const char * toString(SampleOrigo);
+	const char * toString(SampleOrigin);
 	const char * toString(Compression);
 	const char * toString(LineCapShape);
 

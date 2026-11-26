@@ -74,7 +74,6 @@ namespace wg
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			bool			checked = false;
 			ClickArea		clickArea = ClickArea::Default;
 			bool			disabled = false;
@@ -94,6 +93,7 @@ namespace wg
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			std::string			tooltip;
+			Object_p		userData;
 		};
 
 		//.____ Creation __________________________________________

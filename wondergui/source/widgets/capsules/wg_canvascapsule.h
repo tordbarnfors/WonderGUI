@@ -60,7 +60,6 @@ namespace wg
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			BlendMode		blendMode		= BlendMode::Blend;
 			Widget_p		child;
 			Color			clearColor		= Color::Undefined;
@@ -91,6 +90,7 @@ namespace wg
 			Tint_p		tint;
 			std::string			tooltip;
 			bool			usePickHandles = false;
+			Object_p		userData;
 		};
 
 		//.____ Creation __________________________________________

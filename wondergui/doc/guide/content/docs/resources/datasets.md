@@ -38,5 +38,5 @@ auto p3 = Dataset<myData>::create( { .foo = 123, .bar = 456 } );	// Since C++20
 
 ## Purpose
 
-The main purpose of Dataset is to allow for an easy way to attach arbitrary information to any widget or surface through their baggage() methods and have that data automatically destroyed along with the widget.
+The main purpose of Dataset is to allow for an easy way to attach arbitrary information to any widget or surface through their userData() methods and have that data automatically destroyed along with the widget.
 

@@ -31,18 +31,18 @@ public class Printer : Objekt
     }
 
 
-    //____ SetCursorOrigo() ___________________________________________________
+    //____ SetCursorOrigin() ___________________________________________________
 
-    public void SetCursorOrigo(CoordSPX origo)
+    public void SetCursorOrigin(CoordSPX origin)
     {
-        wax_setPrinterOrigo(_obj, origo);
+        wax_setPrinterOrigin(_obj, origin);
     }
 
-    //____ CursorOrigo() ______________________________________________________
+    //____ CursorOrigin() ______________________________________________________
 
-    public CoordSPX CursorOrigo()
+    public CoordSPX CursorOrigin()
     {
-        return wax_printerOrigo(_obj);
+        return wax_printerOrigin(_obj);
     }
 
     //____ SetLineWidth() _____________________________________________________
@@ -189,10 +189,10 @@ public class Printer : Objekt
     private static extern IntPtr wax_printerFont(IntPtr printer);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern void wax_setPrinterOrigo(IntPtr printer, CoordSPX coord);
+    private static extern void wax_setPrinterOrigin(IntPtr printer, CoordSPX coord);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern CoordSPX wax_printerOrigo(IntPtr printer);
+    private static extern CoordSPX wax_printerOrigin(IntPtr printer);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern void wax_setPrinterLineWidth(IntPtr printer, int spxWidth);

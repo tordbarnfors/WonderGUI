@@ -948,7 +948,7 @@ The restorer:
 - **A `std::function`** that takes the surface and returns a bool, `Surface::Restorer` (Tord,
   2026-11-25). It was a pointer to a function for a day, as `finalizer` is one, which Tord had
   picked over an object with a `restore()` to override. A plain function has the surface to go
-  by, with its `identity` and its `baggage`. A lambda captures what it needs, which is what a
+  by, with its `identity` and its `userData`. A lambda captures what it needs, which is what a
   plugin takes, see below, and what the observers of a surface already had. It is a member of
   Surface, so every surface is larger for it on all backends: 64 bytes for a `std::function`
   with MSVC as I recall, not measured, where the pointer was 8.

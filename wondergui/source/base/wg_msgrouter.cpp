@@ -393,7 +393,7 @@ namespace wg
 	{
 		if( m_bIsProcessing )
 		{
-			Base::throwError(ErrorLevel::Warning, ErrorCode::IllegalCall, "dispatch() called from within a dispatch callback (i.e. message being processed calls dispatch). Call ignored.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Warning, ErrorCode::IllegalCall, "dispatch() called from within a dispatch callback (i.e. message being processed calls dispatch). Call ignored.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 

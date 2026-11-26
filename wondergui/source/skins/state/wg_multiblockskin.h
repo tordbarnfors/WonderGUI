@@ -96,7 +96,7 @@ namespace wg
 
 			Coord				blockOfs[State::NbStates];		// Block for each state
 			Color				tintColor[State::NbStates];
-	//		Placement			placementOrigo;
+	//		Placement			placementOrigin;
 	//		CoordI			placementOfs;
 	//		SizeI			dimensions;                   // Stored in pixels
 	//		int				m_tiledSections;

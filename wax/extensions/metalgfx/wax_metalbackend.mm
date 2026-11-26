@@ -224,7 +224,7 @@ bool MetalBackend::setDefaultCanvas( MTLRenderPassDescriptor* renderPassDesc, Si
 	MTLPixelFormat format;
 	if( !_toMetalFormat(pixelFormat, colorSpace, format) )
 	{
-		Base::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "pixelFormat must be ARGB_8, XRGB_8 or Alpha_8", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "pixelFormat must be ARGB_8, XRGB_8 or Alpha_8", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return false;
 	}
 
@@ -431,7 +431,7 @@ bool MetalBackend::_bindCanvas( Surface * pCanvas, SizeI& size, CanvasKind& kind
 
 	if( pSurface && (pSurface->m_texture == nil || (pSurface->m_texture.usage & MTLTextureUsageRenderTarget) == 0) )
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Surface can not be used as canvas, rendering to default canvas instead.",
+		Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Surface can not be used as canvas, rendering to default canvas instead.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		pSurface = nullptr;
 	}
@@ -534,7 +534,7 @@ bool MetalBackend::_beginEncoding()
 
 	if( m_renderEncoder == nil )
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to begin a render pass.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to begin a render pass.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return false;
 	}
 
@@ -695,7 +695,7 @@ id<MTLRenderPipelineState> MetalBackend::_createPipeline( PipelineKind kind, con
 	{
 		NSString * pMessage = [NSString stringWithFormat:@"Failed to create pipeline %s/%s: %@", pVertexShader, pPixelShader,
 							   pError ? pError.localizedDescription : @"shader function missing"];
-		Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, pMessage.UTF8String, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, pMessage.UTF8String, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
 	[pVertexDescriptor release];
@@ -759,14 +759,14 @@ id<MTLFunction> MetalBackend::_function( const char * pName )
 		if( function == nil )
 		{
 			NSString * pMessage = [NSString stringWithFormat:@"Failed to compile shader %s: %@", pName, pError ? pError.localizedDescription : @"function missing"];
-			Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, pMessage.UTF8String, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, pMessage.UTF8String, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		}
 	}
 	else
 	{
 		char buffer[128];
 		snprintf(buffer, sizeof(buffer), "Shader %s is missing, run compile_shaders.py.", pName);
-		Base::throwError(ErrorLevel::Error, ErrorCode::Internal, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::Internal, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
 	m_functions[pName] = function;			// Kept also when nil, so we don't try again and again.
@@ -1037,7 +1037,7 @@ id<MTLRenderPipelineState> MetalBackend::_mipmapPipeline( MTLPixelFormat format 
 	if( pipelineState == nil )
 	{
 		NSString * pMessage = [NSString stringWithFormat:@"Failed to create Mipmap Pipeline: %@", error ? error.localizedDescription : @"shader function missing"];
-		Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, pMessage.UTF8String, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, pMessage.UTF8String, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
 	[descriptor release];

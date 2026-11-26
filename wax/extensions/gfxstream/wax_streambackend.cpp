@@ -200,7 +200,7 @@ namespace wax
 				* it++ = static_cast<StreamWarpmap*>(pObj)->inStreamId();
 			else
 			{
-				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Unknown object type in object list.", this, &StreamBackend::TYPEINFO, __func__, __FILE__, __LINE__);				
+				Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Unknown object type in object list.", this, &StreamBackend::TYPEINFO, __func__, __FILE__, __LINE__);				
 				return;
 			}
 		}

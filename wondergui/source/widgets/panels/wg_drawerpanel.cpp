@@ -53,9 +53,9 @@ namespace wg
 
 	//____ setButton() ________________________________________________________
 
-	void DrawerPanel::setButton(Skin* pSkin, Placement origo, Coord ofs, Size size)
+	void DrawerPanel::setButton(Skin* pSkin, Placement origin, Coord ofs, Size size)
 	{
-		m_buttonPlacement = origo;
+		m_buttonPlacement = origin;
 		m_buttonGeo = { ofs, size };
 		m_buttonSkin.set(pSkin);
 	}
@@ -66,7 +66,7 @@ namespace wg
 	{
 		if (direction == Direction::Undefined)
 		{
-			Base::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "Direction::Undefined is not a valid direction for DrawerPanel. Ignoring.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Warning, ErrorCode::InvalidParam, "Direction::Undefined is not a valid direction for DrawerPanel. Ignoring.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 

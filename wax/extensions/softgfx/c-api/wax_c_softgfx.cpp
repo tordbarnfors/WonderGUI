@@ -113,7 +113,7 @@ wax_obj wax_createSoftEdgemap( const wax_edgemapBP* blueprint )
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wax_obj wax_createSoftEdgemapFromFloats( const wax_edgemapBP* blueprint, wax_sampleOrigo origo, const float * pSamples, int edges, int edgePitch, int samplePitch)
+wax_obj wax_createSoftEdgemapFromFloats( const wax_edgemapBP* blueprint, wax_sampleOrigin origin, const float * pSamples, int edges, int edgePitch, int samplePitch)
 {
 	Edgemap::Blueprint	bp;
 
@@ -122,7 +122,7 @@ wax_obj wax_createSoftEdgemapFromFloats( const wax_edgemapBP* blueprint, wax_sam
 
 	convertEdgemapBlueprint(&bp, blueprint, tintArea);
 
-	auto p = SoftEdgemap::create(bp, (SampleOrigo) origo, pSamples, edges, edgePitch, samplePitch);
+	auto p = SoftEdgemap::create(bp, (SampleOrigin) origin, pSamples, edges, edgePitch, samplePitch);
 	if( !p )
 		return nullptr;
 
@@ -130,7 +130,7 @@ wax_obj wax_createSoftEdgemapFromFloats( const wax_edgemapBP* blueprint, wax_sam
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wax_obj wax_createSoftEdgemapFromSpx( const wax_edgemapBP* blueprint, wax_sampleOrigo origo, const wax_spx * pSamples, int edges, int edgePitch, int samplePitch)
+wax_obj wax_createSoftEdgemapFromSpx( const wax_edgemapBP* blueprint, wax_sampleOrigin origin, const wax_spx * pSamples, int edges, int edgePitch, int samplePitch)
 {
 	Edgemap::Blueprint	bp;
 
@@ -139,7 +139,7 @@ wax_obj wax_createSoftEdgemapFromSpx( const wax_edgemapBP* blueprint, wax_sample
 
 	convertEdgemapBlueprint(&bp, blueprint, tintArea);
 
-	auto p = SoftEdgemap::create(bp, (SampleOrigo) origo, pSamples, edges, edgePitch, samplePitch);
+	auto p = SoftEdgemap::create(bp, (SampleOrigin) origin, pSamples, edges, edgePitch, samplePitch);
 	if( !p )
 		return nullptr;
 

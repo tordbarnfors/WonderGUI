@@ -50,7 +50,6 @@ namespace wg
 		{
 			bool				autohideScrollbars 	= true;
 			bool				autoscroll 			= false;
-			Object_p			baggage;
 			Widget_p			child;
 			Placement			childPlacement 		= Placement::NorthWest;
 			SizeConstraint		childConstraintX 	= SizeConstraint::None;
@@ -80,6 +79,7 @@ namespace wg
 			std::string				tooltip;
 			CoordTransition_p	transition;
 			bool				usePickHandles		= false;
+			Object_p			userData;
 			Axis				wheelOneAxis 		= Axis::Y;
 			Axis				wheelTwoAxis		= Axis::X;
 			ModKeys				wheelShift 			= ModKeys::Alt;

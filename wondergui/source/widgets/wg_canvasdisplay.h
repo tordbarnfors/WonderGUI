@@ -55,7 +55,6 @@ namespace wg
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			BlendMode		blendMode		= BlendMode::Blend;
 			CanvasCapsule_p	canvas;
 			Size			defaultSize = { -1,-1 };
@@ -77,6 +76,7 @@ namespace wg
 			Color			tintColor		= Color::Undefined;
 			Tint_p		tint;
 			std::string			tooltip;
+			Object_p		userData;
 		};
 
 

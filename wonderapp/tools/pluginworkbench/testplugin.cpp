@@ -343,7 +343,7 @@ bool canvasCapsuleGlowTest(ComponentPtr<DynamicSlot> pEntry)
 
 	pButtons->slots << pTintWhite << pTintBlack << pGradientWhite << pGradientBlack;
 
-	pBack->slots.pushBack( pButtons, { .origo = Placement::SouthWest } );
+	pBack->slots.pushBack( pButtons, { .origin = Placement::SouthWest } );
 
 	return true;
 }

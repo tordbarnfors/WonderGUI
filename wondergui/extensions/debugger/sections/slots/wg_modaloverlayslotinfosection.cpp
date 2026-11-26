@@ -32,11 +32,11 @@ namespace wg
 	ModalOverlaySlotInfoSection::ModalOverlaySlotInfoSection(const DebugTheme& theme, IDebugContext* pContext, ModalOverlay::Slot * pInspected)
 		: TypedInfoSection<ModalOverlay::Slot>( theme, pContext, ModalOverlay::Slot::TYPEINFO.className, pInspected )
 	{
-		// Origo, offset and size are what the slot was placed with. Resulting
+		// Origin, offset and size are what the slot was placed with. Resulting
 		// geo is shown by the Overlay::Slot section.
 
 		this->slot = _createRows({
-			textRow( "Origo: ",                    [](ModalOverlay::Slot* s) { return toString(s->origo()); } ),
+			textRow( "Origin: ",                    [](ModalOverlay::Slot* s) { return toString(s->origin()); } ),
 			ptsRow ( "Placement offset X (pts): ", [](ModalOverlay::Slot* s) { return s->pos().x; } ),
 			ptsRow ( "Placement offset Y (pts): ", [](ModalOverlay::Slot* s) { return s->pos().y; } ),
 			ptsRow ( "Placement width (pts): ",    [](ModalOverlay::Slot* s) { return s->size().w; } ),

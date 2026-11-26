@@ -57,7 +57,7 @@ namespace wg
 				auto pObject = dynamic_cast<Object*>(m_pHolder);
 				const TypeInfo* pTypeInfo = pObject ? &pObject->typeInfo() : nullptr;
 
-				Base::throwError(ErrorLevel::Error, ErrorCode::OutOfRange, "Slot index out of range", pObject, pTypeInfo, __func__, __FILE__, __LINE__);
+				Base::reportError(ErrorLevel::Error, ErrorCode::OutOfRange, "Slot index out of range", pObject, pTypeInfo, __func__, __FILE__, __LINE__);
 			}
 
 			return m_slots[index];
@@ -70,7 +70,7 @@ namespace wg
 				auto pObject = dynamic_cast<Object*>(m_pHolder);
 				const TypeInfo* pTypeInfo = pObject ? &pObject->typeInfo() : nullptr;
 
-				Base::throwError(ErrorLevel::Error, ErrorCode::OutOfRange, "Slot index out of range", pObject, pTypeInfo, __func__, __FILE__, __LINE__);
+				Base::reportError(ErrorLevel::Error, ErrorCode::OutOfRange, "Slot index out of range", pObject, pTypeInfo, __func__, __FILE__, __LINE__);
 			}
 
 			return m_slots[index];

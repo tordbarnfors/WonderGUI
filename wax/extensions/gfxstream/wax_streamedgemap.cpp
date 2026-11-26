@@ -47,7 +47,7 @@ StreamEdgemap_p	StreamEdgemap::create(StreamEncoder* pEncoder, const Blueprint& 
 	return p;
 }
 
-StreamEdgemap_p StreamEdgemap::create(StreamEncoder* pEncoder, const Edgemap::Blueprint& blueprint, SampleOrigo origo,
+StreamEdgemap_p StreamEdgemap::create(StreamEncoder* pEncoder, const Edgemap::Blueprint& blueprint, SampleOrigin origin,
 	const float* pSamples, int edges, int edgePitch, int samplePitch)
 {
 	if (!pEncoder)
@@ -61,13 +61,13 @@ StreamEdgemap_p StreamEdgemap::create(StreamEncoder* pEncoder, const Edgemap::Bl
 
 	auto p = StreamEdgemap_p(new StreamEdgemap(pEncoder, blueprint));
 
-	p->_importSamples(origo, pSamples, 0, edges, 0, p->samples(), edgePitch, samplePitch);
+	p->_importSamples(origin, pSamples, 0, edges, 0, p->samples(), edgePitch, samplePitch);
 	p->m_nbRenderSegments = edges + 1;
 	pEncoder->flush();
 	return p;
 }
 
-StreamEdgemap_p StreamEdgemap::create(StreamEncoder* pEncoder, const Edgemap::Blueprint& blueprint, SampleOrigo origo,
+StreamEdgemap_p StreamEdgemap::create(StreamEncoder* pEncoder, const Edgemap::Blueprint& blueprint, SampleOrigin origin,
 	const spx* pSamples, int edges, int edgePitch, int samplePitch)
 {
 	if (!pEncoder)
@@ -81,7 +81,7 @@ StreamEdgemap_p StreamEdgemap::create(StreamEncoder* pEncoder, const Edgemap::Bl
 
 	auto p = StreamEdgemap_p(new StreamEdgemap(pEncoder, blueprint));
 
-	p->_importSamples(origo, pSamples, 0, edges, 0, p->samples(), edgePitch, samplePitch);
+	p->_importSamples(origin, pSamples, 0, edges, 0, p->samples(), edgePitch, samplePitch);
 	p->m_nbRenderSegments = edges + 1;
 	pEncoder->flush();
 	return p;

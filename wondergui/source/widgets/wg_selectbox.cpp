@@ -127,7 +127,7 @@ namespace wg
 		{
 			auto pObject = dynamic_cast<Object*>(m_pHolder);
 			const TypeInfo* pTypeInfo = pObject ? &pObject->typeInfo() : nullptr;
-			Base::throwError(ErrorLevel::SilentError, ErrorCode::InvalidIterator, "Invalid iterator", pObject, pTypeInfo, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::SilentError, ErrorCode::InvalidIterator, "Invalid iterator", pObject, pTypeInfo, __func__, __FILE__, __LINE__);
 			return;
 		}
 
@@ -158,7 +158,7 @@ namespace wg
 		{
 			auto pObject = dynamic_cast<Object*>(m_pHolder);
 			const TypeInfo* pTypeInfo = pObject ? &pObject->typeInfo() : nullptr;
-			Base::throwError(ErrorLevel::SilentError, ErrorCode::OutOfRange, "index out of range", pObject, pTypeInfo, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::SilentError, ErrorCode::OutOfRange, "index out of range", pObject, pTypeInfo, __func__, __FILE__, __LINE__);
 			return;
 		}
 

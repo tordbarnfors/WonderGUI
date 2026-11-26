@@ -612,7 +612,7 @@ namespace wg
 	{
 		if( pNewChild == nullptr )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Slot in PackPanel must contain pointer to widget and not nullptr.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Slot in PackPanel must contain pointer to widget and not nullptr.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 

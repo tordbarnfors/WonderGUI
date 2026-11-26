@@ -59,7 +59,7 @@ namespace wax
 			char buffer[256];
 			snprintf(buffer, sizeof(buffer), "The SDL_GPU device (%s) takes no shaders we have for this platform, nothing will render.",
 					 SDL_GetGPUDeviceDriver(pDevice));
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, buffer, nullptr, nullptr, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, buffer, nullptr, nullptr, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -91,7 +91,7 @@ namespace wax
 		{
 			char buffer[512];
 			snprintf(buffer, sizeof(buffer), "%s failed: %s", pWhat, SDL_GetError());
-			Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, pObject, pClassType, func, file, line);
+			Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, pObject, pClassType, func, file, line);
 		}
 
 		return bOK;

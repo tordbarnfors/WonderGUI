@@ -113,7 +113,6 @@ namespace wg
 		
 		struct Blueprint
 		{
-			Object_p		baggage;
 			bool			disabled		= false;
 			bool			dropTarget 		= false;
 			Finalizer_p		finalizer		= nullptr;
@@ -131,6 +130,7 @@ namespace wg
 			bool			takesFocusFromChild = true;
 			std::string			tooltip;
 			bool			usePickHandles = false;
+			Object_p		userData;
 
 		};
 		

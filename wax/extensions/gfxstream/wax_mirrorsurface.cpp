@@ -35,13 +35,13 @@ namespace wax
 	{
 		if (!blueprint.encoder)
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "You must provide a StreamEncoder in the blueprint.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "You must provide a StreamEncoder in the blueprint.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
 		if (!blueprint.surface)
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "You must provide a Surface in the blueprint.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "You must provide a Surface in the blueprint.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 

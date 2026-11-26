@@ -414,8 +414,8 @@ typedef struct wg_surface_calls_struct
 	int					(*fillSurfaceRect)(wax_obj surface, const wax_rectI* region, wax_color col);
 	int					(*copySurface)(wax_obj destSurface, wax_coordI dst, wax_obj sourceSurface);
 	int					(*copySurfaceRect)(wax_obj destSurface, wax_coordI dst, wax_obj sourceSurface, const wax_rectI* srcRect);
-	void				(*setSurfaceBaggage)(wax_obj surface, wax_obj baggage);
-	wax_obj				(*getSurfaceBaggage)(wax_obj surface);
+	void				(*setSurfaceUserData)(wax_obj surface, wax_obj userData);
+	wax_obj				(*getSurfaceUserData)(wax_obj surface);
 	int					(*addSurfaceObserver)(wax_obj surface, wax_surfaceObserver_func, void* pData, int data);
 	int					(*removeSurfaceObserver)(wax_obj surface, int observerId);
 	wax_surfaceBP		(*getSurfaceBlueprint)(wax_obj surface);
@@ -457,10 +457,10 @@ typedef struct wg_edgemap_calls_struct
 
 	int					(*edgemapSegments)(wax_obj edgemap);
 	int					(*edgemapSamples)(wax_obj edgemap);
-	int 				(*importSpxSamples)(wax_obj edgemap, wax_sampleOrigo origo, const wax_spx* pSource, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
-	int 				(*importFloatSamples)(wax_obj edgemap, wax_sampleOrigo origo, const float* pSource, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
-	int 				(*exportSpxSamples)(wax_obj edgemap, wax_sampleOrigo origo, wax_spx* pDestination, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
-	int 				(*exportFloatSamples)(wax_obj edgemap, wax_sampleOrigo origo, float* pDestination, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
+	int 				(*importSpxSamples)(wax_obj edgemap, wax_sampleOrigin origin, const wax_spx* pSource, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
+	int 				(*importFloatSamples)(wax_obj edgemap, wax_sampleOrigin origin, const float* pSource, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
+	int 				(*exportSpxSamples)(wax_obj edgemap, wax_sampleOrigin origin, wax_spx* pDestination, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
+	int 				(*exportFloatSamples)(wax_obj edgemap, wax_sampleOrigin origin, float* pDestination, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
 
 	void				(*exportBounds)( wax_obj edgemap, wax_spx * pMinMaxOutput, int nSections, int sectionWidth, int topEdge, int bottomEdge, int mapOffset, int minMaxPitch );
 
@@ -512,8 +512,8 @@ typedef struct wg_edgemapfactory_calls_struct
 	int					structSize;
 
 	wax_obj				(*createEdgemap)(wax_obj factory, const wax_edgemapBP* blueprint);
-	wax_obj				(*createEdgemapFromFloats)(wax_obj factory, const wax_edgemapBP* blueprint, wax_sampleOrigo origo, const float* pSamples, int edges, int edgePitch, int samplePitch);
-	wax_obj				(*createEdgemapFromSpx)(wax_obj factory, const wax_edgemapBP* blueprint, wax_sampleOrigo origo, const wax_spx* pSamples, int edges, int edgePitch, int samplePitch);
+	wax_obj				(*createEdgemapFromFloats)(wax_obj factory, const wax_edgemapBP* blueprint, wax_sampleOrigin origin, const float* pSamples, int edges, int edgePitch, int samplePitch);
+	wax_obj				(*createEdgemapFromSpx)(wax_obj factory, const wax_edgemapBP* blueprint, wax_sampleOrigin origin, const wax_spx* pSamples, int edges, int edgePitch, int samplePitch);
 
 } wg_edgemapfactory_calls;
 

@@ -64,7 +64,7 @@ namespace wax
 
 		if (!DX12Backend::device())
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
 				"No D3D12 device set. DX12Backend::setDevice() must be called before any warpmap is created.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;

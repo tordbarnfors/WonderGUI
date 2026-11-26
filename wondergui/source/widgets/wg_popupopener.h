@@ -44,7 +44,6 @@ namespace wg
 		struct Blueprint
 		{
 			Placement		attachPoint		= Placement::SouthWest;
-			Object_p		baggage;
 			bool			closeOnSelect	= true;
 			bool			disabled		= false;
 			bool			dropTarget		= false;
@@ -67,6 +66,7 @@ namespace wg
 			bool			tabLock			= false;
 			bool			takeFocus		= true;
 			std::string		tooltip;
+			Object_p		userData;
 
 		};
 

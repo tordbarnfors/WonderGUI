@@ -41,7 +41,7 @@ FlexPanels provide two modes for controlling the position and size for of a slot
 
 The best way to understand Pinned mode is to think of the FlexPanel as a rubber sheet that can be stretched along its X- and Y-axies. You then attach the slot, which also is a rubber sheet, to the FlexPanel with two pins, one in the top left corner of the slot and the other in the bottom right. Now when you stretch the FlexPanel the pinned slot also stretches.
 
-In Movable mode you simply specify the position and size of the Slot in absolute terms, they don't change when you resize the FlexPanel and you can then move it around by updating the position. However, the origo from which the position is calculated can be specified with a pin. That way you can e.g. place a slot relative to the center or bottom-right of the FlexPanel, making it move appropriately when FlexPanel is resized, while size of the slot is not affected.
+In Movable mode you simply specify the position and size of the Slot in absolute terms, they don't change when you resize the FlexPanel and you can then move it around by updating the position. However, the origin from which the position is calculated can be specified with a pin. That way you can e.g. place a slot relative to the center or bottom-right of the FlexPanel, making it move appropriately when FlexPanel is resized, while size of the slot is not affected.
 
 ### Specifying a FlexPos
 
@@ -122,14 +122,14 @@ Top-left corner being moved up half the center buttons size + padding + size of 
 However, that is an awkward way to express a slot of a fixed size being placed at a fixed distance from the center. Instead we can set the slot as movable. If we skip setting the *pin1* and *pin2* members of the slots blueprint the slot will be created as *movable* and we can instead set *orgio*, *pos* and *size*:
 
 ```c++
-pFlexPanel->slots.pushBack( pCopyButton, { .origo = Placement::Center, 
+pFlexPanel->slots.pushBack( pCopyButton, { .origin = Placement::Center, 
                                            .pos = {0, -(15+5+30)}, 
                                            .size = {100,30} } );
 ```
 
-This first sets the size of the slot, then places it at the specified origo (which is a FlexPos, so we can set relative values instead of a Placement-enum) and adjusts the position with pos.
+This first sets the size of the slot, then places it at the specified origin (which is a FlexPos, so we can set relative values instead of a Placement-enum) and adjusts the position with pos.
 
-Attentive readers might ask, can't we just include the position adjustment in the origo since it is a FlexPos and skip the pos-variable? Yes, you can, but it we think that becomes less readable and goes against the established convention.
+Attentive readers might ask, can't we just include the position adjustment in the origin since it is a FlexPos and skip the pos-variable? Yes, you can, but it we think that becomes less readable and goes against the established convention.
 
 ### The result
 
@@ -146,15 +146,15 @@ pFlexPanel->slots.pushBack({
 	{ pPane2,     {	.pin1 = { Placement::North, {5+50,20+5} }, 
                   .pin2 = { Placement::SouthEast, {-5,-5} }
 	}},
-	{ pCopyButton,{ .origo = Placement::Center, 
+	{ pCopyButton,{ .origin = Placement::Center, 
                   .pos = {0, -(15+5+30)}, 
                   .size = {100,30}
 	}},								  
-	{ pMoveButton, { .origo = Placement::Center, 
+	{ pMoveButton, { .origin = Placement::Center, 
                    .pos = {0,-15}, 
                    .size = {100,30} 
 	}},
-	{ pDeleteButton, { .origo = Placement::Center, 
+	{ pDeleteButton, { .origin = Placement::Center, 
                      .pos = {0, (15+5)}, 
                      .size = {100,30}
 	}} 
@@ -170,7 +170,7 @@ The result is a short, very readable structure, specifying the children and thei
 1. The slots of a FlexPanel are allowed to overlap each other. The first among the slots (the one you access with slots.front() is the topmost while slots.back() returns the bottom one). FlexPanel checks a widgets opacity and a few other tricks to minimize amount of redraw of the same pixels, but it has limited understanding of the shape and opacity of widgets in the slots.
 2. If you skip the size-parameter when placing a movable widget (or set size to {0,0}) the slot will get the occupying widgets default size. If the default size changes (like when adding text to a TextDisplay-widget) the slot will be resized as well. Setting size to zero works individually for the axis, so if you want a slot that is 200 points wide but gets the height from the widget you simply set it to {200,0}.
 3. Slots in a movable state may be placed fully or partly outside FlexPanels geometry, in which case they will be clipped when rendering. This behavior can be changed with setConfineWidgets().
-4. Movable slots have a fourth parameter called "hotspot". This is a secondary FlexPos determining the point inside the slot that should be placed at its origo in the FlexPanel. It defaults to the same value as the origo, making placement feel natural with e.g. the center of the slot being placed at the center of the FlexPanel when setting origo to center. Typically you ignore it, but in some cases it can be useful, like when you want to put a slots top-left corner or lower-right corner at the center of the FlexPanel.
+4. Movable slots have a fourth parameter called "pivot". This is a secondary FlexPos determining the point inside the slot that should be placed at its origin in the FlexPanel. It defaults to the same value as the origin, making placement feel natural with e.g. the center of the slot being placed at the center of the FlexPanel when setting origin to center. Typically you ignore it, but in some cases it can be useful, like when you want to put a slots top-left corner or lower-right corner at the center of the FlexPanel.
 
 
 

@@ -259,28 +259,28 @@ namespace wax
 
 		if (!pInfoBeg)
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [INFO BEGIN] section.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [INFO BEGIN] section.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 
 		if (!pInfoEnd)
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [INFO END] section.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [INFO END] section.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 
 		if (!pCharmapBeg)
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [CHARMAP BEGIN] section.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [CHARMAP BEGIN] section.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 
 		if (!pCharmapEnd)
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [CHARMAP END] section.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [CHARMAP END] section.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}

@@ -44,44 +44,44 @@ namespace wg
 
 		inline FlexPos() {}
 
-		inline FlexPos( Placement _origo ) : origo(s_origoTab[(int)_origo][0], s_origoTab[(int)_origo][1]) {}
-		inline FlexPos( Placement _origo, Coord _offset ) : origo(s_origoTab[(int)_origo][0], s_origoTab[(int)_origo][1]), offset(_offset) {}
+		inline FlexPos( Placement _origin ) : origin(s_originTab[(int)_origin][0], s_originTab[(int)_origin][1]) {}
+		inline FlexPos( Placement _origin, Coord _offset ) : origin(s_originTab[(int)_origin][0], s_originTab[(int)_origin][1]), offset(_offset) {}
 
-		inline FlexPos( CoordF _origo ) : origo(_origo) {}
-		inline FlexPos( CoordF _origo, Coord _offset ) : origo(_origo), offset(_offset) {}
+		inline FlexPos( CoordF _origin ) : origin(_origin) {}
+		inline FlexPos( CoordF _origin, Coord _offset ) : origin(_origin), offset(_offset) {}
 
-		inline FlexPos( float _origoX, float _origoY ) : origo(_origoX, _origoY) {}
-		inline FlexPos( float _origoX, float _origoY, Coord _offset ) : origo(_origoX, _origoY), offset(_offset) {}
+		inline FlexPos( float _originX, float _originY ) : origin(_originX, _originY) {}
+		inline FlexPos( float _originX, float _originY, Coord _offset ) : origin(_originX, _originY), offset(_offset) {}
 
 		//.____ Geometry _______________________________________________________
 
 		Coord	pos(Size canvas) const
 		{
-			Coord c( origo.x*canvas.w + offset.x, origo.y*canvas.h + offset.y);
+			Coord c( origin.x*canvas.w + offset.x, origin.y*canvas.h + offset.y);
 			return c;
 		}
 
 		//.____ Properties _____________________________________________________
 
-		CoordF	origo;
+		CoordF	origin;
 		Coord	offset;
 
 		//.____ Operators ______________________________________________________
 
-		bool			operator==(const FlexPos& other) const { return origo == other.origo &&
+		bool			operator==(const FlexPos& other) const { return origin == other.origin &&
 																			offset == other.offset; }
-		bool			operator!=(const FlexPos& other) const { return origo != other.origo ||
+		bool			operator!=(const FlexPos& other) const { return origin != other.origin ||
 																			offset != other.offset; }
 		//.____ Internal _______________________________________________________
 
 		CoordSPX	_pos(SizeSPX canvas,  int scale) const
 		{
-			CoordSPX c(origo.x * canvas.w + offset.x*scale, origo.y * canvas.h + offset.y*scale);
+			CoordSPX c(origin.x * canvas.w + offset.x*scale, origin.y * canvas.h + offset.y*scale);
 			return c;
 		}
 
 	private:
-		static float	s_origoTab[Placement_size][2];
+		static float	s_originTab[Placement_size][2];
 	};
 
 
@@ -109,8 +109,8 @@ namespace wg
 
 			// Set for movable geo only.
 
-			FlexPos		hotspot = Placement::Undefined;
-			FlexPos		origo = Placement::NorthWest;
+			FlexPos		origin = Placement::NorthWest;
+			FlexPos		pivot = Placement::Undefined;
 			Coord		pos;
 			Size		size;
 
@@ -130,8 +130,8 @@ namespace wg
 		void			setPinned(const FlexPos& topLeft, const FlexPos& bottomRight);
 		inline bool		isPinned() const { return m_bPinned; }
 
-		void			setMovable(const FlexPos& origo = Placement::NorthWest, const FlexPos& hotspot = Placement::Undefined);
-		void			setMovable(const Rect& geometry, const FlexPos& origo, const FlexPos& hotspot = Placement::Undefined);
+		void			setMovable(const FlexPos& origin = Placement::NorthWest, const FlexPos& pivot = Placement::Undefined);
+		void			setMovable(const Rect& geometry, const FlexPos& origin, const FlexPos& pivot = Placement::Undefined);
 		inline bool		isMovable() const { return !m_bPinned; }
 
 
@@ -139,11 +139,11 @@ namespace wg
 
 		// Methods for movable children
 
-		bool			setOrigo(const FlexPos& origo);
-		inline FlexPos	origo() const { return m_origo; }
+		bool			setOrigin(const FlexPos& origin);
+		inline FlexPos	origin() const { return m_origin; }
 
-		bool			setHotspot(const FlexPos& hotspot);
-		inline FlexPos	hotspot() const { return m_hotspot; }
+		bool			setPivot(const FlexPos& pivot);
+		inline FlexPos	pivot() const { return m_pivot; }
 
 		bool			setGeo(const Rect& geometry);
 
@@ -185,9 +185,9 @@ namespace wg
 
 		// Positioned children
 
-		FlexPos			m_origo = Placement::NorthWest;
-		FlexPos			m_hotspot = Placement::NorthWest;
-		Rect			m_placementGeo;		// Widgets geo relative origo and hotspot, not pixel aligned.
+		FlexPos			m_origin = Placement::NorthWest;
+		FlexPos			m_pivot = Placement::NorthWest;
+		Rect			m_placementGeo;		// Widgets geo relative origin and pivot, not pixel aligned.
 
 		//	Stretched children
 
@@ -217,7 +217,6 @@ namespace wg
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			Size			defaultSize;
 			bool			disabled		= false;
 			bool			dropTarget		= false;
@@ -237,6 +236,7 @@ namespace wg
 			bool			takesFocusFromChild = true;
 			std::string			tooltip;
 			bool			usePickHandles	= false;
+			Object_p		userData;
 
 		};
 

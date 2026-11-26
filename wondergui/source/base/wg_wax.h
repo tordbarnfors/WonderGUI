@@ -205,7 +205,7 @@ namespace wg
 	using wax::GfxFlip_min;
 	using wax::TransitionCurve_min;
 	using wax::CanvasRef_min;
-	using wax::SampleOrigo_min;
+	using wax::SampleOrigin_min;
 	using wax::Compression_min;
 	using wax::LineCapShape_min;
 	using wax::ErrorLevel_max;
@@ -226,7 +226,7 @@ namespace wg
 	using wax::GfxFlip_max;
 	using wax::TransitionCurve_max;
 	using wax::CanvasRef_max;
-	using wax::SampleOrigo_max;
+	using wax::SampleOrigin_max;
 	using wax::Compression_max;
 	using wax::LineCapShape_max;
 	using wax::ErrorLevel_size;
@@ -247,7 +247,7 @@ namespace wg
 	using wax::GfxFlip_size;
 	using wax::TransitionCurve_size;
 	using wax::CanvasRef_size;
-	using wax::SampleOrigo_size;
+	using wax::SampleOrigin_size;
 	using wax::Compression_size;
 	using wax::LineCapShape_size;
 	using wax::toString;
@@ -547,7 +547,7 @@ namespace wg
 	using wax::Transform;
 	using wax::TransitionCurve;
 	using wax::CanvasRef;
-	using wax::SampleOrigo;
+	using wax::SampleOrigin;
 	using wax::Compression;
 	using wax::LineCapShape;
 

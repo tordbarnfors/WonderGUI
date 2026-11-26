@@ -70,7 +70,7 @@ int SPXCompressor::compress( void * _pDest, const void * _pBegin, const void * _
 {
 	if( ((intptr_t(_pBegin) | intptr_t(_pEnd) ) &0x01) == 1 )
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Data to compress must start/stop on WORD boundary.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Data to compress must start/stop on WORD boundary.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return 0;
 	}
 

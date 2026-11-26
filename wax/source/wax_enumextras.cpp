@@ -302,7 +302,7 @@ namespace wax
 		return names[(int)i];
 	}
 
-	const char * toString(SampleOrigo i)
+	const char * toString(SampleOrigin i)
 	{
 		static const char * names[] = { 
 			"Top",

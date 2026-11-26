@@ -59,7 +59,7 @@ public:
 		auto pFactory = pDevice->edgemapFactory();
 		
 		m_pEdgemapSPX1 = pFactory->createEdgemap( WGBP(Edgemap, _.size = canvas.size()/64, _.segments = 8, _.colors = m_rainbowColors ),
-												 SampleOrigo::Top, sampleBuffer[0], 7 );
+												 SampleOrigin::Top, sampleBuffer[0], 7 );
 		
 		
 		Tint_p tintsX[8];
@@ -76,19 +76,19 @@ public:
 		
 		
 		m_pEdgemapSPXGradientX = pFactory->createEdgemap( WGBP(Edgemap, _.size = canvas.size()/64, _.segments = 8, _.tints = tintsX ),
-												  SampleOrigo::Top, sampleBuffer[0], 7 );
+												  SampleOrigin::Top, sampleBuffer[0], 7 );
 
 		m_pEdgemapSPXGradientY = pFactory->createEdgemap( WGBP(Edgemap, _.size = canvas.size()/64, _.segments = 8, _.tints = tintsY ),
-												  SampleOrigo::Top, sampleBuffer[0], 7 );
+												  SampleOrigin::Top, sampleBuffer[0], 7 );
 
 		m_pEdgemapSPXGradientXY = pFactory->createEdgemap( WGBP(Edgemap, _.size = canvas.size()/64, _.segments = 8, _.tints = tintsXY ),
-												  SampleOrigo::Top, sampleBuffer[0], 7 );
+												  SampleOrigin::Top, sampleBuffer[0], 7 );
 
 //		m_pSmallEdgemap = pFactory->createEdgemap(WGBP(Edgemap, _.size = { 100, 50 }, _.segments = 4, _.tints = tintsXY),
-//			SampleOrigo::Top, sampleBuffer[0], 3, 513 );
+//			SampleOrigin::Top, sampleBuffer[0], 3, 513 );
 
 		m_pSmallEdgemap = pFactory->createEdgemap(WGBP(Edgemap, _.colors = m_rainbowColors, _.size = {100, 50}, _.segments = 4),
-			SampleOrigo::Top, sampleBuffer[0], 3, 513 );
+			SampleOrigin::Top, sampleBuffer[0], 3, 513 );
 
 		m_pGlobalTint = Tint::create(Color::TransparentWhite, Color::White, {0,0}, {0,1});
 
@@ -108,10 +108,10 @@ public:
 		}
 
 		m_pTilingEdgemap = pFactory->createEdgemap(WGBP(Edgemap, _.colors = m_rainbowColors, _.size = {tileW, tileH}, _.segments = 4, _.tiling = true),
-			SampleOrigo::Top, tileSamples[0], 3 );
+			SampleOrigin::Top, tileSamples[0], 3 );
 
 		m_pTilingEdgemapGradientXY = pFactory->createEdgemap(WGBP(Edgemap, _.tints = tintsXY, _.size = {tileW, tileH}, _.segments = 4, _.tiling = true),
-			SampleOrigo::Top, tileSamples[0], 3 );
+			SampleOrigin::Top, tileSamples[0], 3 );
 
 		return true;
 	}

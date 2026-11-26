@@ -386,7 +386,7 @@ void SDLWindowDX12::_present()
 		char buffer[128];
 		sprintf_s(buffer, "Present1() failed, HRESULT = 0x%08lX", (unsigned long)hr);
 
-		wg::Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, nullptr, nullptr, __func__, __FILE__, __LINE__);
+		wg::Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, nullptr, nullptr, __func__, __FILE__, __LINE__);
 	}
 }
 

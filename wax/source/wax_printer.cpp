@@ -91,23 +91,23 @@ namespace wax
 		m_pFont = pFont;
 	}
 
-	//____ setCursorOrigo() ____________________________________________________________
+	//____ setCursorOrigin() ____________________________________________________________
 	/**
-	* @brief Set the origo for the cursor.
+	* @brief Set the origin for the cursor.
 	* 
-	* Sets the origo for the cursor on the canvas. The origo is the top-left position for the cursor
+	* Sets the origin for the cursor on the canvas. The origin is the top-left position for the cursor
 	* and the position the cursor returns to when resetCursor() is called.
 	* 
-	* When the cursor begins a new line it returns to the x-position of origo.
+	* When the cursor begins a new line it returns to the x-position of origin.
 	* 
-	* Current cursor position is not modified when setting origo. So you might
+	* Current cursor position is not modified when setting origin. So you might
 	* want to call resetCursor() right after.
 	* 
-	* @param origo	Position of origo in subpixel coordinates.
+	* @param origin	Position of origin in subpixel coordinates.
 	*/
-	void Printer::setCursorOrigo( CoordSPX origo )
+	void Printer::setCursorOrigin( CoordSPX origin )
 	{
-		m_cursorOrigo = origo;
+		m_cursorOrigin = origin;
 	}
 
 	//____ setLineWidth() ________________________________________________________
@@ -134,14 +134,14 @@ namespace wax
 
 	//____ resetCursor() _________________________________________________________
 	/**
-	* @brief Move cursor to origo.
+	* @brief Move cursor to origin.
 	* 
-	* Move the cursor to origo.
+	* Move the cursor to origin.
 	*/
 
 	void Printer::resetCursor()
 	{
-		m_cursorPos = m_cursorOrigo;
+		m_cursorPos = m_cursorOrigin;
 	}
 
 	//____ setCursor() ___________________________________________________________
@@ -150,7 +150,7 @@ namespace wax
 	* 
 	* Moves the cursor to the specified position on the canvas.
 	* 
-	* @param origo	Position of cursor in subpixel coordinates.
+	* @param origin	Position of cursor in subpixel coordinates.
 	*
 	* Please note that characters are printed with the cursor position as their baseline,
 	* not their top left coordinate. Setting cursor to {0,0} will make all uppercase
@@ -182,7 +182,7 @@ namespace wax
 	* 
 	* Moves the cursor to the beginning of the next line.
 	* 
-	* The beginning of the next line has the X-position of cursor origo. The new 
+	* The beginning of the next line has the X-position of cursor origin. The new 
 	* Y-position is calculated under the assumption that the current font and font size
 	* has been used for printing the current line and will be used for printing the next line.
 	* 
@@ -194,7 +194,7 @@ namespace wax
 	{
 		if( m_pFont )
 		{
-			m_cursorPos.x = m_cursorOrigo.x;
+			m_cursorPos.x = m_cursorOrigin.x;
 			m_cursorPos.y += m_pFont->maxAscend() + m_pFont->maxDescend() + m_pFont->lineGap();
 		}
 	}
@@ -203,7 +203,7 @@ namespace wax
 	{
 		if( m_pFont )
 		{
-			m_cursorPos.x = m_cursorOrigo.x;
+			m_cursorPos.x = m_cursorOrigin.x;
 			spx oldSize = m_pFont->size();
 			m_pFont->setSize(maxFontSizeThisLine);
 			m_cursorPos.y += m_pFont->maxDescend() + m_pFont->lineGap();
@@ -251,7 +251,7 @@ namespace wax
 	*/
 	void Printer::print( const char * pText )
 	{
-		m_cursorPos = _print(m_cursorPos, pText, nullptr, m_cursorOrigo.x );
+		m_cursorPos = _print(m_cursorPos, pText, nullptr, m_cursorOrigin.x );
 	}
 
 	//____ printWrapping() ________________________________________________________________
@@ -272,7 +272,7 @@ namespace wax
 	*/
 	void Printer::printWrapping( const char * pText, spx wrappedLinesIndent )
 	{
-		m_cursorPos = _print(m_cursorPos, pText, nullptr, m_cursorOrigo.x, true, wrappedLinesIndent );
+		m_cursorPos = _print(m_cursorPos, pText, nullptr, m_cursorOrigin.x, true, wrappedLinesIndent );
 	}
 
 
@@ -338,7 +338,7 @@ namespace wax
 	* 
 	* Prints the specified text, left-aligned, starting from the given coordinate.
 	* 
-	* This method ignores the cursor origo and doesn't update the cursor position.
+	* This method ignores the cursor origin and doesn't update the cursor position.
 	* If the text contains a newline character the horizontal position will return
 	* to the specified position.
 	* 
@@ -365,7 +365,7 @@ namespace wax
 	* The text printed will not be constrained to the box, if the text is bigger than the box it will be
 	* drawn partially outside.
 	* 
-	* This method ignores the cursor origo and doesn't update the cursor position.
+	* This method ignores the cursor origin and doesn't update the cursor position.
 	* 
 	* @return	Position for printing any following character.
 	*/
@@ -385,7 +385,7 @@ namespace wax
 
 	//____ _print() ______________________________________________________________
 
-	CoordSPX Printer::_print( CoordSPX pos, const char * pBegin, const char * pEnd, spx origoX, bool bWrap, spx wrappedLinesIndent )
+	CoordSPX Printer::_print( CoordSPX pos, const char * pBegin, const char * pEnd, spx originX, bool bWrap, spx wrappedLinesIndent )
 	{
 		if( !m_pGfxDevice || !m_pFont )
 			return pos;
@@ -408,13 +408,13 @@ namespace wax
 					pos.x += m_pFont->whitespaceAdvance();
 				else if( chr == 10 )	// LF
 				{
-					pos.x = origoX;
+					pos.x = originX;
 					pos.y += m_pFont->maxAscend() + m_pFont->maxDescend() + m_pFont->lineGap();
 				}
 				else if( chr == 9 )	// TAB
 				{
 					spx tablen = m_pFont->whitespaceAdvance()*m_tabSize;
-					pos.x = pos.x - ((pos.x-origoX) % tablen) + tablen;
+					pos.x = pos.x - ((pos.x-originX) % tablen) + tablen;
 				}
 				else if( chr == 0 )
 				{
@@ -432,7 +432,7 @@ namespace wax
 				
 				if( bWrap && (pos.x + pGlyph->advance > m_lineWidth ) )
 				{
-					pos.x = origoX + wrappedLinesIndent;
+					pos.x = originX + wrappedLinesIndent;
 					pos.y += m_pFont->maxAscend() + m_pFont->maxDescend() + m_pFont->lineGap();
 				}
 								

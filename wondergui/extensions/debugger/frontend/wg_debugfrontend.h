@@ -57,7 +57,6 @@ namespace wg
 		struct Blueprint
 		{
 			DebugBackend_p	backend;									// Mandatory!!!
-			Object_p		baggage;
 			Widget_p		child;
 			bool			disabled = false;
 			bool			dropTarget = false;
@@ -81,6 +80,7 @@ namespace wg
 			bool			usePickHandles = false;
 			Surface_p		icons;										// Optional, embedded default if not set.
 			Surface_p		transparencyGrid;							// Optional, embedded default if not set. Chessboard pattern or similar
+			Object_p		userData;
 		};
 
 		//.____ Creation __________________________________________

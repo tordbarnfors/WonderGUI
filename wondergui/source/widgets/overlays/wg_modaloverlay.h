@@ -57,7 +57,7 @@ namespace wg
 			
 			struct Blueprint
 			{
-				Placement	origo = Placement::Center;
+				Placement	origin = Placement::Center;
 				Coord		pos;
 				Size		size;
 			};
@@ -68,8 +68,8 @@ namespace wg
 
 			//.____ Geometry _________________________________________________
 
-			void			setOrigo(const Placement origo);
-			inline Placement	origo() const { return m_origo; }
+			void			setOrigin(const Placement origin);
+			inline Placement	origin() const { return m_origin; }
 
 			void			setGeo(const Rect& geometry);
 
@@ -93,8 +93,8 @@ namespace wg
 			const static bool safe_to_relocate = false;
 
 			bool		m_bVisible = true;
-			Placement	m_origo = Placement::Center;
-			Rect		m_placementGeo;			// Widgets geo relative origo. Setting width and height to 0 uses Widgets defaultSize() dynamically.
+			Placement	m_origin = Placement::Center;
+			Rect		m_placementGeo;			// Widgets geo relative origin. Setting width and height to 0 uses Widgets defaultSize() dynamically.
 												// Setting just one of them to 0 uses Widgets matchingHeight() or matchingWidth() dynamically.
 			Widget_wp	m_pKeyFocus;			// Pointer at child that held focus when this modal was last on top.
 
@@ -104,7 +104,6 @@ namespace wg
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			bool			disabled = false;
 			bool			dropTarget = false;
 			Finalizer_p		finalizer = nullptr;
@@ -121,6 +120,7 @@ namespace wg
 			bool			takesFocusFromChild = false;
 			std::string			tooltip;
 			bool			usePickHandles = false;
+			Object_p		userData;
 		};
 
 		//.____ Creation __________________________________________

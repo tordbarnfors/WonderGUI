@@ -41,7 +41,6 @@ namespace wg
 		struct Blueprint
 		{
 
-			Object_p		baggage;
 			Widget_p		child;
 			bool			disabled		= false;
 			bool			dropTarget		= false;
@@ -60,6 +59,7 @@ namespace wg
 			bool			takesFocusFromChild = true;
 			std::string			tooltip;
 			bool			usePickHandles	= false;
+			Object_p		userData;
 		};
 
 

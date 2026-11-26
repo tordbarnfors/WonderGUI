@@ -121,7 +121,7 @@ int Q565Compressor::compress( void * pDest, const void * pBegin, const void * pE
 {
 	if( ((intptr_t(pBegin) | intptr_t(pEnd) ) &0x1) == 1 )
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Data to compress must start/stop on WORD boundary.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Data to compress must start/stop on WORD boundary.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return 0;
 	}
 

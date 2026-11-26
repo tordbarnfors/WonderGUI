@@ -38,27 +38,27 @@ namespace wax
 		return SdlGpuEdgemap_p(new SdlGpuEdgemap(blueprint));
 	}
 
-	SdlGpuEdgemap_p SdlGpuEdgemap::create(const Blueprint& blueprint, SampleOrigo origo, const float* pSamples, int edges, int edgePitch, int samplePitch)
+	SdlGpuEdgemap_p SdlGpuEdgemap::create(const Blueprint& blueprint, SampleOrigin origin, const float* pSamples, int edges, int edgePitch, int samplePitch)
 	{
 		if (!_validateBlueprint(blueprint) || edges >= blueprint.segments)
 			return nullptr;
 
 		auto p = SdlGpuEdgemap_p(new SdlGpuEdgemap(blueprint));
 
-		p->_importSamples(origo, pSamples, 0, edges, 0, p->samples(), edgePitch, samplePitch);
+		p->_importSamples(origin, pSamples, 0, edges, 0, p->samples(), edgePitch, samplePitch);
 		p->m_nbRenderSegments = edges + 1;
 
 		return p;
 	}
 
-	SdlGpuEdgemap_p SdlGpuEdgemap::create(const Blueprint& blueprint, SampleOrigo origo, const spx* pSamples, int edges, int edgePitch, int samplePitch)
+	SdlGpuEdgemap_p SdlGpuEdgemap::create(const Blueprint& blueprint, SampleOrigin origin, const spx* pSamples, int edges, int edgePitch, int samplePitch)
 	{
 		if (!_validateBlueprint(blueprint) || edges >= blueprint.segments)
 			return nullptr;
 
 		auto p = SdlGpuEdgemap_p(new SdlGpuEdgemap(blueprint));
 
-		p->_importSamples(origo, pSamples, 0, edges, 0, p->samples(), edgePitch, samplePitch);
+		p->_importSamples(origin, pSamples, 0, edges, 0, p->samples(), edgePitch, samplePitch);
 		p->m_nbRenderSegments = edges + 1;
 
 		return p;
@@ -72,7 +72,7 @@ namespace wax
 
 		if( !SdlGpuContext::isReady() )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
 				"No SDL_GPU device set. SdlGpuBackend::setDevice() must be called before any edgemap is created.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;

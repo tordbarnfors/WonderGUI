@@ -54,7 +54,7 @@ public:
 			}
 
 			m_pEdgemaps[k] = pFactory->createEdgemap(WGBP(Edgemap, _.size = { c_width, c_height }, _.segments = c_nbSegments, _.colors = colors),
-													 SampleOrigo::Top, samples, c_nbEdges);
+													 SampleOrigin::Top, samples, c_nbEdges);
 			if (bTints)
 				m_pEdgemaps[k]->setColors(0, c_nbSegments, tints);
 		}

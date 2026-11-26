@@ -524,9 +524,9 @@ namespace wg
 		m_pDataset = pDataset;
 	}
 
-	void PickMsg::setHotspot(Placement hotspot)
+	void PickMsg::setPivot(Placement pivot)
 	{
-		m_hotspot = hotspot;
+		m_pivot = pivot;
 	}
 
 	void PickMsg::setDragWidget( Widget * pWidget, Coord pointerOfs )

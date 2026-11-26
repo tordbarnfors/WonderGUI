@@ -176,7 +176,7 @@ namespace wax
 		void	_drawLine(CoordSPX begin, CoordSPX end, spx thickness, const LinearColor& color, int nClipRects, const RectSPX* pClipRects);
 		void	_drawCappedLine(CoordSPX begin, CoordSPX end, spx thickness, LineCaps caps, const LinearColor& color, int nClipRects, const RectSPX* pClipRects);
 		void	_blit(Command cmd, CoordI source, CoordSPX dest, const Transform& transform, bool bCustomTransform, const RectSPX& rect);
-		void	_drawEdgemap(SoftEdgemap* pEdgemap, bool bTile, GfxFlip flip, CoordSPX origo, const RectSPX& rect);
+		void	_drawEdgemap(SoftEdgemap* pEdgemap, bool bTile, GfxFlip flip, CoordSPX origin, const RectSPX& rect);
 
 		void	_drawEdgemapPixel(SoftEdgemap* pEdgemap, int column, int row, CoordI canvasPixel);
 		void	_decodeSegmentTints(SoftEdgemap* pEdgemap);

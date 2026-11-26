@@ -58,7 +58,7 @@ namespace wax
 			s_pFence = nullptr;
 
 			if( !DX12Backend::checkDeviceLost() )
-				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create fence for the buffer pool.",
+				Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create fence for the buffer pool.",
 					nullptr, &DX12Backend::TYPEINFO, __func__, __FILE__, __LINE__);
 		}
 
@@ -324,7 +324,7 @@ namespace wax
 			// A lost device is reported once by DX12Backend, not by everything that needs a buffer.
 
 			if( !DX12Backend::checkDeviceLost() )
-				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create a buffer for edgemaps, warpmaps and palettes.",
+				Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create a buffer for edgemaps, warpmaps and palettes.",
 					nullptr, &DX12Backend::TYPEINFO, __func__, __FILE__, __LINE__);
 
 			return false;

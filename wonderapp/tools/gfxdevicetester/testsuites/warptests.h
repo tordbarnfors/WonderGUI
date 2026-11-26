@@ -69,7 +69,7 @@ public:
 			Color colors[4] = { Color(4096, 4096, 4096, 4096), Color(400, 1800, 4000, 3500), Color(4000, 2000, 300, 4096), Color::Transparent };
 
 			m_pGauge = pEdgemapFactory->createEdgemap(WGBP(Edgemap, _.size = { w, h }, _.segments = 4, _.colors = colors, _.tiling = true),
-													  SampleOrigo::Top, samples.data(), nEdges, w + 1);
+													  SampleOrigin::Top, samples.data(), nEdges, w + 1);
 
 			Tint_p tints[4];
 			tints[1] = Tint::create(Color(4096, 4096, 0, 4096), Color(0, 4096, 4096, 2500), { 0.f, 0.f }, { 1.f, 0.f });
@@ -77,7 +77,7 @@ public:
 										 _.stops = { { 0.f, Color(4096, 0, 4096, 4096) }, { 1.f, Color(0, 4096, 0, 3000) } }));
 
 			m_pTintedGauge = pEdgemapFactory->createEdgemap(WGBP(Edgemap, _.size = { w, h }, _.segments = 4, _.colors = colors, _.tints = tints, _.tiling = true),
-															SampleOrigo::Top, samples.data(), nEdges, w + 1);
+															SampleOrigin::Top, samples.data(), nEdges, w + 1);
 		}
 
 		// Small edgemap for identity warps and blend modes.
@@ -95,7 +95,7 @@ public:
 			Color colors[3] = { Color(4096, 1000, 1000, 4096), Color(1000, 4096, 1000, 2500), Color(1000, 1000, 4096, 4096) };
 
 			m_pSmall = pEdgemapFactory->createEdgemap(WGBP(Edgemap, _.size = { w, h }, _.segments = 3, _.colors = colors),
-													  SampleOrigo::Top, samples.data(), nEdges, w + 1);
+													  SampleOrigin::Top, samples.data(), nEdges, w + 1);
 		}
 
 		// Surfaces: a pattern with partly transparent pixels, tiling and not.

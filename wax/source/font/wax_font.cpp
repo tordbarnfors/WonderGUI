@@ -81,7 +81,7 @@ namespace wax
 
 		if (p == this)
 		{
-			Base::throwError( ErrorLevel::Error, ErrorCode::InvalidParam, "Can't set backup font, would create cyclic fallback.", this, &TYPEINFO, __func__, __FILE__, __LINE__ );
+			Base::reportError( ErrorLevel::Error, ErrorCode::InvalidParam, "Can't set backup font, would create cyclic fallback.", this, &TYPEINFO, __func__, __FILE__, __LINE__ );
 			return;
 		}
 

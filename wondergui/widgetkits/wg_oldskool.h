@@ -163,7 +163,6 @@ namespace wg::oldskool
 	public:
 		struct Blueprint
 		{
-			Object_p		baggage;
 			bool			disabled = false;
 			bool			dropTarget = false;
 			Finalizer_p		finalizer = nullptr;
@@ -181,6 +180,7 @@ namespace wg::oldskool
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			std::string			tooltip;
+			Object_p		userData;
 		};
 
 		inline static wg::Button_p	create() { return new Button(Blueprint()); }
@@ -202,7 +202,6 @@ namespace wg::oldskool
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			bool			checked = false;
 			ClickArea		clickArea = ClickArea::Default;
 			bool			disabled = false;
@@ -222,6 +221,7 @@ namespace wg::oldskool
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			std::string			tooltip;
+			Object_p		userData;
 		};
 
 		inline static wg::ToggleButton_p	create() { return new ToggleButton(Blueprint()); }
@@ -242,7 +242,6 @@ namespace wg::oldskool
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			bool			checked = false;
 			ClickArea		clickArea = ClickArea::Default;
 			bool			disabled = false;
@@ -262,6 +261,7 @@ namespace wg::oldskool
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			std::string			tooltip;
+			Object_p		userData;
 		};
 
 		inline static wg::ToggleButton_p	create() { return new Checkbox(Blueprint()); }
@@ -282,7 +282,6 @@ namespace wg::oldskool
 	public:
 		struct Blueprint
 		{
-			Object_p		baggage;
 			bool			checked = false;
 			ClickArea		clickArea = ClickArea::Default;
 			bool			disabled = false;
@@ -302,6 +301,7 @@ namespace wg::oldskool
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			std::string			tooltip;
+			Object_p		userData;
 		};
 
 		inline static wg::ToggleButton_p	create(const Blueprint& blueprint) { return new RadioButton(blueprint); }
@@ -322,7 +322,6 @@ namespace wg::oldskool
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			Widget_p		child;
 			bool			disabled = false;
 			bool			dropTarget = true;
@@ -343,6 +342,7 @@ namespace wg::oldskool
 			bool			takesFocusFromChild = true;
 			std::string			tooltip;
 			bool			usePickHandles = false;
+			Object_p		userData;
 
 		};
 
@@ -363,7 +363,6 @@ namespace wg::oldskool
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			Widget_p		child;
 			bool			disabled = false;
 			bool			dropTarget = true;
@@ -384,6 +383,7 @@ namespace wg::oldskool
 			bool			takesFocusFromChild = true;
 			std::string			tooltip;
 			bool			usePickHandles = false;
+			Object_p		userData;
 
 		};
 
@@ -406,7 +406,6 @@ namespace wg::oldskool
 		{
 			bool				autoHideScrollbars = true;
 			Axis				autoScrollAxis = Axis::Undefined;
-			Object_p			baggage;
 			Widget_p			child;
 			Skin_p				cornerSkin = Skins::PlateNoBevel;
 			bool				disabled = false;
@@ -442,6 +441,7 @@ namespace wg::oldskool
 			CoordTransition_p	transition;
 			bool				usePickHandles = false;
 
+			Object_p			userData;
 			Axis				wheelAxis = Axis::Y;						// Scroll direction of primary mouse wheel. Secondary mouse wheel is the oposite.
 			ModKeys				wheelAxisModifier = ModKeys::Shift;		// Flips the scroll direction of primary mouse wheel.
 			ModKeys				wheelAccelerator = ModKeys::Alt;
@@ -473,7 +473,6 @@ namespace wg::oldskool
 		{
 			bool				autoHideScrollbars = true;
 			Axis				autoScrollAxis = Axis::Undefined;
-			Object_p			baggage;
 			Widget_p			child;
 			Skin_p				cornerSkin = Skins::PlateNoBevel;
 			bool				disabled = false;
@@ -509,6 +508,7 @@ namespace wg::oldskool
 			CoordTransition_p	transition;
 			bool				usePickHandles = false;
 
+			Object_p			userData;
 			Axis				wheelAxis = Axis::Y;						// Scroll direction of primary mouse wheel. Secondary mouse wheel is the oposite.
 			ModKeys				wheelAxisModifier = ModKeys::Shift;		// Flips the scroll direction of primary mouse wheel.
 			ModKeys				wheelAccelerator = ModKeys::Alt;
@@ -540,7 +540,6 @@ namespace wg::oldskool
 		{
 			bool				autoHideScrollbars = true;
 			Axis				autoScrollAxis = Axis::Undefined;
-			Object_p			baggage;
 			Widget_p			child;
 			Skin_p				cornerSkin = Skins::PlateNoBevel;
 			bool				disabled = false;
@@ -576,6 +575,7 @@ namespace wg::oldskool
 			CoordTransition_p	transition;
 			bool				usePickHandles = false;
 
+			Object_p			userData;
 			Axis				wheelAxis = Axis::Y;						// Scroll direction of primary mouse wheel. Secondary mouse wheel is the oposite.
 			ModKeys				wheelAxisModifier = ModKeys::Shift;		// Flips the scroll direction of primary mouse wheel.
 			ModKeys				wheelAccelerator = ModKeys::Alt;
@@ -605,7 +605,6 @@ namespace wg::oldskool
 		struct Blueprint
 		{
 			Axis			axis = Axis::X;
-			Object_p		baggage;
 			bool			disabled = false;
 			bool			dropTarget = false;
 			Finalizer_p		finalizer = nullptr;
@@ -626,6 +625,7 @@ namespace wg::oldskool
 			bool			takesFocusFromChild = false;
 			std::string			tooltip;
 			bool			usePickHandles = false;
+			Object_p		userData;
 
 		};
 
@@ -646,7 +646,6 @@ namespace wg::oldskool
 		struct Blueprint
 		{
 			Axis			axis = Axis::Y;
-			Object_p		baggage;
 			bool			disabled = false;
 			bool			dropTarget = false;
 			Finalizer_p		finalizer = nullptr;
@@ -667,6 +666,7 @@ namespace wg::oldskool
 			bool			takesFocusFromChild = false;
 			std::string			tooltip;
 			bool			usePickHandles = false;
+			Object_p		userData;
 
 		};
 
@@ -686,7 +686,6 @@ namespace wg::oldskool
 
 		struct Blueprint
 		{
-			Object_p			baggage;
 			Coord				buttonOfs;
 			Placement			buttonPlacement = Placement::West;
 			Size				buttonSize = Size{ 14, 14 };
@@ -710,6 +709,7 @@ namespace wg::oldskool
 			std::string				tooltip;
 			ValueTransition_p	transition = Transitions::openClose;
 			bool				usePickHandles = false;
+			Object_p			userData;
 		};
 
 		inline static wg::DrawerPanel_p	create() { return new TreeListDrawer(Blueprint()); }
@@ -729,7 +729,6 @@ namespace wg::oldskool
 		struct Blueprint
 		{
 
-			Object_p		baggage;
 			Widget_p		child;
 			bool			disabled = false;
 			bool			dropTarget = false;
@@ -748,6 +747,7 @@ namespace wg::oldskool
 			bool			takesFocusFromChild = true;
 			std::string			tooltip;
 			bool			usePickHandles = false;
+			Object_p		userData;
 		};
 
 		inline static wg::PaddingCapsule_p	create() { return new TreeListEntry(Blueprint()); }
@@ -765,7 +765,6 @@ namespace wg::oldskool
 	public:
 		struct Blueprint
 		{
-			Object_p		baggage;
 
 			PackLayout_p	columnLayout;
 			int				columns = 2;
@@ -802,6 +801,7 @@ namespace wg::oldskool
 			bool			takesFocusFromChild = true;
 			std::string			tooltip;
 			bool			usePickHandles = false;
+			Object_p		userData;
 
 		};
 
@@ -824,7 +824,6 @@ namespace wg::oldskool
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			bool			disabled = false;
 			bool			dropTarget = false;
 			EditableText::Blueprint	editor = WGBP(EditableText, _.style = TextStyles::NormalDark );
@@ -841,6 +840,7 @@ namespace wg::oldskool
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			std::string			tooltip;
+			Object_p		userData;
 		};
 
 		inline static wg::TextEditor_p	create() { return new TextEditor(Blueprint()); }
@@ -862,7 +862,6 @@ namespace wg::oldskool
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			spx				defaultLengthInChars = 20;		// Set to zero for returning default width calculated from actual text in field.
 			bool			disabled = false;
 			bool			dropTarget = false;
@@ -880,6 +879,7 @@ namespace wg::oldskool
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			std::string			tooltip;
+			Object_p		userData;
 		};
 
 		inline static wg::LineEditor_p	create() { return new LineEditor(Blueprint()); }
@@ -898,7 +898,6 @@ namespace wg::oldskool
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			bool			disabled = false;
 			DynamicText::Blueprint display = WGBP( DynamicText, _.layout = TextLayouts::LeftNoWrap, 
 																_.style = TextStyles::NormalDark );
@@ -919,6 +918,7 @@ namespace wg::oldskool
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			std::string			tooltip;
+			Object_p		userData;
 		};
 
 		inline static wg::SelectBox_p	create() { return new SelectBox(Blueprint()); }
@@ -937,7 +937,6 @@ namespace wg::oldskool
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			bool			disabled = false;
 			DynamicText::Blueprint	display = WGBP(DynamicText, _.layout = TextLayouts::CenteredNoWrap, _.style = TextStyles::Heading5 );
 			bool			dropTarget = false;
@@ -953,6 +952,7 @@ namespace wg::oldskool
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			std::string			tooltip;
+			Object_p		userData;
 		};
 
 		inline static wg::TextDisplay_p	create() { return new WindowTitleBar(Blueprint()); }

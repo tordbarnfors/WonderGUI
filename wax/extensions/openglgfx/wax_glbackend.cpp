@@ -83,7 +83,7 @@ void GlBackend::onGlError(GLenum errorCode, const Object * pObject, const TypeIn
 	}
 
 	snprintf( buffer, 1024, "OpenGL error 0x%x: %s", errorCode, pErrorName );
-	Base::throwError(ErrorLevel::SilentError, ErrorCode::OpenGL, buffer, pObject, pClassType, func, file, line);
+	Base::reportError(ErrorLevel::SilentError, ErrorCode::OpenGL, buffer, pObject, pClassType, func, file, line);
 }
 
 //____ create() _______________________________________________________________
@@ -124,7 +124,7 @@ GlBackend::GlBackend( int uboBindingPoint )
 
 	if( major < 3 || (major == 3 && minor < 3) )
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "GlBackend needs OpenGL 3.3 or later.",
+		Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "GlBackend needs OpenGL 3.3 or later.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		m_bFullyInitialized = false;
 	}
@@ -312,7 +312,7 @@ const CanvasInfo * GlBackend::canvasInfo(CanvasRef ref) const
 		return &m_defaultCanvas;
 	else
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only Default canvas is supported.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only Default canvas is supported.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return &m_dummyCanvas;
 	}
 }
@@ -325,7 +325,7 @@ void GlBackend::beginRender()
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Framebuffer is not complete.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Framebuffer is not complete.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
 
@@ -530,7 +530,7 @@ bool GlBackend::_bindCanvas( Surface * pCanvas, SizeI& size, CanvasKind& kind )
 
 	if( pSurface && (!pSurface->m_bCanvas || pSurface->getTexture() == 0) )
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Surface can not be used as canvas, rendering to default canvas instead.",
+		Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Surface can not be used as canvas, rendering to default canvas instead.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		pSurface = nullptr;
 	}
@@ -907,7 +907,7 @@ void GlBackend::_executeBindCanvas( GlSurface * pCanvas )
 
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Surface could not be bound as canvas, nothing is drawn into it.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, "Surface could not be bound as canvas, nothing is drawn into it.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			m_bExecCanvasOK = false;
@@ -1108,7 +1108,7 @@ GLuint GlBackend::_createProgram( int index )
 		{
 			char buffer[128];
 			snprintf(buffer, sizeof(buffer), "Shader %s or %s is missing, run compile_shaders.py.", pVertexShaderName, pPixelShaderName);
-			Base::throwError(ErrorLevel::Error, ErrorCode::Internal, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::Internal, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 			glDeleteProgram(program);
 			return 0;
@@ -1145,7 +1145,7 @@ GLuint GlBackend::_createProgram( int index )
 
 			snprintf(buffer, sizeof(buffer), "Failed compiling OpenGL shaders %s and %s\nVertexShaderLog: %s\nFragmentShaderLog: %s\nProgramInfoLog: %s",
 					 pVertexShaderName, pPixelShaderName, vertexShaderLog, fragmentShaderLog, programInfoLog);
-			Base::throwError(ErrorLevel::Error, ErrorCode::OpenGL, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::OpenGL, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		}
 
 		glDetachShader(program, vertexShaderID);

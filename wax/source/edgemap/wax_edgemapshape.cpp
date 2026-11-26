@@ -98,7 +98,7 @@ namespace wax
 		bool bOk = _applyPieces(m_builds, m_pBuildFactory);		// m_builds is left with buffers to reuse.
 
 		if (!bOk)
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to create edgemap.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to create edgemap.",
 				this, &typeInfo(), __func__, __FILE__, __LINE__);
 		return bOk;
 	}
@@ -423,7 +423,7 @@ namespace wax
 					}
 
 					if (first >= 0)
-						pEdgemap->importSamples(SampleOrigo::Top, &build.samples[first * nEdges + e], e, e + 1, first, last + 1, 1, nEdges);
+						pEdgemap->importSamples(SampleOrigin::Top, &build.samples[first * nEdges + e], e, e + 1, first, last + 1, 1, nEdges);
 				}
 			}
 			else
@@ -451,7 +451,7 @@ namespace wax
 				if (capacity > nSegments)
 					pEdgemap->setRenderSegments(nSegments);
 
-				pEdgemap->importSamples(SampleOrigo::Top, build.samples.data(), 0, nEdges, 0, nSamples, 1, nEdges);
+				pEdgemap->importSamples(SampleOrigin::Top, build.samples.data(), 0, nEdges, 0, nSamples, 1, nEdges);
 
 				piece.pEdgemap = pEdgemap;
 				stored.capacity = capacity;

@@ -51,7 +51,6 @@ namespace wg
 		struct Blueprint
 		{
 			Axis			axis = Axis::X;
-			Object_p		baggage;
 			Skin_p			beginHandle;
 			bool			disabled = false;
 			bool			dropTarget = false;
@@ -73,6 +72,7 @@ namespace wg
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			std::string			tooltip;
+			Object_p		userData;
 		};
 
 		//.____ Creation __________________________________________

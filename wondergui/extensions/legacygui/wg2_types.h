@@ -52,6 +52,13 @@ typedef wg::Direction   WgDirection;
 typedef wg::SizeConstraint  WgSizePolicy;
 
 typedef wg::SampleMethod   WgScaleMode;
+
+// Old names of renamed WonderGUI and Wax types, so that legacy code keeps compiling.
+
+namespace wg
+{
+	using SampleOrigo = SampleOrigin;
+}
 typedef wg::PixelFormat WgPixelType;
 
 typedef wg::SortOrder   WgSortOrder;

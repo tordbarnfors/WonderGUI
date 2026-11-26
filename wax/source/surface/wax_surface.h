@@ -185,7 +185,6 @@ namespace wax
 
 		struct Blueprint
 		{
-			Object_p			baggage;
 			bool				bigEndian = (WAX_IS_BIG_ENDIAN == 1);	// Byte order of the pixels. Defaults to the byte order of the system.
 			bool				canvas = false;
 			ColorSpace			colorSpace = ColorSpace::Undefined;		// Color space of the pixels. Defaults to sRGB.
@@ -217,6 +216,7 @@ namespace wax
 			int					scale = 0;
 			SizeI				size;					// Mandatory. Size in pixels.
 			bool				tiling = false;
+			Object_p			userData;
 		};
 
 		//.____ Identification __________________________________________
@@ -289,8 +289,8 @@ namespace wax
 
 		//.____ Misc _________________________________________________________
 
-		inline void			setBaggage(Object * pBaggage);
-		inline Object_p		baggage() const;
+		inline void			setUserData(Object * pUserData);
+		inline Object_p		userData() const;
 
 		virtual int			addObserver(const std::function<void(int nRects, const RectI* pRects)>& func);
 		virtual bool		removeObserver( int observerId );
@@ -342,7 +342,7 @@ namespace wax
 			m_bDynamic = bp.dynamic;
 			m_restorer = bp.restorer;
 			m_id = bp.identity;
-			m_pBaggage = bp.baggage;
+			m_pUserData = bp.userData;
 
 			if (bp.finalizer)
 				setFinalizer(bp.finalizer);
@@ -400,7 +400,7 @@ namespace wax
 		int					m_paletteSize = 0;
 		int					m_paletteCapacity = 0;
 		
-		Object_p			m_pBaggage;
+		Object_p			m_pUserData;
 		Observer *			m_pObserver = nullptr;
 	};
 
@@ -662,42 +662,42 @@ namespace wax
 		 pullPixels(buffer, buffer.rect.size(), bAutoNotify);
 	}
 
-	//____ setBaggage() _______________________________________________________
+	//____ setUserData() _______________________________________________________
 	/**
-	 * @brief Attach an Object as baggage.
+	 * @brief Attach an Object as user data.
 	 * 
-	 * @param pBaggage Pointer at the object to become the baggage.
+	 * @param pUserData Pointer at the object to become the user data.
 	 * 
-	 * A Surface can "carry around" one Object as its baggage. Typical baggage would
+	 * A Surface can "carry around" one Object as its user data. Typical user data would
 	 * be a DataSet or Blob containing meta data about the Surface that might be
 	 * relevant to your application.
 	 * 
-	 * The baggage is irrelevant to and ignored by Wax.
+	 * The user data is irrelevant to and ignored by Wax.
 	 */
 
-	void Surface::setBaggage(Object * pBaggage)
+	void Surface::setUserData(Object * pUserData)
 	{
-		m_pBaggage = pBaggage;
+		m_pUserData = pUserData;
 	}
 
 
-	//_____ baggage() _________________________________________________________
+	//_____ userData() _________________________________________________________
 	/**
-	 * @brief Get the baggage for this Surface.
+	 * @brief Get the user data for this Surface.
 	 * 
-	 * @return The Object assigned as baggage or nullptr if none.
+	 * @return The Object assigned as user data or nullptr if none.
 	 * 
-	 * A Surface can "carry around" one Object as its baggage. Typical baggage would
+	 * A Surface can "carry around" one Object as its user data. Typical user data would
 	 * be a DataSet or Blob containing meta data about the Surface that might be
 	 * relevant to your application.
 	 * 
-	 * The baggage is irrelevant to and ignored by Wax.
+	 * The user data is irrelevant to and ignored by Wax.
 	 * 
 	 */
 
-	Object_p Surface::baggage() const
+	Object_p Surface::userData() const
 	{
-		return m_pBaggage;
+		return m_pUserData;
 	}
 
 

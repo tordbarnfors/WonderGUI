@@ -98,7 +98,7 @@ namespace wax
 	{
 		if( s_initCounter <= 0 )
 		{
-			throwError(ErrorLevel::SilentError, ErrorCode::IllegalCall, "Call to Base::exit() ignored, not initialized or already exited.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			reportError(ErrorLevel::SilentError, ErrorCode::IllegalCall, "Call to Base::exit() ignored, not initialized or already exited.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -126,7 +126,7 @@ namespace wax
 
 		if( !s_pPtrPool->isEmpty() )
 		{
-			throwError(ErrorLevel::SilentError, ErrorCode::SystemIntegrity, "Some weak pointers still in use. Can not exit Wax.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			reportError(ErrorLevel::SilentError, ErrorCode::SystemIntegrity, "Some weak pointers still in use. Can not exit Wax.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -134,7 +134,7 @@ namespace wax
 
 		if( !s_pMemStack->isEmpty() )
 		{
-			throwError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, "Memstack still contains data. Not all allocations have been correctly released.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			reportError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, "Memstack still contains data. Not all allocations have been correctly released.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 		}
 
 		delete s_pPtrPool;
@@ -146,7 +146,7 @@ namespace wax
 		// Our context should be the only object alive at this point. Still needed for the error-handler.
 
 		if (s_objectsCreated - s_objectsDestroyed > 1 )
-			throwError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, "Some objects still alive after Wax exit. Might cause problems when they go out of scope. Forgotten to clear pointers?\nHint: Enable object tracking to find out which ones.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			reportError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, "Some objects still alive after Wax exit. Might cause problems when they go out of scope. Forgotten to clear pointers?\nHint: Enable object tracking to find out which ones.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		s_pContext = nullptr;
 		return true;
@@ -165,9 +165,9 @@ namespace wax
 		return p;
 	}
 
-	//____ throwError() _________________________________________________________
+	//____ reportError() _________________________________________________________
 
-	void Base::throwError(ErrorLevel severity, ErrorCode code, const char * msg, const Object * pObject, const TypeInfo* pClassType, const char * function, const char * file, int line)
+	void Base::reportError(ErrorLevel severity, ErrorCode code, const char * msg, const Object * pObject, const TypeInfo* pClassType, const char * function, const char * file, int line)
 	{
 		if (s_pContext != nullptr && s_pContext->pErrorHandler)
 		{

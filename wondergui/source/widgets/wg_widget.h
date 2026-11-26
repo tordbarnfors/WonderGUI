@@ -92,7 +92,6 @@ namespace wg
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			bool			disabled = false;
 			bool			dropTarget = false;
 			Finalizer_p		finalizer = nullptr;
@@ -107,6 +106,7 @@ namespace wg
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			std::string			tooltip;
+			Object_p		userData;
 		};
 
 		//.____ Identification ________________________________________________
@@ -220,9 +220,9 @@ namespace wg
 		bool				markTest( const Coord& ofs );
 		void 				receive( Msg * pMsg ) override final;
 
-		void				setBaggage(Object * pBaggage);
-		bool				hasBaggage() const;
-		Object_p			baggage() const;
+		void				setUserData(Object * pUserData);
+		bool				hasUserData() const;
+		Object_p			userData() const;
 
 		void				bringIntoView( Border margin = 0);
 		void				bringIntoView( Rect area, Border margin = 0 );
@@ -285,7 +285,7 @@ namespace wg
 		{
 //			m_pContextAtConstruction = Base::context().rawPtr();
 
-			m_pBaggage		= bp.baggage;
+			m_pUserData		= bp.userData;
 			m_bDropTarget	= bp.dropTarget;
 			m_id			= bp.id;
 
@@ -385,7 +385,7 @@ namespace wg
 
 		inline static const int MAX_WIDGET_SIZE_SPX = 0x3FFFFFC0;
 
-		Object_p		m_pBaggage;
+		Object_p		m_pUserData;
 
 		SkinSlot		m_skin;
 

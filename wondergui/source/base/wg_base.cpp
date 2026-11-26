@@ -102,7 +102,7 @@ namespace wg
 	{
 		if( s_guiInitCounter <= 0 )
 		{
-			throwError(ErrorLevel::SilentError, ErrorCode::IllegalCall, "Call to Base::exit() ignored, not initialized or already exited.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			reportError(ErrorLevel::SilentError, ErrorCode::IllegalCall, "Call to Base::exit() ignored, not initialized or already exited.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -357,7 +357,7 @@ namespace wg
 			* it = nullptr;
 		else
 		{
-			Base::throwError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, "Base::_stopReceiveUpdates() called on object not receiving updates.", pReceiver, nullptr, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, "Base::_stopReceiveUpdates() called on object not receiving updates.", pReceiver, nullptr, __func__, __FILE__, __LINE__);
 		}
 	}
 

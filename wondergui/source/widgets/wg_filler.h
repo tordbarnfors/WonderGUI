@@ -56,7 +56,6 @@ namespace wg
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			Size			defaultSize = { -1,-1 };
 			bool			disabled = false;
 			bool			dropTarget = false;
@@ -72,6 +71,7 @@ namespace wg
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			std::string			tooltip;
+			Object_p		userData;
 		};
 
 

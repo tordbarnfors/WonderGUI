@@ -293,7 +293,7 @@ QOICompressor_p QOICompressor::create( const Blueprint& blueprint )
 {
 	if( blueprint.format != PixelFormat::ARGB_8 && blueprint.format != PixelFormat::XRGB_8 )
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "QOI compression is only supported for pixel formats ARGB_8 and XRGB_8.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "QOI compression is only supported for pixel formats ARGB_8 and XRGB_8.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return nullptr;
 	}
 
@@ -340,7 +340,7 @@ int QOICompressor::compress( void * pDest, const void * pBegin, const void * pEn
 {
 	if( (((const uint8_t*) pEnd) - ((const uint8_t*) pBegin)) % 4 != 0 )
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Size of data to compress is not a multiple of 4 bytes.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Size of data to compress is not a multiple of 4 bytes.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return 0;
 	}
 

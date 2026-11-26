@@ -280,7 +280,7 @@ namespace wax
 				_setSpec(oldSpec);
 			}
 
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Box can't be made into edgemaps.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Box can't be made into edgemaps.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}

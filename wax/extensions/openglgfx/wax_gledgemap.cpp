@@ -40,7 +40,7 @@ namespace wax
 		return GlEdgemap_p(new GlEdgemap(blueprint));
 	}
 
-	GlEdgemap_p GlEdgemap::create(const Blueprint& blueprint, SampleOrigo origo, const float* pSamples, int edges, int edgePitch, int samplePitch)
+	GlEdgemap_p GlEdgemap::create(const Blueprint& blueprint, SampleOrigin origin, const float* pSamples, int edges, int edgePitch, int samplePitch)
 	{
 		if (!_validateBlueprint(blueprint))
 			return nullptr;
@@ -50,13 +50,13 @@ namespace wax
 
 		auto p = GlEdgemap_p(new GlEdgemap(blueprint));
 
-		p->_importSamples(origo, pSamples, 0, edges, 0, p->samples(), edgePitch, samplePitch);
+		p->_importSamples(origin, pSamples, 0, edges, 0, p->samples(), edgePitch, samplePitch);
 		p->m_nbRenderSegments = edges + 1;
 
 		return p;
 	}
 
-	GlEdgemap_p GlEdgemap::create(const Blueprint& blueprint, SampleOrigo origo, const spx* pSamples, int edges, int edgePitch, int samplePitch)
+	GlEdgemap_p GlEdgemap::create(const Blueprint& blueprint, SampleOrigin origin, const spx* pSamples, int edges, int edgePitch, int samplePitch)
 	{
 		if (!_validateBlueprint(blueprint))
 			return nullptr;
@@ -66,7 +66,7 @@ namespace wax
 
 		auto p = GlEdgemap_p(new GlEdgemap(blueprint));
 
-		p->_importSamples(origo, pSamples, 0, edges, 0, p->samples(), edgePitch, samplePitch);
+		p->_importSamples(origin, pSamples, 0, edges, 0, p->samples(), edgePitch, samplePitch);
 		p->m_nbRenderSegments = edges + 1;
 
 		return p;

@@ -185,7 +185,6 @@ namespace wg
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 
 			PackLayout_p	columnLayout;
 			int				columns = 2;
@@ -222,6 +221,7 @@ namespace wg
 			bool			takesFocusFromChild = true;
 			std::string			tooltip;
 			bool			usePickHandles = false;
+			Object_p		userData;
 
 		};
 		

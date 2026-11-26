@@ -44,17 +44,17 @@ namespace wg
 
 	bool ModalOverlay::Slot::_setBlueprint( const Blueprint& bp )
 	{
-		m_origo = bp.origo;
+		m_origin = bp.origin;
 		m_placementGeo = Rect( bp.pos, bp.size );
 		return true;
 	}
 
 
-	//____ Slot::setOrigo() ____________________________________________________
+	//____ Slot::setOrigin() ____________________________________________________
 
-	void ModalOverlay::Slot::setOrigo(const Placement origo)
+	void ModalOverlay::Slot::setOrigin(const Placement origin)
 	{
-		m_origo = origo;
+		m_origin = origin;
 		_holder()->_refreshRealGeo(this);
 	}
 
@@ -110,7 +110,7 @@ namespace wg
 		if( sz.h <= 0 )
 			sz.h = 1;
 
-		CoordSPX ofs = Util::placementToOfs( pSlot->m_origo, m_size ) - Util::placementToOfs( pSlot->m_origo, sz );
+		CoordSPX ofs = Util::placementToOfs( pSlot->m_origin, m_size ) - Util::placementToOfs( pSlot->m_origin, sz );
 		ofs += placementGeo.pos();
 
 		RectSPX geo( ofs, sz );

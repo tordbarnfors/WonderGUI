@@ -143,7 +143,7 @@ namespace wax
 			counter++;
 			if( counter >= 99 )
 			{
-				Base::throwError(ErrorLevel::Error, ErrorCode::Internal, "Timed out after 100 loops. Likely a loop in TYPEINFO hierarchy.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::reportError(ErrorLevel::Error, ErrorCode::Internal, "Timed out after 100 loops. Likely a loop in TYPEINFO hierarchy.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				return false;
 			}
 

@@ -158,7 +158,7 @@ namespace wax
 	{
 		if( !VulkanContext::isReady() )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No Vulkan device set. Call VulkanBackend::setDevice() before creating any surface.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No Vulkan device set. Call VulkanBackend::setDevice() before creating any surface.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
@@ -233,7 +233,7 @@ namespace wax
 			_dropDeviceObjects();
 
 			if( !VulkanContext::isDeviceLost() )
-				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create the Vulkan objects of a surface, it will have no texture.",
+				Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create the Vulkan objects of a surface, it will have no texture.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		}
 
@@ -282,7 +282,7 @@ namespace wax
 										  bReadable ? VulkanContext::Memory::HostRead : VulkanContext::Memory::HostWrite, pBuffer->buffer ) )
 		{
 			if( !VulkanContext::isDeviceLost() )
-				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for pixels on their way to the texture of a surface.",
+				Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for pixels on their way to the texture of a surface.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 			return nullptr;

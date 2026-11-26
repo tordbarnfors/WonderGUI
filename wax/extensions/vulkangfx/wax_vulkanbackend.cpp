@@ -67,7 +67,7 @@ namespace wax
 	{
 		if (!VulkanContext::isReady())
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
 				"No Vulkan device set. Call VulkanBackend::setDevice() before creating a backend.",
 				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
@@ -85,7 +85,7 @@ namespace wax
 
 		if (VulkanContext::nbBackends() > 0)
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::IllegalCall,
+			Base::reportError(ErrorLevel::Error, ErrorCode::IllegalCall,
 				"Can't change Vulkan device while VulkanBackends exist.",
 				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
@@ -130,7 +130,7 @@ namespace wax
 		m_bDeviceObjectsOK = _createDeviceObjects();
 
 		if (!m_bDeviceObjectsOK && !VulkanContext::isDeviceLost())
-			Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create the Vulkan objects of the backend, nothing will render.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create the Vulkan objects of the backend, nothing will render.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
@@ -176,7 +176,7 @@ namespace wax
 
 		if (!m_vkCmdPushDescriptorSet)
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
 				"The Vulkan device has no VK_KHR_push_descriptor, which VulkanBackend needs.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
@@ -319,7 +319,7 @@ namespace wax
 
 		char buffer[128];
 		snprintf(buffer, sizeof(buffer), "Shader %s is missing, run compile_shaders.py.", pName ? pName : "without a name");
-		Base::throwError(ErrorLevel::Error, ErrorCode::Internal, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::Internal, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return VK_NULL_HANDLE;
 	}
@@ -714,7 +714,7 @@ namespace wax
 
 		if (pSurface && (!pSurface->image() || !pSurface->attachmentView()))
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Surface can not be used as canvas, rendering to default canvas instead.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Surface can not be used as canvas, rendering to default canvas instead.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			pSurface = nullptr;
 		}
@@ -1287,7 +1287,7 @@ namespace wax
 		if (ref == CanvasRef::Default)
 			return &m_defaultCanvas;
 
-		Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only Default canvas is supported.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only Default canvas is supported.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return &m_dummyCanvas;
 	}
 

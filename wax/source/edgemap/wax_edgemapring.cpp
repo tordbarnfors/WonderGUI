@@ -103,7 +103,7 @@ namespace wax
 	{
 		if (spec.nSlices < 0 || (spec.nSlices > 0 && !spec.pSlices))
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid slices.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid slices.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
@@ -134,7 +134,7 @@ namespace wax
 		if (!bOk)
 		{
 			_prepare(oldSpec);
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Too many slices in a quarter of the ring.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Too many slices in a quarter of the ring.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}

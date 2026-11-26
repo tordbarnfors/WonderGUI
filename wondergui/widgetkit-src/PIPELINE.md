@@ -441,7 +441,7 @@ With both in place, `.label = { .text = "..." }` works directly, and
 `gallery_test.cpp` was rewritten to use it: no more create-then-`setText`
 helpers, every widget a single create call.
 
-A third layer, not done: a one-time `throwError` when a text component renders
+A third layer, not done: a one-time `reportError` when a text component renders
 with no style and no default, in the spirit of the `scale != 128` guard.
 
 **`wg::SelectBox` used to be a genuine engine bug — now fixed upstream.** It

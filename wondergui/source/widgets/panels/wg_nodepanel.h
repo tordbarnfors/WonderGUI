@@ -151,7 +151,6 @@ namespace wg
 
 		struct Blueprint
 		{
-			Object_p		baggage;
 			Size			defaultSize = {256,256};
 			bool			disabled = false;
 			MouseButton		dragButton = MouseButton::Left;
@@ -174,6 +173,7 @@ namespace wg
 			bool			takesFocusFromChild = true;
 			std::string			tooltip;
 			bool			usePickHandles = false;
+			Object_p		userData;
 		};
 
 		//.____ Creation ______________________________________________________

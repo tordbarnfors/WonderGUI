@@ -41,8 +41,8 @@ namespace wax
 		//.____ Creation __________________________________________
 		
 		static StreamEdgemap_p	create( StreamEncoder * pEncoder, const Blueprint& blueprint );
-		static StreamEdgemap_p	create( StreamEncoder * pEncoder, const Edgemap::Blueprint& blueprint, SampleOrigo origo, const float * pSamples, int edges, int edgePitch = 0, int samplePitch = 0);
-		static StreamEdgemap_p	create( StreamEncoder * pEncoder, const Edgemap::Blueprint& blueprint, SampleOrigo origo, const spx * pSamples, int edges, int edgePitch = 0, int samplePitch = 0);
+		static StreamEdgemap_p	create( StreamEncoder * pEncoder, const Edgemap::Blueprint& blueprint, SampleOrigin origin, const float * pSamples, int edges, int edgePitch = 0, int samplePitch = 0);
+		static StreamEdgemap_p	create( StreamEncoder * pEncoder, const Edgemap::Blueprint& blueprint, SampleOrigin origin, const spx * pSamples, int edges, int edgePitch = 0, int samplePitch = 0);
 
 
     	//.____ Identification __________________________________________

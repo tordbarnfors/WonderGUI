@@ -49,7 +49,6 @@ namespace wg
 		{
 			bool			active = true;
 			bool			autoDeactivate = false;
-			Object_p		baggage;
 			Widget_p		child;
 			bool			disabled = false;
 			bool			dropTarget = false;
@@ -69,6 +68,7 @@ namespace wg
 			bool			takesFocusFromChild = true;
 			std::string			tooltip;
 			bool			usePickHandles = false;
+			Object_p		userData;
 		};
 
 		//.____ Creation __________________________________________

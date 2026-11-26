@@ -510,7 +510,7 @@ namespace wax
 
 		if( size.w <= 0 || size.h <= 0 || uint32_t(size.h) >= c_qoiMaxPixels / uint32_t(size.w) )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Surface is empty or too large to be saved as a QOI image.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Surface is empty or too large to be saved as a QOI image.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return 0;
 		}
 

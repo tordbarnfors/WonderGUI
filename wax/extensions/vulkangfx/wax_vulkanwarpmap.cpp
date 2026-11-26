@@ -57,7 +57,7 @@ namespace wax
 
 		if (!VulkanContext::isReady())
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
 				"No Vulkan device set. VulkanBackend::setDevice() must be called before any warpmap is created.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
@@ -71,7 +71,7 @@ namespace wax
 		if (!VulkanContext::createBuffer(bytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VulkanContext::Memory::HostWrite, m_buffer))
 		{
 			if (!VulkanContext::isDeviceLost())
-				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for warpmap.",
+				Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for warpmap.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}

@@ -97,35 +97,35 @@ int wax_edgemapSamples(wax_obj edgemap)
 	return getPtr(edgemap)->samples();
 }
 
-int wax_importSpxSamples(wax_obj edgemap, wax_sampleOrigo origo, const wax_spx* pSource,
+int wax_importSpxSamples(wax_obj edgemap, wax_sampleOrigin origin, const wax_spx* pSource,
 	int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd,
 	int edgePitch, int samplePitch)
 {
-	return getPtr(edgemap)->importSamples((SampleOrigo)origo, (const spx*)pSource, 
+	return getPtr(edgemap)->importSamples((SampleOrigin)origin, (const spx*)pSource, 
 		edgeBegin, edgeEnd, sampleBegin, sampleEnd, edgePitch, samplePitch);
 }
 
-int	wax_importFloatSamples(wax_obj edgemap, wax_sampleOrigo origo, const float* pSource,
+int	wax_importFloatSamples(wax_obj edgemap, wax_sampleOrigin origin, const float* pSource,
 	int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd,
 	int edgePitch, int samplePitch)
 {
-	return getPtr(edgemap)->importSamples((SampleOrigo)origo, pSource,
+	return getPtr(edgemap)->importSamples((SampleOrigin)origin, pSource,
 		edgeBegin, edgeEnd, sampleBegin, sampleEnd, edgePitch, samplePitch);
 }
 
-int	wax_exportSpxSamples(wax_obj edgemap, wax_sampleOrigo origo, wax_spx* pDestination,
+int	wax_exportSpxSamples(wax_obj edgemap, wax_sampleOrigin origin, wax_spx* pDestination,
 	int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd,
 	int edgePitch, int samplePitch)
 {
-	return getPtr(edgemap)->exportSamples((SampleOrigo)origo, (spx*)pDestination,
+	return getPtr(edgemap)->exportSamples((SampleOrigin)origin, (spx*)pDestination,
 		edgeBegin, edgeEnd, sampleBegin, sampleEnd, edgePitch, samplePitch);
 }
 
-int wax_exportFloatSamples(wax_obj edgemap, wax_sampleOrigo origo, float* pDestination,
+int wax_exportFloatSamples(wax_obj edgemap, wax_sampleOrigin origin, float* pDestination,
 	int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd,
 	int edgePitch, int samplePitch)
 {
-	return getPtr(edgemap)->exportSamples((SampleOrigo)origo, pDestination,
+	return getPtr(edgemap)->exportSamples((SampleOrigin)origin, pDestination,
 		edgeBegin, edgeEnd, sampleBegin, sampleEnd, edgePitch, samplePitch);
 }
 

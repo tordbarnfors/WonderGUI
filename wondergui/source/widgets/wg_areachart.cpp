@@ -388,7 +388,7 @@ namespace wg
 							_.color = graph.m_fillColor,
 							_.factory = m_pEdgemapFactory,
 							_.flip = m_flip,
-							_.origo = SampleOrigo::Top,
+							_.origin = SampleOrigin::Top,
 							_.outlineColor = graph.m_outlineColor,
 							_.outlineTint = graph.m_pOutlineTint,
 							_.size = rect.size(),

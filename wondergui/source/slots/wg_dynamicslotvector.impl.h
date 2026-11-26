@@ -39,7 +39,7 @@ namespace wg
 	{
 		if( !pWidget )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Pushing a nullptr into a SlotVector is not allowed.", m_pHolder->_container(), nullptr, __func__, __FILE__, __LINE__ );
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Pushing a nullptr into a SlotVector is not allowed.", m_pHolder->_container(), nullptr, __func__, __FILE__, __LINE__ );
 			return end();
 		}
 		
@@ -56,7 +56,7 @@ namespace wg
 	{
 		if( !pWidget )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Pushing a nullptr into a SlotVector is not allowed.", m_pHolder->_container(), nullptr, __func__, __FILE__, __LINE__ );
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Pushing a nullptr into a SlotVector is not allowed.", m_pHolder->_container(), nullptr, __func__, __FILE__, __LINE__ );
 			return end();
 		}
 
@@ -76,7 +76,7 @@ namespace wg
 		{
 			if( !entry.m_pChild )
 			{
-				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Pushing a nullptr into a SlotVector is not allowed.", m_pHolder->_container(), nullptr, __func__, __FILE__, __LINE__ );
+				Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Pushing a nullptr into a SlotVector is not allowed.", m_pHolder->_container(), nullptr, __func__, __FILE__, __LINE__ );
 				return end();
 			}
 		}
@@ -106,7 +106,7 @@ namespace wg
 	{
 		if( !pWidget )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Pushing a nullptr into a SlotVector is not allowed.", m_pHolder->_container(), nullptr, __func__, __FILE__, __LINE__ );
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Pushing a nullptr into a SlotVector is not allowed.", m_pHolder->_container(), nullptr, __func__, __FILE__, __LINE__ );
 			return end();
 		}
 
@@ -123,7 +123,7 @@ namespace wg
 	{
 		if( !pWidget )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Pushing a nullptr into a SlotVector is not allowed.", m_pHolder->_container(), nullptr, __func__, __FILE__, __LINE__ );
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Pushing a nullptr into a SlotVector is not allowed.", m_pHolder->_container(), nullptr, __func__, __FILE__, __LINE__ );
 			return end();
 		}
 
@@ -144,7 +144,7 @@ namespace wg
 		{
 			if( !entry.m_pChild )
 			{
-				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Pushing a nullptr into a SlotVector is not allowed.", m_pHolder->_container(), nullptr, __func__, __FILE__, __LINE__ );
+				Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Pushing a nullptr into a SlotVector is not allowed.", m_pHolder->_container(), nullptr, __func__, __FILE__, __LINE__ );
 				return end();
 			}
 		}
@@ -177,7 +177,7 @@ namespace wg
 		
 		if( !pWidget )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Inserting a nullptr into a SlotVector is not allowed.", m_pHolder->_container(), nullptr, __func__, __FILE__, __LINE__ );
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Inserting a nullptr into a SlotVector is not allowed.", m_pHolder->_container(), nullptr, __func__, __FILE__, __LINE__ );
 			return end();
 		}		
 
@@ -196,7 +196,7 @@ namespace wg
 
 		if( !pWidget )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Inserting a nullptr into a SlotVector is not allowed.", m_pHolder->_container(), nullptr, __func__, __FILE__, __LINE__ );
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Inserting a nullptr into a SlotVector is not allowed.", m_pHolder->_container(), nullptr, __func__, __FILE__, __LINE__ );
 			return end();
 		}
 		
@@ -216,7 +216,7 @@ namespace wg
 
 		if( !pWidget )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Inserting a nullptr into a SlotVector is not allowed.", m_pHolder->_container(), nullptr, __func__, __FILE__, __LINE__ );
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Inserting a nullptr into a SlotVector is not allowed.", m_pHolder->_container(), nullptr, __func__, __FILE__, __LINE__ );
 			return end();
 		}
 
@@ -236,7 +236,7 @@ namespace wg
 
 		if( !pWidget )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Inserting a nullptr into a SlotVector is not allowed.", m_pHolder->_container(), nullptr, __func__, __FILE__, __LINE__ );
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Inserting a nullptr into a SlotVector is not allowed.", m_pHolder->_container(), nullptr, __func__, __FILE__, __LINE__ );
 			return end();
 		}
 
@@ -258,7 +258,7 @@ namespace wg
 		{
 			if( !entry.m_pChild )
 			{
-				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Inserting a nullptr into a SlotVector is not allowed.", m_pHolder->_container(), nullptr, __func__, __FILE__, __LINE__ );
+				Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Inserting a nullptr into a SlotVector is not allowed.", m_pHolder->_container(), nullptr, __func__, __FILE__, __LINE__ );
 				return end();
 			}
 		}
@@ -291,7 +291,7 @@ namespace wg
 		{
 			if( !entry.m_pChild )
 			{
-				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Inserting a nullptr into a SlotVector is not allowed.", m_pHolder->_container(), nullptr, __func__, __FILE__, __LINE__ );
+				Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Inserting a nullptr into a SlotVector is not allowed.", m_pHolder->_container(), nullptr, __func__, __FILE__, __LINE__ );
 				return end();
 			}
 		}

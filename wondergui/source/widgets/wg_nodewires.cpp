@@ -85,13 +85,13 @@ namespace wg
 	{
 		if( !m_pObserved )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "You need to attach to a NodePanel before you can add any wires.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "You need to attach to a NodePanel before you can add any wires.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
 		if( std::any_of(m_wires.begin(), m_wires.end(), [fromNode,toNode] (const Wire& wire) { return wire.fromNode == fromNode && wire.toNode == toNode; }))
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "A wire going from and to the same specified nodes already exists.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "A wire going from and to the same specified nodes already exists.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -101,7 +101,7 @@ namespace wg
 
 		if( itFrom == m_pObserved->nodes.end() || itTo == m_pObserved->nodes.end() )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "One or both of the specified nodes does not exist in the NodePanel that we are attached to.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "One or both of the specified nodes does not exist in the NodePanel that we are attached to.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -120,7 +120,7 @@ namespace wg
 
 		if( it == m_wires.end() )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "No wire going from and to the specified nodes exists.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "No wire going from and to the specified nodes exists.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -134,7 +134,7 @@ namespace wg
 	{
 		if( !color.isValid() )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Color is invalid.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Color is invalid.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -149,7 +149,7 @@ namespace wg
 	{
 		if( length < 0.0 || length > 100 )
 		{
-			Base::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "WireStub capped to be between 0.0 and 100.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Warning, ErrorCode::InvalidParam, "WireStub capped to be between 0.0 and 100.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 			limit( length, 0.0, 100 );
 		}
@@ -165,7 +165,7 @@ namespace wg
 	{
 		if( thickness < 0.1 || thickness > 100 )
 		{
-			Base::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "Wire thickness capped to be between 0.1 and 100.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Warning, ErrorCode::InvalidParam, "Wire thickness capped to be between 0.1 and 100.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 			limit( thickness, 0.1, 100 );
 		}

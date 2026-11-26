@@ -206,7 +206,7 @@ namespace wg
 
 		if (!m_pBakeSurface)
 		{
-			Base::throwError(ErrorLevel::SilentError, ErrorCode::FailedPrerequisite, "Can't render: missing bake surface", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::SilentError, ErrorCode::FailedPrerequisite, "Can't render: missing bake surface", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 

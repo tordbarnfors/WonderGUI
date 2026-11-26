@@ -572,14 +572,14 @@ template<typename T, typename T2, typename T3> inline void limit(T& x, T2 min, T
 		Canvas_32
 	};
 
-	//____ SampleOrigo _____________________________________________________________
+	//____ SampleOrigin _____________________________________________________________
 
-	enum class SampleOrigo			//.autoExtras
+	enum class SampleOrigin			//.autoExtras
 	{
-		Top,				// Origo at top, increasing values goes down.
-		MiddleUp,			// Origo at middle, increasing values goes up.
-		MiddleDown,			// Origo at middle, increasing values goes down.
-		Bottom				// Origo at bottom, increasing values goes up.
+		Top,				// Origin at top, increasing values goes down.
+		MiddleUp,			// Origin at middle, increasing values goes up.
+		MiddleDown,			// Origin at middle, increasing values goes down.
+		Bottom				// Origin at bottom, increasing values goes up.
 	};
 
 	//____ Compression ___________________________________________________________

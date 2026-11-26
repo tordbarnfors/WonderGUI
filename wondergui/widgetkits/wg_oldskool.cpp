@@ -44,7 +44,7 @@ namespace wg::oldskool
 		auto pSurfaceFactory = Base::defaultSurfaceFactory();
 		if( !pSurfaceFactory )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No default surface factory set", nullptr, nullptr, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No default surface factory set", nullptr, nullptr, __func__, __FILE__, __LINE__);
 			return false;
 		}
 

@@ -152,7 +152,7 @@ namespace wax
 
 		if (!pInfo)
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Canvas reference has not been defined.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Canvas reference has not been defined.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 
@@ -179,7 +179,7 @@ namespace wax
 			if (format != PixelFormat::ARGB_8 && format != PixelFormat::XRGB_8 && format != PixelFormat::RGB_565 &&
 				format != PixelFormat::BGR_565 && format != PixelFormat::Alpha_8)
 			{
-				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "ReferenceBackend can't render to surfaces of this pixel format.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "ReferenceBackend can't render to surfaces of this pixel format.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			}
 			else
 			{
@@ -379,12 +379,12 @@ namespace wax
 
 					auto pEdgemap = static_cast<SoftEdgemap*>(m_pObjectsBeg[readObjectIndex(p)]);
 
-					CoordSPX origo;
-					origo.x = _read32(p);
-					origo.y = _read32(p);
+					CoordSPX origin;
+					origin.x = _read32(p);
+					origin.y = _read32(p);
 
 					for (int i = 0; i < nRects; i++)
-						_drawEdgemap(pEdgemap, cmd == Command::TileEdgemap, flip, origo, *m_pRectsPtr++);
+						_drawEdgemap(pEdgemap, cmd == Command::TileEdgemap, flip, origin, *m_pRectsPtr++);
 					break;
 				}
 
@@ -622,20 +622,20 @@ namespace wax
 	//____ _drawEdgemap() _________________________________________________________
 	/*
 		Draws the part of an edgemap that is within rect, flipped/rotated by flip, with the
-		top-left corner of the flipped edgemap at origo. When tiling, the edgemap is repeated
-		over all of rect, with one of the copies at origo.
+		top-left corner of the flipped edgemap at origin. When tiling, the edgemap is repeated
+		over all of rect, with one of the copies at origin.
 
-		The Backend contract places edgemaps on whole pixels, so origo is rounded to nearest
+		The Backend contract places edgemaps on whole pixels, so origin is rounded to nearest
 		pixel. Each pixel of the canvas therefore covers exactly one pixel of the edgemap.
 	*/
 
-	void ReferenceBackend::_drawEdgemap(SoftEdgemap* pEdgemap, bool bTile, GfxFlip flip, CoordSPX _origo, const RectSPX& rect)
+	void ReferenceBackend::_drawEdgemap(SoftEdgemap* pEdgemap, bool bTile, GfxFlip flip, CoordSPX _origin, const RectSPX& rect)
 	{
 		if (m_blendMode == BlendMode::Ignore)
 			return;
 
 		SizeI mapSize = pEdgemap->pixelSize();
-		CoordI origo = Util::roundToPixels(_origo);
+		CoordI origin = Util::roundToPixels(_origin);
 
 		// The standard transforms tell how we move over the edgemap when we move over the canvas,
 		// just like for blits. The corner of the edgemap we start from is the one that makes us
@@ -658,8 +658,8 @@ namespace wax
 			{
 				// Center of the canvas pixel, transformed to the edgemap.
 
-				double dx = x - origo.x + 0.5;
-				double dy = y - origo.y + 0.5;
+				double dx = x - origin.x + 0.5;
+				double dy = y - origin.y + 0.5;
 
 				double mapX = cornerX + dx * mtx.xx + dy * mtx.yx;
 				double mapY = cornerY + dx * mtx.xy + dy * mtx.yy;

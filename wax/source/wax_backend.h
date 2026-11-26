@@ -132,7 +132,7 @@ namespace wax
 			  uint16	flip			GfxFlip.
 			  uint16	padding
 			  uint32	edgemap			Index of the edgemap in the object table.
-			  int32		origo x, y		spx.
+			  int32		origin x, y		spx.
 		*/
 
 		/*

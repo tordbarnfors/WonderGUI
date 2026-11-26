@@ -34,10 +34,10 @@ extern "C" {
 
 	WAX_EXPORT wax_obj wax_createEdgemap( wax_obj factory, const wax_edgemapBP* blueprint);
 
-	WAX_EXPORT wax_obj wax_createEdgemapFromFloats( wax_obj factory, const wax_edgemapBP* blueprint, wax_sampleOrigo origo,
+	WAX_EXPORT wax_obj wax_createEdgemapFromFloats( wax_obj factory, const wax_edgemapBP* blueprint, wax_sampleOrigin origin,
 												const float* pSamples, int edges, int edgePitch, int samplePitch);
 
-	WAX_EXPORT wax_obj wax_createEdgemapFromSpx( wax_obj factory, const wax_edgemapBP* blueprint, wax_sampleOrigo origo, 
+	WAX_EXPORT wax_obj wax_createEdgemapFromSpx( wax_obj factory, const wax_edgemapBP* blueprint, wax_sampleOrigin origin, 
 											 const wax_spx* pSamples, int edges, int edgePitch, int samplePitch);
 
 #ifdef __cplusplus

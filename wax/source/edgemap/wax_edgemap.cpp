@@ -161,30 +161,30 @@ namespace wax
 
 	//____ importSamples() _________________________________________________________
 
-	bool Edgemap::importSamples(SampleOrigo origo, const spx* pSource, int edgeBegin, int edgeEnd,
+	bool Edgemap::importSamples(SampleOrigin origin, const spx* pSource, int edgeBegin, int edgeEnd,
 		int sampleBegin, int sampleEnd, int edgePitch, int samplePitch)
 	{
 		if (pSource == nullptr || edgeBegin < 0 || edgeBegin > edgeEnd || edgeEnd > (m_nbSegments - 1) || sampleBegin < 0 || sampleBegin > sampleEnd || sampleEnd > samples())
 			return false;
 
-		_importSamples(origo, pSource, edgeBegin, edgeEnd, sampleBegin, sampleEnd, edgePitch, samplePitch);
+		_importSamples(origin, pSource, edgeBegin, edgeEnd, sampleBegin, sampleEnd, edgePitch, samplePitch);
 		return true;
 	}
 
-	bool Edgemap::importSamples(SampleOrigo origo, const float* pSource, int edgeBegin, int edgeEnd,
+	bool Edgemap::importSamples(SampleOrigin origin, const float* pSource, int edgeBegin, int edgeEnd,
 		int sampleBegin, int sampleEnd, int edgePitch, int samplePitch)
 	{
 		if (pSource == nullptr || edgeBegin < 0 || edgeBegin > edgeEnd || edgeEnd > (m_nbSegments - 1) || sampleBegin < 0 || sampleBegin > sampleEnd || sampleEnd > samples())
 			return false;
 
-		_importSamples(origo, pSource, edgeBegin, edgeEnd, sampleBegin, sampleEnd, edgePitch, samplePitch);
+		_importSamples(origin, pSource, edgeBegin, edgeEnd, sampleBegin, sampleEnd, edgePitch, samplePitch);
 		return true;
 	}
 
 
 	//____ exportSamples() _________________________________________________________
 
-	bool Edgemap::exportSamples(SampleOrigo origo, spx* pDestination, int edgeBegin, int edgeEnd,
+	bool Edgemap::exportSamples(SampleOrigin origin, spx* pDestination, int edgeBegin, int edgeEnd,
 		int sampleBegin, int sampleEnd, int edgePitch, int samplePitch)
 	{
 		//TODO: Implement!!!
@@ -192,7 +192,7 @@ namespace wax
 		return false;
 	}
 
-	bool Edgemap::exportSamples(SampleOrigo origo, float* pDestination, int edgeBegin, int edgeEnd,
+	bool Edgemap::exportSamples(SampleOrigin origin, float* pDestination, int edgeBegin, int edgeEnd,
 		int sampleBegin, int sampleEnd, int edgePitch, int samplePitch)
 	{
 		//TODO: Implement!!!
@@ -283,15 +283,15 @@ namespace wax
 
 	//____ convertSamples() _______________________________________________________
 
-	void Edgemap::convertSamples( spx * pDest, const spx * pSource, SampleOrigo origo, spx height, int nEdges, int nSamples,
+	void Edgemap::convertSamples( spx * pDest, const spx * pSource, SampleOrigin origin, spx height, int nEdges, int nSamples,
 								  int srcEdgePitch, int srcSamplePitch, int destEdgePitch, int destSamplePitch )
 	{
-		spx mul = (origo == SampleOrigo::Top || origo == SampleOrigo::MiddleDown) ? 1 : -1;
+		spx mul = (origin == SampleOrigin::Top || origin == SampleOrigin::MiddleDown) ? 1 : -1;
 		spx offset = 0;
 
-		if( origo == SampleOrigo::Bottom )
+		if( origin == SampleOrigin::Bottom )
 			offset = height;
-		else if( origo == SampleOrigo::MiddleDown || origo == SampleOrigo::MiddleUp )
+		else if( origin == SampleOrigin::MiddleDown || origin == SampleOrigin::MiddleUp )
 			offset = height/2;
 
 		for( int edge = 0 ; edge < nEdges ; edge++ )
@@ -308,18 +308,18 @@ namespace wax
 		}
 	}
 
-	void Edgemap::convertSamples( spx * pDest, const float * pSource, SampleOrigo origo, spx height, int nEdges, int nSamples,
+	void Edgemap::convertSamples( spx * pDest, const float * pSource, SampleOrigin origin, spx height, int nEdges, int nSamples,
 								  int srcEdgePitch, int srcSamplePitch, int destEdgePitch, int destSamplePitch )
 	{
-		spx mul = (origo == SampleOrigo::Top || origo == SampleOrigo::MiddleDown) ? 1 : -1;
+		spx mul = (origin == SampleOrigin::Top || origin == SampleOrigin::MiddleDown) ? 1 : -1;
 		spx offset = 0;
 
-		if( origo == SampleOrigo::Bottom )
+		if( origin == SampleOrigin::Bottom )
 			offset = height;
-		else if( origo == SampleOrigo::MiddleDown || origo == SampleOrigo::MiddleUp )
+		else if( origin == SampleOrigin::MiddleDown || origin == SampleOrigin::MiddleUp )
 			offset = height/2;
 
-		if( origo == SampleOrigo::MiddleDown || origo == SampleOrigo::MiddleUp )
+		if( origin == SampleOrigin::MiddleDown || origin == SampleOrigin::MiddleUp )
 			mul *= height/2;
 		else
 			mul *= height;
@@ -340,29 +340,29 @@ namespace wax
 
 	//____ convertSample() ________________________________________________________
 
-	spx Edgemap::convertSample( spx sample, SampleOrigo origo, spx height )
+	spx Edgemap::convertSample( spx sample, SampleOrigin origin, spx height )
 	{
-		spx mul = (origo == SampleOrigo::Top || origo == SampleOrigo::MiddleDown) ? 1 : -1;
+		spx mul = (origin == SampleOrigin::Top || origin == SampleOrigin::MiddleDown) ? 1 : -1;
 		spx offset = 0;
 
-		if( origo == SampleOrigo::Bottom )
+		if( origin == SampleOrigin::Bottom )
 			offset = height;
-		else if( origo == SampleOrigo::MiddleDown || origo == SampleOrigo::MiddleUp )
+		else if( origin == SampleOrigin::MiddleDown || origin == SampleOrigin::MiddleUp )
 			offset = height/2;
 
 		return (sample * mul) + offset;
 	}
 
-	spx Edgemap::convertSample( float sample, SampleOrigo origo, spx height )
+	spx Edgemap::convertSample( float sample, SampleOrigin origin, spx height )
 	{
 		spx out;
-		convertSamples( &out, &sample, origo, height, 1, 1, 0, 0, 0, 0 );
+		convertSamples( &out, &sample, origin, height, 1, 1, 0, 0, 0, 0 );
 		return out;
 	}
 
 	//____ _importSamples() ________________________________________________________
 
-	void Edgemap::_importSamples(SampleOrigo origo, const spx* pSource, int edgeBegin, int edgeEnd,
+	void Edgemap::_importSamples(SampleOrigin origin, const spx* pSource, int edgeBegin, int edgeEnd,
 		int sampleBegin, int sampleEnd, int edgePitch, int samplePitch)
 	{
 		if (samplePitch == 0)
@@ -371,14 +371,14 @@ namespace wax
 		if (edgePitch == 0)
 			edgePitch = samplePitch * (sampleEnd - sampleBegin);
 
-		convertSamples(m_pSamples + edgeBegin + sampleBegin * (m_nbSegments - 1), pSource, origo, m_size.h * 64,
+		convertSamples(m_pSamples + edgeBegin + sampleBegin * (m_nbSegments - 1), pSource, origin, m_size.h * 64,
 					   edgeEnd - edgeBegin, sampleEnd - sampleBegin, edgePitch, samplePitch, 1, m_nbSegments - 1);
 
 		_samplesUpdated(edgeBegin, edgeEnd, sampleBegin, sampleEnd);
 		_mirrorFirstColumn(edgeBegin, edgeEnd, sampleBegin);
 	}
 
-	void Edgemap::_importSamples(SampleOrigo origo, const float* pSource, int edgeBegin, int edgeEnd,
+	void Edgemap::_importSamples(SampleOrigin origin, const float* pSource, int edgeBegin, int edgeEnd,
 		int sampleBegin, int sampleEnd, int edgePitch, int samplePitch)
 	{
 		if (samplePitch == 0)
@@ -387,7 +387,7 @@ namespace wax
 		if (edgePitch == 0)
 			edgePitch = samplePitch * (sampleEnd - sampleBegin);
 
-		convertSamples(m_pSamples + edgeBegin + sampleBegin * (m_nbSegments - 1), pSource, origo, m_size.h * 64,
+		convertSamples(m_pSamples + edgeBegin + sampleBegin * (m_nbSegments - 1), pSource, origin, m_size.h * 64,
 					   edgeEnd - edgeBegin, sampleEnd - sampleBegin, edgePitch, samplePitch, 1, m_nbSegments - 1);
 
 		_samplesUpdated(edgeBegin, edgeEnd, sampleBegin, sampleEnd);

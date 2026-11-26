@@ -13,14 +13,15 @@ differently, is added to this guide in the same commit.
 3. [Build and repository layout](#build-and-repository-layout)
 4. [Wax: the graphics library on its own](#wax-the-graphics-library-on-its-own)
 5. [Colors](#colors)
-6. [Text](#text)
-7. [Widgets](#widgets)
-8. [Surfaces](#surfaces)
-9. [Backends](#backends)
-10. [Warpmaps](#warpmaps)
-11. [WonderApp](#wonderapp)
-12. [C API, plugins and the C# wrapper](#c-api-plugins-and-the-c-wrapper)
-13. [Changes that compile but behave differently](#changes-that-compile-but-behave-differently)
+6. [Renamed terms](#renamed-terms)
+7. [Text](#text)
+8. [Widgets](#widgets)
+9. [Surfaces](#surfaces)
+10. [Backends](#backends)
+11. [Warpmaps](#warpmaps)
+12. [WonderApp](#wonderapp)
+13. [C API, plugins and the C# wrapper](#c-api-plugins-and-the-c-wrapper)
+14. [Changes that compile but behave differently](#changes-that-compile-but-behave-differently)
 
 ## Before you start
 
@@ -56,6 +57,8 @@ Then, on v4:
 - [ ] `setDefaultGfxDevice()` → `setDefaultDevice()` and the like; `wg_static_cast` →
       `wax_static_cast`; `WG_IS_LITTLE_ENDIAN` → `WAX_IS_LITTLE_ENDIAN`.
 - [ ] `HiColor` → `Color`, `Color8::Red` → `Color::Red`.
+- [ ] The renamed terms: `throwError` → `reportError`, `origo` → `origin`, `hotspot` → `pivot`,
+      `baggage` → `userData`, in every name they are part of.
 - [ ] `String`, `CharSeq`, `CharBuffer` → `std::string` and `std::string_view`, UTF-8.
 - [ ] `BasicTextLayout` → `PlainTextLayout`.
 - [ ] Per-character styles → `MarkdownTextLayout`, or a `FlowTextLayout` of your own.
@@ -428,6 +431,71 @@ compiles and gets other numbers.
 `WgColor` is a class derived from `Color8` instead of a typedef. It has the web palette as 8-bit
 constants under the old names, `WgColor::LemonCiffon` included, so `WgColor::Black` and the like
 compile as before. It converts to and from `Color8`, and from `Color`.
+
+## Renamed terms
+
+Some words are replaced by others in every name they are part of: class, method, field,
+parameter, enum and C API names, and the text of messages and documentation. There are no
+aliases with the old names, so code with them fails to compile. A search and replace of the old
+word, keeping its case, is enough for most code.
+
+LegacyGUI keeps its own names (`WgOrigo`, `SetHotspot()`, ...). Types that are renamed in
+WonderGUI and Wax get aliases with their old names in LegacyGUI, so legacy code keeps compiling:
+`wg::SampleOrigo`. Renamed methods and fields can't get such aliases.
+
+### Blueprint fields in alphabetical order
+
+Blueprint fields are in alphabetical order, so renamed fields have moved: `userData` is now
+near the end of each Blueprint, where `baggage` was first, and `origin` comes before `pivot` in
+`FlexPanelSlot::Blueprint`. C++20 code with designated initializers must list them in that
+order, or it fails to compile:
+
+```cpp
+// before
+pPanel->slots.pushBack(pWidget, { .baggage = pData, .hotspot = Placement::Center, .origo = Placement::Center });
+// after
+pPanel->slots.pushBack(pWidget, { .origin = Placement::Center, .pivot = Placement::Center, .userData = pData });
+```
+
+Blueprints filled in with `WGBP()` or `_.userData = ...` don't depend on the order. The C API
+structs keep the order they had.
+
+### `throwError` → `reportError`
+
+| Before | After |
+|---|---|
+| `Base::throwError()` | `Base::reportError()` |
+
+### `origo` → `origin`
+
+| Before | After |
+|---|---|
+| `SampleOrigo`, `SampleOrigo_min`, `SampleOrigo_max`, `SampleOrigo_size` | `SampleOrigin`, `SampleOrigin_min`, ... |
+| `EdgemapWave::Blueprint::origo` and the `SampleOrigo origo` parameters of the edgemaps and their factories | `origin` |
+| `FlexPos::origo` | `FlexPos::origin` |
+| `FlexPanelSlot::origo()`, `setOrigo()`, `Blueprint::origo` | `origin()`, `setOrigin()`, `Blueprint::origin` |
+| `ModalOverlay::Slot::origo()`, `setOrigo()`, `Blueprint::origo` | `origin()`, `setOrigin()`, `Blueprint::origin` |
+| `Printer::setCursorOrigo()`, `cursorOrigo()` | `setCursorOrigin()`, `cursorOrigin()` |
+| C: `wax_sampleOrigo`, `WAX_SAMPLEORIGO_TOP`, `_MIDDLE_UP`, `_MIDDLE_DOWN`, `_BOTTOM` | `wax_sampleOrigin`, `WAX_SAMPLEORIGIN_TOP`, ... |
+| C: `wax_setPrinterOrigo()`, `wax_printerOrigo()` | `wax_setPrinterOrigin()`, `wax_printerOrigin()` |
+| C#: `Printer.SetCursorOrigo()`, `CursorOrigo()` | `SetCursorOrigin()`, `CursorOrigin()` |
+
+### `hotspot` → `pivot`
+
+| Before | After |
+|---|---|
+| `FlexPanelSlot::hotspot()`, `setHotspot()`, `Blueprint::hotspot` | `pivot()`, `setPivot()`, `Blueprint::pivot` |
+| `PickMsg::hotspot()`, `setHotspot()` | `pivot()`, `setPivot()` |
+
+### `baggage` → `userData`
+
+| Before | After |
+|---|---|
+| `Widget::baggage()`, `setBaggage()`, `hasBaggage()` | `userData()`, `setUserData()`, `hasUserData()` |
+| `Surface::baggage()`, `setBaggage()` | `userData()`, `setUserData()` |
+| `Blueprint::baggage` of every widget, the surfaces and the other objects that have one | `Blueprint::userData` |
+| C: `wax_setSurfaceBaggage()`, `wax_getSurfaceBaggage()` | `wax_setSurfaceUserData()`, `wax_getSurfaceUserData()` |
+| Plugin interface: `setSurfaceBaggage`, `getSurfaceBaggage` | `setSurfaceUserData`, `getSurfaceUserData`, at the same place |
 
 ## Text
 
@@ -922,7 +990,7 @@ together.** A new plugin refuses to start in an old host.
   `PluginSurface::isContentLost()` asks the host.
 - `PluginSurfaceFactory` returns null when the host can't create the surface. It returned a
   surface around null.
-- `baggage` and `finalizer` in the Blueprint of a plugin's surface are lost. Set them on the
+- `userData` and `finalizer` in the Blueprint of a plugin's surface are lost. Set them on the
   surface afterwards.
 
 ### C# wrapper

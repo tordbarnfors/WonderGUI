@@ -41,7 +41,7 @@ namespace wg
 
 		if (bp.layers.size() > c_maxLayers)
 		{
-			Base::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "Number of layers exceeds maximum", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "Number of layers exceeds maximum", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -53,14 +53,14 @@ namespace wg
 
 			if (type == PixelType::Index || type == PixelType::Bitplanes)
 			{
-				Base::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "Canvas layers can not be palette-based", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::reportError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "Canvas layers can not be palette-based", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 				return nullptr;
 			}
 		}
 
 		if (bp.baseLayer < 0 || bp.baseLayer > bp.layers.size())
 		{
-			Base::throwError(ErrorLevel::Critical, ErrorCode::InvalidParam, "Default layer is out of bounds.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Critical, ErrorCode::InvalidParam, "Default layer is out of bounds.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 

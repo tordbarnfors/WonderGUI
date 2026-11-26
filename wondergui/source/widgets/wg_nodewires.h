@@ -39,7 +39,6 @@ public:
 	struct Blueprint
 	{
 		Border			anchorInset;
-		Object_p		baggage;
 		Axis			defaultAxis = Axis::Undefined;
 		bool			disabled = false;
 		bool			dropTarget = false;
@@ -57,6 +56,7 @@ public:
 		bool			tabLock = false;
 		std::string			tooltip;
 
+		Object_p		userData;
 		Color			wireColor = Color::Black;
 		pts				wireStub = 5;
 		pts				wireThickness = 1.f;

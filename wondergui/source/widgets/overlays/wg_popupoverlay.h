@@ -134,7 +134,6 @@ namespace wg
 			int				aimStillTime = 100;						// Millisec without movement before a pointer is no longer considered aiming at a submenu.
 			int				aimTimeout = 300;						// Millisec on the same widget before a pointer is no longer considered aiming at a submenu. 0 disables aiming.
 			pts				aimTolerance = 20;						// Points the near edge of a submenu is extended by at both ends when checking if the pointer aims at it.
-			Object_p		baggage;
 			bool			blockLeftMouseButton = true;			// An open popup blocks other widgets from receiving mouse move and left button events. Other buttons still get through.
 			int				closingDelay = 200;
 			int				closingFade = 200;
@@ -156,6 +155,7 @@ namespace wg
 			bool			takesFocusFromChild = false;
 			std::string			tooltip;
 			bool			usePickHandles = false;
+			Object_p		userData;
 		};
 
 		//.____ Creation __________________________________________
