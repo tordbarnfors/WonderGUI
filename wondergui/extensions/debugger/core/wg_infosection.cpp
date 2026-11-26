@@ -43,7 +43,7 @@ namespace wg
 		: LabelCapsule( theme.classCapsule )
 		, m_pContext(pContext)
 	{
-		m_pIndentationSkin = ColorSkin::create(Color::Transparent, { 0,0,0,16 });
+		m_pIndentationSkin = ColorSkin::create(Color8::Transparent, { 0,0,0,16 });
 
 		label.setText(pLabel);
 	}
@@ -410,7 +410,7 @@ namespace wg
 
 			TextStyle::Blueprint bp = pEntryStyle ? pEntryStyle->blueprint() : TextStyle::Blueprint();
 			bp.link = pLink;
-			bp.color = Color::DarkRed;
+			bp.color = Color8::DarkRed;
 			bp.decoration = TextDecoration::Underline;
 
 			pDisplay->display.setStyle( TextStyle::create(bp) );

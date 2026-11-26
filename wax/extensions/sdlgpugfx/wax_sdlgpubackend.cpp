@@ -337,13 +337,13 @@ namespace wax
 		};
 
 		bool bOK = grow(m_pVertexBuffer, m_vertexCapacity, nVertices, sizeof(Vertex), SDL_GPU_BUFFERUSAGE_VERTEX);
-		bOK = bOK && grow(m_pColorBuffer, m_colorCapacity, nColors, sizeof(Color), SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ);
+		bOK = bOK && grow(m_pColorBuffer, m_colorCapacity, nColors, sizeof(Color8), SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ);
 		bOK = bOK && grow(m_pExtrasBuffer, m_extrasCapacity, nExtras, sizeof(Extras), SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ);
 
 		if (!bOK)
 			return false;
 
-		uint32_t transferSize = uint32_t(m_vertexCapacity) * sizeof(Vertex) + uint32_t(m_colorCapacity) * sizeof(Color) + uint32_t(m_extrasCapacity) * sizeof(Extras);
+		uint32_t transferSize = uint32_t(m_vertexCapacity) * sizeof(Vertex) + uint32_t(m_colorCapacity) * sizeof(Color8) + uint32_t(m_extrasCapacity) * sizeof(Extras);
 
 		if (!m_pSessionTransfer || transferSize > m_sessionTransferSize)
 		{
@@ -374,7 +374,7 @@ namespace wax
 		m_buffers.pVertexPtr = m_buffers.pVertexBeg;
 		m_buffers.pVertexEnd = m_buffers.pVertexBeg + m_vertexCapacity;
 
-		m_buffers.pColorBeg = (Color*) m_buffers.pVertexEnd;
+		m_buffers.pColorBeg = (Color8*) m_buffers.pVertexEnd;
 		m_buffers.pColorPtr = m_buffers.pColorBeg;
 		m_buffers.pColorEnd = m_buffers.pColorBeg + m_colorCapacity;
 
@@ -1021,7 +1021,7 @@ namespace wax
 	{
 		struct { SDL_GPUBuffer * pBuffer; const void * pBeg; const void * pPtr; uint32_t entrySize; } sessionBuffers[3] = {
 			{ m_pVertexBuffer, m_buffers.pVertexBeg, m_buffers.pVertexPtr, sizeof(Vertex) },
-			{ m_pColorBuffer, m_buffers.pColorBeg, m_buffers.pColorPtr, sizeof(Color) },
+			{ m_pColorBuffer, m_buffers.pColorBeg, m_buffers.pColorPtr, sizeof(Color8) },
 			{ m_pExtrasBuffer, m_buffers.pExtrasBeg, m_buffers.pExtrasPtr, sizeof(Extras) } };
 
 		const uint8_t * pTransferBeg = (const uint8_t*) m_buffers.pVertexBeg;

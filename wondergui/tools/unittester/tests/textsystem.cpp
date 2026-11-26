@@ -673,7 +673,7 @@ bool TextSystemTest::markdownLinksTest(std::ostream& output)
 	auto pStyle = _createStyle();
 	TEST_ASSERT(pStyle != nullptr);
 
-	auto pLinkStyle = WGCREATE(TextStyle, _.color = Color::Blue, _.decoration = TextDecoration::Underline);
+	auto pLinkStyle = WGCREATE(TextStyle, _.color = Color8::Blue, _.decoration = TextDecoration::Underline);
 	auto pMarkdown = MarkdownTextLayout::create( WGBP(MarkdownTextLayout, _.link = pLinkStyle) );
 
 	TestText text( pMarkdown, pStyle, "See [docs](https://example.com \"Tip\") now" );
@@ -701,7 +701,7 @@ bool TextSystemTest::markdownSourceModeTest(std::ostream& output)
 	auto pStyle = _createStyle();
 	TEST_ASSERT(pStyle != nullptr);
 
-	auto pMarkupStyle = WGCREATE(TextStyle, _.color = Color::Gray);
+	auto pMarkupStyle = WGCREATE(TextStyle, _.color = Color8::Gray);
 	auto pPlain = PlainTextLayout::create();
 	auto pSource = MarkdownTextLayout::create( WGBP(MarkdownTextLayout, _.markup = pMarkupStyle, _.showMarkup = true) );
 
@@ -736,7 +736,7 @@ bool TextSystemTest::markdownRenderTest(std::ostream& output)
 
 	auto pBigStyle = WGCREATE(TextStyle, _.sizeScale = 1.5f);
 	auto pCodeStyle = WGCREATE(TextStyle, _.backColor = HiColor(1024,1024,1024,4096));
-	auto pLinkStyle = WGCREATE(TextStyle, _.color = Color::Blue, _.decoration = TextDecoration::Underline);
+	auto pLinkStyle = WGCREATE(TextStyle, _.color = Color8::Blue, _.decoration = TextDecoration::Underline);
 
 	auto pMarkdown = MarkdownTextLayout::create( WGBP(MarkdownTextLayout,
 		_.code = pCodeStyle,
@@ -927,7 +927,7 @@ bool TextSystemTest::decorationTest(std::ostream& output)
 	auto pStrike = WGCREATE(TextStyle, _.decoration = TextDecoration::Strikethrough);
 	auto pUnderline = WGCREATE(TextStyle, _.decoration = TextDecoration::Underline);
 	auto pNone = WGCREATE(TextStyle, _.decoration = TextDecoration::None);
-	auto pUndefined = WGCREATE(TextStyle, _.color = Color::Red);
+	auto pUndefined = WGCREATE(TextStyle, _.color = Color8::Red);
 
 	TextAttr attr;
 	pStrike->exportAttr(State::Default, &attr, 64);

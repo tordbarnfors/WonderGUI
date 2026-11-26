@@ -66,7 +66,7 @@ namespace wg
 			// loss.
 
 			EdgemapFactory_p edgemapFactory;
-			HiColor		emptyColor = Color::DarkBlue;
+			HiColor		emptyColor = Color8::DarkBlue;
 
 			Finalizer_p	finalizer = nullptr;
 			Border		gfxPadding;
@@ -145,7 +145,7 @@ namespace wg
 		BlendMode	m_blendMode = BlendMode::Blend;
 		HiColor		m_hubColor = HiColor::Transparent;
 		HiColor		m_backColor = HiColor::Transparent;
-		HiColor		m_emptyColor = Color::DarkBlue;
+		HiColor		m_emptyColor = Color8::DarkBlue;
 
 		Slice		m_slices[c_maxSlices];
 		int			m_nSlices;

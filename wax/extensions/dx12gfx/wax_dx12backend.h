@@ -365,7 +365,7 @@ namespace wax
 			Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	srvHeap;						// Shader visible, holds blit source descriptors.
 			int												srvCapacity = 0;				// Descriptors in srvHeap.
 			Vertex*											pVertexBufferData = nullptr;	// Permanently mapped.
-			Color*											pColorBufferData = nullptr;		// Permanently mapped.
+			Color8*											pColorBufferData = nullptr;		// Permanently mapped.
 			Extras*											pExtrasBufferData = nullptr;	// Permanently mapped.
 			int												vertexCapacity = 0;				// In entries, not bytes.
 			int												colorCapacity = 0;

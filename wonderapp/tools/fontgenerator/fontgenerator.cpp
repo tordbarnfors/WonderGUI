@@ -367,14 +367,14 @@ bool MyApp::generateFontSurface( FreeTypeFont * pFont, const std::u32string& cha
 	
 	pDevice->beginCanvasUpdate(pSurface);
 	pDevice->setBlendMode(BlendMode::Replace);
-	pDevice->fill(Color::Transparent);
+	pDevice->fill(Color8::Transparent);
 	pDevice->setBlendMode(BlendMode::Replace);
 
 	CoordSPX pos;
 	int rowHeight = (pFont->maxAscend() + pFont->maxDescend()) / 64;
 	spx baselineOfs = pFont->maxAscend();
 	
-	pDevice->setTintColor(Color::White);
+	pDevice->setTintColor(Color8::White);
 	pDevice->drawLine(pos, Direction::Right, surfaceSize.w*64, lineColor);
 	pos.y += 64;
 	

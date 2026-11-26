@@ -163,7 +163,7 @@ GlBackend::GlBackend( int uboBindingPoint )
 	glGenTextures(1, &m_extrasBufferTex);
 
 	glBindBuffer(GL_TEXTURE_BUFFER, m_colorBufferId);
-	glBufferData(GL_TEXTURE_BUFFER, sizeof(Color), nullptr, GL_STREAM_DRAW);
+	glBufferData(GL_TEXTURE_BUFFER, sizeof(Color8), nullptr, GL_STREAM_DRAW);
 	glBindBuffer(GL_TEXTURE_BUFFER, m_extrasBufferId);
 	glBufferData(GL_TEXTURE_BUFFER, sizeof(Extras), nullptr, GL_STREAM_DRAW);
 	glBindBuffer(GL_TEXTURE_BUFFER, 0);
@@ -754,7 +754,7 @@ void GlBackend::_execute()
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glBindBuffer(GL_TEXTURE_BUFFER, m_colorBufferId);
-	glBufferData(GL_TEXTURE_BUFFER, GLsizeiptr(std::max(nColors, size_t(1)) * sizeof(Color)), m_colors.data(), GL_STREAM_DRAW);
+	glBufferData(GL_TEXTURE_BUFFER, GLsizeiptr(std::max(nColors, size_t(1)) * sizeof(Color8)), m_colors.data(), GL_STREAM_DRAW);
 	glBindBuffer(GL_TEXTURE_BUFFER, m_extrasBufferId);
 	glBufferData(GL_TEXTURE_BUFFER, GLsizeiptr(std::max(nExtras, size_t(1)) * sizeof(Extras)), m_extras.data(), GL_STREAM_DRAW);
 	glBindBuffer(GL_TEXTURE_BUFFER, 0);

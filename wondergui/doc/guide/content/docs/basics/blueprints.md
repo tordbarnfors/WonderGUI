@@ -34,7 +34,7 @@ There are three ways to create and use a Blueprint depending on conditions and p
    TextStyle::Blueprint	style;
    style.font = pMyFont;
    style.size = 12;
-   style.color = Color::Black;
+   style.color = Color8::Black;
    auto pMyStyle = TextStyle::create(style);
    ```
 
@@ -49,7 +49,7 @@ There are three ways to create and use a Blueprint depending on conditions and p
    If you are allowed to use C++20 features you can use *designated initializers* to create the blueprint and set all parameters directly in the create call.
 
    ```c++
-   auto pMyStyle = TextStyle::create({	.color = Color::Black, 
+   auto pMyStyle = TextStyle::create({	.color = Color8::Black, 
    									.font = pMyFont,
                                        .size = 12 });
    ```
@@ -72,7 +72,7 @@ There are three ways to create and use a Blueprint depending on conditions and p
     auto pMyStyle = TextStyle::create( WGBP(TextStyle,
    									_.font = pMyFont,
    									_.size = 12,
-   									_.color = Color::Black ));
+   									_.color = Color8::Black ));
    ```
 
    This is looks very similar to designated initializers, but is a bit more convoluted. The changes needed are:
@@ -99,14 +99,14 @@ There are three ways to create and use a Blueprint depending on conditions and p
 It is worth pointing out that you can use designated initializers or the WGBP macro also when creating a blueprint for repeated use. Like:
 
 ```c++
-TextStyle::Blueprint bp1 = { .color = Color::Black, 
+TextStyle::Blueprint bp1 = { .color = Color8::Black, 
 							 .font = pMyFont,
                              .size = 12 };
 
 TextStyle::Blueprint bp2 = WGBP(TextStyle,
 								_.font = pMyFont,
 								_.size = 12,
-								_.color = Color::Black );
+								_.color = Color8::Black );
 ```
 
 
@@ -123,9 +123,9 @@ Let's say we want a green box with a thin black outline. We can create a Bluepri
 
 ```c++
 BoxSkin::Blueprint bp = WGBP(BoxSkin, 
-                             _.color = Color::Green, 
+                             _.color = Color8::Green, 
                              _.outline = 1.f, 
-                             _.outlineColor = Color::Black );
+                             _.outlineColor = Color8::Black );
 ```
 
 Let's say that we want the box to turn red when the mouse pointer enters it. In WG terminology we say that the box enters state Hovered, so we need to provide an alternative color for state Hovered.
@@ -156,7 +156,7 @@ Knowing this, we can add our color for state Hovered to our blueprint. Let's sta
 ```c++
 BoxSkin::StateBP hovered;
 hovered.state = State::Hovered;
-hovered.data.color = Color::Red;
+hovered.data.color = Color8::Red;
 
 bp.states.push_back(hovered);
 ```
@@ -168,7 +168,7 @@ bp.states.push_back(hovered);
 Above we simply create a struct containing the state-specific information and push it onto the stack. That is however quite much code. If we use C++20 designated initializers we can make it much shorter:
 
 ```c++
-bp.states.push_back( {State::Hovered, {.color = Color::Red}} );
+bp.states.push_back( {State::Hovered, {.color = Color8::Red}} );
 ```
 
 
@@ -179,15 +179,15 @@ Unfortunately we can not reuse the designated initializer pattern with the WGBP 
 
 ```c++
 StateBP( State state, StateData data )
-StateBP( State state, Color color )
+StateBP( State state, HiColor color )
 StateBP( State state, Coord contentShift )
-StateBP( State state, Color color, Color outlineColor )
+StateBP( State state, HiColor color, HiColor outlineColor )
 ```
 
 These cover the most common use cases and allows us to write as follows:
 
 ```c++
-bp.states.push_back( {State::Hovered, Color::Red} );
+bp.states.push_back( {State::Hovered, Color8::Red} );
 ```
 
 This is actually briefer and more compact than the designated initializers example above. It comes with one drawback though: we don't (and can't have) constructors for all combinations of parameters. We therefore have to resort to setting parameters explicitly in some cases, but in ~90% of typical use cases we can use this short and clear way.
@@ -197,25 +197,25 @@ This is actually briefer and more compact than the designated initializers examp
 Also, we can use initializer lists to fill the vector instead of one or more push_back() calls:
 
 ```c++
-bp.states = {{State::Hovered, Color::Red}};
+bp.states = {{State::Hovered, Color8::Red}};
 ```
 
 This makes adding several states very clean and simple:
 
 ```c++
-bp.states = {	{State::Hovered, Color::Yellow},
-				{State::Pressed, Color::Red} }
+bp.states = {	{State::Hovered, Color8::Yellow},
+				{State::Pressed, Color8::Red} }
 ```
 
 Intializer lists also have one big advantage over push_back() - they can be inlined in the blueprint intialization. This in turn allows us to inline everyting into the call to BoxSkin::create() like this:
 
 ```c++
 auto pMySkin = BoxSkin::create( WGBP(BoxSkin, 
-                             _.color = Color::Green, 
+                             _.color = Color8::Green, 
                              _.outline = 1.f, 
-                             _.outlineColor = Color::Black,
-                             _.states = {	{State::Hovered, Color::Yellow},
-											{State::Pressed, Color::Red} }
+                             _.outlineColor = Color8::Black,
+                             _.states = {	{State::Hovered, Color8::Yellow},
+											{State::Pressed, Color8::Red} }
 								));
 ```
 
@@ -231,13 +231,13 @@ There are a few more things related to blueprints that is worth pointing out.
 
   ```c++
   TextStyle::Blueprint bp1 = WGBP(TextStyle,
-  								_.color = Color::White,
-  								_.states = {{State::Hovered, Color::Pink}}
+  								_.color = Color8::White,
+  								_.states = {{State::Hovered, Color8::Pink}}
   								);
   																
   TextStyle::Blueprint bp2 = WGBP(TextStyle,
-  								_.states = {{State::Default, Color::White},
-  											{State::Hovered, Color::Pink}}
+  								_.states = {{State::Default, Color8::White},
+  											{State::Hovered, Color8::Pink}}
   								);					
   ```
 

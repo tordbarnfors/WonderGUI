@@ -30,15 +30,15 @@ A small example to clarify how resource should be handled:
 *** RIGHT WAY! ***
 
 	// At initialization
-	auto pWhiteSkin = ColorSkin::create( Color::White );					
-	auto pBlackSkin = ColorSkin::create( Color::Black );
+	auto pWhiteSkin = ColorSkin::create( Color8::White );					
+	auto pBlackSkin = ColorSkin::create( Color8::Black );
 										
 	// Later on changing color of a widget.
 	pWidget->setSkin( bIsWhite ? pWhiteSkin : pBlackSkin );
 	
 *** WRONG WAY! ***
 
-	pWidget->setSkin( bIsWhite ? ColorSkin::create( bIsWhite ? Color::White : Color::Black ) );
+	pWidget->setSkin( bIsWhite ? ColorSkin::create( bIsWhite ? Color8::White : Color8::Black ) );
 ```
 
 Doing it the wrong way will create and destroy resources repeatedly. The cost in this case is negligible but doing the same in other places could result in the unnecessary creation of a large amount of resources, increasing memory consumption and decreasing performance. 

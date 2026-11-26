@@ -84,14 +84,14 @@ The following example makes a 120 degree donut-style meter:
 
 ```c++
 auto pSkin = PieMeterSkin::create({
-				.backColor = Color::Black,
-				.emptyColor = Color::DarkGrey,
-				.hubColor = Color::Transparent,
+				.backColor = Color8::Black,
+				.emptyColor = Color8::DarkGrey,
+				.hubColor = Color8::Transparent,
 				.hubSize = 0.75f,
 				.length = 120,
 				.min = 0.1f,
 				.rotation = -60,
-				.slices = { 1.f, Color::DarkBlue, Color::Blue }
+				.slices = { 1.f, Color8::DarkBlue, Color8::Blue }
 			});
 ```
 
@@ -105,16 +105,16 @@ The following example is identical except that it divides up the meter into thre
 
 ```c++
 auto pSkin = PieMeterSkin::create({
-				.backColor = Color::Black,
-				.emptyColor = Color::DarkGrey,
-				.hubColor = Color::Transparent,
+				.backColor = Color8::Black,
+				.emptyColor = Color8::DarkGrey,
+				.hubColor = Color8::Transparent,
 				.hubSize = 0.75f,
 				.length = 120,
 				.min = 0.1f,
 				.rotation = -60,
-				.slices = { {1.f, Color::Green, Color::Green},
-							{1.f, Color::Yellow, Color::Yellow},
-							{1.f,Color::Red,Color::Red} }
+				.slices = { {1.f, Color8::Green, Color8::Green},
+							{1.f, Color8::Yellow, Color8::Yellow},
+							{1.f,Color8::Red,Color8::Red} }
 			});
 ```
 
@@ -126,17 +126,17 @@ Lastly, this example creates a fan-like meter with a colored hub where the slice
 
 ```c++
 auto pSkin = PieMeterSkin::create({
-                .backColor = Color::Black,
-                .emptyColor = Color::DarkGrey,
-                .hubColor = Color::Yellow,
+                .backColor = Color8::Black,
+                .emptyColor = Color8::DarkGrey,
+                .hubColor = Color8::Yellow,
                 .hubSize = 0.25f,
                 .length = 120,
                 .min = 0.1,
                 .movingSlices = true,
                 .rotation = -60,
-                .slices = { {0.7f,Color::DarkBlue,Color::DarkBlue},
-                            {0.2f,Color::Blue,Color::Blue},
-                            {0.1f,Color::LightBlue,Color::LightBlue} }
+                .slices = { {0.7f,Color8::DarkBlue,Color8::DarkBlue},
+                            {0.2f,Color8::Blue,Color8::Blue},
+                            {0.1f,Color8::LightBlue,Color8::LightBlue} }
     });
 ```
 

@@ -231,7 +231,7 @@ namespace wax
 		SizeI						m_targetSize;			// Of the canvas being recorded for, in pixels.
 
 		std::vector<Vertex>			m_vertices;				// GpuBackend's buffers, see _reserveFrameBuffers().
-		std::vector<Color>			m_colors;
+		std::vector<Color8>			m_colors;
 		std::vector<Extras>			m_extras;
 
 		// Playing back.

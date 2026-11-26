@@ -403,7 +403,7 @@ namespace wax
 		m_buffers.pVertexPtr = m_buffers.pVertexBeg;
 		m_buffers.pVertexEnd = m_buffers.pVertexBeg ? m_buffers.pVertexBeg + frame.vertexCapacity : nullptr;
 
-		m_buffers.pColorBeg = (Color*) frame.colors.pMapped;
+		m_buffers.pColorBeg = (Color8*) frame.colors.pMapped;
 		m_buffers.pColorPtr = m_buffers.pColorBeg;
 		m_buffers.pColorEnd = m_buffers.pColorBeg ? m_buffers.pColorBeg + frame.colorCapacity : nullptr;
 

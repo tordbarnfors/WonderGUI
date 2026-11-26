@@ -26,9 +26,9 @@ auto pMySkin = ColorSkin::create(
 { 
     .margin = 2,
     .padding = 2,
-    .states = { {State::Default, {.color = Color::Green}},
-                {State::Hovered, {.color = Color::Yellow}},
-                {State::Pressed, {.contentShift = {2,2}, .color = Color::Red}}
+    .states = { {State::Default, {.color = Color8::Green}},
+                {State::Hovered, {.color = Color8::Yellow}},
+                {State::Pressed, {.contentShift = {2,2}, .color = Color8::Red}}
               }
 });
 ```
@@ -40,11 +40,11 @@ Specifying the default state is not necessary since all settings for default sta
 ```c++
 auto pMySkin = ColorSkin::create( 
 {
-    .color = Color::Green,
+    .color = Color8::Green,
     .margin = 2,
     .padding = 2,
-    .states = { {State::Hovered, {.color = Color::Yellow}},
-                {State::Pressed, {.contentShift = {2,2}, .color = Color::Red}}
+    .states = { {State::Hovered, {.color = Color8::Yellow}},
+                {State::Pressed, {.contentShift = {2,2}, .color = Color8::Red}}
               }
 });
 ```

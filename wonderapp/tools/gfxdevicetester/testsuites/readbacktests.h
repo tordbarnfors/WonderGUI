@@ -139,7 +139,7 @@ public:
 			pDevice->stretchBlit({ 64 * 216, y, size });
 
 			spx marker = std::min(spx(64 * 24), size.h);
-			pDevice->fill({ 64 * 440, y, marker, marker }, bAlphaOk[i] ? HiColor(Color::Green) : HiColor(Color::Red));
+			pDevice->fill({ 64 * 440, y, marker, marker }, bAlphaOk[i] ? HiColor(Color8::Green) : HiColor(Color8::Red));
 
 			y += size.h + 64 * 8;
 		}
@@ -208,7 +208,7 @@ public:
 			pDevice->stretchBlit({ 64 * 216, y, SizeSPX((c.w - c.w / 2) * 3, c.h * 3) * 64 });
 
 			spx marker = std::min(spx(64 * 24), size.h);
-			pDevice->fill({ 64 * 440, y, marker, marker }, bAlphaOk[i] ? HiColor(Color::Green) : HiColor(Color::Red));
+			pDevice->fill({ 64 * 440, y, marker, marker }, bAlphaOk[i] ? HiColor(Color8::Green) : HiColor(Color8::Red));
 
 			y += size.h + 64 * 8;
 		}
@@ -273,7 +273,7 @@ public:
 			pDevice->setBlitSource(m_pRestorerCopies[i]);
 			pDevice->stretchBlit({ 64 * 216, y, SizeSPX((w - w / 2) * 3, h * 3) * 64 });
 
-			pDevice->fill({ 64 * 440, y, 64 * 24, 64 * 24 }, bAlphaOk[i] ? HiColor(Color::Green) : HiColor(Color::Red));
+			pDevice->fill({ 64 * 440, y, 64 * 24, 64 * 24 }, bAlphaOk[i] ? HiColor(Color8::Green) : HiColor(Color8::Red));
 
 			y += size.h + 64 * 8;
 		}

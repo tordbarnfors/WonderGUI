@@ -108,8 +108,8 @@ namespace wg
 
 		bool				m_bVisible = true;
 
-		HiColor				m_fillColor = Color::LightGray;
-		HiColor				m_outlineColor = Color::Black;
+		HiColor				m_fillColor = Color8::LightGray;
+		HiColor				m_outlineColor = Color8::Black;
 		Tint_p				m_pFillTint;
 		Tint_p				m_pOutlineTint;
 
@@ -203,7 +203,7 @@ namespace wg
 
 			Glow::Blueprint	glow;
 
-			HiColor			gridColor = Color::DarkGray;
+			HiColor			gridColor = Color8::DarkGray;
 			bool			gridOnTop = false;
 			pts				gridThickness = 1;
 

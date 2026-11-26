@@ -31,9 +31,9 @@ Creating a static, white circle with a pink border:
 
 ```c++
 auto pCircleSkin = CircleSkin::create({ 
-  .color = Color::White, 
+  .color = Color8::White, 
   .outlineThickness = 2,
-  .outlineColor = Color::Pink,
+  .outlineColor = Color8::Pink,
   .thickness = 10 });
 ```
 
@@ -43,15 +43,15 @@ A Green circle that turns yellow and grows slightly when hovered and turns red w
 auto pCircleSkin = CircleSkin::create({
   .outlineThickness = 2,
   .size = 0.9f,
-  .states ={{ State::Default, { .color = Color::Green, 
-                                .outlineColor = Color::DarkGreen }},
-            { State::Hovered, { .color = Color::Yellow, 
-                                .outlineColor = Color::DarkYellow,
+  .states ={{ State::Default, { .color = Color8::Green, 
+                                .outlineColor = Color8::DarkGreen }},
+            { State::Hovered, { .color = Color8::Yellow, 
+                                .outlineColor = Color8::DarkYellow,
                               	.size = 1.f }},
-            { State::Pressed, { .color = Color::Red, 
-                                .outlineColor = Color::DarkRed }},
-            { State::Disabled,{ .color = Color::Gray, 
-                                .outlineColor = Color::DarkGray }},
+            { State::Pressed, { .color = Color8::Red, 
+                                .outlineColor = Color8::DarkRed }},
+            { State::Disabled,{ .color = Color8::Gray, 
+                                .outlineColor = Color8::DarkGray }},
   .thickness = 10
 });
 ```
@@ -64,12 +64,12 @@ There are shorthand versions for setting states with only one parameter or just 
 auto pCircleSkin = CircleSkin::create({
   .outlineThickness = 2,
   .size = 0.9f,
-  .states ={{ State::Default, Color::Green, Color::DarkGreen },
-            { State::Hovered, { .color = Color::Yellow, 
-                                .outlineColor = Color::DarkYellow,
+  .states ={{ State::Default, Color8::Green, Color8::DarkGreen },
+            { State::Hovered, { .color = Color8::Yellow, 
+                                .outlineColor = Color8::DarkYellow,
                               	.size = 1.f }},
-            { State::Pressed, Color::Red, Color::DarkRed },
-            { State::Disabled, Color::Gray, Color::DarkGray },
+            { State::Pressed, Color8::Red, Color8::DarkRed },
+            { State::Disabled, Color8::Gray, Color8::DarkGray },
   .thickness = 10
 });
 ```

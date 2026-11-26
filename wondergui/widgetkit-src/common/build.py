@@ -797,7 +797,7 @@ def gen_colors(kit, palette, density):
                 lines.append("")
             for cl in src["comment"].rstrip("\n").split("\n"):
                 lines.append(f"\t\t// {cl}".rstrip())
-        decl = f"\t\tinline const Color\t{name} = Color({rgb[0]},{rgb[1]},{rgb[2]});"
+        decl = f"\t\tinline const Color8\t{name} = Color8({rgb[0]},{rgb[1]},{rgb[2]});"
         lines.append(f"{decl}\t\t// {note}" if note else decl)
     return "\n".join(lines)
 

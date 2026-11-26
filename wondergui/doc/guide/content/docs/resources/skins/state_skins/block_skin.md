@@ -59,9 +59,9 @@ As an example, imagine that we have an image with only two blocks: one for Defau
 
 ```c++
 .states = { State::Default, 
-          { State::Hovered, { .blockless = true, .color = Color::Yellow }},
+          { State::Hovered, { .blockless = true, .color = Color8::Yellow }},
           { State::Pressed, 
-          { State::Disabled, { .blockless = true, .color = Color::DarkGrey }}}
+          { State::Disabled, { .blockless = true, .color = Color8::DarkGrey }}}
 ```
 
 

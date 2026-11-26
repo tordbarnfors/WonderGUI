@@ -1062,7 +1062,7 @@ namespace wax
 		color.toLinearFloat(col);
 		m_tintColor.toLinearFloat(tint);
 
-		Color * pColor = m_buffers.pColorPtr;
+		Color8 * pColor = m_buffers.pColorPtr;
 
 		pColor->r = col[0] * tint[0];
 		pColor->g = col[1] * tint[1];
@@ -1090,7 +1090,7 @@ namespace wax
 			return;
 		}
 
-		static_assert(sizeof(Color) == 4 * sizeof(float), "Tint blocks are written as float4 entries.");
+		static_assert(sizeof(Color8) == 4 * sizeof(float), "Tint blocks are written as float4 entries.");
 
 		m_pixelConstants.tintOfs = int32_t(m_buffers.pColorPtr - m_buffers.pColorBeg);
 		TintTools::writeGpuTintBlock(tint, (float*) m_buffers.pColorPtr);

@@ -127,9 +127,9 @@ WORKBENCH_TEST("Skins", "Box skins")
 		)), { .weight = 0.f });
 	};
 
-	addBox({ .color = Color::LightBlue, .outlineColor = Color::DarkBlue, .outlineThickness = 2 });
-	addBox({ .color = Color::LightGreen, .cornerRadius = 20, .outlineColor = Color::DarkGreen, .outlineThickness = 4 });
-	addBox({ .color = Color::Transparent, .cornerRadius = 60, .outlineColor = Color::Red, .outlineThickness = 8 });
+	addBox({ .color = Color8::LightBlue, .outlineColor = Color8::DarkBlue, .outlineThickness = 2 });
+	addBox({ .color = Color8::LightGreen, .cornerRadius = 20, .outlineColor = Color8::DarkGreen, .outlineThickness = 4 });
+	addBox({ .color = Color8::Transparent, .cornerRadius = 60, .outlineColor = Color8::Red, .outlineThickness = 8 });
 
 	return pPanel;
 }

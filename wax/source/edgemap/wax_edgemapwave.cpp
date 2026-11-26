@@ -661,13 +661,13 @@ namespace wax
 	int EdgemapWave::_generateColorPalette( HiColor * pDest )
 	{
 		HiColor * p = pDest;
-		* p++ = Color::Transparent;
+		* p++ = Color8::Transparent;
 		if( m_bHasOutlines )
 			* p++ = m_outlineColor;
 		* p++ = m_color;
 		if( m_bHasOutlines )
 			* p++ = m_outlineColor;
-		* p++ = Color::Transparent;
+		* p++ = Color8::Transparent;
 
 		return int(p - pDest);
 	}

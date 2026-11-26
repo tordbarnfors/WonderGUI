@@ -28,7 +28,7 @@
 
 #include <wax_color.h>
 
-typedef wg::Color		WgColor;
+typedef wg::Color8		WgColor;
 
 
 #if false

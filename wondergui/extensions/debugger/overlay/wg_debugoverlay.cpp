@@ -65,7 +65,7 @@ namespace wg
 
 		// Create default skins
 
-		m_pSelectionSkin = BoxSkin::create(1, Color::Transparent, Color::Red, 1);
+		m_pSelectionSkin = BoxSkin::create(1, Color8::Transparent, Color8::Red, 1);
 
 		_createToolboxWindow();
 		_createWidgetTreeWindow();
@@ -945,8 +945,8 @@ namespace wg
 		// Create scrollable content
 
 		auto pContentSkin = BoxSkin::create(WGBP(BoxSkin,
-			_.color = Color::White,
-			_.outlineColor = Color::Black,
+			_.color = Color8::White,
+			_.outlineColor = Color8::Black,
 			_.outlineThickness = 1,
 			_.padding = 2));
 
@@ -976,8 +976,8 @@ namespace wg
 		// Create scrollable content
 
 		auto pContentSkin = BoxSkin::create(WGBP(BoxSkin,
-			_.color = Color::White,
-			_.outlineColor = Color::Black,
+			_.color = Color8::White,
+			_.outlineColor = Color8::Black,
 			_.outlineThickness = 1,
 			_.padding = 4));
 
@@ -1016,8 +1016,8 @@ namespace wg
 		// Create scrollable content
 
 		auto pContentSkin = BoxSkin::create(WGBP(BoxSkin,
-			_.color = Color::White,
-			_.outlineColor = Color::Black,
+			_.color = Color8::White,
+			_.outlineColor = Color8::Black,
 			_.outlineThickness = 1,
 			_.padding = 4));
 
@@ -1057,8 +1057,8 @@ namespace wg
 		// Create scrollable content
 
 		auto pContentSkin = BoxSkin::create(WGBP(BoxSkin,
-			_.color = Color::White,
-			_.outlineColor = Color::Black,
+			_.color = Color8::White,
+			_.outlineColor = Color8::Black,
 			_.outlineThickness = 1,
 			_.padding = 4));
 

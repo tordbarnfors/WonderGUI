@@ -140,7 +140,7 @@ namespace wax
 			uint32_t	extrasOfs;		// Offset into the extras buffer. Not used by plain fills.
 		};
 
-		struct Color
+		struct Color8
 		{
 			float	r, g, b, a;
 		};
@@ -410,9 +410,9 @@ namespace wax
 			Vertex *	pVertexPtr = nullptr;
 			Vertex *	pVertexEnd = nullptr;
 
-			Color *		pColorBeg = nullptr;
-			Color *		pColorPtr = nullptr;
-			Color *		pColorEnd = nullptr;
+			Color8 *		pColorBeg = nullptr;
+			Color8 *		pColorPtr = nullptr;
+			Color8 *		pColorEnd = nullptr;
 
 			Extras *	pExtrasBeg = nullptr;
 			Extras *	pExtrasPtr = nullptr;
@@ -455,7 +455,7 @@ namespace wax
 		int					m_sessionColors = 0;
 		int					m_sessionExtras = 0;
 		Vertex *			m_pSessionVertexBeg = nullptr;
-		Color *				m_pSessionColorBeg = nullptr;
+		Color8 *				m_pSessionColorBeg = nullptr;
 		Extras *			m_pSessionExtrasBeg = nullptr;
 		bool				m_bSessionInfoGiven = false;
 		bool				m_bSessionBuffersShort = false;

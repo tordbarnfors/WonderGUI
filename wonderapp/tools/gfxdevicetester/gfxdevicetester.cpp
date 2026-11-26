@@ -332,12 +332,12 @@ bool GfxDeviceTester::setup_chrome()
 		return TextStyle::create(bp);
 	};
 
-	m_pOkStyle = verdictStyle(Color::DarkGreen);
-	m_pSpecksStyle = verdictStyle(Color::DarkOrange);
-	m_pDiffStyle = verdictStyle(Color::Red);
+	m_pOkStyle = verdictStyle(Color8::DarkGreen);
+	m_pSpecksStyle = verdictStyle(Color8::DarkOrange);
+	m_pDiffStyle = verdictStyle(Color8::Red);
 
-	m_pCellSkin = ColorSkin::create({ .color = Color::Transparent, .padding = Border(2, 8) });
-	m_pSelectedCellSkin = ColorSkin::create({ .color = Color::Aquamarine, .padding = Border(2, 8) });
+	m_pCellSkin = ColorSkin::create({ .color = Color8::Transparent, .padding = Border(2, 8) });
+	m_pSelectedCellSkin = ColorSkin::create({ .color = Color8::Aquamarine, .padding = Border(2, 8) });
 
 	// Navigation bar with a button for each view.
 
@@ -376,7 +376,7 @@ bool GfxDeviceTester::setup_chrome()
 
 	m_pViewBase = PaddingCapsule::create();
 
-	auto pRoot = PackPanel::create({ .axis = Axis::Y, .layout = m_pLayout, .skin = ColorSkin::create(Color::AntiqueWhite) });
+	auto pRoot = PackPanel::create({ .axis = Axis::Y, .layout = m_pLayout, .skin = ColorSkin::create(Color8::AntiqueWhite) });
 	pRoot->slots.pushBack(pNavBar, { .weight = 0 });
 	pRoot->slots.pushBack(m_pViewBase, { .weight = 1 });
 
@@ -570,10 +570,10 @@ void GfxDeviceTester::create_viewer(Viewer& viewer)
 	for (int i = 0; i < 3; i++)
 	{
 		viewer.pImages[i] = wg::Base::defaultSurfaceFactory()->createSurface(bp);
-		viewer.pImages[i]->fill(Color::Black);
+		viewer.pImages[i]->fill(Color8::Black);
 	}
 
-	viewer.pTitle = TextDisplay::create({ .display = {.style = wkit::TextStyles::Heading5, .text = "No test selected" }, .skin = ColorSkin::create({ .color = Color::Transparent, .padding = Border(8, 16, 0, 16) }) });
+	viewer.pTitle = TextDisplay::create({ .display = {.style = wkit::TextStyles::Heading5, .text = "No test selected" }, .skin = ColorSkin::create({ .color = Color8::Transparent, .padding = Border(8, 16, 0, 16) }) });
 
 	auto pSlider = Slider::create(WGBP(Slider,
 		_.handle = wkit::Skins::ScrollbarHandleX,
@@ -615,9 +615,9 @@ Widget_p GfxDeviceTester::create_image_box(Viewer& viewer, int image, float zoom
 
 	auto pDisplay = SurfaceDisplay::create(WGBP(SurfaceDisplay,
 		_.skin = BoxSkin::create(WGBP(BoxSkin,
-			_.color = Color::Black,
+			_.color = Color8::Black,
 			_.outlineThickness = 1,
-			_.outlineColor = Color::DarkGrey,
+			_.outlineColor = Color8::DarkGrey,
 			_.padding = 1)),
 		_.surface = viewer.pImages[image],
 		_.zoom = zoom,
@@ -653,8 +653,8 @@ Widget_p GfxDeviceTester::create_progress_bar(Slider_p& pBar, TextDisplay_p& pLa
 		_.markPolicy = MarkPolicy::Ignore,
 		_.defaultSlideLength = 240,
 		_.skin = FillMeterSkin::create(WGBP(FillMeterSkin,
-			_.backColor = Color::White,
-			_.color = Color::SteelBlue,
+			_.backColor = Color8::White,
+			_.color = Color8::SteelBlue,
 			_.defaultSize = Size(240, 16),
 			_.padding = 1))));
 
@@ -676,8 +676,8 @@ Widget_p GfxDeviceTester::create_accuracy_view()
 
 	// Table
 
-	m_pAccuracyTable = TablePanel::create({ .columnSpacing = 0, .rowSpacing = 0, .skin = ColorSkin::create({ .color = Color::White, .padding = 4 }) });
-	m_pAccuracyTable->setRowSkins(ColorSkin::create(Color::White), ColorSkin::create(Color::PapayaWhip));
+	m_pAccuracyTable = TablePanel::create({ .columnSpacing = 0, .rowSpacing = 0, .skin = ColorSkin::create({ .color = Color8::White, .padding = 4 }) });
+	m_pAccuracyTable->setRowSkins(ColorSkin::create(Color8::White), ColorSkin::create(Color8::PapayaWhip));
 
 	auto pTableScroller = wkit::ScrollCapsuleY::create();
 	pTableScroller->slot = m_pAccuracyTable;
@@ -753,8 +753,8 @@ Widget_p GfxDeviceTester::create_performance_view()
 
 	const int nbColumns = 5;
 
-	auto pTable = TablePanel::create({ .columnSpacing = 0, .rowSpacing = 0, .skin = ColorSkin::create({ .color = Color::White, .padding = 4 }) });
-	pTable->setRowSkins(ColorSkin::create(Color::White), ColorSkin::create(Color::PapayaWhip));
+	auto pTable = TablePanel::create({ .columnSpacing = 0, .rowSpacing = 0, .skin = ColorSkin::create({ .color = Color8::White, .padding = 4 }) });
+	pTable->setRowSkins(ColorSkin::create(Color8::White), ColorSkin::create(Color8::PapayaWhip));
 
 	m_pPerformanceTable = pTable;
 
@@ -1024,10 +1024,10 @@ void GfxDeviceTester::fill_background(GfxDevice* pDevice, Background background)
 	switch (background)
 	{
 		case Background::Black:
-			pDevice->fill(canvas, Color::Black);
+			pDevice->fill(canvas, Color8::Black);
 			break;
 		case Background::White:
-			pDevice->fill(canvas, Color::White);
+			pDevice->fill(canvas, Color8::White);
 			break;
 		case Background::Grey:
 			pDevice->fill(canvas, Color8(128, 128, 128));
@@ -1159,7 +1159,7 @@ void GfxDeviceTester::refresh_viewer(Viewer& viewer)
 		else
 		{
 			viewer.pixels[side].clear();
-			viewer.pImages[side]->fill(Color::Black);
+			viewer.pImages[side]->fill(Color8::Black);
 			bOk = false;
 		}
 	}
@@ -1189,7 +1189,7 @@ void GfxDeviceTester::refresh_diff(Viewer& viewer)
 
 	if (testee.empty() || testee.size() != reference.size())
 	{
-		viewer.pImages[2]->fill(Color::Black);
+		viewer.pImages[2]->fill(Color8::Black);
 		return;
 	}
 

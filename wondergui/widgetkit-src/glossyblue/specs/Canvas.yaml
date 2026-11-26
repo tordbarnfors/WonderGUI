@@ -1,6 +1,6 @@
 # Swapped with Window: Canvas carries black text (TextEditor, LineEditor,
 # SelectBox list) so it must be the brightest surface -- Colors::Canvas
-# has always been Color::White, the dark skin contradicted it. The flat
+# has always been Color8::White, the dark skin contradicted it. The flat
 # vertical bevel also stretches without the banding the diagonal showed
 # over the large areas a canvas usually covers.
 recipe: flat_bevel_panel

@@ -50,15 +50,15 @@ namespace wg::oldskool
 {
 	namespace Colors
 	{
-		inline const Color	Plate = Color::LightGrey;
-		inline const Color	Border = Color::DarkGrey;
-		inline const Color	Canvas = Color::White;
+		inline const Color8	Plate = Color8::LightGrey;
+		inline const Color8	Border = Color8::DarkGrey;
+		inline const Color8	Canvas = Color8::White;
 
-		inline const Color	Titlebar = Color::LightGrey;
-		inline const Color	TitlebarBorder = Color::DarkGrey;
+		inline const Color8	Titlebar = Color8::LightGrey;
+		inline const Color8	TitlebarBorder = Color8::DarkGrey;
 
-		inline const Color	TitlebarSelected = Color::LightCyan;
-		inline const Color	TitlebarBorderSelected = Color::DarkCyan;
+		inline const Color8	TitlebarSelected = Color8::LightCyan;
+		inline const Color8	TitlebarBorderSelected = Color8::DarkCyan;
 	}
 
 	namespace TextSizes

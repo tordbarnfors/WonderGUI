@@ -68,19 +68,19 @@ namespace
 		std::vector<Case> out;
 		RoundedBoxSpec s;
 
-		s = {}; s.rect = pixels(10, 10, 140, 140); s.radius = corners(20, 20, 20, 20); s.outline = border(2, 2, 2, 2); s.fillColor = Color::Red; s.outlineColor = Color::White;
+		s = {}; s.rect = pixels(10, 10, 140, 140); s.radius = corners(20, 20, 20, 20); s.outline = border(2, 2, 2, 2); s.fillColor = Color8::Red; s.outlineColor = Color8::White;
 		out.push_back({ "Box on pixels", s });
 
-		s = {}; s.rect = pixels(10.3, 20.6, 130.25, 110.5); s.radius = corners(8, 30, 0, 18); s.outline = border(1.5, 3, 0.5, 6); s.fillColor = Color::Red; s.outlineColor = Color::White;
+		s = {}; s.rect = pixels(10.3, 20.6, 130.25, 110.5); s.radius = corners(8, 30, 0, 18); s.outline = border(1.5, 3, 0.5, 6); s.fillColor = Color8::Red; s.outlineColor = Color8::White;
 		out.push_back({ "Box between pixels", s });
 
-		s = {}; s.rect = pixels(10.4, 10.7, 120.25, 90.5); s.outline = border(2.25, 2.25, 2.25, 2.25); s.fillColor = Color::Blue; s.outlineColor = Color::Yellow;
+		s = {}; s.rect = pixels(10.4, 10.7, 120.25, 90.5); s.outline = border(2.25, 2.25, 2.25, 2.25); s.fillColor = Color8::Blue; s.outlineColor = Color8::Yellow;
 		out.push_back({ "Square corners", s });
 
-		s = {}; s.rect = pixels(10, 60, 140, 40); s.radius = corners(100, 100, 100, 100); s.outline = border(3, 3, 3, 3); s.fillColor = Color::Green; s.outlineColor = Color::White;
+		s = {}; s.rect = pixels(10, 60, 140, 40); s.radius = corners(100, 100, 100, 100); s.outline = border(3, 3, 3, 3); s.fillColor = Color8::Green; s.outlineColor = Color8::White;
 		out.push_back({ "Pill", s });
 
-		s = {}; s.rect = pixels(10.5, 10.5, 139, 139); s.radius = corners(15, 35, 15, 35); s.outline = border(20, 20, 20, 20); s.fillColor = Color::Gray; s.outlineColor = Color::Cyan;
+		s = {}; s.rect = pixels(10.5, 10.5, 139, 139); s.radius = corners(15, 35, 15, 35); s.outline = border(20, 20, 20, 20); s.fillColor = Color8::Gray; s.outlineColor = Color8::Cyan;
 		out.push_back({ "Thick outline", s });
 
 		return out;
@@ -163,8 +163,8 @@ bool EdgemapBoxTest::updateTest(std::ostream& output)
 	resized.radius[1] = 10 * 64;
 
 	RoundedBoxSpec recolored = resized;
-	recolored.fillColor = Color::Blue;
-	recolored.outlineColor = Color::Yellow;
+	recolored.fillColor = Color8::Blue;
+	recolored.outlineColor = Color8::Yellow;
 
 	for (auto* pSpec : { &resized, &recolored })
 	{
@@ -208,7 +208,7 @@ bool EdgemapBoxTest::nothingDrawnTest(std::ostream& output)
 	TEST_ASSERT(pBox != nullptr && pBox->pieces().empty());
 
 	spec.rect = {};
-	spec.fillColor = Color::Red;
+	spec.fillColor = Color8::Red;
 	TEST_ASSERT(pBox->update(spec));
 	pBox->generate();
 	TEST_ASSERT(pBox->pieces().empty());
@@ -227,8 +227,8 @@ bool EdgemapBoxTest::drawnTwiceTest(std::ostream& output)
 
 	RoundedBoxSpec first = cases()[1].spec;
 	RoundedBoxSpec second = first;
-	second.fillColor = Color::Blue;
-	second.outlineColor = Color::Yellow;
+	second.fillColor = Color8::Blue;
+	second.outlineColor = Color8::Yellow;
 
 	// Not until generated.
 

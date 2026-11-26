@@ -357,7 +357,7 @@ namespace wg::glossyblue
 
 		_pSelectableEntrySkin = BoxSkin::create(WGBP(BoxSkin,
 			_.markAlpha = 0,
-			_.states = { {State::Default, Color::Transparent,Color::Transparent},
+			_.states = { {State::Default, Color8::Transparent,Color8::Transparent},
 						 {State::Hovered, HiColor(Colors::Accent).withAlpha(700), HiColor(Colors::Accent).withAlpha(1400)},
 						 {State::Selekted, HiColor(Colors::Accent).withAlpha(1400),HiColor(Colors::Accent).withAlpha(2400) }
 			}
@@ -386,7 +386,7 @@ namespace wg::glossyblue
 			// list's default width (entryDefault.w + listPadding.w), so nothing
 			// gets truncated.
 			_.padding = { 0, 6, 0, 6 },
-			_.states = { {State::Default, Color::Transparent, Color::Transparent},
+			_.states = { {State::Default, Color8::Transparent, Color8::Transparent},
 						 {State::Hovered, HiColor(Colors::Accent).withAlpha(700), HiColor(Colors::Accent).withAlpha(1400)},
 						 {State::Selekted, HiColor(Colors::Accent).withAlpha(1400),HiColor(Colors::Accent).withAlpha(2400) }
 			}

@@ -68,9 +68,9 @@ public:
 
 		for( int i = 0 ; i < 8 ; i++ )
 		{
-			tintsX[i] = Tint::create(m_rainbowColors[i], Color::Black, {0,0}, {1,0});
-			tintsY[i] = Tint::create(m_rainbowColors[i], Color::Black, {0,0}, {0,1});
-			tintsXY[i] = Tint::create(m_rainbowColors[i], Color::Black, {0,0}, {1,1});
+			tintsX[i] = Tint::create(m_rainbowColors[i], Color8::Black, {0,0}, {1,0});
+			tintsY[i] = Tint::create(m_rainbowColors[i], Color8::Black, {0,0}, {0,1});
+			tintsXY[i] = Tint::create(m_rainbowColors[i], Color8::Black, {0,0}, {1,1});
 
 		}
 		
@@ -259,6 +259,6 @@ private:
 	Edgemap_p	m_pTilingEdgemap;
 	Edgemap_p	m_pTilingEdgemapGradientXY;
 
-	HiColor	m_rainbowColors[8] = { Color::Red, Color::Orange, Color::Yellow, Color::Green, Color::Blue, Color::Indigo, Color::Violet, Color( 255,255,255,128 ) };
+	HiColor	m_rainbowColors[8] = { Color8::Red, Color8::Orange, Color8::Yellow, Color8::Green, Color8::Blue, Color8::Indigo, Color8::Violet, Color8( 255,255,255,128 ) };
 };
  
