@@ -1501,11 +1501,15 @@ renders into GL_SRGB8.
   chain, which it was, may leave the pixels of an image undefined where another window covered
   it when it was presented. Copying all of the canvas for every change hid that, and copying
   only what has changed would not. With `clipped` off an image owns all of its pixels, by the
-  specification, and we do nothing in the images that clipping would have saved. A window that
-  is covered and uncovered has not been tried: Xvfb has no window manager.
+  specification, and we do nothing in the images that clipping would have saved. With it
+  (ba62f004) wappsdl3vk builds and gives the same pictures on Linux, the validation layer
+  silent. A window covered by another while it is clicked, and uncovered again, shows what it
+  should, but that says nothing of `clipped`: it does so with `clipped` on too, as lavapipe's
+  images own their pixels either way, and as uncovering a window under X without a compositor
+  sends an expose event, which has the whole window drawn again.
 
 Not compiled: the change for wappcocoametal, which Windows has nothing to build with. Not run:
-wappsdl3vk on a display, and with `clipped` off.
+wappsdl3vk on a display, or with a driver that leaves out what is covered.
 
 Also seen, and not changed: the main loops wait a fixed time each turn, 10 ms with SDL3, which
 keeps a window under 100 frames a second, 1 ms with Win32, and up to 10 ms for an event with
