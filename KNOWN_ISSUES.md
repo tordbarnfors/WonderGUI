@@ -560,6 +560,71 @@ RangeAllocator (`wax/source/wax_rangeallocator.h`), which DX12BufferPool hands o
 blocks with, is there to do the same for blocks of Vulkan memory.
 
 `VulkanContext::createBuffer()` and `createImage()` in `wax/extensions/vulkangfx/wax_vulkancontext.cpp`
+### Polylines: GPU backends are off where a polyline turns back on itself
+
+A polyline that crosses itself or comes back to within its thickness of itself may be blended
+once or several times where it does, by design, see Polylines in `wax_device.h`: SoftBackend and
+LinearBackend blend once, ReferenceBackend and the GPU backends once for each stretch of joined
+segments. The GPU backends also get a few things wrong there, which the others don't:
+
+- A pixel is drawn by one segment, with what it, the segments before and after it and the joins
+  between them cover. What more segments than those cover of a pixel is lost, so slivers go
+  missing in turns sharper than the segments are long enough for (a turn of 168 degrees between
+  segments less than twice as long as the polyline is thick loses a line of pixels at their far
+  ends) and where segments are shorter than a pixel while the polyline turns sharply.
+- Where two segments overlap on the inside of a turn, each has its side of the line halving the
+  joint, also where the other doesn't reach. ReferenceBackend only lets a segment take what it
+  covers.
+- A Vertical, Horizontal or Spear end reaching beyond the first joint is off by a pixel or two at
+  the joint.
+
+gfxdevicetester shows it in PolylineTests "Tight turns, opaque" (differs, max 255 over 438
+pixels) and "Caps" (specks, max 116 over 50), the same on GlBackend, VulkanBackend and
+SdlGpuBackend. Turns up to 140 degrees between segments longer than the polyline is thick,
+curves that bend less than the thickness allows and segments shorter than a pixel in such curves
+come out as on ReferenceBackend, but for round caps of thin polylines, which have the specks
+round caps of thin lines have ("Zigzags", max 17 in one pixel).
+
+Drawing a pixel from all segments near it, binned into tiles on the CPU, would make the GPU
+backends cover exactly what the others do. Not done, as wires and curves don't need it.
+
+`ps_shape_polyline.hlsl`, `GpuShapes::writePolyline()`
+
+### Polylines: not drawn by DX12Backend until its shaders are compiled, untested on Metal
+
+The pixel shader of polylines is new, so DX12Backend has no bytecode for it until
+`dx12gfx/compile_shaders.py` is run on Windows, see "DX12Backend: shaders changed outside
+Windows" above. Until then `drawPolyline()` draws nothing there, but for polylines of one
+segment, which are lines. MetalBackend has the MSL, made by SPIRV-Cross, but it has not been
+run. GlBackend, VulkanBackend and SdlGpuBackend (on Vulkan) have run PolylineTests on Intel UHD
+770 with Mesa.
+
+### Polylines: slower than they have to be
+
+SoftBackend and LinearBackend rasterize all of a polyline as an exact shape in 64-bit math,
+where lines with caps have their long straight parts drawn by the line kernels and their ends
+in 32-bit math, see "Line caps on CPUs without FPU" in ROADMAP.md. Rows are done one at a time
+also where they are the same, as along a vertical segment. Splits where the outline crosses
+itself are looked for by comparing every two edges between each pair of splits. None of it has
+been timed on a CPU without FPU.
+
+On Intel GPUs the pixel shader of polylines is too large for Mesa to run 16 pixels at a time,
+as it does the shader of lines with caps, so it runs 8 at a time (3700 instructions against
+2400). Each segment has a quad that reaches half the thickness and a pixel and a half beyond it,
+and pixels of quads that overlap are shaded by each, all but one only to be discarded. So a
+polyline of segments much shorter than it is thick is drawn many times over: PolylineTests
+"Short segments", eight curves of segments from 0.4 to 7 pixels in thicknesses from 3 to 15,
+takes 4.2 ms on GlBackend, where "Curves", eight curves of 600 segments of 3 to 19 pixels in
+thicknesses from 1.5 to 12, takes 0.84 ms.
+
+Timed with gfxdevicetester on one machine (Core i5-12500T, Intel UHD 770 with Mesa, release
+builds, nothing else running): a polyline of two segments takes about four times as long as a
+line with caps, 7.4 against 1.9 us on SoftBackend and 2.2 against 0.5 us on GlBackend
+(PolylineTests "Angles" against LineCapTests "All caps", 64 of each, a clip rectangle for each).
+A wire of five segments across 500 pixels takes 26 us on SoftBackend and 11 us on GlBackend.
+
+`SoftShapes::preparePolyline()`, `ps_shape_polyline.hlsl`
+
 ### SoftBackend doesn't use the `mipmap` flag of a surface
 
 `Surface` keeps `mipmap` from its Blueprint, but nothing in `wax/extensions/softgfx` reads it:

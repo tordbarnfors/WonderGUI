@@ -580,6 +580,57 @@ canvas layer that is cleared right after.
   Vertical or Horizontal cap and per round cap, and lines allocate nothing once buffers have grown.
   Output is the same as before, down to the rounding.
 
+### Polylines (2026-11-26)
+
+Asked for to draw wires between nodes in transparent colors, which lines with round caps drawn
+one after another can't: they blend twice where they overlap.
+
+- **Decided with Tord: a polyline is one shape only as far as joined segments go.** Each pixel is
+  blended once for segments joined to each other and the joins between them. Where a polyline
+  crosses itself or comes back to within its thickness of itself, backends may blend once or
+  several times. Blending once everywhere, as SVG and the like do, was the alternative. It would
+  take the GPU backends either a pass into a mask or segments binned into tiles for the pixel
+  shader to loop over, about as much work again as the rest, for polylines nobody had asked for.
+  Going there later only changes pixels where polylines cross themselves.
+- **Decided with Tord: round joins first, no spline helper yet.** The command has a word for
+  the kind of join and one for a parameter of it. Miter joins with a limit, bevel beyond it, were
+  estimated at 15-20% on top: in the shader a mitered segment is its band cut by the line halving
+  the joint, simpler than a round join, SoftShapes gets one vertex in place of an arc, and tests
+  are most of it. Curves are to be flattened into polylines in shared code before they are
+  encoded, by subdivision in integer math, so backends only know polylines.
+- **A join is the wedge between the segments, not a disc.** Segments end flat at the points in
+  between, and the round join fills what is left open on the outside of the turn, as in SVG and
+  PDF. With whole discs a join less than half the thickness from an end with a flat cap would
+  stick out beyond the cap, as with the short segments of a curve.
+- **ReferenceBackend defines it by a piece for each segment,** see `_drawPolyline()`: what two
+  joined segments both cover is split by the line halving the angle between them, and pieces
+  following each other are blended together where they share a pixel. A first version cut each
+  piece by that line all the way, which left notches where one segment reaches further than the
+  other in a sharp turn. Now a piece only gives up what the other segment covers, so the pieces
+  together are always what the segments and joins cover.
+- **SoftShapes rasterizes the outline, with what is inside by winding number,** rather than
+  piece by piece: caps, sides, the arc of each join and the point where sides meet on the inside
+  of a turn, in one closed outline, which the row rasterizer gets as chains going steadily down
+  or up. Where sides don't reach the point they meet in, the outline goes by way of the joint and
+  crosses itself, which the winding number takes care of, as it does of polylines crossing
+  themselves. Rows are split where chains cross, found by comparing them two and two: without
+  that the order of edges is only right for part of a sub-row, which showed as lines of wrong
+  pixels at the ends of sharp turns. So SoftBackend and LinearBackend blend once everywhere,
+  which the rule allows.
+- **GPU backends draw a quad around each segment,** as for lines with caps, and a pixel belongs
+  to the segment whose side of the lines halving its joints the center of the pixel is on: the
+  others discard it. So quads may overlap, and need no mesh that fits together. The shader adds
+  up what the segment, its two neighbors and the two joins cover of the pixel, as planes with the
+  functions of the line shader, now in `line.hlsl`. The arc of a join is taken as straight where
+  it is closest to the pixel, as circles of other shapes are, and kept inside two more tangents,
+  which is what makes thin polylines come out right at their joints. See KNOWN_ISSUES.md for
+  where this falls short.
+- **A polyline is a shape (`ShapeKind::Polyline`) with clip rectangles for scissors.** GPU
+  backends draw its quads once for each, as for lines. Its points are counted in
+  `SessionInfo::nPolylinePoints`, four more bytes in BeginSession of the stream.
+- **One segment is passed on to drawLine()** by DeviceGen2, so backends only get polylines with
+  joints, and a polyline of one segment is batched and drawn as other lines.
+
 ### Build setup (2026-11)
 
 - **`CMakePresets.json` is the shared build setup,** with a configure preset per WonderApp

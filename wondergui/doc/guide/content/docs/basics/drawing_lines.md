@@ -54,12 +54,37 @@ Where two lines meet inside a pixel rather than on its border, each covers part 
 
 A line with no length runs along x, so round caps make a dot and square caps a square.
 
-Lines meeting at round or square caps overlap, which shows where they are semi-transparent. There are no joins between lines.
+Lines meeting at round or square caps overlap, which shows where they are semi-transparent. There are no joins between lines, use a polyline for lines that are to be joined.
+
+
+
+## Polylines
+
+drawPolyline() draws a line through a number of points as one shape, with the same thickness all the way:
+
+```c++
+	CoordSPX points[4] = { {10*64,10*64}, {40*64,10*64}, {40*64,60*64}, {90*64,60*64} };
+
+	pDevice->drawPolyline( 4, points, color, 3*64 );
+	pDevice->drawPolyline( 4, points, color, 3*64, { LineCap::Round, LineCap::Spear(300) } );
+```
+
+Its points are exact positions on the canvas, as the ends of a line with caps are, and it is drawn as exactly. The segments from one point to the next end flat at the points in between and are joined there by a round join: the wedge left open between two segments on the outside of a turn is filled by that part of a disc around the point, with the diameter of the thickness. The caps are for the two ends of the polyline. LineCap::None, the default, cuts an end along the axis its segment doesn't mainly follow, through the endpoint.
+
+What sets a polyline apart from lines drawn one after another is that its segments and joins are drawn together: each pixel is blended once, with the part of it they cover. A polyline in a semi-transparent color is as transparent at its joints as everywhere else, and no background shows through between two segments. Wires between nodes are what it was made for.
+
+That holds for segments joined to each other, not for a polyline that crosses itself or comes back to within its thickness of itself, as in a zigzag closing in or a turn sharper than the segments are long enough for. There segments that aren't joined cover the same pixels, which a backend may blend once or several times, so they can come out darker in a semi-transparent color, and GPU backends can leave slivers of the tightest turns out. Draw such polylines in opaque colors, where it hardly shows.
+
+A polyline has at most GfxDevice::maxPolylinePoints() points. Points that are the same as the one before them are left out, a polyline with one segment is drawn by drawLine(), and an end is only cut out of its own segment.
+
+A curve is drawn as a polyline through points along it, close enough for the segments not to show: a few pixels apart for a curve that bends gently.
 
 
 
 ## Speed and accuracy
 
 Caps cost a little extra for each line, more the thicker it is. On SoftBackend a capped line takes about 1 to 5 microseconds more than one without caps on a desktop CPU. GPU backends draw them at about the same speed.
+
+Polylines cost more than lines: a polyline of two segments takes about four times as long as a line with caps, on SoftBackend and GPU backends alike. SoftBackend and LinearBackend draw all of a polyline as an exact shape, also its long straight segments. GPU backends work out what three segments and two joins cover for the pixels close to a joint, and visit a pixel once for every segment within about half the thickness of it, so segments much shorter than a polyline is thick are costly there. Keep the points of a curve a few pixels apart.
 
 SoftBackend and LinearBackend draw the parts of a line around its ends as exact shapes, and the whole columns of pixels between them with the same code as lines without caps. That code estimates the coverage of the pixels along the edges of the line from the middle of each column, which can be off by up to an eighth of a pixel for lines near 45 degrees, as for lines without caps. The GPU backends work out the exact coverage of straight edges for every pixel, but estimate the round caps of thin lines and small dots.
