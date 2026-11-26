@@ -1553,8 +1553,30 @@ that are each one of the states v4 gives, never a mix, so nothing old was shown.
   a texture on an IOSurface should have, nor that copying with a blit encoder needs a usage, and
   the validation of Metal accepts them as they are.
 
-Not run: wappcocoametal on a Retina display or with a window dragged larger, and wappsdl3vk on
-a display, or with a driver that leaves out what is covered.
+Merged into v4, with the rename of HiColor to Color and with Replace in the two SDL Metal
+windows (116593a2):
+
+- **On Linux** `linux-wappsdl3vk`, `linux-wappsdl3gl` and `linux-wappsdl3gpu` build with no fix,
+  unittester passes with each and gfxdevicetester gives the same lines as before, VulkanBackend
+  4 that differ of 266, SdlGpuBackend 4 and GlBackend 3, the validation layer silent. With
+  wappsdl3vk the 24 pictures of widgetbench are the same as before, and those of editera are
+  each one of the same two states.
+- **On the Mac** `macos-wappcocoametal`, `macos-wappsdl3metal` and `macos-wappsdl3gpu` build
+  with no fix, unittester passes with each and gfxdevicetester gives the same lines as before,
+  13 that differ of 266 with both Metal windows and 10 with SDL GPU on Metal, the validation
+  of Metal silent.
+- **Replace shows no difference in wappsdl3metal,** against the commit before it: of 62 pictures
+  of widgetbench and editera, idle, clicked, resized and with the caret blinking, 61 are the
+  same pixel for pixel, and the last is from the middle of a drag at a size the other run has
+  no picture of, and is right. The canvas is opaque wherever these windows draw, so there was
+  nothing for the blending to get wrong in them.
+- **wappcocoametal is as it was before the merge:** 57 of 62 pictures are the same, one differs
+  by the caret, and four are from the middle of a drag at sizes the other run has none of.
+- **wappsdl2metal compiles and links** on the Mac, with both Replace lines. It has no preset
+  there, `-G Xcode -DWAPPLIB=wappsdl2metal` configures it. It was not run.
+
+Not run: wappsdl2metal, wappcocoametal on a Retina display or with a window dragged larger, and
+wappsdl3vk on a display, or with a driver that leaves out what is covered.
 
 Also seen, and not changed: the main loops wait a fixed time each turn, 10 ms with SDL3, which
 keeps a window under 100 frames a second, 1 ms with Win32, and up to 10 ms for an event with
