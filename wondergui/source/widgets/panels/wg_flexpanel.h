@@ -270,6 +270,7 @@ namespace wg
 		{
 			m_bSiblingsOverlap = true;
 			m_edgePolicy = bp.edgePolicy;
+			m_bClipChildren = (bp.edgePolicy == EdgePolicy::Clip);
             m_defaultSize = bp.defaultSize;
         }
 

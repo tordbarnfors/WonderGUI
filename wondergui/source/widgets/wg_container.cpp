@@ -386,6 +386,10 @@ namespace wg
 
 		// Render children
 
+		ClipPopData childrenClipPop;
+		if( m_bClipChildren )
+			childrenClipPop = limitClipList(pDevice, _canvas);		// Our skin may overflow, but our children may not.
+
 		RectSPX	dirtBounds = pDevice->clipBounds();
 
 		if( m_bSiblingsOverlap )
@@ -476,6 +480,8 @@ namespace wg
 			}
 
 		}
+
+		popClipList(pDevice, childrenClipPop);
 	}
 
 	//____ _resize() __________________________________________________________
@@ -498,6 +504,10 @@ namespace wg
 	BorderSPX Container::_calcOverflow()
 	{
 		BorderSPX 	overflow = m_skin.overflow(m_scale);
+
+		if( m_bClipChildren )
+			return overflow;						// Children are clipped, so their overflow doesn't reach outside us.
+
 		RectSPX		overflowGeo = RectSPX{ 0,0,m_size } + overflow;
 
 		SlotWithGeo slot;
@@ -537,6 +547,9 @@ namespace wg
 
 	void Container::_addChildOverflow( const RectSPX& childGeo, const BorderSPX& childOverflow )
 	{
+		if( m_bClipChildren )
+			return;
+
 		if( m_overflow.top >= childOverflow.top && m_overflow.right >= childOverflow.right && m_overflow.bottom >= childOverflow.bottom && m_overflow.left >= childOverflow.left )
 			return;
 		
@@ -558,7 +571,7 @@ namespace wg
 
 	void Container::_removeChildOverflow( const RectSPX& childGeo, const BorderSPX& childOverflow )
 	{
-		if( childOverflow.isEmpty() )
+		if( m_bClipChildren || childOverflow.isEmpty() )
 			return;
 
 		RectSPX childOverflowGeo = childGeo + childOverflow;
@@ -591,12 +604,14 @@ namespace wg
 		if( coverage.contains(_contentRect(geo)) )
 			return;										// No need to loop through children, skins coverage contains them all.
 		
+		RectSPX childClip = m_bClipChildren ? RectSPX::overlap(clip, geo) : clip;
+
 		SlotWithGeo child;
 		_firstSlotWithGeo( child );
 
 		while(child.pSlot)
 		{
-			child.pSlot->_widget()->_maskPatches( patches, child.geo + geo.pos(), clip );
+			child.pSlot->_widget()->_maskPatches( patches, child.geo + geo.pos(), childClip );
 			_nextSlotWithGeo( child );
 		}
 	}

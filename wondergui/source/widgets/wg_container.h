@@ -194,6 +194,7 @@ namespace wg
 			virtual void			_maskPatches( PatchesSPX& patches, const RectSPX& geo, const RectSPX& clip ) override;
 
 			bool					m_bSiblingsOverlap = true;	// Set if children (might be) overlapping each other (special considerations to be taken during rendering).		
+			bool					m_bClipChildren = false;	// Set if children (including their overflow) should be clipped to our geometry when rendered.
 			bool					m_bUsePickHandles = false;
 			bool					m_bTakesFocusFromChild = true;
 			BorderSPX				m_overflow;
