@@ -13,9 +13,9 @@ public:
 
 	bool init(GfxDevice * pDevice, const RectI& canvas, wapp::API * pAppAPI)
 	{
-		m_pCanvas = pDevice->surfaceFactory()->createSurface( { .canvas = true, .format = PixelFormat::Alpha_8, .size = canvas.size()/64 } );
+		m_pCanvas = pDevice->bitmapFactory()->createBitmap( { .canvas = true, .format = PixelFormat::Alpha_8, .size = canvas.size()/64 } );
 
-		m_pImg = pAppAPI->loadSurface("resources/splash.png", pDevice->surfaceFactory());
+		m_pImg = pAppAPI->loadBitmap("resources/splash.png", pDevice->bitmapFactory());
 		if (!m_pImg)
 			return false;
 
@@ -109,8 +109,8 @@ public:
 
 
 private:
-	Surface_p	m_pCanvas;
-	Surface_p	m_pImg;
+	Bitmap_p	m_pCanvas;
+	Bitmap_p	m_pImg;
 
 	float rot = 35;
 	float scale = 1.3f;

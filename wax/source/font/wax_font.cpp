@@ -44,31 +44,31 @@ namespace wax
 		return true;
 	}
 
-	//____ getGlyphAsSurface() ___________________________________________________
+	//____ getGlyphAsBitmap() ___________________________________________________
 
-	Surface_p Font::getGlyphAsSurface(char32_t chr, const Surface::Blueprint& _bp, SurfaceFactory * pFactory )
+	Bitmap_p Font::getGlyphAsBitmap(char32_t chr, const Bitmap::Blueprint& _bp, BitmapFactory * pFactory )
 	{
 		Glyph glyph;
 		getGlyphWithBitmap(chr, glyph);
 		
-		if( glyph.pSurface == nullptr )
+		if( glyph.pBitmap == nullptr )
 			return nullptr;
 		
 		if( pFactory == nullptr )
-			pFactory = Base::defaultSurfaceFactory();
+			pFactory = Base::defaultBitmapFactory();
 		
 		if( !pFactory )
 			return nullptr;
 		
 		RectI pixelRect = glyph.rect/64;
 		
-		Surface::Blueprint bp = _bp;
+		Bitmap::Blueprint bp = _bp;
 		if( bp.size.isEmpty() )
 			bp.size = pixelRect.size();
 		
-		auto pSurface = pFactory->createSurface(bp);
-		pSurface->copy({ 0,0 }, glyph.pSurface, pixelRect );
-		return pSurface;
+		auto pBitmap = pFactory->createBitmap(bp);
+		pBitmap->copy({ 0,0 }, glyph.pBitmap, pixelRect );
+		return pBitmap;
 	}
 
 	//____ setBackupFont() _______________________________________________________

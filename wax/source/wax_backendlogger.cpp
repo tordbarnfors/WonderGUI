@@ -27,7 +27,7 @@ namespace wax
 {
 	const TypeInfo BackendLogger::TYPEINFO = { "BackendLogger", &Backend::TYPEINFO };
 
-	const TypeInfo s_unspecifiedSurfaceType = { "SurfaceType Unspecified, real backend missing", &Surface::TYPEINFO };
+	const TypeInfo s_unspecifiedBitmapType = { "BitmapType Unspecified, real backend missing", &Bitmap::TYPEINFO };
 
 	//____ typeInfo() _________________________________________________________
 
@@ -60,7 +60,7 @@ namespace wax
 
 	//____ beginSession() _____________________________________________________
 
-	void BackendLogger::beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
+	void BackendLogger::beginSession( CanvasRef canvasRef, Bitmap * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
 	{
 		if( m_pOStream )
 		{
@@ -113,17 +113,17 @@ namespace wax
 
 	//____ setCanvas() ________________________________________________________
 
-	void BackendLogger::setCanvas(Surface* pSurface)
+	void BackendLogger::setCanvas(Bitmap* pBitmap)
 	{
 		if( m_pOStream )
 		{
-			*m_pOStream	<< "SET CANVAS: ptr = " << pSurface << " id = " << pSurface->identity()
-			<< " pixelSize = " << pSurface->pixelSize().w  << ", " << pSurface->pixelSize().h
-			<< " format = " << toString(pSurface->pixelFormat()) << std::endl;
+			*m_pOStream	<< "SET CANVAS: ptr = " << pBitmap << " id = " << pBitmap->identity()
+			<< " pixelSize = " << pBitmap->pixelSize().w  << ", " << pBitmap->pixelSize().h
+			<< " format = " << toString(pBitmap->pixelFormat()) << std::endl;
 		}
 
 		if (m_pBackend)
-			m_pBackend->setCanvas(pSurface);
+			m_pBackend->setCanvas(pBitmap);
 	}
 
 	void BackendLogger::setCanvas(CanvasRef ref)
@@ -630,17 +630,17 @@ namespace wax
 		return pCanvasInfo;
 	}
 
-	//____ surfaceFactory() ___________________________________________________
+	//____ bitmapFactory() ___________________________________________________
 
-	SurfaceFactory_p BackendLogger::surfaceFactory()
+	BitmapFactory_p BackendLogger::bitmapFactory()
 	{
-		SurfaceFactory_p pFactory = nullptr;
+		BitmapFactory_p pFactory = nullptr;
 
 		if (m_pBackend)
-			pFactory = m_pBackend->surfaceFactory();
+			pFactory = m_pBackend->bitmapFactory();
 
 		if( m_pOStream )
-			*m_pOStream << "Called surfaceFactory(). Returned: " << pFactory.rawPtr() << std::endl;
+			*m_pOStream << "Called bitmapFactory(). Returned: " << pFactory.rawPtr() << std::endl;
 
 		return pFactory;
 	}

@@ -17,8 +17,8 @@
 ## Documentation
 
 - The manual is in `wondergui/doc/guide/content/docs/` (Hugo): `basics/` for the object model,
-  blueprints, screen geometry and surfaces, `widgets/` for states, containers and layout,
-  `resources/` for skins, surfaces and warpmaps. Read the page for an area before working in it.
+  blueprints, screen geometry and bitmaps, `widgets/` for states, containers and layout,
+  `resources/` for skins, bitmaps and warpmaps. Read the page for an area before working in it.
 - `basics/blending_and_transparency.md` is the definition all graphics backends must follow,
   not just a description. Change it together with the backends.
 - Parts of the guide were written before the Wax split and may still lag behind, so trust the
@@ -27,7 +27,7 @@
 
 ## Layout
 
-- `wax/` - graphics base library and its extensions (soft, OpenGL, DX12, Metal, Vulkan, SDL GPU backends, FreeType fonts, streaming). The GPU backends (OpenGL, DX12, Metal, Vulkan, SDL GPU) share the HLSL shaders in `wax/extensions/hlsl` and the API independent part of a GPU backend in `wax/source/wax_gpubackend.h` (and `wax_gpuedgemap.h`, `wax_gpusurface.h`). `c-api/` is compiled into the `wax` library, so changing the Wax API usually means updating it too. `wrappers/` has the C# wrapper.
+- `wax/` - graphics base library and its extensions (soft, OpenGL, DX12, Metal, Vulkan, SDL GPU backends, FreeType fonts, streaming). The GPU backends (OpenGL, DX12, Metal, Vulkan, SDL GPU) share the HLSL shaders in `wax/extensions/hlsl` and the API independent part of a GPU backend in `wax/source/wax_gpubackend.h` (and `wax_gpuedgemap.h`, `wax_gpubitmap.h`). `c-api/` is compiled into the `wax` library, so changing the Wax API usually means updating it too. `wrappers/` has the C# wrapper.
 - `wondergui/` - the UI toolkit: `source/` (widgets, components, text layouts), `extensions/` (legacy GUI, debugger, plugin), `tools/`, `widgetkits/`.
 - `wonderapp/` - application frameworks (SDL2/SDL3, Win32, Cocoa) and tools built on them.
 - `thirdparty/` - vendored third-party code.
@@ -85,7 +85,7 @@
 ## WAX Design
 
 - Meant to run on anything from 68030-based machines with 16-bit graphics, a few megabytes of memory and no FPU, up to modern high end machines with GPU acceleration.
-- spx (short for subpixel) is the primary measure unit for the API and is 1/64 pixel. Pixel for surface, edgemap and warpmap sizes.
+- spx (short for subpixel) is the primary measure unit for the API and is 1/64 pixel. Pixel for bitmap, edgemap and warpmap sizes.
 - All code should be big/little endian agnostic.
 - Avoid floating point calculations and only use floats in API where it makes a lot of sense and costs little. Floats in range 0.0-1.0 are more acceptable.
 - Minimal reliance on external libraries. Some std libraries are already accepted.
@@ -94,9 +94,9 @@
 - origin for drawing operations are top/left corner.
 - Drawing is deferred: draws are rendered when the canvas update ends and read their Edgemaps and Warpmaps then.
 - Colors given to the API are sRGB, pixels are stored with straight alpha and blending happens in linear light. `ReferenceBackend` (`wax/extensions/softgfx`) implements the rules as directly as possible and is what other backends are tested against.
-- Pixel formats only describe the channels, named in register order starting with the most significant bits. Color space and byte order are separate properties of a surface.
-- Each backend has its own Surface, Edgemap and Warpmap subtypes. Code that shouldn't depend on the backend creates them through the factories of the device.
-- Surfaces, Edgemaps and Warpmaps are semi-mutable: their properties are fixed when created, but their content can change.
+- Pixel formats only describe the channels, named in register order starting with the most significant bits. Color space and byte order are separate properties of a bitmap.
+- Each backend has its own Bitmap, Edgemap and Warpmap subtypes. Code that shouldn't depend on the backend creates them through the factories of the device.
+- Bitmaps, Edgemaps and Warpmaps are semi-mutable: their properties are fixed when created, but their content can change.
 
 ## WonderGUI Design
 

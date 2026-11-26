@@ -1671,7 +1671,7 @@ void _fill(uint8_t* WAX_RESTRICT pDst, int pitchX, int pitchY, int nLines, int l
 //_____ _straight_blit() ____________________________________________________________
 
 template<SoftFormat SRCFORMAT, TintMode TINT, BlendMode BLEND, SoftFormat DSTFORMAT, SoftBackend::ReadOp READOP>
-void _straight_blit(const uint8_t* WAX_RESTRICT pSrc, uint8_t* WAX_RESTRICT pDst, const SoftSurface* WAX_RESTRICT pSrcSurf, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform* WAX_RESTRICT pMatrix)
+void _straight_blit(const uint8_t* WAX_RESTRICT pSrc, uint8_t* WAX_RESTRICT pDst, const SoftBitmap* WAX_RESTRICT pSrcBitmap, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform* WAX_RESTRICT pMatrix)
 {
 	constexpr bool srcIsLinear = SoftFormatInfo::isLinear(SRCFORMAT);
 
@@ -1689,7 +1689,7 @@ void _straight_blit(const uint8_t* WAX_RESTRICT pSrc, uint8_t* WAX_RESTRICT pDst
 
 	// Fast track for transparent black pixels in the Color buffers of two-pass blits.
 	// Not done for other source formats (like the ARGB_8_linear buffers), since those
-	// kernels are also used for blits from ordinary surfaces, which should stay fast.
+	// kernels are also used for blits from ordinary bitmaps, which should stay fast.
 
 	constexpr TransparentOp transparentOp = _transparent_op<BLEND, DSTFORMAT>();
 	constexpr bool bFastTransparent = SRCFORMAT == SoftFormat::Undefined &&
@@ -1712,21 +1712,21 @@ void _straight_blit(const uint8_t* WAX_RESTRICT pSrc, uint8_t* WAX_RESTRICT pDst
 	int lineX, lineY;
 	int xPitch, yPitch;
 
-	SizeI surfSize;
+	SizeI bitmapSize;
 
 	if constexpr (READOP == SoftBackend::ReadOp::Tile || READOP == SoftBackend::ReadOp::Blur)
 	{
-		xPitch = pSrcSurf->pixelBits()/8;
-		yPitch = pSrcSurf->pitch();
+		xPitch = pSrcBitmap->pixelBits()/8;
+		yPitch = pSrcBitmap->pitch();
 
 		// Source position is tracked as coordinates. pSrc must be inside the source.
 
-		int ofs = int(pSrc - pSrcSurf->pixels());
+		int ofs = int(pSrc - pSrcBitmap->pixels());
 		lineY = ofs / yPitch;
 		lineX = (ofs % yPitch) / xPitch;
-		pSrc = pSrcSurf->pixels();
+		pSrc = pSrcBitmap->pixels();
 
-		surfSize = pSrcSurf->pixelSize();
+		bitmapSize = pSrcBitmap->pixelSize();
 	}
 
 	// Steps of a straight blit are -1, 0 or 1, so wrapping a tile position is a matter
@@ -1743,18 +1743,18 @@ void _straight_blit(const uint8_t* WAX_RESTRICT pSrc, uint8_t* WAX_RESTRICT pDst
 	{
 		if (pMatrix->xx != 0)
 		{
-			runLength = surfSize.w;
-			runJump = -pMatrix->xx * surfSize.w * xPitch;
+			runLength = bitmapSize.w;
+			runJump = -pMatrix->xx * bitmapSize.w * xPitch;
 		}
 		else
 		{
-			runLength = surfSize.h;
-			runJump = -pMatrix->xy * surfSize.h * yPitch;
+			runLength = bitmapSize.h;
+			runJump = -pMatrix->xy * bitmapSize.h * yPitch;
 		}
 	}
 
-	const Color8* WAX_RESTRICT pPalette = pSrcSurf->palette();
-	const Color* WAX_RESTRICT pPalette4096 = pSrcSurf->palette4096();
+	const Color8* WAX_RESTRICT pPalette = pSrcBitmap->palette();
+	const Color* WAX_RESTRICT pPalette4096 = pSrcBitmap->palette4096();
 
 	// Step 1: Prepare any tint gradient
 
@@ -1793,11 +1793,11 @@ void _straight_blit(const uint8_t* WAX_RESTRICT pSrc, uint8_t* WAX_RESTRICT pDst
 	{
 		if constexpr (READOP == SoftBackend::ReadOp::Tile)
 		{
-			pSrc = pSrcSurf->pixels() + lineY * yPitch + lineX * xPitch;
+			pSrc = pSrcBitmap->pixels() + lineY * yPitch + lineX * xPitch;
 
-			runLeft =	pMatrix->xx > 0 ? surfSize.w - lineX :
+			runLeft =	pMatrix->xx > 0 ? bitmapSize.w - lineX :
 						pMatrix->xx < 0 ? lineX + 1 :
-						pMatrix->xy > 0 ? surfSize.h - lineY : lineY + 1;
+						pMatrix->xy > 0 ? bitmapSize.h - lineY : lineY + 1;
 		}
 
 		if constexpr (READOP == SoftBackend::ReadOp::Blur)
@@ -1882,10 +1882,10 @@ void _straight_blit(const uint8_t* WAX_RESTRICT pSrc, uint8_t* WAX_RESTRICT pDst
 						ofs.x = 0;
 					if( ofs.y < 0 )
 						ofs.y = 0;
-					if( ofs.x >= surfSize.w )
-						ofs.x = surfSize.w -1;
-					if( ofs.y >= surfSize.h )
-						ofs.y = surfSize.h -1;
+					if( ofs.x >= bitmapSize.w )
+						ofs.x = bitmapSize.w -1;
+					if( ofs.y >= bitmapSize.h )
+						ofs.y = bitmapSize.h -1;
 
 					_read_pixel<SRCFORMAT>(pSrc + ofs.y * yPitch + ofs.x * xPitch, pPalette, pPalette4096, inB[i], inG[i], inR[i], inA[i]);
 				}
@@ -2008,8 +2008,8 @@ void _straight_blit(const uint8_t* WAX_RESTRICT pSrc, uint8_t* WAX_RESTRICT pDst
 
 		if constexpr(READOP == SoftBackend::ReadOp::Tile)
 		{
-			lineX = wrap(lineX + pMatrix->yx, surfSize.w);
-			lineY = wrap(lineY + pMatrix->yy, surfSize.h);
+			lineX = wrap(lineX + pMatrix->yx, bitmapSize.w);
+			lineY = wrap(lineY + pMatrix->yy, bitmapSize.h);
 		}
 		else if constexpr(READOP == SoftBackend::ReadOp::Blur)
 		{
@@ -2091,18 +2091,18 @@ static inline void _bilinear_mix(int fracX, int fracY, const Texel& s11, const T
 // blending can't change the result. Gives exactly the same result as _transform_blit().
 
 template<SoftFormat SRCFORMAT, BlendMode BLEND, SoftFormat DSTFORMAT, bool bFast8>
-void _scale_blit_bilinear(const SoftSurface* WAX_RESTRICT pSrcSurf, BinalCoord pos, binalInt pixelIncX, binalInt lineIncY,
+void _scale_blit_bilinear(const SoftBitmap* WAX_RESTRICT pSrcBitmap, BinalCoord pos, binalInt pixelIncX, binalInt lineIncY,
 						  uint8_t* WAX_RESTRICT pDst, int dstPitchX, int dstPitchY, int nLines, int lineLength, const SoftBackend::ColTrans& tint,
 						  int16_t fixedB, int16_t fixedG, int16_t fixedR, int16_t fixedA)
 {
 	if (nLines <= 0 || lineLength <= 0)
 		return;
 
-	int srcPixelBytes = pSrcSurf->pixelBits() / 8;
-	int srcPitch = pSrcSurf->pitch();
+	int srcPixelBytes = pSrcBitmap->pixelBits() / 8;
+	int srcPitch = pSrcBitmap->pitch();
 
-	const Color8* WAX_RESTRICT pPalette = pSrcSurf->palette();
-	const Color* WAX_RESTRICT pPalette4096 = pSrcSurf->palette4096();
+	const Color8* WAX_RESTRICT pPalette = pSrcBitmap->palette();
+	const Color* WAX_RESTRICT pPalette4096 = pSrcBitmap->palette4096();
 
 	// Columns of the source that are sampled, same as by _transform_blit(): the right
 	// neighbour of a sample is only read when it has a weight.
@@ -2129,7 +2129,7 @@ void _scale_blit_bilinear(const SoftSurface* WAX_RESTRICT pSrcSurf, BinalCoord p
 		int slot = rowIndex[0] == keepRow ? 1 : 0;
 
 		int16_t* p = pRows[slot];
-		const uint8_t* pPixel = pSrcSurf->pixels() + row * srcPitch + firstColumn * srcPixelBytes;
+		const uint8_t* pPixel = pSrcBitmap->pixels() + row * srcPitch + firstColumn * srcPixelBytes;
 
 		for (int i = 0; i < nColumns; i++)
 		{
@@ -2238,7 +2238,7 @@ void _scale_blit_bilinear(const SoftSurface* WAX_RESTRICT pSrcSurf, BinalCoord p
 //____ _transform_blit __________________________________________
 
 template<SoftFormat SRCFORMAT, SampleMethod SAMPLEMETHOD, TintMode TINT, BlendMode BLEND, SoftFormat DSTFORMAT, SoftBackend::ReadOp READOP>
-void _transform_blit(const SoftSurface* WAX_RESTRICT pSrcSurf, BinalCoord pos, const binalInt matrix[2][2], uint8_t* WAX_RESTRICT pDst, int dstPitchX, int dstPitchY, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos)
+void _transform_blit(const SoftBitmap* WAX_RESTRICT pSrcBitmap, BinalCoord pos, const binalInt matrix[2][2], uint8_t* WAX_RESTRICT pDst, int dstPitchX, int dstPitchY, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos)
 {
 	constexpr bool srcIsLinear = SoftFormatInfo::isLinear(SRCFORMAT);
 
@@ -2252,10 +2252,10 @@ void _transform_blit(const SoftSurface* WAX_RESTRICT pSrcSurf, BinalCoord pos, c
 
 	constexpr int bits = bFast8 ? 8 : 12;
 
-	int srcPixelBytes = pSrcSurf->pixelBits()/8;
-	int	srcPitch = pSrcSurf->pitch();
-	binalInt srcMax_w = pSrcSurf->pixelSize().w * BINAL_MUL;
-	binalInt srcMax_h = pSrcSurf->pixelSize().h * BINAL_MUL;
+	int srcPixelBytes = pSrcBitmap->pixelBits()/8;
+	int	srcPitch = pSrcBitmap->pitch();
+	binalInt srcMax_w = pSrcBitmap->pixelSize().w * BINAL_MUL;
+	binalInt srcMax_h = pSrcBitmap->pixelSize().h * BINAL_MUL;
 
 	binalInt pixelIncX = matrix[0][0];
 	binalInt pixelIncY = matrix[0][1];
@@ -2285,8 +2285,8 @@ void _transform_blit(const SoftSurface* WAX_RESTRICT pSrcSurf, BinalCoord pos, c
 		lineIncY %= srcMax_h;
 	}
 
-	const Color8* WAX_RESTRICT pPalette = pSrcSurf->palette();
-	const Color* WAX_RESTRICT pPalette4096 = pSrcSurf->palette4096();
+	const Color8* WAX_RESTRICT pPalette = pSrcBitmap->palette();
+	const Color* WAX_RESTRICT pPalette4096 = pSrcBitmap->palette4096();
 
 	// Step 1: Setup fixed blend color
 	
@@ -2316,7 +2316,7 @@ void _transform_blit(const SoftSurface* WAX_RESTRICT pSrcSurf, BinalCoord pos, c
 	{
 		if (pixelIncY == 0 && lineIncX == 0 && pixelIncX > 0 && pixelIncX <= BINAL_MUL)
 		{
-			_scale_blit_bilinear<SRCFORMAT, BLEND, DSTFORMAT, bFast8>(pSrcSurf, pos, pixelIncX, lineIncY, pDst, dstPitchX, dstPitchY,
+			_scale_blit_bilinear<SRCFORMAT, BLEND, DSTFORMAT, bFast8>(pSrcBitmap, pos, pixelIncX, lineIncY, pDst, dstPitchX, dstPitchY,
 																	  nLines, lineLength, tint, fixedB, fixedG, fixedR, fixedA);
 			return;
 		}
@@ -2356,7 +2356,7 @@ void _transform_blit(const SoftSurface* WAX_RESTRICT pSrcSurf, BinalCoord pos, c
 			// Step 2: Read source color.
 
 			int16_t srcB, srcG, srcR, srcA;
-			uint8_t* WAX_RESTRICT p = pSrcSurf->pixels() + (ofsY >> BINAL_SHIFT) * srcPitch + (ofsX >> BINAL_SHIFT) * srcPixelBytes;
+			uint8_t* WAX_RESTRICT p = pSrcBitmap->pixels() + (ofsY >> BINAL_SHIFT) * srcPitch + (ofsX >> BINAL_SHIFT) * srcPixelBytes;
 
 			if constexpr(SAMPLEMETHOD == SampleMethod::Bilinear)
 			{
@@ -2396,7 +2396,7 @@ void _transform_blit(const SoftSurface* WAX_RESTRICT pSrcSurf, BinalCoord pos, c
 					}
 					else
 					{
-						// At least one of the four sample pixels is within source surface
+						// At least one of the four sample pixels is within source bitmap
 
 						if constexpr(bFast8)
 						{
@@ -2507,9 +2507,9 @@ void _transform_blit(const SoftSurface* WAX_RESTRICT pSrcSurf, BinalCoord pos, c
 
 					binalInt x = (ofsX >> BINAL_SHIFT), y = (ofsY >> BINAL_SHIFT);
 
-					auto surfSize = pSrcSurf->pixelSize();
+					auto bitmapSize = pSrcBitmap->pixelSize();
 					
-					auto p = pSrcSurf->pixels();
+					auto p = pSrcBitmap->pixels();
 					
 					for( int i = 0 ; i < 9 ; i++ )
 					{
@@ -2521,10 +2521,10 @@ void _transform_blit(const SoftSurface* WAX_RESTRICT pSrcSurf, BinalCoord pos, c
 							ofs.x = 0;
 						if( ofs.y < 0 )
 							ofs.y = 0;
-						if( ofs.x >= surfSize.w )
-							ofs.x = surfSize.w -1;
-						if( ofs.y >= surfSize.h )
-							ofs.y = surfSize.h -1;
+						if( ofs.x >= bitmapSize.w )
+							ofs.x = bitmapSize.w -1;
+						if( ofs.y >= bitmapSize.h )
+							ofs.y = bitmapSize.h -1;
 
 						_read_pixel<SRCFORMAT>(p + ofs.y * srcPitch + ofs.x * srcPixelBytes, pPalette, pPalette4096, inB[i], inG[i], inR[i], inA[i]);
 					}

@@ -336,14 +336,14 @@ namespace wax
 			}
 
 
-			case GfxStream::ChunkId::CreateSurface:
+			case GfxStream::ChunkId::CreateBitmap:
 			{
-				uint16_t	surfaceId;
-				Surface::Blueprint	bp;
+				uint16_t	bitmapId;
+				Bitmap::Blueprint	bp;
 
 				uint8_t		bigEndian;
 
-				decoder >> surfaceId;
+				decoder >> bitmapId;
 				decoder >> bp.canvas;
 				decoder >> bp.dynamic;
 				decoder >> bp.format;
@@ -368,7 +368,7 @@ namespace wax
 						decoder.skip(header.size - 48);
 				}
 
-				m_charStream << "    surfaceId   = " << surfaceId << std::endl;
+				m_charStream << "    bitmapId   = " << bitmapId << std::endl;
 				m_charStream << "    canvas      = " << bp.canvas << std::endl;
 				m_charStream << "    dynamic     = " << bp.dynamic << std::endl;
 				m_charStream << "    format      = " << toString(bp.format) << std::endl;
@@ -389,24 +389,24 @@ namespace wax
 				break;
 			}
 				
-			case GfxStream::ChunkId::SurfaceUpdate:
+			case GfxStream::ChunkId::BitmapUpdate:
 			{
-				uint16_t	surfaceId;
+				uint16_t	bitmapId;
 				RectI		region;
 
-				decoder >> surfaceId;
+				decoder >> bitmapId;
 				decoder >> region;
 
-				m_charStream << "    surfaceId   = " << surfaceId << std::endl;
+				m_charStream << "    bitmapId   = " << bitmapId << std::endl;
 				_printRect( "    region     ", region );
 				break;
 			}
 
-			case GfxStream::ChunkId::SurfaceUpdate2:
+			case GfxStream::ChunkId::BitmapUpdate2:
 			{
 				CanvasRef	canvasRef;
 				uint8_t		dummy;
-				uint16_t	surfaceId;
+				uint16_t	bitmapId;
 				uint16_t	nRects;
 				PixelFormat	format;
 				ColorSpace	colorSpace;
@@ -414,14 +414,14 @@ namespace wax
 
 				decoder >> canvasRef;
 				decoder >> dummy;
-				decoder >> surfaceId;
+				decoder >> bitmapId;
 				decoder >> nRects;
 				decoder >> format;
 				decoder >> colorSpace;
 				decoder >> bigEndian;
 
 				m_charStream << "    canvasRef = " << toString(canvasRef) << std::endl;
-				m_charStream << "    surfaceId = " << surfaceId << std::endl;
+				m_charStream << "    bitmapId = " << bitmapId << std::endl;
 				m_charStream << "    nbRects   = " << nRects << std::endl;
 				m_charStream << "    format    = " << toString(format) << ", " << toString(colorSpace) << (bigEndian ? ", big endian" : "") << std::endl;
 
@@ -429,55 +429,55 @@ namespace wax
 				break;
 			}
 
-			case GfxStream::ChunkId::SurfacePixels:
-			case GfxStream::ChunkId::SurfacePalette:
+			case GfxStream::ChunkId::BitmapPixels:
+			case GfxStream::ChunkId::BitmapPalette:
 			{
 				int toSkip = _readPrintDataInfo(header.size);
 				decoder.skip(toSkip);
 				break;
 			}
 
-			case GfxStream::ChunkId::FillSurface:
+			case GfxStream::ChunkId::FillBitmap:
 			{
-				uint16_t	surfaceId;
+				uint16_t	bitmapId;
 				RectI		region;
 				Color		col;
 
-				decoder >> surfaceId;
+				decoder >> bitmapId;
 				decoder >> region;
 				decoder >> col;
 
-				m_charStream << "    surfaceId   = " << surfaceId << std::endl;
+				m_charStream << "    bitmapId   = " << bitmapId << std::endl;
 				_printRect( "    region     ", region );
 				_printColor("    color      ", col );
 				break;
 			}
 
-			case GfxStream::ChunkId::CopySurface:
+			case GfxStream::ChunkId::CopyBitmap:
 			{
-				uint16_t	destSurfaceId;
-				uint16_t	sourceSurfaceId;
+				uint16_t	destBitmapId;
+				uint16_t	sourceBitmapId;
 				RectI		sourceRect;
 				CoordI		dest;
 
-				decoder >> destSurfaceId;
-				decoder >> sourceSurfaceId;
+				decoder >> destBitmapId;
+				decoder >> sourceBitmapId;
 				decoder >> sourceRect;
 				decoder >> dest;
 
-				m_charStream << "    destSurface = " << destSurfaceId << std::endl;
-				m_charStream << "    srcSurface  = " << sourceSurfaceId << std::endl;
+				m_charStream << "    destBitmap = " << destBitmapId << std::endl;
+				m_charStream << "    srcBitmap  = " << sourceBitmapId << std::endl;
 				_printRect( "    source     ", sourceRect );
 				m_charStream << "    dest        = " << dest.x << ", " << dest.y << std::endl;
 				break;
 			}
 
-			case GfxStream::ChunkId::DeleteSurface:
+			case GfxStream::ChunkId::DeleteBitmap:
 			{
-				uint16_t	surfaceId;
-				decoder >> surfaceId;
+				uint16_t	bitmapId;
+				decoder >> bitmapId;
 
-				m_charStream << "    surfaceId   = " << surfaceId << std::endl;
+				m_charStream << "    bitmapId   = " << bitmapId << std::endl;
 				break;
 			}
 

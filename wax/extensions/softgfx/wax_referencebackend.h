@@ -25,7 +25,7 @@
 
 #include <wax_backend.h>
 #include <wax_tinttools.h>
-#include <wax_softsurface.h>
+#include <wax_softbitmap.h>
 #include <wax_softedgemap.h>
 #include <wax_softwarpmap.h>
 
@@ -60,7 +60,7 @@ namespace wax
 	 *
 	 * - Blend modes follow the definitions in the guide ("Blending and transparency"). Paint
 	 *   modes put paint on the canvas, with BlendMode::Blend being Porter-Duff 'over', also onto
-	 *   transparent pixels. Drawing onto a transparent surface and blending that onto a
+	 *   transparent pixels. Drawing onto a transparent bitmap and blending that onto a
 	 *   background gives the same result as drawing directly onto the background. Effect modes
 	 *   change the colors already on the canvas, keep its alpha and use the alpha of the source
 	 *   as the strength of the effect.
@@ -78,7 +78,7 @@ namespace wax
 	 * is defined in whole pixels (end points of lines and position of edgemaps are rounded to
 	 * nearest pixel). Those places are pointed out in the code.
 	 *
-	 * It uses the same surfaces and edgemaps as SoftBackend (SoftSurface and SoftEdgemap) and
+	 * It uses the same bitmaps and edgemaps as SoftBackend (SoftBitmap and SoftEdgemap) and
 	 * can render to canvases of PixelFormat ARGB_8, XRGB_8, RGB_565, BGR_565 and Alpha_8, in
 	 * linear or sRGB color space and either byte order.
 	 */
@@ -101,10 +101,10 @@ namespace wax
 		void	beginRender() override;
 		void	endRender() override;
 
-		void	beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo = nullptr ) override;
+		void	beginSession( CanvasRef canvasRef, Bitmap * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo = nullptr ) override;
 		void	endSession() override;
 
-		void	setCanvas( Surface * pSurface ) override;
+		void	setCanvas( Bitmap * pBitmap ) override;
 		void	setCanvas( CanvasRef ref ) override;
 
 		void	setObjects(Object* const * pBeg, Object* const * pEnd) override;
@@ -117,11 +117,11 @@ namespace wax
 
 		//.____ Misc _________________________________________________________
 
-		bool	defineCanvas(CanvasRef ref, SoftSurface* pSurface);
+		bool	defineCanvas(CanvasRef ref, SoftBitmap* pBitmap);
 
 		const CanvasInfo *	canvasInfo(CanvasRef ref) const override;
 
-		SurfaceFactory_p	surfaceFactory() override;
+		BitmapFactory_p	bitmapFactory() override;
 		EdgemapFactory_p	edgemapFactory() override;
 		WarpmapFactory_p	warpmapFactory() override;
 
@@ -147,13 +147,13 @@ namespace wax
 			LinearColor operator+(const LinearColor& k) const { return { r + k.r, g + k.g, b + k.b, a + k.a }; }
 		};
 
-		// What a sample outside the source surface reads.
+		// What a sample outside the source bitmap reads.
 
 		enum class EdgeMode
 		{
-			Clamp,			// Nearest pixel on the edge of the surface.
+			Clamp,			// Nearest pixel on the edge of the bitmap.
 			Clip,			// Transparent black.
-			Tile			// The surface is repeated.
+			Tile			// The bitmap is repeated.
 		};
 
 		// An edge of an edgemap, through one column of pixels, from its position at the left side
@@ -245,7 +245,7 @@ namespace wax
 
 		std::vector<CanvasInfo>	m_definedCanvases;
 
-		SurfaceFactory_p	m_pSurfaceFactory;
+		BitmapFactory_p	m_pBitmapFactory;
 		EdgemapFactory_p	m_pEdgemapFactory;
 		WarpmapFactory_p	m_pWarpmapFactory;
 
@@ -256,14 +256,14 @@ namespace wax
 
 		// Canvas
 
-		Surface_p			m_pCanvas;
+		Bitmap_p			m_pCanvas;
 		PixelBuffer			m_canvasBuffer;
 		bool				m_bAlphaOnlyCanvas = false;		// Canvas is Alpha_8, which is blended differently.
 		bool				m_bCanvasHasAlpha = false;
 
 		// States
 
-		Surface_p			m_pBlitSource;
+		Bitmap_p			m_pBlitSource;
 		PixelBuffer			m_blitSourceBuffer;
 
 		BlendMode			m_blendMode = BlendMode::Blend;

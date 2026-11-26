@@ -34,7 +34,7 @@
 #include <wg_pluginfreetypefont.h>
 #include <wg_plugingfxdevice.h>
 #include <wg_pluginhostbridge.h>
-#include <wg_pluginsurface.h>
-#include <wg_pluginsurfacefactory.h>
+#include <wg_pluginbitmap.h>
+#include <wg_pluginbitmapfactory.h>
 
 #endif //WGLEGACYPLUGIN_DOT_H

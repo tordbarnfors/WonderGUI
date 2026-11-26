@@ -5,10 +5,10 @@ set(SOURCES
 	wax_vulkancontext.cpp
 	wax_vulkancontext.h
 	wax_vulkanshaders.h
-	wax_vulkansurface.cpp
-	wax_vulkansurface.h
-	wax_vulkansurfacefactory.cpp
-	wax_vulkansurfacefactory.h
+	wax_vulkanbitmap.cpp
+	wax_vulkanbitmap.h
+	wax_vulkanbitmapfactory.cpp
+	wax_vulkanbitmapfactory.h
 	wax_vulkanedgemap.cpp
 	wax_vulkanedgemap.h
 	wax_vulkanedgemapfactory.cpp

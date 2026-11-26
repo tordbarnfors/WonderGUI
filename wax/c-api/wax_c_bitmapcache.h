@@ -33,13 +33,13 @@ extern "C" {
 
 typedef struct wax_cacheSlot_struct
 {
-	wax_obj		surface;
+	wax_obj		bitmap;
 	wax_coordI	coord;
 } wax_cacheSlot;
 
 
-typedef void(*wax_cacheAddedSurfaceFunc)(wax_obj surface, void * pData, int data);
-typedef void(*wax_cacheRemovedSurfacesFunc)(int nSurfaces, wax_obj* pSurfaces, void * pData, int data);
+typedef void(*wax_cacheAddedBitmapFunc)(wax_obj bitmap, void * pData, int data);
+typedef void(*wax_cacheRemovedBitmapsFunc)(int nBitmaps, wax_obj* pBitmaps, void * pData, int data);
 typedef void(*wax_cacheClearedFunc)(void * pData, int data);
 
 typedef void* wax_cacheListener;
@@ -47,11 +47,11 @@ typedef void* wax_cacheListener;
 
 typedef struct wax_cacheListenerBP_struct
 {
-	wax_cacheAddedSurfaceFunc	addFunc;
+	wax_cacheAddedBitmapFunc	addFunc;
 	void *						addPtr;
 	int							addInt;
 	
-	wax_cacheRemovedSurfacesFunc	removeFunc;
+	wax_cacheRemovedBitmapsFunc	removeFunc;
 	void *						removePtr;
 	int							removeInt;
 	
@@ -61,7 +61,7 @@ typedef struct wax_cacheListenerBP_struct
 } wax_cacheListenerBP;
 
 
-WAX_EXPORT wax_obj			wax_createBitmapCache( int maxSize, wax_obj surfaceFactory );
+WAX_EXPORT wax_obj			wax_createBitmapCache( int maxSize, wax_obj bitmapFactory );
 
 WAX_EXPORT void 				wax_setCacheLimit(wax_obj bitmapCache, int maxBytes);
 WAX_EXPORT int				wax_cacheLimit(wax_obj bitmapCache);
@@ -72,8 +72,8 @@ WAX_EXPORT wax_cacheListener	wax_addCacheListener(wax_obj bitmapCache, wax_cache
 WAX_EXPORT void				wax_removeCacheListener(wax_obj bitmapCache, wax_cacheListener listener );
 
 WAX_EXPORT wax_cacheSlot 		wax_getCacheSlot(wax_obj bitmapCache, wax_sizeI size);
-WAX_EXPORT int				wax_getNbCacheSurfaces(wax_obj bitmapCache);
-WAX_EXPORT int				wax_getCacheSurfaces(wax_obj bitmapCache, int maxSurfaces, wax_obj * pArray );
+WAX_EXPORT int				wax_getNbCacheBitmaps(wax_obj bitmapCache);
+WAX_EXPORT int				wax_getCacheBitmaps(wax_obj bitmapCache, int maxBitmaps, wax_obj * pArray );
 
 
 #ifdef __cplusplus

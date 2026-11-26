@@ -50,7 +50,7 @@ namespace wg
 		m_gfxPadding		= bp.gfxPadding;
 		m_pTint			= bp.tint;
 		m_size				= bp.size;
-		m_pSurface			= bp.surface;
+		m_pBitmap			= bp.bitmap;
 
 		m_frames.reserve(bp.frames.size());
 		
@@ -103,7 +103,7 @@ namespace wg
 			
 			RenderSettingsWithTint settings(pDevice, m_layer, m_blendMode, m_color, canvas, m_pTint);
 
-			pDevice->setBlitSource(m_pSurface);
+			pDevice->setBlitSource(m_pBitmap);
 
 			NinePatch patch;
 			patch.block = Rect(pFrame->pos, m_size);
@@ -135,7 +135,7 @@ namespace wg
 			
 			int alpha = alphaOverride == -1 ? m_markAlpha : alphaOverride;
 
-			return Util::markTestNinePatch(ofs, m_pSurface, patch, canvas, scale, alpha);
+			return Util::markTestNinePatch(ofs, m_pBitmap, patch, canvas, scale, alpha);
 		}
 
 		return false;
@@ -180,7 +180,7 @@ namespace wg
 			if ((m_pTint && !m_pTint->isOpaque()) || m_color.a != 4096)
 				m_bOpaque = false;
 			else
-				m_bOpaque = m_pSurface->isOpaque();
+				m_bOpaque = m_pBitmap->isOpaque();
 		}
 		else
 			m_bOpaque = false;

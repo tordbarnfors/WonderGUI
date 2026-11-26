@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wg2_animplayer.h>
 
-#include <wax_surface.h>
+#include <wax_bitmap.h>
 #include <wg2_gfxdevice.h>
 #include <wg2_util.h>
 

@@ -61,14 +61,14 @@ wax_obj wax_getBackend( wax_obj device )
 wax_canvasInfo wax_getCanvas(wax_obj device)
 {
 	auto& canvasInfo = getPtr(device)->canvas();
-	return { (wax_canvasRef)canvasInfo.ref, canvasInfo.pSurface, {canvasInfo.size.w, canvasInfo.size.h}, canvasInfo.scale };
+	return { (wax_canvasRef)canvasInfo.ref, canvasInfo.pBitmap, {canvasInfo.size.w, canvasInfo.size.h}, canvasInfo.scale };
 }
 
 
 wax_canvasInfo wax_getCanvasRef(wax_obj device, wax_canvasRef ref)
 {
 	auto& canvasInfo = getPtr(device)->canvas((CanvasRef)ref);
-	return { (wax_canvasRef)canvasInfo.ref, canvasInfo.pSurface, {canvasInfo.size.w, canvasInfo.size.h}, canvasInfo.scale };
+	return { (wax_canvasRef)canvasInfo.ref, canvasInfo.pBitmap, {canvasInfo.size.w, canvasInfo.size.h}, canvasInfo.scale };
 }
 
 
@@ -78,9 +78,9 @@ wax_obj	wax_canvasLayers(wax_obj device)
 }
 
 
-wax_obj wax_surfaceFactory(wax_obj device)
+wax_obj wax_bitmapFactory(wax_obj device)
 {
-	return getPtr(device)->surfaceFactory().rawPtr();
+	return getPtr(device)->bitmapFactory().rawPtr();
 }
 
 
@@ -218,9 +218,9 @@ wax_blendMode wax_getBlendMode(wax_obj device)
 }
 
 
-int wax_setBlitSource(wax_obj device, wax_obj surface)
+int wax_setBlitSource(wax_obj device, wax_obj bitmap)
 {
-	return getPtr(device)->setBlitSource( static_cast<Surface*>(reinterpret_cast<Object*>(surface)) );
+	return getPtr(device)->setBlitSource( static_cast<Bitmap*>(reinterpret_cast<Object*>(bitmap)) );
 }
 
 
@@ -327,11 +327,11 @@ int wax_beginCanvasUpdateWithRef(wax_obj device, wax_canvasRef canvas, int nUpda
 }
 
 
-int wax_beginCanvasUpdateWithSurface(wax_obj device, wax_obj surface, int nUpdateRects, const wax_rectSPX* pUpdateRects, wax_obj canvasLayers, int startLayer)
+int wax_beginCanvasUpdateWithBitmap(wax_obj device, wax_obj bitmap, int nUpdateRects, const wax_rectSPX* pUpdateRects, wax_obj canvasLayers, int startLayer)
 {
 	CanvasLayers* pLayers = canvasLayers == 0 ? nullptr : static_cast<CanvasLayers*>(reinterpret_cast<Object*>(canvasLayers));
 
-	return getPtr(device)->beginCanvasUpdate(static_cast<Surface*>(reinterpret_cast<Object*>(surface)), nUpdateRects, (const RectSPX*)pUpdateRects,
+	return getPtr(device)->beginCanvasUpdate(static_cast<Bitmap*>(reinterpret_cast<Object*>(bitmap)), nUpdateRects, (const RectSPX*)pUpdateRects,
 		pLayers, startLayer);
 }
 

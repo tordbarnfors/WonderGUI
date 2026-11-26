@@ -176,7 +176,7 @@ std::string Window::title() const
 
 //____ setIcon() _____________________________________________________________
 
-bool Window::setIcon(wg::Surface* pIcon)
+bool Window::setIcon(wg::Bitmap* pIcon)
 {
 	//TODO: Implement!
 	return false;

@@ -95,7 +95,7 @@ static void _fill_bgr565srgb_noblend_notint(uint8_t* pDst, int pitchX, int pitch
 
 //____ _straight_blit_bgr565srgb_to_same_notint_noblend() ____________________________________________________________
 
-static void _straight_blit_bgr565srgb_to_same_notint_noblend(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform * pMatrix)
+static void _straight_blit_bgr565srgb_to_same_notint_noblend(const uint8_t* pSrc, uint8_t* pDst, const SoftBitmap* pSrcBitmap, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform * pMatrix)
 {
 	if( pitches.srcX == 2 && pitches.dstX == 2 )
 	{
@@ -179,9 +179,9 @@ static void _straight_blit_bgr565srgb_to_same_notint_noblend(const uint8_t* pSrc
 
 //____ _straight_blit_index8srgb_to_bgr565srgb_notint_noblend() ____________________________________________________________
 
-static void _straight_blit_index8srgb_to_bgr565srgb_notint_noblend(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform * pMatrix)
+static void _straight_blit_index8srgb_to_bgr565srgb_notint_noblend(const uint8_t* pSrc, uint8_t* pDst, const SoftBitmap* pSrcBitmap, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform * pMatrix)
 {
-	auto pPalette = pSrcSurf->palette();
+	auto pPalette = pSrcBitmap->palette();
 
 	// Copy loop
 
@@ -204,9 +204,9 @@ static void _straight_blit_index8srgb_to_bgr565srgb_notint_noblend(const uint8_t
 
 //____ _straight_blit_index8srgb_to_bgr565srgb_notint_blend() ____________________________________________________________
 /*
-static void _straight_blit_index8srgb_to_bgr565srgb_notint_blend(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform * pMatrix)
+static void _straight_blit_index8srgb_to_bgr565srgb_notint_blend(const uint8_t* pSrc, uint8_t* pDst, const SoftBitmap* pSrcBitmap, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform * pMatrix)
 {
-	auto pPalette = pSrcSurf->palette();
+	auto pPalette = pSrcBitmap->palette();
 
 	// Copy loop
 
@@ -245,7 +245,7 @@ static void _straight_blit_index8srgb_to_bgr565srgb_notint_blend(const uint8_t* 
 
 //____ _straight_blit_alpha8_to_bgr565srgb_notint_blend() ____________________________________________________________
 /*
-static void _straight_blit_alpha8_to_bgr565srgb_notint_blend(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform * pMatrix)
+static void _straight_blit_alpha8_to_bgr565srgb_notint_blend(const uint8_t* pSrc, uint8_t* pDst, const SoftBitmap* pSrcBitmap, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform * pMatrix)
 {
 	// Copy loop
 
@@ -283,7 +283,7 @@ static void _straight_blit_alpha8_to_bgr565srgb_notint_blend(const uint8_t* pSrc
 
 //____ _straight_blit_alpha8_to_bgr565srgb_flattint_blend() ____________________________________________________________
 /*
-static void _straight_blit_alpha8_to_bgr565srgb_flattint_blend(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform * pMatrix)
+static void _straight_blit_alpha8_to_bgr565srgb_flattint_blend(const uint8_t* pSrc, uint8_t* pDst, const SoftBitmap* pSrcBitmap, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform * pMatrix)
 {
 
 	uint8_t srcR = Color::packLinearTab[tint.flatTintColor.r] >> 3;
@@ -324,7 +324,7 @@ static void _straight_blit_alpha8_to_bgr565srgb_flattint_blend(const uint8_t* pS
 
 //____ _straight_blit_bgrxa8srgb_to_bgr565srgb_notint_noblend() ____________________________________________________________
 
-static void _straight_blit_bgrxa8srgb_to_bgr565srgb_notint_noblend(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform * pMatrix)
+static void _straight_blit_bgrxa8srgb_to_bgr565srgb_notint_noblend(const uint8_t* pSrc, uint8_t* pDst, const SoftBitmap* pSrcBitmap, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform * pMatrix)
 {
 
 	// Copy loop
@@ -349,7 +349,7 @@ static void _straight_blit_bgrxa8srgb_to_bgr565srgb_notint_noblend(const uint8_t
 
 //____ _straight_blit_bgra8srgb_to_bgr565srgb_notint_blend() ____________________________________________________________
 /*
-static void _straight_blit_bgra8srgb_to_bgr565srgb_notint_blend(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform * pMatrix)
+static void _straight_blit_bgra8srgb_to_bgr565srgb_notint_blend(const uint8_t* pSrc, uint8_t* pDst, const SoftBitmap* pSrcBitmap, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform * pMatrix)
 {
 
 	// Copy loop
@@ -421,7 +421,7 @@ static void updateFixedBlendCache( Color bgCol, Color fgCol )
 
 //____ _straight_blit_alpha8_to_bgr565srgb_no_or_flat_tint_fixedblend() ____________________________________________________________
 
-static void _straight_blit_alpha8_to_bgr565srgb_no_or_flat_tint_fixedblend(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform * pMatrix)
+static void _straight_blit_alpha8_to_bgr565srgb_no_or_flat_tint_fixedblend(const uint8_t* pSrc, uint8_t* pDst, const SoftBitmap* pSrcBitmap, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform * pMatrix)
 {
 	// Setup conversion table
 

@@ -29,20 +29,20 @@ inline BitmapFont* getPtr(wax_obj obj) {
 }
 
 
-wax_obj wax_createBitmapFont( wax_obj surface, char * pGlyphSpec, wax_obj backupFont )
+wax_obj wax_createBitmapFont( wax_obj bitmap, char * pGlyphSpec, wax_obj backupFont )
 {
-	auto pSurface = static_cast<Surface*>(reinterpret_cast<Object*>(surface));
-	auto pBackupFont = static_cast<Font*>(reinterpret_cast<Object*>(surface));
+	auto pBitmap = static_cast<Bitmap*>(reinterpret_cast<Object*>(bitmap));
+	auto pBackupFont = static_cast<Font*>(reinterpret_cast<Object*>(bitmap));
 	
-	auto p = BitmapFont::create(pSurface, pGlyphSpec, pBackupFont );
+	auto p = BitmapFont::create(pBitmap, pGlyphSpec, pBackupFont );
 	p->retain();
 	return static_cast<Object*>(p.rawPtr());
 }
 
 
-wax_obj wax_getBitmapFontSurface( wax_obj font )
+wax_obj wax_getBitmapFontBitmap( wax_obj font )
 {
-	auto pSurface = getPtr(font)->surface();
-	return static_cast<Object*>(pSurface.rawPtr());
+	auto pBitmap = getPtr(font)->bitmap();
+	return static_cast<Object*>(pBitmap.rawPtr());
 }
 

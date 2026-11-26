@@ -42,8 +42,8 @@ set( SOURCES
 	source/wax_gpubackend.h
 	source/wax_gpuedgemap.cpp
 	source/wax_gpuedgemap.h
-	source/wax_gpusurface.cpp
-	source/wax_gpusurface.h
+	source/wax_gpubitmap.cpp
+	source/wax_gpubitmap.h
 	source/wax_memheap.cpp
 	source/wax_memheap.h
 	source/wax_mempool.cpp
@@ -110,17 +110,17 @@ set( SOURCES
 	source/font/wax_gridwalker.h
 	source/font/wax_sysfont.cpp
 	source/font/wax_sysfont.h
-	source/surface/wax_surface.cpp
-	source/surface/wax_surface.h
-	source/surface/wax_surfacefactory.cpp
-	source/surface/wax_surfacefactory.h
-	source/surface/wax_surfacefileheader.h
-	source/surface/wax_surfacefileinspector.cpp
-	source/surface/wax_surfacefileinspector.h
-	source/surface/wax_surfacereader.cpp
-	source/surface/wax_surfacereader.h
-	source/surface/wax_surfacewriter.cpp
-	source/surface/wax_surfacewriter.h
+	source/bitmap/wax_bitmap.cpp
+	source/bitmap/wax_bitmap.h
+	source/bitmap/wax_bitmapfactory.cpp
+	source/bitmap/wax_bitmapfactory.h
+	source/bitmap/wax_bitmapfileheader.h
+	source/bitmap/wax_bitmapfileinspector.cpp
+	source/bitmap/wax_bitmapfileinspector.h
+	source/bitmap/wax_bitmapreader.cpp
+	source/bitmap/wax_bitmapreader.h
+	source/bitmap/wax_bitmapwriter.cpp
+	source/bitmap/wax_bitmapwriter.h
 	source/warp/wax_ballwarp.cpp
 	source/warp/wax_ballwarp.h
 	source/warp/wax_circularwarp.cpp
@@ -190,14 +190,14 @@ set( SOURCES
 	c-api/wax_c_patches.h
 	c-api/wax_c_printer.cpp
 	c-api/wax_c_printer.h
-	c-api/wax_c_surface.cpp
-	c-api/wax_c_surface.h
-	c-api/wax_c_surfacefactory.cpp
-	c-api/wax_c_surfacefactory.h
-	c-api/wax_c_surfacereader.cpp
-	c-api/wax_c_surfacereader.h
-	c-api/wax_c_surfacewriter.cpp
-	c-api/wax_c_surfacewriter.h
+	c-api/wax_c_bitmap.cpp
+	c-api/wax_c_bitmap.h
+	c-api/wax_c_bitmapfactory.cpp
+	c-api/wax_c_bitmapfactory.h
+	c-api/wax_c_bitmapreader.cpp
+	c-api/wax_c_bitmapreader.h
+	c-api/wax_c_bitmapwriter.cpp
+	c-api/wax_c_bitmapwriter.h
 	c-api/wax_c_sysfont.cpp
 	c-api/wax_c_sysfont.h
 	c-api/wax_c_tint.cpp
@@ -219,7 +219,7 @@ set(INCDIRS
 	${CMAKE_CURRENT_LIST_DIR}/source/compression
 	${CMAKE_CURRENT_LIST_DIR}/source/edgemap
 	${CMAKE_CURRENT_LIST_DIR}/source/font
-	${CMAKE_CURRENT_LIST_DIR}/source/surface
+	${CMAKE_CURRENT_LIST_DIR}/source/bitmap
 	${CMAKE_CURRENT_LIST_DIR}/source/warp
 	${CMAKE_CURRENT_LIST_DIR}/c-api
 )

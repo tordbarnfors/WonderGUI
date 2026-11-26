@@ -123,8 +123,8 @@ set(SOURCES
     sections/objects/wg_splitpanelinfosection.cpp
     sections/objects/wg_stackpanelinfosection.h
     sections/objects/wg_stackpanelinfosection.cpp
-    sections/objects/wg_surfacedisplayinfosection.h
-    sections/objects/wg_surfacedisplayinfosection.cpp
+    sections/objects/wg_bitmapdisplayinfosection.h
+    sections/objects/wg_bitmapdisplayinfosection.cpp
     sections/objects/wg_tablepanelinfosection.h
     sections/objects/wg_tablepanelinfosection.cpp
     sections/objects/wg_textdisplayinfosection.h

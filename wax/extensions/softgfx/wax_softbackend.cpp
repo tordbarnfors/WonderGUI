@@ -22,7 +22,7 @@
 #include <cfloat>
 #include <cmath>
 #include <wax_softbackend.h>
-#include <wax_softsurfacefactory.h>
+#include <wax_softbitmapfactory.h>
 #include <wax_softedgemapfactory.h>
 #include <wax_softedgemap.h>
 #include <wax_softwarpmapfactory.h>
@@ -180,7 +180,7 @@ namespace wax
 
 	//____ _beginSession() _______________________________________________________
 
-	void SoftBackend::beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
+	void SoftBackend::beginSession( CanvasRef canvasRef, Bitmap * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
 	{
 		if( canvasRef != CanvasRef::None )
 			setCanvas(canvasRef);
@@ -207,14 +207,14 @@ namespace wax
 			return;
 		}
 
-		setCanvas(pInfo->pSurface);
+		setCanvas(pInfo->pBitmap);
 	}
 
-	void SoftBackend::setCanvas(Surface* _pSurface)
+	void SoftBackend::setCanvas(Bitmap* _pBitmap)
 	{
 		// Wax should be able to run without RTTI.
 
-		auto pSurface = _pSurface->isInstanceOf(SoftSurface::TYPEINFO) ? static_cast<SoftSurface*>(_pSurface) : nullptr;
+		auto pBitmap = _pBitmap->isInstanceOf(SoftBitmap::TYPEINFO) ? static_cast<SoftBitmap*>(_pBitmap) : nullptr;
 
 		if (m_pCanvas)
 		{
@@ -222,7 +222,7 @@ namespace wax
 			m_pCanvas->freePixelBuffer(m_buffer);
 		}
 
-		m_pCanvas = pSurface;
+		m_pCanvas = pBitmap;
 
 		m_buffer = m_pCanvas->allocPixelBuffer();
 		m_pCanvasPixels		= m_buffer.pixels;
@@ -326,7 +326,7 @@ namespace wax
 
 				if (statesChanged & uint8_t(StateChange::BlitSource))
 				{
-					auto pBlitSource = static_cast<SoftSurface*>(m_pObjectsBeg[readObjectIndex(p)]);
+					auto pBlitSource = static_cast<SoftBitmap*>(m_pObjectsBeg[readObjectIndex(p)]);
 
 					if (!pBlitSource || !m_pBlitSource || pBlitSource->softFormat() != m_pBlitSource->softFormat() ||
 						pBlitSource->sampleMethod() != m_pBlitSource->sampleMethod())
@@ -426,7 +426,7 @@ namespace wax
 				{
 					char errorMsg[1024];
 
-					snprintf(errorMsg, 1024, "Failed fill operation. SoftBackend is missing fill kernel for TintMode::%s, BlendMode::%s onto surface of format %s.",
+					snprintf(errorMsg, 1024, "Failed fill operation. SoftBackend is missing fill kernel for TintMode::%s, BlendMode::%s onto bitmap of format %s.",
 						toString(m_colTrans.mode),
 						toString(mode),
 						toString(m_canvasSoftFormat));
@@ -605,7 +605,7 @@ namespace wax
 
 					char errorMsg[1024];
 
-					snprintf(errorMsg, 1024, "Failed drawLine operation. SoftBackend is missing clipLine kernel for BlendMode::%s onto surface of format %s.",
+					snprintf(errorMsg, 1024, "Failed drawLine operation. SoftBackend is missing clipLine kernel for BlendMode::%s onto bitmap of format %s.",
 						toString(m_blendMode),
 						toString(m_canvasSoftFormat));
 
@@ -953,7 +953,7 @@ namespace wax
 
 					char errorMsg[1024];
 
-					snprintf(errorMsg, 1024, "Failed draw segments operation. SoftBackend is missing segments kernel %s tint for BlendMode::%s onto surface of format %s.",
+					snprintf(errorMsg, 1024, "Failed draw segments operation. SoftBackend is missing segments kernel %s tint for BlendMode::%s onto bitmap of format %s.",
 						tinting.bPerPixel ? "with" : "without",
 						toString(m_blendMode),
 						toString(m_canvasSoftFormat));
@@ -1143,27 +1143,27 @@ namespace wax
 
 	//____ defineCanvas() _____________________________________________
 
-	bool SoftBackend::defineCanvas(CanvasRef ref, SoftSurface* pSurface)
+	bool SoftBackend::defineCanvas(CanvasRef ref, SoftBitmap* pBitmap)
 	{
 
 		auto it = std::find_if(m_definedCanvases.begin(), m_definedCanvases.end(), [ref](CanvasInfo& entry) { return (ref == entry.ref); });
 
 		if (it == m_definedCanvases.end())
 		{
-			if (pSurface)
-				m_definedCanvases.push_back(CanvasInfo(ref, pSurface, pSurface->pixelSize() * 64, pSurface->pixelFormat(), pSurface->scale(),
-													   pSurface->colorSpace(), pSurface->isBigEndian()));
+			if (pBitmap)
+				m_definedCanvases.push_back(CanvasInfo(ref, pBitmap, pBitmap->pixelSize() * 64, pBitmap->pixelFormat(), pBitmap->scale(),
+													   pBitmap->colorSpace(), pBitmap->isBigEndian()));
 		}
 		else
 		{
-			if (pSurface)
+			if (pBitmap)
 			{
-				it->pSurface = pSurface;
-				it->size = pSurface->pixelSize() * 64;
-				it->scale = pSurface->scale();
-				it->format = pSurface->pixelFormat();
-				it->colorSpace = pSurface->colorSpace();
-				it->bigEndian = pSurface->isBigEndian();
+				it->pBitmap = pBitmap;
+				it->size = pBitmap->pixelSize() * 64;
+				it->scale = pBitmap->scale();
+				it->format = pBitmap->pixelFormat();
+				it->colorSpace = pBitmap->colorSpace();
+				it->bigEndian = pBitmap->isBigEndian();
 			}
 			else
 			{
@@ -1187,14 +1187,14 @@ namespace wax
 	}
 
 
-	//____ surfaceFactory() ___________________________________________________
+	//____ bitmapFactory() ___________________________________________________
 
-	SurfaceFactory_p SoftBackend::surfaceFactory()
+	BitmapFactory_p SoftBackend::bitmapFactory()
 	{
-		if (!m_pSurfaceFactory)
-			m_pSurfaceFactory = SoftSurfaceFactory::create();
+		if (!m_pBitmapFactory)
+			m_pBitmapFactory = SoftBitmapFactory::create();
 
-		return m_pSurfaceFactory;
+		return m_pBitmapFactory;
 	}
 
 
@@ -1230,14 +1230,14 @@ namespace wax
 
 	bool SoftBackend::canBeBlitSource(const TypeInfo& type) const
 	{
-		return (type == SoftSurface::TYPEINFO);
+		return (type == SoftBitmap::TYPEINFO);
 	}
 
 	//____ canBeCanvas() ______________________________________________
 
 	bool SoftBackend::canBeCanvas(const TypeInfo& type) const
 	{
-		// Any type of surface can be a backend for software rendering as long as pixelbuffer can be reserved.
+		// Any type of bitmap can be a backend for software rendering as long as pixelbuffer can be reserved.
 
 		return true;
 	}
@@ -1404,7 +1404,7 @@ namespace wax
 
 	void SoftBackend::_onePassStraightBlit(const RectI& dest, CoordI src, const Transform& mtx, CoordI patchPos, StraightBlitOp_p pPassOneOp)
 	{
-		const SoftSurface* pSource = m_pBlitSource;
+		const SoftBitmap* pSource = m_pBlitSource;
 
 		int srcPixelBytes = pSource->m_pPixelDescription->bits / 8;
 		int dstPixelBytes = m_canvasPixelBytes;
@@ -1426,7 +1426,7 @@ namespace wax
 
 	void SoftBackend::_twoPassStraightBlit(const RectI& dest, CoordI src, const Transform& mtx, CoordI patchPos, StraightBlitOp_p pPassOneOp)
 	{
-		SoftSurface* pSource = m_pBlitSource;
+		SoftBitmap* pSource = m_pBlitSource;
 
 		int srcPixelBytes = pSource->m_pPixelDescription->bits / 8;
 		int dstPixelBytes = m_canvasPixelBytes;
@@ -1484,7 +1484,7 @@ namespace wax
 
 	void SoftBackend::_onePassTransformBlit(const RectI& dest, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp, Command cmd)
 	{
-		const SoftSurface* pSource = m_pBlitSource;
+		const SoftBitmap* pSource = m_pBlitSource;
 
 		int dstPixelBytes = m_canvasPixelBytes;
 
@@ -1499,7 +1499,7 @@ namespace wax
 	void SoftBackend::_twoPassTransformBlit(const RectI& dest, BinalCoord pos, const binalInt transformMatrix[2][2],
 		CoordI patchPos, TransformBlitOp_p pPassOneOp, Command cmd)
 	{
-		const SoftSurface* pSource = m_pBlitSource;
+		const SoftBitmap* pSource = m_pBlitSource;
 		StraightBlitOp_p pPassTwoOp = (cmd == Command::ClipBlit) ? m_pClipBlitSecondPassOp : m_pBlitSecondPassOp;
 
 		int dstPixelBytes = m_canvasPixelBytes;
@@ -1650,7 +1650,7 @@ namespace wax
 
 		// Sanity checking...
 
-		if (/*!m_pRenderLayerSurface ||*/ !m_pBlitSource /*|| !m_pCanvasPixels*/ || !m_pBlitSource->m_pData || m_blendMode == BlendMode::Ignore)
+		if (/*!m_pRenderLayerBitmap ||*/ !m_pBlitSource /*|| !m_pCanvasPixels*/ || !m_pBlitSource->m_pData || m_blendMode == BlendMode::Ignore)
 			return;
 
 		//
@@ -2555,7 +2555,7 @@ namespace wax
 		{
 			char errorMsg[1024];
 
-			snprintf(errorMsg, 1024, "Failed DrawShape operation. SoftBackend is missing fill or coverage kernel for BlendMode::%s onto surface of format %s.",
+			snprintf(errorMsg, 1024, "Failed DrawShape operation. SoftBackend is missing fill or coverage kernel for BlendMode::%s onto bitmap of format %s.",
 				toString(m_blendMode),
 				toString(m_canvasSoftFormat));
 
@@ -3094,7 +3094,7 @@ namespace wax
 		{
 			char errorMsg[1024];
 
-			snprintf(errorMsg, 1024, "Failed drawLine operation. SoftBackend is missing clipLine, fill or coverage kernel for BlendMode::%s onto surface of format %s.",
+			snprintf(errorMsg, 1024, "Failed drawLine operation. SoftBackend is missing clipLine, fill or coverage kernel for BlendMode::%s onto bitmap of format %s.",
 				toString(m_blendMode),
 				toString(m_canvasSoftFormat));
 

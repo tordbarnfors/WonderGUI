@@ -27,7 +27,7 @@ public:
 		if (!pDevice->isInstanceOf(GfxDeviceGen2::TYPEINFO))
 			return false;
 
-		m_pLogo = pAppAPI->loadSurface("resources/logo-200.png", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Nearest });
+		m_pLogo = pAppAPI->loadBitmap("resources/logo-200.png", pDevice->bitmapFactory(), { .sampleMethod = SampleMethod::Nearest });
 		if (!m_pLogo)
 			return false;
 
@@ -35,7 +35,7 @@ public:
 
 		for (auto& pHalf : m_pHalves)
 		{
-			pHalf = pDevice->surfaceFactory()->createSurface(WGBP(Surface,
+			pHalf = pDevice->bitmapFactory()->createBitmap(WGBP(Bitmap,
 				_.size = halfSize,
 				_.format = PixelFormat::ARGB_8,
 				_.canvas = true));
@@ -186,7 +186,7 @@ private:
 		pDevice->setBlendMode(BlendMode::Blend);
 	}
 
-	Surface_p		m_pLogo;
-	Surface_p		m_pHalves[2];			// Flattened between the rounds, followed by a canvas update per round.
+	Bitmap_p		m_pLogo;
+	Bitmap_p		m_pHalves[2];			// Flattened between the rounds, followed by a canvas update per round.
 	CanvasLayers_p	m_pCanvasLayers;
 };

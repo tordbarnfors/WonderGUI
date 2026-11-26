@@ -21,8 +21,8 @@
 =========================================================================*/
 #include <cocoagfxbackend.h>
 
-#include <wax_softsurface.h>
-#include <wax_softsurfacefactory.h>
+#include <wax_softbitmap.h>
+#include <wax_softbitmapfactory.h>
 #include <wax_softedgemapfactory.h>
 #include <wax_softbackend.h>
 #include <wax_softkernels_default.h>
@@ -79,7 +79,7 @@ private:
 	static const int	c_maxBuffers = 3;
 	static const int	c_maxChangedRects = 64;		// More than this and we copy everything.
 
-	Surface_p		_createCanvas();
+	Bitmap_p		_createCanvas();
 	void			_releaseBuffers();
 	Pixels *		_createPixels();
 	static void		_releasePixels(Pixels * pPixels);
@@ -110,8 +110,8 @@ bool initGfxBackend()
 
 	wg::Base::setDefaultDevice(pSoftDevice);
 
-	auto pSurfaceFactory = SoftSurfaceFactory::create();
-	wg::Base::setDefaultSurfaceFactory(pSurfaceFactory);
+	auto pBitmapFactory = SoftBitmapFactory::create();
+	wg::Base::setDefaultBitmapFactory(pBitmapFactory);
 
 	auto pEdgemapFactory = SoftEdgemapFactory::create();
 	wg::Base::setDefaultEdgemapFactory(pEdgemapFactory);
@@ -155,7 +155,7 @@ CocoaWindowSoftware::CocoaWindowSoftware(wapp::Window* pUserWindow, wg::Placemen
 	[m_view setLayer:m_layer];
 	[m_view setWantsLayer:YES];
 
-	m_pRootPanel = RootPanel::create( { .canvasSurface = _createCanvas() } );
+	m_pRootPanel = RootPanel::create( { .canvasBitmap = _createCanvas() } );
 	m_pRootPanel->setWindowRef(reinterpret_cast<uintptr_t>(this));
 }
 
@@ -209,7 +209,7 @@ void CocoaWindowSoftware::onWindowSizeUpdated()
 
 //____ _createCanvas() ________________________________________________________
 
-Surface_p CocoaWindowSoftware::_createCanvas()
+Bitmap_p CocoaWindowSoftware::_createCanvas()
 {
 	SizeI size = _sizeInPixels();
 	size.w = std::max(size.w, 1);
@@ -226,7 +226,7 @@ Surface_p CocoaWindowSoftware::_createCanvas()
 	m_canvasPitch = size.w * 4;
 	m_pCanvasBlob = Blob::create(m_canvasPitch * size.h);
 
-	return SoftSurface::create( WGBP(Surface, _.size = size, _.format = PixelFormat::XRGB_8, _.canvas = true, _.scale = _scale() ), m_pCanvasBlob, m_canvasPitch);
+	return SoftBitmap::create( WGBP(Bitmap, _.size = size, _.format = PixelFormat::XRGB_8, _.canvas = true, _.scale = _scale() ), m_pCanvasBlob, m_canvasPitch);
 }
 
 //____ _releaseBuffers() ______________________________________________________

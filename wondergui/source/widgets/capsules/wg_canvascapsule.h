@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_capsule.h>
-#include <wax_surfacefactory.h>
+#include <wax_bitmapfactory.h>
 #include <wax_patches.h>
 #include <wax_canvaslayers.h>
 #include <wg_glow.h>
@@ -60,6 +60,7 @@ namespace wg
 
 		struct Blueprint
 		{
+			BitmapFactory_p bitmapFactory;
 			BlendMode		blendMode		= BlendMode::Blend;
 			Widget_p		child;
 			Color			clearColor		= Color::Undefined;
@@ -83,7 +84,6 @@ namespace wg
 			Skin_p			skin;
 			bool			skinAroundCanvas = false;
 			bool			stickyFocus		= false;
-			SurfaceFactory_p surfaceFactory;
 			bool			tabLock			= false;
 			bool			takesFocusFromChild = true;
 			Color			tintColor		= Color::Undefined;
@@ -133,8 +133,8 @@ namespace wg
 		void				setBlendMode(BlendMode mode);
 		inline BlendMode	blendMode() { return m_blendMode; }
 
-		void				setSurfaceFactory(SurfaceFactory* pFactory);
-		SurfaceFactory_p	surfaceFactory() const { return m_pFactory; }
+		void				setBitmapFactory(BitmapFactory* pFactory);
+		BitmapFactory_p	bitmapFactory() const { return m_pFactory; }
 		
 		void				setFormat(PixelFormat format);
 		PixelFormat			format() const { return m_canvasFormat; }
@@ -153,8 +153,8 @@ namespace wg
 
 		//.____ Content _____________________________________________
 
-		Surface_p			canvas() const { return m_pCanvas; }
-		Surface_p			glowCanvas() const { return m_pGlowCanvas; }
+		Bitmap_p			canvas() const { return m_pCanvas; }
+		Bitmap_p			glowCanvas() const { return m_pGlowCanvas; }
 
 		int					nbSideDisplays() const { return (int)m_sideDisplays.size(); }
 
@@ -171,7 +171,7 @@ namespace wg
 		{
 			m_canvasSize = m_size;
 
-			m_pFactory		= bp.surfaceFactory;
+			m_pFactory		= bp.bitmapFactory;
 			m_canvasFormat	= bp.pixelFormat;
 			m_canvasColorSpace = bp.colorSpace;
 			m_pCanvasLayers = bp.layers;
@@ -205,7 +205,7 @@ namespace wg
 
 		void				_update(int microPassed, int64_t microsecTimestamp) override;
 
-		Surface*			_renderCanvas(GfxDevice* pDevice, bool bFollowCanvas);
+		Bitmap*			_renderCanvas(GfxDevice* pDevice, bool bFollowCanvas);
 		void				_render(GfxDevice* pDevice, const RectSPX& _canvas, const RectSPX& _window) override;
 		void				_resize(const SizeSPX& size, int scale) override;
 
@@ -229,7 +229,7 @@ namespace wg
 		Rect				_childLocalSpxToGlobalPts(const StaticSlot* pSlot, const RectSPX& rect) const override;
 
 		RectSPX				_canvasWindow( RectSPX window ) const;
-		Surface*			_canvasSurface() { return m_pCanvas; }
+		Bitmap*			_canvasBitmap() { return m_pCanvas; }
 
 		void				_addSideDisplay(CanvasDisplay* pSideDisplay);
 		void				_removeSideDisplay(CanvasDisplay* pSideDisplay);
@@ -237,13 +237,13 @@ namespace wg
 
 		void				_setCanvasSize( SizeSPX canvasSize );
 
-		Surface_p			m_pCanvas;
-		Surface_p			m_pGlowCanvas;	// Extra canvas that may be needed when glow is active.
+		Bitmap_p			m_pCanvas;
+		Bitmap_p			m_pGlowCanvas;	// Extra canvas that may be needed when glow is active.
 
 		CanvasLayers_p		m_pCanvasLayers;
 		SizeSPX				m_canvasSize;
 		
-		SurfaceFactory_p	m_pFactory;
+		BitmapFactory_p	m_pFactory;
 		PixelFormat			m_canvasFormat = PixelFormat::ARGB_8;
 		ColorSpace			m_canvasColorSpace = ColorSpace::Undefined;		// Undefined: same as the canvas we are rendered onto.
 		Color				m_clearColor = Color::Undefined;

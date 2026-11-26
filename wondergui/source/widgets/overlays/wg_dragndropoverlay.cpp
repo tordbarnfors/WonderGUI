@@ -24,7 +24,7 @@
 #include <wg_msgrouter.h>
 #include <wg_msg.h>
 #include <wax_device.h>
-#include <wax_surfacefactory.h>
+#include <wax_bitmapfactory.h>
 #include <wax_patches.h>
 #include <wg_image.h>
 #include <wg_root.h>
@@ -589,8 +589,8 @@ namespace wg
 		{
 			SizeSPX sz = m_pPicked->_size();
 
-			auto pFactory = pDevice->surfaceFactory();
-			auto pCanvas = pFactory->createSurface( WGBP(Surface, _.size = sz/64, _.format = PixelFormat::ARGB_8,
+			auto pFactory = pDevice->bitmapFactory();
+			auto pCanvas = pFactory->createBitmap( WGBP(Bitmap, _.size = sz/64, _.format = PixelFormat::ARGB_8,
 														 _.colorSpace = pDevice->canvas().colorSpace, _.canvas = true) );
 			pCanvas->fill( Color::Transparent );
 

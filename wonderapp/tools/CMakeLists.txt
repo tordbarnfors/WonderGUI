@@ -3,7 +3,7 @@ add_subdirectory(editera)
 add_subdirectory(fontgenerator)
 add_subdirectory(gfxdevicetester)
 add_subdirectory(packlayouttester)
-add_subdirectory(surfviewer)
+add_subdirectory(bitmapviewer)
 add_subdirectory(streamanalyzer)
 add_subdirectory(widgetbench)
 

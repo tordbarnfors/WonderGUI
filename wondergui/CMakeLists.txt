@@ -192,8 +192,8 @@ set( SOURCES
 	source/widgets/wg_skindisplay.h
 	source/widgets/wg_slider.cpp
 	source/widgets/wg_slider.h
-	source/widgets/wg_surfacedisplay.cpp
-	source/widgets/wg_surfacedisplay.h
+	source/widgets/wg_bitmapdisplay.cpp
+	source/widgets/wg_bitmapdisplay.h
 	source/widgets/wg_textdisplay.cpp
 	source/widgets/wg_textdisplay.h
 	source/widgets/wg_texteditor.cpp

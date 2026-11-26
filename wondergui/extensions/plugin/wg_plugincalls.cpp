@@ -35,8 +35,8 @@ namespace wg
 //	wg_streamplayer_calls*		PluginCalls::streamPlayer	= nullptr;
 //	wg_streampump_calls*		PluginCalls::streamPump		= nullptr;
 //	wg_streamreader_calls*		PluginCalls::streamReader	= nullptr;
-	wg_surface_calls*			PluginCalls::surface		= nullptr;
-	wg_surfacefactory_calls*	PluginCalls::surfaceFactory = nullptr;
+	wg_bitmap_calls*			PluginCalls::bitmap		= nullptr;
+	wg_bitmapfactory_calls*	PluginCalls::bitmapFactory = nullptr;
 	wg_edgemap_calls*			PluginCalls::edgemap		= nullptr;
 	wg_edgemapfactory_calls*	PluginCalls::edgemapFactory = nullptr;
 	wg_hostbridge_calls*		PluginCalls::hostBridge		= nullptr;
@@ -87,10 +87,10 @@ namespace wg
 			goto	error_too_old_abi;
 */
 
-		if (pCallsCollection->pSurface->structSize < sizeof(wg_surface_calls))
+		if (pCallsCollection->pBitmap->structSize < sizeof(wg_bitmap_calls))
 			goto	error_too_old_abi;
 
-		if (pCallsCollection->pSurfaceFactory->structSize < sizeof(wg_surfacefactory_calls))
+		if (pCallsCollection->pBitmapFactory->structSize < sizeof(wg_bitmapfactory_calls))
 			goto	error_too_old_abi;
 
 		if (pCallsCollection->pEdgemap->structSize < sizeof(wg_edgemap_calls))
@@ -127,8 +127,8 @@ namespace wg
 //		streamBuffer	= pCallsCollection->pStreamBuffer;
 //		streamPlayer	= pCallsCollection->pStreamPlayer;
 //		streamPump		= pCallsCollection->pStreamPump;
-		surface			= pCallsCollection->pSurface;
-		surfaceFactory	= pCallsCollection->pSurfaceFactory;
+		bitmap			= pCallsCollection->pBitmap;
+		bitmapFactory	= pCallsCollection->pBitmapFactory;
 		edgemap			= pCallsCollection->pEdgemap;
 		edgemapFactory = pCallsCollection->pEdgemapFactory;
 		hostBridge		= pCallsCollection->pHostBridge;

@@ -78,7 +78,7 @@ protected:
 	{
 		string			name;
 		GfxDevice_p		pDevice;
-		Surface_p		pCanvas;
+		Bitmap_p		pCanvas;
 	};
 
 	struct SuiteEntry
@@ -135,7 +135,7 @@ protected:
 	struct Viewer
 	{
 		TextDisplay_p		pTitle;							// Suite and name of the test shown.
-		Surface_p			pImages[3];						// Testee, reference and diff, as displayed.
+		Bitmap_p			pImages[3];						// Testee, reference and diff, as displayed.
 		Slider_p			pDiffSlider;
 		TextDisplay_p		pDiffFactorLabel;
 
@@ -229,7 +229,7 @@ protected:
 	vector<RectSPX>	clip_rects(ClipList clipList);
 	void		fill_background(GfxDevice* pDevice, Background background);
 	bool		read_canvas(Side side, vector<uint8_t>& pixels);
-	void		write_image(Surface* pSurface, const vector<uint8_t>& pixels);
+	void		write_image(Bitmap* pBitmap, const vector<uint8_t>& pixels);
 	void		compare(const vector<uint8_t>& testee, const vector<uint8_t>& reference, AccuracyResult& result);
 
 	void		show_test(Viewer& viewer, int test);

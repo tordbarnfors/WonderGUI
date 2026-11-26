@@ -199,19 +199,19 @@ bool WgPen::SetChar( Uint32 chr )
 	wg::Glyph glyph;
 	
 	m_pFont->getGlyphWithBitmap( chr, glyph );
-	if( !glyph.pSurface )
+	if( !glyph.pBitmap )
 	{
 		// The glyph doesn't exist in this font, try to get the unicode
 		// WHITE_BOX as a replacement glyph.
 
 		m_pFont->getGlyphWithBitmap( 0xFFFD, glyph );
-		if( !glyph.pSurface )
+		if( !glyph.pBitmap )
 		{
 			// We don't have the white box, try with the most suitable
 			// common ascii character instead...
 
 			m_pFont->getGlyphWithBitmap( '*', glyph );
-			if( !glyph.pSurface )
+			if( !glyph.pBitmap )
 			{
 				// Total failure, nothing to render...
 
@@ -229,12 +229,12 @@ bool WgPen::SetChar( Uint32 chr )
 
 void WgPen::BlitChar() const
 {
-	if( m_glyph.pSurface )
+	if( m_glyph.pBitmap )
 	{
         int x = m_pos.x + m_glyph.bearingX/64;
         int y = m_pos.y + m_glyph.bearingY/64;
 
-		m_pDevice->setBlitSource(m_glyph.pSurface);            //TODO: Optimize!!!!
+		m_pDevice->setBlitSource(m_glyph.pBitmap);            //TODO: Optimize!!!!
 
 		m_pDevice->blit( wg::CoordSPX(x*64,y*64), m_glyph.rect);
 	}

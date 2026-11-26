@@ -52,10 +52,10 @@
 #include <wax_c_util.h>
 #include <wax_c_patches.h>
 #include <wax_c_printer.h>
-#include <wax_c_surface.h>
-#include <wax_c_surfacefactory.h>
-#include <wax_c_surfacereader.h>
-#include <wax_c_surfacewriter.h>
+#include <wax_c_bitmap.h>
+#include <wax_c_bitmapfactory.h>
+#include <wax_c_bitmapreader.h>
+#include <wax_c_bitmapwriter.h>
 #include <wax_c_tint.h>
 
 

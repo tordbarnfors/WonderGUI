@@ -31,13 +31,13 @@ widget with another pointer style, such as a `LineEditor`.
 
 `wondergui/source/base/wg_inputhandler.cpp`
 
-### Without a default `SurfaceFactory`, drawing text with a `FreeTypeFont` crashes
+### Without a default `BitmapFactory`, drawing text with a `FreeTypeFont` crashes
 
 A `FreeTypeFont` that isn't given a cache uses `Base::defaultBitmapCache()`, and
-`BitmapCache::_addCacheSurface()` calls `createSurface()` on `Base::defaultSurfaceFactory()`
+`BitmapCache::_addCacheBitmap()` calls `createBitmap()` on `Base::defaultBitmapFactory()`
 without checking for null. A host that creates a `RootPanel` with its own device and never
-calls `Base::setDefaultSurfaceFactory()` works until the first text is drawn.
-`Font::getGlyphAsSurface()` does check. Seen as a crash at the first render with text; the null
+calls `Base::setDefaultBitmapFactory()` works until the first text is drawn.
+`Font::getGlyphAsBitmap()` does check. Seen as a crash at the first render with text; the null
 factory is from reading the code, since the fix that was tried set the default device and all
 three factories at once.
 
@@ -163,7 +163,7 @@ with gfxdevicetester, which behaves the same with OpenGL and Vulkan.
 
 It never swaps, which shows nothing on Wayland, where a window isn't mapped until it has swapped
 in a buffer. SDL2 uses X11 by default, so this only hits with `SDL_VIDEODRIVER=wayland`.
-wappsdl3gl renders into a surface per window and swaps it in, which wappsdl2gl could copy.
+wappsdl3gl renders into a bitmap per window and swaps it in, which wappsdl2gl could copy.
 
 `wonderapp/source/sdl2/backend_opengl.cpp`
 
@@ -171,7 +171,7 @@ wappsdl3gl renders into a surface per window and swaps it in, which wappsdl2gl c
 
 With `WAPP_GPU_DEBUG=1` and D3D12, the debug layer lists 467 live objects when gfxdevicetester
 ends ("Process is terminating", Arc B580, e5d6c4ae). `backend_specific_exit()` leaves the device
-to the process when `SdlGpuBackend::setDevice(nullptr)` says no, which it does while surfaces and
+to the process when `SdlGpuBackend::setDevice(nullptr)` says no, which it does while bitmaps and
 such are alive, so something outlives the backend: of gfxdevicetester, or of WonderApp, in which
 case every application has it. Harmless at exit, but it would hide a real leak. Not looked into.
 
@@ -280,11 +280,11 @@ every driver takes. See under Graphics for what differs with Metal and with Vulk
 
 `wax/extensions/sdlgpugfx`
 
-### MetalSurface with surfaces that change while drawing
+### MetalBitmap with bitmaps that change while drawing
 
-MetalSurface sends pixels to its texture when the surface is used, in a command buffer committed
+MetalBitmap sends pixels to its texture when the bitmap is used, in a command buffer committed
 ahead of the session, since e4e1e9b5. gfxdevicetester gives the same results as before, but it
-fills most of its surfaces once. An application that writes to surfaces every frame hasn't been
+fills most of its bitmaps once. An application that writes to bitmaps every frame hasn't been
 run with it: widgetbench was only started and left on its first test, with nobody at it.
 
 ## Graphics
@@ -366,21 +366,21 @@ At d9508fe6 MetalBackend has the same twelve, and Rectangles of ReadbackTests, w
 SdlGpuBackend with Metal has the six of BlitGridNear, SamplingTests and WarpTests by the same
 amounts, and specks for the three of palettes. So has SdlGpuBackend with D3D12 (Arc B580).
 
-### PluginSurfaceFactory drops the user data and the finalizer of a Blueprint
+### PluginBitmapFactory drops the user data and the finalizer of a Blueprint
 
-`_convertBlueprint()` has nothing to put them in, as `wax_surfaceBP` has neither, and the
-PluginSurface is made from an empty Blueprint, so a surface a plugin creates with `userData` or
+`_convertBlueprint()` has nothing to put them in, as `wax_bitmapBP` has neither, and the
+PluginBitmap is made from an empty Blueprint, so a bitmap a plugin creates with `userData` or
 `finalizer` in its Blueprint has no user data and its finalizer is never called. `setUserData()`
-and `setFinalizer()` on the surface afterwards work, on the PluginSurface. Found 2026-11-25 when
+and `setFinalizer()` on the bitmap afterwards work, on the PluginBitmap. Found 2026-11-25 when
 restorers were passed on, which are in the same place.
 
-`PluginSurfaceFactory::_prepareSurface()` in `wondergui/extensions/plugin/wg_pluginsurfacefactory.cpp`
+`PluginBitmapFactory::_prepareBitmap()` in `wondergui/extensions/plugin/wg_pluginbitmapfactory.cpp`
 
-### A surface with no height gets past `_isBlueprintValid()`, and pluginworkbench aborts on it
+### A bitmap with no height gets past `_isBlueprintValid()`, and pluginworkbench aborts on it
 
-`Surface::_isBlueprintValid()` turns down a size that `isEmpty()`, which a SizeI only is when
-both width and height are zero. So 64 x 0 and 390 x -51 get through. DX12Surface then fails to
-make its texture and GpuSurface asks for pixels of a negative size, which ends in `std::bad_alloc`
+`Bitmap::_isBlueprintValid()` turns down a size that `isEmpty()`, which a SizeI only is when
+both width and height are zero. So 64 x 0 and 390 x -51 get through. DX12Bitmap then fails to
+make its texture and GpuBitmap asks for pixels of a negative size, which ends in `std::bad_alloc`
 and an abort. Not tried on the other backends.
 
 That is how pluginworkbench ends in its first frame on wappwin32dx12 (2026-11-25, the first
@@ -390,33 +390,33 @@ two things: the check, and CanvasCapsule asking for a canvas when it has no room
 the check alone fixed CanvasCapsule gets no canvas, which it then begins a canvas update with.
 Whether pluginworkbench does the same on SDL hasn't been tried.
 
-`Surface::_isBlueprintValid()` in `wax/source/surface/wax_surface.cpp`,
+`Bitmap::_isBlueprintValid()` in `wax/source/bitmap/wax_bitmap.cpp`,
 `CanvasCapsule::_renderCanvas()` in `wondergui/source/widgets/capsules/wg_canvascapsule.cpp`
 
-### MetalSurface: pixels asked for during a session miss what it rendered
+### MetalBitmap: pixels asked for during a session miss what it rendered
 
 MetalBackend marks a canvas as rendered into when it binds it, as DX12Backend and VulkanBackend
 do, but what it renders isn't in the texture until its command buffer is committed, when the
 session ends. `pushPixels()` between the two reads the texture back as it was. So does `alpha()`,
 and its alpha map then counts as up to date, so `alpha()` stays without what the session rendered
-until the surface is rendered into the next time. DX12Surface and VulkanSurface have every
-backend submit what it has recorded before they read back, which MetalSurface has no way to ask
+until the bitmap is rendered into the next time. DX12Bitmap and VulkanBitmap have every
+backend submit what it has recorded before they read back, which MetalBitmap has no way to ask
 for.
 
 It can't happen through a device: DeviceGen2 opens and closes the session of a canvas update
 inside the call that ends it (`_doFlattenLayers()`), so nothing of the caller runs in between,
 also with nested canvas updates. It takes code that drives the backend itself and asks for pixels
 between `beginSession()` and `endSession()`. The texture is right all along, so drawing from the
-surface is.
+bitmap is.
 
-`MetalBackend::_bindCanvas()`, `MetalSurface::_readBack()`, `GpuSurface::_readAlphaMap()`
+`MetalBackend::_bindCanvas()`, `MetalBitmap::_readBack()`, `GpuBitmap::_readAlphaMap()`
 
 ### DX12Backend: canvas layers take 1.5-3 times as long as on GlBackend
 
 On Windows (Arc B580), gfxdevicetester's tests drawing into canvas layers took 130-200 times as
-long as on GlBackend, then 5-9 times with the pixels of a DX12Surface in CPU cached memory
+long as on GlBackend, then 5-9 times with the pixels of a DX12Bitmap in CPU cached memory
 (95e05825). A canvas layer no longer gets a pixel buffer, nor an upload of transparent black, see
-"DX12Surface: canvases without a pixel buffer" in ROADMAP.md, which leaves this (gfxdevicetester,
+"DX12Bitmap: canvases without a pixel buffer" in ROADMAP.md, which leaves this (gfxdevicetester,
 Release, two runs of each, 2026-11-23):
 
     Test                                        at first   95e05825      now       GlBackend
@@ -426,7 +426,7 @@ Release, two runs of each, 2026-11-23):
     ReadbackTests        Readback                4.7 ms    3.3 ms        3.2 ms    2.0 ms
 
 Without canvas layers the same tests are faster on DX12Backend (NoCanvasLayers 18 us against
-210 us, ViaSurface 15 us against 100 us).
+210 us, ViaBitmap 15 us against 100 us).
 
 What is left is making the texture of each layer, a committed resource, which DeviceGen2 does for
 every canvas update (`_beginCanvasUpdate()`). Timed by itself it grows with the size, less than
@@ -442,16 +442,16 @@ the pixel buffer did (ARGB_8, two runs of 20 each):
 Tried: D3D12_HEAP_FLAG_CREATE_NOT_ZEROED makes no difference. A texture placed in a heap that is
 there already takes 21 us, but needs a heap kept between updates, which is what GL drivers do.
 Decided with Tord not to keep canvases or memory for them behind the scenes: if anything, layer
-surfaces are to be supplied or kept by whoever owns the canvas.
+bitmaps are to be supplied or kept by whoever owns the canvas.
 
-`_createDeviceObjects()` in `wax/extensions/dx12gfx/wax_dx12surface.cpp`
+`_createDeviceObjects()` in `wax/extensions/dx12gfx/wax_dx12bitmap.cpp`
 
-### DeviceGen2 makes a surface for every canvas layer, used or not, of the size of the canvas
+### DeviceGen2 makes a bitmap for every canvas layer, used or not, of the size of the canvas
 
-`CanvasLayers` says that the surface of a layer is made when something first draws to the layer,
+`CanvasLayers` says that the bitmap of a layer is made when something first draws to the layer,
 so that layers not used cost nothing. DeviceGen2 makes one for every layer with a format or a
 function of its own when the canvas update begins, clears it, and blends it onto the canvas when
-the update ends, also when nothing was drawn to it. The surfaces are of the size of the whole
+the update ends, also when nothing was drawn to it. The bitmaps are of the size of the whole
 canvas, however small the rectangles to update are. RootPanel and CanvasCapsule begin a canvas
 update with their layers for every render, so a window with layers pays for all of them each time
 something in it changes. All backends.
@@ -469,18 +469,18 @@ CMake warns about it when a DX12 build is configured, if it finds a Python, and
 
 `wax/extensions/dx12gfx/compile_shaders.py`
 
-### DX12Surface: a small surface takes at least 64 KB
+### DX12Bitmap: a small bitmap takes at least 64 KB
 
-The texture of a DX12Surface is a committed resource, which D3D12 makes at least 64 KB, and there
+The texture of a DX12Bitmap is a committed resource, which D3D12 makes at least 64 KB, and there
 are one or two descriptor heaps besides. A 32x32 icon has 4 KB of pixels. Its pixels in plain
 memory take what they are since 2026-11-24, where they were a second committed resource. Edgemaps,
 Warpmaps and palettes get their buffers from DX12BufferPool, see ROADMAP.md, but textures would
 need a heap to be placed in.
 
-Accepted as it is (Tord, 2026-11): graphics is meant to be baked into larger surfaces, for
+Accepted as it is (Tord, 2026-11): graphics is meant to be baked into larger bitmaps, for
 performance too, so nothing is planned for this.
 
-`_createDeviceObjects()` in `wax/extensions/dx12gfx/wax_dx12surface.cpp`
+`_createDeviceObjects()` in `wax/extensions/dx12gfx/wax_dx12bitmap.cpp`
 
 ### DX12BufferPool keeps a block for as long as one buffer is left in it
 
@@ -555,19 +555,19 @@ does, is planned, see ROADMAP.md.
 
 ### VulkanBackend: one memory allocation per buffer and image
 
-Drivers can limit allocations to 4096, which an app with that many surfaces would hit.
+Drivers can limit allocations to 4096, which an app with that many bitmaps would hit.
 RangeAllocator (`wax/source/wax_rangeallocator.h`), which DX12BufferPool hands out ranges of its
 blocks with, is there to do the same for blocks of Vulkan memory.
 
 `VulkanContext::createBuffer()` and `createImage()` in `wax/extensions/vulkangfx/wax_vulkancontext.cpp`
-### SoftBackend doesn't use the `mipmap` flag of a surface
+### SoftBackend doesn't use the `mipmap` flag of a bitmap
 
-`Surface` keeps `mipmap` from its Blueprint, but nothing in `wax/extensions/softgfx` reads it:
+`Bitmap` keeps `mipmap` from its Blueprint, but nothing in `wax/extensions/softgfx` reads it:
 no smaller levels are made and blits always sample the full-size pixels. A blit to a much
 smaller size, like an `Image` showing a 1173 pixel wide picture 150 wide, should therefore alias.
-That hasn't been measured: Cybersim shrinks its pictures itself before making surfaces of them.
+That hasn't been measured: Cybersim shrinks its pictures itself before making bitmaps of them.
 
-`wax/extensions/softgfx/wax_softsurface.cpp`, `wax_softbackend.cpp`
+`wax/extensions/softgfx/wax_softbitmap.cpp`, `wax_softbackend.cpp`
 
 ### SoftBackend draws thick rings slower than the grid of nodes did
 
@@ -575,7 +575,7 @@ Linear triangles follow a ring less closely than the bilinear cells of the grid 
 for the same precision a ring takes pieces about half the size, around 8 x 15 pixels for a ring
 of radius 90 to 148. SoftBackend spends about as much on each piece on each row as on drawing
 it, so such a ring takes 1.25 times as long as before, and 1.6 times as long when it is a blit,
-which reads the surface in a kernel call for each piece on each row. Thin rings, rounded frames,
+which reads the bitmap in a kernel call for each piece on each row. Thin rings, rounded frames,
 focus rings, cylinders and planes in perspective take as long as before or less, down to 0.67.
 Measured on x86-64 against commit 2614ea3.
 
@@ -604,7 +604,7 @@ balls are caught by the windows. Only sent when tilt or roll changes, not when s
 
 ### `wax_getFreeTypeFontBitmapCache()` returns a retained cache
 
-The other C API getters, such as `wax_getBitmapFontSurface()` and `wax_getDeviceSurfaceFactory()`,
+The other C API getters, such as `wax_getBitmapFontBitmap()` and `wax_getDeviceBitmapFactory()`,
 return a borrowed object, but this one retains the cache, so a caller that treats it like the
 others leaks a reference. The header doesn't say which is meant. Dropping the retain is a change
 of contract for callers that already release it, so it is left until someone decides.
@@ -613,9 +613,9 @@ of contract for callers that already release it, so it is left until someone dec
 
 ### The C# wrapper doesn't build
 
-`StreamBackend.DefineCanvas()` takes a `StreamSurface`, a class no file of the wrapper has, so
+`StreamBackend.DefineCanvas()` takes a `StreamBitmap`, a class no file of the wrapper has, so
 `dotnet build` of `Wax.csproj` stops with CS0246 (dotnet 10.0.402, 2026-11-23). It is the only
 error, on v4 and breaking-changes too, so the rest compiles, but nothing of the wrapper has been
-run, the `FillColor` of `Surface.Blueprint` included.
+run, the `FillColor` of `Bitmap.Blueprint` included.
 
 `wax/wrappers/c-sharp/wax_streambackend.cs`, `wax/wrappers/c-sharp/Wax/Wax.csproj`

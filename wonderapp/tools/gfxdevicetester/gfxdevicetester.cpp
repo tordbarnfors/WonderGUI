@@ -13,7 +13,7 @@
 
 #include <wax.h>
 #include <wax_referencebackend.h>
-#include <wax_softsurface.h>
+#include <wax_softbitmap.h>
 
 #include "gfxdevicetester.h"
 
@@ -42,7 +42,7 @@
 #include "testsuites/palettecapacitytests.h"
 #include "testsuites/blursourcetests.h"
 #include "testsuites/readbacktests.h"
-#include "testsuites/surfacefilltests.h"
+#include "testsuites/bitmapfilltests.h"
 #include "testsuites/edgemaptinttests.h"
 #include "testsuites/layerroundtriptests.h"
 #include "testsuites/blendruletests.h"
@@ -183,7 +183,7 @@ void GfxDeviceTester::closeWindow(wapp::Window* pWindow)
 
 void GfxDeviceTester::setup_backends()
 {
-	Surface::Blueprint canvasBP = WGBP(Surface,
+	Bitmap::Blueprint canvasBP = WGBP(Bitmap,
 		_.size = m_canvasSize,
 		_.canvas = true);
 
@@ -202,7 +202,7 @@ void GfxDeviceTester::setup_backends()
 		}
 		name += ")";
 
-		m_backends[TESTEE] = { name, pDevice, wg::Base::defaultSurfaceFactory()->createSurface(canvasBP) };
+		m_backends[TESTEE] = { name, pDevice, wg::Base::defaultBitmapFactory()->createBitmap(canvasBP) };
 	}
 
 	// Reference: GfxDeviceGen2 with ReferenceBackend.
@@ -210,7 +210,7 @@ void GfxDeviceTester::setup_backends()
 	{
 		auto pBackend = ReferenceBackend::create();
 
-		m_backends[REFERENCE] = { "Reference (GfxDeviceGen2 + ReferenceBackend)", GfxDeviceGen2::create(pBackend), SoftSurface::create(canvasBP) };
+		m_backends[REFERENCE] = { "Reference (GfxDeviceGen2 + ReferenceBackend)", GfxDeviceGen2::create(pBackend), SoftBitmap::create(canvasBP) };
 	}
 
 	// Both canvases are read back to ARGB_8 in the color space of the reference canvas
@@ -252,7 +252,7 @@ void GfxDeviceTester::setup_tests()
 	add([]() { return new PaletteCapacityTests(); });
 	add([]() { return new BlurSourceTests(); });
 	add([]() { return new ReadbackTests(); });
-	add([]() { return new SurfaceFillTests(); });
+	add([]() { return new BitmapFillTests(); });
 	add([]() { return new EdgemapTintTests(); });
 	add([]() { return new LayerRoundTripTests(); });
 	add([]() { return new BlendRuleTests(); });
@@ -561,7 +561,7 @@ Widget_p GfxDeviceTester::create_test_tree()
 
 void GfxDeviceTester::create_viewer(Viewer& viewer)
 {
-	Surface::Blueprint bp = WGBP(Surface,
+	Bitmap::Blueprint bp = WGBP(Bitmap,
 		_.size = m_canvasSize,
 		_.format = PixelFormat::ARGB_8,
 		_.colorSpace = m_compareColorSpace,
@@ -569,7 +569,7 @@ void GfxDeviceTester::create_viewer(Viewer& viewer)
 
 	for (int i = 0; i < 3; i++)
 	{
-		viewer.pImages[i] = wg::Base::defaultSurfaceFactory()->createSurface(bp);
+		viewer.pImages[i] = wg::Base::defaultBitmapFactory()->createBitmap(bp);
 		viewer.pImages[i]->fill(Color::Black);
 	}
 
@@ -613,13 +613,13 @@ Widget_p GfxDeviceTester::create_image_box(Viewer& viewer, int image, float zoom
 
 	auto pLabel = TextDisplay::create({ .display = {.style = wkit::TextStyles::Strong, .text = label.c_str() } });
 
-	auto pDisplay = SurfaceDisplay::create(WGBP(SurfaceDisplay,
+	auto pDisplay = BitmapDisplay::create(WGBP(BitmapDisplay,
 		_.skin = BoxSkin::create(WGBP(BoxSkin,
 			_.color = Color::Black,
 			_.outlineThickness = 1,
 			_.outlineColor = Color::DarkGrey,
 			_.padding = 1)),
-		_.surface = viewer.pImages[image],
+		_.bitmap = viewer.pImages[image],
 		_.zoom = zoom,
 		_.minUserZoom = zoom,
 		_.maxUserZoom = zoom));
@@ -1057,23 +1057,23 @@ void GfxDeviceTester::fill_background(GfxDevice* pDevice, Background background)
 
 bool GfxDeviceTester::read_canvas(Side side, vector<uint8_t>& pixels)
 {
-	Surface* pSurface = m_backends[side].pCanvas;
-	if (!pSurface || pSurface->pixelSize() != m_canvasSize)
+	Bitmap* pBitmap = m_backends[side].pCanvas;
+	if (!pBitmap || pBitmap->pixelSize() != m_canvasSize)
 		return false;
 
 	pixels.resize(m_canvasSize.w * m_canvasSize.h * 4);
 
-	auto buffer = pSurface->allocPixelBuffer();
-	pSurface->pushPixels(buffer);
+	auto buffer = pBitmap->allocPixelBuffer();
+	pBitmap->pushPixels(buffer);
 
 	int srcPitchAdd = buffer.pitch - m_canvasSize.w * wax::Util::pixelFormatToDescription(buffer.format).bits / 8;
 	int dstPaletteEntries = 0;
 
 	bool bOk = PixelTools::copyPixels(m_canvasSize.w, m_canvasSize.h, buffer.pixels, buffer.format, buffer.colorSpace, buffer.bigEndian, srcPitchAdd,
-		buffer.palette, pSurface->paletteSize(),
+		buffer.palette, pBitmap->paletteSize(),
 		pixels.data(), PixelFormat::ARGB_8, m_compareColorSpace, (WAX_IS_BIG_ENDIAN == 1), 0, nullptr, dstPaletteEntries, 0);
 
-	pSurface->freePixelBuffer(buffer);
+	pBitmap->freePixelBuffer(buffer);
 	return bOk;
 }
 
@@ -1083,9 +1083,9 @@ bool GfxDeviceTester::read_canvas(Side side, vector<uint8_t>& pixels)
 	we display.
 */
 
-void GfxDeviceTester::write_image(Surface* pSurface, const vector<uint8_t>& pixels)
+void GfxDeviceTester::write_image(Bitmap* pBitmap, const vector<uint8_t>& pixels)
 {
-	auto buffer = pSurface->allocPixelBuffer();
+	auto buffer = pBitmap->allocPixelBuffer();
 
 	int dstPitchAdd = buffer.pitch - m_canvasSize.w * wax::Util::pixelFormatToDescription(buffer.format).bits / 8;
 	int dstPaletteEntries = 0;
@@ -1094,8 +1094,8 @@ void GfxDeviceTester::write_image(Surface* pSurface, const vector<uint8_t>& pixe
 		nullptr, 0,
 		buffer.pixels, buffer.format, buffer.colorSpace, buffer.bigEndian, dstPitchAdd, nullptr, dstPaletteEntries, 0);
 
-	pSurface->pullPixels(buffer);
-	pSurface->freePixelBuffer(buffer);
+	pBitmap->pullPixels(buffer);
+	pBitmap->freePixelBuffer(buffer);
 }
 
 //____ compare() ______________________________________________________________
@@ -2083,7 +2083,7 @@ double GfxDeviceTester::time_test(Test* pTest, int loops, int frames)
 
 void GfxDeviceTester::sync_testee()
 {
-	Surface* pCanvas = m_backends[TESTEE].pCanvas;
+	Bitmap* pCanvas = m_backends[TESTEE].pCanvas;
 	GfxDevice* pDevice = m_backends[TESTEE].pDevice;
 
 	if (pDevice->isInstanceOf(GfxDeviceGen2::TYPEINFO))

@@ -171,7 +171,7 @@ namespace wg
 		if (m_cycleDuration > 0 && !m_state.isDisabled())
 		{
 			RectSPX canv = _contentRect();
-			pDevice->setBlitSource(frames._surface());
+			pDevice->setBlitSource(frames._bitmap());
 			auto * pFrame = frames.find(_playPosToTimestamp(m_playPos));
 			pDevice->stretchFlipBlit(canv, align(ptsToSpx(Rect(pFrame->source(), frames.frameSize()),m_scale)), pFrame->flip());
 		}
@@ -189,7 +189,7 @@ namespace wg
 		if (m_cycleDuration > 0 && !m_state.isDisabled())
 		{
 			Rect source = Rect(frames.find(_playPosToTimestamp(m_playPos))->source(), frames.frameSize());
-			return Util::markTestStretchRect(ofs, frames._surface(), align(ptsToSpx(source, m_scale)), RectSPX(m_size), m_animMarkAlpha);
+			return Util::markTestStretchRect(ofs, frames._bitmap(), align(ptsToSpx(source, m_scale)), RectSPX(m_size), m_animMarkAlpha);
 		}
 
 		return false;
@@ -279,9 +279,9 @@ namespace wg
 		_requestResize();
 	}
 
-	//____ _didSetAnimSurface() _______________________________________________
+	//____ _didSetAnimBitmap() _______________________________________________
 
-	void AnimPlayer::_didSetAnimSurface(AnimFrames* pComponent)
+	void AnimPlayer::_didSetAnimBitmap(AnimFrames* pComponent)
 	{
 		_requestRender();
 	}

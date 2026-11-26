@@ -45,7 +45,7 @@ namespace wg
 	//____ constructor ____________________________________________________________
 
 	SpinMeterSkin::SpinMeterSkin( const Blueprint& bp ) : Skin(bp),
-		m_pSurface(bp.surface),
+		m_pBitmap(bp.bitmap),
 		m_defaultSize(bp.defaultSize),
 		m_pivot(bp.pivot),
 		m_placement(bp.placement),
@@ -113,7 +113,7 @@ namespace wg
 
 		RenderSettingsWithTint settings(pDevice, m_layer, m_blendMode, m_color, canvas, m_pTint);
 
-		pDevice->setBlitSource(m_pSurface);
+		pDevice->setBlitSource(m_pBitmap);
 		pDevice->rotScaleBlit(canvas, degrees, zoom, m_pivot, m_placement);
 	}
 

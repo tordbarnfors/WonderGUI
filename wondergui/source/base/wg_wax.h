@@ -29,7 +29,7 @@
 //
 // WonderGUI is built on top of the Wax graphics library. The Wax classes,
 // types and functions that are part of WonderGUI's API are brought into the
-// wg namespace here, so they can be used as wg::Surface, wg::GfxDevice etc.
+// wg namespace here, so they can be used as wg::Bitmap, wg::GfxDevice etc.
 //
 // Only what is listed here becomes part of wg. Remove a line to keep that
 // name in wax only, or add an alias to give it a different name in wg, e.g.:
@@ -120,7 +120,7 @@ namespace wg
 
 	//____ wax_base.h ______________________________________________________________
 
-	using wax::SurfaceFactory_p;
+	using wax::BitmapFactory_p;
 	using GfxDeviceFactory_p = wax::DeviceFactory_p;
 	using wax::Error;
 
@@ -444,42 +444,42 @@ namespace wg
 
 	using wax::StrongPtr;
 
-	//____ wax_surface.h ___________________________________________________________
+	//____ wax_bitmap.h ___________________________________________________________
 
-	using wax::Surface_p;
-	using wax::Surface_wp;
+	using wax::Bitmap_p;
+	using wax::Bitmap_wp;
 	using wax::PixelBuffer;
 	using wax::NinePatch;
-	using wax::Surface;
+	using wax::Bitmap;
 
-	//____ wax_surfacefactory.h ____________________________________________________
+	//____ wax_bitmapfactory.h ____________________________________________________
 
-	using wax::SurfaceFactory_wp;
-	using wax::SurfaceFactory;
+	using wax::BitmapFactory_wp;
+	using wax::BitmapFactory;
 
-	//____ wax_surfacefileheader.h _________________________________________________
+	//____ wax_bitmapfileheader.h _________________________________________________
 
-	using wax::SurfaceFileHeader;
-	using wax::SurfaceFileLayout;
-	using wax::surfaceFileLayout;
+	using wax::BitmapFileHeader;
+	using wax::BitmapFileLayout;
+	using wax::bitmapFileLayout;
 
-	//____ wax_surfacefileinspector.h ______________________________________________
+	//____ wax_bitmapfileinspector.h ______________________________________________
 
-	using wax::SurfaceFileInspector_p;
-	using wax::SurfaceFileInspector_wp;
-	using wax::SurfaceFileInspector;
+	using wax::BitmapFileInspector_p;
+	using wax::BitmapFileInspector_wp;
+	using wax::BitmapFileInspector;
 
-	//____ wax_surfacereader.h _____________________________________________________
+	//____ wax_bitmapreader.h _____________________________________________________
 
-	using wax::SurfaceReader_p;
-	using wax::SurfaceReader_wp;
-	using wax::SurfaceReader;
+	using wax::BitmapReader_p;
+	using wax::BitmapReader_wp;
+	using wax::BitmapReader;
 
-	//____ wax_surfacewriter.h _____________________________________________________
+	//____ wax_bitmapwriter.h _____________________________________________________
 
-	using wax::SurfaceWriter_p;
-	using wax::SurfaceWriter_wp;
-	using wax::SurfaceWriter;
+	using wax::BitmapWriter_p;
+	using wax::BitmapWriter_wp;
+	using wax::BitmapWriter;
 
 	//____ wax_sysfont.h ___________________________________________________________
 

@@ -49,7 +49,7 @@ namespace wg
 		m_blendMode		= bp.blendMode;
 		m_pEdgemapFactory = bp.edgemapFactory;
 
-		// Generate lists of states that affects shift, color and surface.
+		// Generate lists of states that affects shift, color and bitmap.
 
 		State	shiftingStates[State::NbStates];
 		Coord	stateShifts[State::NbStates];
@@ -139,7 +139,7 @@ namespace wg
 
 		}
 
-		// Calc size of index table for surface and color, get their index masks & shifts.
+		// Calc size of index table for bitmap and color, get their index masks & shifts.
 
 		int	colorIndexEntries;
 		int	sizeIndexEntries;

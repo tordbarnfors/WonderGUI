@@ -27,7 +27,7 @@
 #import "MetalKit/MetalKit.h"
 
 #include <wax_gpubackend.h>
-#include <wax_metalsurface.h>
+#include <wax_metalbitmap.h>
 
 #include <map>
 #include <string>
@@ -55,12 +55,12 @@ namespace wax
 
 	class MetalBackend : public GpuBackend
 	{
-		friend class MetalSurface;
+		friend class MetalBitmap;
 		friend class MetalEdgemap;
 	public:
 		//.____ Creation ________________________________________________
 
-		// Sets the device shared by all backends, surfaces, edgemaps and Warpmaps, before any of
+		// Sets the device shared by all backends, bitmaps, edgemaps and Warpmaps, before any of
 		// them is created. Sessions are committed to commandQueue, which we make ourselves when
 		// none is given. An application that renders into the default canvas itself gives the
 		// queue it commits to, as command buffers only run in the order they were committed
@@ -91,7 +91,7 @@ namespace wax
 
 		const CanvasInfo* canvasInfo(CanvasRef ref) const override;
 
-		SurfaceFactory_p	surfaceFactory() override;
+		BitmapFactory_p	bitmapFactory() override;
 		EdgemapFactory_p	edgemapFactory() override;
 		WarpmapFactory_p	warpmapFactory() override;
 
@@ -108,25 +108,25 @@ namespace wax
 
 		bool	_isRecording() const override;
 
-		bool	_isNativeSurface( const Object * pObject ) const override;
+		bool	_isNativeBitmap( const Object * pObject ) const override;
 		bool	_isNativeEdgemap( const Object * pObject ) const override;
 		bool	_isNativeWarpmap( const Object * pObject ) const override;
 
-		void	_beginSessionOnDevice( Surface * pCanvas ) override;
+		void	_beginSessionOnDevice( Bitmap * pCanvas ) override;
 		void	_endSessionOnDevice() override;
 
 		bool	_reserveFrameBuffers( int nVertices, int nColors, int nExtras, int nObjects ) override;
 
-		bool	_bindCanvas( Surface * pCanvas, SizeI& size, CanvasKind& kind ) override;
+		bool	_bindCanvas( Bitmap * pCanvas, SizeI& size, CanvasKind& kind ) override;
 		bool	_bindPipeline( PipelineKind kind, BlendMode blendMode ) override;
 		void	_setConstants( ConstantBlock block ) override;
 		void	_draw( int firstVertex, int nVertices ) override;
 		void	_setScissor( const RectI& rect ) override;
 		void	_resetScissor() override;
 
-		void	_prepareBlitSource( Surface * pSurface ) override;
-		bool	_bindBlitTexture( Surface * pSurface ) override;
-		void	_bindBlitSampler( Surface * pSurface, bool bClip ) override;
+		void	_prepareBlitSource( Bitmap * pBitmap ) override;
+		bool	_bindBlitTexture( Bitmap * pBitmap ) override;
+		void	_bindBlitSampler( Bitmap * pBitmap, bool bClip ) override;
 		bool	_bindEdgemap( GpuEdgemap * pEdgemap ) override;
 		void	_drawWarpmap( Warpmap * pWarpmap, const RectI * pPatches, int nPatches ) override;
 
@@ -175,12 +175,12 @@ namespace wax
 		id<MTLFunction>				_function( const char * pName );
 		id<MTLRenderPipelineState>	_createPipeline( PipelineKind kind, const BlendState& blend, MTLPixelFormat format );
 
-		void						_generateMipmaps( MetalSurface * pSurface );		// Draws every mip level from level 0, between render passes.
+		void						_generateMipmaps( MetalBitmap * pBitmap );		// Draws every mip level from level 0, between render passes.
 		id<MTLRenderPipelineState>	_mipmapPipeline( MTLPixelFormat format );
 
 		static bool				_toMetalFormat( PixelFormat format, ColorSpace colorSpace, MTLPixelFormat& metalFormat );
 
-		SurfaceFactory_p    m_pSurfaceFactory;
+		BitmapFactory_p    m_pBitmapFactory;
 		EdgemapFactory_p	m_pEdgemapFactory;
 		WarpmapFactory_p	m_pWarpmapFactory;
 
@@ -196,7 +196,7 @@ namespace wax
 
 		// Canvas
 
-		MetalSurface *					m_pCanvasSurface = nullptr;		// Null for the default canvas.
+		MetalBitmap *					m_pCanvasBitmap = nullptr;		// Null for the default canvas.
 		bool							m_bDefaultCanvasLoaded = false;	// A render pass on the default canvas has been begun this session.
 		MTLPixelFormat					m_targetFormat = MTLPixelFormatInvalid;
 		SizeI							m_targetSize;					// In pixels.

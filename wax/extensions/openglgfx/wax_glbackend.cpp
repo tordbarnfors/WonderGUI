@@ -24,8 +24,8 @@
 #include <algorithm>
 
 #include <wax_glbackend.h>
-#include <wax_glsurface.h>
-#include <wax_glsurfacefactory.h>
+#include <wax_glbitmap.h>
+#include <wax_glbitmapfactory.h>
 #include <wax_gledgemap.h>
 #include <wax_gledgemapfactory.h>
 #include <wax_glwarpmap.h>
@@ -131,7 +131,7 @@ GlBackend::GlBackend( int uboBindingPoint )
 
 	LOG_INIT_GLERROR(glGetError());
 
-	// Framebuffer for rendering into surfaces, vertex buffer and its vertex array. The vertex array
+	// Framebuffer for rendering into bitmaps, vertex buffer and its vertex array. The vertex array
 	// has the layout of GpuBackend::Vertex, which the vertex shaders read as the inputs of
 	// ../hlsl/README.md, in the order they are declared.
 
@@ -179,7 +179,7 @@ GlBackend::GlBackend( int uboBindingPoint )
 	// Samplers, as those of DX12Backend and VulkanBackend: tiling sources repeat, ClipBlit reads
 	// transparent black outside the source and everything else, including Blur, reads the edge
 	// pixels. A mipmap filter on a texture without mipmaps leaves it incomplete, so the mipmapped
-	// ones are only used for mipmapped surfaces.
+	// ones are only used for mipmapped bitmaps.
 
 	glGenSamplers(16, m_samplers);
 
@@ -246,14 +246,14 @@ const TypeInfo& GlBackend::typeInfo(void) const
 
 bool GlBackend::canBeBlitSource(const TypeInfo& type) const
 {
-	return (type == GlSurface::TYPEINFO);
+	return (type == GlBitmap::TYPEINFO);
 }
 
 //____ canBeCanvas() _____________________________________________
 
 bool GlBackend::canBeCanvas(const TypeInfo& type) const
 {
-	return (type == GlSurface::TYPEINFO);
+	return (type == GlBitmap::TYPEINFO);
 }
 
 //____ waitForCompletion() ____________________________________________________
@@ -263,14 +263,14 @@ void GlBackend::waitForCompletion()
 	glFinish();
 }
 
-//____ surfaceFactory() ______________________________________________________
+//____ bitmapFactory() ______________________________________________________
 
-SurfaceFactory_p GlBackend::surfaceFactory()
+BitmapFactory_p GlBackend::bitmapFactory()
 {
-	if( !m_pSurfaceFactory )
-		m_pSurfaceFactory = GlSurfaceFactory::create();
+	if( !m_pBitmapFactory )
+		m_pBitmapFactory = GlBitmapFactory::create();
 
-	return m_pSurfaceFactory;
+	return m_pBitmapFactory;
 }
 
 //____ edgemapFactory() ______________________________________________________
@@ -343,7 +343,7 @@ void GlBackend::beginRender()
 	glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &m_glReadFrameBuffer);
 	glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &m_glDrawFrameBuffer);
 
-	//  Modify states. Surfaces are drawn upside down to the window, so triangles turn the other
+	//  Modify states. Bitmaps are drawn upside down to the window, so triangles turn the other
 	//  way there, and must not be culled.
 
 	glDisable(GL_DEPTH_TEST);
@@ -426,11 +426,11 @@ bool GlBackend::_isRecording() const
 	return m_bRendering;
 }
 
-//____ _isNativeSurface() ____________________________________________________
+//____ _isNativeBitmap() ____________________________________________________
 
-bool GlBackend::_isNativeSurface( const Object * pObject ) const
+bool GlBackend::_isNativeBitmap( const Object * pObject ) const
 {
-	return pObject && _isOfType(pObject->typeInfo(), GlSurface::TYPEINFO);
+	return pObject && _isOfType(pObject->typeInfo(), GlBitmap::TYPEINFO);
 }
 
 //____ _isNativeEdgemap() ____________________________________________________
@@ -449,7 +449,7 @@ bool GlBackend::_isNativeWarpmap( const Object * pObject ) const
 
 //____ _beginSessionOnDevice() _______________________________________________
 
-void GlBackend::_beginSessionOnDevice( Surface * pCanvas )
+void GlBackend::_beginSessionOnDevice( Bitmap * pCanvas )
 {
 	m_ops.clear();
 	m_patches.clear();
@@ -521,27 +521,27 @@ void GlBackend::_holdForSession( Object * pObject )
 
 //____ _bindCanvas() _________________________________________________________
 
-bool GlBackend::_bindCanvas( Surface * pCanvas, SizeI& size, CanvasKind& kind )
+bool GlBackend::_bindCanvas( Bitmap * pCanvas, SizeI& size, CanvasKind& kind )
 {
 	if( !m_bRendering )
 		return false;
 
-	auto pSurface = static_cast<GlSurface*>(pCanvas);
+	auto pBitmap = static_cast<GlBitmap*>(pCanvas);
 
-	if( pSurface && (!pSurface->m_bCanvas || pSurface->getTexture() == 0) )
+	if( pBitmap && (!pBitmap->m_bCanvas || pBitmap->getTexture() == 0) )
 	{
-		Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Surface can not be used as canvas, rendering to default canvas instead.",
+		Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Bitmap can not be used as canvas, rendering to default canvas instead.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
-		pSurface = nullptr;
+		pBitmap = nullptr;
 	}
 
-	// How y is flipped, see compile_shaders.py. Surfaces are drawn upside down to GL, so their
+	// How y is flipped, see compile_shaders.py. Bitmaps are drawn upside down to GL, so their
 	// first row is at the top as on the other backends. In the window gl_FragCoord is upside down.
 
-	if( pSurface )
+	if( pBitmap )
 	{
-		size = pSurface->pixelSize();
-		kind = _canvasKind(pSurface);
+		size = pBitmap->pixelSize();
+		kind = _canvasKind(pBitmap);
 
 		m_constants.glCanvas[0] = -1.f;
 		m_constants.glCanvas[1] = 0.f;
@@ -560,8 +560,8 @@ bool GlBackend::_bindCanvas( Surface * pCanvas, SizeI& size, CanvasKind& kind )
 	m_constants.glCanvas[3] = 0.f;
 	m_bConstantsChanged = true;
 
-	_holdForSession(pSurface);
-	_record(Op::BindCanvas, 0, 0, pSurface);
+	_holdForSession(pBitmap);
+	_record(Op::BindCanvas, 0, 0, pBitmap);
 
 	m_bCanvasBound = true;
 	m_targetSize = size;
@@ -656,17 +656,17 @@ void GlBackend::_resetScissor()
 
 //____ _prepareBlitSource() __________________________________________________
 //
-// GlSurface copies what is written to its pixels to the texture right away.
+// GlBitmap copies what is written to its pixels to the texture right away.
 
-void GlBackend::_prepareBlitSource( Surface * pSurface )
+void GlBackend::_prepareBlitSource( Bitmap * pBitmap )
 {
 }
 
 //____ _bindBlitTexture() ____________________________________________________
 
-bool GlBackend::_bindBlitTexture( Surface * pSurface )
+bool GlBackend::_bindBlitTexture( Bitmap * pBitmap )
 {
-	auto pSource = static_cast<GlSurface*>(pSurface);
+	auto pSource = static_cast<GlBitmap*>(pBitmap);
 
 	if( !m_bCanvasBound || pSource->getTexture() == 0 )
 		return false;
@@ -684,16 +684,16 @@ bool GlBackend::_bindBlitTexture( Surface * pSurface )
 // Palette based sources are read with texelFetch(), but an integer texture must have a nearest
 // filter to be complete.
 
-void GlBackend::_bindBlitSampler( Surface * pSurface, bool bClip )
+void GlBackend::_bindBlitSampler( Bitmap * pBitmap, bool bClip )
 {
 	if( !m_bCanvasBound )
 		return;
 
-	bool bIndexed = pSurface->pixelDescription()->type == PixelType::Index;
-	bool bBilinear = !bIndexed && pSurface->sampleMethod() == SampleMethod::Bilinear;
-	bool bMipmapped = bBilinear && pSurface->isMipmapped();
+	bool bIndexed = pBitmap->pixelDescription()->type == PixelType::Index;
+	bool bBilinear = !bIndexed && pBitmap->sampleMethod() == SampleMethod::Bilinear;
+	bool bMipmapped = bBilinear && pBitmap->isMipmapped();
 
-	int index = (bMipmapped ? 8 : 0) + (bClip ? 4 : 0) + (pSurface->isTiling() ? 2 : 0) + (bBilinear ? 1 : 0);
+	int index = (bMipmapped ? 8 : 0) + (bClip ? 4 : 0) + (pBitmap->isTiling() ? 2 : 0) + (bBilinear ? 1 : 0);
 
 	_record(Op::BindSampler, index);
 }
@@ -782,7 +782,7 @@ void GlBackend::_execute()
 		switch( op.op )
 		{
 			case Op::BindCanvas:
-				_executeBindCanvas( static_cast<GlSurface*>(op.pObject) );
+				_executeBindCanvas( static_cast<GlBitmap*>(op.pObject) );
 				break;
 
 			case Op::SetPipeline:
@@ -807,7 +807,7 @@ void GlBackend::_execute()
 
 			case Op::BindBlitTexture:
 			{
-				auto pSource = static_cast<GlSurface*>(op.pObject);
+				auto pSource = static_cast<GlBitmap*>(op.pObject);
 
 				glBindTexture(GL_TEXTURE_2D, pSource->getTexture());
 
@@ -882,7 +882,7 @@ void GlBackend::_execute()
 
 //____ _executeBindCanvas() __________________________________________________
 
-void GlBackend::_executeBindCanvas( GlSurface * pCanvas )
+void GlBackend::_executeBindCanvas( GlBitmap * pCanvas )
 {
 	SizeI size;
 
@@ -907,7 +907,7 @@ void GlBackend::_executeBindCanvas( GlSurface * pCanvas )
 
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
-			Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, "Surface could not be bound as canvas, nothing is drawn into it.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::RenderFailure, "Bitmap could not be bound as canvas, nothing is drawn into it.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			m_bExecCanvasOK = false;
@@ -1014,7 +1014,7 @@ void GlBackend::_executeConstants()
 
 //____ _executeScissor() _____________________________________________________
 //
-// GL counts rows from the bottom, which is where surfaces have their first row, as they are drawn
+// GL counts rows from the bottom, which is where bitmaps have their first row, as they are drawn
 // upside down to GL. The window has its first row at the top.
 
 void GlBackend::_executeScissor( const RectI& rect )

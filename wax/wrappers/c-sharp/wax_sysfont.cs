@@ -7,7 +7,7 @@ public class SysFont : Font
 {
     //____ Constructor ________________________________________________________
  
-    public SysFont(SurfaceFactory factory, Font backupFont)
+    public SysFont(BitmapFactory factory, Font backupFont)
     {
         _obj = wax_createSysFont(factory.CHandle(), backupFont.CHandle());
     }
@@ -15,9 +15,9 @@ public class SysFont : Font
     //____ DLL functions ______________________________________________________
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    public static extern IntPtr wax_createSysFont( IntPtr surfaceFactory, IntPtr backupFont );
+    public static extern IntPtr wax_createSysFont( IntPtr bitmapFactory, IntPtr backupFont );
 /*
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    public static extern IntPtr wax_getBitmapFontSurface( IntPtr bitmapFont );
+    public static extern IntPtr wax_getBitmapFontBitmap( IntPtr bitmapFont );
 */
 }

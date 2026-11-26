@@ -13,9 +13,9 @@ public class StreamBackend : Backend
     }
 
     //____ DefineCanvas() _____________________________________________________
-    public bool DefineCanvas(CanvasRef reference, StreamSurface surface)
+    public bool DefineCanvas(CanvasRef reference, StreamBitmap bitmap)
     {
-        return (wax_defineStreamBackendCanvasWithSurface(_obj, reference, surface.CHandle()) == 1);
+        return (wax_defineStreamBackendCanvasWithBitmap(_obj, reference, bitmap.CHandle()) == 1);
     }
 
     public bool DefineCanvas(CanvasRef reference, SizeI pixelSize, PixelFormat pixelFormat, int scale = 64,
@@ -38,7 +38,7 @@ public class StreamBackend : Backend
     private static extern IntPtr wax_createStreamBackend(IntPtr streamEncoder, int maxEdges);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int wax_defineStreamBackendCanvasWithSurface(IntPtr streamBackend, CanvasRef canvas, IntPtr surface);
+    private static extern int wax_defineStreamBackendCanvasWithBitmap(IntPtr streamBackend, CanvasRef canvas, IntPtr bitmap);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern int wax_defineStreamBackendCanvas(IntPtr streamBackend, CanvasRef canvas, SizeI pixelSize, PixelFormat pixelFormat, int scale,

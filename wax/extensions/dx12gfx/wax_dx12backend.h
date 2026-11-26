@@ -39,7 +39,7 @@ namespace wax
 {
 
 
-	class DX12Surface;
+	class DX12Bitmap;
 
 	class DX12Backend;
 	typedef	StrongPtr<DX12Backend>	DX12Backend_p;
@@ -59,7 +59,7 @@ namespace wax
 
 	class DX12Backend : public GpuBackend
 	{
-		friend class DX12Surface;		// Tells us when one whose upload we recorded goes away.
+		friend class DX12Bitmap;		// Tells us when one whose upload we recorded goes away.
 
 	public:
 
@@ -67,10 +67,10 @@ namespace wax
 
 		// Any number of backends can exist at the same time, e.g. one per window,
 		// but they all share one device and one command queue, set with setDevice()
-		// before the first backend or surface is created. Sharing the queue is what
-		// lets surfaces move freely between backends without cross-queue syncing.
+		// before the first backend or bitmap is created. Sharing the queue is what
+		// lets bitmaps move freely between backends without cross-queue syncing.
 		//
-		// It is also what keeps surface uploads in order. They are recorded into
+		// It is also what keeps bitmap uploads in order. They are recorded into
 		// our command list, so they run after whatever any backend submitted before
 		// and before whatever comes after. See submitUploads().
 
@@ -92,30 +92,30 @@ namespace wax
 		void	beginRender() override;
 		void	endRender() override;
 
-		void	beginSession(CanvasRef canvasRef, Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, const SessionInfo* pInfo = nullptr) override;
+		void	beginSession(CanvasRef canvasRef, Bitmap* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, const SessionInfo* pInfo = nullptr) override;
 
 		void	setObjects(Object* const* pBeg, Object* const* pEnd) override;
 
 
 		//.____ Device _______________________________________________________
 
-		// Sets the device and render queue shared by all backends, surfaces and
+		// Sets the device and render queue shared by all backends, bitmaps and
 		// edgemaps, holding a reference to both. setDevice(nullptr, nullptr)
-		// releases them, which is done once all backends, surfaces and edgemaps
+		// releases them, which is done once all backends, bitmaps and edgemaps
 		// are gone, or to replace the device, see below.
 		//
-		// Backends, surfaces and edgemaps outlive the device they were made from.
+		// Backends, bitmaps and edgemaps outlive the device they were made from.
 		// Setting a new one moves them all over to it: they let go of everything
-		// they had on the old device and create it anew on the new one. Surfaces
+		// they had on the old device and create it anew on the new one. Bitmaps
 		// keep their pixels in plain memory in between. With backends around this
 		// has to be done in two steps, between frames:
 		//
 		//   1. setDevice(nullptr, nullptr). Everything lets go of the device. If it
-		//      still works, what was rendered into canvas surfaces is read back
+		//      still works, what was rendered into canvas bitmaps is read back
 		//      first, otherwise that is lost. Backends render nothing until step 2.
 		//
-		//   2. setDevice(pNewDevice, pNewQueue). Everything moves onto it. Surfaces
-		//      with a restorer (Surface::Blueprint::restorer) have theirs called
+		//   2. setDevice(pNewDevice, pNewQueue). Everything moves onto it. Bitmaps
+		//      with a restorer (Bitmap::Blueprint::restorer) have theirs called
 		//      here, as they had their content in the texture only, also when the
 		//      device they left still worked.
 		//
@@ -127,18 +127,18 @@ namespace wax
 		// default canvas belonged to a swap chain on the old device, and every
 		// window has to be redrawn in full, e.g. with RootPanel::addDirtyPatch().
 		//
-		// That redraw also restores what was rendered into canvas surfaces and lost
-		// with a lost device. Such surfaces say so through Surface::isContentLost(),
+		// That redraw also restores what was rendered into canvas bitmaps and lost
+		// with a lost device. Such bitmaps say so through Bitmap::isContentLost(),
 		// and the widgets that keep content in canvases render it again when they
-		// see it. Surfaces of your own that you render into need the same check, or
-		// a restorer, and so do surfaces whose restorer declines.
+		// see it. Bitmaps of your own that you render into need the same check, or
+		// a restorer, and so do bitmaps whose restorer declines.
 
 		static bool					setDevice(ID3D12Device * pDX12Device, ID3D12CommandQueue * pDX12CommandQueue);
 		static ID3D12Device *		device() { return s_pDevice.Get(); }
 		static ID3D12CommandQueue *	commandQueue() { return s_pCommandQueue.Get(); }
 
 		// Submits what every backend has recorded and waits for the GPU to finish
-		// all of it. Used by surfaces before they read a canvas back on the copy
+		// all of it. Used by bitmaps before they read a canvas back on the copy
 		// queue, since any backend might be using it.
 
 		static void				waitForCompletionOfAll();
@@ -158,7 +158,7 @@ namespace wax
 		// The first failure that turns out to be device loss is reported once
 		// through the error handler, with the removal reason and, if DRED was
 		// enabled before the device was created, its breadcrumbs and page fault
-		// in the debugger's output window. From then on all backends, surfaces and
+		// in the debugger's output window. From then on all backends, bitmaps and
 		// edgemaps stop touching the device and drop their rendering without
 		// complaint, until setDevice() is given a new one, which they all move
 		// onto as described above. isDeviceLost() stays true until then.
@@ -203,7 +203,7 @@ namespace wax
 
 		const CanvasInfo* canvasInfo(CanvasRef ref) const override;
 
-		SurfaceFactory_p	surfaceFactory() override;
+		BitmapFactory_p	bitmapFactory() override;
 		EdgemapFactory_p	edgemapFactory() override;
 		WarpmapFactory_p	warpmapFactory() override;
 
@@ -214,9 +214,9 @@ namespace wax
 
 		//.____ Uploads ______________________________________________________
 
-		// Surfaces don't send the pixels the CPU writes to their textures right
-		// away. They wait on a list shared by all surfaces, and every backend
-		// records the copies of everything on it before a session, so a surface is
+		// Bitmaps don't send the pixels the CPU writes to their textures right
+		// away. They wait on a list shared by all bitmaps, and every backend
+		// records the copies of everything on it before a session, so a bitmap is
 		// never drawn out of date. That puts all of them in front of the frame
 		// that first needs them, which can be a lot just after loading.
 		//
@@ -239,25 +239,25 @@ namespace wax
 
 		bool		_isRecording() const override;
 
-		bool		_isNativeSurface(const Object* pObject) const override;
+		bool		_isNativeBitmap(const Object* pObject) const override;
 		bool		_isNativeEdgemap(const Object* pObject) const override;
 		bool		_isNativeWarpmap(const Object* pObject) const override;
 
-		void		_beginSessionOnDevice(Surface* pCanvas) override;
+		void		_beginSessionOnDevice(Bitmap* pCanvas) override;
 		void		_endSessionOnDevice() override;
 
 		bool		_reserveFrameBuffers(int nVertices, int nColors, int nExtras, int nObjects) override;
 
-		bool		_bindCanvas(Surface* pCanvas, SizeI& size, CanvasKind& kind) override;
+		bool		_bindCanvas(Bitmap* pCanvas, SizeI& size, CanvasKind& kind) override;
 		bool		_bindPipeline(PipelineKind kind, BlendMode blendMode) override;
 		void		_setConstants(ConstantBlock block) override;
 		void		_draw(int firstVertex, int nVertices) override;
 		void		_setScissor(const RectI& rect) override;
 		void		_resetScissor() override;
 
-		void		_prepareBlitSource(Surface* pSurface) override;
-		bool		_bindBlitTexture(Surface* pSurface) override;
-		void		_bindBlitSampler(Surface* pSurface, bool bClip) override;
+		void		_prepareBlitSource(Bitmap* pBitmap) override;
+		bool		_bindBlitTexture(Bitmap* pBitmap) override;
+		void		_bindBlitSampler(Bitmap* pBitmap, bool bClip) override;
 		bool		_bindEdgemap(GpuEdgemap* pEdgemap) override;
 		void		_drawWarpmap(Warpmap* pWarpmap, const RectI* pPatches, int nPatches) override;
 
@@ -265,7 +265,7 @@ namespace wax
 
 		void _waitForFence(UINT64 fenceValue);
 		void _flushCommandList();				// Submits what we have recorded so far and reopens the list.
-		void _restoreBlitSourceCanvases();		// Returns canvas surfaces we read from to COMMON state.
+		void _restoreBlitSourceCanvases();		// Returns canvas bitmaps we read from to COMMON state.
 
 		void _bindSessionState();				// Everything a session needs on a freshly reset command list.
 		void _bindCanvasState();				// Render target, viewport and scissor for the bound canvas.
@@ -288,19 +288,19 @@ namespace wax
 		bool _createSamplers();
 		bool _createPipeline(PipelineKind kind, const BlendState& blend, DXGI_FORMAT rtvFormat, Microsoft::WRL::ComPtr<ID3D12PipelineState>& pPipeline);
 
-		void _transitionCanvas(DX12Surface* pCanvas, D3D12_RESOURCE_STATES state);
+		void _transitionCanvas(DX12Bitmap* pCanvas, D3D12_RESOURCE_STATES state);
 		void _transitionDefaultCanvas(D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after);
 
-		// Uploads of pending surfaces, recorded into our open command list. See
-		// "Uploads" in the public section and DX12Surface::_updatePending().
+		// Uploads of pending bitmaps, recorded into our open command list. See
+		// "Uploads" in the public section and DX12Bitmap::_updatePending().
 
 		int64_t _recordUploads(int64_t maxBytes);			// Oldest first, returns bytes recorded.
-		void _recordUpload(DX12Surface* pSurface);			// Just this one, if it is pending.
+		void _recordUpload(DX12Bitmap* pBitmap);			// Just this one, if it is pending.
 		void _recordUploadBatch();							// Whatever _recordUploads() put in m_uploadBatch.
 		void _stageUploadBatch();							// Their changed pixels, into buffers the GPU copies from.
 		void _uploadsSubmitted();							// Right after Signal(m_fenceValue) for the list holding them.
 		void _abandonRecordedUploads();						// The list holding them was never submitted.
-		void _forgetRecordedUpload(DX12Surface* pSurface);	// It is going away.
+		void _forgetRecordedUpload(DX12Bitmap* pBitmap);	// It is going away.
 		void _openedCommandList();							// After every Reset() of the command list.
 
 		// Resources the command list being recorded uses, held until the GPU is
@@ -318,9 +318,9 @@ namespace wax
 		bool _growSRVHeap(int nNeeded = 0);			// When the current frame's heap is full or can't fit a session.
 		void _forgetObjectSRVs();					// Descriptors must be copied anew for the object table.
 
-		static bool _isDX12SurfaceType(const TypeInfo& type);
+		static bool _isDX12BitmapType(const TypeInfo& type);
 
-		void _generateMipmaps(DX12Surface* pSurface);			// Draws every mip level from level 0.
+		void _generateMipmaps(DX12Bitmap* pBitmap);			// Draws every mip level from level 0.
 		ID3D12PipelineState* _mipmapPipeline(DXGI_FORMAT format);
 
 		static CanvasKind _canvasKindOfFormat(DXGI_FORMAT format);
@@ -329,7 +329,7 @@ namespace wax
 
 
 
-		SurfaceFactory_p	m_pSurfaceFactory;	
+		BitmapFactory_p	m_pBitmapFactory;	
 		EdgemapFactory_p	m_pEdgemapFactory;
 		WarpmapFactory_p	m_pWarpmapFactory;
 
@@ -343,7 +343,7 @@ namespace wax
 		// The canvas the command list renders into, see _bindCanvas(). It can change
 		// between processCommands() calls, for render layers.
 
-		DX12Surface*				m_pCanvasSurface = nullptr;		// In RENDER_TARGET state, null for the default canvas.
+		DX12Bitmap*				m_pCanvasBitmap = nullptr;		// In RENDER_TARGET state, null for the default canvas.
 		D3D12_CPU_DESCRIPTOR_HANDLE	m_activeCanvasRTV = {};			// Zero when there is nothing to render into.
 		DXGI_FORMAT					m_activeCanvasFormat = DXGI_FORMAT_UNKNOWN;
 		SizeI						m_targetSize;					// Of the canvas, in pixels.
@@ -387,30 +387,30 @@ namespace wax
 		bool												m_bDeviceObjectsOK = false;		// Command list, allocators and fence were all created.
 		bool												m_bOutOfDescriptorsReported = false;	// Said once for each backend, as it would come again with every frame.
 
-		// Canvas surfaces we have barriered out of COMMON to read as blit source.
+		// Canvas bitmaps we have barriered out of COMMON to read as blit source.
 		// They go back before the session ends or the command list is closed, so
 		// everything rests in COMMON between sessions and the copy queue can touch
 		// it.
 
-		std::vector<Surface_p>								m_blitSourceCanvases;
+		std::vector<Bitmap_p>								m_blitSourceCanvases;
 
 		// Every command list we open gets a serial of its own, unique among all
-		// backends. A surface read as blit source remembers the serial, so we know
+		// backends. A bitmap read as blit source remembers the serial, so we know
 		// when it was read, and implicitly promoted out of COMMON, by the list we
 		// are about to record its upload into. See _recordUploads().
 
 		UINT64												m_listSerial = 0;
 		static UINT64										s_lastListSerial;
 
-		// Surfaces whose uploads are in our open command list, told if it is never
+		// Bitmaps whose uploads are in our open command list, told if it is never
 		// submitted. They let us know if they go away before that.
 
-		std::vector<DX12Surface*>							m_recordedUploads;
+		std::vector<DX12Bitmap*>							m_recordedUploads;
 
-		std::vector<DX12Surface*>							m_uploadBatch;		// Kept between calls, so it doesn't reallocate.
+		std::vector<DX12Bitmap*>							m_uploadBatch;		// Kept between calls, so it doesn't reallocate.
 		std::vector<D3D12_RESOURCE_BARRIER>					m_uploadBarriers;	// Likewise.
 
-		// The most one buffer of _stageUploadBatch() holds, unless a single surface
+		// The most one buffer of _stageUploadBatch() holds, unless a single bitmap
 		// has more to send.
 
 		static const UINT64									c_maxStagingBufferBytes = 64 * 1024 * 1024;
@@ -419,7 +419,7 @@ namespace wax
 		// have a resource released while the GPU may still use it. So every
 		// texture, buffer and descriptor heap a recorded command reads or writes
 		// is held here, as
-		// the D3D12 resource only - surfaces and edgemaps die when their owners
+		// the D3D12 resource only - bitmaps and edgemaps die when their owners
 		// let go, like with any other backend. On submit, _releaseWhenDone() hands
 		// the lot to a thread pool callback that fires once, when the GPU has
 		// passed the fence value signalled after it, and releases them there.
@@ -436,16 +436,16 @@ namespace wax
 		// Where in the current frame's shader visible heap the descriptor of each blit
 		// source in the object table has been copied, by index in the table. Text
 		// switches blit source for almost every glyph, since the glyph cache sorts
-		// glyphs into surfaces by height, but between only a handful of surfaces, so
+		// glyphs into bitmaps by height, but between only a handful of bitmaps, so
 		// the table has each once and a descriptor per entry is all a session needs.
 		//
-		// Whoever let go of a surface, its texture is held by m_heldResources until
+		// Whoever let go of a bitmap, its texture is held by m_heldResources until
 		// the GPU is done with it. That is per submission, so the slots are forgotten
-		// with each one and the next draw from the surface holds it again.
+		// with each one and the next draw from the bitmap holds it again.
 
 		struct SRVSlot
 		{
-			SIZE_T	srv = 0;		// The surface's own descriptor, which is what was copied.
+			SIZE_T	srv = 0;		// The bitmap's own descriptor, which is what was copied.
 			int		slot = -1;		// -1 until copied.
 		};
 

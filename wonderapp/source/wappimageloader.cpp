@@ -7,12 +7,12 @@
 
 using namespace wg;
 
-//____ wappLoadSurface() ______________________________________________________
+//____ wappLoadBitmap() ______________________________________________________
 
-Surface_p wappLoadSurface( const std::string& path, SurfaceFactory * pFactory, const Surface::Blueprint& _bp )
+Bitmap_p wappLoadBitmap( const std::string& path, BitmapFactory * pFactory, const Bitmap::Blueprint& _bp )
 {
 	if( !pFactory )
-		pFactory = Base::defaultSurfaceFactory().rawPtr();
+		pFactory = Base::defaultBitmapFactory().rawPtr();
 
 	if (path.rfind(".surf") == path.size() - 5 || path.rfind(".srf") == path.size() - 4)
 	{
@@ -20,10 +20,10 @@ Surface_p wappLoadSurface( const std::string& path, SurfaceFactory * pFactory, c
 		if (!input.good())
 			return nullptr;
 
-		auto pReader = SurfaceReader::create({ .factory = pFactory });
-		Surface_p pSurface = pReader->readSurfaceFromStream(input, _bp);
+		auto pReader = BitmapReader::create({ .factory = pFactory });
+		Bitmap_p pBitmap = pReader->readBitmapFromStream(input, _bp);
 		input.close();
-		return pSurface;
+		return pBitmap;
 	}
 
 	int width, height, channels;
@@ -69,7 +69,7 @@ Surface_p wappLoadSurface( const std::string& path, SurfaceFactory * pFactory, c
 		if (!data)
 			return nullptr;
 
-		Surface::Blueprint bp = _bp;
+		Bitmap::Blueprint bp = _bp;
 		bp.size = { width, height };
 
 		pixelDesc.type = PixelType::Chunky;
@@ -91,17 +91,17 @@ Surface_p wappLoadSurface( const std::string& path, SurfaceFactory * pFactory, c
 			bp.format = PixelFormat::XRGB_8;
 		}
 
-		Surface_p pSurface = pFactory->createSurface(bp, (uint8_t*)data, pixelDesc, 0, nullptr, 0);
+		Bitmap_p pBitmap = pFactory->createBitmap(bp, (uint8_t*)data, pixelDesc, 0, nullptr, 0);
 		stbi_image_free(data);
-		return pSurface;
+		return pBitmap;
 	}
 
 	auto bp = _bp;
 	bp.format = destFormat;
 	bp.size = { width, height };
 
-	Surface_p pSurface = pFactory->createSurface(bp, (uint8_t*)data, pixelDesc, 0, nullptr, 0);
+	Bitmap_p pBitmap = pFactory->createBitmap(bp, (uint8_t*)data, pixelDesc, 0, nullptr, 0);
 
 	stbi_image_free(data);
-	return pSurface;
+	return pBitmap;
 }

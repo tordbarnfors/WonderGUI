@@ -51,9 +51,9 @@ namespace wg
 
 		struct Blueprint
 		{
-			Surface_p					icons;
+			Bitmap_p					icons;
 
-			Surface_p					transparencyGrid;
+			Bitmap_p					transparencyGrid;
 
 			Capsule::Blueprint			mainCapsule;
 			LabelCapsule::Blueprint		classCapsule;

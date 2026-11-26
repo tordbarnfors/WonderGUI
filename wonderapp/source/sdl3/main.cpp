@@ -66,7 +66,7 @@ public:
 	}
 
 	Blob_p 			loadBlob(const std::string& path, bool bNullTerminate = false) override;
-	Surface_p 		loadSurface(const std::string& path, SurfaceFactory* pFactory = nullptr, const Surface::Blueprint& bp = Surface::Blueprint() ) override;
+	Bitmap_p 		loadBitmap(const std::string& path, BitmapFactory* pFactory = nullptr, const Bitmap::Blueprint& bp = Bitmap::Blueprint() ) override;
 
 	bool			initDefaultWidgetKit() override;
 
@@ -146,7 +146,7 @@ SDLWindow * create_backend_specific_window(wapp::Window* pUserWindow, wg::Placem
 
 MouseButton translateSDLMouseButton(Uint8 button);
 
-Surface_p generateWindowSurface(SDL_Window* pWindow, int widht, int height);
+Bitmap_p generateWindowBitmap(SDL_Window* pWindow, int widht, int height);
 
 
 float				g_scale;
@@ -777,11 +777,11 @@ Blob_p MyAppAPI::loadBlob(const std::string& path, bool bNullTerminate)
 	return pBlob;
 }
 
-//____ loadSurface() ______________________________________________________
+//____ loadBitmap() ______________________________________________________
 
-Surface_p MyAppAPI::loadSurface(const std::string& path, SurfaceFactory* pFactory, const Surface::Blueprint& _bp)
+Bitmap_p MyAppAPI::loadBitmap(const std::string& path, BitmapFactory* pFactory, const Bitmap::Blueprint& _bp)
 {
-	return wappLoadSurface(path, pFactory, _bp);
+	return wappLoadBitmap(path, pFactory, _bp);
 }
 
 //____ initDefaultWidgetKit() ____________________________________________________

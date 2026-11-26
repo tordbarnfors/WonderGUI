@@ -42,7 +42,7 @@ built on it and draw with the same HLSL shaders (`wax/extensions/hlsl`). The ste
    Decided with Tord: its shaders are
    the HLSL too, turned into GLSL 3.3 by DXC and SPIRV-Cross (`openglgfx/compile_shaders.py`),
    which also fixes up what GLSL 3.3 lacks: storage buffers become buffer textures, varyings get
-   names, and y is flipped for surfaces. GL stays at 3.3, and with that on macOS. GL 4.3 would have
+   names, and y is flipped for bitmaps. GL stays at 3.3, and with that on macOS. GL 4.3 would have
    needed no fixing up, but has no macOS. Code only for GL goes inside `#ifdef WAX_GLSL` in the
    HLSL, so far the vertex input of `vs_warp.hlsl`.
 4. **Dropped:** giving GLSL and MSL the file split of the HLSL, as both are generated from it.
@@ -76,21 +76,21 @@ For SdlGpuBackend, still to do, see "SdlGpuBackend" under Decided:
   fixed cost of a session, about 0.1 ms more, from a command buffer of its own.
 - **A lost device,** which SDL_GPU doesn't tell us about. Restorers are never called.
 
-### GPU surfaces: left after "pixels kept once"
+### GPU bitmaps: left after "pixels kept once"
 
-"GPU surfaces: pixels kept once" under Decided is done but for this:
+"GPU bitmaps: pixels kept once" under Decided is done but for this:
 
 - **It went into v4 from gl-shape-performance,** in one piece with what has no API change (Tord,
   2026-11-24: "just move on with 2 and 3 locally", 2026-11-25: "you can merge branch to v4").
   breaking-changes has none of it: not the restorer, `buffered` leaving, nor what went out of
-  GlSurface and MetalSurface.
-- **`loadSurface()` of WonderApp gives no restorer,** so what it loads keeps its pixels (Tord,
+  GlBitmap and MetalBitmap.
+- **`loadBitmap()` of WonderApp gives no restorer,** so what it loads keeps its pixels (Tord,
   who plans to change its API). Until then, what an application loads through it takes twice its
   pixels on all backends, which on GlBackend is more than before.
 - **Restorers are only called by DX12Backend,** which is the one that replaces its device. On
   the others a restorer says the same about what to keep, and is called once they can replace
   theirs, see "VulkanBackend: a lost device stops rendering for good" in KNOWN_ISSUES.md.
-- **Alpha in one pass:** pixels with alpha written to a surface with restorer are gone through
+- **Alpha in one pass:** pixels with alpha written to a bitmap with restorer are gone through
   twice, for the alpha map and for premultiplying, where one function could do both.
 - **Alpha without the second pass:** a flag for pixels the producer has premultiplied, or a
   texture with straight alpha that the shader multiplies, which is right at 1:1 and with nearest
@@ -495,7 +495,7 @@ For SdlGpuBackend, still to do, see "SdlGpuBackend" under Decided:
 - **Left as it is:** blits, lines and edgemaps step through their part of the command stream
   themselves, as they read it one rectangle or line at a time, where the other draws are handed
   what processCommands() has read.
-- **Decided with Tord: edgemaps keep a GPU buffer of their own,** as surfaces have their
+- **Decided with Tord: edgemaps keep a GPU buffer of their own,** as bitmaps have their
   textures. Copying what a frame draws of them into its extras buffer was considered and turned
   down: an edgemap can be drawn many times a frame, and a resource shouldn't fill up the buffers
   of the frame. So each backend keeps its edgemap class, which is what makes that buffer. The
@@ -528,32 +528,32 @@ For SdlGpuBackend, still to do, see "SdlGpuBackend" under Decided:
 - **Mipmaps are made with linear blits** in Vulkan, rather than the shaders DX12Backend draws them
   with, which average the same four texels.
 
-### Surfaces created without pixels (2026-11)
+### Bitmaps created without pixels (2026-11)
 
-Decided with Tord: `Surface::Blueprint` has `fillColor`, which a surface created without pixels
+Decided with Tord: `Bitmap::Blueprint` has `fillColor`, which a bitmap created without pixels
 is filled with. It defaults to `Color::Undefined`, which fills nothing in and leaves the content
-unspecified until all of it has been drawn or written. It was unspecified already on SoftSurface
-(memory as it came) and GlSurface (a texture given no pixels), while DX12Surface filled its pixels
-with zeroes and uploaded them, which cost more than making the surface for something like a
+unspecified until all of it has been drawn or written. It was unspecified already on SoftBitmap
+(memory as it came) and GlBitmap (a texture given no pixels), while DX12Bitmap filled its pixels
+with zeroes and uploaded them, which cost more than making the bitmap for something like a
 canvas layer that is cleared right after.
 
-- **How it is filled is up to the surface.** For now each fills the pixels it keeps with
-  `PixelTools::fillBitmap()`, as `Surface::fill()` does, and sends them to its texture as it sends
-  supplied pixels. GlSurface fills a buffer for the upload when it keeps none. A clear on the GPU
+- **How it is filled is up to the bitmap.** For now each fills the pixels it keeps with
+  `PixelTools::fillBitmap()`, as `Bitmap::fill()` does, and sends them to its texture as it sends
+  supplied pixels. GlBitmap fills a buffer for the upload when it keeps none. A clear on the GPU
   is the faster way for a canvas that keeps no pixels, and is left for when there are such.
-- **Ignored when pixels are supplied,** and `Surface::blueprint()` returns it undefined: it says
-  how the surface was to start out, not what it is.
-- **Indexed surfaces** get the nearest color of their palette.
-- **gfxstream:** the CreateSurface chunk ends with the fill color, 48 bytes instead of 40. The
+- **Ignored when pixels are supplied,** and `Bitmap::blueprint()` returns it undefined: it says
+  how the bitmap was to start out, not what it is.
+- **Indexed bitmaps** get the nearest color of their palette.
+- **gfxstream:** the CreateBitmap chunk ends with the fill color, 48 bytes instead of 40. The
   player reads it when the chunk is that long, so older streams still play, but an older player
   can't read a new stream.
-- **C API:** `wax_surfaceBP` has `useFillColor` besides `fillColor`, as a zeroed struct would
-  otherwise ask for transparent black. In C# `Surface.Blueprint.FillColor` is null by default.
+- **C API:** `wax_bitmapBP` has `useFillColor` besides `fillColor`, as a zeroed struct would
+  otherwise ask for transparent black. In C# `Bitmap.Blueprint.FillColor` is null by default.
 
 ### Software tiling (2026-11)
 
-- **Tiling surfaces of any size.** SoftBackend and LinearBackend wrap tile positions by the size
-  of the surface, not a power-of-two bit mask, like the GPU backends and ReferenceBackend.
+- **Tiling bitmaps of any size.** SoftBackend and LinearBackend wrap tile positions by the size
+  of the bitmap, not a power-of-two bit mask, like the GPU backends and ReferenceBackend.
 - **No per-pixel wrapping.** Straight tiles step a pointer and jump back at the edge of the
   source. Transform tiles reduce their steps to less than the source and read in runs that stay
   inside it, wrapping between runs. Cheap enough that keeping a separate power-of-two path wasn't
@@ -595,7 +595,7 @@ canvas layer that is cleared right after.
 
 ### WonderApp on Wayland (2026-11)
 
-- **wappsdl3gl windows render into a GlSurface of their own,** flipped into the back buffer and
+- **wappsdl3gl windows render into a GlBitmap of their own,** flipped into the back buffer and
   swapped in when something was drawn, as Wax only draws what changed and the back buffer doesn't
   keep its content. What is drawn into the front buffer never shows on Wayland. The bytes are
   copied as they are, as the window of an EGL context isn't sRGB-capable.
@@ -708,7 +708,7 @@ Not yet timed on Windows, where the shapes were slowest, nor with DX12Backend an
 MetalBackend gets all but the plain min() and max(), which MSL has, DX12Backend only the shader
 per kind, as FXC doesn't short-circuit.
 
-### DX12Backend: surfaces (2026-11)
+### DX12Backend: bitmaps (2026-11)
 
 Compared with GlBackend on the same Windows machine (Arc B580), DX12Backend was level in all of
 gfxdevicetester (median 1.01) but for tests making D3D12 objects or reading pixels with the CPU:
@@ -718,7 +718,7 @@ ReadbackTests 1.7 times, and with canvases without a pixel buffer, see the secti
 below, canvas layers 1.5-3 times as long. See "DX12Backend: canvas layers" in KNOWN_ISSUES.md for
 what is left.
 
-- **The pixels of a DX12Surface are in CPU cached memory** (`_createDeviceObjects()`, 95e05825),
+- **The pixels of a DX12Bitmap are in CPU cached memory** (`_createDeviceObjects()`, 95e05825),
   a custom heap with the properties of a READBACK heap, created in COMMON. The pixels are read as
   much as they are written: by whoever has a PixelBuffer, by `alpha()`, by the premultiplying copy
   for uploads and the unpremultiplying after readback. In the upload heap, write-combined on a GPU
@@ -734,52 +734,52 @@ what is left.
   the other suites do with what they draw, so they compare drawing. "Cylinders made each run"
   makes them for each run.
 
-### GPU surfaces on GpuSurface (2026-11)
+### GPU bitmaps on GpuBitmap (2026-11)
 
-Decided with Tord. DX12Surface and VulkanSurface were the same class twice on the CPU side, and
-all four GPU surfaces had their own constructors, palette conversion and premultiplying.
+Decided with Tord. DX12Bitmap and VulkanBitmap were the same class twice on the CPU side, and
+all four GPU bitmaps had their own constructors, palette conversion and premultiplying.
 
-- **GpuSurface (`wax/source/wax_gpusurface.h`) is the base of DX12Surface, VulkanSurface and
-  MetalSurface.** It has the pixels the CPU reads and writes, which of pixels and texture is the
+- **GpuBitmap (`wax/source/wax_gpubitmap.h`) is the base of DX12Bitmap, VulkanBitmap and
+  MetalBitmap.** It has the pixels the CPU reads and writes, which of pixels and texture is the
   newer and where (`m_dirtyRect`, `m_bBufferNeedsSync`), the palette, the pixels in plain memory
-  of a surface the API gives nothing for, and the pixel buffer a canvas gets when its pixels are
+  of a bitmap the API gives nothing for, and the pixel buffer a canvas gets when its pixels are
   first asked for. A subclass picks the format of the texture, makes what is on the device and
   copies between pixels and texture: `_setTextureFormat()`, `_createDeviceObjects()`,
   `_createPixelBuffer()` and `_readBack()`, and `_waitForUpload()` and `_updatePending()` if its
   uploads need them. That follows the line of GpuBackend: lifetime of resources,
   synchronization and device loss stay with each backend, as does when an upload happens.
-- **A surface is made by one sequence** (`GpuSurface::_setup()`), called by the constructor of the
+- **A bitmap is made by one sequence** (`GpuBitmap::_setup()`), called by the constructor of the
   subclass as it calls what the subclass implements. The four `create()` of each class turn their
   arguments into a `PixelSource`, so each class has one constructor.
 - **`create()` returns null for a blueprint that isn't valid or a format without a texture,** on
-  all four, as GlSurface and MetalSurface did. DX12Surface and VulkanSurface gave a surface
+  all four, as GlBitmap and MetalBitmap did. DX12Bitmap and VulkanBitmap gave a bitmap
   without a texture and an error. Pixels in plain memory are for when the device gives nothing:
   none set, lost, or out of memory.
-- **Pixels are little endian,** as the texture formats are laid out by byte. DX12Surface and
-  MetalSurface said native, which is the same on what they run on.
+- **Pixels are little endian,** as the texture formats are laid out by byte. DX12Bitmap and
+  MetalBitmap said native, which is the same on what they run on.
 - **Premultiplying and the palette as the shaders read it are in GpuTools,** used by all four.
   What is sent to a texture gets no premultiplied copy when every pixel is opaque or transparent
-  black, which only DX12Surface looked for.
-- **MetalSurface sends pixels to its texture when it is used,** where `pullPixels()` committed a
-  command buffer and waited for the GPU every time, and creating a surface with pixels did too.
-  MetalBackend has it done before the surface is drawn from or into (`syncTexture()`), in a
+  black, which only DX12Bitmap looked for.
+- **MetalBitmap sends pixels to its texture when it is used,** where `pullPixels()` committed a
+  command buffer and waited for the GPU every time, and creating a bitmap with pixels did too.
+  MetalBackend has it done before the bitmap is drawn from or into (`syncTexture()`), in a
   command buffer of its own committed there, so ahead of the session in the queue. The copy reads
   the pixels when the GPU gets to it, so `allocPixelBuffer()` waits for the last one. The palette
   is in plain memory, where it was in a Metal buffer nothing on the GPU read.
-- **All three backends call `notifyRendered()` when they bind a surface as canvas** (Tord:
+- **All three backends call `notifyRendered()` when they bind a bitmap as canvas** (Tord:
   consistency first, then fix what breaks). MetalBackend kept a list of the canvases of a session
   and marked them when the session had been committed, as reading a texture back doesn't wait for
-  a session being recorded, which it does with DX12Backend and VulkanBackend. See "MetalSurface:
+  a session being recorded, which it does with DX12Backend and VulkanBackend. See "MetalBitmap:
   pixels asked for during a session" in KNOWN_ISSUES.md for what that leaves. Changed after the
   test runs below, and not compiled.
-- **GlSurface isn't built on GpuSurface.** It keeps no pixels unless `buffered`, palette based or
+- **GlBitmap isn't built on GpuBitmap.** It keeps no pixels unless `buffered`, palette based or
   `Alpha_8`: the texture is the only copy, `allocPixelBuffer()` makes a buffer for the call and
   `alpha()` reads an alpha map of a byte per pixel. That is the leanest of the four and another
   model, so a base class would only have been in its way. It uses the helpers in GpuTools. Making
   the other three as lean, which is what `buffered` says, is a decision of its own, taken since:
-  see "GPU surfaces: pixels kept once" below, where GlSurface was put on GpuSurface after all.
-- **Left in:** `unload()`, `reload()` and `isLoaded()` of GlSurface and MetalSurface and the two
-  pixel counters of GlSurface. Nothing in the repository calls them, but they are public API, so
+  see "GPU bitmaps: pixels kept once" below, where GlBitmap was put on GpuBitmap after all.
+- **Left in:** `unload()`, `reload()` and `isLoaded()` of GlBitmap and MetalBitmap and the two
+  pixel counters of GlBitmap. Nothing in the repository calls them, but they are public API, so
   taking them out belongs on breaking-changes.
 
 Tested on Windows (Arc B580): gfxdevicetester gives the same results as before on all 262 tests
@@ -790,23 +790,23 @@ and MetalBackend on a Mac (x86_64, Debug) built as they were written and give th
 as before on all 262 tests too, VulkanBackend also with garbage written to every new image and
 pixel buffer. All at e4e1e9b5 against 50102486.
 
-### DX12Surface: canvases without a pixel buffer (2026-11)
+### DX12Bitmap: canvases without a pixel buffer (2026-11)
 
 Decided with Tord, after timing where canvas layers spent their time: 2.4 of the 2.55 ms of
-gfxdevicetester's CanvasLayerTest1 went to making the four DX12Surfaces of the layers, each a
+gfxdevicetester's CanvasLayerTest1 went to making the four DX12Bitmaps of the layers, each a
 texture (345 us), a buffer for its pixels (160 us), zeroes written to that buffer (17 us), all of
 it read to see if it needed premultiplying (64 us) and then uploaded to the texture, which
 DeviceGen2 clears with a fill right after.
 
 - **A canvas that isn't `buffered` and is created without pixels or fill color has no pixel
   buffer** until its pixels are asked for: `allocPixelBuffer()`, `pushPixels()` and `alpha()` make
-  it (`GpuSurface::_needPixels()`), marked as older than the texture, so it is read back into before it is
-  read. That is what `buffered` of the Blueprint says, which DX12Surface didn't look at. It is
+  it (`GpuBitmap::_needPixels()`), marked as older than the texture, so it is read back into before it is
+  read. That is what `buffered` of the Blueprint says, which DX12Bitmap didn't look at. It is
   half the memory of a canvas nobody reads, and with the upload gone CanvasLayerTest1 takes
-  0.76 ms where it took 2.45 ms. Other surfaces are written by the CPU and keep their buffer, as
+  0.76 ms where it took 2.45 ms. Other bitmaps are written by the CPU and keep their buffer, as
   does an indexed canvas, which can't be drawn to.
 - **With a fill color the canvas gets its pixel buffer at once,** filled and uploaded as for any
-  surface. Clearing the texture on the GPU instead would save that for a canvas nobody reads, but
+  bitmap. Clearing the texture on the GPU instead would save that for a canvas nobody reads, but
   it has to be recorded by a DX12Backend, as uploads are. Left until something needs it: canvas
   layers are created without a fill color and cleared by DeviceGen2.
 - **On the device is having a texture,** which `_evacuate()` and `_migrate()` went by the pixel
@@ -817,27 +817,27 @@ DeviceGen2 clears with a fill right after.
 - **Not kept between canvas updates:** what is left of a canvas layer is making its texture,
   about 350 us at 512x512. Placed in a heap that is there already it takes 21 us, but Tord doesn't
   want canvases or memory for them kept behind the scenes. If it is to be solved, by layer
-  surfaces that whoever owns the canvas supplies or keeps.
-- VulkanSurface and MetalSurface have the same since they were built on GpuSurface, see "GPU
-  surfaces on GpuSurface" below. VulkanSurface no longer sends the unspecified pixels of a new
-  surface to its texture: an image nothing has been sent to stays in the layout it was created
+  bitmaps that whoever owns the canvas supplies or keeps.
+- VulkanBitmap and MetalBitmap have the same since they were built on GpuBitmap, see "GPU
+  bitmaps on GpuBitmap" below. VulkanBitmap no longer sends the unspecified pixels of a new
+  bitmap to its texture: an image nothing has been sent to stays in the layout it was created
   in, which VulkanBackend takes it out of like any other.
 
 Tested on Windows (Arc B580): gfxdevicetester gives the same results as before on all 262 tests,
 and in a Debug build the same for 43 tests of canvases, layers, readback, mipmaps and warps with
-the device removed and replaced between starting up and running them, which takes the surfaces
+the device removed and replaced between starting up and running them, which takes the bitmaps
 made by then off the device and back, as without. That took holding the run back some frames, see
 SUGGESTIONS.md. Not tested: the device removed while drawing, and a working device being let go
 of, which is when a canvas without a pixel buffer gets one to read back into.
 
-### GPU surfaces: staging and plain memory (2026-11)
+### GPU bitmaps: staging and plain memory (2026-11)
 
-Step 1 of "GPU surfaces: pixels kept once" below, decided with Tord 2026-11-24. It
-replaces what "DX12Backend: surfaces", "GPU surfaces on GpuSurface" and "DX12Surface: canvases
-without a pixel buffer" above say of where the pixels of a surface are and of the pixel buffer of
+Step 1 of "GPU bitmaps: pixels kept once" below, decided with Tord 2026-11-24. It
+replaces what "DX12Backend: bitmaps", "GPU bitmaps on GpuBitmap" and "DX12Bitmap: canvases
+without a pixel buffer" above say of where the pixels of a bitmap are and of the pixel buffer of
 a canvas.
 
-- **GpuSurface has the pixels of every surface but a canvas, in plain memory.** A subclass makes
+- **GpuBitmap has the pixels of every bitmap but a canvas, in plain memory.** A subclass makes
   staging memory (`_allocStaging()`), has a rectangle of it copied to the texture (`_pull()`) and
   reads a rectangle of the texture back (`_readBack()`). It no longer has a buffer with our
   pixels, nor says how their lines are to be padded.
@@ -846,84 +846,84 @@ a canvas.
   now has 1 KB.
 - **`buffered` of the Blueprint does nothing** for the three, until it goes.
 - **A PixelBuffer of a canvas is staging memory of the rectangle asked for,** which the GPU
-  copies from where it is. What needs premultiplying is copied by a second buffer. The surface
+  copies from where it is. What needs premultiplying is copied by a second buffer. The bitmap
   keeps a list of what it has handed out, as `freePixelBuffer()` gets a pointer.
-- **A canvas without a device has pixels like any surface,** and lets go of them when they are on
+- **A canvas without a device has pixels like any bitmap,** and lets go of them when they are on
   their way to a texture again and no PixelBuffer points into them.
-- **Reading back makes a buffer for the rectangle and lets go of it.** A DX12Surface kept the one
+- **Reading back makes a buffer for the rectangle and lets go of it.** A DX12Bitmap kept the one
   it read back by, so a canvas that had been read had its pixels three times: texture, pixel
   buffer and that.
 - **`alpha()` of a canvas reads a map of a byte for each pixel,** made by reading the canvas back
   when first asked for and again after it has been rendered into or written.
-- **DX12Backend stages what a batch of surfaces has to send in one buffer**
-  (`_stageUploadBatch()`), up to 64 MB a buffer unless one surface has more. That is one buffer
-  made where each surface had one for its pixels, and nothing rounded up to 64 KB. It is in an
+- **DX12Backend stages what a batch of bitmaps has to send in one buffer**
+  (`_stageUploadBatch()`), up to 64 MB a buffer unless one bitmap has more. That is one buffer
+  made where each bitmap had one for its pixels, and nothing rounded up to 64 KB. It is in an
   UPLOAD heap, as it is written once. A PixelBuffer of a canvas is in the CPU cached memory the
-  pixels of a DX12Surface were in.
+  pixels of a DX12Bitmap were in.
 - **Nothing waits for an upload with D3D12,** which `allocPixelBuffer()` did when the GPU hadn't
   read the pixels yet. Nothing on the GPU reads our pixels now.
-- **A lost device takes nothing of a surface that keeps its pixels.** A canvas is read back if the
+- **A lost device takes nothing of a bitmap that keeps its pixels.** A canvas is read back if the
   device works, otherwise cleared and marked with `isContentLost()`, also one that was created
   with pixels or a fill color and never rendered into, which had them back before. With the
   device removed and replaced ahead of gfxdevicetester's tests, that is what shows: the three
-  canvases of SurfaceFillTests come out cleared.
-- **VulkanBackend records the uploads of a surface in its own command buffer**
+  canvases of BitmapFillTests come out cleared.
+- **VulkanBackend records the uploads of a bitmap in its own command buffer**
   (`_recordUploads()`) when it is about to draw from or into it, outside the render pass and
-  after having other backends submit what they have recorded. VulkanSurface submitted every
+  after having other backends submit what they have recorded. VulkanBitmap submitted every
   backend and waited for the GPU before and after each upload. Reading back records what is to
   be uploaded in the command buffer it reads with, so it waits once. A rectangle starting at an
   offset that isn't a multiple of four goes by a buffer of its own, as Vulkan doesn't promise
   such a copy for every queue.
-- **MetalSurface commits its uploads as before,** and nothing waits for them either. `unload()`
+- **MetalBitmap commits its uploads as before,** and nothing waits for them either. `unload()`
   reads a canvas back, where what was rendered into it was lost.
-- **A PixelBuffer is the pixels of the surface or memory of its own,** so only what is pulled is
-  written and only what is pushed has been read. That was so with GlSurface already, and is
-  what the documentation of Surface says, but the first version of the test below filled a
-  buffer before pushing part of it, which wrote the surface itself with the software renderer.
-  For `resources/surfaces.md` of the guide, with step 2.
+- **A PixelBuffer is the pixels of the bitmap or memory of its own,** so only what is pulled is
+  written and only what is pushed has been read. That was so with GlBitmap already, and is
+  what the documentation of Bitmap says, but the first version of the test below filled a
+  buffer before pushing part of it, which wrote the bitmap itself with the software renderer.
+  For `resources/bitmaps.md` of the guide, with step 2.
 
 Tested on Windows (Arc B580): gfxdevicetester gives the same results as before on all 262 tests
 with DX12Backend and GlBackend. "Rectangles" of ReadbackTests is new: it writes and reads parts
 of canvases through parts of pixel buffers. With DX12Backend it differs where "Readback" does,
 at the canvas D3D12 has as XRGB_8 for RGB_565. With GlBackend it differs for the one in
-KNOWN_ISSUES.md, as GlSurface can't read part of a surface it has no pixels of. In a Debug build,
+KNOWN_ISSUES.md, as GlBitmap can't read part of a bitmap it has no pixels of. In a Debug build,
 63 tests of canvases, layers, readback, mipmaps, palettes, blurs and warps give the same with the
 device removed and replaced before they run, but for the three canvases above.
 
 Timed with DX12Backend (two runs each): the median of the 262 tests is 1.000 of what it was.
 "Readback" takes 5.3 ms where it took 3.2: each of its six canvases is read back twice a run,
 for its pixels and for `alpha()`, and each time a buffer is made. "FillColor" of
-SurfaceFillTests takes 0.9 ms where it took 9 us: it reads three canvases that are never
+BitmapFillTests takes 0.9 ms where it took 9 us: it reads three canvases that are never
 rendered into, which had their pixels at hand. See SUGGESTIONS.md.
 
-Not done: VulkanSurface and MetalSurface are not compiled. What the debug layer of D3D12 says
-hasn't been looked at. How long it takes to load the surfaces of an application hasn't been
+Not done: VulkanBitmap and MetalBitmap are not compiled. What the debug layer of D3D12 says
+hasn't been looked at. How long it takes to load the bitmaps of an application hasn't been
 timed. A working device being let go of was run with the next section.
 
-### GPU surfaces: pixels kept once (2026-11)
+### GPU bitmaps: pixels kept once (2026-11)
 
 Decided with Tord 2026-11-24 and built the same day, in three steps: staging and plain memory
-(the section above), the restorer with `buffered` gone, and GlSurface onto GpuSurface. It
-replaces what "GPU surfaces on GpuSurface" above says of GlSurface standing by itself and of
+(the section above), the restorer with `buffered` gone, and GlBitmap onto GpuBitmap. It
+replaces what "GPU bitmaps on GpuBitmap" above says of GlBitmap standing by itself and of
 what was left in, and what the section above says of `buffered` and of canvases created with
 pixels.
 
-**The rule: a surface keeps its pixels unless it is promised them back.** The promise is a
+**The rule: a bitmap keeps its pixels unless it is promised them back.** The promise is a
 restorer in its Blueprint, which is called when the texture is lost. A canvas is the other case:
 the GPU writes it, so pixels kept would be old ones, and whoever rendered into it does that again.
 
-| Surface | Kept in plain memory | After a lost device | Read by the CPU | Written by the CPU |
+| Bitmap | Kept in plain memory | After a lost device | Read by the CPU | Written by the CPU |
 |---|---|---|---|---|
 | Without restorer | All pixels | Sent again | At once, in place | In place, then copied to staging |
 | With restorer | An alpha map, if not all is opaque | Restorer called | Read back, waits for the GPU | Straight into staging |
 | `Alpha_8`, palette based | All pixels, restorer or not | Sent again | At once, in place | In place, then copied to staging |
 | Canvas | Nothing | Restorer called if it has one, else `isContentLost()` | Read back, waits for the GPU | Straight into staging |
 
-At rest an `ARGB_8` surface takes 8 bytes a pixel without restorer, 5 with one (4 if all of it is
-opaque) and 4 as a canvas, 5 once `alpha()` has been asked. So for whoever makes a surface: give
+At rest an `ARGB_8` bitmap takes 8 bytes a pixel without restorer, 5 with one (4 if all of it is
+opaque) and 4 as a canvas, 5 once `alpha()` has been asked. So for whoever makes a bitmap: give
 a restorer to what is only written, and none to what is read.
 
-Surfaces without pixels of their own:
+Bitmaps without pixels of their own:
 
 - **`allocPixelBuffer()` hands out staging memory** of the rectangle asked for, and `pullPixels()`
   has just that region copied to the texture. That is the fast path for a stream: the producer
@@ -934,75 +934,75 @@ Surfaces without pixels of their own:
   and lose precision where alpha is low, so what is read regularly should keep its pixels.
 - **The alpha map is a byte for each pixel,** written with the pixels and not made as long as
   all that has been written is opaque. A canvas reads its texture back for it.
-- **`Alpha_8` and palette based surfaces keep their pixels** with a restorer too, which is never
+- **`Alpha_8` and palette based bitmaps keep their pixels** with a restorer too, which is never
   called. An alpha map would take as much as the pixels of the 8 bit ones. `Index_16` is with
   them (mine): its alpha comes by the palette, which can change after the pixels were written.
   A side effect is that the glyph cache gets through a lost device by itself.
-- **What a surface is created with is written to pixels it has until they are sent,** not
+- **What a bitmap is created with is written to pixels it has until they are sent,** not
   straight to staging memory (mine). That is a copy more, but DX12Backend stages what a batch of
-  surfaces has to send in one buffer, where each would have had a buffer of at least 64 KB made
-  for it. A surface that is never drawn from keeps them, as it has nothing in its texture.
+  bitmaps has to send in one buffer, where each would have had a buffer of at least 64 KB made
+  for it. A bitmap that is never drawn from keeps them, as it has nothing in its texture.
 
 The restorer:
 
-- **A `std::function`** that takes the surface and returns a bool, `Surface::Restorer` (Tord,
+- **A `std::function`** that takes the bitmap and returns a bool, `Bitmap::Restorer` (Tord,
   2026-11-25). It was a pointer to a function for a day, as `finalizer` is one, which Tord had
-  picked over an object with a `restore()` to override. A plain function has the surface to go
+  picked over an object with a `restore()` to override. A plain function has the bitmap to go
   by, with its `identity` and its `userData`. A lambda captures what it needs, which is what a
-  plugin takes, see below, and what the observers of a surface already had. It is a member of
-  Surface, so every surface is larger for it on all backends: 64 bytes for a `std::function`
+  plugin takes, see below, and what the observers of a bitmap already had. It is a member of
+  Bitmap, so every bitmap is larger for it on all backends: 64 bytes for a `std::function`
   with MSVC as I recall, not measured, where the pointer was 8.
-- **What a restorer captures has to be there as long as the surface,** which can be longer than
-  whoever made it: a font or what is about to be rendered may hold the surface.
-  `Surface::dropRestorer()` is for that. The surface declines from then on and stays one with a
+- **What a restorer captures has to be there as long as the bitmap,** which can be longer than
+  whoever made it: a font or what is about to be rendered may hold the bitmap.
+  `Bitmap::dropRestorer()` is for that. The bitmap declines from then on and stays one with a
   restorer, as what it keeps in memory was settled when it was made.
-- **Called when the device has been replaced,** between frames, by `DX12Surface::migrateAll()`
-  once every surface is on the new device, as a restorer may use other surfaces. The surfaces to
-  call are held by strong pointers meanwhile, as a restorer may let go of surfaces. Not when the
-  surface is first used: that spreads the work, but runs code of the application from inside
+- **Called when the device has been replaced,** between frames, by `DX12Bitmap::migrateAll()`
+  once every bitmap is on the new device, as a restorer may use other bitmaps. The bitmaps to
+  call are held by strong pointers meanwhile, as a restorer may let go of bitmaps. Not when the
+  bitmap is first used: that spreads the work, but runs code of the application from inside
   rendering. An application that wants it spread declines and writes the pixels in its own time.
-- **It returns true when the content is back, false when it did nothing.** After false the surface
+- **It returns true when the content is back, false when it did nothing.** After false the bitmap
   is cleared to transparent black and says `isContentLost()`, which is how a canvas without
   restorer ends up too. Clearing is sending zeros, from pixels made for it and let go of when sent.
-- **`isContentLost()` goes back to false** when the restorer returns true or all of the surface
+- **`isContentLost()` goes back to false** when the restorer returns true or all of the bitmap
   has been written by one `pullPixels()`. A canvas without restorer says it from when the device
-  is let go of, a surface with one when it has declined.
-- **`Surface::declineRestore()`** is the one ready-made restorer, for streams.
-- **A working device that is let go of is as a lost one** to a surface with restorer (Tord).
+  is let go of, a bitmap with one when it has declined.
+- **`Bitmap::declineRestore()`** is the one ready-made restorer, for streams.
+- **A working device that is let go of is as a lost one** to a bitmap with restorer (Tord).
   Canvases without are read back, into pixels they have until they are on a device again.
 - **A canvas with a restorer has it called** in place of being read back or left lost (mine, it
   wasn't talked through). So CanvasCapsule and the like could repaint from one instead of
   looking at `isContentLost()`, which none of them does yet.
-- **Without a device, a surface without pixels gets them when first read or written,** zeroed, as
+- **Without a device, a bitmap without pixels gets them when first read or written,** zeroed, as
   its content is lost by then. That is no memory for those that are left alone meanwhile.
 
-`buffered` is gone from the Blueprint, the C API (`wax_surfaceBP`, and `WAX_SAVE_BUFFERED_FLAG`,
-whose value 8 is left unused), SurfaceWriter, the C# wrapper and the surface factory of the
+`buffered` is gone from the Blueprint, the C API (`wax_bitmapBP`, and `WAX_SAVE_BUFFERED_FLAG`,
+whose value 8 is left unused), BitmapWriter, the C# wrapper and the bitmap factory of the
 plugin. The header of `.surf` files keeps the bit as reserved, so files written with it load.
-`wax_surfaceBP` got `restorer` and `restorerData`: a `wax_restorer_func` takes the surface and
-the data, and the C API wraps the two in a lambda, as it does for the observers of a surface.
-`wax_getSurfaceBlueprint()` gives no restorer, as a `std::function` can't be handed back as a
-function of C. New calls are `wax_declineSurfaceRestore()`, `wax_dropSurfaceRestorer()` and
-`wax_surfaceIsContentLost()`. The layout of `wax_surfaceBP` changed, as it did for `fillColor`,
+`wax_bitmapBP` got `restorer` and `restorerData`: a `wax_restorer_func` takes the bitmap and
+the data, and the C API wraps the two in a lambda, as it does for the observers of a bitmap.
+`wax_getBitmapBlueprint()` gives no restorer, as a `std::function` can't be handed back as a
+function of C. New calls are `wax_declineBitmapRestore()`, `wax_dropBitmapRestorer()` and
+`wax_bitmapIsContentLost()`. The layout of `wax_bitmapBP` changed, as it did for `fillColor`,
 so plugins have to be built again.
 
-Plugins (2026-11-25). A surface of a plugin is a PluginSurface in the plugin, which passes
-every call on to a surface in the host. The host can't call the restorer of the plugin, which
-takes the PluginSurface, so:
+Plugins (2026-11-25). A bitmap of a plugin is a PluginBitmap in the plugin, which passes
+every call on to a bitmap in the host. The host can't call the restorer of the plugin, which
+takes the PluginBitmap, so:
 
-- **The host gets `PluginSurface::_restoreFromHost()` as restorer and the PluginSurface as its
-  data,** which calls the restorer of the Blueprint with the PluginSurface. A table from surfaces
-  of the host to PluginSurfaces was the other way, with the restorer still a pointer (Tord asked
+- **The host gets `PluginBitmap::_restoreFromHost()` as restorer and the PluginBitmap as its
+  data,** which calls the restorer of the Blueprint with the PluginBitmap. A table from bitmaps
+  of the host to PluginBitmaps was the other way, with the restorer still a pointer (Tord asked
   why not a capture).
-- **PluginSurfaceFactory makes the PluginSurface first** and attaches it to the surface of the
+- **PluginBitmapFactory makes the PluginBitmap first** and attaches it to the bitmap of the
   host when that is made, as the host needs the pointer with the Blueprint. It was made from
-  the host's surface before. A host that fails to make its surface now gives null, where the
+  the host's bitmap before. A host that fails to make its bitmap now gives null, where the
   factory went on with a null object.
-- **The destructor of a PluginSurface drops the restorer** of the host's surface, which may
+- **The destructor of a PluginBitmap drops the restorer** of the host's bitmap, which may
   outlive it.
-- **`isContentLost()` is virtual** and PluginSurface asks the host, so CanvasCapsule, Glow and
+- **`isContentLost()` is virtual** and PluginBitmap asks the host, so CanvasCapsule, Glow and
   the charts of a plugin see that their canvases were cleared.
-- **`surfaceIsContentLost` and `dropSurfaceRestorer` are new at the end of `wg_surface_calls`,**
+- **`bitmapIsContentLost` and `dropBitmapRestorer` are new at the end of `wg_bitmap_calls`,**
   so a plugin built with them doesn't start in a host from before.
 - **The restorer of a plugin runs on the thread the host replaces its device on,** between
   frames, as the host calls it. That is where pluginworkbench calls the plugin anyway. Whether
@@ -1010,57 +1010,57 @@ takes the PluginSurface, so:
 
 Tested on Windows (Arc B580, 2026-11-25): gfxdevicetester gives the same results as before on
 all 266 tests with DX12Backend and GlBackend, and unittester passes. Plugins were run with
-pluginworkbench on wappwin32dx12 in a Debug build, with surfaces added to the test plugin as a
+pluginworkbench on wappwin32dx12 in a Debug build, with bitmaps added to the test plugin as a
 temporary change and the device removed every three seconds:
 
-- The restorer of a surface, a lambda with a capture, was called with the PluginSurface and
-  filled it. The surface read back as before the loss and said no lost content.
-- A surface that declines and a canvas without restorer said `isContentLost()` and read back
-  cleared. A surface without restorer never said it. Its pixels weren't read after the loss.
-- A surface with a restorer that was let go of at once never had it called.
+- The restorer of a bitmap, a lambda with a capture, was called with the PluginBitmap and
+  filled it. The bitmap read back as before the loss and said no lost content.
+- A bitmap that declines and a canvas without restorer said `isContentLost()` and read back
+  cleared. A bitmap without restorer never said it. Its pixels weren't read after the loss.
+- A bitmap with a restorer that was let go of at once never had it called.
 - A CanvasCapsule in the plugin didn't crash. Whether it painted again wasn't looked at.
 - The debug layer of D3D12 said nothing but that the device was removed.
 
-Not run: a surface of the host that outlives its PluginSurface, which is what dropping the
-restorer is for (the call is made, with the surface going away right after), the C# wrapper,
-which nothing here builds, and VulkanSurface, MetalSurface and SdlGpuSurface, which take the
-restorer from GpuSurface. To get pluginworkbench to run a plugin on Win32, `Win32API` got its
+Not run: a bitmap of the host that outlives its PluginBitmap, which is what dropping the
+restorer is for (the call is made, with the bitmap going away right after), the C# wrapper,
+which nothing here builds, and VulkanBitmap, MetalBitmap and SdlGpuBitmap, which take the
+restorer from GpuBitmap. To get pluginworkbench to run a plugin on Win32, `Win32API` got its
 `openLibrary()`, `loadSymbol()` and `closeLibrary()`, which were left to do. It then aborted in
-its first frame for another reason, see "A surface with no height gets past
+its first frame for another reason, see "A bitmap with no height gets past
 `_isBlueprintValid()`" in KNOWN_ISSUES.md.
 
-GlSurface on GpuSurface:
+GlBitmap on GpuBitmap:
 
 - **It sends what is written when it is written,** as before, since `glTexSubImage2D()` has
-  copied when it returns. GpuSurface gives such a subclass (`m_bPullsAtOnce`) pixels to copy from
+  copied when it returns. GpuBitmap gives such a subclass (`m_bPullsAtOnce`) pixels to copy from
   where they are, so nothing goes by staging memory but what has to be premultiplied.
 - **Its pixels are little endian** like those of the others, where they were in the byte order
   of the Blueprint. A PixelBuffer says which it is.
 - **It keeps its pixels unless it has a restorer,** where it kept none unless `buffered`. That is
   more memory for an application that gives none.
-- **Part of a surface is read through a framebuffer,** made when first needed. If GL won't make
+- **Part of a bitmap is read through a framebuffer,** made when first needed. If GL won't make
   one of the texture, which it doesn't promise for every format, all of it is read and the part
   copied. That fixes "Rectangles" of ReadbackTests.
 - **`alpha()` of a canvas reads an alpha map,** read back whole when the canvas has been
   rendered into, where it read one pixel for each call. See SUGGESTIONS.md.
-- **A Blob is copied from,** where a `buffered` surface took it over, and its pitch no longer
+- **A Blob is copied from,** where a `buffered` bitmap took it over, and its pitch no longer
   has to be a multiple of four.
-- **`unload()`, `reload()`, `isLoaded()` and the pixel counters are gone,** from MetalSurface
+- **`unload()`, `reload()`, `isLoaded()` and the pixel counters are gone,** from MetalBitmap
   the first three.
 
 Tested on Windows (Arc B580): gfxdevicetester gives the same results as before on all 263 tests
 with DX12Backend and GlBackend, but for "Rectangles" on GlBackend, which is right now.
-ReadbackTests and SurfaceFillTests have a restorer where they had `buffered`. New in
-ReadbackTests: "Restorer" writes and reads rectangles of surfaces with a restorer that fills
+ReadbackTests and BitmapFillTests have a restorer where they had `buffered`. New in
+ReadbackTests: "Restorer" writes and reads rectangles of bitmaps with a restorer that fills
 them again, two of them sRGB, and "WriteAll" and "WriteAllRestorer" write all of a 256 x 256
-surface each run. All three give what the software renderer gives on both.
+bitmap each run. All three give what the software renderer gives on both.
 
 In a Debug build with DX12Backend, with temporary changes that ran the tests, replaced the
 device and ran them again: with the device removed, "Restorer" gives the same after, as do the
-other tests of ReadbackTests, canvas layers, mipmaps and palettes. Of SurfaceFillTests, the
-surface whose restorer declines and the three canvases come back cleared, the first with alpha
-0 from `alpha()`, and the surfaces that keep their pixels as they were. With a device that
-worked, the two canvases without restorer were read back and came through, and the two surfaces
+other tests of ReadbackTests, canvas layers, mipmaps and palettes. Of BitmapFillTests, the
+bitmap whose restorer declines and the three canvases come back cleared, the first with alpha
+0 from `alpha()`, and the bitmaps that keep their pixels as they were. With a device that
+worked, the two canvases without restorer were read back and came through, and the two bitmaps
 with a restorer that declines were cleared.
 
 Everything builds for wappwin32dx12 and wappsdl3gl, and unittester passes.
@@ -1076,19 +1076,19 @@ second run after was the uneven one.
   sessions then. Why hasn't been looked into: all of them draw into canvases that are drawn from
   in turn.
 - **Reading canvases costs more with DX12Backend,** as step 1 found: "Readback" 5.2 ms where it
-  took 3.2, and "FillColor" 1.15 ms where it took 9 us, as four of its surfaces are read back
+  took 3.2, and "FillColor" 1.15 ms where it took 9 us, as four of its bitmaps are read back
   each run where all seven had their pixels at hand.
 - **GlBackend: the median is 0.995 of before.** "Readback" takes 2.9 ms where it took 2.2, as
   `alpha()` of a canvas now reads all of it back. The two canvas layer tests and "FillColor" take
   14-23% less, the first most likely as a canvas no longer gets a framebuffer for reading when
   it is made. "GradientBlur" took 13% more in both runs, where the other two blur tests didn't,
   which I take for noise.
-- **Writing all of a 256 x 256 surface: "WriteAllRestorer" takes 150 us with DX12Backend and
+- **Writing all of a 256 x 256 bitmap: "WriteAllRestorer" takes 150 us with DX12Backend and
   80 us with GlBackend.** With D3D12 that is the time it takes to make a buffer, which is made
-  for each PixelBuffer of a surface without pixels. "WriteAll", without restorer, shows 5 us with
+  for each PixelBuffer of a bitmap without pixels. "WriteAll", without restorer, shows 5 us with
   DX12Backend and 80 us with GlBackend, but the 5 us is not what a stream pays: the tester runs
   a test many times in one canvas update, and DX12Backend sends what was written once for all of
-  them, in a buffer it makes outside what is timed. A surface written once a frame pays for a
+  them, in a buffer it makes outside what is timed. A bitmap written once a frame pays for a
   buffer either way, and for one copy more without restorer. So with D3D12 a restorer gains
   memory and a copy, not the buffer, and with OpenGL memory only. Timing one write a frame takes
   another kind of test.
@@ -1103,7 +1103,7 @@ On Linux and on a Mac, at d9508fe6 (2026-11-25, Debug), all of it compiled with 
   debug mode.
 - **Mac** (x86_64): all targets with `macos-wappcocoametal`, `macos-wappsdl3metal` and
   `macos-wappsdl3gpu`, but for two bundle steps, see KNOWN_ISSUES.md. That is the first time
-  MetalSurface compiled on GpuSurface. unittester passes with each. gfxdevicetester: MetalBackend
+  MetalBitmap compiled on GpuBitmap. unittester passes with each. gfxdevicetester: MetalBackend
   13 differ of 266 with both frameworks, where the 261 tests of bcf58e51 are unchanged and the
   13th is Rectangles of the new ReadbackTests, and SdlGpuBackend 10, with ReadbackTests sheared
   until uploads on Metal had tight rows, see "SdlGpuBackend" under Decided.
@@ -1152,7 +1152,7 @@ before on both.
 
 ### DX12Backend: small buffers out of shared blocks (2026-11)
 
-Each DX12Edgemap, DX12Warpmap and palette of a DX12Surface had a buffer that was a committed
+Each DX12Edgemap, DX12Warpmap and palette of a DX12Bitmap had a buffer that was a committed
 resource of its own, which D3D12 makes at least 64 KB and takes about 250 us to create. Decided
 with Tord: they keep a buffer of their own, but get it from DX12BufferPool
 (`dx12gfx/wax_dx12bufferpool.h`), as a range of a block they share. D3D12 binds these buffers by
@@ -1181,10 +1181,10 @@ address, so nothing changes in shaders or in how they are bound.
   memory it hands out, and the blocks are write-combined memory, which is very slow to read.
   RangeAllocator knows nothing of D3D12, so VulkanBackend can use it for its memory.
 - **The buffers are only ever written.** That is why upload heap memory is right for them, where
-  it was wrong for the pixels of surfaces, which are read. Two places did read them and no longer
+  it was wrong for the pixels of bitmaps, which are read. Two places did read them and no longer
   do: GpuEdgemap copied the old buffer into the new one when an edgemap got its first tint, and
   now fills the new one in from the samples, and the palette was premultiplied where it lay
-  (`p[0] *= p[3]`), in VulkanSurface too, and is now worked out before it is written.
+  (`p[0] *= p[3]`), in VulkanBitmap too, and is now worked out before it is written.
 - **A range given back waits for the GPU** before it is handed out again, as draws recorded or
   on their way may still read it. One fence counts the submissions of all DX12Backends
   (`DX12BufferPool::submitted()`), and a range waits for the last one that may read it, which for
@@ -1196,12 +1196,12 @@ address, so nothing changes in shaders or in how they are bound.
 - **Ranges are whole numbers of 192 bytes,** a multiple of the float4 of edgemaps and palettes,
   of the 24 bytes of a Warpmap vertex and of a cache line, so every kind can start at any range.
   The debug layer of D3D12 has nothing to say about buffers bound that way.
-- **A device let go of takes the blocks with it.** Edgemaps and surfaces give their buffers back
+- **A device let go of takes the blocks with it.** Edgemaps and bitmaps give their buffers back
   first and get new ones on the next device, as before. A DX12Warpmap, which wasn't moved to a new
   device before and held on to the old one, finds its buffer no longer valid and gets a new one
   when next drawn (`_prepare()`).
-- **Surfaces stay as they are.** A small DX12Surface takes at least 128 KB, see KNOWN_ISSUES.md.
-  Decided with Tord not to pool them: graphics is meant to be baked into larger surfaces anyway.
+- **Bitmaps stay as they are.** A small DX12Bitmap takes at least 128 KB, see KNOWN_ISSUES.md.
+  Decided with Tord not to pool them: graphics is meant to be baked into larger bitmaps anyway.
 
 On Windows (Arc B580, Release): gfxdevicetester has 134 such buffers of 2.6 MB together, now in
 27 blocks and nine resources of their own, 2.9 MB, where they took 8.6 MB or more. (Doubling
@@ -1241,13 +1241,13 @@ A backend on the GPU API of SDL 3 (`wax/extensions/sdlgpugfx`), so that an appli
 can use Wax without picking a backend for each platform: SDL_GPU draws with Vulkan, D3D12 or
 Metal as it finds them. WonderApp has it as `wappsdl3gpu`, which renders each window into a canvas
 of its own and copies that to the swap chain, as `wappsdl3gl` does. Built on GpuBackend,
-GpuSurface and GpuEdgemap like the other GPU backends, with SdlGpuSurface, SdlGpuEdgemap,
+GpuBitmap and GpuEdgemap like the other GPU backends, with SdlGpuBitmap, SdlGpuEdgemap,
 SdlGpuWarpmap and their factories. All share one device, set by `SdlGpuBackend::setDevice()`.
 
 - **A session is recorded and played back when it ends,** into a command buffer of its own,
   which is submitted then, as GlBackend plays back its sessions. SDL_GPU has no buffers the CPU
   writes to where the GPU reads them, and copies only in copy passes, outside render passes, so
-  what a session writes and what has changed of the surfaces, edgemaps and Warpmaps it draws is
+  what a session writes and what has changed of the bitmaps, edgemaps and Warpmaps it draws is
   uploaded in a copy pass in front of its render passes. That is when the Wax design says the
   objects are read. A command buffer per session also puts every session in front of what comes
   after it, so reading back needs no flushing of other backends. It costs about 0.1 ms per session
@@ -1269,7 +1269,7 @@ SdlGpuWarpmap and their factories. All share one device, set by `SdlGpuBackend::
   for on the other backends, see `hlsl/sdlgpu.hlsl`: Alpha_8 is R8 with the value moved to
   alpha, XRGB_8 reads alpha 1, clipping multiplies a texel clamped to the edge by the part of its
   footprint inside the source, which is what a transparent border gives, and palette indexes are
-  in R8_UNORM or R16_UNORM, turned back into indexes by the largest index, which SdlGpuSurface
+  in R8_UNORM or R16_UNORM, turned back into indexes by the largest index, which SdlGpuBitmap
   puts in the header of the palette. The A8 of SDL_GPU wasn't an option: it is R8 with a swizzle
   on Vulkan, which a render target must not have, and Metal can't render into it.
 - **Edgemaps and Warpmaps are uploaded whole when they have changed,** cycling the buffer, so
@@ -1279,7 +1279,7 @@ SdlGpuWarpmap and their factories. All share one device, set by `SdlGpuBackend::
   driver of SDL_GPU (3.4.18) ignores `pixels_per_row` of SDL_UploadToGPUTexture() and takes the
   length of a row from the width of the region, which sheared every upload of a rectangle from a
   wider pixel buffer. So with that driver `SdlGpuContext::tightUploadRows()` is true, staging
-  memory has no padding at the end of a row, and `SdlGpuSurface::_pull()` copies a rectangle
+  memory has no padding at the end of a row, and `SdlGpuBitmap::_pull()` copies a rectangle
   narrower than its buffer to a buffer of its own, as it already does for offsets that aren't a
   multiple of four. Downloads are not affected. Other drivers are left as they were, so the copy
   is not made for them. If SDL fixes it, the flag can go.
@@ -1348,13 +1348,13 @@ of a frame is kept. What each backend has for it:
   have to go into the command buffer of the application. It is set before a render and forgotten
   by `endRender()`, as `autopresent()` of MetalBackend and the semaphores of VulkanBackend are.
 - **Only the render pass of a session on the default canvas goes there** ("uploads kept apart",
-  Tord). Its uploads, and everything of sessions on surfaces, are still in command buffers of
-  ours, submitted when the session ends. So all that surfaces hold is on its way to the GPU when
+  Tord). Its uploads, and everything of sessions on bitmaps, are still in command buffers of
+  ours, submitted when the session ends. So all that bitmaps hold is on its way to the GPU when
   a session has ended, and pixels can be read back at any time. With everything in the
   application's command buffer, a read-back before it was submitted would have got pixels from
   before the frame, and could have put an older upload on top of a newer one. It costs a command
   buffer of ours per frame, about 0.1 ms on Intel UHD 770. What is left for the application to
-  know: what it changes of a surface after the render and before it submits is what the window
+  know: what it changes of a bitmap after the render and before it submits is what the window
   gets, a frame early, and we push uniform data to slots 0-3 of its command buffer.
 - **Mip levels are made before the render pass,** for all that a session blits from, in every
   session. The pass was ended and begun again for each before. A session has one canvas and
@@ -1414,7 +1414,7 @@ into the texture of the swap chain (B8G8R8A8_UNORM_SRGB), then `setDefaultCanvas
 widget draws. Its frame texture and the copy to the window are gone. 13 pages and views drawn the
 same way into a texture of its own are pixel for pixel what they were before. A second window,
 of the debugger, with an SdlGpuBackend of its own on the same device, is drawn between the
-acquire and the submit of the first, with fonts and skins on surfaces from the first backend's
+acquire and the submit of the first, with fonts and skins on bitmaps from the first backend's
 factory. The debug mode of SDL_GPU said nothing. Not tried there: Vulkan, and a window that
 changes size between the event and the acquire.
 

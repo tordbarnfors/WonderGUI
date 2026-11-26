@@ -345,7 +345,7 @@ namespace wax
 		{
 			char errorMsg[1024];
 
-			snprintf(errorMsg, 1024, "Failed warp operation. SoftBackend is missing fill or coverage kernel for BlendMode::%s onto surface of format %s.",
+			snprintf(errorMsg, 1024, "Failed warp operation. SoftBackend is missing fill or coverage kernel for BlendMode::%s onto bitmap of format %s.",
 				toString(m_blendMode),
 				toString(m_canvasSoftFormat));
 
@@ -460,7 +460,7 @@ namespace wax
 			// Source is read into a Color buffer with the first pass of two-pass blits, then
 			// drawn with the coverage kernel.
 
-			SoftSurface* pSource = m_pBlitSource;
+			SoftBitmap* pSource = m_pBlitSource;
 			SoftFormat srcFormat = pSource->softFormat();
 
 			if (srcFormat == SoftFormat::Undefined)
@@ -469,17 +469,17 @@ namespace wax
 			w.bBilinear = (pSource->sampleMethod() == SampleMethod::Bilinear);
 			w.bTileRead = pSource->isTiling();
 
-			// A non-tiling surface is read as if the edge pixels of the source rectangle continued
-			// outside it, so positions are kept within the rectangle (and the surface): between the
+			// A non-tiling bitmap is read as if the edge pixels of the source rectangle continued
+			// outside it, so positions are kept within the rectangle (and the bitmap): between the
 			// centers of its edge pixels when bilinear, inside it when nearest. The kernels take
 			// bilinear positions relative to pixel centers, which puts that range at lo -> hi - 1.
 
-			int64_t surfaceSize[2] = { int64_t(pSource->pixelSize().w) << 16, int64_t(pSource->pixelSize().h) << 16 };
+			int64_t bitmapSize[2] = { int64_t(pSource->pixelSize().w) << 16, int64_t(pSource->pixelSize().h) << 16 };
 
 			for (int a = 0; a < 2; a++)
 			{
 				int64_t lo = std::max(w.sourcePos[a], int64_t(0));
-				int64_t hi = std::min(w.sourcePos[a] + w.size[a], surfaceSize[a]);
+				int64_t hi = std::min(w.sourcePos[a] + w.size[a], bitmapSize[a]);
 
 				w.readMin[a] = lo;
 				w.readMax[a] = w.bBilinear ? hi - c_one : hi - 1;
@@ -2061,7 +2061,7 @@ namespace wax
 	/*
 		Reads the blit source for positions (x,y), (x+dx, y+dy) ... in pixels of the source rectangle,
 		wrapped into the periods with a center in the gap between copies in the nearest one (see
-		WarpSetup::colorLow). A non-tiling surface is read as if the edge pixels of the source
+		WarpSetup::colorLow). A non-tiling bitmap is read as if the edge pixels of the source
 		rectangle continued outside it, which the kernels can't do, so positions outside are clamped
 		and read one by one. If pCoverage is set, pixels without coverage are not read.
 
@@ -2075,7 +2075,7 @@ namespace wax
 									uint8_t* pDirect, CoordI directPos, uint8_t* pDrawn)
 	{
 		const WarpSetup& w = m_warp;
-		const SoftSurface* pSource = m_pBlitSource;
+		const SoftBitmap* pSource = m_pBlitSource;
 
 		const int64_t half = w.bBilinear ? c_one / 2 : 0;		// Bilinear kernels take positions relative to pixel centers.
 
@@ -2112,7 +2112,7 @@ namespace wax
 
 			if (w.bTileRead)
 			{
-				// Kernel wraps around the surface.
+				// Kernel wraps around the bitmap.
 
 				const int64_t periodX = int64_t(pSource->pixelSize().w) * c_one;
 				const int64_t periodY = int64_t(pSource->pixelSize().h) * c_one;

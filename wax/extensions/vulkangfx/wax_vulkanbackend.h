@@ -31,7 +31,7 @@
 
 namespace wax
 {
-	class VulkanSurface;
+	class VulkanBitmap;
 
 	class VulkanBackend;
 	typedef	StrongPtr<VulkanBackend>	VulkanBackend_p;
@@ -47,7 +47,7 @@ namespace wax
 	 * recording draws.
 	 *
 	 * Any number of backends can exist at the same time, e.g. one per window, but they all share
-	 * one device and one queue, set with setDevice() before the first backend or surface is
+	 * one device and one queue, set with setDevice() before the first backend or bitmap is
 	 * created. The device must be Vulkan 1.3 with these enabled:
 	 *
 	 *   Features:		dynamicRendering, synchronization2, shaderDemoteToHelperInvocation,
@@ -81,7 +81,7 @@ namespace wax
 
 		//.____ Device _______________________________________________________
 
-		// Sets the device and queue shared by all backends, surfaces, edgemaps and Warpmaps.
+		// Sets the device and queue shared by all backends, bitmaps, edgemaps and Warpmaps.
 		// Must be called before any of them is created. setDevice() with a null device lets go of
 		// it, which is only allowed once they are all gone. Replacing a device that is in use isn't
 		// supported yet.
@@ -104,7 +104,7 @@ namespace wax
 
 		const CanvasInfo*	canvasInfo(CanvasRef ref) const override;
 
-		SurfaceFactory_p	surfaceFactory() override;
+		BitmapFactory_p	bitmapFactory() override;
 		EdgemapFactory_p	edgemapFactory() override;
 		WarpmapFactory_p	warpmapFactory() override;
 
@@ -133,25 +133,25 @@ namespace wax
 
 		bool		_isRecording() const override;
 
-		bool		_isNativeSurface( const Object * pObject ) const override;
+		bool		_isNativeBitmap( const Object * pObject ) const override;
 		bool		_isNativeEdgemap( const Object * pObject ) const override;
 		bool		_isNativeWarpmap( const Object * pObject ) const override;
 
-		void		_beginSessionOnDevice( Surface * pCanvas ) override;
+		void		_beginSessionOnDevice( Bitmap * pCanvas ) override;
 		void		_endSessionOnDevice() override;
 
 		bool		_reserveFrameBuffers( int nVertices, int nColors, int nExtras, int nObjects ) override;
 
-		bool		_bindCanvas( Surface * pCanvas, SizeI& size, CanvasKind& kind ) override;
+		bool		_bindCanvas( Bitmap * pCanvas, SizeI& size, CanvasKind& kind ) override;
 		bool		_bindPipeline( PipelineKind kind, BlendMode blendMode ) override;
 		void		_setConstants( ConstantBlock block ) override;
 		void		_draw( int firstVertex, int nVertices ) override;
 		void		_setScissor( const RectI& rect ) override;
 		void		_resetScissor() override;
 
-		void		_prepareBlitSource( Surface * pSurface ) override;
-		bool		_bindBlitTexture( Surface * pSurface ) override;
-		void		_bindBlitSampler( Surface * pSurface, bool bClip ) override;
+		void		_prepareBlitSource( Bitmap * pBitmap ) override;
+		bool		_bindBlitTexture( Bitmap * pBitmap ) override;
+		void		_bindBlitSampler( Bitmap * pBitmap, bool bClip ) override;
 		bool		_bindEdgemap( GpuEdgemap * pEdgemap ) override;
 		void		_drawWarpmap( Warpmap * pWarpmap, const RectI * pPatches, int nPatches ) override;
 
@@ -170,8 +170,8 @@ namespace wax
 		void		_endRendering();						// For barriers and copies, which can't be inside.
 
 		void		_releaseCanvas();						// Puts the bound canvas back to rest.
-		void		_recordUploads( VulkanSurface * pSurface );	// What the CPU has written to it, into our command buffer.
-		void		_generateMipmaps( VulkanSurface * pSurface );
+		void		_recordUploads( VulkanBitmap * pBitmap );	// What the CPU has written to it, into our command buffer.
+		void		_generateMipmaps( VulkanBitmap * pBitmap );
 
 		void		_pushBuffer( uint32_t binding, VkBuffer buffer, VkDeviceSize offset = 0, VkDeviceSize range = VK_WHOLE_SIZE );
 		void		_pushImage( uint32_t binding, VkImageView view );
@@ -182,7 +182,7 @@ namespace wax
 
 		static VkFormat		_defaultCanvasFormat( VkFormat format, PixelFormat& pixelFormat, ColorSpace& colorSpace );
 
-		SurfaceFactory_p	m_pSurfaceFactory;
+		BitmapFactory_p	m_pBitmapFactory;
 		EdgemapFactory_p	m_pEdgemapFactory;
 		WarpmapFactory_p	m_pWarpmapFactory;
 
@@ -229,7 +229,7 @@ namespace wax
 		};
 
 		Target				m_target;
-		VulkanSurface *		m_pTargetSurface = nullptr;		// Null for the default canvas.
+		VulkanBitmap *		m_pTargetBitmap = nullptr;		// Null for the default canvas.
 		bool				m_bRendering = false;			// Inside vkCmdBeginRendering().
 		bool				m_bDefaultCanvasInUse = false;	// Moved out of its resting layout this session.
 

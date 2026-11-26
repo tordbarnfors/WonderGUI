@@ -151,10 +151,10 @@ bool MyApp::_setupGUI(API* pAPI)
 	m_pDebugger = DebugBackend::create();
 
 	auto path = pAPI->resourceDirectory();
-	auto pIconSurface = pAPI->loadSurface( path + "debugger_gfx.png");
-	auto pTransparencyGrid = pAPI->loadSurface(path + "checkboardtile.png", nullptr, { .tiling = true } );
+	auto pIconBitmap = pAPI->loadBitmap( path + "debugger_gfx.png");
+	auto pTransparencyGrid = pAPI->loadBitmap(path + "checkboardtile.png", nullptr, { .tiling = true } );
 
-	m_pDebugOverlay = DebugOverlay::create( { .backend = m_pDebugger, .icons = pIconSurface, .transparencyGrid = pTransparencyGrid } );
+	m_pDebugOverlay = DebugOverlay::create( { .backend = m_pDebugger, .icons = pIconBitmap, .transparencyGrid = pTransparencyGrid } );
 
 	m_pDebugOverlay->setActivated(true);
 */
@@ -810,23 +810,23 @@ bool MyApp::_loadSkins(API * pAPI)
 	path.append("greyskin/");
 #endif
 
-	auto pPlateSurf = pAPI->loadSurface(path + "plate.bmp");
-	auto pButtonSurf = pAPI->loadSurface(path + "button.bmp");
-	auto pStateButtonSurf = pAPI->loadSurface(path + "state_button.bmp");
-	auto pCheckBoxSurf = pAPI->loadSurface(path + "checkbox.png");
+	auto pPlateBitmap = pAPI->loadBitmap(path + "plate.bmp");
+	auto pButtonBitmap = pAPI->loadBitmap(path + "button.bmp");
+	auto pStateButtonBitmap = pAPI->loadBitmap(path + "state_button.bmp");
+	auto pCheckBoxBitmap = pAPI->loadBitmap(path + "checkbox.png");
 
-	if (!pPlateSurf || !pButtonSurf || !pStateButtonSurf)
+	if (!pPlateBitmap || !pButtonBitmap || !pStateButtonBitmap)
 		return false;
 
 	m_pPlateSkin = BlockSkin::create(WGBP(BlockSkin,
-		_.surface = pPlateSurf,
+		_.bitmap = pPlateBitmap,
 		_.axis = Axis::X,
 		_.frame = 4,
 		_.padding = 4
 	));
 
 	m_pButtonSkin = BlockSkin::create(WGBP(BlockSkin,
-		_.surface = pButtonSurf,
+		_.bitmap = pButtonBitmap,
 		_.axis = Axis::X,
 		_.frame = 4,
 		_.padding = { 4,10,4,10 },
@@ -834,7 +834,7 @@ bool MyApp::_loadSkins(API * pAPI)
 	));
 
 	m_pToggleButtonSkin = BlockSkin::create(WGBP(BlockSkin,
-		_.surface = pStateButtonSurf,
+		_.bitmap = pStateButtonBitmap,
 		_.axis = Axis::X,
 		_.frame = 4,
 		_.padding = 4,
@@ -842,7 +842,7 @@ bool MyApp::_loadSkins(API * pAPI)
 	));
 
 	m_pCheckBoxSkin = BlockSkin::create(WGBP(BlockSkin,
-		_.surface = pCheckBoxSurf,
+		_.bitmap = pCheckBoxBitmap,
 		_.axis = Axis::Y,
 		_.frame = 3,
 //		_.defaultSize = { 12,12 },
@@ -913,7 +913,7 @@ bool MyApp::loadStream(std::string path)
 			while( m_screens[ofs]->identity() != (int) ref )
 				ofs++;
 
-			Surface_p pScreen = m_screens[ofs];
+			Bitmap_p pScreen = m_screens[ofs];
 
 			RecordedSteps rec;
 			
@@ -986,13 +986,13 @@ bool MyApp::loadStream(std::string path)
 	addExtraSoftKernelsForBGR565sRGBCanvas(pStreamGfxBackend);
 
 
-	m_pStreamSurfaceFactory = pStreamGfxDevice->surfaceFactory();
+	m_pStreamBitmapFactory = pStreamGfxDevice->bitmapFactory();
 	m_pStreamGfxDevice = pStreamGfxDevice;
 	m_pStreamGfxBackend = pStreamGfxBackend;
 	m_pStreamTrimGfxBackend = pTrimGfxBackend;
 	m_pBackendLogger = BackendLogger::create(nullptr, pTrimGfxBackend);
 
-	m_pStreamPlayer	= StreamPlayer::create( m_pBackendLogger, m_pStreamSurfaceFactory, pTrimGfxBackend->edgemapFactory() );
+	m_pStreamPlayer	= StreamPlayer::create( m_pBackendLogger, m_pStreamBitmapFactory, pTrimGfxBackend->edgemapFactory() );
 	m_pStreamPlayer->setStoreDirtyRects(true);
 	m_pStreamPlayer->setMaxDirtyRects(10000);
 	m_pStreamPlayer->setCanvasInfoCallback([this](const CanvasInfo * pBegin, const CanvasInfo * pEnd) { setupScreens(pBegin,pEnd); } );
@@ -1040,7 +1040,7 @@ bool MyApp::loadStream(std::string path)
 
 void MyApp::setupScreens(const CanvasInfo* pBeg, const CanvasInfo* pEnd)
 {
-	SurfaceFactory_p	pFactory = wax::Base::defaultSurfaceFactory();
+	BitmapFactory_p	pFactory = wax::Base::defaultBitmapFactory();
 
 	// Ugly typecast! Will only work with SoftGfxDevice!
 
@@ -1051,23 +1051,23 @@ void MyApp::setupScreens(const CanvasInfo* pBeg, const CanvasInfo* pEnd)
 	{
 		auto format = pCanvas->format != PixelFormat::Undefined ? pCanvas->format : PixelFormat::ARGB_8;
 
-		auto pSurf = pFactory->createSurface({ .bigEndian = pCanvas->bigEndian, .colorSpace = pCanvas->colorSpace, .format = format,
+		auto pBitmap = pFactory->createBitmap({ .bigEndian = pCanvas->bigEndian, .colorSpace = pCanvas->colorSpace, .format = format,
 											   .identity = int(pCanvas->ref), .scale = pCanvas->scale, .size = pCanvas->size/64 });
-		pSurf->fill(Color::Black);
+		pBitmap->fill(Color::Black);
 
-		m_screens.push_back(pSurf);
+		m_screens.push_back(pBitmap);
 
 		if( pLinearBackend )
 			pLinearBackend->defineCanvas(pCanvas->ref, pCanvas->size, format, pCanvas->scale, pCanvas->colorSpace, pCanvas->bigEndian );
 		else
-			pSoftBackend->defineCanvas(pCanvas->ref, wax_dynamic_cast<SoftSurface_p>(pSurf));
+			pSoftBackend->defineCanvas(pCanvas->ref, wax_dynamic_cast<SoftBitmap_p>(pBitmap));
 	}
 }
 
 
 void MyApp::setupScreens()
 {
-	SurfaceFactory_p	pFactory = wax::Base::defaultSurfaceFactory();
+	BitmapFactory_p	pFactory = wax::Base::defaultBitmapFactory();
 
 	// Ugly typecast! Will only work with SoftGfxDevice!
 	
@@ -1078,15 +1078,15 @@ void MyApp::setupScreens()
 
 	for (int i = 0; i < 11; i++)
 	{
-		auto pSurf = pFactory->createSurface({ .colorSpace = ColorSpace::sRGB, .format = PixelFormat::RGB_565, .identity = int(CanvasRef::Default) + i, .size = {800,480}});
-		pSurf->fill(Color::Black);
+		auto pBitmap = pFactory->createBitmap({ .colorSpace = ColorSpace::sRGB, .format = PixelFormat::RGB_565, .identity = int(CanvasRef::Default) + i, .size = {800,480}});
+		pBitmap->fill(Color::Black);
 
-		m_screens.push_back(pSurf);
+		m_screens.push_back(pBitmap);
 
 		if( pLinearBackend )
 			pLinearBackend->defineCanvas(CanvasRef(int(CanvasRef::Default) + i), {800*64,480*64}, PixelFormat::RGB_565, 64, ColorSpace::sRGB );
 		else
-			pSoftBackend->defineCanvas(CanvasRef(int(CanvasRef::Default) + i), wax_dynamic_cast<SoftSurface_p>(pSurf));
+			pSoftBackend->defineCanvas(CanvasRef(int(CanvasRef::Default) + i), wax_dynamic_cast<SoftBitmap_p>(pBitmap));
 	}
 }
 
@@ -1103,7 +1103,7 @@ void MyApp::updateGUIAfterReload()
 	m_overlayDisplays.clear();
 
 
-	auto pSurfFactory = wax::Base::defaultSurfaceFactory();
+	auto pBitmapFactory = wax::Base::defaultBitmapFactory();
 
 
 	int toggleNb = 0;
@@ -1121,13 +1121,13 @@ void MyApp::updateGUIAfterReload()
 											_.display.layout = m_pTextLayoutCentered
 										));
 
-		auto pDisplay = SurfaceDisplay::create({ .surface = pScreen });
+		auto pDisplay = BitmapDisplay::create({ .bitmap = pScreen });
 
 
-		auto pOverlaySurface = pSurfFactory->createSurface( WGBP(Surface, _.size = pScreen->pixelSize(), _.canvas = true) );
-		auto pOverlayDisplay = SurfaceDisplay::create({ .surface = pOverlaySurface });
+		auto pOverlayBitmap = pBitmapFactory->createBitmap( WGBP(Bitmap, _.size = pScreen->pixelSize(), _.canvas = true) );
+		auto pOverlayDisplay = BitmapDisplay::create({ .bitmap = pOverlayBitmap });
 
-		m_debugOverlays.push_back(pOverlaySurface);
+		m_debugOverlays.push_back(pOverlayBitmap);
 		m_overlayDisplays.push_back(pOverlayDisplay);
 
 		auto pDisplayStack = StackPanel::create();
@@ -1356,8 +1356,8 @@ void MyApp::openRecordedStepsWindow()
 		for( auto& step : m_recordedSteps )
 		{
 			auto pRow = PackPanel::create( { .axis = Axis::X, .spacing = 4 } );
-			pRow->slots.pushBack( SurfaceDisplay::create( { .surface = step.before } ) );
-			pRow->slots.pushBack( SurfaceDisplay::create( { .surface = step.after } ) );
+			pRow->slots.pushBack( BitmapDisplay::create( { .bitmap = step.before } ) );
+			pRow->slots.pushBack( BitmapDisplay::create( { .bitmap = step.after } ) );
 			pStepList->slots.pushBack(pRow);
 		}
 		
@@ -1511,11 +1511,11 @@ void MyApp::_updateResourcesView()
 	{
 		if( pObj != nullptr )
 		{
-			if( pObj->isInstanceOf(Surface::TYPEINFO) )
+			if( pObj->isInstanceOf(Bitmap::TYPEINFO) )
 			{
-				auto pSurf = wax_static_cast<Surface_p>(pObj);
+				auto pBitmap = wax_static_cast<Bitmap_p>(pObj);
 
-				auto pWidget = _buildSurfaceDisplayWithIndexTag( pSurf, index );
+				auto pWidget = _buildBitmapDisplayWithIndexTag( pBitmap, index );
 				m_pResourcePanel->slots.pushBack( pWidget, { .weight = 0 } );
 			}
 			else if( pObj->isInstanceOf(Edgemap::TYPEINFO) )
@@ -1588,18 +1588,18 @@ ScrollPanel_p MyApp::_standardScrollPanel()
 }
 
 
-//____ _buildSurfaceDisplayWithIndexTag() ______________________________________
+//____ _buildBitmapDisplayWithIndexTag() ______________________________________
 
-Widget_p MyApp::_buildSurfaceDisplayWithIndexTag( Surface * pSurf, int index )
+Widget_p MyApp::_buildBitmapDisplayWithIndexTag( Bitmap * pBitmap, int index )
 {
 	auto pBase = PackPanel::create( { .axis = Axis::Y, .id = index, .spacing = 4 });
 	pBase->setAxis(Axis::Y);
 	pBase->setId(index);
 
-	int bytes = (pSurf->pixelBits() * pSurf->pixelWidth() / 8) * pSurf->pixelHeight();
+	int bytes = (pBitmap->pixelBits() * pBitmap->pixelWidth() / 8) * pBitmap->pixelHeight();
 
 	char	label[256];
-	snprintf( label, 256, "%d: Surface %dx%d %s, ~%d kb", index, pSurf->pixelWidth(), pSurf->pixelHeight(), toString(pSurf->pixelFormat()), bytes/1024 );
+	snprintf( label, 256, "%d: Bitmap %dx%d %s, ~%d kb", index, pBitmap->pixelWidth(), pBitmap->pixelHeight(), toString(pBitmap->pixelFormat()), bytes/1024 );
 
 	auto pLabel = TextDisplay::create( WGBP(TextDisplay,
 						 _.display.style = m_pBigWhiteStyle,
@@ -1607,8 +1607,8 @@ Widget_p MyApp::_buildSurfaceDisplayWithIndexTag( Surface * pSurf, int index )
 						_.display.layout = m_pTextLayoutCentered
 				));
 	
-	auto pDisplay = SurfaceDisplay::create( WGBP(SurfaceDisplay,
-												 _.surface = pSurf,
+	auto pDisplay = BitmapDisplay::create( WGBP(BitmapDisplay,
+												 _.bitmap = pBitmap,
 												 _.skin = m_pRedOutlinedBlackSkin ));
 	
 	auto pCentering = StackPanel::create();
@@ -1690,11 +1690,11 @@ void MyApp::_generateFrameStatistics()
 /*
 			case GfxStream::ChunkId::BeginCanvasUpdate:
 			{
-				uint16_t	surfaceId;
+				uint16_t	bitmapId;
 				CanvasRef	canvasRef;
 				uint8_t		dummy;
 					
-				*pDecoder >> surfaceId;
+				*pDecoder >> bitmapId;
 				*pDecoder >> canvasRef;
 				*pDecoder >> dummy;
 

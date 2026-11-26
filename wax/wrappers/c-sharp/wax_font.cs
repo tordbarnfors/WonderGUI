@@ -9,7 +9,7 @@ public class Glyph
 
     public IntPtr   FontRef;
 
-    public Surface? Surface;
+    public Bitmap? Bitmap;
 
 	public RectSPX	Rect;
 	int     	    BearingX;
@@ -39,7 +39,7 @@ public class Font : Objekt
 
 		// These below are not updated by getGlyphWithoutBitmap().
 
-		public IntPtr	surface;
+		public IntPtr	bitmap;
 		public RectSPX  rect;
 		public int      bearingX;
 		public int      bearingY;

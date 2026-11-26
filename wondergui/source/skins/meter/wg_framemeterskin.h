@@ -25,7 +25,7 @@
 
 #include <wg_skin.h>
 #include <wax_tint.h>
-#include <wax_surface.h>
+#include <wax_bitmap.h>
 #include <vector>
 
 namespace wg
@@ -51,6 +51,7 @@ namespace wg
 
 		struct Blueprint
 		{
+			Bitmap_p				bitmap;		// Mandatory
 			BlendMode				blendMode = BlendMode::Blend;
 			Color					color = Color::Undefined;
 			Finalizer_p				finalizer = nullptr;
@@ -62,7 +63,6 @@ namespace wg
 			Border					padding;
 			Size					size;			// Mandatory
 			Border					spacing;
-			Surface_p				surface;		// Mandatory
 			Tint_p				tint;
 		};
 
@@ -125,7 +125,7 @@ namespace wg
 
 		int					m_duration;		// Millisec
 		Size				m_size;
-		Surface_p			m_pSurface;
+		Bitmap_p			m_pBitmap;
 		std::vector<Frame>	m_frames;
 		
 		bool				m_bOpaque;

@@ -32,7 +32,7 @@ public:
 
 	bool		generateBitmapFont();
 	bool		generateFontSpec( wax::FreeTypeFont * pFont, const std::u32string& charmap );
-	bool		generateFontSurface( wax::FreeTypeFont * pFont, const std::u32string& charmap );
+	bool		generateFontBitmap( wax::FreeTypeFont * pFont, const std::u32string& charmap );
 	void		displayBitmapFont();
 
 private:
@@ -53,9 +53,9 @@ private:
 	wg::TextEditor_p	m_pCharsEditor;
 	wg::Blob_p			m_pLoadedFontBlob;
 	
-	wg::Surface_p		m_pBitmapFontSurface;
+	wg::Bitmap_p		m_pBitmapFontBitmap;
 	std::string			m_bitmapFontSpec;
-	wg::Surface_p		m_pFontDisplaySurface;
+	wg::Bitmap_p		m_pFontDisplayBitmap;
 	wg::Image_p			m_pBitmapDisplay;
 	
 	wg::Skin_p			m_pPlateSkin;

@@ -77,7 +77,7 @@ namespace wax
 
 	//____ create _________________________________________________________________
 
-	SysFont_p SysFont::create( SurfaceFactory * pFactory, Font * pBackupFont )
+	SysFont_p SysFont::create( BitmapFactory * pFactory, Font * pBackupFont )
 	{
 		return SysFont_p(new SysFont(pFactory, pBackupFont));
 	}
@@ -85,11 +85,11 @@ namespace wax
 
 	//____ constructor ____________________________________________________________
 
-	SysFont::SysFont(SurfaceFactory* pFactory, Font * pBackupFont ) : Font(pBackupFont)
+	SysFont::SysFont(BitmapFactory* pFactory, Font * pBackupFont ) : Font(pBackupFont)
 	{
-		m_pSurface = pFactory->createSurface( WAXBP(Surface, _.size = { 512,48 }, _.format = PixelFormat::Alpha_8) );
+		m_pBitmap = pFactory->createBitmap( WAXBP(Bitmap, _.size = { 512,48 }, _.format = PixelFormat::Alpha_8) );
 
-		auto pixbuf = m_pSurface->allocPixelBuffer();
+		auto pixbuf = m_pBitmap->allocPixelBuffer();
 
 		uint8_t val[2] = { 0,255 };
 
@@ -109,8 +109,8 @@ namespace wax
 			pPixel += pixbuf.pitch - 512;
 		}
 
-		m_pSurface->pullPixels(pixbuf);
-		m_pSurface->freePixelBuffer(pixbuf);
+		m_pBitmap->pullPixels(pixbuf);
+		m_pBitmap->freePixelBuffer(pixbuf);
 	
 	}
 
@@ -154,7 +154,7 @@ namespace wax
 			glyph.advance = 14 * 64;
 			glyph.kerningIndex = 0;
 			glyph.fontRef = this;
-			glyph.pSurface = m_pSurface;
+			glyph.pBitmap = m_pBitmap;
 			glyph.bearingX = 0;
 			glyph.bearingY = -12*64;
 			glyph.rect.x = ((chr - 32) % 32) * 16 * 64;
@@ -167,7 +167,7 @@ namespace wax
 			glyph.advance = 0;
 			glyph.kerningIndex = 0;
 			glyph.fontRef = nullptr;
-			glyph.pSurface = nullptr;
+			glyph.pBitmap = nullptr;
 		}
 
 	}

@@ -660,7 +660,7 @@ def gen_skin_block(entry):
     x, y = entry["atlas_x_pts"], entry["atlas_y_pts"]
     w, h = entry["size_pts"]
     lines = [f"\t\t{target} = BlockSkin::create(WGBP(BlockSkin,",
-             f"\t\t\t_.surface = pSkinBlocks,",
+             f"\t\t\t_.bitmap = pSkinBlocks,",
              f"\t\t\t_.firstBlock = {{ {fmt_pts(x)},{fmt_pts(y)},{fmt_pts(w)},{fmt_pts(h)} }},"]
 
     if entry["axis"] in ("x", "y"):

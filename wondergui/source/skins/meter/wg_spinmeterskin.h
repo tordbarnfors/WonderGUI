@@ -26,7 +26,7 @@
 #include <wg_skin.h>
 #include <wax_color.h>
 #include <wax_tint.h>
-#include <wax_surface.h>
+#include <wax_bitmap.h>
 
 namespace wg
 {
@@ -48,6 +48,7 @@ namespace wg
 			float		angleBegin = 0.f;
 			float		angleEnd = 360.f;
 
+			Bitmap_p	bitmap;							// Mandatory
 			BlendMode	blendMode = BlendMode::Blend;
 			Color		color = Color::Undefined;
 			Size		defaultSize;						// Mandatory
@@ -63,7 +64,6 @@ namespace wg
 			CoordF		placement = { 0.5f, 0.5f };
 			Border		spacing;
 
-			Surface_p	surface;							// Mandatory
 			Tint_p	tint;
 			float		zoom = 1.f;
 		};
@@ -98,7 +98,7 @@ namespace wg
 		SpinMeterSkin(	const Blueprint& blueprint );
 		~SpinMeterSkin() {};
 
-		Surface_p	m_pSurface;
+		Bitmap_p	m_pBitmap;
 		Size		m_defaultSize;
 		CoordF		m_pivot;
 		CoordF		m_placement;

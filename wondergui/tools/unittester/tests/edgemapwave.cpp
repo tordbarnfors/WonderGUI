@@ -3,7 +3,7 @@
 #include <wondergui.h>
 #include <wax_device_gen2.h>
 #include <wax_softbackend.h>
-#include <wax_softsurface.h>
+#include <wax_softbitmap.h>
 #include <wax_softedgemapfactory.h>
 #include <wax_softkernels_default.h>
 #include <wax_edgemapwave.h>
@@ -31,7 +31,7 @@ namespace
 		addDefaultSoftKernels(pBackend);
 		auto pDevice = GfxDeviceGen2::create(pBackend);
 
-		auto pCanvas = SoftSurface::create(WGBP(Surface, _.size = c_canvasSize, _.format = PixelFormat::ARGB_8, _.colorSpace = ColorSpace::Linear, _.canvas = true));
+		auto pCanvas = SoftBitmap::create(WGBP(Bitmap, _.size = c_canvasSize, _.format = PixelFormat::ARGB_8, _.colorSpace = ColorSpace::Linear, _.canvas = true));
 
 		pDevice->beginRender();
 		pDevice->beginCanvasUpdate(pCanvas);

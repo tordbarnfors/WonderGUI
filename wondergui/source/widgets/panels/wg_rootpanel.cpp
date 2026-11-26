@@ -51,7 +51,7 @@ namespace wg
 		return RootPanel_p(new RootPanel(bp));
 	}
 
-	RootPanel_p	RootPanel::create( Surface* pCanvas, GfxDevice* pDevice )
+	RootPanel_p	RootPanel::create( Bitmap* pCanvas, GfxDevice* pDevice )
 	{
 		if (!pCanvas)
 		{
@@ -119,12 +119,12 @@ namespace wg
 		{
 			m_canvas = pUseGfxDevice->canvas(bp.canvasRef);
 		}
-		else if( bp.canvasSurface )
+		else if( bp.canvasBitmap )
 		{
 			m_canvas.ref = CanvasRef::None;
-			m_canvas.pSurface = bp.canvasSurface;
-			m_canvas.size = bp.canvasSurface->pixelSize()*64;
-			m_canvas.scale = bp.canvasSurface->scale();
+			m_canvas.pBitmap = bp.canvasBitmap;
+			m_canvas.size = bp.canvasBitmap->pixelSize()*64;
+			m_canvas.scale = bp.canvasBitmap->scale();
 		}
 
 		m_geo = m_canvas.size;
@@ -169,12 +169,12 @@ namespace wg
 		}
 	}
 
-	RootPanel::RootPanel(Surface* pSurface, GfxDevice * pGfxDevice ) : RootPanel()
+	RootPanel::RootPanel(Bitmap* pBitmap, GfxDevice * pGfxDevice ) : RootPanel()
 	{
 		m_canvas.ref = CanvasRef::None;
-		m_canvas.pSurface = pSurface;
-		m_canvas.size = pSurface->pixelSize()*64;
-		m_canvas.scale = pSurface->scale();
+		m_canvas.pBitmap = pBitmap;
+		m_canvas.size = pBitmap->pixelSize()*64;
+		m_canvas.scale = pBitmap->scale();
 
 		m_geo = m_canvas.size;
 		m_pGfxDevice = pGfxDevice;
@@ -225,14 +225,14 @@ namespace wg
 
 	//____ setCanvas() ________________________________________________________
 
-	bool RootPanel::setCanvas(Surface* pSurface)
+	bool RootPanel::setCanvas(Bitmap* pBitmap)
 	{
-		if (!pSurface)
+		if (!pBitmap)
 		{
 			return false;
 		}
 
-		if( pSurface == m_canvas.pSurface )
+		if( pBitmap == m_canvas.pBitmap )
 		{
 			return true;
 		}
@@ -241,9 +241,9 @@ namespace wg
 		SizeSPX oldSize = m_geo.size();
 
 		m_canvas.ref = CanvasRef::None;
-		m_canvas.pSurface = pSurface;
-		m_canvas.size = pSurface->pixelSize()*64;
-		m_canvas.scale = pSurface->scale();
+		m_canvas.pBitmap = pBitmap;
+		m_canvas.size = pBitmap->pixelSize()*64;
+		m_canvas.scale = pBitmap->scale();
 
 		if (!m_bScaleSet)
 			m_scale = m_canvas.scale;
@@ -565,7 +565,7 @@ namespace wg
 			const RectSPX* pRects = dirtyPatches.begin();
 
 			if (m_canvas.ref == CanvasRef::None )
-				pGfxDevice->beginCanvasUpdate(m_canvas.pSurface, nRects, pRects, m_pCanvasLayers);
+				pGfxDevice->beginCanvasUpdate(m_canvas.pBitmap, nRects, pRects, m_pCanvasLayers);
 			else
 				pGfxDevice->beginCanvasUpdate(m_canvas.ref, nRects, pRects, m_pCanvasLayers);
 
@@ -584,7 +584,7 @@ namespace wg
 			// Set clipping rectangle.
 
 			if (m_canvas.ref == CanvasRef::None )
-				pGfxDevice->beginCanvasUpdate(m_canvas.pSurface, 1, &clip, nullptr, 0);
+				pGfxDevice->beginCanvasUpdate(m_canvas.pBitmap, 1, &clip, nullptr, 0);
 			else
 				pGfxDevice->beginCanvasUpdate(m_canvas.ref, 1, &clip, nullptr, 0);
 

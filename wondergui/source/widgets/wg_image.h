@@ -54,7 +54,7 @@ namespace wg
 			bool			dropTarget = false;
 			Finalizer_p		finalizer = nullptr;
 			int				id = 0;
-			Surface_p		image;
+			Bitmap_p		image;
 			int				imageMarkAlpha = 1;
 			Rect			imageRect;
 			Color			imageTint = Color::White;
@@ -86,14 +86,14 @@ namespace wg
 
 		//.____ Appearance ________________________________________________________
 
-		void				setImage( Surface * pSurface, const Rect& rect );	///< @brief Set image to display.
-		void				setImage( Surface * pSurface );						///< @brief Set image to display.
+		void				setImage( Bitmap * pBitmap, const Rect& rect );	///< @brief Set image to display.
+		void				setImage( Bitmap * pBitmap );						///< @brief Set image to display.
 
 		void				setImageTint(Color tint);
 		Color				imageTint() const { return m_imageTint; }
 
-		inline Surface_p	imageSurface() const;								///< @brief Get surface of image displayed.
-		inline Rect			imageRect() const;									///< @brief Get area of surface rectangle of image displayed.
+		inline Bitmap_p	imageBitmap() const;								///< @brief Get bitmap of image displayed.
+		inline Rect			imageRect() const;									///< @brief Get area of bitmap rectangle of image displayed.
 
 		//.____ Behavior ______________________________________________________
 
@@ -114,15 +114,15 @@ namespace wg
 		
 		template<class BP> Image( const BP& bp ) : Widget(bp)
 		{
-			m_pSurface	= bp.image;
+			m_pBitmap	= bp.image;
 			m_rect = bp.imageRect;
 			m_imageTint = bp.imageTint;
 			m_imageMarkAlpha = bp.imageMarkAlpha;
 			m_sizePolicy = bp.sizePolicy;
 			m_placement = bp.placement;
 
-			if( m_rect.isEmpty() && m_pSurface )
-				m_rect = m_pSurface->pointSize();
+			if( m_rect.isEmpty() && m_pBitmap )
+				m_rect = m_pBitmap->pointSize();
 		}
 		
 		virtual ~Image() {};
@@ -132,7 +132,7 @@ namespace wg
 
 	private:
 
-		Surface_p		m_pSurface;
+		Bitmap_p		m_pBitmap;
 		Rect			m_rect;
 		Color			m_imageTint = Color::White;
 		int				m_imageMarkAlpha = 1;
@@ -141,9 +141,9 @@ namespace wg
 	};
 
 
-	Surface_p Image::imageSurface() const
+	Bitmap_p Image::imageBitmap() const
 	{
-		return m_pSurface;
+		return m_pBitmap;
 	}
 
 	Rect Image::imageRect() const

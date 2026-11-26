@@ -63,7 +63,7 @@ namespace wg
 
 	//____ addLayer() _____________________________________________________________
 
-	int MultiBlockSkin::addLayer(Surface * pSurf, Coord ofs)
+	int MultiBlockSkin::addLayer(Bitmap * pBitmap, Coord ofs)
 	{
 		//
 
@@ -71,7 +71,7 @@ namespace wg
 		auto& layer = m_layers.back();
 
 		layer.blendMode = BlendMode::Blend;
-		layer.pSurface = pSurf;
+		layer.pBitmap = pBitmap;
 
 
 		for (int i = 0; i < State::NbStates; i++)
@@ -86,7 +86,7 @@ namespace wg
 		return (int) m_layers.size();
 	}
 
-	int MultiBlockSkin::addLayer(Surface * pSurf, Coord blockStartOfs, Size blockPitch, std::initializer_list<State> stateBlocks)
+	int MultiBlockSkin::addLayer(Bitmap * pBitmap, Coord blockStartOfs, Size blockPitch, std::initializer_list<State> stateBlocks)
 	{
 		//
 
@@ -94,7 +94,7 @@ namespace wg
 		auto& layer = m_layers.back();
 
 		layer.blendMode = BlendMode::Blend;
-		layer.pSurface = pSurf;
+		layer.pBitmap = pBitmap;
 
 		//
 
@@ -140,7 +140,7 @@ namespace wg
 		return (int) m_layers.size();
 	}
 
-	int MultiBlockSkin::addLayer(Surface * pSurf, std::initializer_list<State> stateBlocks, Axis axis, pts spacing, Coord blockStartOfs )
+	int MultiBlockSkin::addLayer(Bitmap * pBitmap, std::initializer_list<State> stateBlocks, Axis axis, pts spacing, Coord blockStartOfs )
 	{
 		Size blockPitch;
 
@@ -149,7 +149,7 @@ namespace wg
 		else
 			blockPitch.h = m_blockSizePoints.h + spacing;
 
-		return addLayer(pSurf, blockStartOfs, blockPitch, stateBlocks);
+		return addLayer(pBitmap, blockStartOfs, blockPitch, stateBlocks);
 	}
 
 
@@ -285,7 +285,7 @@ namespace wg
 				pDevice->setTintColor(mixedTint);
 			}
 
-			pDevice->setBlitSource(layer.pSurface);
+			pDevice->setBlitSource(layer.pBitmap);
 
 			NinePatch patch;
 			patch.block = Rect(layer.blockOfs[stateIndex], m_blockSizePoints);
@@ -317,7 +317,7 @@ namespace wg
 
 	SizeSPX MultiBlockSkin::_defaultSize(int scale) const
 	{
-        // Default size is when each point of the surface maps to a pixel of the skinarea.
+        // Default size is when each point of the bitmap maps to a pixel of the skinarea.
         
         return align(ptsToSpx(m_blockSizePoints,scale));
 	}
@@ -353,7 +353,7 @@ namespace wg
 
 			int alpha = alphaOverride == -1 ? m_markAlpha : alphaOverride;
 
-			bool bMarked = markTestNinePatch(_ofs, layer.pSurface, patch, canvas, scale, alpha);
+			bool bMarked = markTestNinePatch(_ofs, layer.pBitmap, patch, canvas, scale, alpha);
 			if (bMarked)
 				return true;
 		}
@@ -402,7 +402,7 @@ namespace wg
 
 		for (auto& layer : m_layers)
 		{
-			if (layer.blendMode == BlendMode::Replace || (layer.blendMode == BlendMode::Blend && layer.pSurface->isOpaque() && layer.tintColor[stateIdx].a == 4096) )
+			if (layer.blendMode == BlendMode::Replace || (layer.blendMode == BlendMode::Blend && layer.pBitmap->isOpaque() && layer.tintColor[stateIdx].a == 4096) )
 			{
 				bOpaque = true;
 				break;

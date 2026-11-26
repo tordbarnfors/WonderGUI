@@ -22,7 +22,7 @@
 #include <wg_image.h>
 #include <wax_device.h>
 #include <wg_util.h>
-#include <wax_surface.h>
+#include <wax_bitmap.h>
 
 namespace wg
 {
@@ -40,18 +40,18 @@ namespace wg
 
 	//____ setImage() _____________________________________________________________
 
-	void Image::setImage( Surface * pSurface, const Rect& rect )
+	void Image::setImage( Bitmap * pBitmap, const Rect& rect )
 	{
-		if( pSurface != m_pSurface || rect != m_rect )
+		if( pBitmap != m_pBitmap || rect != m_rect )
 		{
 			bool bResize = false;
 			if( rect.w != m_rect.w || rect.h != m_rect.h )
 				bResize = true;
 
-			m_pSurface = pSurface;
+			m_pBitmap = pBitmap;
 
-			if( pSurface )
-				m_rect = Rect::overlap( rect, Rect(pSurface->pointSize()) );
+			if( pBitmap )
+				m_rect = Rect::overlap( rect, Rect(pBitmap->pointSize()) );
 			else
 				m_rect.clear();
 
@@ -61,18 +61,18 @@ namespace wg
 		}
 	}
 
-	void Image::setImage( Surface * pSurface )
+	void Image::setImage( Bitmap * pBitmap )
 	{
-		if( pSurface != m_pSurface )
+		if( pBitmap != m_pBitmap )
 		{
 			bool bResize = false;
-			if( !pSurface || !m_pSurface || pSurface->pointSize() != m_pSurface->pointSize() )
+			if( !pBitmap || !m_pBitmap || pBitmap->pointSize() != m_pBitmap->pointSize() )
 				bResize = true;
 
-			m_pSurface = pSurface;
+			m_pBitmap = pBitmap;
 
-			if( pSurface )
-				m_rect = pSurface->pointSize();
+			if( pBitmap )
+				m_rect = pBitmap->pointSize();
 			else
 				m_rect.clear();
 
@@ -101,7 +101,7 @@ namespace wg
 
 		spx contentHeight = borderSize.h;
 
-		if( m_pSurface )
+		if( m_pBitmap )
 		{
 			if( m_sizePolicy == SizePolicy2D::Scale )
 			{
@@ -113,7 +113,7 @@ namespace wg
 			{
 				spx contentWidth = width - borderSize.w;
 
-				if( m_pSurface && m_pSurface->pixelWidth()*64 > contentWidth )
+				if( m_pBitmap && m_pBitmap->pixelWidth()*64 > contentWidth )
 					contentHeight += align(int(int64_t(contentWidth * m_rect.h) / m_rect.w));
 				else
 					contentHeight += align(ptsToSpx(m_rect.h,scale));
@@ -133,7 +133,7 @@ namespace wg
 
 		spx contentWidth = borderSize.w;
 		
-		if( m_pSurface )
+		if( m_pBitmap )
 		{
 			if( m_sizePolicy == SizePolicy2D::Scale )
 			{
@@ -145,7 +145,7 @@ namespace wg
 			{
 				int contentHeight = height - borderSize.h;
 
-				if( m_pSurface && m_pSurface->pixelHeight()*64 > contentHeight )
+				if( m_pBitmap && m_pBitmap->pixelHeight()*64 > contentHeight )
 					contentWidth += align(int(int64_t(contentHeight * m_rect.w) / m_rect.h));
 				else
 					contentWidth += align(ptsToSpx(m_rect.w,scale));
@@ -163,7 +163,7 @@ namespace wg
 	{
 		SizeSPX size = m_skin.contentBorderSize(scale);
 		
-		if (m_pSurface)
+		if (m_pBitmap)
 			size += align(ptsToSpx(m_rect.size(),scale));
 
 		return size;
@@ -175,11 +175,11 @@ namespace wg
 	{
 		Widget::_render(pDevice,_canvas,_window);
 
-		if( m_pSurface && !m_rect.isEmpty() )
+		if( m_pBitmap && !m_rect.isEmpty() )
 		{
 			RectSPX content = m_skin.contentRect( _canvas, m_scale, state() );
 
-			RectSPX imgRect = ptsToSpx(m_rect, m_pSurface->scale());
+			RectSPX imgRect = ptsToSpx(m_rect, m_pBitmap->scale());
 			
 			RectSPX dest = rectFromPolicy(m_sizePolicy, m_placement, content, imgRect.size() );
 
@@ -188,7 +188,7 @@ namespace wg
 			if( bTint )
 				pDevice->setTintColor(m_imageTint);
 
-			pDevice->setBlitSource(m_pSurface);
+			pDevice->setBlitSource(m_pBitmap);
 			pDevice->stretchBlit( dest, imgRect );
 
 			if (bTint)
@@ -200,11 +200,11 @@ namespace wg
 
 	bool Image::_alphaTest( const CoordSPX& ofs )
 	{
-		if( m_pSurface && !m_rect.isEmpty() )
+		if( m_pBitmap && !m_rect.isEmpty() )
 		{
 			RectSPX content = m_skin.contentRect( m_size, m_scale, state() );
 
-			RectSPX imgRect = ptsToSpx(m_rect, m_pSurface->scale());
+			RectSPX imgRect = ptsToSpx(m_rect, m_pBitmap->scale());
 			
 			RectSPX dest = rectFromPolicy(m_sizePolicy, m_placement, content, imgRect.size() );
 		
@@ -221,7 +221,7 @@ namespace wg
 			{
 				int opacityTreshold = m_imageMarkAlpha * 4096 / imageAlpha;
 
-				if (Util::markTestStretchRect(ofs, m_pSurface, imgRect, dest, opacityTreshold))
+				if (Util::markTestStretchRect(ofs, m_pBitmap, imgRect, dest, opacityTreshold))
 					return true;
 			}
 		}

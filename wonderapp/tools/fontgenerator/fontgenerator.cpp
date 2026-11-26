@@ -160,7 +160,7 @@ bool MyApp::saveBitmapFont()
 		{
 			case 0:				// 8-bit SURF (uncompressed)
 			{
-				auto pCopy = m_pBitmapFontSurface->convert( { .format = PixelFormat::ARGB_8 } );
+				auto pCopy = m_pBitmapFontBitmap->convert( { .format = PixelFormat::ARGB_8 } );
 				
 				auto pixbuf = pCopy->allocPixelBuffer();
 				pCopy->pushPixels(pixbuf);
@@ -179,14 +179,14 @@ bool MyApp::saveBitmapFont()
 				pCopy->pullPixels(pixbuf);
 				pCopy->freePixelBuffer(pixbuf);
 				
-				auto pIndexedSurface = pCopy->convert( { .colorSpace = ColorSpace::Linear, .format = PixelFormat::Index_8 } );
-				if( pIndexedSurface )
+				auto pIndexedBitmap = pCopy->convert( { .colorSpace = ColorSpace::Linear, .format = PixelFormat::Index_8 } );
+				if( pIndexedBitmap )
 				{
 					std::string path = outputPath + ".surf";
 
 					std::ofstream out(path, std::ios::binary);
-					auto pWriter = SurfaceWriter::create({});
-					pWriter->writeSurfaceToStream(out, pIndexedSurface);
+					auto pWriter = BitmapWriter::create({});
+					pWriter->writeBitmapToStream(out, pIndexedBitmap);
 					out.close();
 				}
 				else
@@ -202,8 +202,8 @@ bool MyApp::saveBitmapFont()
 				std::string path = outputPath + ".surf";
 
 				std::ofstream out(path, std::ios::binary);
-				auto pWriter = SurfaceWriter::create({});
-				pWriter->writeSurfaceToStream(out, m_pBitmapFontSurface);
+				auto pWriter = BitmapWriter::create({});
+				pWriter->writeBitmapToStream(out, m_pBitmapFontBitmap);
 				out.close();
 			}
 			break;
@@ -247,7 +247,7 @@ bool MyApp::generateBitmapFont()
 
 	std::u32string charmap = Utf8::toUtf32( m_pCharsEditor->editor.text() );
 	
-	generateFontSurface(pFont, charmap);
+	generateFontBitmap(pFont, charmap);
 	generateFontSpec(pFont, charmap);
 	
 	return true;
@@ -310,16 +310,16 @@ bool MyApp::generateFontSpec( FreeTypeFont * pFont, const std::u32string& charma
 	return true;
 }
 
-//____ generateFontSurface() ___________________________________________________
+//____ generateFontBitmap() ___________________________________________________
 
-bool MyApp::generateFontSurface( FreeTypeFont * pFont, const std::u32string& chars )
+bool MyApp::generateFontBitmap( FreeTypeFont * pFont, const std::u32string& chars )
 {
 	bool bUseSRGB = (m_pStemDarkeningSelector->selectedEntryId() == 1);
 		
 	ColorSpace	outputColorSpace = bUseSRGB ? ColorSpace::sRGB : ColorSpace::Linear;
 
 	
-	// Calculate size of surface needed.
+	// Calculate size of bitmap needed.
 		
 	spx maxWidth = 4096*64;
 	spx ofsX = 0;
@@ -330,7 +330,7 @@ bool MyApp::generateFontSurface( FreeTypeFont * pFont, const std::u32string& cha
 		Glyph glyph;
 		pFont->getGlyphWithBitmap(chars[i], glyph);
 
-		if( glyph.pSurface )
+		if( glyph.pBitmap )
 		{
 			spx advance = glyph.advance;
 			if( glyph.bearingX < 0 )
@@ -346,26 +346,26 @@ bool MyApp::generateFontSurface( FreeTypeFont * pFont, const std::u32string& cha
 		}
 	}
 	
-	SizeI surfaceSize;
+	SizeI bitmapSize;
 	
 	int rowPixelHeight = (pFont->maxAscend() + pFont->maxDescend()) / 64;
-	surfaceSize.h = 1 + (rowPixelHeight+1) * nRows;
+	bitmapSize.h = 1 + (rowPixelHeight+1) * nRows;
 	
 	if( nRows == 1 )
-		surfaceSize.w = ofsX / 64;
+		bitmapSize.w = ofsX / 64;
 	else
-		surfaceSize.w = maxWidth / 64;
+		bitmapSize.w = maxWidth / 64;
 	
-	// Generate and fill in surface
+	// Generate and fill in bitmap
 	
-	auto pSurface = wg::Base::defaultSurfaceFactory()->createSurface( { .canvas = true, .colorSpace = outputColorSpace, .format = PixelFormat::ARGB_8, .size = surfaceSize });
+	auto pBitmap = wg::Base::defaultBitmapFactory()->createBitmap( { .canvas = true, .colorSpace = outputColorSpace, .format = PixelFormat::ARGB_8, .size = bitmapSize });
 	auto pDevice = wg::Base::defaultDevice();
 
 	Color lineColor(1024,0,0,4096);
 	
 	pDevice->beginRender();
 	
-	pDevice->beginCanvasUpdate(pSurface);
+	pDevice->beginCanvasUpdate(pBitmap);
 	pDevice->setBlendMode(BlendMode::Replace);
 	pDevice->fill(Color::Transparent);
 	pDevice->setBlendMode(BlendMode::Replace);
@@ -375,7 +375,7 @@ bool MyApp::generateFontSurface( FreeTypeFont * pFont, const std::u32string& cha
 	spx baselineOfs = pFont->maxAscend();
 	
 	pDevice->setTintColor(Color::White);
-	pDevice->drawLine(pos, Direction::Right, surfaceSize.w*64, lineColor);
+	pDevice->drawLine(pos, Direction::Right, bitmapSize.w*64, lineColor);
 	pos.y += 64;
 	
 	for( int i = 0 ; i < int(chars.length()) ; i++ )
@@ -391,17 +391,17 @@ bool MyApp::generateFontSurface( FreeTypeFont * pFont, const std::u32string& cha
 			bearingX = 0;
 		}
 		
-		if( pos.x + advance > surfaceSize.w*64  )
+		if( pos.x + advance > bitmapSize.w*64  )
 		{
 			pos.x = 0;
 			pos.y += rowHeight*64;
-			pDevice->drawLine(pos, Direction::Right, surfaceSize.w*64, lineColor);
+			pDevice->drawLine(pos, Direction::Right, bitmapSize.w*64, lineColor);
 			pos.y += 64;
 		}
 
-		if( glyph.pSurface )
+		if( glyph.pBitmap )
 		{
-			pDevice->setBlitSource(glyph.pSurface);
+			pDevice->setBlitSource(glyph.pBitmap);
 			pDevice->blit(pos + CoordSPX(bearingX,baselineOfs + glyph.bearingY), glyph.rect);
 			pos.x += advance;
 			pDevice->drawLine(pos, Direction::Down, rowHeight*64, lineColor );
@@ -411,19 +411,19 @@ bool MyApp::generateFontSurface( FreeTypeFont * pFont, const std::u32string& cha
 
 	pos.x = 0;
 	pos.y += rowHeight*64;
-	pDevice->drawLine(pos, Direction::Right, surfaceSize.w*64, lineColor);
+	pDevice->drawLine(pos, Direction::Right, bitmapSize.w*64, lineColor);
 
 	pDevice->endCanvasUpdate();
 	pDevice->endRender();
 	
-	m_pBitmapFontSurface = pSurface;
+	m_pBitmapFontBitmap = pBitmap;
 	
-	m_pFontDisplaySurface = wg::Base::defaultSurfaceFactory()->createSurface( { .canvas = true, .format = PixelFormat::ARGB_8, .size = surfaceSize });
+	m_pFontDisplayBitmap = wg::Base::defaultBitmapFactory()->createBitmap( { .canvas = true, .format = PixelFormat::ARGB_8, .size = bitmapSize });
 
 	pDevice->beginRender();
-	pDevice->beginCanvasUpdate(m_pFontDisplaySurface);
+	pDevice->beginCanvasUpdate(m_pFontDisplayBitmap);
 	pDevice->fill( Color::White );
-	pDevice->setBlitSource(pSurface);
+	pDevice->setBlitSource(pBitmap);
 	pDevice->setTintColor(Color::Black);
 	pDevice->blit({0,0});
 	pDevice->endCanvasUpdate();
@@ -437,7 +437,7 @@ bool MyApp::generateFontSurface( FreeTypeFont * pFont, const std::u32string& cha
 
 void MyApp::displayBitmapFont()
 {
-	m_pBitmapDisplay->setImage(m_pFontDisplaySurface);
+	m_pBitmapDisplay->setImage(m_pFontDisplayBitmap);
 }
 
 //____ createInputPanel() ________________________________________________________
@@ -689,23 +689,23 @@ bool MyApp::_loadSkins(wapp::API * pAPI)
 {
 	string path = "resources/greyskin/";
 
-	auto pPlateSurf = pAPI->loadSurface(path + "plate.bmp");
-	auto pButtonSurf = pAPI->loadSurface(path + "button.bmp");
-	auto pStateButtonSurf = pAPI->loadSurface(path + "state_button.bmp");
-	auto pCheckBoxSurf = pAPI->loadSurface(path + "checkbox.png");
+	auto pPlateBitmap = pAPI->loadBitmap(path + "plate.bmp");
+	auto pButtonBitmap = pAPI->loadBitmap(path + "button.bmp");
+	auto pStateButtonBitmap = pAPI->loadBitmap(path + "state_button.bmp");
+	auto pCheckBoxBitmap = pAPI->loadBitmap(path + "checkbox.png");
 
-	if (!pPlateSurf || !pButtonSurf || !pStateButtonSurf)
+	if (!pPlateBitmap || !pButtonBitmap || !pStateButtonBitmap)
 		return false;
 
 	m_pPlateSkin = BlockSkin::create(WGBP(BlockSkin,
-		_.surface = pPlateSurf,
+		_.bitmap = pPlateBitmap,
 		_.axis = Axis::X,
 		_.frame = 4,
 		_.padding = 4
 	));
 
 	m_pButtonSkin = BlockSkin::create(WGBP(BlockSkin,
-		_.surface = pButtonSurf,
+		_.bitmap = pButtonBitmap,
 		_.axis = Axis::X,
 		_.frame = 4,
 		_.padding = { 4,10,4,10 },
@@ -713,7 +713,7 @@ bool MyApp::_loadSkins(wapp::API * pAPI)
 	));
 
 	m_pToggleButtonSkin = BlockSkin::create(WGBP(BlockSkin,
-		_.surface = pStateButtonSurf,
+		_.bitmap = pStateButtonBitmap,
 		_.axis = Axis::X,
 		_.frame = 4,
 		_.padding = 4,
@@ -721,7 +721,7 @@ bool MyApp::_loadSkins(wapp::API * pAPI)
 	));
 
 	m_pCheckBoxSkin = BlockSkin::create(WGBP(BlockSkin,
-		_.surface = pCheckBoxSurf,
+		_.bitmap = pCheckBoxBitmap,
 		_.axis = Axis::Y,
 		_.frame = 3,
 //		_.defaultSize = { 12,12 },

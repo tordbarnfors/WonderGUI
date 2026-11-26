@@ -26,7 +26,7 @@
 #include <wax_c_types.h>
 #include <wax_c_geo.h>
 #include <wax_c_color.h>
-#include <wax_c_surface.h>
+#include <wax_c_bitmap.h>
 #include <wax_c_backend.h>
 
 #ifdef __cplusplus
@@ -99,7 +99,7 @@ extern "C" {
 
 	WAX_EXPORT wax_obj		wax_canvasLayers(wax_obj device);
 
-	WAX_EXPORT wax_obj		wax_surfaceFactory(wax_obj device);
+	WAX_EXPORT wax_obj		wax_bitmapFactory(wax_obj device);
 	WAX_EXPORT wax_obj		wax_edgemapFactory(wax_obj device);
 	WAX_EXPORT wax_obj		wax_warpmapFactory(wax_obj device);
 
@@ -135,7 +135,7 @@ extern "C" {
 	WAX_EXPORT int			wax_setBlendMode(wax_obj device, wax_blendMode blendMode);
 	WAX_EXPORT wax_blendMode 	wax_getBlendMode(wax_obj device);
 
-	WAX_EXPORT int			wax_setBlitSource(wax_obj device, wax_obj surface);
+	WAX_EXPORT int			wax_setBlitSource(wax_obj device, wax_obj bitmap);
 	WAX_EXPORT wax_obj 		wax_getBlitSource(wax_obj device);
 
 	WAX_EXPORT void			wax_setMorphFactor(wax_obj device, float factor);
@@ -160,7 +160,7 @@ extern "C" {
 	WAX_EXPORT void			wax_flushDevice(wax_obj device);
 
 	WAX_EXPORT int			wax_beginCanvasUpdateWithRef(wax_obj device, wax_canvasRef canvas, int nUpdateRects, const wax_rectSPX* pUpdateRects, wax_obj canvasLayers, int startLayer);
-	WAX_EXPORT int			wax_beginCanvasUpdateWithSurface(wax_obj device, wax_obj surface, int nUpdateRects, const wax_rectSPX* pUpdateRects, wax_obj canvasLayers, int startLayer);
+	WAX_EXPORT int			wax_beginCanvasUpdateWithBitmap(wax_obj device, wax_obj bitmap, int nUpdateRects, const wax_rectSPX* pUpdateRects, wax_obj canvasLayers, int startLayer);
 	WAX_EXPORT void			wax_endCanvasUpdate(wax_obj device);
 
 	WAX_EXPORT void			wax_flattenLayers(wax_obj device);

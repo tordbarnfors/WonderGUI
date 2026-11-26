@@ -25,7 +25,7 @@
 
 
 #include <wg_dynamicvector.h>
-#include <wax_surface.h>
+#include <wax_bitmap.h>
 #include <wax_geo.h>
 #include <wg_types.h>
 
@@ -67,7 +67,7 @@ namespace wg
 		The AnimFrames component contains a vector of rectangular bitmap
 		areas, all of the same size, used as frames in an animation.
 
-		All frames must be from the same Surface. Each frame
+		All frames must be from the same Bitmap. Each frame
 		has an individual duration (set in milliseconds) so the frame rate
 		can vary throughout the animation. Frames can overlap each other and
 		each frame can also be flipped or rotated in 90 degrees increments, which
@@ -82,7 +82,7 @@ namespace wg
 		{
 		public:
 			virtual void	_didSetAnimFrameSize(AnimFrames * pComponent) = 0;
-			virtual void	_didSetAnimSurface(AnimFrames * pComponent) = 0;
+			virtual void	_didSetAnimBitmap(AnimFrames * pComponent) = 0;
 		};
 
 		AnimFrames(Holder * pHolder) : DynamicVector(pHolder) {}
@@ -90,8 +90,8 @@ namespace wg
 
 		//.____ Content _______________________________________________________
 
-		void			setSurface(Surface* pSurface);
-		Surface_p		surface() const { return m_pSurface; }
+		void			setBitmap(Bitmap* pBitmap);
+		Bitmap_p		bitmap() const { return m_pBitmap; }
 
 		void			setFrameSize(Size pointSize);
 		Size			frameSize() const { return m_frameSize; }
@@ -101,7 +101,7 @@ namespace wg
 
 		//.____ Internal ______________________________________________________
 
-		Surface *		_surface() const { return m_pSurface; }
+		Bitmap *		_bitmap() const { return m_pBitmap; }
 
 
 	protected:
@@ -114,7 +114,7 @@ namespace wg
 
 		int			m_duration = 0;
 		Size		m_frameSize;
-		Surface_p	m_pSurface;
+		Bitmap_p	m_pBitmap;
 	};
 
 	//____ duration() _________________________________________________________

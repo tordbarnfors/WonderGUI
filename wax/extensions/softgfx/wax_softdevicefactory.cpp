@@ -34,7 +34,7 @@ namespace wax
 
 	SoftDeviceFactory::SoftDeviceFactory(const Blueprint& bp)
 	{
-		m_pDefaultCanvasSurface			= bp.defaultCanvasSurface;
+		m_pDefaultCanvasBitmap			= bp.defaultCanvasBitmap;
 		m_kernels						= bp.kernels;
 	}
 
@@ -55,8 +55,8 @@ namespace wax
 		for( auto func : m_kernels )
 			func(pBackend);
 
-		if( m_pDefaultCanvasSurface )
-			pBackend->defineCanvas( CanvasRef::Default, m_pDefaultCanvasSurface);
+		if( m_pDefaultCanvasBitmap )
+			pBackend->defineCanvas( CanvasRef::Default, m_pDefaultCanvasBitmap);
 
 		auto pDevice = DeviceGen2::create(pBackend);
 		return pDevice;

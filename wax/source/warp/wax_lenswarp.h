@@ -40,7 +40,7 @@ namespace wax
 	 *
 	 * The lens is centered in the Warpmap, as large as fits, with its outline antialiased within
 	 * it. The source is what is under the lens: normally a source rectangle of the same size as the
-	 * Warpmap, in the surface that holds the graphics, so that the source is as large as the Warpmap
+	 * Warpmap, in the bitmap that holds the graphics, so that the source is as large as the Warpmap
 	 * where there is no magnification. Move the lens by drawing it somewhere else with the source
 	 * rectangle moved along, which doesn't take generating again.
 	 *
@@ -62,7 +62,7 @@ namespace wax
 	 * place. A frame, a highlight or a shadow are drawn separately.
 	 *
 	 * The lens is drawn over what is already there, so graphics with transparency in them are
-	 * blended twice where it is. Draw it from a surface with the finished graphics on it.
+	 * blended twice where it is. Draw it from a bitmap with the finished graphics on it.
 	 */
 
 	class LensWarp : public WarpGenerator

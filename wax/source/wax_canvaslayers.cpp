@@ -34,13 +34,13 @@ namespace wax
 	 * 
 	 * The layers are specified through a list of PixelFormats. The first value
 	 * specifies the pixel format of layer 1, which is the first layer to be
-	 * blended onto the canvas surface (which is layer 0) and thus the bottom
-	 * layer, bar the canvas surface itself.
+	 * blended onto the canvas bitmap (which is layer 0) and thus the bottom
+	 * layer, bar the canvas bitmap itself.
 	 * 
 	 * 
 	 * 
 	 * @param extraLayers - The PixelFormat for each layer, starting with layer 1 which is
-	 * 						the bottom layer (bar the canvas surface itself, which is layer 0)
+	 * 						the bottom layer (bar the canvas bitmap itself, which is layer 0)
 	 *						and moving upwards.
 	 * 
 	 * @return The created CanvasLayer object or nullptr if something went wrong.
@@ -137,20 +137,20 @@ namespace wax
 
 	//____ setLayerInitializer() _______________________________________________
 	/**
-	 * @brief Set a lambda function for clearing or initializing a layers surface.
+	 * @brief Set a lambda function for clearing or initializing a layers bitmap.
 	 * 
-	 * Set a lambda function for clearing or initializing a layers surface.
+	 * Set a lambda function for clearing or initializing a layers bitmap.
 	 * 
 	 * @param layer		The layer for which we specify the initializer. Please note that layer numbering starts on 1, not 0.
 	 * @param func		A lambda function to be used to initializing the layer after it is created.
 	 * 
-	 * By default a layer surface is filled with transparency when created, but that will be replaced by this function if specified.
-	 * Use this function to fill the surface with any content you like before widgets or skins render into it.
+	 * By default a layer bitmap is filled with transparency when created, but that will be replaced by this function if specified.
+	 * Use this function to fill the bitmap with any content you like before widgets or skins render into it.
 	 * 
 	 * When the function is called, it receives one parameter which is the Device to use. This has been prepared
 	 * for operation in the following way:
 	 * 
-	 * - RenderTarget is set to the surface for the layer.
+	 * - RenderTarget is set to the bitmap for the layer.
 	 * - ClipList is set to only update patches that might be used.
 	 * - BlendMode is unspecified, you need to set it!
 	 * - Tint is cleared.
@@ -162,11 +162,11 @@ namespace wax
 
 	//____ setLayerFinalizer() _________________________________________________
 	/**
-	 * @brief Set a lambda function to finalize the layers surface.
+	 * @brief Set a lambda function to finalize the layers bitmap.
 	 * 
-	 * Set a lambda function to finalize the layers surface before it is blended onto the base layer (the specified canvas surface). 
+	 * Set a lambda function to finalize the layers bitmap before it is blended onto the base layer (the specified canvas bitmap). 
 	 * 
-	 * This finalization step is purely optional, it just provides the option to modify the surface content before blending it onto the base layer.
+	 * This finalization step is purely optional, it just provides the option to modify the bitmap content before blending it onto the base layer.
 	 * 
 	 * @param layer		The layer for which we specify the finalizer. Please note that layer numbering starts on 1, not 0.
 	 * @param func		A lambda function to be used to finalize the layer after it is created.
@@ -174,7 +174,7 @@ namespace wax
 	 * When the function is called, it receives one parameter which is the Device to use. This has been prepared
 	 * for operation in the following way:
 	 * 
-	 * - RenderTarget is set to the surface for the layer.
+	 * - RenderTarget is set to the bitmap for the layer.
 	 * - ClipList is set to only update patches that might be used.
 	 * - BlendMode is set to Blend.
 	 * - Tint is cleared.
@@ -187,19 +187,19 @@ namespace wax
 	/**
 	 * @brief Set the lambda function for blending a layer onto base layer.
 	 * 
-	 * Sets the lambda function for blending the specified layer onto the base layer (the specified canvas surface). 
+	 * Sets the lambda function for blending the specified layer onto the base layer (the specified canvas bitmap). 
 	 * 
-	 * By default the layer is blitted onto the canvas surface using BlendMode::Blend. If a blend function
+	 * By default the layer is blitted onto the canvas bitmap using BlendMode::Blend. If a blend function
 	 * is specified, that is used instead.
 	 * 
 	 * 
 	 * @param layer		The layer for which we specify the blend function. Please note that layer numbering starts on 1, not 0.
-	 * @param func		A lambda function to be used to blend the layer onto the canvas surface.
+	 * @param func		A lambda function to be used to blend the layer onto the canvas bitmap.
 	 * 
 	 * When the function is called, it receives one parameter which is the Device to use. This has been prepared
 	 * for operation in the following way:
 	 * 
-	 * - RenderTarget is set to the canvas surface (base layer).
+	 * - RenderTarget is set to the canvas bitmap (base layer).
 	 * - Blit source is set to the layer to be blended.
 	 * - ClipList is set to that provided to beginCanvasUpdate().
 	 * - BlendMode is set to Blend.
@@ -213,15 +213,15 @@ namespace wax
 	/**
 	 * @brief Set a lambda function to initialize the canvas.
 	 * 
-	 * Sets a lambda function to initialize the canvas surface. This is called from Device::beginCanvasUpdate() and is
+	 * Sets a lambda function to initialize the canvas bitmap. This is called from Device::beginCanvasUpdate() and is
 	 * an optional step.
 	 * 
-	 * @param func		A lambda function to be called when canvas surface is initialized.
+	 * @param func		A lambda function to be called when canvas bitmap is initialized.
 	 * 
 	 * When the function is called, it receives one parameter which is the Device to use. This has been prepared
 	 * for operation in the following way:
 	 * 
-	 * - Render target is set to the canvas surface (base layer).
+	 * - Render target is set to the canvas bitmap (base layer).
 	 * - ClipList is set to that provided to beginCanvasUpdate().
 	 * - BlendMode is set to Blend.
 	 * - Tint is cleared.
@@ -234,15 +234,15 @@ namespace wax
 	/**
 	 * @brief Set a lambda function to finalize the canvas.
 	 * 
-	 * Sets a lambda function to finalize the canvas surface. This is called from Device::endCanvasUpdate() and is
+	 * Sets a lambda function to finalize the canvas bitmap. This is called from Device::endCanvasUpdate() and is
 	 * an optional step.
 	 * 
-	 * @param func		A lambda function to be called when canvas surface is finalized.
+	 * @param func		A lambda function to be called when canvas bitmap is finalized.
 	 * 
 	 * When the function is called, it receives one parameter which is the Device to use. This has been prepared
 	 * for operation in the following way:
 	 * 
-	 * - Render target is set to the canvas surface (base layer).
+	 * - Render target is set to the canvas bitmap (base layer).
 	 * - ClipList is set to that provided to beginCanvasUpdate().
 	 * - BlendMode is set to Blend.
 	 * - Tint is cleared.
@@ -255,17 +255,17 @@ namespace wax
 	/**
 	 * @brief Set a lambda function to modify canvas before layer is blended onto it.
 	 * 
-	 * Sets a lambda function to modify the canvas surface before the specified layer is blended onto it. This is
+	 * Sets a lambda function to modify the canvas bitmap before the specified layer is blended onto it. This is
 	 * an optional step which provides you the oportunity to modify canvas content before next layer is blended onto it.
 	 * 
 	 * 
 	 * @param layer		The layer before which the modifier should be called. Please note that layer numbering starts on 1, not 0.
-	 * @param func		A lambda function to be used to modify content of the canvas surface.
+	 * @param func		A lambda function to be used to modify content of the canvas bitmap.
 	 * 
 	 * When the function is called, it receives one parameter which is the Device to use. This has been prepared
 	 * for operation in the following way:
 	 * 
-	 * - Render target is set to the canvas surface (base layer).
+	 * - Render target is set to the canvas bitmap (base layer).
 	 * - ClipList is set to that provided to Device::beginCanvasUpdate().
 	 * - BlendMode is set to Blend.
 	 * - Tint is cleared.

@@ -37,7 +37,7 @@ extern "C" {
 typedef struct wax_canvasInfo_struct		// NOT BINARY EQUIVALENT!
 {
 	wax_canvasRef	ref;
-	wax_obj			surface;
+	wax_obj			bitmap;
 	wax_sizeSPX		size;
 	int				scale;
 } wax_canvasInfo;
@@ -81,10 +81,10 @@ typedef struct wax_sessionInfo_struct		// Binary equivalent of Backend::SessionI
 WAX_EXPORT void	wax_backendBeginRender( wax_obj backend );
 WAX_EXPORT void	wax_backendEndRender( wax_obj backend );
 
-WAX_EXPORT void	wax_backendBeginSession( wax_obj backend, wax_canvasRef canvasRef, wax_obj canvasSurface, int nUpdateRects, const wax_rectSPX * pUpdateRects, const wax_sessionInfo * pInfo );
+WAX_EXPORT void	wax_backendBeginSession( wax_obj backend, wax_canvasRef canvasRef, wax_obj canvasBitmap, int nUpdateRects, const wax_rectSPX * pUpdateRects, const wax_sessionInfo * pInfo );
 WAX_EXPORT void	wax_backendEndSession( wax_obj backend );
 
-WAX_EXPORT void	wax_backendSetCanvasWithSurface( wax_obj backend, wax_obj surface );
+WAX_EXPORT void	wax_backendSetCanvasWithBitmap( wax_obj backend, wax_obj bitmap );
 WAX_EXPORT void	wax_backendSetCanvasWithRef( wax_obj backend, wax_canvasRef canvas );
 
 WAX_EXPORT void	wax_backendSetObjects(wax_obj backend, wax_obj* const * pBeg, wax_obj* const * pEnd);
@@ -98,14 +98,14 @@ WAX_EXPORT void	wax_backendProcessCommands(wax_obj backend, const uint16_t* pBeg
 
 WAX_EXPORT wax_canvasInfo wax_backendCanvasInfo(wax_obj backend, wax_canvasRef ref);
 
-WAX_EXPORT wax_obj	wax_backendSurfaceFactory(wax_obj backend);
+WAX_EXPORT wax_obj	wax_backendBitmapFactory(wax_obj backend);
 WAX_EXPORT wax_obj	wax_backendEdgemapFactory(wax_obj backend);
 WAX_EXPORT wax_obj	wax_backendWarpmapFactory(wax_obj backend);
 
 
 WAX_EXPORT int		wax_backendMaxEdges(wax_obj backend);
 
-WAX_EXPORT const wax_typeInfo * wax_backendSurfaceType(wax_obj backend);
+WAX_EXPORT const wax_typeInfo * wax_backendBitmapType(wax_obj backend);
 
 
 #ifdef __cplusplus

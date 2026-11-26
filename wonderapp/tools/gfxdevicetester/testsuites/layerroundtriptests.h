@@ -19,26 +19,26 @@ public:
 	{
 		name = "LayerRoundTripTests";
 
-		addTest("ViaSurface", &LayerRoundTripTests::viaSurface);
+		addTest("ViaBitmap", &LayerRoundTripTests::viaBitmap);
 		addTest("ViaCanvasLayer", &LayerRoundTripTests::viaCanvasLayer);
 	}
 
 	bool init(GfxDevice * pDevice, const RectSPX& canvas, wapp::API * pAppAPI)
 	{
-		m_pLogo = pAppAPI->loadSurface("resources/logo-200.png", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Bilinear });
-		m_pShadow = pAppAPI->loadSurface("resources/shadow.png", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Bilinear });
+		m_pLogo = pAppAPI->loadBitmap("resources/logo-200.png", pDevice->bitmapFactory(), { .sampleMethod = SampleMethod::Bilinear });
+		m_pShadow = pAppAPI->loadBitmap("resources/shadow.png", pDevice->bitmapFactory(), { .sampleMethod = SampleMethod::Bilinear });
 		if (!m_pLogo || !m_pShadow)
 			return false;
 
 		SizeI canvasSize = canvas.size() / 64;
 		SizeI halfSize = { canvasSize.w / 2, canvasSize.h };
 
-		m_pLayerSurface = pDevice->surfaceFactory()->createSurface(WGBP(Surface,
+		m_pLayerBitmap = pDevice->bitmapFactory()->createBitmap(WGBP(Bitmap,
 			_.size = halfSize,
 			_.format = PixelFormat::ARGB_8,
 			_.canvas = true));
 
-		m_pLayeredCanvas = pDevice->surfaceFactory()->createSurface(WGBP(Surface,
+		m_pLayeredCanvas = pDevice->bitmapFactory()->createBitmap(WGBP(Bitmap,
 			_.size = canvasSize,
 			_.format = PixelFormat::ARGB_8,
 			_.canvas = true));
@@ -70,14 +70,14 @@ public:
 
 		m_pTint = Tint::create(Color(4096, 4096, 0, 4096), Color(0, 4096, 4096, 0), { 0.f, 0.f }, { 1.f, 1.f });
 
-		return m_pLayerSurface && m_pLayeredCanvas && m_pCanvasLayers && m_pEdgemap;
+		return m_pLayerBitmap && m_pLayeredCanvas && m_pCanvasLayers && m_pEdgemap;
 	}
 
 	bool exit(GfxDevice * pDevice, const RectSPX& canvas)
 	{
 		m_pLogo = nullptr;
 		m_pShadow = nullptr;
-		m_pLayerSurface = nullptr;
+		m_pLayerBitmap = nullptr;
 		m_pLayeredCanvas = nullptr;
 		m_pCanvasLayers = nullptr;
 		m_pEdgemap = nullptr;
@@ -85,22 +85,22 @@ public:
 		return true;
 	}
 
-	// Scene drawn onto an offscreen surface with transparent background, which is then blended
+	// Scene drawn onto an offscreen bitmap with transparent background, which is then blended
 	// onto the canvas.
 
-	bool viaSurface(GfxDevice * pDevice, const RectSPX& canvas)
+	bool viaBitmap(GfxDevice * pDevice, const RectSPX& canvas)
 	{
 		drawBackground(pDevice, canvas);
 		drawScene(pDevice, { 0,0 });
 
-		pDevice->beginCanvasUpdate(m_pLayerSurface);
+		pDevice->beginCanvasUpdate(m_pLayerBitmap);
 		pDevice->setBlendMode(BlendMode::Replace);
 		pDevice->fill(Color::Transparent);
 		drawScene(pDevice, { 0,0 });
 		pDevice->endCanvasUpdate();
 
 		pDevice->setBlendMode(BlendMode::Blend);
-		pDevice->setBlitSource(m_pLayerSurface);
+		pDevice->setBlitSource(m_pLayerBitmap);
 		pDevice->blit({ canvas.w / 2, 0 });
 		return true;
 	}
@@ -194,10 +194,10 @@ private:
 	static const int c_edgemapWidth = 120;
 	static const int c_edgemapHeight = 90;
 
-	Surface_p		m_pLogo;
-	Surface_p		m_pShadow;
-	Surface_p		m_pLayerSurface;
-	Surface_p		m_pLayeredCanvas;
+	Bitmap_p		m_pLogo;
+	Bitmap_p		m_pShadow;
+	Bitmap_p		m_pLayerBitmap;
+	Bitmap_p		m_pLayeredCanvas;
 	CanvasLayers_p	m_pCanvasLayers;
 	Edgemap_p		m_pEdgemap;
 	Tint_p			m_pTint;

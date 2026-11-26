@@ -115,12 +115,12 @@ namespace workbench
 		return pBlob;
 	}
 
-	//____ Context::loadSurface() _____________________________________________
+	//____ Context::loadBitmap() _____________________________________________
 	//
 	// Loads any image stb_image can read. Size and pixel format are taken from
 	// the image, the rest of the blueprint is used as given.
 
-	Surface_p Context::loadSurface(const std::string& path, const Surface::Blueprint& blueprint)
+	Bitmap_p Context::loadBitmap(const std::string& path, const Bitmap::Blueprint& blueprint)
 	{
 		std::string fullPath = c_resourceDir + path;
 
@@ -143,14 +143,14 @@ namespace workbench
 		desc.B_mask = 0x00FF0000;
 		desc.A_mask = 0xFF000000;
 
-		Surface::Blueprint bp = blueprint;
+		Bitmap::Blueprint bp = blueprint;
 		bp.size = { width, height };
 		bp.format = (channels == 4 || channels == 2) ? PixelFormat::ARGB_8 : PixelFormat::XRGB_8;
 
-		auto pSurface = Base::defaultSurfaceFactory()->createSurface(bp, pPixels, desc, width * 4);
+		auto pBitmap = Base::defaultBitmapFactory()->createBitmap(bp, pPixels, desc, width * 4);
 
 		stbi_image_free(pPixels);
-		return pSurface;
+		return pBitmap;
 	}
 
 	//____ Context::addRoute() ________________________________________________

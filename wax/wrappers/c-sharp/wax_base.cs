@@ -84,15 +84,15 @@ public static class Base
         _handler = handler;
     }
 
-    //____ SetDefaultSurfaceFactory() _________________________________________
-    static public void SetDefaultSurfaceFactory(SurfaceFactory factory)
+    //____ SetDefaultBitmapFactory() _________________________________________
+    static public void SetDefaultBitmapFactory(BitmapFactory factory)
     {
-        wax_setDefaultSurfaceFactory( factory.CHandle() );
+        wax_setDefaultBitmapFactory( factory.CHandle() );
     }
 
     /*
         //____ SetDefaultEdgemapFactory() _________________________________________
-        static public void SetDefaultSurfaceFactory(EdgemapFactory factory)
+        static public void SetDefaultBitmapFactory(EdgemapFactory factory)
         {
             wax_setDefaultEdgemapFactory(factory.CHandle());
         }
@@ -159,10 +159,10 @@ public static class Base
     private static extern void wax_setErrorHandler(C_ErrorHandler errorHandler);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern void wax_setDefaultSurfaceFactory( IntPtr factory );
+    private static extern void wax_setDefaultBitmapFactory( IntPtr factory );
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern IntPtr wax_defaultSurfaceFactory();
+    private static extern IntPtr wax_defaultBitmapFactory();
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern void wax_setDefaultEdgemapFactory( IntPtr factory );

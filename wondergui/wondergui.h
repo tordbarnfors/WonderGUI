@@ -134,7 +134,7 @@
 #include <wg_staticslotvector.h>
 #include <wg_statictext.h>
 #include <wg_staticvector.h>
-#include <wg_surfacedisplay.h>
+#include <wg_bitmapdisplay.h>
 #include <wg_tablepanel.h>
 #include <wg_dynamictext.h>
 #include <wg_textdisplay.h>

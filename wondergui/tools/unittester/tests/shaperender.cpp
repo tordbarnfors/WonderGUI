@@ -7,8 +7,8 @@
 #include <wax_util.h>
 #include <wax_softbackend.h>
 #include <wax_linearbackend.h>
-#include <wax_softsurface.h>
-#include <wax_softsurfacefactory.h>
+#include <wax_softbitmap.h>
+#include <wax_softbitmapfactory.h>
 #include <wax_softedgemapfactory.h>
 #include <wax_softkernels_default.h>
 #include <wax_softshapes.h>
@@ -56,24 +56,24 @@ namespace
 	public:
 		Canvas()
 		{
-			surface = SoftSurface::create(WGBP(Surface, _.size = c_canvasSize, _.format = PixelFormat::ARGB_8, _.colorSpace = ColorSpace::Linear, _.canvas = true));
+			bitmap = SoftBitmap::create(WGBP(Bitmap, _.size = c_canvasSize, _.format = PixelFormat::ARGB_8, _.colorSpace = ColorSpace::Linear, _.canvas = true));
 		}
 
 		std::vector<uint8_t> read() const
 		{
 			std::vector<uint8_t> out(c_canvasSize.w * c_canvasSize.h * 4);
 
-			auto buffer = surface->allocPixelBuffer();
-			surface->pushPixels(buffer);
+			auto buffer = bitmap->allocPixelBuffer();
+			bitmap->pushPixels(buffer);
 
 			for (int y = 0; y < c_canvasSize.h; y++)
 				std::memcpy(out.data() + y * c_canvasSize.w * 4, buffer.pixels + y * buffer.pitch, c_canvasSize.w * 4);
 
-			surface->freePixelBuffer(buffer);
+			bitmap->freePixelBuffer(buffer);
 			return out;
 		}
 
-		SoftSurface_p	surface;
+		SoftBitmap_p	bitmap;
 	};
 
 	// Channel of 8-bit BGRA pixel as 12-bit linear.
@@ -300,7 +300,7 @@ bool ShapeRenderTest::blendModesTest(std::ostream& output)
 		auto pDevice = createSoftDevice();
 
 		pDevice->beginRender();
-		pDevice->beginCanvasUpdate(canvas.surface);
+		pDevice->beginCanvasUpdate(canvas.bitmap);
 		pDevice->setBlendMode(BlendMode::Replace);
 		pDevice->fill(c_background);
 		pDevice->endCanvasUpdate();
@@ -309,7 +309,7 @@ bool ShapeRenderTest::blendModesTest(std::ostream& output)
 		auto before = canvas.read();
 
 		pDevice->beginRender();
-		pDevice->beginCanvasUpdate(canvas.surface);
+		pDevice->beginCanvasUpdate(canvas.bitmap);
 		pDevice->setBlendMode(mode);
 		pDevice->setFixedBlendColor(fixedColor);
 		pDevice->setMorphFactor(morphFactor);
@@ -366,7 +366,7 @@ bool ShapeRenderTest::fillAndOutlineTest(std::ostream& output)
 	auto pDevice = createSoftDevice();
 
 	pDevice->beginRender();
-	pDevice->beginCanvasUpdate(canvas.surface);
+	pDevice->beginCanvasUpdate(canvas.bitmap);
 	pDevice->setBlendMode(BlendMode::Replace);
 	pDevice->fill(c_background);
 	pDevice->setBlendMode(BlendMode::Blend);
@@ -408,7 +408,7 @@ bool ShapeRenderTest::tintColorTest(std::ostream& output)
 	auto pDevice = createSoftDevice();
 
 	pDevice->beginRender();
-	pDevice->beginCanvasUpdate(canvas.surface);
+	pDevice->beginCanvasUpdate(canvas.bitmap);
 	pDevice->setBlendMode(BlendMode::Replace);
 	pDevice->fill(c_background);
 	pDevice->setBlendMode(BlendMode::Blend);
@@ -460,7 +460,7 @@ bool ShapeRenderTest::gradientTintTest(std::ostream& output)
 	auto pDevice = createSoftDevice();
 
 	pDevice->beginRender();
-	pDevice->beginCanvasUpdate(canvas.surface);
+	pDevice->beginCanvasUpdate(canvas.bitmap);
 	pDevice->setBlendMode(BlendMode::Replace);
 	pDevice->fill(c_background);
 	pDevice->setBlendMode(BlendMode::Blend);
@@ -503,7 +503,7 @@ bool ShapeRenderTest::clipListTest(std::ostream& output)
 		auto pDevice = createSoftDevice();
 
 		pDevice->beginRender();
-		pDevice->beginCanvasUpdate(canvas.surface);
+		pDevice->beginCanvasUpdate(canvas.bitmap);
 		pDevice->setBlendMode(BlendMode::Replace);
 		pDevice->fill(c_background);
 		pDevice->setBlendMode(BlendMode::Blend);
@@ -653,7 +653,7 @@ bool ShapeRenderTest::linearBackendTest(std::ostream& output)
 	auto pDevice = createSoftDevice();
 
 	pDevice->beginRender();
-	pDevice->beginCanvasUpdate(canvas.surface);
+	pDevice->beginCanvasUpdate(canvas.bitmap);
 	drawScene(pDevice);
 	pDevice->endCanvasUpdate();
 	pDevice->endRender();
@@ -718,7 +718,7 @@ bool ShapeRenderTest::streamTest(std::ostream& output)
 	auto pDevice = createSoftDevice();
 
 	pDevice->beginRender();
-	pDevice->beginCanvasUpdate(directCanvas.surface);
+	pDevice->beginCanvasUpdate(directCanvas.bitmap);
 	drawScene(pDevice);
 	pDevice->endCanvasUpdate();
 	pDevice->endRender();
@@ -731,9 +731,9 @@ bool ShapeRenderTest::streamTest(std::ostream& output)
 
 	auto pBackend = SoftBackend::create();
 	addDefaultSoftKernels(pBackend);
-	pBackend->defineCanvas(CanvasRef::Default, streamedCanvas.surface);
+	pBackend->defineCanvas(CanvasRef::Default, streamedCanvas.bitmap);
 
-	auto pStreamPlayer = StreamPlayer::create(pBackend, SoftSurfaceFactory::create(), SoftEdgemapFactory::create());
+	auto pStreamPlayer = StreamPlayer::create(pBackend, SoftBitmapFactory::create(), SoftEdgemapFactory::create());
 	auto pStreamEncoder = StreamEncoder::create({ pStreamPlayer, pStreamPlayer->input });
 	auto pStreamBackend = StreamBackend::create(pStreamEncoder);
 	pStreamBackend->defineCanvas(CanvasRef::Default, c_canvasSize, PixelFormat::ARGB_8, 64, ColorSpace::Linear);
@@ -775,7 +775,7 @@ bool ShapeRenderTest::cApiTest(std::ostream& output)
 		Canvas canvas;
 
 		pDevice->beginRender();
-		pDevice->beginCanvasUpdate(canvas.surface);
+		pDevice->beginCanvasUpdate(canvas.bitmap);
 		drawScene(pDevice, i == 1);
 		pDevice->endCanvasUpdate();
 		pDevice->endRender();
@@ -812,7 +812,7 @@ bool ShapeRenderTest::alignedBoxTest(std::ostream& output)
 	auto pDevice = createSoftDevice();
 
 	pDevice->beginRender();
-	pDevice->beginCanvasUpdate(canvas.surface);
+	pDevice->beginCanvasUpdate(canvas.bitmap);
 	pDevice->setBlendMode(BlendMode::Replace);
 	pDevice->fill(c_background);
 	pDevice->setBlendMode(BlendMode::Blend);
@@ -855,7 +855,7 @@ bool ShapeRenderTest::boxSkinTest(std::ostream& output)
 	auto pDevice = createSoftDevice();
 
 	pDevice->beginRender();
-	pDevice->beginCanvasUpdate(skinCanvas.surface);
+	pDevice->beginCanvasUpdate(skinCanvas.bitmap);
 	pDevice->setBlendMode(BlendMode::Replace);
 	pDevice->fill(c_background);
 	pDevice->setBlendMode(BlendMode::Blend);
@@ -875,7 +875,7 @@ bool ShapeRenderTest::boxSkinTest(std::ostream& output)
 	Canvas boxCanvas;
 
 	pDevice->beginRender();
-	pDevice->beginCanvasUpdate(boxCanvas.surface);
+	pDevice->beginCanvasUpdate(boxCanvas.bitmap);
 	pDevice->setBlendMode(BlendMode::Replace);
 	pDevice->fill(c_background);
 	pDevice->setBlendMode(BlendMode::Blend);
@@ -954,7 +954,7 @@ bool ShapeRenderTest::ringTest(std::ostream& output)
 	auto pDevice = createSoftDevice();
 
 	pDevice->beginRender();
-	pDevice->beginCanvasUpdate(canvas.surface);
+	pDevice->beginCanvasUpdate(canvas.bitmap);
 	pDevice->setBlendMode(BlendMode::Replace);
 	pDevice->fill(c_background);
 	pDevice->setBlendMode(BlendMode::Blend);
@@ -1028,7 +1028,7 @@ bool ShapeRenderTest::undefinedColorTest(std::ostream& output)
 		}
 
 		pDevice->beginRender();
-		pDevice->beginCanvasUpdate(canvas.surface);
+		pDevice->beginCanvasUpdate(canvas.bitmap);
 		pDevice->setBlendMode(BlendMode::Replace);
 		pDevice->fill(c_background);
 		if (bRing)
@@ -1108,7 +1108,7 @@ namespace
 		auto pDevice = GfxDeviceGen2::create(ReferenceBackend::create());
 
 		pDevice->beginRender();
-		pDevice->beginCanvasUpdate(canvas.surface);
+		pDevice->beginCanvasUpdate(canvas.bitmap);
 		pDevice->setBlendMode(BlendMode::Replace);
 		pDevice->fill(Color::Transparent);
 		pDevice->setBlendMode(BlendMode::Blend);

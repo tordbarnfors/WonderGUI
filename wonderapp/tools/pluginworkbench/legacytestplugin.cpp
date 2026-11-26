@@ -42,11 +42,11 @@ DLLEXPORTPREFIX int init( wg_plugin_interface * pInterface, void * pRealHostBrid
 	if( !WgPluginBase::init(pInterface, pRealHostBridge) )
 		return 0;								// Host's plugin interface is older than ours.
 	
-	auto pSurfaceFactory 	= PluginSurfaceFactory::create(hSurfaceFactory);
+	auto pSurfaceFactory 	= PluginBitmapFactory::create(hSurfaceFactory);
 	auto pEdgemapFactory	= PluginEdgemapFactory::create(hEdgemapFactory);
 	auto pGfxDevice 		= PluginGfxDevice::create(hGfxDevice,pSurfaceFactory, pEdgemapFactory);
 	
-	WgPluginBase::setDefaultSurfaceFactory(pSurfaceFactory);
+	WgPluginBase::setDefaultBitmapFactory(pSurfaceFactory);
 	WgPluginBase::setDefaultDevice(pGfxDevice);
 	
 	

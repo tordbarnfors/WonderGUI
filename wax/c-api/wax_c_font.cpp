@@ -65,7 +65,7 @@ void wax_getGlyphWithBitmap(wax_obj font, uint32_t chr, wax_glyph* pGlyph)
 	pGlyph->bearingX = glyph.bearingX;
 	pGlyph->bearingY = glyph.bearingY;
 	pGlyph->rect = * (wax_rectSPX*) &glyph.rect;
-	pGlyph->surface = static_cast<Object*>(glyph.pSurface.rawPtr());
+	pGlyph->bitmap = static_cast<Object*>(glyph.pBitmap.rawPtr());
 }
 
 
@@ -153,13 +153,13 @@ wax_obj wax_getBackupFont(wax_obj font)
 }
 
 
-wax_obj wax_createSurfaceFromGlyph(wax_obj font, uint32_t chr, const wax_surfaceBP* blueprint, wax_obj surfaceFactory)
+wax_obj wax_createBitmapFromGlyph(wax_obj font, uint32_t chr, const wax_bitmapBP* blueprint, wax_obj bitmapFactory)
 {
-	Surface::Blueprint bp;
+	Bitmap::Blueprint bp;
 
-	convertSurfaceBlueprint(&bp, blueprint);
+	convertBitmapBlueprint(&bp, blueprint);
 
-	auto p = getPtr(font)->getGlyphAsSurface(chr, bp, static_cast<SurfaceFactory*>(reinterpret_cast<Object*>(surfaceFactory)));
+	auto p = getPtr(font)->getGlyphAsBitmap(chr, bp, static_cast<BitmapFactory*>(reinterpret_cast<Object*>(bitmapFactory)));
 	if( !p )
 		return nullptr;
 

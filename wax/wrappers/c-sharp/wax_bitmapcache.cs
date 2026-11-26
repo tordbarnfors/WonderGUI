@@ -6,7 +6,7 @@ namespace Wax;
 public class BitmapCache : Objekt
 {
     //____ Constructor ________________________________________________________
-    public BitmapCache(int maxBytes, SurfaceFactory factory)
+    public BitmapCache(int maxBytes, BitmapFactory factory)
     {
         _obj = wax_createBitmapCache(maxBytes, factory.CHandle());
     }
@@ -45,7 +45,7 @@ public class BitmapCache : Objekt
     //____ DLL functions ______________________________________________________
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern IntPtr wax_createBitmapCache( int maxSize, IntPtr surfaceFactory );
+    private static extern IntPtr wax_createBitmapCache( int maxSize, IntPtr bitmapFactory );
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern void wax_setCacheLimit(IntPtr bitmapCache, int maxBytes);

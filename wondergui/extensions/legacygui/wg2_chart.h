@@ -38,7 +38,7 @@
 #include <functional>
 #include <vector>
 
-#include <wax_surfacefactory.h>
+#include <wax_bitmapfactory.h>
 #include <wg_skin.h>
 #include <wax_tint.h>
 #include <wax_edgemapwave.h>

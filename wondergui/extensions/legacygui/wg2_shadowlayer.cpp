@@ -23,7 +23,7 @@
 #include <wg2_eventhandler.h>
 #include <wg2_event.h>
 #include <wg2_gfxdevice.h>
-#include <wax_surfacefactory.h>
+#include <wax_bitmapfactory.h>
 #include <wg2_patches.h>
 #include <wg2_base.h>
 #include <wg2_util.h>
@@ -603,11 +603,11 @@ void WgShadowLayer::_renderPatches(wg::GfxDevice * pDevice, const WgRect& _canva
 
 		if (!m_pShadowSurface)
 		{
-			auto pSurfaceFactory = wax::Base::defaultSurfaceFactory();
+			auto pSurfaceFactory = wax::Base::defaultBitmapFactory();
 
 			if (pSurfaceFactory)
 			{
-				m_pShadowSurface = pSurfaceFactory->createSurface( WGBP(Surface,
+				m_pShadowSurface = pSurfaceFactory->createBitmap( WGBP(Surface,
 																		_.size = _canvas.size(),
 																		_.format = WgPixelType::ARGB_8,
 																		_.colorSpace = colorSpace,

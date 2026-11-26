@@ -26,7 +26,7 @@ public:
 
 	bool init(GfxDevice * pDevice, const RectSPX& canvas, wapp::API * pAppAPI)
 	{
-		auto pFactory = pDevice->surfaceFactory();
+		auto pFactory = pDevice->bitmapFactory();
 
 		// 16x16 pattern: red and green ramps, blue checker and every third pixel half transparent.
 
@@ -50,16 +50,16 @@ public:
 		{
 			SampleMethod method = i == 0 ? SampleMethod::Nearest : SampleMethod::Bilinear;
 
-			m_pPattern[i] = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::ARGB_8, _.colorSpace = ColorSpace::Linear, _.sampleMethod = method),
+			m_pPattern[i] = pFactory->createBitmap(WGBP(Bitmap, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::ARGB_8, _.colorSpace = ColorSpace::Linear, _.sampleMethod = method),
 													(uint8_t*)pattern, PixelFormat::ARGB_8);
-			m_pOpaque[i] = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::XRGB_8, _.colorSpace = ColorSpace::Linear, _.sampleMethod = method),
+			m_pOpaque[i] = pFactory->createBitmap(WGBP(Bitmap, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::XRGB_8, _.colorSpace = ColorSpace::Linear, _.sampleMethod = method),
 												   (uint8_t*)opaque, PixelFormat::ARGB_8);
 		}
 
-		m_pImpulse = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::ARGB_8, _.colorSpace = ColorSpace::Linear, _.sampleMethod = SampleMethod::Nearest),
+		m_pImpulse = pFactory->createBitmap(WGBP(Bitmap, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::ARGB_8, _.colorSpace = ColorSpace::Linear, _.sampleMethod = SampleMethod::Nearest),
 											 (uint8_t*)impulse, PixelFormat::ARGB_8);
 
-		m_pBlurCanvas = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::ARGB_8, _.canvas = true, _.sampleMethod = SampleMethod::Nearest));
+		m_pBlurCanvas = pFactory->createBitmap(WGBP(Bitmap, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::ARGB_8, _.canvas = true, _.sampleMethod = SampleMethod::Nearest));
 
 		m_pBrush = Blurbrush::create();
 		return true;
@@ -166,7 +166,7 @@ private:
 		pDevice->setBlendMode(BlendMode::Blend);
 	}
 
-	bool _rotScale(GfxDevice * pDevice, const RectSPX& canvas, Surface * pSource, bool bTint)
+	bool _rotScale(GfxDevice * pDevice, const RectSPX& canvas, Bitmap * pSource, bool bTint)
 	{
 		_background(pDevice, canvas);
 		if (bTint)
@@ -178,7 +178,7 @@ private:
 		return true;
 	}
 
-	bool _blur(GfxDevice * pDevice, const RectSPX& canvas, Surface * pSource)
+	bool _blur(GfxDevice * pDevice, const RectSPX& canvas, Bitmap * pSource)
 	{
 		pDevice->beginCanvasUpdate(m_pBlurCanvas);
 		pDevice->setBlendMode(BlendMode::Replace);
@@ -199,9 +199,9 @@ private:
 
 	static const int c_srcSize = 16;
 
-	Surface_p	m_pPattern[2];		// Nearest, bilinear.
-	Surface_p	m_pOpaque[2];		// BGRX, nearest and bilinear.
-	Surface_p	m_pImpulse;
-	Surface_p	m_pBlurCanvas;
+	Bitmap_p	m_pPattern[2];		// Nearest, bilinear.
+	Bitmap_p	m_pOpaque[2];		// BGRX, nearest and bilinear.
+	Bitmap_p	m_pImpulse;
+	Bitmap_p	m_pBlurCanvas;
 	Blurbrush_p	m_pBrush;
 };

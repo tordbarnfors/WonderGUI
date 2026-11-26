@@ -25,7 +25,7 @@
 
 #include <vector>
 #include <wg2_layer.h>
-#include <wax_surface.h>
+#include <wax_bitmap.h>
 
 class WgShadowLayer;
 

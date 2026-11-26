@@ -32,7 +32,7 @@
 
 namespace wax
 {
-	class SdlGpuSurface;
+	class SdlGpuBitmap;
 
 	class SdlGpuBackend;
 	typedef	StrongPtr<SdlGpuBackend>	SdlGpuBackend_p;
@@ -51,7 +51,7 @@ namespace wax
 	 * copy passes, outside render passes. So the hooks GpuBackend calls only record what to do, as
 	 * in GlBackend, and endSession() plays the recording back into a command buffer of its own,
 	 * which it submits: a copy pass with the vertices, colors and extras of the session and what the
-	 * surfaces, edgemaps and Warpmaps it draws have changed, then a render pass on the canvas.
+	 * bitmaps, edgemaps and Warpmaps it draws have changed, then a render pass on the canvas.
 	 * The objects drawn are read when the session ends, which is when the Wax design says they are.
 	 *
 	 * An application that renders its own frame with SDL_GPU can have us draw on top of it, also
@@ -64,7 +64,7 @@ namespace wax
 	 * draw overlap, which they don't but for pixels the edges of two share.
 	 *
 	 * Any number of backends can exist at the same time, e.g. one per window, but they all share
-	 * one device, set with setDevice() before the first backend or surface is created.
+	 * one device, set with setDevice() before the first backend or bitmap is created.
 	 */
 
 	class SdlGpuBackend : public GpuBackend
@@ -87,7 +87,7 @@ namespace wax
 
 		//.____ Device _______________________________________________________
 
-		// Sets the device shared by all backends, surfaces, edgemaps and Warpmaps. Must be called
+		// Sets the device shared by all backends, bitmaps, edgemaps and Warpmaps. Must be called
 		// before any of them is created, with a device created for at least one of the shader
 		// formats SDL_GPU_SHADERFORMAT_SPIRV, _DXIL or _MSL, depending on platform, see
 		// SdlGpuShaders. setDevice() with null lets go of it, which is only allowed once they are
@@ -123,19 +123,19 @@ namespace wax
 		//		SDL_SubmitGPUCommandBuffer(pCmd);
 		//
 		// Set before a render and forgotten by endRender(), so it is given for each one, on the
-		// thread that acquired it and with no pass of the owner's open. Sessions on surfaces still
+		// thread that acquired it and with no pass of the owner's open. Sessions on bitmaps still
 		// have command buffers of their own, as do the uploads of all sessions, so everything but
 		// the draws into the default canvas is submitted when a session ends, as without it.
 		//
 		// We push uniform data to slots 0-3 of both stages, so an owner that draws more in the
-		// command buffer afterwards pushes its own again. And what the owner changes of a surface
+		// command buffer afterwards pushes its own again. And what the owner changes of a bitmap
 		// after the render but before it submits is what the default canvas gets.
 
 		void	setCommandBuffer( SDL_GPUCommandBuffer * pCommandBuffer );
 
 		const CanvasInfo*	canvasInfo(CanvasRef ref) const override;
 
-		SurfaceFactory_p	surfaceFactory() override;
+		BitmapFactory_p	bitmapFactory() override;
 		EdgemapFactory_p	edgemapFactory() override;
 		WarpmapFactory_p	warpmapFactory() override;
 
@@ -152,25 +152,25 @@ namespace wax
 
 		bool		_isRecording() const override;
 
-		bool		_isNativeSurface( const Object * pObject ) const override;
+		bool		_isNativeBitmap( const Object * pObject ) const override;
 		bool		_isNativeEdgemap( const Object * pObject ) const override;
 		bool		_isNativeWarpmap( const Object * pObject ) const override;
 
-		void		_beginSessionOnDevice( Surface * pCanvas ) override;
+		void		_beginSessionOnDevice( Bitmap * pCanvas ) override;
 		void		_endSessionOnDevice() override;
 
 		bool		_reserveFrameBuffers( int nVertices, int nColors, int nExtras, int nObjects ) override;
 
-		bool		_bindCanvas( Surface * pCanvas, SizeI& size, CanvasKind& kind ) override;
+		bool		_bindCanvas( Bitmap * pCanvas, SizeI& size, CanvasKind& kind ) override;
 		bool		_bindPipeline( PipelineKind kind, BlendMode blendMode ) override;
 		void		_setConstants( ConstantBlock block ) override;
 		void		_draw( int firstVertex, int nVertices ) override;
 		void		_setScissor( const RectI& rect ) override;
 		void		_resetScissor() override;
 
-		void		_prepareBlitSource( Surface * pSurface ) override;
-		bool		_bindBlitTexture( Surface * pSurface ) override;
-		void		_bindBlitSampler( Surface * pSurface, bool bClip ) override;
+		void		_prepareBlitSource( Bitmap * pBitmap ) override;
+		bool		_bindBlitTexture( Bitmap * pBitmap ) override;
+		void		_bindBlitSampler( Bitmap * pBitmap, bool bClip ) override;
 		bool		_bindEdgemap( GpuEdgemap * pEdgemap ) override;
 		void		_drawWarpmap( Warpmap * pWarpmap, const RectI * pPatches, int nPatches ) override;
 
@@ -192,12 +192,12 @@ namespace wax
 
 		enum class Op : uint8_t
 		{
-			BindCanvas,				// pObject: the surface, null for the default canvas.
+			BindCanvas,				// pObject: the bitmap, null for the default canvas.
 			SetPipeline,			// pPipeline.
 			SetConstants,			// a: ConstantBlock, b: index in m_constantSnapshots.
 			Draw,					// a: first vertex, b: vertices.
 			SetScissor,				// rect, in canvas pixels.
-			BindBlitTexture,		// pObject: the surface.
+			BindBlitTexture,		// pObject: the bitmap.
 			BindSampler,			// a: index in m_samplers.
 			BindEdgemap,			// pObject: the edgemap.
 			DrawWarpmap				// pObject: the Warpmap, a: first patch in m_patches, b: patches.
@@ -239,14 +239,14 @@ namespace wax
 		void		_execute();
 		void		_recordUploads( SDL_GPUCopyPass * pCopyPass );
 		void		_generateMipmaps( SDL_GPUCommandBuffer * pCmd );
-		void		_executeBindCanvas( SdlGpuSurface * pCanvas );
+		void		_executeBindCanvas( SdlGpuBitmap * pCanvas );
 		void		_executeScissor( const RectI& rect );
 		bool		_beginPass();					// Into the canvas being played back for, unless already.
 		void		_endPass();
 		bool		_prepareDraw( int draw );		// Of the pipeline being played back, see Pipeline. False if there is none.
 		void		_bindResources();
 
-		SurfaceFactory_p	m_pSurfaceFactory;
+		BitmapFactory_p	m_pBitmapFactory;
 		EdgemapFactory_p	m_pEdgemapFactory;
 		WarpmapFactory_p	m_pWarpmapFactory;
 

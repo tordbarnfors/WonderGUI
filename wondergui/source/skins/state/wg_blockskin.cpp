@@ -40,42 +40,42 @@ namespace wg
 	}
 
 
-	BlockSkin_p BlockSkin::create(Surface * pSurface, Border frame )
+	BlockSkin_p BlockSkin::create(Bitmap * pBitmap, Border frame )
 	{
-		BorderI pixelFrame = roundToPixels(ptsToSpx(frame,pSurface->scale()));
+		BorderI pixelFrame = roundToPixels(ptsToSpx(frame,pBitmap->scale()));
 
-		if (pSurface == nullptr || pixelFrame.width() >= pSurface->pixelSize().w || pixelFrame.height() >= pSurface->pixelSize().h  )
+		if (pBitmap == nullptr || pixelFrame.width() >= pBitmap->pixelSize().w || pixelFrame.height() >= pBitmap->pixelSize().h  )
 			return nullptr;
 
-		return BlockSkin_p( new BlockSkin(pSurface, pSurface->pointSize(), frame) );
+		return BlockSkin_p( new BlockSkin(pBitmap, pBitmap->pointSize(), frame) );
 	}
 
-	BlockSkin_p BlockSkin::create(Surface * pSurface, Rect block, Border frame)
+	BlockSkin_p BlockSkin::create(Bitmap * pBitmap, Rect block, Border frame)
 	{
-		if (pSurface == nullptr)
+		if (pBitmap == nullptr)
 			return nullptr;
 
-		SizeI surfSize = pSurface->pixelSize();
-		BorderI pixelFrame = roundToPixels(ptsToSpx(frame, pSurface->scale()));
-		RectI pixelBlock = roundToPixels(ptsToSpx(block, pSurface->scale()));
+		SizeI bitmapSize = pBitmap->pixelSize();
+		BorderI pixelFrame = roundToPixels(ptsToSpx(frame, pBitmap->scale()));
+		RectI pixelBlock = roundToPixels(ptsToSpx(block, pBitmap->scale()));
 
-		if( pixelFrame.width() >= surfSize.w || pixelFrame.height() >= surfSize.h ||
-			pixelBlock.x < 0 || pixelBlock.y < 0 || pixelBlock.right() > surfSize.w || pixelBlock.bottom() > surfSize.h )
+		if( pixelFrame.width() >= bitmapSize.w || pixelFrame.height() >= bitmapSize.h ||
+			pixelBlock.x < 0 || pixelBlock.y < 0 || pixelBlock.right() > bitmapSize.w || pixelBlock.bottom() > bitmapSize.h )
 			return nullptr;
 
-		return BlockSkin_p(new BlockSkin(pSurface, block, frame));
+		return BlockSkin_p(new BlockSkin(pBitmap, block, frame));
 	}
 
-	BlockSkin_p	BlockSkin::create(Surface * pSurface, Rect _firstBlock, std::initializer_list<State> stateBlocks, Border _frame, Axis axis, pts _spacing)
+	BlockSkin_p	BlockSkin::create(Bitmap * pBitmap, Rect _firstBlock, std::initializer_list<State> stateBlocks, Border _frame, Axis axis, pts _spacing)
 	{
-		if (pSurface == nullptr || stateBlocks.size() < 1 )
+		if (pBitmap == nullptr || stateBlocks.size() < 1 )
 			return nullptr;
 
 		// Get pixel values
 
-		int scale = pSurface->scale();
+		int scale = pBitmap->scale();
 
-		SizeI surfSize = pSurface->pixelSize();
+		SizeI bitmapSize = pBitmap->pixelSize();
 		RectI firstBlock = roundToPixels(ptsToSpx(_firstBlock, scale));
 		BorderI frame = roundToPixels(ptsToSpx(_frame, scale));
 		int   spacing = roundToPixels(ptsToSpx(_spacing, scale));
@@ -90,13 +90,13 @@ namespace wg
 			blockArea.h += (nBlocks - 1) * (firstBlock.h + spacing);
 
 		if (frame.width() >= firstBlock.w || frame.height() >= firstBlock.h ||
-			blockArea.x < 0 || blockArea.y < 0 || blockArea.right() > surfSize.w || blockArea.bottom() > surfSize.h)
+			blockArea.x < 0 || blockArea.y < 0 || blockArea.right() > bitmapSize.w || blockArea.bottom() > bitmapSize.h)
 			return nullptr;
 
 		// Create the skin
 
 		Blueprint bp;
-		bp.surface 	= pSurface;
+		bp.bitmap 	= pBitmap;
 		bp.frame	= _frame;
 		bp.axis		= axis,
 		bp.blockSpacing	= _spacing;
@@ -109,21 +109,21 @@ namespace wg
 		return BlockSkin_p(p);
 	}
 
-	BlockSkin_p BlockSkin::create(Surface * pSurface, std::initializer_list<State> stateBlocks, Border _frame, Axis axis, pts _spacing)
+	BlockSkin_p BlockSkin::create(Bitmap * pBitmap, std::initializer_list<State> stateBlocks, Border _frame, Axis axis, pts _spacing)
 	{
-		if (pSurface == nullptr || stateBlocks.size() < 1)
+		if (pBitmap == nullptr || stateBlocks.size() < 1)
 			return nullptr;
 
-		int scale = pSurface->scale();
+		int scale = pBitmap->scale();
 
-		SizeI	surfSize = pSurface->pixelSize();
+		SizeI	bitmapSize = pBitmap->pixelSize();
 		int		nBlocks = (int) stateBlocks.size();
 		BorderI frame = roundToPixels(ptsToSpx(_frame, scale));
 		int   spacing = roundToPixels(ptsToSpx(_spacing, scale));
 
 		// Check so blocks fit evenly
 
-		int		length = axis == Axis::X ? surfSize.w : surfSize.h;
+		int		length = axis == Axis::X ? bitmapSize.w : bitmapSize.h;
 
 		if ((length - (nBlocks - 1) * spacing) % nBlocks != 0)
 			return nullptr;
@@ -132,10 +132,10 @@ namespace wg
 
 		int blockLen = (length - (nBlocks - 1) * spacing) / nBlocks;
 
-		SizeI blockSize = axis == Axis::X ? SizeI(blockLen, surfSize.h) : SizeI(surfSize.w, blockLen);
+		SizeI blockSize = axis == Axis::X ? SizeI(blockLen, bitmapSize.h) : SizeI(bitmapSize.w, blockLen);
 
 		Blueprint bp;
-		bp.surface 	= pSurface;
+		bp.bitmap 	= pBitmap;
 		bp.frame	= _frame;
 		bp.axis		= axis,
 		bp.blockSpacing	= _spacing;
@@ -148,13 +148,13 @@ namespace wg
 		return BlockSkin_p(p);
 	}
 
-	BlockSkin_p BlockSkin::createStatic( Surface * pSurface, Rect block, Border frame )
+	BlockSkin_p BlockSkin::createStatic( Bitmap * pBitmap, Rect block, Border frame )
 	{
-		return create(pSurface, block, frame);
+		return create(pBitmap, block, frame);
 	}
 
 
-	BlockSkin_p BlockSkin::createClickable( Surface * pSurface, Size blockGeo, Coord blockStartOfs, Size blockPitch, Border blockFrame )
+	BlockSkin_p BlockSkin::createClickable( Bitmap * pBitmap, Size blockGeo, Coord blockStartOfs, Size blockPitch, Border blockFrame )
 	{
 		Axis axis;
 		int spacing;
@@ -169,25 +169,25 @@ namespace wg
 			spacing = blockPitch.h - blockGeo.h;
 		}
 
-		return BlockSkin::create(pSurface, Rect(blockStartOfs,blockGeo), { State::Default, State::Hovered, State::Pressed, State::Disabled }, blockFrame, axis, spacing);
+		return BlockSkin::create(pBitmap, Rect(blockStartOfs,blockGeo), { State::Default, State::Hovered, State::Pressed, State::Disabled }, blockFrame, axis, spacing);
 	}
 
 
-	BlockSkin_p BlockSkin::createStaticFromSurface( Surface * pSurface, Border frame )
+	BlockSkin_p BlockSkin::createStaticFromBitmap( Bitmap * pBitmap, Border frame )
 	{
-		return create(pSurface, frame);
+		return create(pBitmap, frame);
 	}
 
 	//____ constructor ____________________________________________________________
 
 
-	BlockSkin::BlockSkin(Surface * pSurface, Rect block, Border frame)
+	BlockSkin::BlockSkin(Bitmap * pBitmap, Rect block, Border frame)
 	{
 
-		m_pSurface			= pSurface;
+		m_pBitmap			= pBitmap;
 		m_ninePatch.block.setSize( block.size() );
 		m_ninePatch.frame	= frame;
-		bool bOpaque		= pSurface->isOpaque();
+		bool bOpaque		= pBitmap->isOpaque();
 
 		// Calc size of index table for block and color, get their index masks & shifts.
 
@@ -240,7 +240,7 @@ namespace wg
 
 	BlockSkin::BlockSkin(const Blueprint& bp) : StateSkin(bp)
 	{
-		m_pSurface = bp.surface;
+		m_pBitmap = bp.bitmap;
 		m_ninePatch.frame = bp.frame;
 		m_blendMode = bp.blendMode;
 		m_pTint = bp.tint;
@@ -261,13 +261,13 @@ namespace wg
 
 			if (bp.axis == Axis::X)
 			{
-				block.w = (m_pSurface->pointWidth() - bp.blockSpacing * (nStateBlocks - 1)) / nStateBlocks;
-				block.h = m_pSurface->pointHeight();
+				block.w = (m_pBitmap->pointWidth() - bp.blockSpacing * (nStateBlocks - 1)) / nStateBlocks;
+				block.h = m_pBitmap->pointHeight();
 			}
 			else
 			{
-				block.w = m_pSurface->pointWidth();
-				block.h = (m_pSurface->pointHeight() - bp.blockSpacing * (nStateBlocks - 1)) / nStateBlocks;
+				block.w = m_pBitmap->pointWidth();
+				block.h = (m_pBitmap->pointHeight() - bp.blockSpacing * (nStateBlocks - 1)) / nStateBlocks;
 			}
 		}
 
@@ -442,14 +442,14 @@ namespace wg
 
 	void BlockSkin::_render( GfxDevice * pDevice, const RectSPX& _canvas, int scale, State state, float value, float value2, int animPos, float* pStateFractions) const
 	{
-		if( !m_pSurface )
+		if( !m_pBitmap )
 			return;
 
 		RectSPX canvas = _canvas - align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_overflow, scale));
 		
 		RenderSettingsWithTint settings(pDevice, m_layer, m_blendMode, _getColor(state), canvas, m_pTint);
 
-		pDevice->setBlitSource(m_pSurface);
+		pDevice->setBlitSource(m_pBitmap);
 
 		NinePatch	patch = m_ninePatch;
 		patch.block.setPos(_getBlock(state));
@@ -470,8 +470,8 @@ namespace wg
 
 	SizeSPX BlockSkin::_defaultSize(int scale) const
 	{
-        //This takes the scale of the surface into account
-        // Default size is when each point of the surface maps to a point of the skinarea.
+        //This takes the scale of the bitmap into account
+        // Default size is when each point of the bitmap maps to a point of the skinarea.
       
 		SizeSPX content = align(ptsToSpx(m_padding, scale));
 		SizeSPX blockSize = align(ptsToSpx(m_ninePatch.block.size(), scale));
@@ -509,7 +509,7 @@ namespace wg
 
 		int alpha = alphaOverride == -1 ? m_markAlpha : alphaOverride;
 
-		return markTestNinePatch(_ofs, m_pSurface, patch, canvas, scale, alpha);
+		return markTestNinePatch(_ofs, m_pBitmap, patch, canvas, scale, alpha);
 	}
 
 	//____ _dirtyRect() ______________________________________________________
@@ -547,7 +547,7 @@ namespace wg
 		bool bOpaque = false;
 		bool bTintDecides = false;
 
-		if (!m_pSurface)
+		if (!m_pBitmap)
 			bOpaque = false;
 		else if (m_blendMode == BlendMode::Replace)
 			bOpaque = true;
@@ -555,7 +555,7 @@ namespace wg
 			bOpaque = false;
 		else if (m_blendMode == BlendMode::Blend)
 		{
-			bOpaque = m_pSurface->isOpaque();
+			bOpaque = m_pBitmap->isOpaque();
 			bTintDecides = bOpaque;
 		}
 		else

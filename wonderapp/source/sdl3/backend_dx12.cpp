@@ -23,7 +23,7 @@
 
 #include <dx12_wrapper.h>
 
-#include <wax_dx12surfacefactory.h>
+#include <wax_dx12bitmapfactory.h>
 #include <wax_dx12edgemapfactory.h>
 #include <wax_dx12backend.h>
 
@@ -127,8 +127,8 @@ bool backend_specific_init()
 	auto pGfxDevice = GfxDeviceGen2::create(pBackend);
 	wg::Base::setDefaultDevice(pGfxDevice);
 
-	auto pSurfaceFactory = DX12SurfaceFactory::create();
-	wg::Base::setDefaultSurfaceFactory(pSurfaceFactory);
+	auto pBitmapFactory = DX12BitmapFactory::create();
+	wg::Base::setDefaultBitmapFactory(pBitmapFactory);
 
 	wg::Base::setDefaultEdgemapFactory(pBackend->edgemapFactory());
 	wg::Base::setDefaultWarpmapFactory(pBackend->warpmapFactory());
@@ -150,7 +150,7 @@ void backend_specific_exit()
 //____ _recoverDevice() _______________________________________________________
 //
 // Everything has to let go of the old device before D3D12 gives us a new one:
-// the windows their swap chains, DX12Backend everything it and the surfaces
+// the windows their swap chains, DX12Backend everything it and the bitmaps
 // and edgemaps have on it, and the wrapper the device itself. Then it all
 // comes back on the new device.
 

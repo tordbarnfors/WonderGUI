@@ -56,10 +56,10 @@ namespace wax
 		void	beginRender() override;
 		void	endRender() override;
 		
-		void	beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo = nullptr ) override;
+		void	beginSession( CanvasRef canvasRef, Bitmap * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo = nullptr ) override;
 		void	endSession() override;
 
-		void	setCanvas( Surface * pSurface ) override;
+		void	setCanvas( Bitmap * pBitmap ) override;
 		void	setCanvas( CanvasRef ref ) override;
 		void	setObjects(Object* const * pBeg, Object* const * pEnd) override;
 		void	setRects(const RectSPX* pBeg, const RectSPX* pEnd) override;
@@ -70,8 +70,8 @@ namespace wax
 		//.____ Behavior ______________________________________________________
 
 		void	addNonMaskingSession();
-		void	addFullyMaskingSession( CanvasRef canvas, Surface * pCanvas );
-		void	addMaskingSession( CanvasRef canvas, Surface * pCanvas, int nMaskingRects, const RectSPX * pMaskingRects );
+		void	addFullyMaskingSession( CanvasRef canvas, Bitmap * pCanvas );
+		void	addMaskingSession( CanvasRef canvas, Bitmap * pCanvas, int nMaskingRects, const RectSPX * pMaskingRects );
 		void	clearSessionMasks();
 		void	setTrimLevel(int level);
 
@@ -79,7 +79,7 @@ namespace wax
 
 		const CanvasInfo *	canvasInfo(CanvasRef ref) const override;
 
-		SurfaceFactory_p	surfaceFactory() override;
+		BitmapFactory_p	bitmapFactory() override;
 		EdgemapFactory_p	edgemapFactory() override;
 		WarpmapFactory_p	warpmapFactory() override;
 
@@ -116,7 +116,7 @@ namespace wax
 		struct SessionMask
 		{
 			CanvasRef	canvasRef;
-			Surface *	pCanvas;
+			Bitmap *	pCanvas;
 
 			std::vector<RectSPX>	rects;
 		};

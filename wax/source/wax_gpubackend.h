@@ -74,10 +74,10 @@ namespace wax
 
 		//.____ Rendering ________________________________________________
 
-		void	beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo = nullptr ) override;
+		void	beginSession( CanvasRef canvasRef, Bitmap * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo = nullptr ) override;
 		void	endSession() override;
 
-		void	setCanvas( Surface * pSurface ) override;
+		void	setCanvas( Bitmap * pBitmap ) override;
 		void	setCanvas( CanvasRef ref ) override;
 
 		void	setObjects(Object* const * pBeg, Object* const * pEnd) override;
@@ -195,7 +195,7 @@ namespace wax
 			AlphaOnly = 2
 		};
 
-		static CanvasKind	_canvasKind( const Surface * pSurface );
+		static CanvasKind	_canvasKind( const Bitmap * pBitmap );
 
 		// How the blender of the GPU combines what a pipeline draws with the canvas, worked out
 		// by _blendState() the same way for every graphics API, which each backend translates to
@@ -251,17 +251,17 @@ namespace wax
 
 		virtual bool		_isRecording() const = 0;
 
-		// Whether an object is a surface, edgemap or Warpmap of the subclass. Edgemaps are
+		// Whether an object is a bitmap, edgemap or Warpmap of the subclass. Edgemaps are
 		// GpuEdgemaps.
 
-		virtual bool		_isNativeSurface( const Object * pObject ) const = 0;
+		virtual bool		_isNativeBitmap( const Object * pObject ) const = 0;
 		virtual bool		_isNativeEdgemap( const Object * pObject ) const = 0;
 		virtual bool		_isNativeWarpmap( const Object * pObject ) const = 0;
 
 		// Called by beginSession() and endSession() while recording, before and after everything
 		// else. pCanvas is the canvas of the session, null for the default canvas.
 
-		virtual void		_beginSessionOnDevice( Surface * pCanvas ) = 0;
+		virtual void		_beginSessionOnDevice( Bitmap * pCanvas ) = 0;
 		virtual void		_endSessionOnDevice() = 0;
 
 		// Makes room in the buffers of the frame for what a session may write, and points
@@ -275,7 +275,7 @@ namespace wax
 		// Points the recording at a canvas, null for the default one. Fills in its size in pixels
 		// and its kind, returns false if it can't be rendered into.
 
-		virtual bool		_bindCanvas( Surface * pCanvas, SizeI& size, CanvasKind& kind ) = 0;
+		virtual bool		_bindCanvas( Bitmap * pCanvas, SizeI& size, CanvasKind& kind ) = 0;
 
 		// Binds the pipeline of a kind of draw and blend mode on the canvas, with the blending of
 		// _blendState(). The blend mode is normalized and never Ignore, see _setPipeline().
@@ -296,20 +296,20 @@ namespace wax
 		virtual void		_setScissor( const RectI& rect ) = 0;
 		virtual void		_resetScissor() = 0;
 
-		// Makes sure the texture of a surface about to become blit source holds what has been
+		// Makes sure the texture of a bitmap about to become blit source holds what has been
 		// written to its pixels.
 
-		virtual void		_prepareBlitSource( Surface * pSurface ) = 0;
+		virtual void		_prepareBlitSource( Bitmap * pBitmap ) = 0;
 
 		// Binds the texture of the blit source, and its palette if palette based. Draws any stale
 		// mip levels first.
 
-		virtual bool		_bindBlitTexture( Surface * pSurface ) = 0;
+		virtual bool		_bindBlitTexture( Bitmap * pBitmap ) = 0;
 
 		// Binds the sampler for the blit source, clamping, clipping (transparent outside) or tiling,
-		// nearest or bilinear as the surface says.
+		// nearest or bilinear as the bitmap says.
 
-		virtual void		_bindBlitSampler( Surface * pSurface, bool bClip ) = 0;
+		virtual void		_bindBlitSampler( Bitmap * pBitmap, bool bClip ) = 0;
 
 		// Binds the buffer of an edgemap, where the palette of a blit source also goes.
 
@@ -323,7 +323,7 @@ namespace wax
 		//.____ Internal ______________________________________________________
 
 		void				_resetStates();			// To start values, for a new session or canvas.
-		void				_setCanvas( Surface * pCanvas );
+		void				_setCanvas( Bitmap * pCanvas );
 
 		bool				_setPipeline( PipelineKind kind );		// For m_activeBlendMode, see _bindPipeline().
 
@@ -334,7 +334,7 @@ namespace wax
 		Object *			_object( uint32_t index ) const;		// From the object table, null if the index is out of range.
 
 		void				_applyStateChange( const GpuTools::StateChangeParams& state );
-		void				_setBlitSource( Surface * pSurface, uint32_t objectIndex = c_noObject );
+		void				_setBlitSource( Bitmap * pBitmap, uint32_t objectIndex = c_noObject );
 		bool				_bindBlitSource();
 		void				_bindBlitSamplerAndFlags();
 
@@ -441,7 +441,7 @@ namespace wax
 
 		bool				m_bInSession = false;			// Between beginSession() and endSession().
 
-		Surface *			m_pActiveCanvas = nullptr;		// Canvas being rendered into, null for the default one.
+		Bitmap *			m_pActiveCanvas = nullptr;		// Canvas being rendered into, null for the default one.
 		bool				m_bCanvasBound = false;			// _bindCanvas() succeeded for it.
 		SizeI				m_activeCanvasSize;
 		CanvasKind			m_activeCanvasKind = CanvasKind::WithAlpha;
@@ -472,7 +472,7 @@ namespace wax
 		int					m_blurRadius = 0;				// In spx, turned into texture coordinates when drawn.
 		float				m_blurColorMtx[9][4] = {};
 
-		Surface *			m_pBlitSource = nullptr;
+		Bitmap *			m_pBlitSource = nullptr;
 		uint32_t			m_blitSourceObject = c_noObject;	// Its index in the object table.
 		SizeI				m_blitSourceSize;
 		bool				m_bBlitSourceAlphaOnly = false;

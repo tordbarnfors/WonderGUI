@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wg_util.h>
 #include <wax_geo.h>
-#include <wax_surface.h>
+#include <wax_bitmap.h>
 #include <wax_device.h>
 #include <wax_patches.h>
 #include <wg_base.h>
@@ -34,13 +34,13 @@ namespace wg
 
 	//____ markTestStretchRect() __________________________________________________
 
-	bool Util::markTestStretchRect( CoordSPX ofs, Surface * pSurface, const RectSPX& source, const RectSPX& area, int opacityTreshold )
+	bool Util::markTestStretchRect( CoordSPX ofs, Bitmap * pBitmap, const RectSPX& source, const RectSPX& area, int opacityTreshold )
 	{
 		// Sanity check & shortcuts.
-		if( !pSurface || !area.contains(ofs) || source.isEmpty() || area.isEmpty() || opacityTreshold > 4096 )
+		if( !pBitmap || !area.contains(ofs) || source.isEmpty() || area.isEmpty() || opacityTreshold > 4096 )
 			return false;
 
-		if( pSurface->isOpaque() || opacityTreshold <= 0 )
+		if( pBitmap->isOpaque() || opacityTreshold <= 0 )
 			return true;
 
 		// Make cordinates relative area.
@@ -57,20 +57,20 @@ namespace wg
 
 		// Do alpha test
 
-		int alpha = pSurface->alpha( sourceOfs );
+		int alpha = pBitmap->alpha( sourceOfs );
 
 		return (alpha >= opacityTreshold);
 	}
 
 	//____ markTestTileRect() __________________________________________________
 
-	bool Util::markTestTileRect(CoordSPX ofs, Surface* pSurface, const RectSPX& area, int scale, int opacityTreshold)
+	bool Util::markTestTileRect(CoordSPX ofs, Bitmap* pBitmap, const RectSPX& area, int scale, int opacityTreshold)
 	{
 		// Sanity check & shortcuts.
-		if (!pSurface || !area.contains(ofs) || area.isEmpty() || opacityTreshold > 4096)
+		if (!pBitmap || !area.contains(ofs) || area.isEmpty() || opacityTreshold > 4096)
 			return false;
 
-		if (pSurface->isOpaque() || opacityTreshold <= 0)
+		if (pBitmap->isOpaque() || opacityTreshold <= 0)
 			return true;
 
 		// Make cordinates relative area.
@@ -80,39 +80,39 @@ namespace wg
 
 		// Convert offset in area to offset in bitmap.
 
-		SizeSPX tileOnScreen = pSurface->pixelSize() * 64 * scale / pSurface->scale();
+		SizeSPX tileOnScreen = pBitmap->pixelSize() * 64 * scale / pBitmap->scale();
 
-		CoordSPX sourceOfs = ofs * pSurface->scale() / scale;
+		CoordSPX sourceOfs = ofs * pBitmap->scale() / scale;
 
-		SizeI size = pSurface->pixelSize()*64;
+		SizeI size = pBitmap->pixelSize()*64;
 
 		sourceOfs.x %= size.w;
 		sourceOfs.y %= size.h;
 
 		// Do alpha test
 
-		int alpha = pSurface->alpha(sourceOfs);
+		int alpha = pBitmap->alpha(sourceOfs);
 
 		return (alpha >= opacityTreshold);
 	}
 
-	bool Util::markTestNinePatch(CoordSPX ofs, Surface* pSurface, const NinePatch& patch, const RectSPX& _dest, int scale, int opacityTreshold)
+	bool Util::markTestNinePatch(CoordSPX ofs, Bitmap* pBitmap, const NinePatch& patch, const RectSPX& _dest, int scale, int opacityTreshold)
 	{
 		const BorderSPX destFrame = align(ptsToSpx(patch.frame, scale));
-		const BorderSPX sourceFrame = align(ptsToSpx(patch.frame,pSurface->scale()));
-		const RectSPX _source = align(ptsToSpx(patch.block, pSurface->scale()));
+		const BorderSPX sourceFrame = align(ptsToSpx(patch.frame,pBitmap->scale()));
+		const RectSPX _source = align(ptsToSpx(patch.block, pBitmap->scale()));
 
-		const int surfScale = pSurface->scale();
+		const int bitmapScale = pBitmap->scale();
 
 		// Sanity check & shortcuts.
 
 		if (sourceFrame.isEmpty() && patch.rigidPartXSections == YSections::None && patch.rigidPartYSections == XSections::None )
-			return markTestStretchRect(ofs, pSurface, _source, _dest, opacityTreshold);
+			return markTestStretchRect(ofs, pBitmap, _source, _dest, opacityTreshold);
 
-		if (!pSurface || !_dest.contains(ofs) || _source.isEmpty() || _dest.isEmpty() || opacityTreshold > 4096)
+		if (!pBitmap || !_dest.contains(ofs) || _source.isEmpty() || _dest.isEmpty() || opacityTreshold > 4096)
 			return false;
 
-		if (pSurface->isOpaque() || opacityTreshold <= 0)
+		if (pBitmap->isOpaque() || opacityTreshold <= 0)
 			return true;
 
 		//
@@ -203,7 +203,7 @@ namespace wg
 
 			// Do alpha test
 
-			int alpha = pSurface->alpha( CoordSPX(source.x + sourceOfs.x, source.y + sourceOfs.y) );
+			int alpha = pBitmap->alpha( CoordSPX(source.x + sourceOfs.x, source.y + sourceOfs.y) );
 
 			return (alpha >= opacityTreshold);
 		}
@@ -213,12 +213,12 @@ namespace wg
 
 		if (markedSectionX == XSections::Center && (patch.rigidPartXSections & markedSectionY) != YSections::None)
 		{
-			int leftSrcLen = patch.rigidPartXOfs*surfScale;
-			int rightSrcLen = source.w - patch.rigidPartXOfs*surfScale - patch.rigidPartXLength*surfScale;
+			int leftSrcLen = patch.rigidPartXOfs*bitmapScale;
+			int rightSrcLen = source.w - patch.rigidPartXOfs*bitmapScale - patch.rigidPartXLength*bitmapScale;
 
 			int totalSrcLen = leftSrcLen + rightSrcLen;
 
-			spx midDstLen = std::min(spx(patch.rigidPartXLength*surfScale), dest.w);
+			spx midDstLen = std::min(spx(patch.rigidPartXLength*bitmapScale), dest.w);
 
 			spx leftDstLen = (dest.w - midDstLen) * leftSrcLen / totalSrcLen;
 			spx rightDstLen = dest.w - midDstLen - leftDstLen;
@@ -228,7 +228,7 @@ namespace wg
 			else if (ofs.x < leftDstLen + midDstLen)
 				sourceOfs.x = int(ofs.x - leftDstLen) + leftSrcLen;
 			else
-				sourceOfs.x = int((ofs.x - leftDstLen - midDstLen) / double(rightDstLen) * rightSrcLen) + leftSrcLen + patch.rigidPartXLength*surfScale;
+				sourceOfs.x = int((ofs.x - leftDstLen - midDstLen) / double(rightDstLen) * rightSrcLen) + leftSrcLen + patch.rigidPartXLength*bitmapScale;
 		}
 		else
 			sourceOfs.x = (int)(ofs.x / ((double)dest.w) * source.w);
@@ -236,12 +236,12 @@ namespace wg
 		
 		if (markedSectionY == YSections::Center && (patch.rigidPartYSections & markedSectionX) != XSections::None)
 		{
-			int topSrcLen = patch.rigidPartYOfs*surfScale;
-			int bottomSrcLen = source.h - patch.rigidPartYOfs*surfScale - patch.rigidPartYLength*surfScale;
+			int topSrcLen = patch.rigidPartYOfs*bitmapScale;
+			int bottomSrcLen = source.h - patch.rigidPartYOfs*bitmapScale - patch.rigidPartYLength*bitmapScale;
 
 			int totalSrcLen = topSrcLen + bottomSrcLen;
 
-			spx midDstLen = std::min(spx(patch.rigidPartYLength*surfScale), dest.h);
+			spx midDstLen = std::min(spx(patch.rigidPartYLength*bitmapScale), dest.h);
 
 			spx topDstLen = (dest.h - midDstLen) * topSrcLen / totalSrcLen;
 			spx bottomDstLen = dest.h - midDstLen - topDstLen;
@@ -251,14 +251,14 @@ namespace wg
 			else if (ofs.y < topDstLen + midDstLen)
 				sourceOfs.y = int(ofs.y - topDstLen) + topSrcLen;
 			else
-				sourceOfs.y = int((ofs.y - topDstLen - midDstLen) / double(bottomDstLen) * bottomSrcLen) + topSrcLen + patch.rigidPartYLength*surfScale;
+				sourceOfs.y = int((ofs.y - topDstLen - midDstLen) / double(bottomDstLen) * bottomSrcLen) + topSrcLen + patch.rigidPartYLength*bitmapScale;
 		}
 		else
 			sourceOfs.y = (int)(ofs.y / ((double)dest.h) * source.h);
 
 		// Do alpha test
 
-		int alpha = pSurface->alpha( CoordSPX(source.x + sourceOfs.x, source.y + sourceOfs.y) );
+		int alpha = pBitmap->alpha( CoordSPX(source.x + sourceOfs.x, source.y + sourceOfs.y) );
 
 		return (alpha >= opacityTreshold);
  */

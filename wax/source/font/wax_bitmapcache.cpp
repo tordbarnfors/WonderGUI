@@ -45,7 +45,7 @@ namespace wax
 
 	//____ Create _________________________________________________________________
 
-	BitmapCache_p BitmapCache::create( int maxSize, SurfaceFactory * pFactory )
+	BitmapCache_p BitmapCache::create( int maxSize, BitmapFactory * pFactory )
 	{
 		auto * pCache = new BitmapCache( maxSize, pFactory );
 		return BitmapCache_p(pCache);
@@ -53,7 +53,7 @@ namespace wax
 
 	//____ constructor ____________________________________________________________
 
-	BitmapCache::BitmapCache( int size, SurfaceFactory * pFactory )
+	BitmapCache::BitmapCache( int size, BitmapFactory * pFactory )
 	{
 		m_cacheLimit	= size;
 		m_pFactory		= pFactory;
@@ -100,7 +100,7 @@ namespace wax
 		// Clear cache
 
 		for (int i = 0; i < 10; i++)
-			m_cacheSurfaces[i].clear();
+			m_cacheBitmaps[i].clear();
 
 		m_cacheSize = 0;
 	}
@@ -126,103 +126,103 @@ namespace wax
 
 	//____ getCacheSlot() _________________________________________________________
 
-	std::tuple<Surface_p, CoordI> BitmapCache::getCacheSlot( SizeI size )
+	std::tuple<Bitmap_p, CoordI> BitmapCache::getCacheSlot( SizeI size )
 	{
 		int category = size.h > 128 ? 9 : s_sizeToCategory[size.h];
 
-		CacheSurf * pCacheSurf;
+		CacheBitmap * pCacheBitmap;
 
 		if( category == 9  )
-			pCacheSurf = _addCacheSurface( category, size.w, size.h );
-		else if(m_cacheSurfaces[category].empty())
-			pCacheSurf = _addCacheSurface(category, 1024, s_categoryHeight[category]);
+			pCacheBitmap = _addCacheBitmap( category, size.w, size.h );
+		else if(m_cacheBitmaps[category].empty())
+			pCacheBitmap = _addCacheBitmap(category, 1024, s_categoryHeight[category]);
 		else
 		{
-			auto& ref = m_cacheSurfaces[category].back();
+			auto& ref = m_cacheBitmaps[category].back();
 			
 			if( ref.capacity - ref.used >= size.w )
-				pCacheSurf = &ref;
+				pCacheBitmap = &ref;
 			else
-				pCacheSurf = _addCacheSurface( category, 1024, s_categoryHeight[category]);
+				pCacheBitmap = _addCacheBitmap( category, 1024, s_categoryHeight[category]);
 		}
 		
-		int ofs = pCacheSurf->used;
-		pCacheSurf->used += size.w;
-		return std::make_tuple(pCacheSurf->pSurface, CoordI(ofs,0));
+		int ofs = pCacheBitmap->used;
+		pCacheBitmap->used += size.w;
+		return std::make_tuple(pCacheBitmap->pBitmap, CoordI(ofs,0));
 	}
 
-	//____ getSurfaces() _________________________________________________________
+	//____ getBitmaps() _________________________________________________________
 
-	std::vector<Surface_p> BitmapCache::getSurfaces() const
+	std::vector<Bitmap_p> BitmapCache::getBitmaps() const
 	{
-		std::vector<Surface_p>	output;
+		std::vector<Bitmap_p>	output;
 		
-		for( const std::vector<CacheSurf>& vec : m_cacheSurfaces )
+		for( const std::vector<CacheBitmap>& vec : m_cacheBitmaps )
 		{
 			for( auto& entry : vec )
-				output.push_back(entry.pSurface);
+				output.push_back(entry.pBitmap);
 		}
 		
 		return output;
 	}
 
-	//____ _addCacheSurface() __________________________________________________
+	//____ _addCacheBitmap() __________________________________________________
 
-	BitmapCache::CacheSurf * BitmapCache::_addCacheSurface( int category, int width, int height )
+	BitmapCache::CacheBitmap * BitmapCache::_addCacheBitmap( int category, int width, int height )
 	{
-		auto pFactory = m_pFactory ? m_pFactory : Base::defaultSurfaceFactory();
+		auto pFactory = m_pFactory ? m_pFactory : Base::defaultBitmapFactory();
 		
-		Surface_p pSurf;
+		Bitmap_p pBitmap;
 		
 		if( category == 9 )
-			pSurf = pFactory->createSurface( WAXBP(Surface, _.size = {width,height}, _.format = PixelFormat::Alpha_8) );
+			pBitmap = pFactory->createBitmap( WAXBP(Bitmap, _.size = {width,height}, _.format = PixelFormat::Alpha_8) );
 		else
-			pSurf = pFactory->createSurface( WAXBP(Surface, _.size = {width,s_categoryHeight[category]}, _.format = PixelFormat::Alpha_8) );
+			pBitmap = pFactory->createBitmap( WAXBP(Bitmap, _.size = {width,s_categoryHeight[category]}, _.format = PixelFormat::Alpha_8) );
 
 		m_cacheSize += width * height;
 
-		m_cacheSurfaces[category].emplace_back(pSurf,width,m_surfacesCreated++);
-		return &m_cacheSurfaces[category].back();
+		m_cacheBitmaps[category].emplace_back(pBitmap,width,m_bitmapsCreated++);
+		return &m_cacheBitmaps[category].back();
 	}
 
 	//____ _truncateCache() ___________________________________________________
 
 	void BitmapCache::_truncateCache(int maxSize)
 	{
-		Surface*	removedSurfaces[32];
-		int			nRemovedSurfaces = 0;
+		Bitmap*	removedBitmaps[32];
+		int			nRemovedBitmaps = 0;
 
 		// Remove cache entries
 
-		while (m_cacheSize > maxSize && nRemovedSurfaces < 32 )
+		while (m_cacheSize > maxSize && nRemovedBitmaps < 32 )
 		{
 			// Find category with oldest cache entry
 
-			uint32_t lowestCreationNb = m_surfacesCreated;
+			uint32_t lowestCreationNb = m_bitmapsCreated;
 			int oldestCat = -1;
 			for (int cat = 0; cat < 10; cat++)
 			{
-				if (!m_cacheSurfaces[cat].empty() && m_cacheSurfaces[cat].front().creationNb < lowestCreationNb)
+				if (!m_cacheBitmaps[cat].empty() && m_cacheBitmaps[cat].front().creationNb < lowestCreationNb)
 					oldestCat = cat;
 			}
 
-			auto& toRemove = m_cacheSurfaces[oldestCat].front();
+			auto& toRemove = m_cacheBitmaps[oldestCat].front();
 
 			// Decreaste s_cacheSize
 
-			SizeI pixels = toRemove.pSurface->pixelSize();
+			SizeI pixels = toRemove.pBitmap->pixelSize();
 			m_cacheSize -= pixels.w * pixels.h;
 
-			// Remove surface and add to list of removed.
+			// Remove bitmap and add to list of removed.
 
-			removedSurfaces[nRemovedSurfaces++] = toRemove.pSurface;
-			m_cacheSurfaces[oldestCat].erase(m_cacheSurfaces[oldestCat].begin());
+			removedBitmaps[nRemovedBitmaps++] = toRemove.pBitmap;
+			m_cacheBitmaps[oldestCat].erase(m_cacheBitmaps[oldestCat].begin());
 		}
 
-		// Remove references to bitmaps in removed cache surfaces
+		// Remove references to bitmaps in removed cache bitmaps
 
 		for (auto pListener : m_listeners)
-			pListener->_cacheSurfacesRemoved(nRemovedSurfaces, removedSurfaces);
+			pListener->_cacheBitmapsRemoved(nRemovedBitmaps, removedBitmaps);
 
 		// Continue recursively if we need to remove more than we could in this round.
 

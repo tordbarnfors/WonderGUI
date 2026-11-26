@@ -51,10 +51,10 @@ set(SOURCES
 
 	wax_softdevicefactory.cpp
 	wax_softdevicefactory.h	
-	wax_softsurface.cpp
-	wax_softsurface.h
-	wax_softsurfacefactory.cpp
-	wax_softsurfacefactory.h
+	wax_softbitmap.cpp
+	wax_softbitmap.h
+	wax_softbitmapfactory.cpp
+	wax_softbitmapfactory.h
 	wax_softedgemap.cpp
 	wax_softedgemap.h
 	wax_softedgemapfactory.cpp

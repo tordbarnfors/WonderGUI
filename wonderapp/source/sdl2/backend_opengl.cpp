@@ -21,8 +21,8 @@
 =========================================================================*/
 #include <sdlwindow.h>
 
-#include <wax_glsurface.h>
-#include <wax_glsurfacefactory.h>
+#include <wax_glbitmap.h>
+#include <wax_glbitmapfactory.h>
 #include <wax_gledgemapfactory.h>
 #include <wax_glbackend.h>
 
@@ -90,8 +90,8 @@ bool backend_specific_init()
 
 	wg::Base::setDefaultDevice(pGlDevice);
 
-	auto pSurfaceFactory = GlSurfaceFactory::create();
-	wg::Base::setDefaultSurfaceFactory(pSurfaceFactory);
+	auto pBitmapFactory = GlBitmapFactory::create();
+	wg::Base::setDefaultBitmapFactory(pBitmapFactory);
 
 	auto pEdgemapFactory = GlEdgemapFactory::create();
 	wg::Base::setDefaultEdgemapFactory(pEdgemapFactory);

@@ -25,8 +25,8 @@
 
 #include <wax_geo.h>
 #include <wax_pointers.h>
-#include <wax_surface.h>
-#include <wax_surfacefactory.h>
+#include <wax_bitmap.h>
+#include <wax_bitmapfactory.h>
 
 namespace wax
 {
@@ -43,7 +43,7 @@ namespace wax
 
 		// These below are not updated by getGlyphWithoutBitmap().
 
-		Surface_p 	pSurface;		// Set to null if no bitmap for glyph could be found.
+		Bitmap_p 	pBitmap;		// Set to null if no bitmap for glyph could be found.
 		RectSPX		rect;
 		spx			bearingX = 0;		// x offset when rendering the glyph (negated offset to glyph origin)
 		spx			bearingY = 0;		// y offset when rendering the glyph (negated offset to glyph origin)
@@ -98,7 +98,7 @@ namespace wax
 
         inline Font_p           backupFont() const;             ///@brief Font used when glyph can't be found in our font.
 
-		Surface_p				getGlyphAsSurface(char32_t chr, const Surface::Blueprint& blueprint = Surface::Blueprint() , SurfaceFactory * pFactory = nullptr );
+		Bitmap_p				getGlyphAsBitmap(char32_t chr, const Bitmap::Blueprint& blueprint = Bitmap::Blueprint() , BitmapFactory * pFactory = nullptr );
 
 		//.____ Deprecated __________________________________________________________
 		

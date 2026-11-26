@@ -28,7 +28,7 @@
 #include <wax_device.h>
 #include <wax_c_device.h>
 #include <wg_types.h>
-#include <wg_pluginsurfacefactory.h>
+#include <wg_pluginbitmapfactory.h>
 #include <wg_pluginedgemapfactory.h>
 #include <wg_pluginwarpmapfactory.h>
 
@@ -38,7 +38,7 @@ typedef void* wax_obj;
 
 namespace wg
 {
-	class PluginSurface;
+	class PluginBitmap;
 	class PluginGfxDevice;
 	typedef	StrongPtr<PluginGfxDevice> PluginGfxDevice_p;
 	typedef	WeakPtr<PluginGfxDevice>	PluginGfxDevice_wp;
@@ -49,7 +49,7 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static PluginGfxDevice_p	create( wax_obj hDevice, PluginSurfaceFactory * pSurfaceFactory, PluginEdgemapFactory * pEdgemapFactory );
+		static PluginGfxDevice_p	create( wax_obj hDevice, PluginBitmapFactory * pBitmapFactory, PluginEdgemapFactory * pEdgemapFactory );
 
 		//.____ Identification __________________________________________
 
@@ -63,7 +63,7 @@ namespace wg
 
 		CanvasLayers_p		canvasLayers() const override { return m_pCanvasLayers; }
 
-		SurfaceFactory_p surfaceFactory() override;
+		BitmapFactory_p bitmapFactory() override;
         EdgemapFactory_p edgemapFactory() override;
         WarpmapFactory_p warpmapFactory() override;
 
@@ -97,8 +97,8 @@ namespace wg
         bool        setBlendMode( BlendMode blendMode ) override;
         BlendMode 	blendMode() const override;
 
-        bool        setBlitSource(Surface * pSource) override;
-        Surface_p 	blitSource() const override;
+        bool        setBlitSource(Bitmap * pSource) override;
+        Bitmap_p 	blitSource() const override;
 
         void        setMorphFactor(float factor) override;
         float		morphFactor() const override;
@@ -124,7 +124,7 @@ namespace wg
         void    flush() override;
 
 		bool	beginCanvasUpdate( CanvasRef canvas, int nUpdateRects = 0, const RectSPX* pUpdateRects = nullptr, CanvasLayers * pLayers = nullptr, int startLayer = -1 ) override;
-		bool	beginCanvasUpdate( Surface * pCanvas, int nUpdateRects = 0, const RectSPX* pUpdateRects = nullptr, CanvasLayers * pLayers = nullptr, int startLayer = -1 ) override;
+		bool	beginCanvasUpdate( Bitmap * pCanvas, int nUpdateRects = 0, const RectSPX* pUpdateRects = nullptr, CanvasLayers * pLayers = nullptr, int startLayer = -1 ) override;
         void    endCanvasUpdate() override;
 
         
@@ -189,10 +189,10 @@ namespace wg
 
  
 	protected:
-		PluginGfxDevice( wax_obj object, PluginSurfaceFactory * pSurfaceFactory, PluginEdgemapFactory * pEdgemapFactory );
+		PluginGfxDevice( wax_obj object, PluginBitmapFactory * pBitmapFactory, PluginEdgemapFactory * pEdgemapFactory );
 		~PluginGfxDevice();
 
-        bool    _beginCanvasUpdate( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers * pLayers, int startLayer);
+        bool    _beginCanvasUpdate( CanvasRef canvasRef, Bitmap * pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers * pLayers, int startLayer);
 
 		struct StashedCanvas
 		{
@@ -205,7 +205,7 @@ namespace wg
 		std::vector<wax_ringSlice>	m_ringSlices;		// Slices passed on by drawRing().
 		
 		wax_obj	m_hostBlurbrush = nullptr;
-		PluginSurfaceFactory_p	m_pSurfaceFactory;
+		PluginBitmapFactory_p	m_pBitmapFactory;
         PluginEdgemapFactory_p	m_pEdgemapFactory;
         PluginWarpmapFactory_p	m_pWarpmapFactory;
 
@@ -215,7 +215,7 @@ namespace wg
 		CanvasLayers_p	m_pCanvasLayers;
 		std::vector<StashedCanvas>	m_canvasStack;
 
-		Surface_p		m_pBlitSource;
+		Bitmap_p		m_pBlitSource;
 		Blurbrush_p		m_pBlurbrush;
 	};
 } // namespace wg

@@ -23,7 +23,7 @@ public:
 
 	bool init(GfxDevice * pDevice, const RectSPX& canvas, wapp::API * pAppAPI)
 	{
-		auto pFactory = pDevice->surfaceFactory();
+		auto pFactory = pDevice->bitmapFactory();
 
 		Color8 palette[8];
 		for (int i = 0; i < 8; i++)
@@ -53,22 +53,22 @@ public:
 			PixelFormat format = formats[s].format;
 			ColorSpace colorSpace = formats[s].colorSpace;
 
-			// Pixels are given in the color space of the surface, so they are used as they are.
+			// Pixels are given in the color space of the bitmap, so they are used as they are.
 
 			if (format == PixelFormat::Index_8)
-				m_pSources[s] = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = format, _.colorSpace = colorSpace, _.sampleMethod = SampleMethod::Nearest,
+				m_pSources[s] = pFactory->createBitmap(WGBP(Bitmap, _.size = { c_srcSize, c_srcSize }, _.format = format, _.colorSpace = colorSpace, _.sampleMethod = SampleMethod::Nearest,
 															 _.palette = palette, _.paletteSize = 8), indices, format, c_srcSize, palette, 8);
 			else if (format == PixelFormat::Alpha_8)
-				m_pSources[s] = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = format, _.sampleMethod = SampleMethod::Nearest),
+				m_pSources[s] = pFactory->createBitmap(WGBP(Bitmap, _.size = { c_srcSize, c_srcSize }, _.format = format, _.sampleMethod = SampleMethod::Nearest),
 														alpha, format, c_srcSize);
 			else
-				m_pSources[s] = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = format, _.colorSpace = colorSpace, _.sampleMethod = SampleMethod::Nearest),
+				m_pSources[s] = pFactory->createBitmap(WGBP(Bitmap, _.size = { c_srcSize, c_srcSize }, _.format = format, _.colorSpace = colorSpace, _.sampleMethod = SampleMethod::Nearest),
 														(uint8_t*)pixels, PixelFormat::ARGB_8, c_srcSize * 4);
 
 			for (int r = 0; r < c_nbRows; r++)
 			{
-				m_pCanvases[r][s] = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::ARGB_8, _.canvas = true, _.sampleMethod = SampleMethod::Nearest));
-				m_pA8Canvases[r][s] = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::Alpha_8, _.canvas = true, _.sampleMethod = SampleMethod::Nearest));
+				m_pCanvases[r][s] = pFactory->createBitmap(WGBP(Bitmap, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::ARGB_8, _.canvas = true, _.sampleMethod = SampleMethod::Nearest));
+				m_pA8Canvases[r][s] = pFactory->createBitmap(WGBP(Bitmap, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::Alpha_8, _.canvas = true, _.sampleMethod = SampleMethod::Nearest));
 			}
 		}
 
@@ -111,7 +111,7 @@ public:
 
 private:
 
-	bool _test(GfxDevice * pDevice, const RectSPX& canvas, Surface_p (&canvases)[3][6])
+	bool _test(GfxDevice * pDevice, const RectSPX& canvas, Bitmap_p (&canvases)[3][6])
 	{
 		bool bA8 = canvases[0][0]->pixelFormat() == PixelFormat::Alpha_8;
 
@@ -176,9 +176,9 @@ private:
 	static const int c_nbSources = 6;
 	static const int c_nbRows = 3;
 
-	Surface_p	m_pSources[c_nbSources];
-	Surface_p	m_pCanvases[c_nbRows][c_nbSources];
-	Surface_p	m_pA8Canvases[c_nbRows][c_nbSources];
+	Bitmap_p	m_pSources[c_nbSources];
+	Bitmap_p	m_pCanvases[c_nbRows][c_nbSources];
+	Bitmap_p	m_pA8Canvases[c_nbRows][c_nbSources];
 	Blurbrush_p	m_pBrush;
 	Tint_p		m_pTint;
 };

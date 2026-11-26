@@ -27,7 +27,7 @@ public:
 
 private:
 
-	typedef int (*initClientFunc)( wg_plugin_interface * pInterface, void * pHostBridge, wax_obj hPluginCapsule, wax_obj hGfxDevice, wax_obj hSurfaceFactory, wax_obj hEdgemapFactory );
+	typedef int (*initClientFunc)( wg_plugin_interface * pInterface, void * pHostBridge, wax_obj hPluginCapsule, wax_obj hGfxDevice, wax_obj hBitmapFactory, wax_obj hEdgemapFactory );
 	typedef int (*updateClientFunc)(void);
 	typedef void (*exitClientFunc)(void);
 

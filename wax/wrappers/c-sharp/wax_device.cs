@@ -57,12 +57,12 @@ public class Device : Objekt
         return (wax_beginCanvasUpdateWithRef(_obj, canvas, rectCount, updateRects, layersHandle, startLayer) == 1);
     }
 
-    public bool BeginCanvasUpdate(Surface canvas, RectSPX[]? updateRects = null, CanvasLayers? layers = null, int startLayer = 0)
+    public bool BeginCanvasUpdate(Bitmap canvas, RectSPX[]? updateRects = null, CanvasLayers? layers = null, int startLayer = 0)
     {
         int rectCount = updateRects?.Length ?? 0;
         IntPtr layersHandle = layers?.CHandle() ?? 0;
 
-        return (wax_beginCanvasUpdateWithSurface(_obj, canvas.CHandle(), rectCount, updateRects, layersHandle, startLayer) == 1);
+        return (wax_beginCanvasUpdateWithBitmap(_obj, canvas.CHandle(), rectCount, updateRects, layersHandle, startLayer) == 1);
     }
 
     //____ EndCanvasUpdate() __________________________________________________
@@ -116,7 +116,7 @@ public class Device : Objekt
 
     //____ SetBlitSource() ____________________________________________________
 
-    public bool SetBlitSource(Surface blitSource)
+    public bool SetBlitSource(Bitmap blitSource)
     {
         return (wax_setBlitSource(_obj, blitSource.CHandle()) == 1);
     }
@@ -214,7 +214,7 @@ public class Device : Objekt
     private static extern IntPtr wax_createDevice(IntPtr backend);
 
     //	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    //private static extern const wax_typeInfo* wax_deviceSurfaceType(IntPtr device);
+    //private static extern const wax_typeInfo* wax_deviceBitmapType(IntPtr device);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern int wax_setBackend(IntPtr device, IntPtr backend);
@@ -231,7 +231,7 @@ public class Device : Objekt
     private static extern IntPtr wax_canvasLayers(IntPtr device);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern IntPtr wax_surfaceFactory(IntPtr device);
+    private static extern IntPtr wax_bitmapFactory(IntPtr device);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern IntPtr wax_edgemapFactory(IntPtr device);
@@ -280,7 +280,7 @@ public class Device : Objekt
     private static extern BlendMode wax_getBlendMode(IntPtr device);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int wax_setBlitSource(IntPtr device, IntPtr surface);
+    private static extern int wax_setBlitSource(IntPtr device, IntPtr bitmap);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern IntPtr wax_getBlitSource(IntPtr device);
@@ -327,7 +327,7 @@ public class Device : Objekt
     private static extern int wax_beginCanvasUpdateWithRef(IntPtr device, CanvasRef canvas, int nUpdateRects, RectSPX[]? updateRects, IntPtr canvasLayers, int startLayer);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int wax_beginCanvasUpdateWithSurface(IntPtr device, IntPtr surface, int nUpdateRects, RectSPX[]? updateRects, IntPtr canvasLayers, int startLayer);
+    private static extern int wax_beginCanvasUpdateWithBitmap(IntPtr device, IntPtr bitmap, int nUpdateRects, RectSPX[]? updateRects, IntPtr canvasLayers, int startLayer);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern void wax_endCanvasUpdate(IntPtr device);

@@ -38,7 +38,7 @@ sidecar, not the spec.
 - `BEGIN/END GENERATED COLORS` — the `Colors::` namespace, from
   `palette.yaml`'s `exported_colors`. `center_of: <Part>` **measures** the
   centre pixel of `parts/<Part>.png`, so a constant meant to match a rendered
-  surface is whatever the bitmap actually is. This exists because the constants
+  bitmap is whatever the bitmap actually is. This exists because the constants
   were hand-written for a while and drifted: `Colors::Plate` had become the
   gradient's *top* colour while the bitmap's middle was 14 levels darker.
   Other forms: `border_of` / `top_of` / `bottom_of` (a palette entry) and
@@ -52,20 +52,20 @@ comment and destroyed the file.
 
 The atlas is rendered at **2x pt density** — 1pt = 2px. `BlockSkin` resolves
 `firstBlock`/`frame`/`padding`/`rigidPart`/`spacing` (all in **pts**) against the
-**surface's** scale:
+**bitmap's** scale:
 
-    RectI firstBlock = roundToPixels(ptsToSpx(_firstBlock, pSurface->scale()))
+    RectI firstBlock = roundToPixels(ptsToSpx(_firstBlock, pBitmap->scale()))
 
-`Surface::Blueprint.scale` defaults to `0`, which `Surface` resolves to `64` (1x),
-and a PNG carries no density metadata. So the surface **must** be created with
+`Bitmap::Blueprint.scale` defaults to `0`, which `Bitmap` resolves to `64` (1x),
+and a PNG carries no density metadata. So the bitmap **must** be created with
 `_.scale = 128`. At the default it does not fail — every block is sampled at half
-size from half the offset and renders as garbage. `init()` now refuses a surface
+size from half the offset and renders as garbage. `init()` now refuses a bitmap
 whose `scale() != 128` with an explicit error rather than proceeding.
 
-There is no `Surface::setScale()` (only a stale comment referencing one), so the
+There is no `Bitmap::setScale()` (only a stale comment referencing one), so the
 kit cannot correct this itself.
 
-**Planned fix:** switch from PNG to the `.surf` format, whose `SurfaceFileHeader`
+**Planned fix:** switch from PNG to the `.surf` format, whose `BitmapFileHeader`
 includes `int16_t scale`. The reader would then set the scale from the file and
 the whole footgun disappears. Until then, callers patch their loading code.
 
@@ -289,7 +289,7 @@ one.
 
 `content_shift: {<State>: [x, y]}` in a spec moves the widget's **content**
 (label, icon) for that state without touching the artwork — the classic
-push-button effect where the caption sinks with the surface. BlockSkin adds it
+push-button effect where the caption sinks with the bitmap. BlockSkin adds it
 in `_contentOfs` (`wg_stateskin.cpp`), in pts, so it costs no atlas space and
 needs no extra blocks. Currently **1pt** down-right on Button's `Pressed`,
 ToggleButton's `Checked`/`CheckedHovered` (a toggle has no Pressed block; the
@@ -320,7 +320,7 @@ STATE_STYLE entry. RadioButton uses it too, in the opposite direction — see
 `CheckedHovered -> Hovered`, `CheckedPressed -> Pressed`,
 `DisabledChecked -> Disabled`, so the checked and unchecked families have
 **bit-identical backgrounds** and differ only by the tick. The reasoning: the
-tick already says "on", so if the surface also changes on check, it has nothing
+tick already says "on", so if the bitmap also changes on check, it has nothing
 left to say about what the pointer is doing. Background = pointer, glyph =
 value. Before this the checkbox had no Hovered or Pressed block at all and was
 the one control in the kit that never reacted to the pointer.
@@ -380,7 +380,7 @@ They are the same widget class and share a strip layout, but their
 `state_style_as` mappings are deliberate opposites.
 
 A **checkbox** is an independent switch: `Checked -> Default`,
-`CheckedHovered -> Hovered` and so on, so the surface only ever says what the
+`CheckedHovered -> Hovered` and so on, so the bitmap only ever says what the
 pointer is doing and the tick alone says on/off.
 
 A **radio button** is one of a set where exactly one is down, so `Checked`
@@ -457,7 +457,7 @@ rest of the toolkit. The kit's wrapper is now ordinary gap-filling like the
 other nine.
 
 It still defaults to `NormalBright`, **not** the `entryTextStyle` beside it: the
-closed box is a blue raised control, the same surface as a Button, while the
+closed box is a blue raised control, the same bitmap as a Button, while the
 list is drawn on `Skins::Canvas`. Two backgrounds, two styles — sharing one left
 the closed box with black text on blue.
 

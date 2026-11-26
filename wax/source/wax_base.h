@@ -48,8 +48,8 @@ namespace wax
 	class BitmapCache;
 	typedef	StrongPtr<BitmapCache>		BitmapCache_p;
 
-	class SurfaceFactory;
-	typedef	StrongPtr<SurfaceFactory>	SurfaceFactory_p;
+	class BitmapFactory;
+	typedef	StrongPtr<BitmapFactory>	BitmapFactory_p;
 
 	class DeviceFactory;
 	typedef	StrongPtr<DeviceFactory>	DeviceFactory_p;
@@ -76,7 +76,7 @@ namespace wax
 
 		std::function<void(Error&)>	pErrorHandler = nullptr;
 
-		SurfaceFactory_p	pDefaultSurfaceFactory;
+		BitmapFactory_p	pDefaultBitmapFactory;
 		EdgemapFactory_p	pDefaultEdgemapFactory;
 		WarpmapFactory_p	pDefaultWarpmapFactory;
 		DeviceFactory_p	pDefaultDeviceFactory;
@@ -123,8 +123,8 @@ namespace wax
 
 		static BitmapCache_p		defaultBitmapCache();
 
-		static void					setDefaultSurfaceFactory( SurfaceFactory * pFactory );
-		static inline SurfaceFactory_p	defaultSurfaceFactory() { return s_pContext->pDefaultSurfaceFactory; };
+		static void					setDefaultBitmapFactory( BitmapFactory * pFactory );
+		static inline BitmapFactory_p	defaultBitmapFactory() { return s_pContext->pDefaultBitmapFactory; };
 
 		static void					setDefaultEdgemapFactory(EdgemapFactory* pFactory);
 		static inline EdgemapFactory_p	defaultEdgemapFactory() { return s_pContext->pDefaultEdgemapFactory; };

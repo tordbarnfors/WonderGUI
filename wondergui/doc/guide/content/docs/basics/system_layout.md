@@ -21,10 +21,10 @@ The base system is built as two separate libraries, neither of which needs any e
 
 The libraries, from bottom to top are the following:
 
-1. **Wax** - This contains the fundamental object model with smart pointers and reference counted objects and some classes for memory management. It also deals with all the low-level aspects of drawing and buffer graphics, as well as classes for loading and saving surfaces, the font system and a simple system for printing text. If you are not interested in a GUI, but want a cross-platform, efficient library for drawing simple 2D-graphics and manipulating images, you can use Wax on its own or build your own system on top of it.
+1. **Wax** - This contains the fundamental object model with smart pointers and reference counted objects and some classes for memory management. It also deals with all the low-level aspects of drawing and buffer graphics, as well as classes for loading and saving bitmaps, the font system and a simple system for printing text. If you are not interested in a GUI, but want a cross-platform, efficient library for drawing simple 2D-graphics and manipulating images, you can use Wax on its own or build your own system on top of it.
 2. **WonderGUI** - The GUI library itself, providing all the rest such as widgets, skins, advanced text handling, event handling and user input.
 
-Wax uses the namespace 'wax' and WonderGUI the namespace 'wg'. The Wax classes that are part of WonderGUI's API are also brought into the wg namespace, some of them under a different name (wax::Device is wg::GfxDevice), so you can work with wg::Surface, wg::GfxDevice and so on without having to think about which library they come from. The header wg_wax.h lists them. Initializing WonderGUI with wg::Base::init() will automatically initialize Wax as well.
+Wax uses the namespace 'wax' and WonderGUI the namespace 'wg'. The Wax classes that are part of WonderGUI's API are also brought into the wg namespace, some of them under a different name (wax::Device is wg::GfxDevice), so you can work with wg::Bitmap, wg::GfxDevice and so on without having to think about which library they come from. The header wg_wax.h lists them. Initializing WonderGUI with wg::Base::init() will automatically initialize Wax as well.
 
 ## Extensions
 

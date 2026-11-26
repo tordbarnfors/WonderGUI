@@ -32,7 +32,7 @@
 *	The compressed data is binary compatible with the data of a QOI image
 *	(qoiformat.org), that is a QOI file consists of its 14 byte header followed
 *	by exactly what the compressor produces. The header is not included, since
-*	surface files and graphics streams keep the size of the image elsewhere.
+*	bitmap files and graphics streams keep the size of the image elsewhere.
 *
 *	QOI chunks:
 *

@@ -37,8 +37,8 @@
 
 
 #include <wax_geo.h>
-#include <wax_surface.h>
-#include <wax_surfacefactory.h>
+#include <wax_bitmap.h>
+#include <wax_bitmapfactory.h>
 #include <wax_edgemapfactory.h>
 #include <wax_canvaslayers.h>
 #include <wax_dynamicbuffer.h>
@@ -49,7 +49,7 @@
 namespace wax
 {
 
-	class	Surface;
+	class	Bitmap;
 	class	LegacyCTextDisplay;
 	class	CaretInstance;
 	class 	Pen;
@@ -85,7 +85,7 @@ namespace wax
 
 		CanvasLayers_p 		canvasLayers() const override;
 		
-		SurfaceFactory_p	surfaceFactory() override;
+		BitmapFactory_p	bitmapFactory() override;
 		EdgemapFactory_p	edgemapFactory() override;
 		WarpmapFactory_p	warpmapFactory() override;
 
@@ -120,8 +120,8 @@ namespace wax
 		bool		setBlendMode(BlendMode blendMode) override;
 		BlendMode 	blendMode() const override;
 
-		bool		setBlitSource(Surface* pSource) override;
-		Surface_p 	blitSource() const override;
+		bool		setBlitSource(Bitmap* pSource) override;
+		Bitmap_p 	blitSource() const override;
 
 		void		setMorphFactor(float factor) override;
 		float		morphFactor() const override;
@@ -149,7 +149,7 @@ namespace wax
 		virtual void	flush() override;
 
 		inline bool     beginCanvasUpdate(CanvasRef canvas, int nUpdateRects = 0, const RectSPX* pUpdateRects = nullptr, CanvasLayers* pLayers = nullptr, int startLayer = -1) override;
-		inline bool     beginCanvasUpdate(Surface* pCanvas, int nUpdateRects = 0, const RectSPX* pUpdateRects = nullptr, CanvasLayers* pLayers = nullptr, int startLayer = -1) override;
+		inline bool     beginCanvasUpdate(Bitmap* pCanvas, int nUpdateRects = 0, const RectSPX* pUpdateRects = nullptr, CanvasLayers* pLayers = nullptr, int startLayer = -1) override;
 		virtual void    endCanvasUpdate() override;
 
 		void			flattenLayers();
@@ -234,7 +234,7 @@ namespace wax
 
 		struct RenderState
 		{
-			Surface_p		blitSource;
+			Bitmap_p		blitSource;
 			Tint_p			pTint;
 			Blurbrush_p		pBlurbrush;
 
@@ -249,7 +249,7 @@ namespace wax
 
 		// Remembers where in the object table of a layer an object was put, so that it is
 		// added only once, see _objectIndex(). Text alone switches blit source between a
-		// few glyph cache surfaces for almost every glyph.
+		// few glyph cache bitmaps for almost every glyph.
 		//
 		// The cache is direct mapped and an entry is simply replaced when another object
 		// lands on it. That can only make an object appear twice in the table, which costs
@@ -279,7 +279,7 @@ namespace wax
 			uint32_t				objectCacheGeneration = 1;
 
 			int						finalCommandsOfs = -1;
-			Surface_p				pLayerCanvas;				// Null for layer 0 or any layer rendering directly to layer 0.
+			Bitmap_p				pLayerCanvas;				// Null for layer 0 or any layer rendering directly to layer 0.
 
 			Command					latestCommand = Command::None;
 			int						latestCommandOfs = -1;
@@ -312,7 +312,7 @@ namespace wax
 		DeviceGen2( Backend * pBackend );
 		virtual ~DeviceGen2();
 
-		bool _beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers* pLayers, int startLayer);
+		bool _beginCanvasUpdate(CanvasRef ref, Bitmap* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers* pLayers, int startLayer);
 
 		void _transformBlitSimple(const RectSPX& _dest, CoordSPX src, int transformOfs, Command cmd);
 		void _transformBlitComplex(const RectSPX& _dest, CoordI _src, const Transform& matrix, Command cmd);
@@ -363,7 +363,7 @@ namespace wax
 		return _beginCanvasUpdate(ref, nullptr, nUpdateRects, pUpdateRects, pLayers, startLayer);
 	}
 
-	bool DeviceGen2::beginCanvasUpdate(Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers* pLayers, int startLayer)
+	bool DeviceGen2::beginCanvasUpdate(Bitmap* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers* pLayers, int startLayer)
 	{
 		return _beginCanvasUpdate(CanvasRef::None, pCanvas, nUpdateRects, pUpdateRects, pLayers, startLayer);
 	}

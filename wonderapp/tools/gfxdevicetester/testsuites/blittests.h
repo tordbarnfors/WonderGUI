@@ -24,15 +24,15 @@ public:
 	bool init(GfxDevice * pDevice, const RectI& canvas, wapp::API * pAppAPI)
 	{
 
-		m_pClockFace = pAppAPI->loadSurface( "resources/clockface_2500.png", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Bilinear } );
+		m_pClockFace = pAppAPI->loadBitmap( "resources/clockface_2500.png", pDevice->bitmapFactory(), { .sampleMethod = SampleMethod::Bilinear } );
 		if (!m_pClockFace)
 			return false;
 
-		m_pSplash = pAppAPI->loadSurface("resources/splash.png", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Bilinear });
+		m_pSplash = pAppAPI->loadBitmap("resources/splash.png", pDevice->bitmapFactory(), { .sampleMethod = SampleMethod::Bilinear });
 		if (!m_pSplash)
 			return false;
 
-		m_pAlphaOnly = pDevice->surfaceFactory()->createSurface( WGBP(Surface,
+		m_pAlphaOnly = pDevice->bitmapFactory()->createBitmap( WGBP(Bitmap,
 																	  _.size = { 400,400 },
 																	  _.format = PixelFormat::Alpha_8,
 																	  _.sampleMethod = SampleMethod::Bilinear ));
@@ -134,9 +134,9 @@ public:
 	}
 
 private:
-	Surface_p	m_pClockFace;
-	Surface_p	m_pSplash;
-	Surface_p	m_pAlphaOnly;
+	Bitmap_p	m_pClockFace;
+	Bitmap_p	m_pSplash;
+	Bitmap_p	m_pAlphaOnly;
 
 	float rot = 35;
 	float scale = 1.3f;

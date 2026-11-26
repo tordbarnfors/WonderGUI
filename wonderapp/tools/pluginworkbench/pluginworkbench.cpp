@@ -57,7 +57,7 @@ bool MyApp::init(wapp::API* pAPI)
 	wg_populatePluginInterface(&c_calls);
 
 	if( !m_pInitClient(&c_calls, wg::Base::hostBridge(), m_pPluginCapsule,
-				  wg::Base::defaultDevice(), wg::Base::defaultSurfaceFactory(), wg::Base::defaultEdgemapFactory()) )
+				  wg::Base::defaultDevice(), wg::Base::defaultBitmapFactory(), wg::Base::defaultEdgemapFactory()) )
 	{
 		printf("ERROR: Plugin failed to initialize!\n");
 		return false;
@@ -237,23 +237,23 @@ bool MyApp::_loadSkins(wapp::API * pAPI)
 {
 	string path = "resources/greyskin/";
 
-	auto pPlateSurf = pAPI->loadSurface(path + "plate.bmp");
-	auto pButtonSurf = pAPI->loadSurface(path + "button.bmp");
-	auto pStateButtonSurf = pAPI->loadSurface(path + "state_button.bmp");
-	auto pCheckBoxSurf = pAPI->loadSurface(path + "checkbox.png");
+	auto pPlateBitmap = pAPI->loadBitmap(path + "plate.bmp");
+	auto pButtonBitmap = pAPI->loadBitmap(path + "button.bmp");
+	auto pStateButtonBitmap = pAPI->loadBitmap(path + "state_button.bmp");
+	auto pCheckBoxBitmap = pAPI->loadBitmap(path + "checkbox.png");
 
-	if (!pPlateSurf || !pButtonSurf || !pStateButtonSurf)
+	if (!pPlateBitmap || !pButtonBitmap || !pStateButtonBitmap)
 		return false;
 
 	m_pPlateSkin = BlockSkin::create(WGBP(BlockSkin,
-		_.surface = pPlateSurf,
+		_.bitmap = pPlateBitmap,
 		_.axis = Axis::X,
 		_.frame = 4,
 		_.padding = 4
 	));
 
 	m_pButtonSkin = BlockSkin::create(WGBP(BlockSkin,
-		_.surface = pButtonSurf,
+		_.bitmap = pButtonBitmap,
 		_.axis = Axis::X,
 		_.frame = 4,
 		_.padding = { 4,10,4,10 },
@@ -261,7 +261,7 @@ bool MyApp::_loadSkins(wapp::API * pAPI)
 	));
 
 	m_pToggleButtonSkin = BlockSkin::create(WGBP(BlockSkin,
-		_.surface = pStateButtonSurf,
+		_.bitmap = pStateButtonBitmap,
 		_.axis = Axis::X,
 		_.frame = 4,
 		_.padding = 4,
@@ -269,7 +269,7 @@ bool MyApp::_loadSkins(wapp::API * pAPI)
 	));
 
 	m_pCheckBoxSkin = BlockSkin::create(WGBP(BlockSkin,
-		_.surface = pCheckBoxSurf,
+		_.bitmap = pCheckBoxBitmap,
 		_.axis = Axis::Y,
 		_.frame = 3,
 //		_.defaultSize = { 12,12 },

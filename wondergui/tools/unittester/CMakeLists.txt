@@ -17,10 +17,10 @@ set( SOURCES
 	tests/qoi.h
 	tests/rangeallocator.cpp
 	tests/rangeallocator.h
-	tests/surfacefile.cpp
-	tests/surfacefile.h
-	tests/surfacefill.cpp
-	tests/surfacefill.h
+	tests/bitmapfile.cpp
+	tests/bitmapfile.h
+	tests/bitmapfill.cpp
+	tests/bitmapfill.h
 	tests/softshapes.cpp
 	tests/softshapes.h
 	tests/shaperender.cpp

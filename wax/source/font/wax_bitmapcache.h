@@ -28,8 +28,8 @@
 
 #include <wax_pointers.h>
 #include <wax_types.h>
-#include <wax_surface.h>
-#include <wax_surfacefactory.h>
+#include <wax_bitmap.h>
+#include <wax_bitmapfactory.h>
 
 namespace wax
 {
@@ -42,8 +42,8 @@ namespace wax
 	class BitmapCacheListener
 	{
 	public:
-		virtual void _cacheSurfaceAdded(Surface* pSurface) = 0;
-		virtual void _cacheSurfacesRemoved(int nSurfaces, Surface* pSurfaces[]) = 0;
+		virtual void _cacheBitmapAdded(Bitmap* pBitmap) = 0;
+		virtual void _cacheBitmapsRemoved(int nBitmaps, Bitmap* pBitmaps[]) = 0;
 		virtual void _cacheCleared() = 0;
 	};
 
@@ -53,7 +53,7 @@ namespace wax
 	public:
 		//.____ Creation __________________________________________
 
-		static BitmapCache_p	create( int maxSize, SurfaceFactory * pFactory = nullptr );
+		static BitmapCache_p	create( int maxSize, BitmapFactory * pFactory = nullptr );
 
 		//.____ Identification __________________________________________
 
@@ -74,20 +74,20 @@ namespace wax
 		void		addListener( BitmapCacheListener * pListener );
 		void		removeListener( BitmapCacheListener * pListener );
 		
-		std::tuple<Surface_p, CoordI> 	getCacheSlot( SizeI size );
+		std::tuple<Bitmap_p, CoordI> 	getCacheSlot( SizeI size );
 		
-		inline int						nbSurfaces() const { return int(m_cacheSurfaces->size()); }
-		std::vector<Surface_p>			getSurfaces() const;
+		inline int						nbBitmaps() const { return int(m_cacheBitmaps->size()); }
+		std::vector<Bitmap_p>			getBitmaps() const;
 		
 		
 	protected:
-		BitmapCache( int maxSize, SurfaceFactory * pFactory );
+		BitmapCache( int maxSize, BitmapFactory * pFactory );
 		virtual ~BitmapCache();
 
-		struct CacheSurf
+		struct CacheBitmap
 		{
-			CacheSurf( Surface * _pSurface, int _capacity, uint32_t creationNb ) :
-				pSurface(_pSurface),
+			CacheBitmap( Bitmap * _pBitmap, int _capacity, uint32_t creationNb ) :
+				pBitmap(_pBitmap),
 				capacity(_capacity),
 				used(0)
 				{
@@ -95,28 +95,28 @@ namespace wax
 				}
 				
 			
-			Surface_p	pSurface;
+			Bitmap_p	pBitmap;
 			int			capacity;
 			int			used;
 			
 			uint32_t	creationNb;
 		};
 
-		CacheSurf*		_addCacheSurface(int category, int width, int height);
+		CacheBitmap*		_addCacheBitmap(int category, int width, int height);
 		void			_truncateCache(int maxSize);
 
 		
-		SurfaceFactory_p		m_pFactory;
+		BitmapFactory_p		m_pFactory;
 		
 		std::vector<BitmapCacheListener*>	m_listeners;	// List of alive listeners.
 
-		std::vector<CacheSurf>	m_cacheSurfaces[10];		// The nine combined surfaces + the tenth vector with all character-specific surfaces.
+		std::vector<CacheBitmap>	m_cacheBitmaps[10];		// The nine combined bitmaps + the tenth vector with all character-specific bitmaps.
 
-		uint32_t				m_surfacesCreated = 0;		// Increments and provides m_surfCreationNb for each new surface created.
-		int						m_cacheSize = 0;			// Size in bytes of existing cacheSurfaces. Used and unused cache space.
+		uint32_t				m_bitmapsCreated = 0;		// Increments and provides m_bitmapCreationNb for each new bitmap created.
+		int						m_cacheSize = 0;			// Size in bytes of existing cacheBitmaps. Used and unused cache space.
 		int						m_cacheLimit;				// Maximum size of cache in bytes. 0 = no limit.
 
-		const static uint8_t	s_categoryHeight[9];		// Pixel heights for cache surfaces in each category.
+		const static uint8_t	s_categoryHeight[9];		// Pixel heights for cache bitmaps in each category.
 		const static uint8_t	s_sizeToCategory[129];		// Table for grouping sizes into categories.
 	};
 

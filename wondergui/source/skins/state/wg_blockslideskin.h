@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_stateskin.h>
-#include <wax_surface.h>
+#include <wax_bitmap.h>
 #include <wax_tint.h>
 
 #include <vector>
@@ -69,6 +69,7 @@ namespace wg
 		struct Blueprint
 		{
 
+			Bitmap_p		bitmap;
 			BlendMode		blendMode = BlendMode::Blend;
 
 			pts				blockLength;					// Required!
@@ -88,7 +89,6 @@ namespace wg
 
 			Border			spacing;
 			std::vector<StateBP> states;
-			Surface_p		surface;
 			Tint_p		tint;
 		};
 
@@ -147,7 +147,7 @@ namespace wg
 		}
 
 
-		Surface_p	m_pSurface;
+		Bitmap_p	m_pBitmap;
 		Direction	m_slideDirection = Direction::Right;
 		Size		m_blockSize;
 		pts			m_slideDistance = 0;

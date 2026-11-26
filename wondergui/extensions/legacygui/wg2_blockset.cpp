@@ -34,7 +34,7 @@ wg::BlockSkin_p WgBlockset::CreateFromRow( wg::Surface * pSurf, const WgRect& re
 	wg::CoordI ofs = { w + padding, 0 };
 
 	wg::BlockSkin::Blueprint bp;
-	bp.surface = pSurf;
+	bp.bitmap = pSurf;
 	bp.firstBlock = wg::Rect(rect);
 	bp.blockSpacing = padding;
 	bp.axis = wg::Axis::X;
@@ -79,7 +79,7 @@ wg::BlockSkin_p WgBlockset::CreateFromColumn( wg::Surface * pSurf, const WgRect&
 	wg::CoordI ofs = { 0, h + padding };
 
 	wg::BlockSkin::Blueprint bp;
-	bp.surface = pSurf;
+	bp.bitmap = pSurf;
 	bp.firstBlock = wg::Rect(rect);
 	bp.blockSpacing = padding;
 	bp.axis = wg::Axis::Y;

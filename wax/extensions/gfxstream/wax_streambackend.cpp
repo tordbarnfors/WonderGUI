@@ -23,10 +23,10 @@
 #include <algorithm>
 
 #include <wax_streambackend.h>
-#include <wax_remotesurface.h>
-#include <wax_mirrorsurface.h>
+#include <wax_remotebitmap.h>
+#include <wax_mirrorbitmap.h>
 #include <wax_streamedgemap.h>
-#include <wax_remotesurfacefactory.h>
+#include <wax_remotebitmapfactory.h>
 #include <wax_streamedgemapfactory.h>
 #include <wax_streamwarpmap.h>
 #include <wax_streamwarpmapfactory.h>
@@ -111,11 +111,11 @@ namespace wax
 
 	//____ beginSession() ________________________________________________________
 
-	void StreamBackend::beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
+	void StreamBackend::beginSession( CanvasRef canvasRef, Bitmap * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
 	{
 		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::BeginSession, 0, 52 };
 
-		(*m_pEncoder) << (pCanvas ? static_cast<RemoteSurface*>(pCanvas)->inStreamId() : (uint16_t) 0);
+		(*m_pEncoder) << (pCanvas ? static_cast<RemoteBitmap*>(pCanvas)->inStreamId() : (uint16_t) 0);
 		(*m_pEncoder) << canvasRef;
 		(*m_pEncoder) << (uint8_t) 0;				// Filler to align.
 
@@ -156,12 +156,12 @@ namespace wax
 
 	//____ setCanvas() ___________________________________________________________
 
-	void StreamBackend::setCanvas( Surface * pSurface )
+	void StreamBackend::setCanvas( Bitmap * pBitmap )
 	{
 		uint16_t size = 2 + 2;
 
 		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::SetCanvas, 0, size };
-		(*m_pEncoder) << (pSurface ? static_cast<RemoteSurface*>(pSurface)->inStreamId() : (uint16_t) 0);
+		(*m_pEncoder) << (pBitmap ? static_cast<RemoteBitmap*>(pBitmap)->inStreamId() : (uint16_t) 0);
 		(*m_pEncoder) << CanvasRef::None;
 		(*m_pEncoder) << (uint8_t) 0;				// Filler to align.
 	}
@@ -171,7 +171,7 @@ namespace wax
 		uint16_t size = 2 + 1 + 1;
 
 		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::SetCanvas, {}, size };
-		(*m_pEncoder) << (uint16_t) 0;				// Surface ID
+		(*m_pEncoder) << (uint16_t) 0;				// Bitmap ID
 		(*m_pEncoder) << ref;
 		(*m_pEncoder) << (uint8_t) 0;				// Filler to align.
 	}
@@ -190,10 +190,10 @@ namespace wax
 
 			if( pObj == nullptr )
 				* it++ = 0;
-			else if( pObj->typeInfo() == RemoteSurface::TYPEINFO )
-				* it++ = static_cast<RemoteSurface*>(pObj)->inStreamId();
-			else if (pObj->typeInfo() == MirrorSurface::TYPEINFO)
-				*it++ = static_cast<MirrorSurface*>(pObj)->inStreamId();
+			else if( pObj->typeInfo() == RemoteBitmap::TYPEINFO )
+				* it++ = static_cast<RemoteBitmap*>(pObj)->inStreamId();
+			else if (pObj->typeInfo() == MirrorBitmap::TYPEINFO)
+				*it++ = static_cast<MirrorBitmap*>(pObj)->inStreamId();
 			else if( pObj->typeInfo() == StreamEdgemap::TYPEINFO )
 				* it++ = static_cast<StreamEdgemap*>(pObj)->inStreamId();
 			else if( pObj->typeInfo() == StreamWarpmap::TYPEINFO )
@@ -238,26 +238,26 @@ namespace wax
 
 	//____ defineCanvas() ________________________________________________________
 
-	bool StreamBackend::defineCanvas( CanvasRef ref, RemoteSurface * pSurface )
+	bool StreamBackend::defineCanvas( CanvasRef ref, RemoteBitmap * pBitmap )
 	{
 		auto it = std::find_if(m_definedCanvases.begin(), m_definedCanvases.end(), [ref](CanvasInfo& entry) { return (ref == entry.ref); });
 
 		if (it == m_definedCanvases.end())
 		{
-			if (pSurface)
-				m_definedCanvases.push_back(CanvasInfo(ref, pSurface, pSurface->pixelSize() * 64, pSurface->pixelFormat(), pSurface->scale(),
-													   pSurface->colorSpace(), pSurface->isBigEndian()));
+			if (pBitmap)
+				m_definedCanvases.push_back(CanvasInfo(ref, pBitmap, pBitmap->pixelSize() * 64, pBitmap->pixelFormat(), pBitmap->scale(),
+													   pBitmap->colorSpace(), pBitmap->isBigEndian()));
 		}
 		else
 		{
-			if (pSurface)
+			if (pBitmap)
 			{
-				it->pSurface = pSurface;
-				it->size = pSurface->pixelSize() * 64;
-				it->scale = pSurface->scale();
-				it->format = pSurface->pixelFormat();
-				it->colorSpace = pSurface->colorSpace();
-				it->bigEndian = pSurface->isBigEndian();
+				it->pBitmap = pBitmap;
+				it->size = pBitmap->pixelSize() * 64;
+				it->scale = pBitmap->scale();
+				it->format = pBitmap->pixelFormat();
+				it->colorSpace = pBitmap->colorSpace();
+				it->bigEndian = pBitmap->isBigEndian();
 			}
 			else
 			{
@@ -282,7 +282,7 @@ namespace wax
 		{
 			if( !pixelSize.isEmpty() )
 			{
-				it->pSurface = nullptr;
+				it->pBitmap = nullptr;
 				it->size = pixelSize * 64;
 				it->scale = scale;
 				it->format = pixelFormat;
@@ -337,14 +337,14 @@ namespace wax
 		(*m_pEncoder) << microsecPassed;
 	}
 
-	//____ surfaceFactory() ______________________________________________________
+	//____ bitmapFactory() ______________________________________________________
 
-	SurfaceFactory_p StreamBackend::surfaceFactory()
+	BitmapFactory_p StreamBackend::bitmapFactory()
 	{
-		if( !m_pSurfaceFactory )
-			m_pSurfaceFactory = RemoteSurfaceFactory::create(m_pEncoder);
+		if( !m_pBitmapFactory )
+			m_pBitmapFactory = RemoteBitmapFactory::create(m_pEncoder);
 
-		return m_pSurfaceFactory;
+		return m_pBitmapFactory;
 	}
 
 	//____ edgemapFactory() ______________________________________________________
@@ -378,14 +378,14 @@ namespace wax
 
 	bool StreamBackend::canBeBlitSource(const TypeInfo& type) const
 	{
-		return (type == RemoteSurface::TYPEINFO || type == MirrorSurface::TYPEINFO );
+		return (type == RemoteBitmap::TYPEINFO || type == MirrorBitmap::TYPEINFO );
 	}
 
 	//____ canBeCanvas() ______________________________________________
 
 	bool StreamBackend::canBeCanvas(const TypeInfo& type) const
 	{
-		return (type == RemoteSurface::TYPEINFO);
+		return (type == RemoteBitmap::TYPEINFO);
 	}
 
 	//____ waitForCompletion() ___________________________________________________

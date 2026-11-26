@@ -241,7 +241,7 @@ namespace
 		return p;
 	}
 
-	Widget_p surfaces()
+	Widget_p bitmaps()
 	{
 		// The passive skins, forced onto SkinDisplays so they can be compared
 		// side by side rather than hunted for behind other widgets.
@@ -287,7 +287,7 @@ namespace
 		pColumn->slots.pushBack(section("Split panels - drag the handles", splitPanels()), { .weight = 0 });
 		pColumn->slots.pushBack(section("Drawer", drawer()), { .weight = 0 });
 		pColumn->slots.pushBack(section("Capsules", capsules()), { .weight = 0 });
-		pColumn->slots.pushBack(section("Surfaces", surfaces()), { .weight = 0 });
+		pColumn->slots.pushBack(section("Bitmaps", bitmaps()), { .weight = 0 });
 
 		auto pScroll = wkit::ScrollCapsuleY::create({
 			.child = PaddingCapsule::create({ .child = pColumn, .padding = 16 })

@@ -9,8 +9,8 @@
 #include <wax_softbackend.h>
 #include <wax_linearbackend.h>
 #include <wax_referencebackend.h>
-#include <wax_softsurface.h>
-#include <wax_softsurfacefactory.h>
+#include <wax_softbitmap.h>
+#include <wax_softbitmapfactory.h>
 #include <wax_softedgemapfactory.h>
 #include <wax_softkernels_default.h>
 #include <wax_softshapes.h>
@@ -117,7 +117,7 @@ namespace
 			pBackend = ReferenceBackend::create();
 
 		auto pDevice = GfxDeviceGen2::create(pBackend);
-		auto pCanvas = SoftSurface::create(WGBP(Surface, _.size = c_canvasSize, _.format = PixelFormat::ARGB_8, _.colorSpace = ColorSpace::Linear, _.canvas = true));
+		auto pCanvas = SoftBitmap::create(WGBP(Bitmap, _.size = c_canvasSize, _.format = PixelFormat::ARGB_8, _.colorSpace = ColorSpace::Linear, _.canvas = true));
 
 		pDevice->beginRender();
 		pDevice->beginCanvasUpdate(pCanvas);
@@ -360,7 +360,7 @@ bool LineRenderTest::capsCommandTest(std::ostream& output)
 	std::ostringstream log;
 	auto pLogger = BackendLogger::create(&log, pSoft);
 	auto pDevice = GfxDeviceGen2::create(pLogger);
-	auto pCanvas = SoftSurface::create(WGBP(Surface, _.size = { 32, 32 }, _.format = PixelFormat::ARGB_8, _.canvas = true));
+	auto pCanvas = SoftBitmap::create(WGBP(Bitmap, _.size = { 32, 32 }, _.format = PixelFormat::ARGB_8, _.canvas = true));
 
 	pDevice->beginRender();
 	pDevice->beginCanvasUpdate(pCanvas);
@@ -580,13 +580,13 @@ bool LineRenderTest::streamTest(std::ostream& output)
 
 	Pixels streamed(c_canvasSize.w * c_canvasSize.h * 4, 0);
 
-	auto pCanvas = SoftSurface::create(WGBP(Surface, _.size = c_canvasSize, _.format = PixelFormat::ARGB_8, _.colorSpace = ColorSpace::Linear, _.canvas = true));
+	auto pCanvas = SoftBitmap::create(WGBP(Bitmap, _.size = c_canvasSize, _.format = PixelFormat::ARGB_8, _.colorSpace = ColorSpace::Linear, _.canvas = true));
 
 	auto pBackend = SoftBackend::create();
 	addDefaultSoftKernels(pBackend);
 	pBackend->defineCanvas(CanvasRef::Default, pCanvas);
 
-	auto pStreamPlayer = StreamPlayer::create(pBackend, SoftSurfaceFactory::create(), SoftEdgemapFactory::create());
+	auto pStreamPlayer = StreamPlayer::create(pBackend, SoftBitmapFactory::create(), SoftEdgemapFactory::create());
 	auto pStreamEncoder = StreamEncoder::create({ pStreamPlayer, pStreamPlayer->input });
 	auto pStreamBackend = StreamBackend::create(pStreamEncoder);
 	pStreamBackend->defineCanvas(CanvasRef::Default, c_canvasSize, PixelFormat::ARGB_8, 64, ColorSpace::Linear);

@@ -6,10 +6,10 @@ set(SOURCES
 	wax_sdlgpucontext.h
 	wax_sdlgpushaders.cpp
 	wax_sdlgpushaders.h
-	wax_sdlgpusurface.cpp
-	wax_sdlgpusurface.h
-	wax_sdlgpusurfacefactory.cpp
-	wax_sdlgpusurfacefactory.h
+	wax_sdlgpubitmap.cpp
+	wax_sdlgpubitmap.h
+	wax_sdlgpubitmapfactory.cpp
+	wax_sdlgpubitmapfactory.h
 	wax_sdlgpuedgemap.cpp
 	wax_sdlgpuedgemap.h
 	wax_sdlgpuedgemapfactory.cpp

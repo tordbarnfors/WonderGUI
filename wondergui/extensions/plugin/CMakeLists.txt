@@ -29,10 +29,10 @@ set( PLUGIN_SOURCES
 	wg_pluginhostbridge.cpp
 	wg_pluginhostbridge.h
 	wg_plugininterface.h
-	wg_pluginsurface.cpp
-	wg_pluginsurface.h
-	wg_pluginsurfacefactory.cpp
-	wg_pluginsurfacefactory.h
+	wg_pluginbitmap.cpp
+	wg_pluginbitmap.h
+	wg_pluginbitmapfactory.cpp
+	wg_pluginbitmapfactory.h
 	wg_pluginedgemap.cpp
 	wg_pluginedgemap.h
 	wg_pluginedgemapfactory.cpp
@@ -75,10 +75,10 @@ set( LEGACYPLUGIN_SOURCES
 	wg_pluginhostbridge.cpp
 	wg_pluginhostbridge.h
 	wg_plugininterface.h
-	wg_pluginsurface.cpp
-	wg_pluginsurface.h
-	wg_pluginsurfacefactory.cpp
-	wg_pluginsurfacefactory.h	
+	wg_pluginbitmap.cpp
+	wg_pluginbitmap.h
+	wg_pluginbitmapfactory.cpp
+	wg_pluginbitmapfactory.h	
 	wg_pluginedgemap.cpp
 	wg_pluginedgemap.h
 	wg_pluginedgemapfactory.cpp

@@ -115,19 +115,19 @@ namespace wg
 
 		void				_setSize(SizeSPX size, int scale);
 		void				_update(int microPassed);
-		void				_render(GfxDevice* pDevice, const RectSPX& canvas, Surface_p pSeed, const RectSPX& seedArea );
+		void				_render(GfxDevice* pDevice, const RectSPX& canvas, Bitmap_p pSeed, const RectSPX& seedArea );
 
 
 	protected:
 
 		SizeI				_glowResolution();
-		Surface_p			_createGlowCanvas( SurfaceFactory * pFactory, ColorSpace colorSpace );
+		Bitmap_p			_createGlowCanvas( BitmapFactory * pFactory, ColorSpace colorSpace );
 
 		Blurbrush_p			m_pBrush;
 
 		int					m_refreshRate = 30;
 
-		Surface_p			m_surface[2];
+		Bitmap_p			m_bitmap[2];
 		SizeI				m_resolution;
 
 		Color				m_seedTint = Color::White;

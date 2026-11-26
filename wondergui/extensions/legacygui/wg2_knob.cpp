@@ -394,7 +394,7 @@ void WgKnob::_renderPatches(wg::GfxDevice * pDevice, const WgRect& _canvas, cons
 	{
 		if( !m_pSurfaceFactory )
 			return;
-		m_pSurf = m_pSurfaceFactory->createSurface( WGBP(Surface,
+		m_pSurf = m_pSurfaceFactory->createBitmap( WGBP(Surface,
 													_.size = m_size*m_iOversampleX, 
 													_.format = WgPixelType::ARGB_8,
 													_.colorSpace = colorSpace) );

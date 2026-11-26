@@ -40,16 +40,16 @@ namespace wg
 		return BakeSkin_p(new BakeSkin(blueprint));
 	}
 
-	BakeSkin_p BakeSkin::create(Surface* pBakeSurface, std::initializer_list<Skin_p> skins)
+	BakeSkin_p BakeSkin::create(Bitmap* pBakeBitmap, std::initializer_list<Skin_p> skins)
 	{
-		return BakeSkin_p(new BakeSkin(pBakeSurface,skins));
+		return BakeSkin_p(new BakeSkin(pBakeBitmap,skins));
 	}
 
 	//____ constructor ________________________________________________________
 
 	BakeSkin::BakeSkin(const Blueprint& blueprint)
 	{
-		m_pBakeSurface = blueprint.surface;
+		m_pBakeBitmap = blueprint.bitmap;
 
 		m_blendMode = blueprint.blendMode;
 		m_tintColor = blueprint.color;
@@ -67,9 +67,9 @@ namespace wg
 		_onModified();
 	}
 
-	BakeSkin::BakeSkin(Surface* pBakeSurface, std::initializer_list<Skin_p> skinsIn)
+	BakeSkin::BakeSkin(Bitmap* pBakeBitmap, std::initializer_list<Skin_p> skinsIn)
 	{
-		m_pBakeSurface = pBakeSurface;
+		m_pBakeBitmap = pBakeBitmap;
 
 		m_skins = skinsIn;
 
@@ -204,9 +204,9 @@ namespace wg
 	{
 		// Sanity checking
 
-		if (!m_pBakeSurface)
+		if (!m_pBakeBitmap)
 		{
-			Base::reportError(ErrorLevel::SilentError, ErrorCode::FailedPrerequisite, "Can't render: missing bake surface", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::SilentError, ErrorCode::FailedPrerequisite, "Can't render: missing bake bitmap", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 
@@ -239,11 +239,11 @@ namespace wg
 			nClipRects = 1;
 		}
 
-		// Set new canvas (surface and rect).
+		// Set new canvas (bitmap and rect).
 
-		pDevice->beginCanvasUpdate(m_pBakeSurface, nClipRects, clip);
+		pDevice->beginCanvasUpdate(m_pBakeBitmap, nClipRects, clip);
 
-		// Clear bake surface, unless we are opaque.
+		// Clear bake bitmap, unless we are opaque.
 
 //		if (!m_bOpaque)
 		{
@@ -252,7 +252,7 @@ namespace wg
 			pDevice->setBlendMode(BlendMode::Blend);
 		}
 
-		// Render skins to bake surface, from back to front
+		// Render skins to bake bitmap, from back to front
 
 		if (m_bSkinInSkin)
 		{
@@ -284,7 +284,7 @@ namespace wg
 
 		RenderSettingsWithTint settings(pDevice, m_layer, m_blendMode, m_tintColor, canvas, m_pTint);
 
-		pDevice->setBlitSource(m_pBakeSurface);
+		pDevice->setBlitSource(m_pBakeBitmap);
 		pDevice->blit(canvas.pos(), { 0,0,canvas.size()});
 	}
 

@@ -151,9 +151,9 @@ namespace wg
 		}
 	}
 
-	//____ setSurfaceFactory() _________________________________________________
+	//____ setBitmapFactory() _________________________________________________
 
-	void CanvasCapsule::setSurfaceFactory(SurfaceFactory* pFactory)
+	void CanvasCapsule::setBitmapFactory(BitmapFactory* pFactory)
 	{
 		if (pFactory != m_pFactory)
 		{
@@ -329,7 +329,7 @@ namespace wg
 
 	//____ _renderCanvas() ____________________________________________________
 
-	Surface* CanvasCapsule::_renderCanvas(GfxDevice* pDevice, bool bFollowCanvas)
+	Bitmap* CanvasCapsule::_renderCanvas(GfxDevice* pDevice, bool bFollowCanvas)
 	{
 		// Without a color space of our own we take the one of the canvas we are rendered onto.
 		// Side displays might be on canvases with other color spaces, so only our own rendering
@@ -350,22 +350,22 @@ namespace wg
 
 		if (!m_pCanvas)
 		{
-			SurfaceFactory* pFactory = m_pFactory ? m_pFactory : Base::defaultSurfaceFactory();
+			BitmapFactory* pFactory = m_pFactory ? m_pFactory : Base::defaultBitmapFactory();
 			if (!pFactory)
 			{
 				Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
-					"No surface factory available to create canvas surface.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					"No bitmap factory available to create canvas bitmap.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				return nullptr;
 			}
 
 			SizeI pixelSize = m_canvasSize / 64;
-			m_pCanvas = pFactory->createSurface(WGBP(Surface, _.size = pixelSize, _.format = m_canvasFormat,
+			m_pCanvas = pFactory->createBitmap(WGBP(Bitmap, _.size = pixelSize, _.format = m_canvasFormat,
 				_.colorSpace = colorSpace, _.canvas = true, _.scale = m_scale));
 			m_patches.clear();
 			m_patches.add(m_canvasSize);
 		}
 
-		// Render children into canvas surface
+		// Render children into canvas bitmap
 
 		if (!m_patches.isEmpty())
 		{

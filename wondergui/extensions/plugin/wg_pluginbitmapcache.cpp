@@ -41,49 +41,49 @@ namespace wg
 		m_cCache = bitmapCache;
 		PluginCalls::object->retain(bitmapCache);
 
-		// Retrieve and wrap existing cache surfaces
+		// Retrieve and wrap existing cache bitmaps
 
-		int nbSurfaces = PluginCalls::bitmapCache->getNbCacheSurfaces(bitmapCache);
+		int nbBitmaps = PluginCalls::bitmapCache->getNbCacheBitmaps(bitmapCache);
 
-		if (nbSurfaces > 0)
+		if (nbBitmaps > 0)
 		{
-			// Reserve buffer, get surface objects
+			// Reserve buffer, get bitmap objects
 
-			int mem = nbSurfaces * sizeof(wax_obj);
+			int mem = nbBitmaps * sizeof(wax_obj);
 
-			wax_obj * pSurfaces = (wax_obj*) Base::memStackAlloc(mem);
-			PluginCalls::bitmapCache->getCacheSurfaces(bitmapCache, nbSurfaces, pSurfaces);
+			wax_obj * pBitmaps = (wax_obj*) Base::memStackAlloc(mem);
+			PluginCalls::bitmapCache->getCacheBitmaps(bitmapCache, nbBitmaps, pBitmaps);
 
 
 			int highestNumber = 0;
 
-			if (PluginCalls::surface->getSurfaceIdentity(pSurfaces[0]) == 0)
+			if (PluginCalls::bitmap->getBitmapIdentity(pBitmaps[0]) == 0)
 			{
 				// We are first PluginBitmapCache, we start numbering existing ones
 
-				for (int i = 0; i < nbSurfaces; i++)
-					PluginCalls::surface->setSurfaceIdentity(pSurfaces[i], i + 1);
+				for (int i = 0; i < nbBitmaps; i++)
+					PluginCalls::bitmap->setBitmapIdentity(pBitmaps[i], i + 1);
 
-				highestNumber = nbSurfaces;
+				highestNumber = nbBitmaps;
 			}
 			else
 			{
 				// Already numbered, we need to find highest number for stack size.
 
-				for (int i = 0; i < nbSurfaces; i++)
-					highestNumber = std::max( PluginCalls::surface->getSurfaceIdentity(pSurfaces[i]), highestNumber);
+				for (int i = 0; i < nbBitmaps; i++)
+					highestNumber = std::max( PluginCalls::bitmap->getBitmapIdentity(pBitmaps[i]), highestNumber);
 			}
 
 			// Resize vector, create and insert wrappers
 
-			m_surfaces.resize(highestNumber);
+			m_bitmaps.resize(highestNumber);
 
-			for (int i = 0; i < nbSurfaces; i++)
+			for (int i = 0; i < nbBitmaps; i++)
 			{
-				wax_obj obj = pSurfaces[i];
+				wax_obj obj = pBitmaps[i];
 
-				int ofs = PluginCalls::surface->getSurfaceIdentity(obj) - 1;
-				m_surfaces[ofs] = PluginSurface::create(obj);
+				int ofs = PluginCalls::bitmap->getBitmapIdentity(obj) - 1;
+				m_bitmaps[ofs] = PluginBitmap::create(obj);
 			}
 
 			// Release buffer
@@ -96,10 +96,10 @@ namespace wg
 		wax_cacheListenerBP	bp;
 
 
-		bp.addFunc = [](wax_obj surface, void* pData, int data) { ((PluginBitmapCache*)pData)->_surfaceAdded(surface); };
+		bp.addFunc = [](wax_obj bitmap, void* pData, int data) { ((PluginBitmapCache*)pData)->_bitmapAdded(bitmap); };
 		bp.addPtr = this;
 
-		bp.removeFunc = [](int nSurfaces, wax_obj* pSurfaces, void* pData, int data) { ((PluginBitmapCache*)pData)->_surfacesRemoved(nSurfaces, pSurfaces); };
+		bp.removeFunc = [](int nBitmaps, wax_obj* pBitmaps, void* pData, int data) { ((PluginBitmapCache*)pData)->_bitmapsRemoved(nBitmaps, pBitmaps); };
 		bp.removePtr = this;
 
 		bp.clearFunc = [](void* pData, int data) { ((PluginBitmapCache*)pData)->_cleared(); };
@@ -173,75 +173,75 @@ namespace wg
 
 	//____ getCacheSlot() _____________________________________________________
 
-	std::tuple<Surface_p, CoordI> PluginBitmapCache::getCacheSlot(SizeI size)
+	std::tuple<Bitmap_p, CoordI> PluginBitmapCache::getCacheSlot(SizeI size)
 	{
 		auto slot = PluginCalls::bitmapCache->getCacheSlot(m_cCache, { size.w,size.h });
 
-		int ofs = PluginCalls::surface->getSurfaceIdentity(slot.surface) - 1;
+		int ofs = PluginCalls::bitmap->getBitmapIdentity(slot.bitmap) - 1;
 
-		return std::make_tuple(m_surfaces[ofs], CoordI( slot.coord.x, slot.coord.y ) );
+		return std::make_tuple(m_bitmaps[ofs], CoordI( slot.coord.x, slot.coord.y ) );
 	}
 
-	//____ getSurfaces() ______________________________________________________
+	//____ getBitmaps() ______________________________________________________
 
-	std::vector<Surface_p> PluginBitmapCache::getSurfaces() const
+	std::vector<Bitmap_p> PluginBitmapCache::getBitmaps() const
 	{
-		std::vector<Surface_p> vec;
+		std::vector<Bitmap_p> vec;
 
-		for ( auto& surf : m_surfaces )
+		for ( auto& bitmap : m_bitmaps )
 		{
-			if (surf)
-				vec.push_back(surf);
+			if (bitmap)
+				vec.push_back(bitmap);
 		}
 
 		return vec;
 	}
 
-	//____ wrapperSurface() ___________________________________________________
+	//____ wrapperBitmap() ___________________________________________________
 
-	PluginSurface* PluginBitmapCache::wrapperSurface(wax_obj surfaceObject)
+	PluginBitmap* PluginBitmapCache::wrapperBitmap(wax_obj bitmapObject)
 	{
-		int offset = PluginCalls::surface->getSurfaceIdentity(surfaceObject) -1;
+		int offset = PluginCalls::bitmap->getBitmapIdentity(bitmapObject) -1;
 
-		assert(offset > 0 && offset < m_surfaces.size() && m_surfaces[offset] != nullptr );
+		assert(offset > 0 && offset < m_bitmaps.size() && m_bitmaps[offset] != nullptr );
 
-		return m_surfaces[offset];
+		return m_bitmaps[offset];
 	}
 
-	//____ _surfaceAdded() ____________________________________________________
+	//____ _bitmapAdded() ____________________________________________________
 
-	void PluginBitmapCache::_surfaceAdded(wax_obj surface)
+	void PluginBitmapCache::_bitmapAdded(wax_obj bitmap)
 	{
-		int ofs = PluginCalls::surface->getSurfaceIdentity(surface) - 1;
+		int ofs = PluginCalls::bitmap->getBitmapIdentity(bitmap) - 1;
 		if (ofs < 0)
 		{
 			// We are the first PluginBitmapCache receiving the callback. Let's decide and offset.
 
 			int ofs = 0;
-			for ( auto& surf : m_surfaces )
+			for ( auto& bitmap : m_bitmaps )
 			{
-				if (!surf)
+				if (!bitmap)
 					break;
 				ofs++;
 			}
 
-			PluginCalls::surface->setSurfaceIdentity(surface, ofs + 1);
+			PluginCalls::bitmap->setBitmapIdentity(bitmap, ofs + 1);
 		}
 
-		if (ofs >= m_surfaces.size())
-			m_surfaces.resize(ofs + 1);
+		if (ofs >= m_bitmaps.size())
+			m_bitmaps.resize(ofs + 1);
 
-		m_surfaces[ofs] = PluginSurface::create(surface);
+		m_bitmaps[ofs] = PluginBitmap::create(bitmap);
 	}
 
-	//____ _surfacesRemoved() _________________________________________________
+	//____ _bitmapsRemoved() _________________________________________________
 
-	void PluginBitmapCache::_surfacesRemoved(int nSurfaces, wax_obj* pSurfaces)
+	void PluginBitmapCache::_bitmapsRemoved(int nBitmaps, wax_obj* pBitmaps)
 	{
-		for (int i = 0; i < nSurfaces; i++)
+		for (int i = 0; i < nBitmaps; i++)
 		{
-			int ofs = PluginCalls::surface->getSurfaceIdentity(pSurfaces[i]) - 1;
-			m_surfaces[ofs] = nullptr;
+			int ofs = PluginCalls::bitmap->getBitmapIdentity(pBitmaps[i]) - 1;
+			m_bitmaps[ofs] = nullptr;
 		}
 	}
 
@@ -249,7 +249,7 @@ namespace wg
 
 	void PluginBitmapCache::_cleared()
 	{
-		m_surfaces.clear();
+		m_bitmaps.clear();
 	}
 
 

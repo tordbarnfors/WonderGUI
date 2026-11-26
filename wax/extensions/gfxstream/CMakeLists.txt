@@ -3,14 +3,14 @@ set( SOURCES
 
 	wax_gfxstream.cpp
 	wax_gfxstream.h
-	wax_mirrorsurfacefactory.cpp
-	wax_mirrorsurfacefactory.h
-	wax_mirrorsurface.cpp
-	wax_mirrorsurface.h
-	wax_remotesurface.cpp
-	wax_remotesurface.h
-	wax_remotesurfacefactory.cpp
-	wax_remotesurfacefactory.h
+	wax_mirrorbitmapfactory.cpp
+	wax_mirrorbitmapfactory.h
+	wax_mirrorbitmap.cpp
+	wax_mirrorbitmap.h
+	wax_remotebitmap.cpp
+	wax_remotebitmap.h
+	wax_remotebitmapfactory.cpp
+	wax_remotebitmapfactory.h
 	wax_streambackend.cpp
 	wax_streambackend.h
 	wax_streambuffer.cpp

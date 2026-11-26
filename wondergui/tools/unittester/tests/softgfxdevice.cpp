@@ -31,7 +31,7 @@ bool SoftGfxDeviceTest::init(std::ostream& output)
 bool SoftGfxDeviceTest::drawRingTest(std::ostream& output)
 {
 
-	SoftSurface_p pCanvas =	SoftSurface::create( { .canvas = true, .size = {4096,4096} } );
+	SoftBitmap_p pCanvas =	SoftBitmap::create( { .canvas = true, .size = {4096,4096} } );
 
 	auto pBackend = SoftBackend::create();
 	GfxDevice_p pDevice = GfxDeviceGen2::create(pBackend);

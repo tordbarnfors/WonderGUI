@@ -25,7 +25,7 @@
 
 #include <wg_chart.h>
 #include <wax_edgemapwave.h>
-#include <wax_surfacefactory.h>
+#include <wax_bitmapfactory.h>
 
 namespace wg
 {
@@ -41,6 +41,7 @@ namespace wg
 		struct Blueprint
 		{
 
+			BitmapFactory_p	bitmapFactory = nullptr;
 			Placement		bottomLabelPlacement = Placement::South;
 			pts				bottomLabelSpacing = 1;
 
@@ -80,7 +81,6 @@ namespace wg
 			bool			selectable = false;
 			Skin_p			skin;
 			bool			stickyFocus = false;
-			SurfaceFactory_p	surfaceFactory = nullptr;
 			bool			tabLock = false;
 
 			TextLayout_p	textLayout;
@@ -129,10 +129,10 @@ namespace wg
 			m_flip = bp.flip;
 			m_bAxisSwapped = ( bp.flip == GfxFlip::Rot90 || bp.flip == GfxFlip::Rot90FlipX || bp.flip == GfxFlip::Rot90FlipY ||
 							  bp.flip == GfxFlip::Rot270 || bp.flip == GfxFlip::Rot270FlipX || bp.flip == GfxFlip::Rot270FlipY );
-			m_scrollSurfaceFormat = bp.pixelFormat;
-			m_pSurfaceFactory = bp.surfaceFactory;
+			m_scrollBitmapFormat = bp.pixelFormat;
+			m_pBitmapFactory = bp.bitmapFactory;
 
-			if (Util::pixelFormatToDescription(m_scrollSurfaceFormat).A_mask == 0)
+			if (Util::pixelFormatToDescription(m_scrollBitmapFormat).A_mask == 0)
 				m_bOpaqueChart = true;
 		}
 
@@ -145,7 +145,7 @@ namespace wg
 
 		void		_renderCharts(GfxDevice* pDevice, const RectSPX& canvas) override;
 
-		virtual void _renderOnScrollSurface( GfxDevice * pDevice, SizeSPX canvasSize, spx rightEdgeOfs, int64_t rightEdgeTimestamp, spx dirtLen ) = 0;
+		virtual void _renderOnScrollBitmap( GfxDevice * pDevice, SizeSPX canvasSize, spx rightEdgeOfs, int64_t rightEdgeTimestamp, spx dirtLen ) = 0;
 		virtual void	_removeOutdatedSamples() = 0;
 
 		void		_requestFullRedraw();
@@ -163,15 +163,15 @@ namespace wg
 		int			m_latency = 10000;
 
 	private:
-		SurfaceFactory_p m_pSurfaceFactory;
-		Surface_p	m_pScrollSurface;
+		BitmapFactory_p m_pBitmapFactory;
+		Bitmap_p	m_pScrollBitmap;
 
 		int64_t		m_rightEdgeTimestamp = 0;
 		spx			m_rightEdgeOfs = 0;
 		spx			m_dirtLen = 0;
 
-		PixelFormat	m_scrollSurfaceFormat = PixelFormat::ARGB_8;
-		Color		m_scrollSurfaceBgColor = Color::Transparent;
+		PixelFormat	m_scrollBitmapFormat = PixelFormat::ARGB_8;
+		Color		m_scrollBitmapBgColor = Color::Transparent;
 
 		GfxFlip		m_flip = GfxFlip::None;
 		bool		m_bAxisSwapped = false;				// Set if flip results in X and Y being swapped.

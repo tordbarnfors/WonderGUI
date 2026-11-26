@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wg_plugincalls.h>
 #include <wg_pluginfont.h>
-#include <wg_pluginsurface.h>
+#include <wg_pluginbitmap.h>
 
 namespace wg
 {

@@ -34,7 +34,7 @@
 
 namespace wax
 {
-    class Surface;
+    class Bitmap;
     class Device;
 
 	class CanvasLayers;
@@ -51,24 +51,24 @@ namespace wax
 	 * 
 	 * CanvasLayers specifies layers 1 and above when performing multi-layer rendering.
 	 * 
-	 * Layer 0 (also called the base layer) is the surface set as canvas. The first specified layer
+	 * Layer 0 (also called the base layer) is the bitmap set as canvas. The first specified layer
 	 * in this CanvasLayer becomes layer 1. A maximum of 16 layers can be specified.
 	 * 
-	 * The surface of a layer is created on demand when the first widget or skin attempts to render to it
+	 * The bitmap of a layer is created on demand when the first widget or skin attempts to render to it
 	 * (calls Device::setRenderLayer(layer-number)), thus there is no cost for specifying layers that
 	 * are not used.
 	 * 
 	 * When the canvas is completed (when Device::endCanvasUpdate() is called), the generated
-	 * surfaces are blended onto the base layer and destroyed, resulting in the canvas surface containing
+	 * bitmaps are blended onto the base layer and destroyed, resulting in the canvas bitmap containing
 	 * the composite image.
 	 * 
-	 * The format of the surface and the operation used to blend it onto the canvas surface can be specified.
+	 * The format of the bitmap and the operation used to blend it onto the canvas bitmap can be specified.
 	 * Several other methods can also be specified, dealing with initializing and finalizing the individual layer
-	 * surfaces.
+	 * bitmaps.
 	 * 
 	 * Using CanvasLayers allows for advanced rendering operations where shadows, glow, glass-effects etc
 	 * can be inserted between backgrounds and foregrounds of the UI. It is also an easy way to bog down the user
-	 * interface by allocating and blending large surfaces on the fly, using large amounts of memory, GPU and CPU.
+	 * interface by allocating and blending large bitmaps on the fly, using large amounts of memory, GPU and CPU.
 	 * 
 	 * CanvasLayers can also produce unexpected results when different widgets overlap. I.e. if an overlapping
 	 * widget renders all its contents to a layer below the layer used by the widget behind it, 
@@ -160,7 +160,7 @@ namespace wax
 
 
 
-        int						m_baseLayer = 0;                // 0 Means that the canvas surface is the base layer.
+        int						m_baseLayer = 0;                // 0 Means that the canvas bitmap is the base layer.
 		std::vector<LayerBP>	m_layers;
         
         std::function<void(Device * pDevice)>  m_clearCanvasFunc = nullptr;

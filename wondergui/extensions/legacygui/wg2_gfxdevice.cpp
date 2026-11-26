@@ -24,7 +24,7 @@
 #include <wg2_gfxdevice.h>
 #include <wg2_base.h>
 
-#include <wax_surface.h>
+#include <wax_bitmap.h>
 #include <wg2_geo.h>
 #include <wg2_blockset.h>
 #include <wg2_text.h>
@@ -299,7 +299,7 @@ void WgGfxDevice::_printEllipsisTextSpan( wg::GfxDevice * pDevice, WgPen& pen, c
 		ellipsisChar = '.';
 	}
 
-	if( ellipsis.pSurface )
+	if( ellipsis.pBitmap )
 	{
 		if( ellipsisChar == int(WgExtChar::Ellipsis) )
 			ellipsisWidth = ellipsis.rect.w/64 + ellipsis.bearingX/64;

@@ -40,7 +40,7 @@ namespace wax
 	 * sweep of it (1.0 being all of it, negative going counter clockwise). Its height goes from
 	 * topDistance (top of the source) to bottomDistance (bottom of the source), which are distances
 	 * from the outline, positive outwards, negative inwards. With a sweep of 1.0 the source wraps
-	 * around and an edgemap or surface that is tiling joins seamlessly.
+	 * around and an edgemap or bitmap that is tiling joins seamlessly.
 	 *
 	 * Positions along the outline are those of the nearest point on it, so the source keeps its
 	 * width along the straight sides and is spread or squeezed around the corners, more the further

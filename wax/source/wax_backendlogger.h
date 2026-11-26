@@ -57,10 +57,10 @@ public:
 	void	endRender() override;
 
 
-	void	beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo = nullptr ) override;
+	void	beginSession( CanvasRef canvasRef, Bitmap * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo = nullptr ) override;
 	void	endSession() override;
 
-	void	setCanvas( Surface * pSurface ) override;
+	void	setCanvas( Bitmap * pBitmap ) override;
 	void	setCanvas( CanvasRef ref ) override;
 	void	setObjects(Object* const * pBeg, Object* const * pEnd) override;
 	void	setRects(const RectSPX* pBeg, const RectSPX* pEnd) override;
@@ -76,7 +76,7 @@ public:
 
 	const CanvasInfo *	canvasInfo(CanvasRef ref) const override;
 
-	SurfaceFactory_p	surfaceFactory() override;
+	BitmapFactory_p	bitmapFactory() override;
 	EdgemapFactory_p	edgemapFactory() override;
 	WarpmapFactory_p	warpmapFactory() override;
 

@@ -25,7 +25,7 @@ public:
 
 	bool init(GfxDevice * pDevice, const RectI& canvas, wapp::API * pAppAPI)
 	{
-		m_pImg = pAppAPI->loadSurface("resources/mipmaptest.png", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Bilinear });
+		m_pImg = pAppAPI->loadBitmap("resources/mipmaptest.png", pDevice->bitmapFactory(), { .sampleMethod = SampleMethod::Bilinear });
 		if (!m_pImg)
 			return false;
 
@@ -126,7 +126,7 @@ public:
 	}
 
 private:
-	Surface_p	m_pImg;
+	Bitmap_p	m_pImg;
 
 	float rot = 35;
 	float scale = 1.3f;

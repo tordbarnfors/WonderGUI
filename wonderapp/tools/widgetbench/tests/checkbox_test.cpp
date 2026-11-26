@@ -3,7 +3,7 @@
 // Skins::Checkbox carries eight blocks: Default, Hovered, Pressed, Checked,
 // CheckedHovered, CheckedPressed, Disabled, DisabledChecked. The checked
 // family is deliberately drawn on the UNCHECKED family's background, so the
-// surface only ever says what the pointer is doing and the tick says whether
+// bitmap only ever says what the pointer is doing and the tick says whether
 // the box is on. The tick also sinks 1pt down-right while the box is held.
 //
 // Row 1 forces each state on the skin directly, so all eight are visible at

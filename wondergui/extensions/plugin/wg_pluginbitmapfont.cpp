@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wg_plugincalls.h>
 #include <wg_pluginbitmapfont.h>
-#include <wg_pluginsurface.h>
+#include <wg_pluginbitmap.h>
 
 #include <cassert>
 
@@ -35,12 +35,12 @@ namespace wg
 
 	PluginBitmapFont::PluginBitmapFont( wax_obj cBitmapFont ) : PluginFont(cBitmapFont)
 	{
-		wax_obj surface = PluginCalls::bitmapFont->getBitmapFontSurface(cBitmapFont);
+		wax_obj bitmap = PluginCalls::bitmapFont->getBitmapFontBitmap(cBitmapFont);
 		
 		// PluginBitmapFont doesn't support backup fonts.
 		assert( PluginCalls::font->getBackupFont(cBitmapFont) == 0 );
 		
-		m_pSurface = PluginSurface::create(surface);
+		m_pBitmap = PluginBitmap::create(bitmap);
 	}
 
 	//____ Destructor _____________________________________________________________
@@ -74,14 +74,14 @@ namespace wg
 			glyph.bearingX	= cGlyph.bearingX;
 			glyph.bearingY	= cGlyph.bearingY;
 
-			glyph.pSurface 	= m_pSurface;
+			glyph.pBitmap 	= m_pBitmap;
 		}
 		else
 		{
 			glyph.advance = 0;
 			glyph.fontRef = 0;
 			glyph.kerningIndex = 0;
-			glyph.pSurface = nullptr;
+			glyph.pBitmap = nullptr;
 		}
 
 		return;

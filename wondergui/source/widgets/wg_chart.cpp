@@ -194,7 +194,7 @@ namespace wg
 			{
 				SizeI chartSize = graphCanvas.size() / 64;
 
-				m_pChartCanvas = pDevice->surfaceFactory()->createSurface(WGBP(Surface,
+				m_pChartCanvas = pDevice->bitmapFactory()->createBitmap(WGBP(Bitmap,
 					_.size = chartSize,
 					_.format = PixelFormat::ARGB_8,
 					_.colorSpace = colorSpace,

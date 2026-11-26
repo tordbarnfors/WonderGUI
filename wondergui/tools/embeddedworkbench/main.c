@@ -56,7 +56,7 @@ int main ( int argc, char** argv )
 	SDL_LockSurface(pWinSurf);
 
     wax_obj hBlob = wax_createBlobFromData( pWinSurf->pixels, 0, NULL );
-	wax_obj hCanvas = wax_createSoftSurfaceFromBlob( &(wax_surfaceBP){ .canvas = 1, .size = canvasSize, .format = format }, hBlob, pWinSurf->pitch );
+	wax_obj hCanvas = wax_createSoftBitmapFromBlob( &(wax_bitmapBP){ .canvas = 1, .size = canvasSize, .format = format }, hBlob, pWinSurf->pitch );
 	wax_release( hBlob );
 
 	SDL_UnlockSurface(pWinSurf);
@@ -81,7 +81,7 @@ int main ( int argc, char** argv )
 
 
 	hBlob = wax_createBlobFromData( pLogoSDLSurf->pixels, 0, NULL );
-	wax_obj hLogoSurface = wax_createSoftSurfaceFromBlob( &(wax_surfaceBP){ .size = imgSize, .format = WAX_PIXFMT_XRGB_8 }, hBlob, pLogoSDLSurf->pitch );
+	wax_obj hLogoBitmap = wax_createSoftBitmapFromBlob( &(wax_bitmapBP){ .size = imgSize, .format = WAX_PIXFMT_XRGB_8 }, hBlob, pLogoSDLSurf->pitch );
     wax_release(hBlob);
 
 
@@ -92,7 +92,7 @@ int main ( int argc, char** argv )
 	imgSize.h = pSymbolSDLSurf->h;
 
     hBlob = wax_createBlobFromData( pSymbolSDLSurf->pixels, 0, NULL );
-	wax_obj hSymbolSurface = wax_createSoftSurfaceFromBlob( &(wax_surfaceBP){ .size = imgSize, .format = WAX_PIXFMT_XRGB_8 }, hBlob, pSymbolSDLSurf->pitch );
+	wax_obj hSymbolBitmap = wax_createSoftBitmapFromBlob( &(wax_bitmapBP){ .size = imgSize, .format = WAX_PIXFMT_XRGB_8 }, hBlob, pSymbolSDLSurf->pitch );
     wax_release(hBlob);
 
 	//------------------------------------------------------
@@ -116,7 +116,7 @@ int main ( int argc, char** argv )
 
 		wax_beginRender( hGfxDevice );
 
-		wax_beginCanvasUpdateWithSurface( hGfxDevice, hCanvas, 0, NULL, NULL, -1 );
+		wax_beginCanvasUpdateWithBitmap( hGfxDevice, hCanvas, 0, NULL, NULL, -1 );
 
 
 		wax_color fillColor;
@@ -130,14 +130,14 @@ int main ( int argc, char** argv )
 		wax_coordSPX symbolDest;
 		symbolDest.x = (240-150)/2*64;
 		symbolDest.y = 30*64;
-		wax_setBlitSource( hGfxDevice, hSymbolSurface );
+		wax_setBlitSource( hGfxDevice, hSymbolBitmap );
 		wax_blit( hGfxDevice, symbolDest );
 
 
 		wax_coordSPX logoDest;
 		logoDest.x = 0*64;
 		logoDest.y = (240-40)*64;
-		wax_setBlitSource( hGfxDevice, hLogoSurface );
+		wax_setBlitSource( hGfxDevice, hLogoBitmap );
 		wax_blit( hGfxDevice, logoDest );
 
 
@@ -166,8 +166,8 @@ int main ( int argc, char** argv )
 	// deleted before calling Base::exit().
 
 
-	wax_release( hLogoSurface );
-	wax_release( hSymbolSurface );
+	wax_release( hLogoBitmap );
+	wax_release( hSymbolBitmap );
 
 	wax_release( hCanvas );
 	wax_release( hGfxDevice );

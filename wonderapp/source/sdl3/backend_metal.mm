@@ -21,8 +21,8 @@
 =========================================================================*/
 #include <sdlwindow.h>
 
-#include <wax_metalsurface.h>
-#include <wax_metalsurfacefactory.h>
+#include <wax_metalbitmap.h>
+#include <wax_metalbitmapfactory.h>
 #include <wax_metaledgemapfactory.h>
 #include <wax_metalbackend.h>
 
@@ -50,7 +50,7 @@ private:
 
 	SDL_MetalView		m_metalView = nullptr;
 	MetalBackend_p		m_pBackend;
-	MetalSurface_p		m_pCanvas;
+	MetalBitmap_p		m_pCanvas;
 };
 
 
@@ -71,8 +71,8 @@ bool backend_specific_init()
 	auto pDevice = GfxDeviceGen2::create(pBackend);
 	wg::Base::setDefaultDevice(pDevice);
 
-	auto pSurfaceFactory = MetalSurfaceFactory::create();
-	wg::Base::setDefaultSurfaceFactory(pSurfaceFactory);
+	auto pBitmapFactory = MetalBitmapFactory::create();
+	wg::Base::setDefaultBitmapFactory(pBitmapFactory);
 
 	auto pEdgemapFactory = MetalEdgemapFactory::create();
 	wg::Base::setDefaultEdgemapFactory(pEdgemapFactory);
@@ -130,7 +130,7 @@ SDLWindowMetal::SDLWindowMetal(wapp::Window* pUserWindow, wg::Placement origin, 
 		m_pBackend = wax_static_cast<MetalBackend_p>(static_cast<GfxDeviceGen2*>(wg::Base::defaultDevice().rawPtr())->backend());
 		m_pBackend->setDefaultCanvas(nullptr, pixels, PixelFormat::ARGB_8);
 
-		m_pCanvas = MetalSurface::create({.canvas = true, .format = PixelFormat::ARGB_8, .scale = scale, .size = pixels });
+		m_pCanvas = MetalBitmap::create({.canvas = true, .format = PixelFormat::ARGB_8, .scale = scale, .size = pixels });
 	}
 
 	m_pRootPanel = RootPanel::create(m_pCanvas);
@@ -185,7 +185,7 @@ void SDLWindowMetal::onWindowSizeUpdated()
 
 		_layer().drawableSize = CGSizeMake(pixels.w, pixels.h);
 
-		m_pCanvas = MetalSurface::create({.canvas = true, .format = PixelFormat::ARGB_8, .scale = _scale(), .size = pixels });
+		m_pCanvas = MetalBitmap::create({.canvas = true, .format = PixelFormat::ARGB_8, .scale = _scale(), .size = pixels });
 		m_pRootPanel->setCanvas(m_pCanvas);
 		m_pRootPanel->render();
 	}

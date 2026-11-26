@@ -150,7 +150,7 @@ namespace wg::oldskool
 
 	// Fonts are optional. Bold, italic and monospace fall back to the normal
 	// font, which falls back to a SysFont. The skin blocks are embedded and
-	// created with the default surface factory, so the kit is tied to that
+	// created with the default bitmap factory, so the kit is tied to that
 	// factory's device until exit() is called.
 
 	bool init(Font* pNormal = nullptr, Font* pBold = nullptr, Font* pItalic = nullptr, Font* pMonospace = nullptr);

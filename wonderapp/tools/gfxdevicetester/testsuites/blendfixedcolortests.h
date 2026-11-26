@@ -17,7 +17,7 @@ public:
 
 	bool init(GfxDevice * pDevice, const RectSPX& canvas, wapp::API * pAppAPI)
 	{
-		m_pSplash = pAppAPI->loadSurface("resources/splash.png", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Nearest } );
+		m_pSplash = pAppAPI->loadBitmap("resources/splash.png", pDevice->bitmapFactory(), { .sampleMethod = SampleMethod::Nearest } );
 		if (!m_pSplash)
 			return false;
 
@@ -169,6 +169,6 @@ private:
 			pDevice->fill( RectSPX(0, y*32*64, canvas.w, 32*64), pColors[y] );
 	}
 
-	Surface_p	m_pSplash;
+	Bitmap_p	m_pSplash;
 
 };

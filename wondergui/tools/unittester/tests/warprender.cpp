@@ -7,7 +7,7 @@
 #include <wax_softbackend.h>
 #include <wax_linearbackend.h>
 #include <wax_referencebackend.h>
-#include <wax_softsurface.h>
+#include <wax_softbitmap.h>
 #include <wax_softedgemap.h>
 #include <wax_softedgemapfactory.h>
 #include <wax_softwarpmap.h>
@@ -29,7 +29,7 @@
 #include <wax_streambackend.h>
 #include <wax_streamplayer.h>
 #include <wax_streamencoder.h>
-#include <wax_softsurfacefactory.h>
+#include <wax_softbitmapfactory.h>
 
 #include <algorithm>
 #include <cmath>
@@ -121,7 +121,7 @@ namespace
 			pBackend = ReferenceBackend::create();
 
 		auto pDevice = GfxDeviceGen2::create(pBackend);
-		auto pCanvas = SoftSurface::create(WGBP(Surface, _.size = c_canvasSize, _.format = canvasFormat, _.colorSpace = ColorSpace::Linear, _.canvas = true));
+		auto pCanvas = SoftBitmap::create(WGBP(Bitmap, _.size = c_canvasSize, _.format = canvasFormat, _.colorSpace = ColorSpace::Linear, _.canvas = true));
 
 		pDevice->beginRender();
 		pDevice->beginCanvasUpdate(pCanvas);
@@ -239,9 +239,9 @@ namespace
 		return pDevice->edgemapFactory()->createEdgemap(bp, SampleOrigin::Top, samples.data(), nEdges, w + 1);
 	}
 
-	// A surface with a pattern that has no two neighbors alike.
+	// A bitmap with a pattern that has no two neighbors alike.
 
-	Surface_p makeSurface(GfxDevice* pDevice, bool bTiling, SampleMethod sampleMethod)
+	Bitmap_p makeBitmap(GfxDevice* pDevice, bool bTiling, SampleMethod sampleMethod)
 	{
 		const int w = 32, h = 16;
 
@@ -260,14 +260,14 @@ namespace
 			}
 		}
 
-		return pDevice->surfaceFactory()->createSurface(WGBP(Surface, _.format = PixelFormat::ARGB_8, _.sampleMethod = sampleMethod, _.size = { w, h }, _.tiling = bTiling),
+		return pDevice->bitmapFactory()->createBitmap(WGBP(Bitmap, _.format = PixelFormat::ARGB_8, _.sampleMethod = sampleMethod, _.size = { w, h }, _.tiling = bTiling),
 														pixels.data(), PixelFormat::ARGB_8);
 	}
 
-	// Sizes of the sources the Warpmaps are made for: edgemaps, surfaces and the source rectangles used.
+	// Sizes of the sources the Warpmaps are made for: edgemaps, bitmaps and the source rectangles used.
 
 	const SizeSPX c_edgemapSource = { 48 * 64, 24 * 64 };
-	const SizeSPX c_surfaceSource = { 32 * 64, 16 * 64 };
+	const SizeSPX c_bitmapSource = { 32 * 64, 16 * 64 };
 	const SizeSPX c_rectSource = { 16 * 64, 16 * 64 };
 
 	Warpmap_p makeRing(GfxDevice* pDevice, int size, SizeSPX source, float sweep = 360.f, float startAngle = 0.f)
@@ -367,15 +367,15 @@ namespace
 		pDevice->warpDrawEdgemap({ 50 * 64, 2 * 64 }, pArc, pEdgemap, { 11 * 64, 3 * 64 });
 		pDevice->warpDrawEdgemap({ 98 * 64, 2 * 64 }, pWave, pTinted);
 
-		pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Bilinear));
-		pDevice->warpBlit({ 2 * 64, 50 * 64 }, makeRing(pDevice, 44, c_surfaceSource));
+		pDevice->setBlitSource(makeBitmap(pDevice, true, SampleMethod::Bilinear));
+		pDevice->warpBlit({ 2 * 64, 50 * 64 }, makeRing(pDevice, 44, c_bitmapSource));
 
 		pDevice->setTint({ 50 * 64, 50 * 64, 44 * 64, 44 * 64 }, Tint::create(Color(4096, 4096, 4096, 4096), Color(4096, 1000, 1000, 2000)));
 		pDevice->warpBlit({ 50 * 64, 50 * 64 }, makeRing(pDevice, 44, c_rectSource, 270.f, -135.f), { 8 * 64, 0, 16 * 64, 16 * 64 }, { 5 * 64, 0 });
 		pDevice->clearTint();
 
-		pDevice->setBlitSource(makeSurface(pDevice, false, SampleMethod::Nearest));
-		pDevice->warpBlit({ 98 * 64, 50 * 64 }, makeWave(pDevice, 44, c_surfaceSource));
+		pDevice->setBlitSource(makeBitmap(pDevice, false, SampleMethod::Nearest));
+		pDevice->warpBlit({ 98 * 64, 50 * 64 }, makeWave(pDevice, 44, c_bitmapSource));
 	}
 
 	// Straight onto the source, with cells of cellSize, or the default Warpmap if 0.
@@ -395,13 +395,13 @@ namespace
 	{
 		Pixels streamed(c_canvasSize.w * c_canvasSize.h * 4, 0);
 
-		auto pCanvas = SoftSurface::create(WGBP(Surface, _.size = c_canvasSize, _.format = PixelFormat::ARGB_8, _.colorSpace = ColorSpace::Linear, _.canvas = true));
+		auto pCanvas = SoftBitmap::create(WGBP(Bitmap, _.size = c_canvasSize, _.format = PixelFormat::ARGB_8, _.colorSpace = ColorSpace::Linear, _.canvas = true));
 
 		auto pBackend = SoftBackend::create();
 		addDefaultSoftKernels(pBackend);
 		pBackend->defineCanvas(CanvasRef::Default, pCanvas);
 
-		auto pStreamPlayer = StreamPlayer::create(pBackend, SoftSurfaceFactory::create(), SoftEdgemapFactory::create());
+		auto pStreamPlayer = StreamPlayer::create(pBackend, SoftBitmapFactory::create(), SoftEdgemapFactory::create());
 		auto pStreamEncoder = StreamEncoder::create({ pStreamPlayer, pStreamPlayer->input });
 		auto pStreamBackend = StreamBackend::create(pStreamEncoder);
 		pStreamBackend->defineCanvas(CanvasRef::Default, c_canvasSize, PixelFormat::ARGB_8, 64, ColorSpace::Linear);
@@ -499,7 +499,7 @@ bool WarpRenderTest::identityEdgemapTest(std::ostream& output)
 }
 
 //____ identityBlitTest() _____________________________________________________
-// A Warpmap mapping straight onto a surface draws it as blit() does, for both sample methods.
+// A Warpmap mapping straight onto a bitmap draws it as blit() does, for both sample methods.
 
 bool WarpRenderTest::identityBlitTest(std::ostream& output)
 {
@@ -509,12 +509,12 @@ bool WarpRenderTest::identityBlitTest(std::ostream& output)
 
 	for (auto sampleMethod : { SampleMethod::Nearest, SampleMethod::Bilinear })
 	{
-		auto pSurface = makeSurface(pRes, false, sampleMethod);
+		auto pBitmap = makeBitmap(pRes, false, sampleMethod);
 		auto pWarpmap = identity({ 16, 12 }, 5);
 
 		auto direct = [&](GfxDevice* pDevice)
 		{
-			pDevice->setBlitSource(pSurface);
+			pDevice->setBlitSource(pBitmap);
 			pDevice->blit({ 3 * 64, 4 * 64 }, { 64 * 7, 64 * 2, 64 * 16, 64 * 12 });
 			pDevice->setTintColor(Color(4096, 2000, 4096, 3000));
 			pDevice->blit({ 40 * 64, 50 * 64 }, { 64 * 7, 64 * 2, 64 * 16, 64 * 12 });
@@ -522,7 +522,7 @@ bool WarpRenderTest::identityBlitTest(std::ostream& output)
 
 		auto warped = [&](GfxDevice* pDevice)
 		{
-			pDevice->setBlitSource(pSurface);
+			pDevice->setBlitSource(pBitmap);
 			pDevice->warpBlit({ 3 * 64, 4 * 64 }, pWarpmap, { 64 * 7, 64 * 2, 64 * 16, 64 * 12 });
 			pDevice->setTintColor(Color(4096, 2000, 4096, 3000));
 			pDevice->warpBlit({ 40 * 64, 50 * 64 }, pWarpmap, { 64 * 7, 64 * 2, 64 * 16, 64 * 12 });
@@ -549,7 +549,7 @@ bool WarpRenderTest::meshSeamTest(std::ostream& output)
 {
 	auto pRes = resourceDevice();
 	auto pEdgemap = makeEdgemap(pRes, false, true);
-	auto pSurface = makeSurface(pRes, false, SampleMethod::Bilinear);
+	auto pBitmap = makeBitmap(pRes, false, SampleMethod::Bilinear);
 
 	const SizeI size = { 64, 40 };
 	auto nodeAt = [](int x, int y) { return CoordSPX(52 * x + 17 * y - 400, -11 * x + 47 * y - 160); };
@@ -621,7 +621,7 @@ bool WarpRenderTest::meshSeamTest(std::ostream& output)
 		return [=](GfxDevice* pDevice)
 		{
 			pDevice->warpDrawEdgemap({ 4 * 64, 4 * 64 }, pWarpmap, pEdgemap);
-			pDevice->setBlitSource(pSurface);
+			pDevice->setBlitSource(pBitmap);
 			pDevice->warpBlit({ 80 * 64, 4 * 64 }, pWarpmap, { 0, 0, 24 * 64, 16 * 64 });
 			pDevice->setBlendMode(BlendMode::Add);
 			pDevice->warpBlit({ 40 * 64, 50 * 64 }, pWarpmap, { 0, 0, 24 * 64, 16 * 64 });
@@ -647,7 +647,7 @@ bool WarpRenderTest::perspectiveWeightTest(std::ostream& output)
 {
 	auto pRes = resourceDevice();
 	auto pEdgemap = makeEdgemap(pRes, false, true);
-	auto pSurface = makeSurface(pRes, true, SampleMethod::Bilinear);
+	auto pBitmap = makeBitmap(pRes, true, SampleMethod::Bilinear);
 
 	// The source from x = 5 to 60, shrinking to the right towards a horizon at x = 105, partly
 	// outside the Warpmap at the top and bottom. Positions in the source are (u, v) / d.
@@ -682,13 +682,13 @@ bool WarpRenderTest::perspectiveWeightTest(std::ostream& output)
 		return [=](GfxDevice* pDevice)
 		{
 			pDevice->warpDrawEdgemap({ 4 * 64, 4 * 64 }, pWarpmap, pEdgemap);
-			pDevice->setBlitSource(pSurface);
+			pDevice->setBlitSource(pBitmap);
 			pDevice->warpBlit({ 84 * 64, 4 * 64 }, pWarpmap, { 64 * 4, 0 });
 		};
 	};
 
 	// SoftBackend and LinearBackend divide for perspective every few pixels, keeping within a
-	// quarter of a pixel, which shows by more along the edges of the checkers of the surface.
+	// quarter of a pixel, which shows by more along the edges of the checkers of the bitmap.
 
 	for (TestBackend backend : { TestBackend::Soft, TestBackend::Linear, TestBackend::Reference })
 	{
@@ -710,7 +710,7 @@ bool WarpRenderTest::vertexCoverageTest(std::ostream& output)
 {
 	auto pRes = resourceDevice();
 	auto pEdgemap = makeEdgemap(pRes, false, true);
-	auto pSurface = makeSurface(pRes, true, SampleMethod::Bilinear);
+	auto pBitmap = makeBitmap(pRes, true, SampleMethod::Bilinear);
 
 	// A disc of radius 23 pixels over a Warpmap of 60 x 50, mapped straight onto the source.
 
@@ -762,7 +762,7 @@ bool WarpRenderTest::vertexCoverageTest(std::ostream& output)
 		{
 			pDevice->setTintColor(tint);
 			pDevice->warpDrawEdgemap({ 4 * 64, 4 * 64 }, pWarpmap, pEdgemap);
-			pDevice->setBlitSource(pSurface);
+			pDevice->setBlitSource(pBitmap);
 			pDevice->warpBlit({ 84 * 64, 4 * 64 }, pWarpmap);
 		};
 	};
@@ -820,9 +820,9 @@ bool WarpRenderTest::blendModesTest(std::ostream& output)
 
 	auto pEdgemap = makeEdgemap(pRes, true);
 	auto pRing = makeRing(pRes, 40, c_edgemapSource);
-	auto pBlitRing = makeRing(pRes, 40, c_surfaceSource);
-	auto pWave = makeWave(pRes, 40, c_surfaceSource);
-	auto pSurface = makeSurface(pRes, true, SampleMethod::Bilinear);
+	auto pBlitRing = makeRing(pRes, 40, c_bitmapSource);
+	auto pWave = makeWave(pRes, 40, c_bitmapSource);
+	auto pBitmap = makeBitmap(pRes, true, SampleMethod::Bilinear);
 
 	for (BlendMode mode : modes)
 	{
@@ -841,7 +841,7 @@ bool WarpRenderTest::blendModesTest(std::ostream& output)
 			pDevice->setFixedBlendColor(fixedColor);
 
 			pDevice->warpDrawEdgemap({ 4 * 64, 4 * 64 }, pRing, pEdgemap);
-			pDevice->setBlitSource(pSurface);
+			pDevice->setBlitSource(pBitmap);
 			pDevice->warpBlit({ 60 * 64, 4 * 64 }, pWave);
 			pDevice->warpBlit({ 110 * 64, 4 * 64 }, pBlitRing);
 		};
@@ -873,7 +873,7 @@ bool WarpRenderTest::offsetPeriodTest(std::ostream& output)
 	auto pEdgemap = makeEdgemap(pRes, true);
 	auto pArc = makeRing(pRes, 44, c_edgemapSource, 270.f, -135.f);
 	auto pBlitArc = makeRing(pRes, 44, { 24 * 64, 16 * 64 }, 270.f, -135.f);
-	auto pSurface = makeSurface(pRes, true, SampleMethod::Bilinear);
+	auto pBitmap = makeBitmap(pRes, true, SampleMethod::Bilinear);
 
 	// Edgemap is 48 pixels wide, period is 360 / 270 of that: 64 pixels. Source rectangle of the
 	// blit is 24 pixels wide, period 32 pixels.
@@ -883,7 +883,7 @@ bool WarpRenderTest::offsetPeriodTest(std::ostream& output)
 		return [=](GfxDevice* pDevice)
 		{
 			pDevice->warpDrawEdgemap({ 2 * 64, 2 * 64 }, pArc, pEdgemap, { edgemapOffset + 7 * 64, 0 });
-			pDevice->setBlitSource(pSurface);
+			pDevice->setBlitSource(pBitmap);
 			pDevice->warpBlit({ 60 * 64, 2 * 64 }, pBlitArc, { 4 * 64, 0, 24 * 64, 16 * 64 }, { blitOffset + 3 * 64, 0 });
 		};
 	};
@@ -1056,7 +1056,7 @@ bool WarpRenderTest::streamContentTest(std::ostream& output)
 	StrongPtr<CountingSoftBackend> pReceiver = new CountingSoftBackend();
 	auto pReceived = pReceiver->pWarpmapFactory;
 
-	auto pPlayer = StreamPlayer::create(pReceiver, SoftSurfaceFactory::create(), SoftEdgemapFactory::create());
+	auto pPlayer = StreamPlayer::create(pReceiver, SoftBitmapFactory::create(), SoftEdgemapFactory::create());
 	StrongPtr<ChunkCounter> pCounter = new ChunkCounter({ pPlayer, pPlayer->input });
 	auto pEncoder = StreamEncoder::create({ pCounter, pCounter->input });
 	auto pStreamBackend = StreamBackend::create(pEncoder);
@@ -1220,7 +1220,7 @@ bool WarpRenderTest::nonSquareCellsTest(std::ostream& output)
 			// Resources made by the device drawn with, so they are streamed too.
 
 			pDevice->warpDrawEdgemap({ 4 * 64, 4 * 64 }, sheared(pDevice, cellSize), makeEdgemap(pDevice, true));
-			pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Bilinear));
+			pDevice->setBlitSource(makeBitmap(pDevice, true, SampleMethod::Bilinear));
 			pDevice->warpBlit({ 80 * 64, 4 * 64 }, sheared(pDevice, cellSize), { 64 * 2, 64 * 1, 64 * 24, 64 * 12 }, { 64 * 3, 0 });
 		};
 	};
@@ -1249,13 +1249,13 @@ bool WarpRenderTest::cApiTest(std::ostream& output)
 {
 	auto pRes = resourceDevice();
 	auto pEdgemap = makeEdgemap(pRes, true);
-	auto pSurface = makeSurface(pRes, true, SampleMethod::Bilinear);
+	auto pBitmap = makeBitmap(pRes, true, SampleMethod::Bilinear);
 
 	// Vertices and triangles of a bent rectangle, given to both.
 
 	const SizeI warpSize = { 40, 36 };
 	const int cellSize = 6;
-	const spx bentPeriod = c_surfaceSource.w * 3 / 2;
+	const spx bentPeriod = c_bitmapSource.w * 3 / 2;
 
 	Mesh bent = gridMesh(warpSize, { cellSize, cellSize }, [&](int px, int py)
 	{
@@ -1263,7 +1263,7 @@ bool WarpRenderTest::cApiTest(std::ostream& output)
 		float y = py / float(warpSize.h);
 		float u = x * 1.1f - 0.05f + 0.07f * std::sin(y * 6.f);
 		float v = y + 0.05f * std::sin(x * 5.f);
-		return CoordSPX(spx(std::lround(u * c_surfaceSource.w)), spx(std::lround(v * c_surfaceSource.h)));
+		return CoordSPX(spx(std::lround(u * c_bitmapSource.w)), spx(std::lround(v * c_bitmapSource.h)));
 	}, bentPeriod);
 
 	auto cpp = [&](GfxDevice* pDevice)
@@ -1277,7 +1277,7 @@ bool WarpRenderTest::cApiTest(std::ostream& output)
 		auto pFrame = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 44, 40 }, _.sourceSize = c_edgemapSource, _.rect = { 64 * 6, 64 * 6, 64 * 32, 64 * 28 },
 												   _.cornerRadius = 64 * 7, _.topDistance = 64 * 5, _.bottomDistance = -64 * 4, _.start = 0.2f, _.sweep = -0.8f), SoftWarpmapFactory::create());
 		pDevice->warpDrawEdgemap({ 64 * 3, 64 * 50 }, pFrame->generate(), pEdgemap);
-		pDevice->setBlitSource(pSurface);
+		pDevice->setBlitSource(pBitmap);
 		pDevice->warpBlit({ 64 * 60, 64 * 4 }, pBent, { 64 * 2, 64 * 3 });
 		pDevice->warpBlit({ 64 * 110, 64 * 4 }, pBent, { 64 * 4, 64 * 2, 64 * 20, 64 * 12 }, { 0, 0 });
 	};
@@ -1333,7 +1333,7 @@ bool WarpRenderTest::cApiTest(std::ostream& output)
 		wax_obj frame = wax_createRoundedRectWarp(&frameBP, factory);
 		wax_warpDrawEdgemap(device, { 64 * 3, 64 * 50 }, wax_generateWarpGenerator(frame), (wax_obj) static_cast<Object*>(pEdgemap.rawPtr()), { 0, 0 });
 		wax_release(frame);
-		pDevice->setBlitSource(pSurface);
+		pDevice->setBlitSource(pBitmap);
 		wax_warpBlit(device, { 64 * 60, 64 * 4 }, cBent, { 64 * 2, 64 * 3 });
 		wax_rectSPX source = { 64 * 4, 64 * 2, 64 * 20, 64 * 12 };
 		wax_warpBlitRect(device, { 64 * 110, 64 * 4 }, bentLater, &source, { 0, 0 });
@@ -1403,11 +1403,11 @@ bool WarpRenderTest::seamColorTest(std::ostream& output)
 {
 	auto pRes = resourceDevice();
 
-	auto pArc = makeRing(pRes, 44, c_surfaceSource, 270.f, -135.f);
+	auto pArc = makeRing(pRes, 44, c_bitmapSource, 270.f, -135.f);
 	auto pRectArc = makeRing(pRes, 44, c_rectSource, 270.f, -135.f);
 	auto pEdgemapArc = makeRing(pRes, 44, c_edgemapSource, 270.f, -135.f);
-	auto pTiling = makeSurface(pRes, true, SampleMethod::Bilinear);
-	auto pClamped = makeSurface(pRes, false, SampleMethod::Bilinear);
+	auto pTiling = makeBitmap(pRes, true, SampleMethod::Bilinear);
+	auto pClamped = makeBitmap(pRes, false, SampleMethod::Bilinear);
 
 	// An edgemap without edges, its one segment a gradient across it.
 
@@ -1440,10 +1440,10 @@ bool WarpRenderTest::seamColorTest(std::ostream& output)
 
 //____ sourceRectTest() _______________________________________________________
 /*
-	A surface that isn't tiling is read as if the edge pixels of the source rectangle continued
+	A bitmap that isn't tiling is read as if the edge pixels of the source rectangle continued
 	outside it, so nothing outside the rectangle shows, also where bilinear sampling and partly
-	covered pixels at the borders reach past it. Blitting a rectangle out of a surface with other
-	colors around it draws exactly as blitting a surface that is just that rectangle.
+	covered pixels at the borders reach past it. Blitting a rectangle out of a bitmap with other
+	colors around it draws exactly as blitting a bitmap that is just that rectangle.
 */
 
 bool WarpRenderTest::sourceRectTest(std::ostream& output)
@@ -1484,9 +1484,9 @@ bool WarpRenderTest::sourceRectTest(std::ostream& output)
 
 	for (SampleMethod method : { SampleMethod::Bilinear, SampleMethod::Nearest })
 	{
-		auto pInner = pRes->surfaceFactory()->createSurface(WGBP(Surface, _.format = PixelFormat::ARGB_8, _.sampleMethod = method, _.size = { w, h }),
+		auto pInner = pRes->bitmapFactory()->createBitmap(WGBP(Bitmap, _.format = PixelFormat::ARGB_8, _.sampleMethod = method, _.size = { w, h }),
 															inner.data(), PixelFormat::ARGB_8);
-		auto pOuter = pRes->surfaceFactory()->createSurface(WGBP(Surface, _.format = PixelFormat::ARGB_8, _.sampleMethod = method, _.size = { w + border * 2, h + border * 2 }),
+		auto pOuter = pRes->bitmapFactory()->createBitmap(WGBP(Bitmap, _.format = PixelFormat::ARGB_8, _.sampleMethod = method, _.size = { w + border * 2, h + border * 2 }),
 															outer.data(), PixelFormat::ARGB_8);
 
 		auto scene = [&](bool bRect)
@@ -1506,7 +1506,7 @@ bool WarpRenderTest::sourceRectTest(std::ostream& output)
 
 		for (TestBackend backend : { TestBackend::Soft, TestBackend::Linear, TestBackend::Reference })
 		{
-			if (!compare(output, pWhat, render(backend, scene(true)), "rectangle", render(backend, scene(false)), "cropped surface", 0))
+			if (!compare(output, pWhat, render(backend, scene(true)), "rectangle", render(backend, scene(false)), "cropped bitmap", 0))
 				return false;
 		}
 	}
@@ -1618,7 +1618,7 @@ bool WarpRenderTest::rotationOffsetTest(std::ostream& output)
 //____ roundedRectTest() ______________________________________________________
 /*
 	RoundedRectWarp drawn by SoftBackend close to what ReferenceBackend measures, and by
-	LinearBackend exactly as SoftBackend: an edgemap in a band across the outline, a surface
+	LinearBackend exactly as SoftBackend: an edgemap in a band across the outline, a bitmap
 	outside an outline with sharp corners and an arc of an edgemap going counter clockwise.
 */
 
@@ -1632,7 +1632,7 @@ bool WarpRenderTest::roundedRectTest(std::ostream& output)
 		auto pBand = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 48, 40 }, _.sourceSize = c_edgemapSource, _.rect = { 64 * 8, 64 * 8, 64 * 32, 64 * 24 },
 												  _.cornerRadius = 64 * 8, _.topDistance = 64 * 6, _.bottomDistance = -64 * 5), pFactory);
 
-		auto pSharp = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 48, 40 }, _.sourceSize = c_surfaceSource, _.rect = { 64 * 10, 64 * 10, 64 * 28, 64 * 20 },
+		auto pSharp = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 48, 40 }, _.sourceSize = c_bitmapSource, _.rect = { 64 * 10, 64 * 10, 64 * 28, 64 * 20 },
 												   _.topDistance = 64 * 7, _.bottomDistance = 0, _.start = 0.1f), pFactory);
 
 		auto pArc = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 48, 40 }, _.sourceSize = c_edgemapSource, _.rect = { 64 * 6, 64 * 6, 64 * 36, 64 * 28 },
@@ -1640,7 +1640,7 @@ bool WarpRenderTest::roundedRectTest(std::ostream& output)
 
 		pDevice->warpDrawEdgemap({ 2 * 64, 2 * 64 }, pBand->generate(), pEdgemap);
 
-		pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Bilinear));
+		pDevice->setBlitSource(makeBitmap(pDevice, true, SampleMethod::Bilinear));
 		pDevice->warpBlit({ 54 * 64, 2 * 64 }, pSharp->generate());
 
 		pDevice->warpDrawEdgemap({ 106 * 64, 2 * 64 }, pArc->generate(), pEdgemap, { 64 * 9, 0 });
@@ -1666,7 +1666,7 @@ bool WarpRenderTest::cylinderTest(std::ostream& output)
 		auto pReel = CylinderWarp::create(reel, pFactory);
 		auto pCan = CylinderWarp::create(can, pFactory);
 
-		pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Bilinear));
+		pDevice->setBlitSource(makeBitmap(pDevice, true, SampleMethod::Bilinear));
 		pDevice->warpBlit({ 2 * 64, 2 * 64 }, pReel->generate(), pReel->rotationOffset(35.f));
 		pDevice->warpBlit({ 36 * 64, 2 * 64 }, pReel->generate(), pReel->rotationOffset(-200.f));
 
@@ -1703,7 +1703,7 @@ bool WarpRenderTest::cylinderTest(std::ostream& output)
 		wax_obj cCan = wax_createCylinderWarp(&canBP, factory);
 		wax_obj device = (wax_obj) static_cast<Object*>(pDevice);
 
-		pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Bilinear));
+		pDevice->setBlitSource(makeBitmap(pDevice, true, SampleMethod::Bilinear));
 		wax_warpBlit(device, { 2 * 64, 2 * 64 }, wax_generateWarpGenerator(cReel), wax_cylinderWarpRotationOffset(cReel, 35.f));
 		wax_warpBlit(device, { 36 * 64, 2 * 64 }, wax_generateWarpGenerator(cReel), wax_cylinderWarpRotationOffset(cReel, -200.f));
 
@@ -1802,7 +1802,7 @@ bool WarpRenderTest::perspectiveTest(std::ostream& output)
 		auto pShared = PerspectiveWarp::create(shared, pFactory);
 		auto pPinned = PerspectiveWarp::create(pinned, pFactory);
 
-		pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Bilinear));
+		pDevice->setBlitSource(makeBitmap(pDevice, true, SampleMethod::Bilinear));
 		pDevice->warpBlit({ 2 * 64, 2 * 64 }, pFloor->generate(), { 0, 10 * 64 });
 		pDevice->warpBlit({ 2 * 64, 48 * 64 }, pPinned->generate());
 
@@ -1827,7 +1827,7 @@ bool WarpRenderTest::perspectiveTest(std::ostream& output)
 		{
 			auto pFactory = pDevice->warpmapFactory();
 			auto pEdgemap = makeEdgemap(pDevice, false);
-			pDevice->setBlitSource(makeSurface(pDevice, false, SampleMethod::Bilinear));
+			pDevice->setBlitSource(makeBitmap(pDevice, false, SampleMethod::Bilinear));
 
 			int i = 0;
 			for (auto& bp : { card, shared, pinned })
@@ -1903,7 +1903,7 @@ bool WarpRenderTest::perspectiveTest(std::ostream& output)
 		wax_perspectiveWarpCorners(cShared, read);
 		TEST_ASSERT(read[2].x == shared.corners.bottomRight.x && read[2].y == shared.corners.bottomRight.y);
 
-		pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Bilinear));
+		pDevice->setBlitSource(makeBitmap(pDevice, true, SampleMethod::Bilinear));
 		wax_warpBlit(device, { 2 * 64, 2 * 64 }, wax_generateWarpGenerator(cFloor), { 0, 10 * 64 });
 		wax_warpBlit(device, { 2 * 64, 48 * 64 }, wax_generateWarpGenerator(cPinned), { 0, 0 });
 
@@ -1948,7 +1948,7 @@ bool WarpRenderTest::ballTest(std::ostream& output)
 		bp.precision = precision;
 		auto pMarble = BallWarp::create(bp, pFactory);
 
-		pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Bilinear));
+		pDevice->setBlitSource(makeBitmap(pDevice, true, SampleMethod::Bilinear));
 		pDevice->warpBlit({ 2 * 64, 2 * 64 }, pGlobe->generate(), pGlobe->rotationOffset(40.f));
 		pDevice->warpBlit({ 2 * 64, 48 * 64 }, pGlobe->generate(), pGlobe->rotationOffset(-150.f));
 		pDevice->warpBlit({ 50 * 64, 2 * 64 }, pRolled->generate());
@@ -2007,7 +2007,7 @@ bool WarpRenderTest::ballTest(std::ostream& output)
 		TEST_ASSERT(wax_ballWarpTilt(cMarble) == marble.tilt && wax_ballWarpRoll(cMarble) == marble.roll);
 		TEST_ASSERT(wax_ballWarpRadius(cGlobe) == 44 * 32 - 32);
 
-		pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Bilinear));
+		pDevice->setBlitSource(makeBitmap(pDevice, true, SampleMethod::Bilinear));
 		wax_warpBlit(device, { 2 * 64, 2 * 64 }, wax_generateWarpGenerator(cGlobe), wax_ballWarpRotationOffset(cGlobe, 40.f));
 		wax_warpBlit(device, { 2 * 64, 48 * 64 }, wax_generateWarpGenerator(cGlobe), wax_ballWarpRotationOffset(cGlobe, -150.f));
 		wax_warpBlit(device, { 50 * 64, 2 * 64 }, wax_generateWarpGenerator(cRolled), { 0, 0 });
@@ -2027,7 +2027,7 @@ bool WarpRenderTest::ballTest(std::ostream& output)
 }
 
 //____ lensTest() _____________________________________________________________
-// Lenses over a tiling surface: a magnifying glass, thick glass and a bubble, one moved along
+// Lenses over a tiling bitmap: a magnifying glass, thick glass and a bubble, one moved along
 // by its source rectangle, a pixel loupe and an edgemap seen through a lens, as SoftBackend
 // draws them against ReferenceBackend, streamed, against much finer meshes and through the C API.
 
@@ -2046,7 +2046,7 @@ bool WarpRenderTest::lensTest(std::ostream& output)
 
 		auto pGlass = make(glass), pThick = make(thick), pBubble = make(bubble), pLoupe = make(loupe), pGauge = make(gauge);
 
-		pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Bilinear));
+		pDevice->setBlitSource(makeBitmap(pDevice, true, SampleMethod::Bilinear));
 		pDevice->warpBlit({ 2 * 64, 2 * 64 }, pGlass->generate(), { 2 * 64, 2 * 64, 44 * 64, 44 * 64 });
 		pDevice->warpBlit({ 50 * 64, 2 * 64 }, pThick->generate(), { 50 * 64, 2 * 64, 40 * 64, 40 * 64 });
 		pDevice->warpBlit({ 94 * 64, 2 * 64 }, pBubble->generate(), { 94 * 64, 2 * 64, 46 * 64, 46 * 64 });
@@ -2055,7 +2055,7 @@ bool WarpRenderTest::lensTest(std::ostream& output)
 
 		pDevice->warpBlit({ 2 * 64, 50 * 64 }, pBubble->generate(), { 2 * 64, 50 * 64, 46 * 64, 46 * 64 }, { 20, -12 });
 
-		pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Nearest));
+		pDevice->setBlitSource(makeBitmap(pDevice, true, SampleMethod::Nearest));
 		pDevice->warpBlit({ 52 * 64, 52 * 64 }, pLoupe->generate(), { 52 * 64, 52 * 64, 40 * 64, 40 * 64 });
 
 		pDevice->warpDrawEdgemap({ 100 * 64, 50 * 64 }, pGauge->generate(), makeEdgemap(pDevice, true));
@@ -2117,13 +2117,13 @@ bool WarpRenderTest::lensTest(std::ostream& output)
 			wax_warpBlitRect(device, dest, warpmap, &source, offset);
 		};
 
-		pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Bilinear));
+		pDevice->setBlitSource(makeBitmap(pDevice, true, SampleMethod::Bilinear));
 		blitRect({ 2 * 64, 2 * 64 }, wax_generateWarpGenerator(cGlass), { 2 * 64, 2 * 64, 44 * 64, 44 * 64 }, { 0, 0 });
 		blitRect({ 50 * 64, 2 * 64 }, wax_generateWarpGenerator(cThick), { 50 * 64, 2 * 64, 40 * 64, 40 * 64 }, { 0, 0 });
 		blitRect({ 94 * 64, 2 * 64 }, wax_generateWarpGenerator(cBubble), { 94 * 64, 2 * 64, 46 * 64, 46 * 64 }, { 0, 0 });
 		blitRect({ 2 * 64, 50 * 64 }, wax_generateWarpGenerator(cBubble), { 2 * 64, 50 * 64, 46 * 64, 46 * 64 }, { 20, -12 });
 
-		pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Nearest));
+		pDevice->setBlitSource(makeBitmap(pDevice, true, SampleMethod::Nearest));
 		blitRect({ 52 * 64, 52 * 64 }, wax_generateWarpGenerator(cLoupe), { 52 * 64, 52 * 64, 40 * 64, 40 * 64 }, { 0, 0 });
 
 		auto pEdgemap = makeEdgemap(pDevice, true);

@@ -12,7 +12,7 @@
 #include <functional>
 #include <vector>
 
-// Edgemaps and surfaces drawn through Warpmaps, with GfxDevice::warpDrawEdgemap() and warpBlit().
+// Edgemaps and bitmaps drawn through Warpmaps, with GfxDevice::warpDrawEdgemap() and warpBlit().
 // Edges are kept smooth, since coverage of sharp corners of edges within a pixel is only estimated
 // by the backends (ReferenceBackend measures it).
 
@@ -47,9 +47,9 @@ public:
 	{
 		auto pEdgemapFactory = pDevice->edgemapFactory();
 		auto pWarpmapFactory = pDevice->warpmapFactory();
-		auto pSurfaceFactory = pDevice->surfaceFactory();
+		auto pBitmapFactory = pDevice->bitmapFactory();
 
-		if (!pEdgemapFactory || !pWarpmapFactory || !pSurfaceFactory)
+		if (!pEdgemapFactory || !pWarpmapFactory || !pBitmapFactory)
 			return false;
 
 		// Gauge: white rim, blue band with a wave on its lower edge, orange band, transparent below.
@@ -98,7 +98,7 @@ public:
 													  SampleOrigin::Top, samples.data(), nEdges, w + 1);
 		}
 
-		// Surfaces: a pattern with partly transparent pixels, tiling and not.
+		// Bitmaps: a pattern with partly transparent pixels, tiling and not.
 
 		{
 			const int w = 64, h = 32;
@@ -113,7 +113,7 @@ public:
 				}
 			}
 
-			m_pTiling = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear, _.tiling = true),
+			m_pTiling = pBitmapFactory->createBitmap(WGBP(Bitmap, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear, _.tiling = true),
 													   (uint8_t*)pixels.data(), PixelFormat::ARGB_8);
 
 			// The same pattern cut to a size that isn't a power of two, tiling.
@@ -125,13 +125,13 @@ public:
 				for (int x = 0; x < nw; x++)
 					cut[y * nw + x] = pixels[y * w + x];
 
-			m_pTilingNPOT = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { nw, nh }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear, _.tiling = true),
+			m_pTilingNPOT = pBitmapFactory->createBitmap(WGBP(Bitmap, _.size = { nw, nh }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear, _.tiling = true),
 														   (uint8_t*)cut.data(), PixelFormat::ARGB_8);
-			m_pTilingNPOTNearest = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { nw, nh }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Nearest, _.tiling = true),
+			m_pTilingNPOTNearest = pBitmapFactory->createBitmap(WGBP(Bitmap, _.size = { nw, nh }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Nearest, _.tiling = true),
 																  (uint8_t*)cut.data(), PixelFormat::ARGB_8);
-			m_pNearest = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Nearest),
+			m_pNearest = pBitmapFactory->createBitmap(WGBP(Bitmap, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Nearest),
 														(uint8_t*)pixels.data(), PixelFormat::ARGB_8);
-			m_pBilinear = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear),
+			m_pBilinear = pBitmapFactory->createBitmap(WGBP(Bitmap, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear),
 														 (uint8_t*)pixels.data(), PixelFormat::ARGB_8);
 		}
 
@@ -163,9 +163,9 @@ public:
 				}
 			}
 
-			m_pReelStrip = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear, _.tiling = true),
+			m_pReelStrip = pBitmapFactory->createBitmap(WGBP(Bitmap, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear, _.tiling = true),
 														  (uint8_t*)strip.data(), PixelFormat::ARGB_8);
-			m_pReelLabel = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { h, w }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear, _.tiling = true),
+			m_pReelLabel = pBitmapFactory->createBitmap(WGBP(Bitmap, _.size = { h, w }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear, _.tiling = true),
 														  (uint8_t*)label.data(), PixelFormat::ARGB_8);
 		}
 
@@ -185,7 +185,7 @@ public:
 					floor[y * w + x] = bGrout ? Color8(70, 66, 60, 255) : bDark ? Color8(150, 60, 50, 255) : Color8(225, 215, 190, 255);
 				}
 
-			m_pFloor = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear, _.tiling = true),
+			m_pFloor = pBitmapFactory->createBitmap(WGBP(Bitmap, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear, _.tiling = true),
 													  (uint8_t*)floor.data(), PixelFormat::ARGB_8);
 		}
 
@@ -206,7 +206,7 @@ public:
 					card[y * w + x] = c;
 				}
 
-			m_pCard = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear),
+			m_pCard = pBitmapFactory->createBitmap(WGBP(Bitmap, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear),
 													 (uint8_t*)card.data(), PixelFormat::ARGB_8);
 		}
 
@@ -234,9 +234,9 @@ public:
 					map[y * w + x] = c;
 				}
 
-			m_pMap = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear, _.tiling = true),
+			m_pMap = pBitmapFactory->createBitmap(WGBP(Bitmap, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear, _.tiling = true),
 													(uint8_t*)map.data(), PixelFormat::ARGB_8);
-			m_pMapNearest = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Nearest, _.tiling = true),
+			m_pMapNearest = pBitmapFactory->createBitmap(WGBP(Bitmap, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Nearest, _.tiling = true),
 														   (uint8_t*)map.data(), PixelFormat::ARGB_8);
 		}
 
@@ -244,7 +244,7 @@ public:
 
 		m_forGauge = _makeWarps(pWarpmapFactory, m_pGauge->pixelSize() * 64);
 		m_forSmall = _makeWarps(pWarpmapFactory, m_pSmall->pixelSize() * 64);
-		m_forSurface = _makeWarps(pWarpmapFactory, m_pTiling->pixelSize() * 64);
+		m_forBitmap = _makeWarps(pWarpmapFactory, m_pTiling->pixelSize() * 64);
 		m_forNPOT = _makeWarps(pWarpmapFactory, m_pTilingNPOT->pixelSize() * 64);
 		m_forRect = _makeWarps(pWarpmapFactory, { 64 * 32, 64 * 24 });
 		m_forWideRect = _makeWarps(pWarpmapFactory, { 64 * 48, 64 * 32 });
@@ -281,7 +281,7 @@ public:
 		m_pCard = nullptr;
 		m_forGauge = {};
 		m_forSmall = {};
-		m_forSurface = {};
+		m_forBitmap = {};
 		m_forNPOT = {};
 		m_forRect = {};
 		m_forWideRect = {};
@@ -329,12 +329,12 @@ public:
 		pDevice->setTint(canvas, Tint::create(Color(4096, 4096, 4096, 4096), Color(4096, 1500, 500, 2500), { 0.f, 0.f }, { 1.f, 1.f }));
 		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 10 }, m_forGauge.ring, m_pTintedGauge);
 		pDevice->setBlitSource(m_pTiling);
-		pDevice->warpBlit({ 64 * 260, 64 * 260 }, m_forSurface.ring);
+		pDevice->warpBlit({ 64 * 260, 64 * 260 }, m_forBitmap.ring);
 		pDevice->clearTint();
 
 		pDevice->setTintColor(Color(2000, 4096, 4096, 3000));
 		pDevice->warpDrawEdgemap({ 64 * 260, 64 * 10 }, m_forGauge.arc, m_pGauge);
-		pDevice->warpBlit({ 64 * 10, 64 * 260 }, m_forSurface.wave);
+		pDevice->warpBlit({ 64 * 10, 64 * 260 }, m_forBitmap.wave);
 		pDevice->clearTintColor();
 		return true;
 	}
@@ -342,23 +342,23 @@ public:
 	bool blitRing(GfxDevice * pDevice, const RectSPX& canvas)
 	{
 		pDevice->setBlitSource(m_pTiling);
-		pDevice->warpBlit({ 64 * 10, 64 * 10 }, m_forSurface.ring);
-		pDevice->warpBlit({ 64 * 260, 64 * 10 }, m_forSurface.ring, { 64 * 13, 64 * 5 });
+		pDevice->warpBlit({ 64 * 10, 64 * 10 }, m_forBitmap.ring);
+		pDevice->warpBlit({ 64 * 260, 64 * 10 }, m_forBitmap.ring, { 64 * 13, 64 * 5 });
 		pDevice->setBlitSource(m_pBilinear);
-		pDevice->warpBlit({ 64 * 10, 64 * 260 }, m_forSurface.ring);
-		pDevice->warpBlit({ 64 * 260, 64 * 260 }, m_forSurface.smallRing);
+		pDevice->warpBlit({ 64 * 10, 64 * 260 }, m_forBitmap.ring);
+		pDevice->warpBlit({ 64 * 260, 64 * 260 }, m_forBitmap.smallRing);
 		return true;
 	}
 
 	bool blitWave(GfxDevice * pDevice, const RectSPX& canvas)
 	{
 		pDevice->setBlitSource(m_pNearest);
-		pDevice->warpBlit({ 64 * 10, 64 * 10 }, m_forSurface.wave);
+		pDevice->warpBlit({ 64 * 10, 64 * 10 }, m_forBitmap.wave);
 		pDevice->setBlitSource(m_pBilinear);
-		pDevice->warpBlit({ 64 * 260, 64 * 10 }, m_forSurface.wave);
+		pDevice->warpBlit({ 64 * 260, 64 * 10 }, m_forBitmap.wave);
 		pDevice->setBlitSource(m_pTiling);
-		pDevice->warpBlit({ 64 * 10, 64 * 260 }, m_forSurface.wave);
-		pDevice->warpBlit({ 64 * 260, 64 * 260 }, m_forSurface.stripes);
+		pDevice->warpBlit({ 64 * 10, 64 * 260 }, m_forBitmap.wave);
+		pDevice->warpBlit({ 64 * 260, 64 * 260 }, m_forBitmap.stripes);
 		return true;
 	}
 
@@ -378,7 +378,7 @@ public:
 		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 10 }, m_forGauge.stripes, m_pGauge);
 		pDevice->warpDrawEdgemap({ 64 * 260, 64 * 10 }, m_forGauge.stripes, m_pGauge, { 64 * 33, 64 * 17 });
 		pDevice->setBlitSource(m_pTiling);
-		pDevice->warpBlit({ 64 * 10, 64 * 260 }, m_forSurface.stripes, { 64 * 5, 64 * 3 });
+		pDevice->warpBlit({ 64 * 10, 64 * 260 }, m_forBitmap.stripes, { 64 * 5, 64 * 3 });
 		return true;
 	}
 
@@ -450,16 +450,16 @@ public:
 	RoundedRectWarps _makeRoundedRects(WarpmapFactory * pFactory)
 	{
 		SizeSPX gauge = m_pGauge->pixelSize() * 64;
-		SizeSPX surface = m_pTiling->pixelSize() * 64;
+		SizeSPX bitmap = m_pTiling->pixelSize() * 64;
 		RoundedRectWarps w;
 
 		w.band = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 240, 240 }, _.sourceSize = gauge, _.rect = { 64 * 30, 64 * 50, 64 * 180, 64 * 140 },
 											  _.cornerRadius = 64 * 30, _.topDistance = 64 * 25, _.bottomDistance = -64 * 20), pFactory)->generate();
-		w.sharp = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 240, 240 }, _.sourceSize = surface, _.rect = { 64 * 30, 64 * 50, 64 * 180, 64 * 140 },
+		w.sharp = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 240, 240 }, _.sourceSize = bitmap, _.rect = { 64 * 30, 64 * 50, 64 * 180, 64 * 140 },
 											   _.topDistance = 64 * 24, _.bottomDistance = 0), pFactory)->generate();
 		w.arc = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 240, 240 }, _.sourceSize = gauge, _.rect = { 64 * 30, 64 * 50, 64 * 180, 64 * 140 },
 											 _.cornerRadius = 64 * 50, _.topDistance = 64 * 25, _.bottomDistance = -64 * 20, _.start = -0.3f, _.sweep = 0.75f), pFactory)->generate();
-		w.frame = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 240, 240 }, _.sourceSize = surface, _.rect = { 64 * 10, 64 * 30, 64 * 220, 64 * 180 },
+		w.frame = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 240, 240 }, _.sourceSize = bitmap, _.rect = { 64 * 10, 64 * 30, 64 * 220, 64 * 180 },
 											   _.cornerRadius = 64 * 8, _.topDistance = 0, _.bottomDistance = -64 * 36, _.precision = 10.f), pFactory)->generate();
 		return w;
 	}
@@ -593,13 +593,13 @@ public:
 										   vertices.data(), triangles.data());
 		};
 
-		SizeSPX gauge = m_pGauge->pixelSize() * 64, surface = m_pBilinear->pixelSize() * 64;
+		SizeSPX gauge = m_pGauge->pixelSize() * 64, bitmap = m_pBilinear->pixelSize() * 64;
 		DiscWarps w;
 
 		w.large = disc(gauge, 110, Warpmap::coverageOne, 0);
-		w.largeBlit = disc(surface, 110, Warpmap::coverageOne, 0);
+		w.largeBlit = disc(bitmap, 110, Warpmap::coverageOne, 0);
 		w.half = disc(gauge, 57, Warpmap::coverageOne / 2, Warpmap::coverageOne / 2);
-		w.small = disc(surface, 13, Warpmap::coverageOne, 0);
+		w.small = disc(bitmap, 13, Warpmap::coverageOne, 0);
 		return w;
 	}
 
@@ -620,7 +620,7 @@ public:
 	// middle. Bottom: a card turned 0, 60 and 120 degrees around its middle (the last one mirrored,
 	// its back facing the viewer), one tilted, turned and rolled, and one pinned onto a free shape.
 
-	// The source rectangle of the floor covers many tiles of the tiling surface.
+	// The source rectangle of the floor covers many tiles of the tiling bitmap.
 
 	static SizeSPX _floorSource() { return { 64 * 512, 64 * 256 }; }
 
@@ -766,8 +766,8 @@ public:
 	// Top: floor tiles under, from the left, a magnifying glass, thick glass, a bubble and a strong
 	// bubble, and smaller lenses below them. Bottom: the world map under a pixel loupe, a glass, a
 	// bubble and a large thick glass, and the gauge with part of it magnified beside it. The
-	// tiles and the map are drawn straight from their surfaces, so what is under a lens is the same
-	// rectangle of the surface.
+	// tiles and the map are drawn straight from their bitmaps, so what is under a lens is the same
+	// rectangle of the bitmap.
 
 	static constexpr int c_smallLenses[4] = { 80, 50, 30, 16 };
 
@@ -858,17 +858,17 @@ private:
 	Edgemap_p	m_pTintedGauge;
 	Edgemap_p	m_pSmall;
 
-	Surface_p	m_pTiling;
-	Surface_p	m_pTilingNPOT;
-	Surface_p	m_pTilingNPOTNearest;
-	Surface_p	m_pNearest;
-	Surface_p	m_pBilinear;
-	Surface_p	m_pReelStrip;
-	Surface_p	m_pReelLabel;
-	Surface_p	m_pFloor;
-	Surface_p	m_pCard;
-	Surface_p	m_pMap;
-	Surface_p	m_pMapNearest;
+	Bitmap_p	m_pTiling;
+	Bitmap_p	m_pTilingNPOT;
+	Bitmap_p	m_pTilingNPOTNearest;
+	Bitmap_p	m_pNearest;
+	Bitmap_p	m_pBilinear;
+	Bitmap_p	m_pReelStrip;
+	Bitmap_p	m_pReelLabel;
+	Bitmap_p	m_pFloor;
+	Bitmap_p	m_pCard;
+	Bitmap_p	m_pMap;
+	Bitmap_p	m_pMapNearest;
 
 	// Warpmaps are made for a source of a certain size.
 
@@ -945,7 +945,7 @@ private:
 
 	Warps		m_forGauge;
 	Warps		m_forSmall;
-	Warps		m_forSurface;
+	Warps		m_forBitmap;
 	Warps		m_forNPOT;
 	Warps		m_forRect;
 	Warps		m_forWideRect;

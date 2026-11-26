@@ -25,8 +25,8 @@
 
 #include "workbench.h"
 
-#include <wax_softsurface.h>
-#include <wax_softsurfacefactory.h>
+#include <wax_softbitmap.h>
+#include <wax_softbitmapfactory.h>
 #include <wax_softedgemapfactory.h>
 #include <wax_softbackend.h>
 #include <wax_softkernels_default.h>
@@ -137,7 +137,7 @@ namespace workbench
 		addDefaultSoftKernels(pBackend);
 
 		wg::Base::setDefaultDevice(GfxDeviceGen2::create(pBackend));
-		wg::Base::setDefaultSurfaceFactory(SoftSurfaceFactory::create());
+		wg::Base::setDefaultBitmapFactory(SoftBitmapFactory::create());
 		wg::Base::setDefaultEdgemapFactory(SoftEdgemapFactory::create());
 		wg::Base::setDefaultWarpmapFactory(pBackend->warpmapFactory());
 
@@ -703,7 +703,7 @@ namespace workbench
 			return;
 		}
 
-		auto pCanvas = SoftSurface::create(WGBP(Surface,
+		auto pCanvas = SoftBitmap::create(WGBP(Bitmap,
 			_.canvas = true,
 			_.format = PixelFormat::XRGB_8,
 			_.scale = _scale(),

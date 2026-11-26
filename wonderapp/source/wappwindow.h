@@ -96,7 +96,7 @@ namespace wapp
 		bool            setTitle(std::string& title);
 		std::string     title() const;
 
-		bool            setIcon(wg::Surface* pIcon);
+		bool            setIcon(wg::Bitmap* pIcon);
 
 		//.____ Internal ____________________________________________________________
 

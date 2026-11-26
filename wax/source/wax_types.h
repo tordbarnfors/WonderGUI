@@ -259,7 +259,7 @@ template<typename T, typename T2, typename T3> inline void limit(T& x, T2 min, T
 
 	// BlendModes control how blits and fills are blended against their backgrounds and how colors are blended against each other.
 	// There are two groups of BlendModes.
-	// The first one is for combining two surfaces into one and consists of Replace, Morph and Blend.
+	// The first one is for combining two bitmaps into one and consists of Replace, Morph and Blend.
 	// The second one is for manipulating RGB values of destination and therefore does not update the
 	// destinations alpha channel (if any), unless the destination lacks RGB values, in which case the
 	// alpha is manipulated instead.
@@ -397,7 +397,7 @@ template<typename T, typename T2, typename T3> inline void limit(T& x, T2 min, T
 	 *
 	 * Chunky formats are named after the order of their channels in a register, starting with
 	 * the most significant bits. How that register is laid out in memory is decided by the byte
-	 * order of the Surface (or PixelBuffer), which by default is the byte order of the system.
+	 * order of the Bitmap (or PixelBuffer), which by default is the byte order of the system.
 	 * ARGB_8 in little endian byte order therefore has its channels in the order B, G, R, A in memory.
 	 *
 	 * Formats say nothing about color space, that is decided separately by ColorSpace.
@@ -443,7 +443,7 @@ template<typename T, typename T2, typename T3> inline void limit(T& x, T2 min, T
 
 	//____ ColorSpace ________________________________________________________
 	/**
-	 * Color space of the color channels of a Surface. Alpha is always linear.
+	 * Color space of the color channels of a Bitmap. Alpha is always linear.
 	 *
 	 * Colors given to Wax, as Color8 and Color, are always sRGB.
 	 * Undefined is only used in blueprints, where it gives the default (sRGB).

@@ -1,1 +1,1 @@
-ruby scripts/make_superheader.rb src/baselibrary/wondergui.h src/baselibrary/base src/baselibrary/components src/baselibrary/gfxstream src/baselibrary/numberlayouts src/baselibrary/skins src/baselibrary/slots src/baselibrary/surfaceio src/baselibrary/textlayouts src/baselibrary/widgets
+ruby scripts/make_superheader.rb src/baselibrary/wondergui.h src/baselibrary/base src/baselibrary/components src/baselibrary/gfxstream src/baselibrary/numberlayouts src/baselibrary/skins src/baselibrary/slots src/baselibrary/bitmapio src/baselibrary/textlayouts src/baselibrary/widgets

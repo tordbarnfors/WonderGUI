@@ -37,7 +37,7 @@ namespace wax
 
 	//____ SdlGpuContext ________________________________________________________
 	/**
-	 * @brief The SDL_GPU device shared by SdlGpuBackends and their surfaces, edgemaps and Warpmaps.
+	 * @brief The SDL_GPU device shared by SdlGpuBackends and their bitmaps, edgemaps and Warpmaps.
 	 *
 	 * Set by SdlGpuBackend::setDevice(). SDL_GPU keeps what the GPU still uses alive until it is
 	 * done with it, and gives buffers and textures we upload to that are in use new memory when

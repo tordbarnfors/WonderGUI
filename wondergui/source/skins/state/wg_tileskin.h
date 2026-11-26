@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_stateskin.h>
-#include <wax_surface.h>
+#include <wax_bitmap.h>
 #include <wax_tint.h>
 
 #include <vector>
@@ -42,7 +42,7 @@ namespace wg
 	{
 
 		Coord		contentShift;
-		Surface_p	surface;
+		Bitmap_p	bitmap;
 		Color		color;
 		bool		m_bOpaque;
 	};
@@ -63,7 +63,7 @@ namespace wg
 		{
 			Color			color = Color::Undefined;
 			Coord			contentShift;
-			Surface_p		surface;
+			Bitmap_p		bitmap;
 		};
 
 		struct StateBP
@@ -74,7 +74,7 @@ namespace wg
 			StateBP( State state, StateData data ) : state(state), data(data) {}
 			StateBP( State state, Color color ) : state(state) { data.color = color; }
 			StateBP( State state, Coord contentShift ) : state(state)	{ data.contentShift = contentShift; }
-			StateBP( State state, Surface_p surface ) : state(state)	{ data.surface = surface; }
+			StateBP( State state, Bitmap_p bitmap ) : state(state)	{ data.bitmap = bitmap; }
 
 			State			state = State::Default;
 			StateData		data;
@@ -82,6 +82,7 @@ namespace wg
 
 		struct Blueprint
 		{
+			Bitmap_p		bitmap;
 			BlendMode		blendMode = BlendMode::Blend;
 			Color			color = Color::Undefined;
 			Finalizer_p		finalizer = nullptr;
@@ -92,13 +93,12 @@ namespace wg
 			Border			spacing;
 
 			std::vector<StateBP>	states;
-			Surface_p		surface;
 			Tint_p		tint;
 		};
 
 		//.____ Creation __________________________________________
 
-		static TileSkin_p	create(Surface * pSurface, Color color = Color::Undefined, int layer = -1 );
+		static TileSkin_p	create(Bitmap * pBitmap, Color color = Color::Undefined, int layer = -1 );
 		static TileSkin_p	create(const Blueprint& blueprint);
 
 		//.____ Identification __________________________________________
@@ -128,11 +128,11 @@ namespace wg
 		TileSkin(const Blueprint& blueprint);
 		~TileSkin();
 
-		Surface *		_getSurface(State state) const
+		Bitmap *		_getBitmap(State state) const
 		{
-						int idxTabEntry = (state.index() & m_stateSurfaceIndexMask) >> m_stateSurfaceIndexShift;
-						int entry = m_pStateSurfaceIndexTab[idxTabEntry];
-						return m_pStateSurfaces[entry];
+						int idxTabEntry = (state.index() & m_stateBitmapIndexMask) >> m_stateBitmapIndexShift;
+						int entry = m_pStateBitmapIndexTab[idxTabEntry];
+						return m_pStateBitmaps[entry];
 		}
 
 		const Color&	_getColor(State state) const
@@ -153,11 +153,11 @@ namespace wg
 		uint8_t*		m_pStateColorIndexTab;		// Table with index values into m_pStateColors for each mode (72) or less.
 		Color*		m_pStateColors;				// Contains colors for states.
 
-		uint8_t			m_stateSurfaceIndexMask;
-		uint8_t			m_stateSurfaceIndexShift;
-		uint8_t*		m_pStateSurfaceIndexTab;
-		Surface **		m_pStateSurfaces;
-		int				m_nbStateSurfaces;			// So we know how many to decrease refCount of in destructor.
+		uint8_t			m_stateBitmapIndexMask;
+		uint8_t			m_stateBitmapIndexShift;
+		uint8_t*		m_pStateBitmapIndexTab;
+		Bitmap **		m_pStateBitmaps;
+		int				m_nbStateBitmaps;			// So we know how many to decrease refCount of in destructor.
 
 
 

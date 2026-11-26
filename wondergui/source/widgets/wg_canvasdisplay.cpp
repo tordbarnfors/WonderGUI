@@ -320,7 +320,7 @@ namespace wg
 
 			if ( dest.w > 0 && dest.h > 0)
 			{
-				auto pSurface = m_pCanvas->_renderCanvas(pDevice, false);
+				auto pBitmap = m_pCanvas->_renderCanvas(pDevice, false);
 
 				auto canvasArea = _canvasWindow(dest);
 				
@@ -340,7 +340,7 @@ namespace wg
 				if (m_pTint )
 					pDevice->setTint(canvasArea, m_pTint);
 
-				pDevice->setBlitSource(pSurface);
+				pDevice->setBlitSource(pBitmap);
 				pDevice->stretchBlit(canvasArea);
 
 				if (m_pTint)
@@ -401,12 +401,12 @@ namespace wg
 		{
 			float scale = m_canvasSize.w / float(canvasGeo.w);
 
-			CoordSPX surfOfs = (ofs - canvasGeo.pos()) * scale;
+			CoordSPX bitmapOfs = (ofs - canvasGeo.pos()) * scale;
 
-			auto pSurface = m_pCanvas->_canvasSurface();
-			if (pSurface)
+			auto pBitmap = m_pCanvas->_canvasBitmap();
+			if (pBitmap)
 			{
-				if (pSurface->alpha(surfOfs) > 0)		// Any alpha gives a hit. We could add a variable for this if needed.
+				if (pBitmap->alpha(bitmapOfs) > 0)		// Any alpha gives a hit. We could add a variable for this if needed.
 					return true;
 			}
 		}

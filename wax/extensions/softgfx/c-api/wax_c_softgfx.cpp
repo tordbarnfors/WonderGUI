@@ -23,8 +23,8 @@
 #include <wax_c_internal.h>
 
 #include <wax_softbackend.h>
-#include <wax_softsurface.h>
-#include <wax_softsurfacefactory.h>
+#include <wax_softbitmap.h>
+#include <wax_softbitmapfactory.h>
 #include <wax_softedgemap.h>
 #include <wax_softedgemapfactory.h>
 #include <wax_softwarpmapfactory.h>
@@ -38,59 +38,59 @@ wax_obj wax_createSoftBackend(void)
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-int wax_defineSoftBackendCanvas( wax_obj backend, wax_canvasRef ref, wax_obj softSurface )
+int wax_defineSoftBackendCanvas( wax_obj backend, wax_canvasRef ref, wax_obj softBitmap )
 {
 	auto pBackend = static_cast<SoftBackend*>(reinterpret_cast<Object*>(backend));
-	auto pSurface = static_cast<SoftSurface*>(reinterpret_cast<Object*>(softSurface));
+	auto pBitmap = static_cast<SoftBitmap*>(reinterpret_cast<Object*>(softBitmap));
 
-	return pBackend->defineCanvas((CanvasRef) ref, pSurface);
+	return pBackend->defineCanvas((CanvasRef) ref, pBitmap);
 }
 
-wax_obj wax_createSoftSurface(const wax_surfaceBP* blueprint)
+wax_obj wax_createSoftBitmap(const wax_bitmapBP* blueprint)
 {
-	Surface::Blueprint	bp;
-	convertSurfaceBlueprint(&bp, blueprint);
+	Bitmap::Blueprint	bp;
+	convertBitmapBlueprint(&bp, blueprint);
 
-	auto p = SoftSurface::create(bp);
+	auto p = SoftBitmap::create(bp);
 	p->retain();
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
 
-wax_obj wax_createSoftSurfaceFromBlob(const wax_surfaceBP* blueprint, wax_obj blob, int pitch)
+wax_obj wax_createSoftBitmapFromBlob(const wax_bitmapBP* blueprint, wax_obj blob, int pitch)
 {
-	Surface::Blueprint	bp;
-	convertSurfaceBlueprint(&bp, blueprint);
-	auto p = SoftSurface::create(bp, static_cast<Blob*>(reinterpret_cast<Object*>(blob)), pitch );
+	Bitmap::Blueprint	bp;
+	convertBitmapBlueprint(&bp, blueprint);
+	auto p = SoftBitmap::create(bp, static_cast<Blob*>(reinterpret_cast<Object*>(blob)), pitch );
 	p->retain();
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wax_obj	wax_createSoftSurfaceFromBitmap(const wax_surfaceBP* blueprint, const uint8_t* pPixels,
+wax_obj	wax_createSoftBitmapFromBitmap(const wax_bitmapBP* blueprint, const uint8_t* pPixels,
 									   wax_pixelFormat pixelFormat, int pitch, const wax_color8 * pPalette, int paletteSize )
 {
-	Surface::Blueprint	bp;
-	convertSurfaceBlueprint(&bp, blueprint);
-	auto p = SoftSurface::create(bp, pPixels, (PixelFormat) pixelFormat, pitch, (const Color8*) pPalette, paletteSize);
+	Bitmap::Blueprint	bp;
+	convertBitmapBlueprint(&bp, blueprint);
+	auto p = SoftBitmap::create(bp, pPixels, (PixelFormat) pixelFormat, pitch, (const Color8*) pPalette, paletteSize);
 	p->retain();
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wax_obj	wax_createSoftSurfaceFromRawData(const wax_surfaceBP* blueprint, const uint8_t* pPixels,
+wax_obj	wax_createSoftBitmapFromRawData(const wax_bitmapBP* blueprint, const uint8_t* pPixels,
 										const wax_pixelDescription * pPixelDescription, int pitch, const wax_color8 * pPalette, int paletteSize )
 {
-	Surface::Blueprint	bp;
-	convertSurfaceBlueprint(&bp, blueprint);
+	Bitmap::Blueprint	bp;
+	convertBitmapBlueprint(&bp, blueprint);
 	
-	auto p = SoftSurface::create(bp, pPixels, *(PixelDescription*) pPixelDescription, pitch, (const Color8*) pPalette, paletteSize);
+	auto p = SoftBitmap::create(bp, pPixels, *(PixelDescription*) pPixelDescription, pitch, (const Color8*) pPalette, paletteSize);
 	p->retain();
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
 
-wax_obj wax_createSoftSurfaceFactory()
+wax_obj wax_createSoftBitmapFactory()
 {
-	auto p = SoftSurfaceFactory::create();
+	auto p = SoftBitmapFactory::create();
 	p->retain();
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }

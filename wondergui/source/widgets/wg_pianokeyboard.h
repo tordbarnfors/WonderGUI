@@ -53,10 +53,10 @@ namespace wg
 		struct Blueprint
 		{
 
-			Surface_p		blackKeys;
+			Bitmap_p		blackKeys;
 			bool			disabled = false;
 			bool			dropTarget = false;
-			Surface_p		evenWhiteKeys;
+			Bitmap_p		evenWhiteKeys;
 			Finalizer_p		finalizer = nullptr;
 			int				id = 0;
 			bool			keyFlipOnPress = false;
@@ -64,7 +64,7 @@ namespace wg
 			std::initializer_list<State>	keyStates;
 			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
 			int				nbWhiteKeys = 52;
-			Surface_p		oddWhiteKeys;
+			Bitmap_p		oddWhiteKeys;
 			bool			pickable = false;
 			uint8_t			pickCategory = 0;
 			bool			pickHandle = false;
@@ -91,7 +91,7 @@ namespace wg
 
 		void		setLayout(int nbWhiteKeys, const std::bitset<7>& blackKeyPositions );
 
-		void		setSurfaces(const Surface_p& pOddWhiteKeys, const Surface_p& pEvenWhiteKeys, const Surface_p& pBlackKeys, const std::initializer_list<State>& states);
+		void		setBitmaps(const Bitmap_p& pOddWhiteKeys, const Bitmap_p& pEvenWhiteKeys, const Bitmap_p& pBlackKeys, const std::initializer_list<State>& states);
 
 		//.____ Control _______________________________________________________
 
@@ -129,7 +129,7 @@ namespace wg
 		template<class BP> PianoKeyboard(const BP& bp) : Widget(bp)
 		{
 			setLayout(bp.nbWhiteKeys, bp.keyLayout);
-			setSurfaces(bp.oddWhiteKeys, bp.evenWhiteKeys, bp.blackKeys, bp.keyStates);
+			setBitmaps(bp.oddWhiteKeys, bp.evenWhiteKeys, bp.blackKeys, bp.keyStates);
 
 			m_bFlipOnPress = bp.keyFlipOnPress;
 		}
@@ -160,9 +160,9 @@ namespace wg
 		float			m_blackKeyHeight = 0;			// Relative to canvas content height.
 		spx				m_blackKeySourceHeight = 0;
 
-		Surface_p		m_pOddWhiteKeys;
-		Surface_p		m_pEvenWhiteKeys;
-		Surface_p		m_pBlackKeys;
+		Bitmap_p		m_pOddWhiteKeys;
+		Bitmap_p		m_pEvenWhiteKeys;
+		Bitmap_p		m_pBlackKeys;
 
 		int				m_stateOfsY[State::NbStates];	
 

@@ -18,5 +18,5 @@ private:
 	bool decompressTest(std::ostream& output);
 	bool writeQOITest(std::ostream& output);
 	bool readQOITest(std::ostream& output);
-	bool surfaceFileTest(std::ostream& output);
+	bool bitmapFileTest(std::ostream& output);
 };

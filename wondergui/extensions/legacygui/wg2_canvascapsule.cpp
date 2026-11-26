@@ -386,7 +386,7 @@ void WgCanvasCapsule::_renderPatches( wg::GfxDevice * pDevice, const WgRect& _ca
 
 	if (!m_pCanvas)
 	{
-        wg::SurfaceFactory_p pFactory = m_pFactory ? m_pFactory : wax::Base::defaultSurfaceFactory();
+        wg::SurfaceFactory_p pFactory = m_pFactory ? m_pFactory : wax::Base::defaultBitmapFactory();
         
 		if (!pFactory)
 			return;                            // No SurfaceFactory set!
@@ -398,7 +398,7 @@ void WgCanvasCapsule::_renderPatches( wg::GfxDevice * pDevice, const WgRect& _ca
 			return;                            // Can't create a canvas of the required size!
 
 		
-		m_pCanvas = pFactory->createSurface( WGBP(Surface,
+		m_pCanvas = pFactory->createBitmap( WGBP(Surface,
 												  _.size = canvasSize,
 												  _.format = WgPixelType::ARGB_8,
 												  _.colorSpace = colorSpace,

@@ -184,6 +184,7 @@ namespace wg
 		struct Blueprint
 		{
 
+			BitmapFactory_p	bitmapFactory = nullptr;
 			Placement		bottomLabelPlacement = Placement::South;
 			pts				bottomLabelSpacing = 1;
 
@@ -229,7 +230,6 @@ namespace wg
 			bool			selectable = false;
 			Skin_p			skin;
 			bool			stickyFocus = false;
-			SurfaceFactory_p	surfaceFactory = nullptr;
 			bool			tabLock = false;
 
 			TextLayout_p	textLayout;
@@ -287,7 +287,7 @@ namespace wg
 		void	_didMoveEntries(AreaScrollChartEntry* pFrom, AreaScrollChartEntry* pTo, int nb) override;
 		void	_willEraseEntries(AreaScrollChartEntry* pEntry, int nb) override;
 
-		void	_renderOnScrollSurface( GfxDevice * pDevice, SizeSPX canvasSize, spx leftEdgeOfs, int64_t leftEdgeTimestamp, spx dirtLen ) override;
+		void	_renderOnScrollBitmap( GfxDevice * pDevice, SizeSPX canvasSize, spx leftEdgeOfs, int64_t leftEdgeTimestamp, spx dirtLen ) override;
 		void	_removeOutdatedSamples() override;
 
 		void	_startedOrEndedTransition();

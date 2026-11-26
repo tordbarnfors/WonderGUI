@@ -33,7 +33,7 @@
 namespace wax
 {
 	class Device;
-	class Surface;
+	class Bitmap;
 	struct NinePatch;
 }
 
@@ -45,9 +45,9 @@ namespace wg
 	{
 		using namespace wax::Util;		// Wax has its own Util, which we extend.
 
-		bool		markTestStretchRect( CoordSPX ofs, Surface * pSurface, const RectSPX& source, const RectSPX& area, int opacityTreshold );
-		bool		markTestTileRect(CoordSPX ofs, Surface* pSurface, const RectSPX& area, int scale, int opacityTreshold);
-		bool		markTestNinePatch(CoordSPX ofs, Surface* pSurface, const NinePatch& patch, const RectSPX& _dest, int scale, int opacityTreshold);
+		bool		markTestStretchRect( CoordSPX ofs, Bitmap * pBitmap, const RectSPX& source, const RectSPX& area, int opacityTreshold );
+		bool		markTestTileRect(CoordSPX ofs, Bitmap* pBitmap, const RectSPX& area, int scale, int opacityTreshold);
+		bool		markTestNinePatch(CoordSPX ofs, Bitmap* pBitmap, const NinePatch& patch, const RectSPX& _dest, int scale, int opacityTreshold);
 
 
 		CoordSPX 	placementToOfs( Placement placement, RectSPX base );

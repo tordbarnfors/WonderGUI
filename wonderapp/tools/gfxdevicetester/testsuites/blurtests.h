@@ -16,13 +16,13 @@ public:
 
 	bool init(GfxDevice * pDevice, const RectI& canvas, wapp::API * pAppAPI)
 	{
-//		m_pImg = pAppAPI->loadSurface("resources/mipmaptest.png", pDevice->surfaceFactory());
+//		m_pImg = pAppAPI->loadBitmap("resources/mipmaptest.png", pDevice->bitmapFactory());
 //		if (!m_pImg)
 //			return false;
 
-		m_pCanvasSurface = pDevice->surfaceFactory()->createSurface( { .canvas = true, .size = canvas.size()/64  } );
-		m_pBlurSurface[0] = pDevice->surfaceFactory()->createSurface( { .canvas = true, .format = PixelFormat::XRGB_8, .size = canvas.size() / 64 } );
-		m_pBlurSurface[1] = pDevice->surfaceFactory()->createSurface( { .canvas = true, .format = PixelFormat::XRGB_8, .size = canvas.size() / 64 } );
+		m_pCanvasBitmap = pDevice->bitmapFactory()->createBitmap( { .canvas = true, .size = canvas.size()/64  } );
+		m_pBlurBitmap[0] = pDevice->bitmapFactory()->createBitmap( { .canvas = true, .format = PixelFormat::XRGB_8, .size = canvas.size() / 64 } );
+		m_pBlurBitmap[1] = pDevice->bitmapFactory()->createBitmap( { .canvas = true, .format = PixelFormat::XRGB_8, .size = canvas.size() / 64 } );
 
 		m_pGradient = Tint::create(Color::Red, Color::Blue, {0,0}, {1,0});
 
@@ -31,9 +31,9 @@ public:
 	 
 	bool exit(GfxDevice * pDevice, const RectI& canvas)
 	{
-		m_pCanvasSurface = nullptr;
-		m_pBlurSurface[0] = nullptr;
-		m_pBlurSurface[1] = nullptr;
+		m_pCanvasBitmap = nullptr;
+		m_pBlurBitmap[0] = nullptr;
+		m_pBlurBitmap[1] = nullptr;
 		return true;
 	}
 
@@ -66,8 +66,8 @@ public:
 
 	bool setBlurbrush(GfxDevice* pDevice, const RectI& canvas)
 	{
-		m_pBlurSurface[0]->fill(Color::Transparent);
-		m_pBlurSurface[1]->fill(Color::Transparent);
+		m_pBlurBitmap[0]->fill(Color::Transparent);
+		m_pBlurBitmap[1]->fill(Color::Transparent);
 
 		float blue[9] = { 0.15f, 0.15f, 0.15f, 0, 0.4f, 0, 0,0,0 };
 		float green[9] = {0,0,0, 0,0.7f,0, 0,0,0};
@@ -80,7 +80,7 @@ public:
 			.size = 64 * 8
 		});
 
-		pDevice->beginCanvasUpdate(m_pCanvasSurface);
+		pDevice->beginCanvasUpdate(m_pCanvasBitmap);
 		pDevice->setBlendMode(BlendMode::Replace);
 		pDevice->fill(Color::Transparent);
 		pDevice->fill( RectSPX(100,100,64,64)*64, Color::White);
@@ -88,7 +88,7 @@ public:
 
 		for( int i = 0 ; i < 2 ; i++ )
 		{
-			pDevice->beginCanvasUpdate(m_pBlurSurface[i]);
+			pDevice->beginCanvasUpdate(m_pBlurBitmap[i]);
 			pDevice->setBlendMode(BlendMode::Replace);
 			pDevice->fill(Color::Black);
 			pDevice->endCanvasUpdate();
@@ -102,22 +102,22 @@ public:
 	{
 		for( int i = 0 ; i < 10 ; i++ )
 		{
-			pDevice->beginCanvasUpdate(m_pBlurSurface[0]);
+			pDevice->beginCanvasUpdate(m_pBlurBitmap[0]);
 			pDevice->fill({100*64,100*64,200*64,200*64}, Color::White);
 			pDevice->endCanvasUpdate();
 
-			pDevice->beginCanvasUpdate(m_pBlurSurface[1]);
-			pDevice->setBlitSource(m_pBlurSurface[0]);
+			pDevice->beginCanvasUpdate(m_pBlurBitmap[1]);
+			pDevice->setBlitSource(m_pBlurBitmap[0]);
 
 			pDevice->setBlurbrush(m_pBrush);
 
 			pDevice->blur({0,0});
 			pDevice->endCanvasUpdate();
 
-			std::swap( m_pBlurSurface[0], m_pBlurSurface[1] );
+			std::swap( m_pBlurBitmap[0], m_pBlurBitmap[1] );
 		}
 		
-		pDevice->setBlitSource(m_pBlurSurface[0]);
+		pDevice->setBlitSource(m_pBlurBitmap[0]);
 
 		pDevice->setBlurbrush(m_pBrush);
 		pDevice->blur(canvas);
@@ -126,8 +126,8 @@ public:
 
 
 private:
-	Surface_p	m_pCanvasSurface;
-	Surface_p	m_pBlurSurface[2];
+	Bitmap_p	m_pCanvasBitmap;
+	Bitmap_p	m_pBlurBitmap[2];
 
 	Blurbrush_p	m_pBrush;
 	Tint_p	m_pGradient;

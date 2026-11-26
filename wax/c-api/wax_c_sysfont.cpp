@@ -27,9 +27,9 @@
 
 using namespace wax;
 
-wax_obj wax_createSysFont(wax_obj surfaceFactory, wax_obj backupFont)
+wax_obj wax_createSysFont(wax_obj bitmapFactory, wax_obj backupFont)
 {
-	SurfaceFactory * pFactory = surfaceFactory == nullptr ? nullptr : static_cast<SurfaceFactory*>(reinterpret_cast<Object*>(surfaceFactory) );
+	BitmapFactory * pFactory = bitmapFactory == nullptr ? nullptr : static_cast<BitmapFactory*>(reinterpret_cast<Object*>(bitmapFactory) );
 	Font * pBackupFont = backupFont == nullptr ? nullptr : static_cast<Font*>(reinterpret_cast<Object*>(backupFont) );
 
 	auto pSysFont = SysFont::create( pFactory, pBackupFont );

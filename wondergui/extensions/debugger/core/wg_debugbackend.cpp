@@ -54,7 +54,7 @@
 #include <wg_selectboxinfosection.h>
 #include <wg_sidecanvasinfosection.h>
 #include <wg_skindisplayinfosection.h>
-#include <wg_surfacedisplayinfosection.h>
+#include <wg_bitmapdisplayinfosection.h>
 #include <wg_timerinfosection.h>
 
 #include <wg_chartinfosection.h>
@@ -159,7 +159,7 @@ namespace wg
 		_registerObject<SelectBox, SelectBoxInfoSection>();
 		_registerObject<SideCanvas, SideCanvasInfoSection>();
 		_registerObject<SkinDisplay, SkinDisplayInfoSection>();
-		_registerObject<SurfaceDisplay, SurfaceDisplayInfoSection>();
+		_registerObject<BitmapDisplay, BitmapDisplayInfoSection>();
 		_registerObject<Timer, TimerInfoSection>();
 
 		_registerObject<Chart, ChartInfoSection>();

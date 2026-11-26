@@ -14,7 +14,7 @@ BookToC: true
 
 Most resources in WonderGUI are *immutable*, meaning that once they have been created they can not be modified. This is by design since allowing common resources shared by many widgets to be updated would require expensive book-keeping to make sure any widget affected is updated accordingly.
 
-Some objects, i.e. Surfaces, are *semi-mutable* in that you  can change their content (i.e. their pixel values) while their  attributes are immutable (e.g. size, pixel format etc). These should be  treated with care, understanding that changing the pixel data of a  surface will not automatically update any widget or other resource  depending on it.
+Some objects, i.e. Bitmaps, are *semi-mutable* in that you  can change their content (i.e. their pixel values) while their  attributes are immutable (e.g. size, pixel format etc). These should be  treated with care, understanding that changing the pixel data of a  bitmap will not automatically update any widget or other resource  depending on it.
 
 Widgets are never immutable or semi-mutable, they can all be manipulated at all times.
 
@@ -70,15 +70,15 @@ The following table lists the classes that are considered resources with a short
 | Printer              | Yes          | A low-level class for printing text to the screen as part of the Wax library. Meant for situations where WonderGUI's more sophisticated text layout system would be overkill. Not used by any WonderGUI widgets, but is available nevertheless. |
 | RoundedRectWarp      | Yes          | Generator of a Warpmap that bends the source around the outline of a rounded rectangle, such as a focus ring or a progress border from a straight bar. See [Warpmaps](warpmaps). |
 | Skin                 | No           | Defines the look and feel of a widget (or a part thereof) and draws it. Contains information about margins, padding, graphics and colors and any changes to appearance when interacting with it. |
-| Surface              | Content only | Bitmap surfaces containing graphics resources for rendering or serving as rendering output. Surface is a base class which is subclassed depending on rendering output such as Software, OpenGL, Metal och Streaming. |
-| SurfaceFactory       | No           | A simple factory class for creating surfaces. Subclassed into factories for various rendering outputs. |
-| SurfaceFileInspector | No           | Class for reading header information from a .wbm-file, containing graphics in WonderGUI specific format. |
-| SurfaceReader        | No           | Class for reading surfaces from WonderGUI's custom graphics file format. |
-| SurfaceWriter        | No           | Class for writing surfaces to WonderGUI's custom graphics file format. |
+| Bitmap              | Content only | Bitmaps containing graphics resources for rendering or serving as rendering output. Bitmap is a base class which is subclassed depending on rendering output such as Software, OpenGL, Metal och Streaming. |
+| BitmapFactory       | No           | A simple factory class for creating bitmaps. Subclassed into factories for various rendering outputs. |
+| BitmapFileInspector | No           | Class for reading header information from a .wbm-file, containing graphics in WonderGUI specific format. |
+| BitmapReader        | No           | Class for reading bitmaps from WonderGUI's custom graphics file format. |
+| BitmapWriter        | No           | Class for writing bitmaps to WonderGUI's custom graphics file format. |
 | TextLayout           | No           | TextLayouts manages the layout and rendering of text, such as the texts placement and alignment within a rectangle. They also manage text-wrapping and can theoretically handle animated text, rotated text and bi-directional text, although just a basic TextLayout subclass has been implemented so far. |
 | TextStyle            | No           | TextStyle objects specify the font, size, color and decorations to use for some text or parts thereof. |
 | Transition           | No           | Specifies a transition from one color, position size or such to another. Subclassed into classes for dealing specifically with colors and arrays of values. |
 | WarpGenerator        | Yes          | Base class for generators that make and keep a Warpmap from a few settings, such as CircularWarp. See [Warpmaps](warpmaps). |
-| Warpmap              | Content only | Bends a surface or an edgemap into another shape when drawn, by a grid of positions in the source. Subclassed depending on rendering output, like Edgemap. See [Warpmaps](warpmaps). |
+| Warpmap              | Content only | Bends a bitmap or an edgemap into another shape when drawn, by a grid of positions in the source. Subclassed depending on rendering output, like Edgemap. See [Warpmaps](warpmaps). |
 | WarpmapFactory       | No           | A simple factory class for creating warpmaps. Subclassed into factories for various rendering outputs. |
 

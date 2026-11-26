@@ -23,7 +23,7 @@
 #include "wg_oldskool.h"
 
 #include <wax_sysfont.h>
-#include <wax_surfacereader.h>
+#include <wax_bitmapreader.h>
 #include <wg_base.h>
 
 namespace wg::oldskool
@@ -31,31 +31,31 @@ namespace wg::oldskool
 	// Skin blocks as a .surf, generated from resources/oldskool_skinblocks.png into
 	// wg_oldskool_resources.cpp. To regenerate, from the WonderGUI root:
 	//
-	//   scripts/embed_images.rb --image2surf=<path to image2surf> --output=wondergui/widgetkits/wg_oldskool_resources.cpp
-	//                           --namespace=wg::oldskool _skinBlocksSurf=resources/oldskool_skinblocks.png
+	//   scripts/embed_images.rb --image2bitmap=<path to image2bitmap> --output=wondergui/widgetkits/wg_oldskool_resources.cpp
+	//                           --namespace=wg::oldskool _skinBlocksBitmap=resources/oldskool_skinblocks.png
 
-	extern const char	_skinBlocksSurf[];
-	extern const int	_skinBlocksSurfSize;
+	extern const char	_skinBlocksBitmap[];
+	extern const int	_skinBlocksBitmapSize;
 
 	//____ init() _____________________________________________________________
 
 	bool init(Font* pNormal, Font* pBold, Font* pItalic, Font* pMonospace)
 	{
-		auto pSurfaceFactory = Base::defaultSurfaceFactory();
-		if( !pSurfaceFactory )
+		auto pBitmapFactory = Base::defaultBitmapFactory();
+		if( !pBitmapFactory )
 		{
-			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No default surface factory set", nullptr, nullptr, __func__, __FILE__, __LINE__);
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No default bitmap factory set", nullptr, nullptr, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
-		auto pReader = SurfaceReader::create(WGBP(SurfaceReader, _.factory = pSurfaceFactory));
-		Surface_p pSkinBlocks = pReader->readSurfaceFromMemory(_skinBlocksSurf);
+		auto pReader = BitmapReader::create(WGBP(BitmapReader, _.factory = pBitmapFactory));
+		Bitmap_p pSkinBlocks = pReader->readBitmapFromMemory(_skinBlocksBitmap);
 		if( !pSkinBlocks )
 			return false;
 
 		Font_p pNormalFont = pNormal;
 		if( !pNormalFont )
-			pNormalFont = SysFont::create(pSurfaceFactory);
+			pNormalFont = SysFont::create(pBitmapFactory);
 
 		Fonts::Normal	= pNormalFont;
 		Fonts::Bold		= pBold ? pBold : pNormalFont.rawPtr();
@@ -96,7 +96,7 @@ namespace wg::oldskool
 		Transitions::openClose = ValueTransition::create(250000);
 
 		Skins::Plate = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 0,60,10,10 },
 			_.padding = 3,
 			_.frame = 3));
@@ -106,13 +106,13 @@ namespace wg::oldskool
 			_.padding = 3));
 
 		Skins::Canvas = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 24,60,10,10 },
 			_.padding = 1,
 			_.frame = 1));
 
 		Skins::Window = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 36,60,10,10 },
 			_.padding = 5,
 			_.frame = 3));
@@ -149,7 +149,7 @@ namespace wg::oldskool
 			_.padding = { 16, 4, 4, 4 }));
 
 		_pPlusMinusToggleSkin = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 0,0,14,14 },
 			_.axis = Axis::X,
 			_.blockSpacing = 2,
@@ -164,7 +164,7 @@ namespace wg::oldskool
 		));
 
 		Skins::SplitHandle = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 0,15,10,10 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -175,7 +175,7 @@ namespace wg::oldskool
 
 
 		Skins::Button = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 0,15,10,10 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -186,7 +186,7 @@ namespace wg::oldskool
 
 
 		Skins::ToggleButton = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 0,26,10,10 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -196,7 +196,7 @@ namespace wg::oldskool
 		));
 
 		Skins::Checkbox = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 0,37,10,10 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -204,7 +204,7 @@ namespace wg::oldskool
 		));
 
 		Skins::RadioButton = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 0,48,10,10 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -212,7 +212,7 @@ namespace wg::oldskool
 		));
 
 		Skins::SelectBox = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 96,0,34,22 },
 			_.frame = { 4,25,4,4 },
 			_.padding = { 3, 25, 3, 4, },
@@ -235,7 +235,7 @@ namespace wg::oldskool
 			_.padding = 0));
 
 		Skins::ScrollbarHandleX = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 0,114,18,21 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -246,7 +246,7 @@ namespace wg::oldskool
 		));
 
 		Skins::ScrollbarHandleY = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 131,0,21,18 },
 			_.axis = Axis::Y,
 			_.blockSpacing = 1,
@@ -258,7 +258,7 @@ namespace wg::oldskool
 
 
 		Skins::ScrollbarButtonUp = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 74,15, 21, 18 },
 			_.axis = Axis::Y,
 			_.blockSpacing = 1,
@@ -266,7 +266,7 @@ namespace wg::oldskool
 		));
 
 		Skins::ScrollbarButtonDown = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 52, 15, 21, 18 },
 			_.axis = Axis::Y,
 			_.blockSpacing = 1,
@@ -274,7 +274,7 @@ namespace wg::oldskool
 		));
 
 		Skins::ScrollbarButtonLeft = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 76,92, 18, 21 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -282,7 +282,7 @@ namespace wg::oldskool
 		));
 
 		Skins::ScrollbarButtonRight = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 0,92, 18, 21 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -290,7 +290,7 @@ namespace wg::oldskool
 		));
 
 		Skins::Field = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 24,60,10,10 },
 			_.padding = 1,
 			_.frame = 1,

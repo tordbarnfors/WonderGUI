@@ -25,7 +25,7 @@
 
 #include <wax_c_types.h>
 #include <wax_c_color.h>
-#include <wax_c_surface.h>
+#include <wax_c_bitmap.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,7 +41,7 @@ extern "C" {
 
 		// These below are not updated by getGlyphWithoutBitmap().
 
-		wax_obj		surface;
+		wax_obj		bitmap;
 		wax_rectSPX	rect;
 		wax_spx		bearingX;
 		wax_spx		bearingY;
@@ -72,7 +72,7 @@ extern "C" {
 
 	WAX_EXPORT wax_obj	wax_getBackupFont(wax_obj font);
 
-	WAX_EXPORT wax_obj	wax_createSurfaceFromGlyph(wax_obj font, uint32_t chr, const wax_surfaceBP* blueprint, wax_obj surfaceFactory);
+	WAX_EXPORT wax_obj	wax_createBitmapFromGlyph(wax_obj font, uint32_t chr, const wax_bitmapBP* blueprint, wax_obj bitmapFactory);
 
 
 

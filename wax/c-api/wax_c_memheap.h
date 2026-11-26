@@ -37,7 +37,7 @@ extern "C" {
 	WAX_EXPORT void *		wax_malloc( wax_memHeap heap, int bytes );
 	WAX_EXPORT void  		wax_free( wax_memHeap heap, void * pBuffer );
 /*
-	void		wax_drawFragmentMap( wax_memHeap heap, int nSections, uint16_t * pSectionTable, wax_obj surface );
+	void		wax_drawFragmentMap( wax_memHeap heap, int nSections, uint16_t * pSectionTable, wax_obj bitmap );
 */
 	WAX_EXPORT void			wax_setMemHeapDebugLevel( wax_memHeap heap, int level );
 

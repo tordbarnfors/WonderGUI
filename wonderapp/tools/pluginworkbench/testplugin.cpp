@@ -19,7 +19,7 @@ using namespace std;
 
 extern "C" {
 	DLLEXPORTPREFIX int		init( wg_plugin_interface * pInterface, void * pRealHostBridge,
-								  wax_obj hPluginCapsule, wax_obj hGfxDevice, wax_obj hSurfaceFactory, wax_obj hEdgemapFactory );
+								  wax_obj hPluginCapsule, wax_obj hGfxDevice, wax_obj hBitmapFactory, wax_obj hEdgemapFactory );
 	DLLEXPORTPREFIX int		update(void);
 	DLLEXPORTPREFIX void	exitX(void);
 
@@ -40,16 +40,16 @@ PluginRoot_p 	g_pPluginRoot;
 
 //____ init() _________________________________________________________________
 
-DLLEXPORTPREFIX int init( wg_plugin_interface * pInterface, void * pRealHostBridge, wax_obj hPluginCapsule, wax_obj hGfxDevice, wax_obj hSurfaceFactory, wax_obj hEdgemapFactory )
+DLLEXPORTPREFIX int init( wg_plugin_interface * pInterface, void * pRealHostBridge, wax_obj hPluginCapsule, wax_obj hGfxDevice, wax_obj hBitmapFactory, wax_obj hEdgemapFactory )
 {
 	if( !PluginBase::init(pInterface, pRealHostBridge) )
 		return 0;								// Host's plugin interface is older than ours.
 	
-	auto pSurfaceFactory 	= PluginSurfaceFactory::create(hSurfaceFactory);
+	auto pBitmapFactory 	= PluginBitmapFactory::create(hBitmapFactory);
 	auto pEdgemapFactory	= PluginEdgemapFactory::create(hEdgemapFactory);
-	auto pGfxDevice 		= PluginGfxDevice::create(hGfxDevice, pSurfaceFactory, pEdgemapFactory);
+	auto pGfxDevice 		= PluginGfxDevice::create(hGfxDevice, pBitmapFactory, pEdgemapFactory);
 	
-	wg::Base::setDefaultSurfaceFactory(pSurfaceFactory);
+	wg::Base::setDefaultBitmapFactory(pBitmapFactory);
 	wg::Base::setDefaultEdgemapFactory(pEdgemapFactory);
 	wg::Base::setDefaultDevice(pGfxDevice);
 	

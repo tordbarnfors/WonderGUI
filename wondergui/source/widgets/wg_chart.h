@@ -289,7 +289,7 @@ class Chart;
 		pts				m_leftLabelSpacing = 4;
 		pts				m_rightLabelSpacing = 4;
 
-		Surface_p		m_pChartCanvas;
+		Bitmap_p		m_pChartCanvas;
 
 		ValueTransition_p	m_pRangeTransition;
 		int					m_rangeTransitionProgress = 0;

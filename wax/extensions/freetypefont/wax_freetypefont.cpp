@@ -28,8 +28,8 @@
 #include <assert.h>
 
 #include <wax_freetypefont.h>
-#include <wax_surface.h>
-#include <wax_surfacefactory.h>
+#include <wax_bitmap.h>
+#include <wax_bitmapfactory.h>
 #include <wax_util.h>
 
 
@@ -438,10 +438,10 @@ namespace wax
 		glyph.advance = pGlyph->advance;
 		glyph.kerningIndex = pGlyph->kerningIndex;
 
-		if (pGlyph->pSurface == nullptr)
+		if (pGlyph->pBitmap == nullptr)
 			_generateBitmap(pGlyph);
 
-		glyph.pSurface = pGlyph->pSurface;
+		glyph.pBitmap = pGlyph->pBitmap;
 		glyph.rect = pGlyph->rect;
 		glyph.bearingX = pGlyph->bearingX;
 		glyph.bearingY = pGlyph->bearingY;
@@ -451,7 +451,7 @@ namespace wax
 		glyph.fontRef = 0;
 		glyph.advance = 0;
 		glyph.kerningIndex = 0;
-		glyph.pSurface = nullptr;
+		glyph.pBitmap = nullptr;
 		return;
 	}
 
@@ -506,11 +506,11 @@ namespace wax
 
 	void FreeTypeFont::_copyBitmap( FT_Bitmap * pFTBitmap, MyGlyph * pGlyph )
 	{
-		Surface_p pSurf = pGlyph->pSurface;
+		Bitmap_p pBitmap = pGlyph->pBitmap;
 
-		auto pixbuf = pSurf->allocPixelBuffer(pGlyph->rect/64);
+		auto pixbuf = pBitmap->allocPixelBuffer(pGlyph->rect/64);
 
-		assert( pSurf->pixelFormat() == PixelFormat::Alpha_8);
+		assert( pBitmap->pixelFormat() == PixelFormat::Alpha_8);
 
 		// Copy glyph bitmap into alpha channel of slot, making sure to clear any
 		// left over area of slots alpha channel.
@@ -531,8 +531,8 @@ namespace wax
 				assert( false );
 		}
 
-		pSurf->pullPixels(pixbuf);
-		pSurf->freePixelBuffer(pixbuf);
+		pBitmap->pullPixels(pixbuf);
+		pBitmap->freePixelBuffer(pixbuf);
 	}
 
 
@@ -650,25 +650,25 @@ namespace wax
 		_forEachCachedGlyph( [](MyGlyph& glyph) { glyph.bitmapLost(); } );
 	}
 
-	//____ _cacheSurfaceAdded() __________________________________________________
+	//____ _cacheBitmapAdded() __________________________________________________
 
-	void FreeTypeFont::_cacheSurfaceAdded(Surface* pSurface)
+	void FreeTypeFont::_cacheBitmapAdded(Bitmap* pBitmap)
 	{
 		// Do nothing.
 	}
 
-	//____ _cacheSurfacesRemoved() _____________________________________________
+	//____ _cacheBitmapsRemoved() _____________________________________________
 
-	void FreeTypeFont::_cacheSurfacesRemoved( int nRemovedSurfaces, Surface * pRemovedSurfaces[] )
+	void FreeTypeFont::_cacheBitmapsRemoved( int nRemovedBitmaps, Bitmap * pRemovedBitmaps[] )
 	{
-		_forEachCachedGlyph( [nRemovedSurfaces,pRemovedSurfaces](MyGlyph& glyph)
+		_forEachCachedGlyph( [nRemovedBitmaps,pRemovedBitmaps](MyGlyph& glyph)
 		{
-			Surface* pGlyphSurf = glyph.pSurface;
-			if (pGlyphSurf)
+			Bitmap* pGlyphBitmap = glyph.pBitmap;
+			if (pGlyphBitmap)
 			{
-				for (int i = 0; i < nRemovedSurfaces; i++)
+				for (int i = 0; i < nRemovedBitmaps; i++)
 				{
-					if (pGlyphSurf == pRemovedSurfaces[i])
+					if (pGlyphBitmap == pRemovedBitmaps[i])
 					{
 						glyph.bitmapLost();
 						break;
@@ -683,12 +683,12 @@ namespace wax
 
 	void FreeTypeFont::_getCacheSlot( int width, int height, MyGlyph * pGlyph )
 	{
-		Surface_p	pSurface;
+		Bitmap_p	pBitmap;
 		CoordI		ofs;
 				
-		std::tie(pSurface,ofs) = m_pCache->getCacheSlot( {width,height} );
+		std::tie(pBitmap,ofs) = m_pCache->getCacheSlot( {width,height} );
 				
-		pGlyph->pSurface = pSurface;
+		pGlyph->pBitmap = pBitmap;
 		pGlyph->rect.x = ofs.x*64;
 		pGlyph->rect.y = ofs.y*64;
 		pGlyph->rect.w = width*64;

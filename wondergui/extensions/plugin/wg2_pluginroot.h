@@ -36,7 +36,7 @@
 
 #include <wg_skin.h>
 #include <wax_device.h>
-#include <wax_surface.h>
+#include <wax_bitmap.h>
 
 #include <wg_plugininterface.h>
 

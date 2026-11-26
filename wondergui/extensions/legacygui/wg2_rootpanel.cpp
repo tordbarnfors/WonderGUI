@@ -51,7 +51,7 @@ WgRootPanel::WgRootPanel()
 WgRootPanel::WgRootPanel( wg::Surface * pCanvasSurface, wg::GfxDevice * pGfxDevice )
 {
 	m_canvas.ref = wg::CanvasRef::None;
-	m_canvas.pSurface = pCanvasSurface;
+	m_canvas.pBitmap = pCanvasSurface;
 	m_canvas.size = pCanvasSurface->pixelSize()*64;
 
 	m_bVisible = true;
@@ -66,7 +66,7 @@ WgRootPanel::WgRootPanel( wg::Surface * pCanvasSurface, wg::GfxDevice * pGfxDevi
 WgRootPanel::WgRootPanel( wg::CanvasRef ref, wg::GfxDevice * pGfxDevice )
 {
 	m_canvas.ref = ref;
-	m_canvas.pSurface = nullptr;
+	m_canvas.pBitmap = nullptr;
 	m_canvas.size = pGfxDevice->canvas(ref).size;
 
     m_bVisible = true;
@@ -126,12 +126,12 @@ bool WgRootPanel::SetCanvas(wg::Surface* pSurface)
 		return false;
 	}
 
-	if( pSurface == m_canvas.pSurface )
+	if( pSurface == m_canvas.pBitmap )
         return true;
 
 
 	m_canvas.ref = wg::CanvasRef::None;
-    m_canvas.pSurface = pSurface;
+    m_canvas.pBitmap = pSurface;
     m_canvas.size = pSurface->pixelSize()*64;
 
     if( !m_bHasGeo && m_hook.Widget() )
@@ -144,7 +144,7 @@ bool WgRootPanel::SetCanvas(wg::Surface* pSurface)
 bool WgRootPanel::SetCanvas(wg::CanvasRef ref)
 {
 	m_canvas.ref = ref;
-    m_canvas.pSurface = nullptr;
+    m_canvas.pBitmap = nullptr;
     m_canvas.size = m_pGfxDevice->canvas(ref).size;
 
     if( !m_bHasGeo && m_hook.Widget() )
@@ -351,7 +351,7 @@ bool WgRootPanel::Render( const WgRect& clip )
 
 bool WgRootPanel::BeginRender()
 {
-	if( !m_pGfxDevice || (!m_canvas.pSurface && m_canvas.ref == wg::CanvasRef::None) || !m_hook.Widget() )
+	if( !m_pGfxDevice || (!m_canvas.pBitmap && m_canvas.ref == wg::CanvasRef::None) || !m_hook.Widget() )
 		return false;						// No GFX-device or no widgets to render.
 
 	// Attend to pre-render callbacks
@@ -453,7 +453,7 @@ bool WgRootPanel::BeginRender()
 
 bool WgRootPanel::RenderSection( const WgRect& _clip )
 {
-    if( !m_pGfxDevice || (!m_canvas.pSurface && m_canvas.ref == wg::CanvasRef::None) || !m_hook.Widget() )
+    if( !m_pGfxDevice || (!m_canvas.pBitmap && m_canvas.ref == wg::CanvasRef::None) || !m_hook.Widget() )
 		return false;						// No GFX-device or no widgets to render.
 
 	// Make sure we have a vaild clip rectangle (doesn't go outside our geometry and has an area)
@@ -491,8 +491,8 @@ bool WgRootPanel::RenderSection( const WgRect& _clip )
 		for(int i = 0 ; i < nRects ; i++)
 			pClipRects[i] = pRects[i]*64;
 
-        if (m_canvas.pSurface)
-            m_pGfxDevice->beginCanvasUpdate(m_canvas.pSurface, nRects, pClipRects);
+        if (m_canvas.pBitmap)
+            m_pGfxDevice->beginCanvasUpdate(m_canvas.pBitmap, nRects, pClipRects);
         else
             m_pGfxDevice->beginCanvasUpdate(m_canvas.ref, nRects, pClipRects);
 
@@ -511,8 +511,8 @@ bool WgRootPanel::RenderSection( const WgRect& _clip )
 
         wg::RectI myClip = clip*64;
 
-        if (m_canvas.pSurface)
-            m_pGfxDevice->beginCanvasUpdate(m_canvas.pSurface, 1, &myClip, 0);
+        if (m_canvas.pBitmap)
+            m_pGfxDevice->beginCanvasUpdate(m_canvas.pBitmap, 1, &myClip, 0);
         else
             m_pGfxDevice->beginCanvasUpdate(m_canvas.ref, 1, &myClip, 0);
 
@@ -543,7 +543,7 @@ bool WgRootPanel::RenderSection( const WgRect& _clip )
 
 bool WgRootPanel::EndRender( void )
 {
-	if( !m_pGfxDevice || (!m_canvas.pSurface && m_canvas.size.isEmpty()) || !m_hook.Widget() )
+	if( !m_pGfxDevice || (!m_canvas.pBitmap && m_canvas.size.isEmpty()) || !m_hook.Widget() )
 		return false;						// No GFX-device or no widgets to render.
 
 

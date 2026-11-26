@@ -1,3 +1,3 @@
-add_subdirectory(image2surf)
+add_subdirectory(image2bitmap)
 add_subdirectory(streamgenerator)
 add_subdirectory(streamplayer)

@@ -7,31 +7,31 @@ public:
 	{
 		name = "CanvasFormatTests";
 
-		addTest("DrawToXRGB_8_linear", &CanvasFormatTests::init_XRGB_8_linear, &CanvasFormatTests::drawPrimitives, &CanvasFormatTests::exit_drawToSurface );
-		addTest("DrawToARGB_8", &CanvasFormatTests::init_ARGB_8, &CanvasFormatTests::drawPrimitives, &CanvasFormatTests::exit_drawToSurface);
-		addTest("DrawToXRGB_8", &CanvasFormatTests::init_XRGB_8, &CanvasFormatTests::drawPrimitives, &CanvasFormatTests::exit_drawToSurface);
-		addTest("DrawToRGB_565_linear", &CanvasFormatTests::init_RGB_565_linear, &CanvasFormatTests::drawPrimitives, &CanvasFormatTests::exit_drawToSurface);
+		addTest("DrawToXRGB_8_linear", &CanvasFormatTests::init_XRGB_8_linear, &CanvasFormatTests::drawPrimitives, &CanvasFormatTests::exit_drawToBitmap );
+		addTest("DrawToARGB_8", &CanvasFormatTests::init_ARGB_8, &CanvasFormatTests::drawPrimitives, &CanvasFormatTests::exit_drawToBitmap);
+		addTest("DrawToXRGB_8", &CanvasFormatTests::init_XRGB_8, &CanvasFormatTests::drawPrimitives, &CanvasFormatTests::exit_drawToBitmap);
+		addTest("DrawToRGB_565_linear", &CanvasFormatTests::init_RGB_565_linear, &CanvasFormatTests::drawPrimitives, &CanvasFormatTests::exit_drawToBitmap);
 	}
 
 	bool init(GfxDevice * pDevice, const RectSPX& canvas, wapp::API * pAppAPI)
 	{
-		m_pCanvasXRGB_8_linear = pDevice->surfaceFactory()->createSurface( WGBP(Surface,
+		m_pCanvasXRGB_8_linear = pDevice->bitmapFactory()->createBitmap( WGBP(Bitmap,
 																		_.size = canvas/64,
 																		_.format = PixelFormat::XRGB_8,
 																		_.colorSpace = ColorSpace::Linear,
 																		_.canvas = true ));
-		m_pCanvasARGB_8 = pDevice->surfaceFactory()->createSurface( WGBP(Surface,
+		m_pCanvasARGB_8 = pDevice->bitmapFactory()->createBitmap( WGBP(Bitmap,
 																		 _.size = canvas/64,
 																		 _.format = PixelFormat::ARGB_8,
 																		 _.canvas = true ));
 																   
 																   
 																   
-		m_pCanvasXRGB_8 = pDevice->surfaceFactory()->createSurface( WGBP(Surface,
+		m_pCanvasXRGB_8 = pDevice->bitmapFactory()->createBitmap( WGBP(Bitmap,
 																		 _.size = canvas/64,
 																		 _.format = PixelFormat::XRGB_8,
 																		 _.canvas = true ));
-		m_pCanvasRGB_565_linear = pDevice->surfaceFactory()->createSurface( WGBP(Surface,
+		m_pCanvasRGB_565_linear = pDevice->bitmapFactory()->createBitmap( WGBP(Bitmap,
 																		  _.size = canvas/64,
 																		  _.format = PixelFormat::RGB_565,
 																		  _.colorSpace = ColorSpace::Linear,
@@ -42,35 +42,35 @@ public:
 	bool	init_XRGB_8_linear(GfxDevice * pDevice, const RectSPX& canvas)
 	{
 		m_pActiveCanvas = m_pCanvasXRGB_8_linear;
-		return init_drawToSurface(pDevice, canvas);
+		return init_drawToBitmap(pDevice, canvas);
 	}
 
 	bool	init_ARGB_8(GfxDevice * pDevice, const RectSPX& canvas)
 	{
 		m_pActiveCanvas = m_pCanvasARGB_8;
-		return init_drawToSurface(pDevice, canvas);
+		return init_drawToBitmap(pDevice, canvas);
 	}
 
 	bool	init_XRGB_8(GfxDevice * pDevice, const RectSPX& canvas)
 	{
 		m_pActiveCanvas = m_pCanvasXRGB_8;
-		return init_drawToSurface(pDevice, canvas);
+		return init_drawToBitmap(pDevice, canvas);
 	}
 
 	bool	init_RGB_565_linear(GfxDevice * pDevice, const RectSPX& canvas)
 	{
 		m_pActiveCanvas = m_pCanvasRGB_565_linear;
-		return init_drawToSurface(pDevice, canvas);
+		return init_drawToBitmap(pDevice, canvas);
 	}
 
-	bool	init_drawToSurface(GfxDevice * pDevice, const RectSPX& canvas)
+	bool	init_drawToBitmap(GfxDevice * pDevice, const RectSPX& canvas)
 	{
 		m_pActiveCanvas->fill(Color::Transparent);
 		pDevice->beginCanvasUpdate(m_pActiveCanvas);
 		return true;
 	}
 
-	bool	exit_drawToSurface(GfxDevice * pDevice, const RectSPX& canvas)
+	bool	exit_drawToBitmap(GfxDevice * pDevice, const RectSPX& canvas)
 	{
 		pDevice->endCanvasUpdate();
 		pDevice->setBlitSource(m_pActiveCanvas);
@@ -106,11 +106,11 @@ public:
 
 private:
 
-	Surface_p		m_pActiveCanvas;
+	Bitmap_p		m_pActiveCanvas;
 
 
-	Surface_p		m_pCanvasXRGB_8_linear;
-	Surface_p		m_pCanvasARGB_8;
-	Surface_p		m_pCanvasXRGB_8;
-	Surface_p		m_pCanvasRGB_565_linear;
+	Bitmap_p		m_pCanvasXRGB_8_linear;
+	Bitmap_p		m_pCanvasARGB_8;
+	Bitmap_p		m_pCanvasXRGB_8;
+	Bitmap_p		m_pCanvasRGB_565_linear;
 };

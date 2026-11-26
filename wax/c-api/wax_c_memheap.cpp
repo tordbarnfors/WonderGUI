@@ -58,9 +58,9 @@ void wax_memHeapFree( wax_memHeap heap, void * pBuffer )
 }
 
 /*
-void wax_drawMemHeapFragmentMap( wax_memHeap heap, int nSections, uint16_t * pSectionTable, wax_obj surface )
+void wax_drawMemHeapFragmentMap( wax_memHeap heap, int nSections, uint16_t * pSectionTable, wax_obj bitmap )
 {
-	reinterpret_cast<MemHeap*>(heap)->drawFragmentMap(nSections, pSectionTable, static_cast<Surface*>(reinterpret_cast<Object*>(surface)));
+	reinterpret_cast<MemHeap*>(heap)->drawFragmentMap(nSections, pSectionTable, static_cast<Bitmap*>(reinterpret_cast<Object*>(bitmap)));
 }
 */
 

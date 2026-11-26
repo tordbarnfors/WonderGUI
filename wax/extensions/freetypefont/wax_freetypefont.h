@@ -119,7 +119,7 @@ namespace wax
 		class MyGlyph
 		{
 		public:
-			inline void	bitmapLost() { pSurface = nullptr; }
+			inline void	bitmapLost() { pBitmap = nullptr; }
 			inline bool isInitialized() { return character != 0; }
 
 			char32_t	character = 0;			// Unicode for character.
@@ -128,7 +128,7 @@ namespace wax
 			spx			advance = 0;
 			uint32_t	kerningIndex = 0;		//
 
-			Surface_p 	pSurface;			// Set to null if no bitmap for glyph could be found.
+			Bitmap_p 	pBitmap;			// Set to null if no bitmap for glyph could be found.
 			RectSPX		rect;
 			spx			bearingX = 0;			// x offset when rendering the glyph (negated offset to glyph origin)
 			spx			bearingY = 0;			// y offset when rendering the glyph (negated offset to glyph origin)
@@ -155,8 +155,8 @@ namespace wax
 			std::unordered_map<char32_t,MyGlyph>	extended;	// Glyphs outside the BMP.
 		};
 
-		void 				_cacheSurfaceAdded(Surface* pSurface) override;
-		void 				_cacheSurfacesRemoved(int nSurfaces, Surface* pSurfaces[]) override;
+		void 				_cacheBitmapAdded(Bitmap* pBitmap) override;
+		void 				_cacheBitmapsRemoved(int nBitmaps, Bitmap* pBitmaps[]) override;
 		void 				_cacheCleared() override;
 
 		
@@ -188,7 +188,7 @@ namespace wax
 		CachedFontSize **	m_pCachedFontSizes = nullptr;				//	[X sizes][512 codepages][128 glyphs/codepage]
 		int					m_nCachedFontSizes = 0;
 
-		uint32_t			m_surfCreationNb = 0;
+		uint32_t			m_bitmapCreationNb = 0;
 
 		int					m_renderFlags;
 		RenderMode			m_renderMode;

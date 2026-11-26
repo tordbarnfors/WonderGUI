@@ -436,13 +436,13 @@ namespace wax
 					pos.y += m_pFont->maxAscend() + m_pFont->maxDescend() + m_pFont->lineGap();
 				}
 								
-				if (pGlyph->pSurface)
+				if (pGlyph->pBitmap)
 				{
 					CoordSPX blitPos = pos;
 					blitPos.x += pGlyph->bearingX;
 					blitPos.y += pGlyph->bearingY;
 				
-					m_pGfxDevice->setBlitSource(pGlyph->pSurface);
+					m_pGfxDevice->setBlitSource(pGlyph->pBitmap);
 					m_pGfxDevice->blit(blitPos,pGlyph->rect);
 				}
 

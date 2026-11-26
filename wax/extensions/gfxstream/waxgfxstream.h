@@ -36,10 +36,10 @@
 #include <wax_streamsink.h>
 #include <wax_streamsource.h>
 #include <wax_streamsplitter.h>
-#include <wax_remotesurface.h>
-#include <wax_remotesurfacefactory.h>
-#include <wax_mirrorsurface.h>
-#include <wax_mirrorsurfacefactory.h>
+#include <wax_remotebitmap.h>
+#include <wax_remotebitmapfactory.h>
+#include <wax_mirrorbitmap.h>
+#include <wax_mirrorbitmapfactory.h>
 #include <wax_streamtrimbackend.h>
 #include <wax_streamwrapper.h>
 #include <wax_streamwriter.h>

@@ -7,8 +7,8 @@
 #include <wax_device_gen2.h>
 #include <wax_softbackend.h>
 #include <wax_softkernels_default.h>
-#include <wax_softsurface.h>
-#include <wax_softsurfacefactory.h>
+#include <wax_softbitmap.h>
+#include <wax_softbitmapfactory.h>
 
 #include <vector>
 #include <algorithm>
@@ -400,7 +400,7 @@ bool TextSystemTest::wordNavigationTest(std::ostream& output)
 
 bool TextSystemTest::renderTest(std::ostream& output)
 {
-	wg::Base::setDefaultSurfaceFactory( SoftSurfaceFactory::create() );
+	wg::Base::setDefaultBitmapFactory( SoftBitmapFactory::create() );
 
 	auto pStyle = _createStyle(20);
 	TEST_ASSERT(pStyle != nullptr);
@@ -411,7 +411,7 @@ bool TextSystemTest::renderTest(std::ostream& output)
 	addDefaultSoftKernels(pBackend);
 	auto pDevice = GfxDeviceGen2::create(pBackend);
 
-	auto pCanvas = SoftSurface::create(WGBP(Surface, _.size = canvasSize, _.format = PixelFormat::ARGB_8, _.canvas = true));
+	auto pCanvas = SoftBitmap::create(WGBP(Bitmap, _.size = canvasSize, _.format = PixelFormat::ARGB_8, _.canvas = true));
 
 	auto countLitPixels = [&]( TextLayout * pLayout, std::string_view str )
 	{
@@ -729,7 +729,7 @@ bool TextSystemTest::markdownSourceModeTest(std::ostream& output)
 
 bool TextSystemTest::markdownRenderTest(std::ostream& output)
 {
-	wg::Base::setDefaultSurfaceFactory( SoftSurfaceFactory::create() );
+	wg::Base::setDefaultBitmapFactory( SoftBitmapFactory::create() );
 
 	auto pStyle = _createStyle();
 	TEST_ASSERT(pStyle != nullptr);
@@ -750,7 +750,7 @@ bool TextSystemTest::markdownRenderTest(std::ostream& output)
 	auto pBackend = SoftBackend::create();
 	addDefaultSoftKernels(pBackend);
 	auto pDevice = GfxDeviceGen2::create(pBackend);
-	auto pCanvas = SoftSurface::create(WGBP(Surface, _.size = canvasSize, _.format = PixelFormat::ARGB_8, _.canvas = true));
+	auto pCanvas = SoftBitmap::create(WGBP(Bitmap, _.size = canvasSize, _.format = PixelFormat::ARGB_8, _.canvas = true));
 
 	std::string md = "# Heading\n\nSome *emphasis*, **strong** and `code` with a [link](http://x).\n\n"
 					 "- one\n- two\n  1. nested\n\n> quoted\n> text\n\n```\ncode block\n  indented\n```\n"
@@ -845,7 +845,7 @@ bool TextSystemTest::sizeScaleTest(std::ostream& output)
 
 bool TextSystemTest::decorationTest(std::ostream& output)
 {
-	wg::Base::setDefaultSurfaceFactory( SoftSurfaceFactory::create() );
+	wg::Base::setDefaultBitmapFactory( SoftBitmapFactory::create() );
 
 	auto pStyle = _createStyle(20);
 	TEST_ASSERT(pStyle != nullptr);
@@ -855,7 +855,7 @@ bool TextSystemTest::decorationTest(std::ostream& output)
 	auto pBackend = SoftBackend::create();
 	addDefaultSoftKernels(pBackend);
 	auto pDevice = GfxDeviceGen2::create(pBackend);
-	auto pCanvas = SoftSurface::create(WGBP(Surface, _.size = canvasSize, _.format = PixelFormat::ARGB_8, _.canvas = true));
+	auto pCanvas = SoftBitmap::create(WGBP(Bitmap, _.size = canvasSize, _.format = PixelFormat::ARGB_8, _.canvas = true));
 
 	auto pLayout = PlainTextLayout::create();
 	int baseline = 0;

@@ -39,7 +39,7 @@ namespace wax
 
 	const TypeInfo DeviceGen2::TYPEINFO = { "DeviceGen2", &Device::TYPEINFO };
 
-	const TypeInfo s_surfaceType = { "Unkown SurfaceType, backend missing", &Surface::TYPEINFO };
+	const TypeInfo s_bitmapType = { "Unkown BitmapType, backend missing", &Bitmap::TYPEINFO };
 
 
 
@@ -143,11 +143,11 @@ CanvasLayers_p DeviceGen2::canvasLayers() const
 	return m_canvasStack.back().pLayerInfo;
 }
 
-//____ surfaceFactory() _______________________________________________________
+//____ bitmapFactory() _______________________________________________________
 
-SurfaceFactory_p DeviceGen2::surfaceFactory()
+BitmapFactory_p DeviceGen2::bitmapFactory()
 {
-	return m_pBackend ? m_pBackend->surfaceFactory() : nullptr;
+	return m_pBackend ? m_pBackend->bitmapFactory() : nullptr;
 }
 
 //____ edgemapFactory() _______________________________________________________
@@ -474,11 +474,11 @@ BlendMode DeviceGen2::blendMode() const
 
 //____ setBlitSource() ____________________________________________________
 
-bool DeviceGen2::setBlitSource(Surface* pSource)
+bool DeviceGen2::setBlitSource(Bitmap* pSource)
 {
 	if (pSource && !m_pBackend->canBeBlitSource(pSource->typeInfo()))
 	{
-		Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Surface can not be used as blit source.",
+		Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Bitmap can not be used as blit source.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return false;
@@ -495,7 +495,7 @@ bool DeviceGen2::setBlitSource(Surface* pSource)
 
 //____ blitSource() _______________________________________________________
 
-Surface_p DeviceGen2::blitSource() const
+Bitmap_p DeviceGen2::blitSource() const
 {
 	return m_renderState.blitSource;
 }
@@ -678,13 +678,13 @@ void DeviceGen2::flush()
 
 //____ _beginCanvasUpdate() _______________________________________________
 
-bool DeviceGen2::_beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers* pLayers, int startLayer)
+bool DeviceGen2::_beginCanvasUpdate(CanvasRef ref, Bitmap* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers* pLayers, int startLayer)
 {
 	// Error checking
 
 	if (ref == CanvasRef::None && pCanvas == nullptr)
 	{
-		Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Either CanvasRef or Surface must be specified.",
+		Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Either CanvasRef or Bitmap must be specified.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return false;
@@ -692,7 +692,7 @@ bool DeviceGen2::_beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpdate
 
 	if (pCanvas && (!m_pBackend->canBeCanvas(pCanvas->typeInfo()) || !pCanvas->canBeCanvas()))
 	{
-		Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Surface can not be used as canvas.",
+		Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Bitmap can not be used as canvas.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return false;
@@ -732,7 +732,7 @@ bool DeviceGen2::_beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpdate
 	else
 	{
 		entry.info.ref = CanvasRef::None;
-		entry.info.pSurface = pCanvas;
+		entry.info.pBitmap = pCanvas;
 		entry.info.format = pCanvas->pixelFormat();
 		entry.info.colorSpace = pCanvas->colorSpace();
 		entry.info.bigEndian = pCanvas->isBigEndian();
@@ -803,7 +803,7 @@ bool DeviceGen2::_beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpdate
 		{
 			// Create our layer canvas
 
-			layer.pLayerCanvas = m_pBackend->surfaceFactory()->createSurface(WAXBP(Surface,
+			layer.pLayerCanvas = m_pBackend->bitmapFactory()->createBitmap(WAXBP(Bitmap,
 				_.size = entry.info.size / 64,
 				_.format = info.format,
 				_.colorSpace = info.colorSpace == ColorSpace::Undefined ? entry.info.colorSpace : info.colorSpace,
@@ -1101,7 +1101,7 @@ void DeviceGen2::_doFlattenLayers()
 	if( canvasData.sessionInfo.nRects == 0 )
 		return;			// No rendering to be done.
 
-	m_pBackend->beginSession(canvasData.info.ref, canvasData.info.pSurface, canvasData.updateRects.nRects, canvasData.updateRects.pRects, &canvasData.sessionInfo);
+	m_pBackend->beginSession(canvasData.info.ref, canvasData.info.pBitmap, canvasData.updateRects.nRects, canvasData.updateRects.pRects, &canvasData.sessionInfo);
 
 	// Send transforms
 		
@@ -1185,7 +1185,7 @@ void DeviceGen2::_doFlattenLayers()
 			if (canvasData.info.ref != CanvasRef::None)
 				m_pBackend->setCanvas(canvasData.info.ref);
 			else
-				m_pBackend->setCanvas(canvasData.info.pSurface);
+				m_pBackend->setCanvas(canvasData.info.pBitmap);
 
 			// Send preBlendCanvas and blend commands to backend
 			// causing blending of layer canvas 
@@ -1226,13 +1226,13 @@ void DeviceGen2::_doFlattenLayers()
 
 	m_pBackend->endSession();
 
-	// Notify updated surface
+	// Notify updated bitmap
 
-	Surface * pUpdatedSurf = canvasData.info.pSurface;
-	if( !pUpdatedSurf )
-		pUpdatedSurf = m_pBackend->canvasInfo(canvasData.info.ref)->pSurface;
+	Bitmap * pUpdatedBitmap = canvasData.info.pBitmap;
+	if( !pUpdatedBitmap )
+		pUpdatedBitmap = m_pBackend->canvasInfo(canvasData.info.ref)->pBitmap;
 
-	if( pUpdatedSurf && pUpdatedSurf->hasObservers() )
+	if( pUpdatedBitmap && pUpdatedBitmap->hasObservers() )
 	{
 		m_pBackend->waitForCompletion();
 
@@ -1245,7 +1245,7 @@ void DeviceGen2::_doFlattenLayers()
 		for( int i = 0 ; i < nRects ; i++ )
 			pPixelRects[i] = pSpxRects[i]/64;
 
-		pUpdatedSurf->notifyObservers(nRects, pPixelRects);
+		pUpdatedBitmap->notifyObservers(nRects, pPixelRects);
 
 		Base::memStackFree( bufferSize );
 	}
@@ -2250,7 +2250,7 @@ void DeviceGen2::precisionBlit(const RectSPX& _dest, const RectF& src)
 	}
 
 	// A bilinear sample also reads the next pixel, so samples need to stay at least a little
-	// bit before the last pixel of the source surface. Destination pixels whose samples would
+	// bit before the last pixel of the source bitmap. Destination pixels whose samples would
 	// reach beyond that are drawn with the edge of the source instead, as a separate blit
 	// with no scale in that direction. So along each axis there are one or two parts.
 
@@ -2262,9 +2262,9 @@ void DeviceGen2::precisionBlit(const RectSPX& _dest, const RectF& src)
 		float	scale;
 	};
 
-	auto split = [](float pos, float scale, int surfPixels, spx destBegin, int destPixels, Part* pParts) -> int
+	auto split = [](float pos, float scale, int bitmapPixels, spx destBegin, int destPixels, Part* pParts) -> int
 	{
-		float max = std::max(surfPixels - 1 - 1/64.f, 0.f);
+		float max = std::max(bitmapPixels - 1 - 1/64.f, 0.f);
 
 		pos = std::clamp(pos, 0.f, max);
 
@@ -2281,11 +2281,11 @@ void DeviceGen2::precisionBlit(const RectSPX& _dest, const RectF& src)
 		return 2;
 	};
 
-	SizeI surfSize = m_renderState.blitSource->pixelSize();
+	SizeI bitmapSize = m_renderState.blitSource->pixelSize();
 
 	Part	partsX[2], partsY[2];
-	int		nPartsX = split(srcPos.x, mtx.xx, surfSize.w, dest.x, dest.w / 64, partsX);
-	int		nPartsY = split(srcPos.y, mtx.yy, surfSize.h, dest.y, dest.h / 64, partsY);
+	int		nPartsX = split(srcPos.x, mtx.xx, bitmapSize.w, dest.x, dest.w / 64, partsX);
+	int		nPartsY = split(srcPos.y, mtx.yy, bitmapSize.h, dest.y, dest.h / 64, partsY);
 
 	for (int y = 0; y < nPartsY; y++)
 	{
@@ -2400,7 +2400,7 @@ void DeviceGen2::tile(const RectSPX& dest, CoordSPX shift)
 
 	if (!pSource->isTiling())
 	{
-		Base::reportError(ErrorLevel::SilentError, ErrorCode::FailedPrerequisite, "Tile method called on non-tiling surface", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::SilentError, ErrorCode::FailedPrerequisite, "Tile method called on non-tiling bitmap", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
 
@@ -2430,7 +2430,7 @@ void DeviceGen2::flipTile(const RectSPX& dest, GfxFlip flip, CoordSPX shift)
 
 	if (!pSource->isTiling())
 	{
-		Base::reportError(ErrorLevel::SilentError, ErrorCode::FailedPrerequisite, "Tile method called on non-tiling surface", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::SilentError, ErrorCode::FailedPrerequisite, "Tile method called on non-tiling bitmap", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
 
@@ -2472,7 +2472,7 @@ void DeviceGen2::scaleTile(const RectSPX& dest, float scale, CoordSPX shift)
 
 	if (!pSource->isTiling())
 	{
-		Base::reportError(ErrorLevel::SilentError, ErrorCode::FailedPrerequisite, "Tile method called on non-tiling surface", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::SilentError, ErrorCode::FailedPrerequisite, "Tile method called on non-tiling bitmap", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
 
@@ -2511,7 +2511,7 @@ void DeviceGen2::scaleFlipTile(const RectSPX& dest, float scale, GfxFlip flip, C
 
 	if (!pSource->isTiling())
 	{
-		Base::reportError(ErrorLevel::SilentError, ErrorCode::FailedPrerequisite, "Tile method called on non-tiling surface", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::reportError(ErrorLevel::SilentError, ErrorCode::FailedPrerequisite, "Tile method called on non-tiling bitmap", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
 
@@ -3462,8 +3462,8 @@ void DeviceGen2::_encodeStateChanges()
 	if (m_stateChanges & uint8_t(StateChange::BlitSource))
 	{
 
-		Surface* pSource = newState.blitSource.rawPtr();
-		Surface* pOldSource = encodedState.blitSource.rawPtr();
+		Bitmap* pSource = newState.blitSource.rawPtr();
+		Bitmap* pOldSource = encodedState.blitSource.rawPtr();
 
 		if (pSource != pOldSource)
 		{

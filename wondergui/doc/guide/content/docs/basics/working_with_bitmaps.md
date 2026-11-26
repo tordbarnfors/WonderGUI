@@ -1,0 +1,230 @@
+---
+title: 'Working with Bitmaps'
+weight: 40
+---
+
+# Working with Bitmaps
+
+*This section deals with how to work with bitmaps beyond creating them and using them as resources for GfxDevice. Different ways of copying, converting and modifying content of the bitmap are explained.*
+
+
+
+**Important:** The methods discussed here all use the CPU to copy and manipulate data. This is way slower than using a hardware accelerated GfxDevice to do the copying and in many cases also slower than using a GfxDevice with SoftBackend, which has been optimized for fast operations.
+
+These methods are implemented in a generic fashion, making them small and always available independent of graphics backend in use. They are handy for converting bitmaps between bitmap subtypes and manipulate bitmaps with pixel formats not supported by the current backend, but shouldn't be used for anything time critical.
+
+Accessing pixels directly through PixelBuffers are the exception. Using pixel buffers and manipulate pixels directly can be faster than making many calls to a GfxDevice to achieve the same effect.
+
+
+
+## Clearing and filling
+
+To clear a bitmap you simply fill it with the color you want, using the fill() method. A rectangle can be specified in which case only that rectangle will be filled.
+
+```c++
+pMyBitmap->fill( Color::Black );
+
+pMyBitmap->fill( {10,10,200,100}, Color::White );
+```
+
+The alpha channel is written as well as the color components. No blending takes place. To clear the alpha channel, simply specify a color with 0 alpha or just use Color::Transparent.
+
+
+
+## Copying graphics between bitmaps
+
+The copy() method is an easy way to copy graphics between bitmaps. The following example copies  a rectangular block of 100 x 40 pixels from top-left corner of the specified source bitmap to position (50,50) of our bitmap:
+
+```c++
+pMyBitmap->copy( {50,50}, pOtherBitmap, {0,0,100,40} );
+```
+
+The source rectangle can be left out, in which case the whole source bitmap is copied to the specified destination.
+
+This copy operation works between any source and destination format, pixels are converted on the fly. No blending takes place, the alpha channel is copied as is, if both source and destination has alpha channel. If source is lacking an alpha channel, the destination pixels are made opaque. If destination lacks an alpha channel, the alpha channel of the source is simply discarded.
+
+### Considerations when copying to palette based bitmaps
+
+When copying to an indexed bitmap, there is a lot of overhead which might make the operation very slow and the operation might even fail. The reason is that the color of each pixel copied needs to be checked against the color of the destination palette. If the color doesn't exist in the destination palette it will be added if there is unused capacity in the palette and thus grow the palette. If the palette can not grow, the operation might fail midway, with some pixels copied and possibly an extended palette.
+
+This is when copying TO palette based bitmaps. Copying from a palette based bitmap always works  and have no performance penalty.
+
+### Color space and byte order
+
+Besides the pixel format, each bitmap has a color space (sRGB or linear) and a byte order (little or big endian). Pixels are converted as needed when copying between bitmaps that differ in any of them. So copying between two ARGB_8 bitmaps, one sRGB and one linear, will modify the pixels although they have the same number of bits for each component.
+
+
+
+## Converting bitmaps
+
+Converting a bitmap is just as easy as copying blocks of graphics between them. You need to specify a Blueprint for the new bitmap and the bitmap factory to use.  This example converts a bitmap to 16-bit from whatever format it was before:
+
+```
+auto pNewBitmap = pMyBitmap->convert( { .format = PixelFormat::RGB_565 }, pBitmapFactory );
+```
+
+The size-property of the blueprint is ignored, the converted bitmap is always the same size as the original bitmap. Format and color space default to the ones of the original bitmap if not specified.
+
+One thing to keep in mind is that the supplied blueprint has defaults that might differ from the original bitmap. Flags such as canvas or mipmap might be set which are lost in the process. To avoid this you can copy the original bitmaps blueprint and just modify the properties intended:
+
+```c++
+auto pNewBitmap = pMyBitmap->convert( WGOVR(pMyBitmap->blueprint(),
+	_.format = PixelFormat::RGB_565
+));
+```
+
+However, be aware that  this will copy the content of the **whole** blueprint, including things you might not have intended such as id, user data, finalizers and the restorer.
+
+
+
+
+
+## Accessing pixels directly
+
+To access the pixels in a bitmap we use something called *PixelBuffers*. Conceptually a PixelBuffer is a buffer in memory to which a rectangular block of pixels from the buffer is copied. The pixels can then be read and optionally modified and sent back to the Bitmap. In reality the PixelBuffer is often just a window to the pixels in the bitmap to avoid unnecessary copying. If it can be a window or pixels needs to be copied depends on the graphics subsystem in use and might also depend on the hardware it runs on.
+
+The process is fairly straight forward and divided into 5 steps:
+
+1. Allocate the PixelBuffer.
+2. Push pixels from the bitmap to the PixelBuffer.
+3. Read and/or modify the pixels.
+4. Pull pixels back into the Bitmap.
+5. Free the PixelBuffer.
+
+Step 2 can be skipped if you intend to fill the whole PixelBuffer with new data, not reading a single pixel value.
+
+Step 4 can (and should) be skipped if you only read the pixels.
+
+Let's look into the different steps and what they do.
+
+### Allocating the PixelBuffer
+
+Allocating the PixelBuffer either "opens a window" to the pixels or allocates a buffer in memory large enough to hold the pixels. It then returns a struct containing all the information you need about the buffer and the pixels. By supplying a rectangle to the call you limit the buffer/window to those pixels, which can both be convenient and save time and memory if a buffer is involved.
+
+The following example allocates a pixel buffer mapping the top 64x64 pixels of the bitmap:
+
+```c++
+PixelBuffer bufferInfo = pMyBitmap->allocPixelBuffer( {0,0,64,64} );
+```
+
+After the call, the struct called *bufferInfo* contains the following information:
+
+| Member  | Type         | Description                                                  |
+| ------- | ------------ | ------------------------------------------------------------ |
+| format  | PixelFormat  | The format of the pixels in the buffer (same as the Bitmap). |
+| pixels  | uint8_t*     | A pointer to the top-left pixel in the buffer.               |
+| palette | const Color8* | Pointer at palette if format uses a palette.                 |
+| rect    | RectI        | The area of the Bitmap the buffer maps to, which is the same as the rectangle provided the allocPixelBuffer() call (or the whole bitmap if no rectangle provided). |
+| pitch   | int          | Distance in bytes from beginning of one row of pixels to the next. |
+
+The buffer is tied to the specific bitmap is was created from. You may not pull or push pixels to another bitmap using the same buffer.
+
+Once allocated the buffer should be considered to be empty. Before reading any pixels from the bitmap you should first push pixels to the buffer.
+
+### Pushing pixels to the buffer
+
+Pushing pixels is done through one simple call to the bitmap using the buffer struct as parameter:
+
+```
+pMyBitmap->pushPixels(bufferInfo);
+```
+
+Optionally you can push only some pixels to the buffer by supplying a rectangle:
+
+```
+pMyBitmap->pushPixels(bufferInfo, {5,5,16,20});
+```
+
+The rectangle supplied is relative to *the buffer rectangle and not the bitmap*, meaning that if the buffer maps an area starting 10 pixels into the buffer, a rectangle starting at offset 0 also starts 10 pixels into the buffer.
+
+By pushing pixels to the buffer we are guaranteed that those pixels in the buffer are identical to the ones in the bitmap. If we have a window into the bitmap and no separate buffer, the pushPixels() call will do nothing and cause no overhead. Either way we should always call pushPixels() before we read pixels.
+
+The only time you don't need to call pushPixels() is when you intend to fully replace *all* the pixels of the buffer, without reading any.
+
+We can now start to read and/or write the content of the buffer.
+
+### Reading and writing pixels
+
+Reading and writing pixels is simply a matter of reading and writing the data pointed to by the pixels-member of the PixelBuffer struct. Typically you do know the format of the pixels in the bitmap beforehand since you have allocated it, but the format member can be read if you don't. 
+
+In the example below we draw a red line across the 64x64 buffer allocated above. The pixel format is known to be ARGB_8 in little endian byte order, meaning one byte each for blue, green, red and alpha in that order in memory. Formats are named after the order of the channels in a register, starting with the most significant bits, so the byte order decides the order in memory.
+
+```c++
+for( int y = 0 ; y < 64 ; y++ )
+{
+	// Set pointer at pixel. Y * pitch moves pointer to next line, 
+	
+    int x = y;
+	uint8_t * p = bufferInfo.pixels + y * bufferInfo.pitch + x* 4;
+
+	// Fill in values for blue, green red and alpha
+
+	p[0] = 0;
+	p[1] = 0;
+	p[2] = 255;
+	p[3] = 255;
+}
+```
+
+This is a very naive implementation, but it serves as a good example.
+
+Once we have written our pixels we need to pull them back into the bitmap.
+
+### Pulling pixels to the bitmap
+
+Once we are done writing pixels we need to pull the pixels back into the bitmap. If you are modifying pixels, this is an important step. Even if you know that you have direct access to the pixels in the bitmap you should call pull, since it tells WonderGUI what areas of the bitmap that have been modified.
+
+Pulling pixels works exactly like pushing, just moves them the other direction. The parameters are the same as when pushing. You can pull all pixels of the buffer or a subset represented by a rectangle.
+
+```c++
+pMyBitmap->pullPixels(bufferInfo);
+
+pMyBitmap->pullPixels(bufferInfo, {5,5,16,20});
+```
+
+Once you are done with your buffer you should free it.
+
+### Freeing the PixelBuffer
+
+The PixelBuffer is freed by this simple call:
+
+```c++
+pMyBitmap->freePixelBuffer(bufferInfo);	
+```
+
+Once the buffer is freed it should not be used any more.
+
+Besides returning any allocated memory it will also notify the bitmap that there will be no more accessing the pixels until a new buffer is allocated.
+
+### Summary
+
+Putting it all together we get the following example:
+
+```c++
+PixelBuffer bufferInfo = pMyBitmap->allocPixelBuffer( {0,0,64,64} );
+
+pMyBitmap->pushPixels(bufferInfo);
+
+// Modify pixels here...
+
+pMyBitmap->pullPixels(bufferInfo);
+pMyBitmap->freePixelBuffer(bufferInfo);
+
+```
+
+Some additional things to point out:
+
+* It is perfectly fine to allocate several small PixelBuffers for the same bitmap at the same time, but they should not overlap.
+* Even though you only write pixels to the PixelBuffer you need to pushPixels() first if you don't change ALL pixels you pull. Otherwise you might pull dirt into the bitmap alongside your written pixels.
+* Only write pixels that you pull, and only read pixels that you have pushed. The buffer may be the pixels of the bitmap itself, where what you write is in the bitmap whether you pull it or not, or memory of its own, where what you didn't push is whatever was in that memory.
+* On a graphics backend with a GPU, pushPixels() of a canvas or a bitmap with a [restorer](../resources/bitmaps#keeping-the-pixels-and-getting-them-back) reads the pixels back from the GPU and waits for it, which takes about as long for a few pixels as for all of them. Colors with alpha come back with less precision than they were written with, the lower the alpha the less, so reading, changing and writing back can shift them. A bitmap you read regularly should be neither.
+* It is absolutely forbidden to write pixels outside the buffer.
+* A PixelBuffer should only be alive for a short amount of time. Depending on graphics backend it's existence can hamper or even prevent rendering operations.
+* If the PixelFormat is unknown or not fully understood you can use Util::pixelFormatToDescription() to get detailed information about the pixel format, such as the size of a pixel, size and arrangement of R, G, B and A components etc.
+
+
+
+## Modifying the palette
+
+Although the palette is intended to be modifiable we currently do not provide any API for that.
+

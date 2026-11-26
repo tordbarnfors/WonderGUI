@@ -46,8 +46,8 @@ namespace wg
 //		static wg_streamplayer_calls*	streamPlayer;
 //		static wg_streampump_calls*		streamPump;
 //		static wg_streamreader_calls*	streamReader;
-		static wg_surface_calls*		surface;
-		static wg_surfacefactory_calls* surfaceFactory;
+		static wg_bitmap_calls*		bitmap;
+		static wg_bitmapfactory_calls* bitmapFactory;
 		static wg_edgemap_calls*		edgemap;
 		static wg_edgemapfactory_calls*edgemapFactory;
 		static wg_hostbridge_calls*		hostBridge;

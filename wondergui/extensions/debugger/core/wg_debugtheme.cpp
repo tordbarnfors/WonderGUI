@@ -26,7 +26,7 @@
 #include <wg_colorskin.h>
 #include <wg_plaintextlayout.h>
 #include <wg_basicnumberlayout.h>
-#include <wax_surfacereader.h>
+#include <wax_bitmapreader.h>
 
 namespace wg
 {
@@ -34,12 +34,12 @@ namespace wg
 	// resources/debugger_gfx.png and resources/checkboardtile.png into
 	// wg_debuggerresources.cpp. To regenerate, from the WonderGUI root:
 	//
-	//   scripts/embed_images.rb --image2surf=<path to image2surf> --output=wondergui/extensions/debugger/core/wg_debuggerresources.cpp
-	//                           --namespace=wg _debuggerIconsSurf=resources/debugger_gfx.png
-	//                           _debuggerTransparencyGridSurf=resources/checkboardtile.png
+	//   scripts/embed_images.rb --image2bitmap=<path to image2bitmap> --output=wondergui/extensions/debugger/core/wg_debuggerresources.cpp
+	//                           --namespace=wg _debuggerIconsBitmap=resources/debugger_gfx.png
+	//                           _debuggerTransparencyGridBitmap=resources/checkboardtile.png
 
-	extern const char	_debuggerIconsSurf[];
-	extern const char	_debuggerTransparencyGridSurf[];
+	extern const char	_debuggerIconsBitmap[];
+	extern const char	_debuggerTransparencyGridBitmap[];
 
 	static int		s_widgetKitUsers = 0;
 	static bool		s_bOwnsWidgetKit = false;
@@ -75,26 +75,26 @@ namespace wg
 
 	//____ create() ______________________________________________________________
 
-	DebugTheme DebugTheme::create( Surface * pIcons, Surface * pTransparencyGrid )
+	DebugTheme DebugTheme::create( Bitmap * pIcons, Bitmap * pTransparencyGrid )
 	{
 		DebugTheme theme;
 
-		Surface_p pDefaultIcons;
-		Surface_p pDefaultTransparencyGrid;
+		Bitmap_p pDefaultIcons;
+		Bitmap_p pDefaultTransparencyGrid;
 
 		if( !pIcons || !pTransparencyGrid )
 		{
-			auto pReader = SurfaceReader::create(WGBP(SurfaceReader, _.factory = Base::defaultSurfaceFactory()));
+			auto pReader = BitmapReader::create(WGBP(BitmapReader, _.factory = Base::defaultBitmapFactory()));
 
 			if( !pIcons )
 			{
-				pDefaultIcons = pReader->readSurfaceFromMemory(_debuggerIconsSurf);
+				pDefaultIcons = pReader->readBitmapFromMemory(_debuggerIconsBitmap);
 				pIcons = pDefaultIcons;
 			}
 
 			if( !pTransparencyGrid )
 			{
-				pDefaultTransparencyGrid = pReader->readSurfaceFromMemory(_debuggerTransparencyGridSurf, WGBP(Surface, _.tiling = true));
+				pDefaultTransparencyGrid = pReader->readBitmapFromMemory(_debuggerTransparencyGridBitmap, WGBP(Bitmap, _.tiling = true));
 				pTransparencyGrid = pDefaultTransparencyGrid;
 			}
 		}
@@ -102,35 +102,35 @@ namespace wg
 		theme.icons = pIcons;
 		theme.transparencyGrid = pTransparencyGrid;
 
-		// Icons. All 16x16 blocks in the icons surface.
+		// Icons. All 16x16 blocks in the icons bitmap.
 
 		theme.refreshIcon = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pIcons,
+			_.bitmap = pIcons,
 			_.firstBlock = Rect(0, 0, 16, 16);
 		));
 
 		theme.selectIcon = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pIcons,
+			_.bitmap = pIcons,
 			_.firstBlock = Rect(16, 0, 16, 16);
 		));
 
 		theme.expandIcon = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pIcons,
+			_.bitmap = pIcons,
 			_.firstBlock = Rect(32, 0, 16, 16);
 		));
 
 		theme.condenseIcon = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pIcons,
+			_.bitmap = pIcons,
 			_.firstBlock = Rect(48, 0, 16, 16);
 		));
 
 		theme.unselectIcon = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pIcons,
+			_.bitmap = pIcons,
 			_.firstBlock = Rect(0, 64, 16, 16);
 		));
 
 		theme.dirtyRectsIcon = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pIcons,
+			_.bitmap = pIcons,
 			_.firstBlock = Rect(16, 64, 16, 16);
 		));
 

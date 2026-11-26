@@ -5,18 +5,18 @@ weight: 25
 
 # Blending and transparency
 
-*This section defines how GfxDevice combines what you draw with what is already on the canvas: what each BlendMode does, how transparency and anti-aliasing work, and what to expect when you draw onto transparent surfaces. All graphics backends are meant to follow these definitions. ReferenceBackend implements them as directly as possible and is used to test the other backends against them.*
+*This section defines how GfxDevice combines what you draw with what is already on the canvas: what each BlendMode does, how transparency and anti-aliasing work, and what to expect when you draw onto transparent bitmaps. All graphics backends are meant to follow these definitions. ReferenceBackend implements them as directly as possible and is used to test the other backends against them.*
 
 
 
 ## Colors
 
-Blending happens in **linear light**, with every channel going from 0.0 to 1.0. Colors given to GfxDevice (Color) are sRGB and pixels of sRGB surfaces are converted to linear before blending and back again afterwards. Mixing of colors in Tint gradients is the exception, it happens in sRGB before the result is converted to linear.
+Blending happens in **linear light**, with every channel going from 0.0 to 1.0. Colors given to GfxDevice (Color) are sRGB and pixels of sRGB bitmaps are converted to linear before blending and back again afterwards. Mixing of colors in Tint gradients is the exception, it happens in sRGB before the result is converted to linear.
 
 Pixels are stored with **straight alpha**, e.g. the color channels are not multiplied with alpha.
 
-- A missing color is white. An Alpha_8 surface used as a blit source is white with the alpha of the surface.
-- A missing alpha is opaque. A surface without alpha (XRGB_8, RGB_565, BGR_565) is always opaque.
+- A missing color is white. An Alpha_8 bitmap used as a blit source is white with the alpha of the bitmap.
+- A missing alpha is opaque. A bitmap without alpha (XRGB_8, RGB_565, BGR_565) is always opaque.
 - **The color of a fully transparent pixel never matters.** It can't be seen and it doesn't bleed into anything else, whether through blending, filtering or anti-aliasing. The one exception is Replace onto a canvas without alpha, see below.
 
 In the formulas below:
@@ -54,7 +54,7 @@ In both groups, the alpha of the source always means **how much**: a fully trans
 | **Ignore** | Cb | αb |
 | **Undefined** | Treated as Blend. | |
 
-**Blend** is Porter-Duff *over*. On an opaque canvas pixel it is the familiar `Cs · αs + Cb · (1 − αs)`. The division matters where the canvas is transparent: drawing onto a transparent surface and blending that surface onto a background gives the same result as drawing directly onto the background.
+**Blend** is Porter-Duff *over*. On an opaque canvas pixel it is the familiar `Cs · αs + Cb · (1 − αs)`. The division matters where the canvas is transparent: drawing onto a transparent bitmap and blending that bitmap onto a background gives the same result as drawing directly onto the background.
 
 **Replace** writes the source as it is, alpha included. It can make the canvas transparent.
 
@@ -85,7 +85,7 @@ Add, Invert and Max can give more light than the paint on the glass can hold. Th
 
 Subtract, Multiply and Min only take light away and keep the alpha of the canvas. They have no effect on transparent parts of it, and they affect semi-transparent paint only as far as it gives light: Min with mid grey doesn't darken a pixel that is red at 50% alpha, since its light already is no brighter than mid grey.
 
-An alpha-only surface with a soft round shape, blitted with Add and a tint color, works as a point light shining on the canvas. Blitted with Min and a dark tint color it caps the brightness like a shadow, with Max and a light tint color it raises the brightness like a fill light.
+An alpha-only bitmap with a soft round shape, blitted with Add and a tint color, works as a point light shining on the canvas. Blitted with Min and a dark tint color it caps the brightness like a shadow, with Max and a light tint color it raises the brightness like a fill light.
 
 These definitions are what GPUs can do with fixed-function blending of premultiplied colors in a single pass, see Exactness below.
 
@@ -160,7 +160,7 @@ Anti-aliasing works as on any other canvas: paint modes average the result and t
 
 ## Layers
 
-Since Blend is Porter-Duff over, content drawn with paint modes onto a transparent layer (a CanvasLayers layer or a surface of your own) and then blended onto the canvas looks exactly as if it was drawn directly onto the canvas.
+Since Blend is Porter-Duff over, content drawn with paint modes onto a transparent layer (a CanvasLayers layer or a bitmap of your own) and then blended onto the canvas looks exactly as if it was drawn directly onto the canvas.
 
 Add, Invert and Max leave their light on a transparent layer, so a single one of them drawn onto a transparent layer, with the layer then blended onto the canvas with the same mode, gives the same result as drawing directly onto the canvas. Subtract, Multiply and Min only change light that is already there, and on a transparent layer there is none. If the content of a layer should work as one of them on what is below the layer, draw it onto the layer with Blend and blend the layer with the effect mode, using `blendFunc` in CanvasLayers::LayerBP.
 
@@ -205,6 +205,6 @@ The area of a pixel covered by a warp (warpBlit() and warpDrawEdgemap()) is meas
 
 The software backends draw BlendFixedColor onto the fixed color, as described under Paint modes.
 
-The GPU backends keep canvases and other surfaces with alpha premultiplied and use dual-source blending, as described under Exactness. Colors of nearly transparent pixels therefore lose some precision when read back from them.
+The GPU backends keep canvases and other bitmaps with alpha premultiplied and use dual-source blending, as described under Exactness. Colors of nearly transparent pixels therefore lose some precision when read back from them.
 
 GfxDeviceTester has tests for these rules in BlendRuleTests and LayerRoundTripTests, and for warps in WarpTests.

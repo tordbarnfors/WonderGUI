@@ -23,7 +23,7 @@
 
 #include <wax_object.h>
 #include <wax_blob.h>
-#include <wax_surface.h>
+#include <wax_bitmap.h>
 #include <wg_rootpanel.h>
 
 #include <widgetkits/wg_oldskool.h>

@@ -53,18 +53,18 @@ namespace wax
 
 		struct Blueprint
 		{
+			BitmapFactory_p			bitmapFactory;
 			std::function<void(const CanvasInfo * pBegin, const CanvasInfo * pEnd)> canvasInfoCallback;
 			Backend_p				backend;
 			EdgemapFactory_p			edgemapFactory;
 			Finalizer_p					finalizer = nullptr;
 			int							maxDirtyRects = 64;
 			bool						storeDirtyRects = false;
-			SurfaceFactory_p			surfaceFactory;
 		};
 */
 		//.____ Creation ____________________________________________________________
 
-		static StreamPlayer_p	create(Backend * pBackend, SurfaceFactory * pSurfaceFactory, EdgemapFactory * pEdgemapFactory);
+		static StreamPlayer_p	create(Backend * pBackend, BitmapFactory * pBitmapFactory, EdgemapFactory * pEdgemapFactory);
 
 		//.____ Components __________________________________________________________
 
@@ -91,7 +91,7 @@ namespace wax
 		const std::vector<Object_p>& objects() const { return m_vObjects; }
 
 	protected:
-		StreamPlayer(Backend * pDevice, SurfaceFactory * pSurfaceFactory, EdgemapFactory * pEdgemapFactory);
+		StreamPlayer(Backend * pDevice, BitmapFactory * pBitmapFactory, EdgemapFactory * pEdgemapFactory);
 		~StreamPlayer();
 
 		void	_processStreamChunks(const uint8_t* pBegin, const uint8_t* pEnd) override;
@@ -145,10 +145,10 @@ namespace wax
 
 		StreamDecoder_p		m_pDecoder;
 		Backend_p		m_pBackend;
-		SurfaceFactory_p	m_pSurfaceFactory;
+		BitmapFactory_p	m_pBitmapFactory;
 		EdgemapFactory_p	m_pEdgemapFactory;
 
-		std::vector<Object_p>	m_vObjects;		// Surfaces and Edgemaps.
+		std::vector<Object_p>	m_vObjects;		// Bitmaps and Edgemaps.
 
 		std::vector<Object*>	m_vActionObjects;
 
@@ -158,19 +158,19 @@ namespace wax
 		DataBuffer				m_colorsDataBuffer;
 		DataBuffer				m_commandsDataBuffer;
 
-		uint16_t				m_updateObject = 0;						// ObjectID from latest SurfaceUpdate, SurfaceUpdate2 and EdgemapUpdate. Needed for pixels when stream has old-format DataInfo.
-		CanvasRef				m_updateCanvasRef = CanvasRef::None;	// Used when doing SurfaceUpdate against a canvasRef.
+		uint16_t				m_updateObject = 0;						// ObjectID from latest BitmapUpdate, BitmapUpdate2 and EdgemapUpdate. Needed for pixels when stream has old-format DataInfo.
+		CanvasRef				m_updateCanvasRef = CanvasRef::None;	// Used when doing BitmapUpdate against a canvasRef.
 
-		struct SurfaceDataBuffer
+		struct BitmapDataBuffer
 		{
-			SurfaceDataBuffer(const Surface_p& pSurface) : pSurface(pSurface) {}
+			BitmapDataBuffer(const Bitmap_p& pBitmap) : pBitmap(pBitmap) {}
 
-			Surface_p			pSurface;
+			Bitmap_p			pBitmap;
 			std::vector<RectI>	rects;
 			DataBuffer			buffer;
 
-			// Layout of the streamed pixels, which might differ from the surface they go into.
-			// Undefined format means same as the surface (old style SurfaceUpdate).
+			// Layout of the streamed pixels, which might differ from the bitmap they go into.
+			// Undefined format means same as the bitmap (old style BitmapUpdate).
 
 			PixelFormat			format = PixelFormat::Undefined;
 			ColorSpace			colorSpace = ColorSpace::Undefined;
@@ -196,18 +196,18 @@ namespace wax
 			DataBuffer			buffer;
 		};
 
-		std::vector<SurfaceDataBuffer>	m_surfaceDataBuffers;
+		std::vector<BitmapDataBuffer>	m_bitmapDataBuffers;
 
-		// Surfaces with a palette are created once their SurfacePalette chunks have arrived.
+		// Bitmaps with a palette are created once their BitmapPalette chunks have arrived.
 
-		struct PendingSurface
+		struct PendingBitmap
 		{
 			uint16_t			objectId;
-			Surface::Blueprint	blueprint;
+			Bitmap::Blueprint	blueprint;
 			DataBuffer			palette;
 		};
 
-		std::vector<PendingSurface>		m_pendingSurfaces;
+		std::vector<PendingBitmap>		m_pendingBitmaps;
 		std::vector<EdgemapDataBuffer>	m_edgemapDataBuffers;
 
 		// An update of a Warpmap is applied once all its vertices and triangles have arrived. A
@@ -242,7 +242,7 @@ namespace wax
 		DataBuffer			m_updateRectsDataBuffer;
 
 		CanvasRef			m_baseCanvasRef;
-		Surface_p			m_baseCanvasSurface;
+		Bitmap_p			m_baseCanvasBitmap;
 
 		// Handling of skipping
 

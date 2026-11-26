@@ -88,10 +88,10 @@ namespace wg
 		m_nbKeys = int(pInfo - m_keyInfo);
 	}
 
-	//____ setSurfaces() ______________________________________________________
+	//____ setBitmaps() ______________________________________________________
 
-	void PianoKeyboard::setSurfaces(const Surface_p& pOddWhiteKeys, const Surface_p& pEvenWhiteKeys, 
-									const Surface_p& pBlackKeys, const std::initializer_list<State>& states)
+	void PianoKeyboard::setBitmaps(const Bitmap_p& pOddWhiteKeys, const Bitmap_p& pEvenWhiteKeys, 
+									const Bitmap_p& pBlackKeys, const std::initializer_list<State>& states)
 	{
 		if (states.size() == 0)
 			return;

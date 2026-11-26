@@ -95,7 +95,7 @@ namespace wg
 		pts					m_outlineThickness = 1;
 		pts					m_radius = 1;
 
-		Surface_p			m_sprite;
+		Bitmap_p			m_sprite;
 
 		// Size transitions
 

@@ -25,7 +25,7 @@
 #include <wondergui.h>
 
 #include <wax_softkernels_default.h>
-#include <wax_softsurfacefactory.h>
+#include <wax_softbitmapfactory.h>
 #include <wax_softedgemapfactory.h>
 #include <wax_softbackend.h>
 
@@ -35,8 +35,8 @@ using namespace wg;
 
 void initGfxBackend()
 {
-	auto pFactory = wax::SoftSurfaceFactory::create();
-	Base::setDefaultSurfaceFactory(pFactory);
+	auto pFactory = wax::SoftBitmapFactory::create();
+	Base::setDefaultBitmapFactory(pFactory);
 
 	auto pBackend = wax::SoftBackend::create();
 

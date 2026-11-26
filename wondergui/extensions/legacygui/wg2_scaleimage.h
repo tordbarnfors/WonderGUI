@@ -28,8 +28,8 @@
 #	include <wg2_widget.h>
 #endif
 
-#include <wax_surface.h>
-#include <wax_surfacefactory.h>
+#include <wax_bitmap.h>
+#include <wax_bitmapfactory.h>
 
 
 #include <vector>

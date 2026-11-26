@@ -34,7 +34,7 @@
 // header_shell.h -- this file's un-generated content is copied verbatim
 // from header_shell.h). Companion image: resources/glossyblue_skinblocks.png,
 // rendered at 2x pt density (see common/theme_lib.py) -- load it with
-// Surface::Blueprint.scale = 128 for correct hidpi sizing.
+// Bitmap::Blueprint.scale = 128 for correct hidpi sizing.
 
 #include <wg_base.h>				// Base::setDefaultStyle() / setDefaultTextLayout()
 #include <wax_base.h>			// wax::Base::reportError() for the scale check in init()
@@ -68,7 +68,7 @@ namespace wg::glossyblue
 	{
 		// >>> BEGIN GENERATED COLORS <<<
 		// Mid-tones of the corresponding gradient bitmaps, measured at pack time,
-		// so a flat surface (the capsule label skins, app code) sits flush against
+		// so a flat bitmap (the capsule label skins, app code) sits flush against
 		// a real Plate or Canvas. Border needs no such treatment: a bitmap's
 		// outline is a flat colour already.
 		inline const Color8	Plate = Color8(208,215,224);		// measured: centre pixel of parts/Plate.png
@@ -229,9 +229,9 @@ namespace wg::glossyblue
 	//
 	// glossyblue_skinblocks.png is a 2x-density image: every coordinate in the
 	// generated Skins:: section below is in pts at 1pt = 2px. BlockSkin resolves
-	// those pts against the SURFACE's scale (wg_blockskin.cpp does
-	// roundToPixels(ptsToSpx(_firstBlock, pSurface->scale()))), and
-	// Surface::Blueprint.scale defaults to 0, which Surface resolves to 64 (1x).
+	// those pts against the BITMAP's scale (wg_blockskin.cpp does
+	// roundToPixels(ptsToSpx(_firstBlock, pBitmap->scale()))), and
+	// Bitmap::Blueprint.scale defaults to 0, which Bitmap resolves to 64 (1x).
 	// A PNG carries no density information, so nothing can infer this for you.
 	//
 	// Loaded at the default scale, every block is read at half its size from
@@ -239,12 +239,12 @@ namespace wg::glossyblue
 	// sampled from the wrong part of the atlas. That is a miserable thing to
 	// debug, so refuse it here instead:
 	//
-	//     auto pSkinBlocks = SomeSurface::create( WGBP(Surface,
+	//     auto pSkinBlocks = SomeBitmap::create( WGBP(Bitmap,
 	//         _.size  = atlasSize,        // whatever the PNG actually is
 	//         _.scale = 128,              // <-- REQUIRED, 2x density atlas
 	//         _.format = PixelFormat::ARGB_8 ), pPixels, ... );
 	//
-	inline bool init(Font* pNormal, Font* pBold, Font* pItalic, Font* pMonospace, Surface* pSkinBlocks )
+	inline bool init(Font* pNormal, Font* pBold, Font* pItalic, Font* pMonospace, Bitmap* pSkinBlocks )
 	{
 		if( !pNormal || !pBold || !pItalic || !pMonospace || !pSkinBlocks )
 			return false;
@@ -252,9 +252,9 @@ namespace wg::glossyblue
 		if( pSkinBlocks->scale() != 128 )
 		{
 			wax::Base::reportError( ErrorLevel::Error, ErrorCode::InvalidParam,
-				"glossyblue: skinblocks surface must be created with scale = 128. "
+				"glossyblue: skinblocks bitmap must be created with scale = 128. "
 				"It is a 2x-density atlas, and at any other scale every block is "
-				"sampled from the wrong place. Add _.scale = 128 to its Surface blueprint.",
+				"sampled from the wrong place. Add _.scale = 128 to its Bitmap blueprint.",
 				nullptr, nullptr, __func__, __FILE__, __LINE__ );
 			return false;
 		}
@@ -437,7 +437,7 @@ namespace wg::glossyblue
 
 		// >>> BEGIN GENERATED SKINS <<<
 		Skins::Button = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 133,22,14,20 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -448,14 +448,14 @@ namespace wg::glossyblue
 		));
 
 		Skins::Canvas = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 195,37,12,12 },
 			_.frame = 4,
 			_.padding = 1
 		));
 
 		Skins::Checkbox = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 45,80,14,14 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -463,21 +463,21 @@ namespace wg::glossyblue
 		));
 
 		Skins::Plate = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 115,27,14,14 },
 			_.frame = 5,
 			_.padding = 4
 		));
 
 		Skins::PlateNoBevel = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 208,1,4,14 },
 			_.frame = { 5,1,5,1 },
 			_.padding = 3
 		));
 
 		_pPlusMinusToggleSkin = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 123,95,12,12 },
 			_.axis = Axis::X,
 			_.blockSpacing = 2,
@@ -485,7 +485,7 @@ namespace wg::glossyblue
 		));
 
 		Skins::RadioButton = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 18,95,14,14 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -493,7 +493,7 @@ namespace wg::glossyblue
 		));
 
 		Skins::ScrollbarButtonDown = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 45,1,16,16 },
 			_.axis = Axis::Y,
 			_.blockSpacing = 1,
@@ -501,7 +501,7 @@ namespace wg::glossyblue
 		));
 
 		Skins::ScrollbarButtonLeft = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 79,63,16,16 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -509,7 +509,7 @@ namespace wg::glossyblue
 		));
 
 		Skins::ScrollbarButtonRight = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 147,63,16,16 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -517,7 +517,7 @@ namespace wg::glossyblue
 		));
 
 		Skins::ScrollbarButtonUp = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 62,1,16,16 },
 			_.axis = Axis::Y,
 			_.blockSpacing = 1,
@@ -525,7 +525,7 @@ namespace wg::glossyblue
 		));
 
 		Skins::ScrollbarHandleX = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 79,46,28,16 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -536,7 +536,7 @@ namespace wg::glossyblue
 		));
 
 		Skins::ScrollbarHandleY = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 1,1,16,28 },
 			_.axis = Axis::Y,
 			_.blockSpacing = 1,
@@ -547,7 +547,7 @@ namespace wg::glossyblue
 		));
 
 		Skins::SelectBox = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 18,1,26,20 },
 			_.axis = Axis::Y,
 			_.blockSpacing = 1,
@@ -559,7 +559,7 @@ namespace wg::glossyblue
 		));
 
 		_pSplitHandleXBarSkin = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 79,1,8,44 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -569,7 +569,7 @@ namespace wg::glossyblue
 		));
 
 		_pSplitHandleXDotsSkin = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 115,1,8,25 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -581,7 +581,7 @@ namespace wg::glossyblue
 		));
 
 		_pSplitHandleYBarSkin = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 18,110,44,8 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -591,7 +591,7 @@ namespace wg::glossyblue
 		));
 
 		_pSplitHandleYDotsSkin = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 165,80,25,8 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -603,7 +603,7 @@ namespace wg::glossyblue
 		));
 
 		Skins::ToggleButton = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 133,1,14,20 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -614,14 +614,14 @@ namespace wg::glossyblue
 		));
 
 		Skins::Window = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 193,22,14,14 },
 			_.frame = 5,
 			_.padding = 5
 		));
 
 		Skins::Field = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pSkinBlocks,
+			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 195,37,12,12 },
 			_.frame = 4,
 			_.padding = 2,
@@ -1532,7 +1532,7 @@ namespace wg::glossyblue
 
 			// The CLOSED box. Separate from `entryTextStyle` below on purpose, and
 			// NOT the same style: the closed box is a raised control in the blue
-			// accent colour -- the same surface as a Button -- so its text is
+			// accent colour -- the same bitmap as a Button -- so its text is
 			// white, while the drop-down list is drawn on Skins::Canvas and stays
 			// dark. Two backgrounds, two styles. Sharing one, which the kit did
 			// while it was working around the engine, left the closed box with

@@ -42,7 +42,7 @@ namespace wg
 			intRow    ( "Mark alpha: ",           [](AnimPlayer* a) { return a->markAlpha(); } ),
 			intRow    ( "Number of frames: ",     [](AnimPlayer* a) { return a->frames.size(); } ),
 			intRow    ( "Frames duration (ms): ", [](AnimPlayer* a) { return a->frames.duration(); } ),
-			objectRow ( "Frames surface: ",       [](AnimPlayer* a) -> Object* { return a->frames.surface().rawPtr(); } ),
+			objectRow ( "Frames bitmap: ",       [](AnimPlayer* a) -> Object* { return a->frames.bitmap().rawPtr(); } ),
 			ptsRow    ( "Frame width (pts): ",    [](AnimPlayer* a) { return a->frames.frameSize().w; } ),
 			ptsRow    ( "Frame height (pts): ",   [](AnimPlayer* a) { return a->frames.frameSize().h; } )
 		});

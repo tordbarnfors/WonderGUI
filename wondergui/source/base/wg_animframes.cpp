@@ -27,14 +27,14 @@ namespace wg
 {
 
 
-	//____ setSurface() __________________________________________________________
+	//____ setBitmap() __________________________________________________________
 
-	void AnimFrames::setSurface(Surface* pSurface)
+	void AnimFrames::setBitmap(Bitmap* pBitmap)
 	{
-		if (pSurface != m_pSurface)
+		if (pBitmap != m_pBitmap)
 		{
-			m_pSurface = pSurface;
-			static_cast<AnimFrames::Holder*>(m_pHolder)->_didSetAnimSurface(this);
+			m_pBitmap = pBitmap;
+			static_cast<AnimFrames::Holder*>(m_pHolder)->_didSetAnimBitmap(this);
 		}
 	}
 

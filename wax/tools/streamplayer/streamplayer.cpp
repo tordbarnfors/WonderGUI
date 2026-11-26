@@ -8,8 +8,8 @@
 #include <wax.h>
 #include <wax_softbackend.h>
 #include <wax_softkernels_default.h>
-#include <wax_softsurface.h>
-#include <wax_softsurfacefactory.h>
+#include <wax_softbitmap.h>
+#include <wax_softbitmapfactory.h>
 #include <wax_softedgemapfactory.h>
 #include <wax_device_gen2.h>
 
@@ -25,7 +25,7 @@ using namespace std;
 
 //____ StreamPlayer ____________________________________________________________
 //
-// Plays a gfxstream into a pair of SoftSurface canvases, swapping them as frames
+// Plays a gfxstream into a pair of SoftBitmap canvases, swapping them as frames
 // complete, and shows the front canvas in an SDL window.
 
 class StreamPlayer
@@ -35,7 +35,7 @@ public:
 	void		update();
 	void		exit();
 
-	Surface*	frontCanvas() const { return static_cast<SoftSurface*>(reinterpret_cast<Object*>(m_streamFrontCanvas)); }
+	Bitmap*	frontCanvas() const { return static_cast<SoftBitmap*>(reinterpret_cast<Object*>(m_streamFrontCanvas)); }
 	bool		hasNewFrame() { bool b = m_bNewFrame; m_bNewFrame = false; return b; }
 
 private:
@@ -63,7 +63,7 @@ private:
 static const int	c_canvasWidth = 800;
 static const int	c_canvasHeight = 480;
 
-static void presentCanvas( Surface * pCanvas, SDL_Window * pWindow );
+static void presentCanvas( Bitmap * pCanvas, SDL_Window * pWindow );
 
 //____ main() _________________________________________________________________
 
@@ -127,7 +127,7 @@ int main( int argc, char** argv )
 
 //____ presentCanvas() ________________________________________________________
 
-static void presentCanvas( Surface * pCanvas, SDL_Window * pWindow )
+static void presentCanvas( Bitmap * pCanvas, SDL_Window * pWindow )
 {
 	SDL_Surface * pWinSurf = SDL_GetWindowSurface(pWindow);
 	if( !pWinSurf )
@@ -347,27 +347,27 @@ bool StreamPlayer::_setupStreamPlaying()
 	m_pBackend = SoftBackend::create();
 	addDefaultSoftKernels(m_pBackend);
 
-	auto pSurfaceFactory = SoftSurfaceFactory::create();
+	auto pBitmapFactory = SoftBitmapFactory::create();
 	auto pEdgemapFactory = SoftEdgemapFactory::create();
 
 	// We use the C-interface here just to try it! B-)
 
-	wax_surfaceBP bp = { .canvas = 1, .format = WAX_PIXFMT_ARGB_8, .size = {c_canvasWidth,c_canvasHeight} };
+	wax_bitmapBP bp = { .canvas = 1, .format = WAX_PIXFMT_ARGB_8, .size = {c_canvasWidth,c_canvasHeight} };
 
-	m_streamFrontCanvas		= wax_createSoftSurface( &bp );
+	m_streamFrontCanvas		= wax_createSoftBitmap( &bp );
 	m_streamFrontPatches	= wax_createPatches();
 
-	m_streamBackCanvas		= wax_createSoftSurface( &bp );
+	m_streamBackCanvas		= wax_createSoftBitmap( &bp );
 	m_streamBackPatches		= wax_createPatches();
 
 	wax_obj	backend = static_cast<Object*>(m_pBackend.rawPtr());
-	wax_obj	surfaceFactory = static_cast<Object*>(pSurfaceFactory.rawPtr());
+	wax_obj	bitmapFactory = static_cast<Object*>(pBitmapFactory.rawPtr());
 	wax_obj	edgemapFactory = static_cast<Object*>(pEdgemapFactory.rawPtr());
 
 	wax_defineSoftBackendCanvas(backend, WAX_CANVAS_1, m_streamFrontCanvas);
 
 	m_wrapper = wax_createStreamWrapper(m_pStreamBlob->begin(), m_pStreamBlob->end());
-	m_player = wax_createStreamPlayer(backend, surfaceFactory, edgemapFactory );
+	m_player = wax_createStreamPlayer(backend, bitmapFactory, edgemapFactory );
 
 	wax_component tap = wax_getStreamWrapperOutput(m_wrapper);
 	wax_component sink =wax_getStreamPlayerInput(m_player);

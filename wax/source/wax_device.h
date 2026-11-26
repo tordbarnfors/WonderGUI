@@ -34,8 +34,8 @@
 
 
 #include <wax_geo.h>
-#include <wax_surface.h>
-#include <wax_surfacefactory.h>
+#include <wax_bitmap.h>
+#include <wax_bitmapfactory.h>
 #include <wax_edgemapfactory.h>
 #include <wax_warpmap.h>
 #include <wax_warpmapfactory.h>
@@ -46,7 +46,7 @@
 namespace wax
 {
 
-	class	Surface;
+	class	Bitmap;
 	class	LegacyCTextDisplay;
 	class	CaretInstance;
 	class 	Pen;
@@ -206,10 +206,10 @@ namespace wax
 	struct CanvasInfo
 	{
 		CanvasInfo() {};
-		CanvasInfo( CanvasRef _ref, Surface_p _pSurface, SizeI _size, PixelFormat _format, int _scale,
+		CanvasInfo( CanvasRef _ref, Bitmap_p _pBitmap, SizeI _size, PixelFormat _format, int _scale,
 					ColorSpace _colorSpace = ColorSpace::sRGB, bool _bigEndian = (WAX_IS_BIG_ENDIAN == 1) ) :
 			ref(_ref),
-			pSurface(_pSurface),
+			pBitmap(_pBitmap),
 			size(_size),
 			scale(_scale),
 			format(_format),
@@ -217,7 +217,7 @@ namespace wax
 			bigEndian(_bigEndian) {}
 		
 		CanvasRef	ref = CanvasRef::None;
-		Surface_p	pSurface = nullptr;
+		Bitmap_p	pBitmap = nullptr;
 		SizeSPX		size;
 		int			scale = 64;
 
@@ -246,7 +246,7 @@ namespace wax
 
 		virtual CanvasLayers_p 		canvasLayers() const = 0;
 
-		virtual SurfaceFactory_p	surfaceFactory() = 0;
+		virtual BitmapFactory_p	bitmapFactory() = 0;
 		virtual EdgemapFactory_p	edgemapFactory() = 0;
 		virtual WarpmapFactory_p	warpmapFactory() = 0;
 
@@ -283,8 +283,8 @@ namespace wax
 		virtual bool		setBlendMode( BlendMode blendMode ) = 0;
 		virtual BlendMode 	blendMode() const = 0;
 
-		virtual bool		setBlitSource(Surface * pSource) = 0;
-		virtual Surface_p 	blitSource() const = 0;
+		virtual bool		setBlitSource(Bitmap * pSource) = 0;
+		virtual Bitmap_p 	blitSource() const = 0;
 
 		virtual void		setMorphFactor(float factor) = 0;
 		virtual float		morphFactor() const = 0;
@@ -311,7 +311,7 @@ namespace wax
 		virtual void	flush() = 0;
 
         virtual bool     beginCanvasUpdate( CanvasRef canvas, int nUpdateRects = 0, const RectSPX* pUpdateRects = nullptr, CanvasLayers * pLayers = nullptr, int startLayer = -1 ) = 0;
-        virtual bool     beginCanvasUpdate( Surface * pCanvas, int nUpdateRects = 0, const RectSPX* pUpdateRects = nullptr, CanvasLayers * pLayers = nullptr, int startLayer = -1 ) = 0;
+        virtual bool     beginCanvasUpdate( Bitmap * pCanvas, int nUpdateRects = 0, const RectSPX* pUpdateRects = nullptr, CanvasLayers * pLayers = nullptr, int startLayer = -1 ) = 0;
         virtual void    endCanvasUpdate() = 0;
 
         

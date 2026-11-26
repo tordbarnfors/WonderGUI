@@ -23,8 +23,8 @@
 #define NOMINMAX
 
 #include <wax_dx12backend.h>
-#include <wax_dx12surface.h>
-#include <wax_dx12surfacefactory.h>
+#include <wax_dx12bitmap.h>
+#include <wax_dx12bitmapfactory.h>
 #include <wax_dx12edgemap.h>
 #include <wax_dx12edgemapfactory.h>
 #include <wax_dx12warpmap.h>
@@ -188,11 +188,11 @@ namespace wax
 
 		if (s_pDevice)
 		{
-			// Surfaces go first. If the device still works they read back what was
+			// Bitmaps go first. If the device still works they read back what was
 			// rendered into them, and the backends have to be there to submit and
 			// wait for what is still recorded.
 
-			DX12Surface::evacuateAll();
+			DX12Bitmap::evacuateAll();
 			DX12Edgemap::_evacuateAll();
 
 			for (auto pBackend : s_backends)
@@ -203,7 +203,7 @@ namespace wax
 
 			_flushPendingReleases();
 
-			DX12Surface::exitDevice();
+			DX12Bitmap::exitDevice();
 			DX12BufferPool::exitDevice();
 		}
 
@@ -225,16 +225,16 @@ namespace wax
 			s_bDeviceLost = false;
 			s_deviceRemovedReason = S_OK;
 
-			// Surfaces create their own resources and need the device for it, as does
+			// Bitmaps create their own resources and need the device for it, as does
 			// the pool edgemaps, Warpmaps and palettes get their buffers from.
 
-			DX12Surface::setDevice(pDX12Device);
+			DX12Bitmap::setDevice(pDX12Device);
 			DX12BufferPool::setDevice(pDX12Device, pDX12CommandQueue);
 
 			for (auto pBackend : s_backends)
 				pBackend->_createDeviceObjects(pDX12Device, pDX12CommandQueue);
 
-			DX12Surface::migrateAll();
+			DX12Bitmap::migrateAll();
 			DX12Edgemap::_migrateAll();
 		}
 
@@ -527,7 +527,7 @@ namespace wax
 
 	DX12Backend::DX12Backend(ID3D12Device* pDX12Device, ID3D12CommandQueue* pDX12CommandQueue)
 	{
-		m_pSurfaceFactory = DX12SurfaceFactory::create();
+		m_pBitmapFactory = DX12BitmapFactory::create();
 		m_pEdgemapFactory = DX12EdgemapFactory::create();
 
 		s_backends.push_back(this);
@@ -667,7 +667,7 @@ namespace wax
 
 		m_pActiveCanvas = nullptr;
 		m_bCanvasBound = false;
-		m_pCanvasSurface = nullptr;
+		m_pCanvasBitmap = nullptr;
 		m_activeCanvasRTV = {};
 		m_activeCanvasFormat = DXGI_FORMAT_UNKNOWN;
 
@@ -697,7 +697,7 @@ namespace wax
 		m_heldResources.clear();
 
 		// waitForCompletion() submitted any uploads we had recorded, so this should
-		// be empty, but no surface may be left pointing at us.
+		// be empty, but no bitmap may be left pointing at us.
 
 		_abandonRecordedUploads();
 
@@ -882,7 +882,7 @@ namespace wax
 		m_pActivePipeline = nullptr;
 		m_bBlitSourceBound = false;
 
-		// A flush can happen in the middle of a session, when a surface needs the
+		// A flush can happen in the middle of a session, when a bitmap needs the
 		// GPU to catch up, so put back everything the reset threw away.
 
 		if (m_bInSession)
@@ -988,7 +988,7 @@ namespace wax
 
 	//____ _restoreBlitSourceCanvases() ________________________________________
 	//
-	// Canvas surfaces we read as blit source were barriered into
+	// Canvas bitmaps we read as blit source were barriered into
 	// PIXEL_SHADER_RESOURCE. They go back to COMMON before the list is closed, so
 	// everything rests in COMMON between frames, which is what the copy queue and
 	// D3D12's own promotion rules expect.
@@ -998,27 +998,27 @@ namespace wax
 		if (!m_bCommandListOpen)
 			return;
 
-		// The textures were held by _bindBlitTexture(), so the surfaces can go.
+		// The textures were held by _bindBlitTexture(), so the bitmaps can go.
 
-		for (auto& pSurface : m_blitSourceCanvases)
+		for (auto& pBitmap : m_blitSourceCanvases)
 		{
-			auto pCanvas = static_cast<DX12Surface*>(pSurface.rawPtr());
+			auto pCanvas = static_cast<DX12Bitmap*>(pBitmap.rawPtr());
 
 			// The one we are rendering into belongs in RENDER_TARGET until the
 			// session lets go of it, so leave that one alone.
 
-			if (pCanvas != m_pCanvasSurface)
+			if (pCanvas != m_pCanvasBitmap)
 				_transitionCanvas(pCanvas, D3D12_RESOURCE_STATE_COMMON);
 		}
 
 		m_blitSourceCanvases.clear();
 	}
 
-	//____ _isDX12SurfaceType() _______________________________________________
+	//____ _isDX12BitmapType() _______________________________________________
 
-	bool DX12Backend::_isDX12SurfaceType(const TypeInfo& type)
+	bool DX12Backend::_isDX12BitmapType(const TypeInfo& type)
 	{
-		return _isOfType(type, DX12Surface::TYPEINFO);
+		return _isOfType(type, DX12Bitmap::TYPEINFO);
 	}
 
 	//____ _isRecording() ________________________________________________________
@@ -1028,11 +1028,11 @@ namespace wax
 		return m_bCommandListOpen && !s_bDeviceLost;
 	}
 
-	//____ _isNativeSurface() ____________________________________________________
+	//____ _isNativeBitmap() ____________________________________________________
 
-	bool DX12Backend::_isNativeSurface(const Object* pObject) const
+	bool DX12Backend::_isNativeBitmap(const Object* pObject) const
 	{
-		return pObject && _isOfType(pObject->typeInfo(), DX12Surface::TYPEINFO);
+		return pObject && _isOfType(pObject->typeInfo(), DX12Bitmap::TYPEINFO);
 	}
 
 	//____ _isNativeEdgemap() ____________________________________________________
@@ -1061,7 +1061,7 @@ namespace wax
 	// paints the whole update rect, which breaks the rule above, so the window
 	// must present full frames while it is on.
 
-	void DX12Backend::beginSession(CanvasRef canvasRef, Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, const SessionInfo* pInfo)
+	void DX12Backend::beginSession(CanvasRef canvasRef, Bitmap* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, const SessionInfo* pInfo)
 	{
 		// Every pending upload, so no draw of the session finds a texture out of
 		// date. Whatever submitUploads() hasn't already sent. It may flush the
@@ -1098,10 +1098,10 @@ namespace wax
 	// The swap chain buffer is only ours while we render into it, and only if
 	// this session renders into it at all, so it is claimed by _bindCanvas().
 
-	void DX12Backend::_beginSessionOnDevice(Surface* pCanvas)
+	void DX12Backend::_beginSessionOnDevice(Bitmap* pCanvas)
 	{
 		m_bSessionOnDefaultCanvas = false;
-		m_pCanvasSurface = nullptr;
+		m_pCanvasBitmap = nullptr;
 		m_activeCanvasRTV.ptr = 0;
 		m_activeCanvasFormat = DXGI_FORMAT_UNKNOWN;
 	}
@@ -1110,17 +1110,17 @@ namespace wax
 
 	void DX12Backend::_endSessionOnDevice()
 	{
-		// A canvas surface goes back to COMMON, where D3D12 promotes it on its own
+		// A canvas bitmap goes back to COMMON, where D3D12 promotes it on its own
 		// when it is read as a blit source or copied from.
 
-		if (m_pCanvasSurface)
+		if (m_pCanvasBitmap)
 		{
-			_transitionCanvas(m_pCanvasSurface, D3D12_RESOURCE_STATE_COMMON);
-			m_pCanvasSurface = nullptr;
+			_transitionCanvas(m_pCanvasBitmap, D3D12_RESOURCE_STATE_COMMON);
+			m_pCanvasBitmap = nullptr;
 		}
 
 		// Nothing stays parked between sessions, or the next one would find a
-		// surface in a state it doesn't expect.
+		// bitmap in a state it doesn't expect.
 
 		_restoreBlitSourceCanvases();
 
@@ -1155,7 +1155,7 @@ namespace wax
 
 	//____ _transitionCanvas() ________________________________________________
 
-	void DX12Backend::_transitionCanvas(DX12Surface* pCanvas, D3D12_RESOURCE_STATES state)
+	void DX12Backend::_transitionCanvas(DX12Bitmap* pCanvas, D3D12_RESOURCE_STATES state)
 	{
 		if (!m_bCommandListOpen || !pCanvas || !pCanvas->texture() || pCanvas->resourceState() == state)
 			return;
@@ -1176,7 +1176,7 @@ namespace wax
 	//____ _holdUntilDone() ___________________________________________________
 	//
 	// A command list keeps no references to the resources it mentions, and D3D12
-	// must not have a resource released while work using it is pending. Surfaces
+	// must not have a resource released while work using it is pending. Bitmaps
 	// and edgemaps are only retained by DeviceGen2 until the session ends, which
 	// is long before the GPU has run the commands, so we hold on to their D3D12
 	// resources until the GPU is done, see _releaseWhenDone().
@@ -1352,17 +1352,17 @@ namespace wax
 	//____ _bindCanvas() ______________________________________________________
 	//
 	// Points the command list at the canvas we should render into from here on.
-	// A null surface means the default canvas, which the window owns.
+	// A null bitmap means the default canvas, which the window owns.
 
-	bool DX12Backend::_bindCanvas(Surface* pCanvas, SizeI& size, CanvasKind& kind)
+	bool DX12Backend::_bindCanvas(Bitmap* pCanvas, SizeI& size, CanvasKind& kind)
 	{
-		DX12Surface* pSurface = static_cast<DX12Surface*>(pCanvas);
+		DX12Bitmap* pBitmap = static_cast<DX12Bitmap*>(pCanvas);
 
-		if (pSurface && (!pSurface->texture() || !pSurface->canBeCanvas() || pSurface->renderTargetView().ptr == 0))
+		if (pBitmap && (!pBitmap->texture() || !pBitmap->canBeCanvas() || pBitmap->renderTargetView().ptr == 0))
 		{
-			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Surface can not be used as canvas, rendering to default canvas instead.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Bitmap can not be used as canvas, rendering to default canvas instead.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			pSurface = nullptr;
+			pBitmap = nullptr;
 		}
 
 		// Getting here can flush the command list, and a flush rebinds the canvas.
@@ -1375,50 +1375,50 @@ namespace wax
 
 		// Whatever we rendered into before is done now.
 
-		if (m_pCanvasSurface && m_pCanvasSurface != pSurface)
-			_transitionCanvas(m_pCanvasSurface, D3D12_RESOURCE_STATE_COMMON);
+		if (m_pCanvasBitmap && m_pCanvasBitmap != pBitmap)
+			_transitionCanvas(m_pCanvasBitmap, D3D12_RESOURCE_STATE_COMMON);
 
-		m_pCanvasSurface = nullptr;
+		m_pCanvasBitmap = nullptr;
 
 		if (!m_bCommandListOpen)
 			return false;
 
-		if (pSurface)
+		if (pBitmap)
 		{
 			// Gets any pixels the CPU wrote into the texture before we render over
 			// it, and marks our copy of them as the older one from here on. The
-			// upload barriers the texture out of COMMON and back, so the surface
+			// upload barriers the texture out of COMMON and back, so the bitmap
 			// goes there first. It usually already is, in which case the call
 			// below records nothing. beginSession() has normally taken care of the
 			// upload already.
 
-			_transitionCanvas(pSurface, D3D12_RESOURCE_STATE_COMMON);
+			_transitionCanvas(pBitmap, D3D12_RESOURCE_STATE_COMMON);
 
-			_recordUpload(pSurface);
-			pSurface->notifyRendered();
+			_recordUpload(pBitmap);
+			pBitmap->notifyRendered();
 
 			if (!m_bCommandListOpen)
 				return false;
 
-			_transitionCanvas(pSurface, D3D12_RESOURCE_STATE_RENDER_TARGET);
+			_transitionCanvas(pBitmap, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 			// Whoever owns the canvas may let go of it as soon as the session has
 			// ended - RootPanel does when the window is resized - while the GPU is
 			// still rendering into it.
 
-			_holdUntilDone(pSurface->texture());
+			_holdUntilDone(pBitmap->texture());
 
-			m_pCanvasSurface = pSurface;
-			m_activeCanvasRTV = pSurface->renderTargetView();
-			m_activeCanvasFormat = pSurface->dxgiFormat();
-			m_targetSize = pSurface->pixelSize();
+			m_pCanvasBitmap = pBitmap;
+			m_activeCanvasRTV = pBitmap->renderTargetView();
+			m_activeCanvasFormat = pBitmap->dxgiFormat();
+			m_targetSize = pBitmap->pixelSize();
 		}
 		else
 		{
 			if (m_defaultCanvasRTV.ptr == 0)
 				return false;
 
-			// A session that started on a surface canvas has not claimed the swap
+			// A session that started on a bitmap canvas has not claimed the swap
 			// chain buffer yet. _endSessionOnDevice() hands it back.
 
 			if (!m_bSessionOnDefaultCanvas && m_defaultCanvasBuffer)
@@ -1453,11 +1453,11 @@ namespace wax
 
 	//____ _prepareBlitSource() ________________________________________________
 
-	void DX12Backend::_prepareBlitSource(Surface* pSurface)
+	void DX12Backend::_prepareBlitSource(Bitmap* pBitmap)
 	{
 		// Normally beginSession() has already recorded the upload and this does nothing.
 
-		_recordUpload(static_cast<DX12Surface*>(pSurface));
+		_recordUpload(static_cast<DX12Bitmap*>(pBitmap));
 	}
 
 	//____ _bindBlitTexture() __________________________________________________
@@ -1466,9 +1466,9 @@ namespace wax
 	// points the root descriptor table at it, and binds its palette if it has one.
 	// GpuBackend binds the sampler and sets the constants.
 
-	bool DX12Backend::_bindBlitTexture(Surface* pSurface)
+	bool DX12Backend::_bindBlitTexture(Bitmap* pBitmap)
 	{
-		auto pSource = static_cast<DX12Surface*>(pSurface);
+		auto pSource = static_cast<DX12Bitmap*>(pBitmap);
 
 		if (!m_bCommandListOpen || !pSource->texture())
 			return false;
@@ -1480,7 +1480,7 @@ namespace wax
 			_generateMipmaps(pSource);
 
 		// D3D12 would promote a texture resting in COMMON to a shader resource on
-		// its own, but a canvas surface's state is one we track, so we do it with
+		// its own, but a canvas bitmap's state is one we track, so we do it with
 		// a barrier and put it back before the command list closes.
 
 		if (pSource->canBeCanvas() && pSource->resourceState() == D3D12_RESOURCE_STATE_COMMON)
@@ -1526,8 +1526,8 @@ namespace wax
 				return false;
 			}
 
-			// Ordinary surfaces need holding as much as canvases do: a temporary
-			// surface is released by DeviceGen2 when the session ends. Once is
+			// Ordinary bitmaps need holding as much as canvases do: a temporary
+			// bitmap is released by DeviceGen2 when the session ends. Once is
 			// enough, m_objectSRVs is forgotten with every submission.
 
 			_holdUntilDone(pTexture);
@@ -1567,33 +1567,33 @@ namespace wax
 
 	//____ _generateMipmaps() __________________________________________________
 	//
-	// Draws each mip level of the surface from the one above it, the way
+	// Draws each mip level of the bitmap from the one above it, the way
 	// MetalBackend has Metal do it and GlBackend has OpenGL. D3D12 has no such
 	// call, so we draw them ourselves, see ps_mipmap.hlsl.
 	//
 	// We get here from _bindBlitTexture() when level 0 has changed since the
 	// levels were drawn: after an upload, which _recordUploadBatch() ends with a
 	// barrier back to COMMON, in a fresh command list if this one had read the
-	// surface, or after rendering into the surface, which ended with it back in
+	// bitmap, or after rendering into the bitmap, which ended with it back in
 	// COMMON. Either way every level rests in COMMON and this command list hasn't
 	// promoted it, so we can barrier it ourselves. We leave it in COMMON, where
 	// _bindBlitTexture() expects it.
 
-	void DX12Backend::_generateMipmaps(DX12Surface* pSurface)
+	void DX12Backend::_generateMipmaps(DX12Bitmap* pBitmap)
 	{
 		auto& frame = m_frameResources[m_currentFrameIndex];
 
-		int nLevels = pSurface->mipLevels();
-		ID3D12Resource* pTexture = pSurface->texture();
+		int nLevels = pBitmap->mipLevels();
+		ID3D12Resource* pTexture = pBitmap->texture();
 
 		if (!m_bCommandListOpen || !pTexture || nLevels < 2 || !frame.srvHeap || !m_pSamplerHeap)
 			return;
 
-		ID3D12PipelineState* pPipeline = _mipmapPipeline(pSurface->dxgiFormat());
+		ID3D12PipelineState* pPipeline = _mipmapPipeline(pBitmap->dxgiFormat());
 
 		if (!pPipeline)
 		{
-			pSurface->clearMipmapStale();		// No use trying again, level 0 alone is what we have.
+			pBitmap->clearMipmapStale();		// No use trying again, level 0 alone is what we have.
 			return;
 		}
 
@@ -1619,7 +1619,7 @@ namespace wax
 
 		m_commandList->SetGraphicsRootDescriptorTable(4, samplerHandle);
 
-		SizeI size = pSurface->pixelSize();
+		SizeI size = pBitmap->pixelSize();
 
 		for (int level = 1; level < nLevels; level++)
 		{
@@ -1633,7 +1633,7 @@ namespace wax
 			D3D12_CPU_DESCRIPTOR_HANDLE dest = frame.srvHeap->GetCPUDescriptorHandleForHeapStart();
 			dest.ptr += SIZE_T(frame.nSRVDescriptors) * m_srvDescriptorSize;
 
-			m_pDX12Device->CopyDescriptorsSimple(1, dest, pSurface->mipSourceSRV(level), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+			m_pDX12Device->CopyDescriptorsSimple(1, dest, pBitmap->mipSourceSRV(level), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 			D3D12_GPU_DESCRIPTOR_HANDLE srvHandle = frame.srvHeap->GetGPUDescriptorHandleForHeapStart();
 			srvHandle.ptr += UINT64(frame.nSRVDescriptors) * m_srvDescriptorSize;
@@ -1642,7 +1642,7 @@ namespace wax
 
 			m_commandList->SetGraphicsRootDescriptorTable(3, srvHandle);
 
-			D3D12_CPU_DESCRIPTOR_HANDLE rtv = pSurface->mipRTV(level);
+			D3D12_CPU_DESCRIPTOR_HANDLE rtv = pBitmap->mipRTV(level);
 			m_commandList->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
 
 			LONG w = (size.w >> level) > 0 ? (size.w >> level) : 1;
@@ -1666,7 +1666,7 @@ namespace wax
 		barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COMMON;
 		m_commandList->ResourceBarrier(1, &barrier);
 
-		pSurface->clearMipmapStale();
+		pBitmap->clearMipmapStale();
 
 		// Put back the canvas, and have pipeline and blit source bound anew.
 
@@ -1752,14 +1752,14 @@ namespace wax
 
 	//____ _bindBlitSampler() _________________________________________________
 
-	void DX12Backend::_bindBlitSampler(Surface* pSurface, bool bClip)
+	void DX12Backend::_bindBlitSampler(Bitmap* pBitmap, bool bClip)
 	{
 		if (!m_bCommandListOpen || !m_pSamplerHeap)
 			return;
 
 		// Samplers are ordered nearest/bilinear, clamp/tile, then clip, see _createSamplers().
 
-		int index = (bClip ? 4 : 0) + (pSurface->isTiling() ? 2 : 0) + (pSurface->sampleMethod() == SampleMethod::Bilinear ? 1 : 0);
+		int index = (bClip ? 4 : 0) + (pBitmap->isTiling() ? 2 : 0) + (pBitmap->sampleMethod() == SampleMethod::Bilinear ? 1 : 0);
 
 		D3D12_GPU_DESCRIPTOR_HANDLE samplerHandle = m_pSamplerHeap->GetGPUDescriptorHandleForHeapStart();
 		samplerHandle.ptr += UINT64(index) * m_samplerDescriptorSize;
@@ -2050,11 +2050,11 @@ namespace wax
 		}
 	}
 
-	//____ surfaceFactory() ____________________________________________________
+	//____ bitmapFactory() ____________________________________________________
 
-	SurfaceFactory_p DX12Backend::surfaceFactory()
+	BitmapFactory_p DX12Backend::bitmapFactory()
 	{
-		return m_pSurfaceFactory;
+		return m_pBitmapFactory;
 	}
 
 	//____ edgemapFactory() ____________________________________________________
@@ -2078,14 +2078,14 @@ namespace wax
 
 	bool DX12Backend::canBeBlitSource(const TypeInfo& type) const
 	{
-		return _isDX12SurfaceType(type);
+		return _isDX12BitmapType(type);
 	}
 
 	//____ canBeCanvas() ________________________________________________________
 
 	bool DX12Backend::canBeCanvas(const TypeInfo& type) const
 	{
-		return _isDX12SurfaceType(type);
+		return _isDX12BitmapType(type);
 	}
 
 	//____ waitForCompletion() __________________________________________________
@@ -2128,14 +2128,14 @@ namespace wax
 		{
 			Base::reportError(ErrorLevel::Error, ErrorCode::IllegalCall, "submitUploads() can't be called during a session.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			return DX12Surface::pendingUploadBytes();
+			return DX12Bitmap::pendingUploadBytes();
 		}
 
 		// Nothing can be recorded without device objects or on a lost device. The
 		// uploads stay pending until a new device is set, which redoes them anyway.
 
-		if (!DX12Surface::s_pFirstPending || !m_bDeviceObjectsOK || s_bDeviceLost)
-			return DX12Surface::pendingUploadBytes();
+		if (!DX12Bitmap::s_pFirstPending || !m_bDeviceObjectsOK || s_bDeviceLost)
+			return DX12Bitmap::pendingUploadBytes();
 
 		if (m_bCommandListOpen)
 		{
@@ -2156,20 +2156,20 @@ namespace wax
 			endRender();
 		}
 
-		return DX12Surface::pendingUploadBytes();
+		return DX12Bitmap::pendingUploadBytes();
 	}
 
 	//____ pendingUploadBytes() ________________________________________________
 
 	int64_t DX12Backend::pendingUploadBytes() const
 	{
-		return DX12Surface::pendingUploadBytes();
+		return DX12Bitmap::pendingUploadBytes();
 	}
 
 	//____ _recordUploads() ____________________________________________________
 	//
-	// Records the uploads of pending surfaces into our open command list, oldest
-	// first, until maxBytes is reached. Always at least one, so a surface larger
+	// Records the uploads of pending bitmaps into our open command list, oldest
+	// first, until maxBytes is reached. Always at least one, so a bitmap larger
 	// than maxBytes doesn't block the rest. A negative maxBytes records them all.
 	//
 	// Only between sessions, or at the start of one, since it may have to flush
@@ -2177,12 +2177,12 @@ namespace wax
 
 	int64_t DX12Backend::_recordUploads(int64_t maxBytes)
 	{
-		if (!m_bCommandListOpen || s_bDeviceLost || !DX12Surface::s_pFirstPending)
+		if (!m_bCommandListOpen || s_bDeviceLost || !DX12Bitmap::s_pFirstPending)
 			return 0;
 
 		int64_t bytes = 0;
 
-		for (DX12Surface* p = DX12Surface::s_pFirstPending; p; p = p->m_pNextPending)
+		for (DX12Bitmap* p = DX12Bitmap::s_pFirstPending; p; p = p->m_pNextPending)
 		{
 			if (maxBytes >= 0 && !m_uploadBatch.empty() && bytes + p->m_pendingBytes > maxBytes)
 				break;
@@ -2197,16 +2197,16 @@ namespace wax
 
 	//____ _recordUpload() _____________________________________________________
 	//
-	// For a surface about to be read or rendered into that is still pending. That
+	// For a bitmap about to be read or rendered into that is still pending. That
 	// shouldn't happen, beginSession() records all uploads before anything of the
 	// session, but it is cheap to make sure.
 
-	void DX12Backend::_recordUpload(DX12Surface* pSurface)
+	void DX12Backend::_recordUpload(DX12Bitmap* pBitmap)
 	{
-		if (!pSurface->m_bUploadPending || !m_bCommandListOpen || s_bDeviceLost)
+		if (!pBitmap->m_bUploadPending || !m_bCommandListOpen || s_bDeviceLost)
 			return;
 
-		m_uploadBatch.push_back(pSurface);
+		m_uploadBatch.push_back(pBitmap);
 		_recordUploadBatch();
 	}
 
@@ -2278,7 +2278,7 @@ namespace wax
 		{
 			p->_recordPulls(m_commandList.Get());
 
-			// The surface may go before the GPU has copied, taking the texture with
+			// The bitmap may go before the GPU has copied, taking the texture with
 			// it, and lets go of what is copied from here.
 
 			_holdUntilDone(p->m_texture.Get());
@@ -2302,7 +2302,7 @@ namespace wax
 			p->m_resourceState = D3D12_RESOURCE_STATE_COMMON;
 
 			// Level 0 has changed, so the others are stale. They are drawn from it
-			// before the surface is read, see _generateMipmaps().
+			// before the bitmap is read, see _generateMipmaps().
 
 			p->_uploaded();
 
@@ -2324,13 +2324,13 @@ namespace wax
 
 	//____ _stageUploadBatch() _________________________________________________
 	//
-	// Copies the pixels the surfaces of m_uploadBatch have to send into buffers
+	// Copies the pixels the bitmaps of m_uploadBatch have to send into buffers
 	// the GPU copies from, premultiplied if need be. One buffer for as many
-	// surfaces as fit: making a buffer takes far longer than filling a small one,
+	// bitmaps as fit: making a buffer takes far longer than filling a small one,
 	// and D3D12 makes none smaller than 64 KB. It is held until the GPU has
 	// copied from it and released then.
 	//
-	// A surface whose buffer couldn't be made keeps what it has to send, and
+	// A bitmap whose buffer couldn't be made keeps what it has to send, and
 	// stays pending.
 
 	void DX12Backend::_stageUploadBatch()
@@ -2339,19 +2339,19 @@ namespace wax
 
 		while (first < m_uploadBatch.size())
 		{
-			// As many surfaces as stay under the limit, at least one.
+			// As many bitmaps as stay under the limit, at least one.
 
 			UINT64 bytes = 0;
 			size_t end = first;
 
 			for (; end < m_uploadBatch.size(); end++)
 			{
-				UINT64 surfaceBytes = m_uploadBatch[end]->_dirtyStagingBytes();
+				UINT64 bitmapBytes = m_uploadBatch[end]->_dirtyStagingBytes();
 
-				if (bytes > 0 && bytes + surfaceBytes > c_maxStagingBufferBytes)
+				if (bytes > 0 && bytes + bitmapBytes > c_maxStagingBufferBytes)
 					break;
 
-				bytes += surfaceBytes;
+				bytes += bitmapBytes;
 			}
 
 			if (bytes > 0)
@@ -2368,12 +2368,12 @@ namespace wax
 
 					for (size_t i = first; i < end; i++)
 					{
-						UINT64 surfaceBytes = m_uploadBatch[i]->_dirtyStagingBytes();
+						UINT64 bitmapBytes = m_uploadBatch[i]->_dirtyStagingBytes();
 
-						if (surfaceBytes > 0)
+						if (bitmapBytes > 0)
 						{
 							m_uploadBatch[i]->_stageDirtyInto(buffer.Get(), pMapped, offset);
-							offset += surfaceBytes;
+							offset += bitmapBytes;
 						}
 					}
 
@@ -2388,7 +2388,7 @@ namespace wax
 	//____ _uploadsSubmitted() _________________________________________________
 	//
 	// The list holding the uploads went to the GPU, so they are no longer ours to
-	// tell the surfaces of.
+	// tell the bitmaps of.
 
 	void DX12Backend::_uploadsSubmitted()
 	{
@@ -2414,9 +2414,9 @@ namespace wax
 
 	//____ _forgetRecordedUpload() _____________________________________________
 
-	void DX12Backend::_forgetRecordedUpload(DX12Surface* pSurface)
+	void DX12Backend::_forgetRecordedUpload(DX12Bitmap* pBitmap)
 	{
-		m_recordedUploads.erase(std::remove(m_recordedUploads.begin(), m_recordedUploads.end(), pSurface), m_recordedUploads.end());
+		m_recordedUploads.erase(std::remove(m_recordedUploads.begin(), m_recordedUploads.end(), pBitmap), m_recordedUploads.end());
 	}
 
 	//____ _openedCommandList() ________________________________________________
@@ -2701,7 +2701,7 @@ namespace wax
 
 	bool DX12Backend::_createSamplers()
 	{
-		// Eight samplers, covering the combinations a surface can ask for. The
+		// Eight samplers, covering the combinations a bitmap can ask for. The
 		// index is (clip ? 4 : 0) + (tiling ? 2 : 0) + (bilinear ? 1 : 0), see
 		// _setBlitSource() and _bindBlitSamplerAndFlags(). The clip ones return
 		// transparent black outside the texture, a tiling source never uses them.

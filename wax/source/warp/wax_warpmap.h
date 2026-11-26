@@ -35,12 +35,12 @@ namespace wax
 
 	//____ Warpmap _____________________________________________________________
 	/**
-	 * @brief Bends a surface or an edgemap into another shape when drawn.
+	 * @brief Bends a bitmap or an edgemap into another shape when drawn.
 	 *
 	 * A Warpmap covers a rectangle of size.w * size.h pixels with a mesh of triangles. Each vertex
 	 * has a position in the Warpmap (x, y in spx from its top-left corner), the position in the
 	 * source that is drawn there (u along the width of the source and v along its height, in spx of
-	 * the source: 64 per pixel of the surface or edgemap, relative to the source rectangle for blits)
+	 * the source: 64 per pixel of the bitmap or edgemap, relative to the source rectangle for blits)
 	 * and a weight w for perspective. Positions within a triangle are interpolated from its corners.
 	 * Where a position falls outside the source nothing is drawn, and nothing is drawn outside the
 	 * triangles.
@@ -89,7 +89,7 @@ namespace wax
 	 * When drawn, a source offset (in spx of the source) is added to the position before reading,
 	 * so a ring can be rotated or a pattern scrolled without changing the Warpmap.
 	 *
-	 * There is no supersampling when the Warpmap shrinks a surface. Use a mipmapped surface for that,
+	 * There is no supersampling when the Warpmap shrinks a bitmap. Use a mipmapped bitmap for that,
 	 * on backends that support mipmaps.
 	 *
 	 * Warpmaps are created by a WarpmapFactory, which is specific to the backend, or by a generator
@@ -132,9 +132,9 @@ namespace wax
 	 *   the Warpmap, without perspective, at the center of the pixel, kept within 0 -> coverageOne,
 	 *   and multiplies the part of the pixel that is covered.
 	 *
-	 * - Colors are taken at the position of the center of the pixel: the surface is sampled there
+	 * - Colors are taken at the position of the center of the pixel: the bitmap is sampled there
 	 *   by its sample method, as if the edge pixels of the source rectangle continued outside it
-	 *   (like stretchBlit() reads it), or wrapping around the surface if it is tiling. The tints of
+	 *   (like stretchBlit() reads it), or wrapping around the bitmap if it is tiling. The tints of
 	 *   edgemap segments are evaluated there (in pixels of the edgemap). A center in the gap between
 	 *   copies on a periodic axis is taken in the nearest copy, before its start or after its end, so
 	 *   colors don't jump where copies meet. The device tint is applied in canvas space as usual.

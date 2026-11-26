@@ -447,24 +447,24 @@ namespace wg
 
 	//____ screenshot() __________________________________________________________
 
-	Surface_p Widget::screenshot( const Surface::Blueprint& bp )
+	Bitmap_p Widget::screenshot( const Bitmap::Blueprint& bp )
 	{
 		return screenshot( Rect(), bp );
 	}
 
-	Surface_p Widget::screenshot(const Rect& _rect, const Surface::Blueprint& _bp )
+	Bitmap_p Widget::screenshot(const Rect& _rect, const Bitmap::Blueprint& _bp )
 	{
 		//TOOD: Support layers!
 		
 		auto pDevice = Base::defaultDevice();
-		auto pFactory = Base::defaultSurfaceFactory();
+		auto pFactory = Base::defaultBitmapFactory();
 
 		if( !pDevice || !pFactory )
 			return nullptr;
 
 		RectSPX rect = _rect.isEmpty() ? RectSPX(0,0,m_size) : RectSPX::overlap( m_size, RectSPX(_rect*m_scale));
 
-		wg::Surface::Blueprint bp = _bp;
+		wg::Bitmap::Blueprint bp = _bp;
 		bp.size = (rect.size()+63)/64;
 		bp.format = wg::PixelFormat::ARGB_8;
 		bp.canvas = true;
@@ -476,7 +476,7 @@ namespace wg
 		if( bp.colorSpace == ColorSpace::Undefined )
 			bp.colorSpace = pDevice->isRendering() ? pDevice->canvas().colorSpace : pDevice->canvas(CanvasRef::Default).colorSpace;
 		
-		auto pCanvas = pFactory->createSurface( bp );
+		auto pCanvas = pFactory->createBitmap( bp );
 		if(!pCanvas)
 			return nullptr;
 

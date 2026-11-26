@@ -167,15 +167,15 @@ void MyApp::onLoad()
 
 	if( filePaths.size() > 0 )
 	{
-		m_testSurfaces.clear();
+		m_testBitmaps.clear();
 
 		for( auto& path : filePaths )
 		{
-			auto pSurface = m_pAPI->loadSurface(path);
-			if( pSurface )
+			auto pBitmap = m_pAPI->loadBitmap(path);
+			if( pBitmap )
 			{
 				string name = std::filesystem::path(path).stem().string();
-				m_testSurfaces.push_back({name, pSurface});
+				m_testBitmaps.push_back({name, pBitmap});
 			}
 		}
 
@@ -196,11 +196,11 @@ void MyApp::onRun()
 	int compressTimeTotal = 0;
 	int decompressTimeTotal = 0;
 
-	for( int i = 0 ; i < m_testSurfaces.size() ; i++ )
+	for( int i = 0 ; i < m_testBitmaps.size() ; i++ )
 	{
-		auto pSurface = m_testSurfaces[i].pSurface;
-		auto pixbuf = pSurface->allocPixelBuffer();
-		pSurface->pushPixels(pixbuf);
+		auto pBitmap = m_testBitmaps[i].pBitmap;
+		auto pixbuf = pBitmap->allocPixelBuffer();
+		pBitmap->pushPixels(pixbuf);
 
 		int srcSize = pixbuf.pitch * pixbuf.rect.h;
 		
@@ -264,7 +264,7 @@ void MyApp::onRun()
 
 		Base::memStackFree(srcSize+9);
 		Base::memStackFree(memNeeded);
-		pSurface->freePixelBuffer(pixbuf);
+		pBitmap->freePixelBuffer(pixbuf);
 
 		// Sum up totals
 
@@ -275,7 +275,7 @@ void MyApp::onRun()
 		decompressTimeTotal += int(afterDecompTS - beforeDecompTS);
 	}
 
-	updateListRow( int(m_testSurfaces.size()+1), srcTotalBytes, compressedTotalBytes, compressTimeTotal, decompressTimeTotal );
+	updateListRow( int(m_testBitmaps.size()+1), srcTotalBytes, compressedTotalBytes, compressTimeTotal, decompressTimeTotal );
 }
 
 
@@ -360,10 +360,10 @@ void MyApp::onRunSyntheticTest()
 
 void MyApp::refreshList()
 {
-	m_pResultTable->rows.resize(int(m_testSurfaces.size())+2);
+	m_pResultTable->rows.resize(int(m_testBitmaps.size())+2);
 
 	int index = 1;
-	for( auto& test : m_testSurfaces )
+	for( auto& test : m_testBitmaps )
 	{
 		auto pName = TextDisplay::create({ .display = { .text = test.name.c_str() } });
 		auto pRatio = TextDisplay::create({ .display = { .layout = m_pLayoutRight, .text = "---" } });

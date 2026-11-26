@@ -35,8 +35,8 @@
 #include <wax_c_streamreader.h>
 */
 #include <wax_c_object.h>
-#include <wax_c_surface.h>
-#include <wax_c_surfacefactory.h>
+#include <wax_c_bitmap.h>
+#include <wax_c_bitmapfactory.h>
 #include <wax_c_edgemap.h>
 #include <wax_c_edgemapfactory.h>
 #include <wax_c_warpmap.h>
@@ -79,8 +79,8 @@ struct wg_c_calls_body
 	wg_streampump_calls			streamPump;
 	wg_streamreader_calls		streamReader;
 */
-	wg_surface_calls			surface;
-	wg_surfacefactory_calls		surfaceFactory;
+	wg_bitmap_calls			bitmap;
+	wg_bitmapfactory_calls		bitmapFactory;
 	wg_edgemap_calls			edgemap;
 	wg_edgemapfactory_calls		edgemapFactory;
 	wg_hostbridge_calls			hostBridge;
@@ -112,13 +112,13 @@ static void populateBody(wg_c_calls_body * pBody)
 	pBody->bitmapCache.addCacheListener		= LOCKED(wax_addCacheListener);
 	pBody->bitmapCache.removeCacheListener	= LOCKED(wax_removeCacheListener);
 	pBody->bitmapCache.getCacheSlot			= LOCKED(wax_getCacheSlot);
-	pBody->bitmapCache.getNbCacheSurfaces	= LOCKED(wax_getNbCacheSurfaces);
-	pBody->bitmapCache.getCacheSurfaces		= LOCKED(wax_getCacheSurfaces);
+	pBody->bitmapCache.getNbCacheBitmaps	= LOCKED(wax_getNbCacheBitmaps);
+	pBody->bitmapCache.getCacheBitmaps		= LOCKED(wax_getCacheBitmaps);
 
 
 	pBody->bitmapFont.structSize			= sizeof(wg_bitmapfont_calls);
 	pBody->bitmapFont.createBitmapFont		= LOCKED(wax_createBitmapFont);
-	pBody->bitmapFont.getBitmapFontSurface	= LOCKED(wax_getBitmapFontSurface);
+	pBody->bitmapFont.getBitmapFontBitmap	= LOCKED(wax_getBitmapFontBitmap);
 
 
 	pBody->canvasLayers.structSize			= sizeof(wg_canvaslayers_calls);
@@ -144,15 +144,15 @@ static void populateBody(wg_c_calls_body * pBody)
 	pBody->font.isMonospace					= LOCKED(wax_isMonospace);
 	pBody->font.isMonochrome				= LOCKED(wax_isMonochrome);
 	pBody->font.getBackupFont				= LOCKED(wax_getBackupFont);
-	pBody->font.createSurfaceFromGlyph		= LOCKED(wax_createSurfaceFromGlyph);
+	pBody->font.createBitmapFromGlyph		= LOCKED(wax_createBitmapFromGlyph);
 
 
 	pBody->gfxDevice.structSize				= sizeof(wg_gfxdevice_calls);
-	pBody->gfxDevice.deviceSurfaceType		= nullptr;						// Hopefully this is not used anymore.
+	pBody->gfxDevice.deviceBitmapType		= nullptr;						// Hopefully this is not used anymore.
 	pBody->gfxDevice.getCanvas				= LOCKED(wax_getCanvas);
 	pBody->gfxDevice.getCanvasRef			= LOCKED(wax_getCanvasRef);
 	pBody->gfxDevice.canvasLayers			= LOCKED(wax_canvasLayers);
-	pBody->gfxDevice.surfaceFactory			= LOCKED(wax_surfaceFactory);
+	pBody->gfxDevice.bitmapFactory			= LOCKED(wax_bitmapFactory);
 	pBody->gfxDevice.edgemapFactory			= LOCKED(wax_edgemapFactory);
 	pBody->gfxDevice.maxSegments			= LOCKED(wax_maxSegments);
 	pBody->gfxDevice.canvasSize				= LOCKED(wax_canvasSize);
@@ -188,7 +188,7 @@ static void populateBody(wg_c_calls_body * pBody)
 	pBody->gfxDevice.isDeviceIdle			= LOCKED(wax_isDeviceIdle);
 	pBody->gfxDevice.flushDevice			= LOCKED(wax_flushDevice);
 	pBody->gfxDevice.beginCanvasUpdateWithRef		= LOCKED(wax_beginCanvasUpdateWithRef);
-	pBody->gfxDevice.beginCanvasUpdateWithSurface	= LOCKED(wax_beginCanvasUpdateWithSurface);
+	pBody->gfxDevice.beginCanvasUpdateWithBitmap	= LOCKED(wax_beginCanvasUpdateWithBitmap);
 	pBody->gfxDevice.endCanvasUpdate		= LOCKED(wax_endCanvasUpdate);
 	pBody->gfxDevice.fill					= LOCKED(wax_fill);
 	pBody->gfxDevice.fillRect				= LOCKED(wax_fillRect);
@@ -288,56 +288,56 @@ static void populateBody(wg_c_calls_body * pBody)
 	pBody->object.setFinalizer				= LOCKED(wax_setFinalizer);
 
 
-	pBody->surface.structSize				= sizeof(wg_surface_calls);
-	pBody->surface.setSurfaceIdentity		= LOCKED(wax_setSurfaceIdentity);
-	pBody->surface.getSurfaceIdentity		= LOCKED(wax_getSurfaceIdentity);
-	pBody->surface.surfacePixelSize			= LOCKED(wax_surfacePixelSize);
-	pBody->surface.surfacePixelWidth		= LOCKED(wax_surfacePixelWidth);
-	pBody->surface.surfacePixelHeight		= LOCKED(wax_surfacePixelHeight);
-	pBody->surface.surfacePointSize			= LOCKED(wax_surfacePointSize);
-	pBody->surface.surfacePointWidth		= LOCKED(wax_surfacePointWidth);
-	pBody->surface.surfacePointHeight		= LOCKED(wax_surfacePointHeight);
-	pBody->surface.surfaceScale				= LOCKED(wax_surfaceScale);
-	pBody->surface.surfaceSampleMethod		= LOCKED(wax_surfaceSampleMethod);
-	pBody->surface.surfaceIsTiling			= LOCKED(wax_surfaceIsTiling);
-	pBody->surface.surfaceIsMipmapped		= LOCKED(wax_surfaceIsMipmapped);
-	pBody->surface.surfaceAlpha				= LOCKED(wax_surfaceAlpha);
-	pBody->surface.surfacePalette			= LOCKED(wax_surfacePalette);
-	pBody->surface.surfacePaletteSize		= LOCKED(wax_surfacePaletteSize);
-	pBody->surface.surfacePaletteCapacity	= LOCKED(wax_surfacePaletteCapacity);
-	pBody->surface.surfacePixelDescription	= LOCKED(wax_surfacePixelDescription);
-	pBody->surface.surfacePixelFormat		= LOCKED(wax_surfacePixelFormat);
-	pBody->surface.surfacePixelBits			= LOCKED(wax_surfacePixelBits);
-	pBody->surface.surfaceIsOpaque			= LOCKED(wax_surfaceIsOpaque);
-	pBody->surface.surfaceCanBeCanvas		= LOCKED(wax_surfaceCanBeCanvas);
-	pBody->surface.allocPixelBuffer			= LOCKED(wax_allocPixelBuffer);
-	pBody->surface.allocPixelBufferFromRect	= LOCKED(wax_allocPixelBufferFromRect);
-	pBody->surface.pushPixels				= LOCKED(wax_pushPixels);
-	pBody->surface.pushPixelsFromRect		= LOCKED(wax_pushPixelsFromRect);
-	pBody->surface.pullPixels				= LOCKED(wax_pullPixels);
-	pBody->surface.pullPixelsFromRect		= LOCKED(wax_pullPixelsFromRect);
-	pBody->surface.freePixelBuffer			= LOCKED(wax_freePixelBuffer);
-	pBody->surface.fillSurface				= LOCKED(wax_fillSurface);
-	pBody->surface.fillSurfaceRect			= LOCKED(wax_fillSurfaceRect);
-	pBody->surface.copySurface				= LOCKED(wax_copySurface);
-	pBody->surface.copySurfaceRect			= LOCKED(wax_copySurfaceRect);
-	pBody->surface.setSurfaceUserData		= LOCKED(wax_setSurfaceUserData);
-	pBody->surface.getSurfaceUserData		= LOCKED(wax_getSurfaceUserData);
-	pBody->surface.addSurfaceObserver		= LOCKED(wax_addSurfaceObserver);
-	pBody->surface.removeSurfaceObserver	= LOCKED(wax_removeSurfaceObserver);
-	pBody->surface.getSurfaceBlueprint		= LOCKED(wax_getSurfaceBlueprint);
-	pBody->surface.surfaceColorSpace		= LOCKED(wax_surfaceColorSpace);
-	pBody->surface.surfaceIsBigEndian		= LOCKED(wax_surfaceIsBigEndian);
-	pBody->surface.surfaceIsContentLost		= LOCKED(wax_surfaceIsContentLost);
-	pBody->surface.dropSurfaceRestorer		= LOCKED(wax_dropSurfaceRestorer);
+	pBody->bitmap.structSize				= sizeof(wg_bitmap_calls);
+	pBody->bitmap.setBitmapIdentity		= LOCKED(wax_setBitmapIdentity);
+	pBody->bitmap.getBitmapIdentity		= LOCKED(wax_getBitmapIdentity);
+	pBody->bitmap.bitmapPixelSize			= LOCKED(wax_bitmapPixelSize);
+	pBody->bitmap.bitmapPixelWidth		= LOCKED(wax_bitmapPixelWidth);
+	pBody->bitmap.bitmapPixelHeight		= LOCKED(wax_bitmapPixelHeight);
+	pBody->bitmap.bitmapPointSize			= LOCKED(wax_bitmapPointSize);
+	pBody->bitmap.bitmapPointWidth		= LOCKED(wax_bitmapPointWidth);
+	pBody->bitmap.bitmapPointHeight		= LOCKED(wax_bitmapPointHeight);
+	pBody->bitmap.bitmapScale				= LOCKED(wax_bitmapScale);
+	pBody->bitmap.bitmapSampleMethod		= LOCKED(wax_bitmapSampleMethod);
+	pBody->bitmap.bitmapIsTiling			= LOCKED(wax_bitmapIsTiling);
+	pBody->bitmap.bitmapIsMipmapped		= LOCKED(wax_bitmapIsMipmapped);
+	pBody->bitmap.bitmapAlpha				= LOCKED(wax_bitmapAlpha);
+	pBody->bitmap.bitmapPalette			= LOCKED(wax_bitmapPalette);
+	pBody->bitmap.bitmapPaletteSize		= LOCKED(wax_bitmapPaletteSize);
+	pBody->bitmap.bitmapPaletteCapacity	= LOCKED(wax_bitmapPaletteCapacity);
+	pBody->bitmap.bitmapPixelDescription	= LOCKED(wax_bitmapPixelDescription);
+	pBody->bitmap.bitmapPixelFormat		= LOCKED(wax_bitmapPixelFormat);
+	pBody->bitmap.bitmapPixelBits			= LOCKED(wax_bitmapPixelBits);
+	pBody->bitmap.bitmapIsOpaque			= LOCKED(wax_bitmapIsOpaque);
+	pBody->bitmap.bitmapCanBeCanvas		= LOCKED(wax_bitmapCanBeCanvas);
+	pBody->bitmap.allocPixelBuffer			= LOCKED(wax_allocPixelBuffer);
+	pBody->bitmap.allocPixelBufferFromRect	= LOCKED(wax_allocPixelBufferFromRect);
+	pBody->bitmap.pushPixels				= LOCKED(wax_pushPixels);
+	pBody->bitmap.pushPixelsFromRect		= LOCKED(wax_pushPixelsFromRect);
+	pBody->bitmap.pullPixels				= LOCKED(wax_pullPixels);
+	pBody->bitmap.pullPixelsFromRect		= LOCKED(wax_pullPixelsFromRect);
+	pBody->bitmap.freePixelBuffer			= LOCKED(wax_freePixelBuffer);
+	pBody->bitmap.fillBitmap				= LOCKED(wax_fillBitmap);
+	pBody->bitmap.fillBitmapRect			= LOCKED(wax_fillBitmapRect);
+	pBody->bitmap.copyBitmap				= LOCKED(wax_copyBitmap);
+	pBody->bitmap.copyBitmapRect			= LOCKED(wax_copyBitmapRect);
+	pBody->bitmap.setBitmapUserData		= LOCKED(wax_setBitmapUserData);
+	pBody->bitmap.getBitmapUserData		= LOCKED(wax_getBitmapUserData);
+	pBody->bitmap.addBitmapObserver		= LOCKED(wax_addBitmapObserver);
+	pBody->bitmap.removeBitmapObserver	= LOCKED(wax_removeBitmapObserver);
+	pBody->bitmap.getBitmapBlueprint		= LOCKED(wax_getBitmapBlueprint);
+	pBody->bitmap.bitmapColorSpace		= LOCKED(wax_bitmapColorSpace);
+	pBody->bitmap.bitmapIsBigEndian		= LOCKED(wax_bitmapIsBigEndian);
+	pBody->bitmap.bitmapIsContentLost		= LOCKED(wax_bitmapIsContentLost);
+	pBody->bitmap.dropBitmapRestorer		= LOCKED(wax_dropBitmapRestorer);
 
 
-	pBody->surfaceFactory.structSize		= sizeof(wg_surfacefactory_calls);
-	pBody->surfaceFactory.maxSurfaceSize	= LOCKED(wax_maxSurfaceSize);
-	pBody->surfaceFactory.createSurface		= LOCKED(wax_createSurface);
-	pBody->surfaceFactory.createSurfaceFromBlob = LOCKED(wax_createSurfaceFromBlob);
-	pBody->surfaceFactory.createSurfaceFromBitmap = LOCKED(wax_createSurfaceFromBitmap);
-	pBody->surfaceFactory.createSurfaceFromRawData = LOCKED(wax_createSurfaceFromRawData);
+	pBody->bitmapFactory.structSize		= sizeof(wg_bitmapfactory_calls);
+	pBody->bitmapFactory.maxBitmapSize	= LOCKED(wax_maxBitmapSize);
+	pBody->bitmapFactory.createBitmap		= LOCKED(wax_createBitmap);
+	pBody->bitmapFactory.createBitmapFromBlob = LOCKED(wax_createBitmapFromBlob);
+	pBody->bitmapFactory.createBitmapFromBitmap = LOCKED(wax_createBitmapFromBitmap);
+	pBody->bitmapFactory.createBitmapFromRawData = LOCKED(wax_createBitmapFromRawData);
 
 	pBody->edgemap.structSize				= sizeof(wg_edgemap_calls);
 	pBody->edgemap.edgemapPixelSize			= LOCKED(wax_edgemapPixelSize);
@@ -450,8 +450,8 @@ void wg_populatePluginInterface(wg_plugin_interface * pHeader)
 	pHeader->pStreamPump		= &pBody->streamPump;
 	pHeader->pStreamReader		= &pBody->streamReader;
 */
-	pHeader->pSurface			= &pBody->surface;
-	pHeader->pSurfaceFactory	= &pBody->surfaceFactory;
+	pHeader->pBitmap			= &pBody->bitmap;
+	pHeader->pBitmapFactory	= &pBody->bitmapFactory;
 	pHeader->pEdgemap			= &pBody->edgemap;
 	pHeader->pEdgemapFactory	= &pBody->edgemapFactory;
 	pHeader->pWarpmap			= &pBody->warpmap;

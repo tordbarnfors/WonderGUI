@@ -6,7 +6,7 @@
 #include <wax_device_gen2.h>
 #include <wax_softbackend.h>
 #include <wax_softkernels_default.h>
-#include <wax_softsurface.h>
+#include <wax_softbitmap.h>
 #include <wax_softtint.h>
 #include <wax_tinttools.h>
 
@@ -501,8 +501,8 @@ bool SoftTintTest::tintedRenderingTest(std::ostream& output)
 	addDefaultSoftKernels(pBackend);
 	auto pDevice = GfxDeviceGen2::create(pBackend);
 
-	auto pCanvas = SoftSurface::create(WGBP(Surface, _.size = canvasSize, _.format = PixelFormat::ARGB_8, _.colorSpace = ColorSpace::sRGB, _.canvas = true));
-	auto pSource = SoftSurface::create(WGBP(Surface, _.size = canvasSize, _.format = PixelFormat::ARGB_8, _.colorSpace = ColorSpace::sRGB));
+	auto pCanvas = SoftBitmap::create(WGBP(Bitmap, _.size = canvasSize, _.format = PixelFormat::ARGB_8, _.colorSpace = ColorSpace::sRGB, _.canvas = true));
+	auto pSource = SoftBitmap::create(WGBP(Bitmap, _.size = canvasSize, _.format = PixelFormat::ARGB_8, _.colorSpace = ColorSpace::sRGB));
 	pSource->fill(Color::White);
 
 	RectSPX canvasRect(0, 0, canvasSize.w * 64, canvasSize.h * 64);

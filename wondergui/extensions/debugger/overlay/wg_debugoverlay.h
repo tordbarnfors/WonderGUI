@@ -112,8 +112,8 @@ namespace wg
 			bool			takesFocusFromChild = false;
 			std::string			tooltip;
 			bool			usePickHandles = false;
-			Surface_p		icons;										// Optional, embedded default if not set.
-			Surface_p		transparencyGrid;							// Optional, embedded default if not set. Chessboard pattern or similar
+			Bitmap_p		icons;										// Optional, embedded default if not set.
+			Bitmap_p		transparencyGrid;							// Optional, embedded default if not set. Chessboard pattern or similar
 			Object_p		userData;
 		};
 

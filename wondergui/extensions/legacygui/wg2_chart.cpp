@@ -24,7 +24,7 @@
 #include <wg2_base.h>
 #include <wg_texttool.h>
 #include <wg2_util.h>
-#include <wax_surfacefactory.h>
+#include <wax_bitmapfactory.h>
 
 #include <wax_device_gen2.h>
 #include <wax_softbackend.h>
@@ -848,7 +848,7 @@ void WgChart::_renderPatches( wg::GfxDevice * pDevice, const WgRect& _canvas, co
 
 		if( !m_pCacheBitmap )
 		{
-			m_pCacheBitmap = m_pSurfaceFactory->createSurface( WGBP(Surface,
+			m_pCacheBitmap = m_pSurfaceFactory->createBitmap( WGBP(Surface,
 																_.size = _canvas.size(),
 																_.format = wg::PixelFormat::ARGB_8,
 																_.colorSpace = colorSpace) );

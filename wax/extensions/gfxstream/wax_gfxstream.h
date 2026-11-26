@@ -30,14 +30,14 @@
 #include <cstring>
 
 
-#define WAX_GFXSTREAM_USE_SURFACE_UPDATE2
+#define WAX_GFXSTREAM_USE_BITMAP_UPDATE2
 
 namespace wax
 {
 	class GfxStream
 	{
 	public:
-		static constexpr int	c_maxBlockSize = 1024+256;		// Includes the block headers! Palettes are sent in SurfacePalette chunks, split like pixels.
+		static constexpr int	c_maxBlockSize = 1024+256;		// Includes the block headers! Palettes are sent in BitmapPalette chunks, split like pixels.
 
 		static constexpr int	c_maxClipRects = 256;		// Largest number of patches allowed for a drawing primitive.
 
@@ -72,12 +72,12 @@ namespace wax
 			Commands = 13,
 			UpdateRects = 14,
 
-			CreateSurface = 15,
-			SurfaceUpdate = 16,
-			SurfacePixels = 17,
-			FillSurface = 18,
-			CopySurface = 19,
-			DeleteSurface = 20,
+			CreateBitmap = 15,
+			BitmapUpdate = 16,
+			BitmapPixels = 17,
+			FillBitmap = 18,
+			CopyBitmap = 19,
+			DeleteBitmap = 20,
 
 			CreateEdgemap = 21,
 			SetEdgemapRenderSegments = 22,
@@ -86,10 +86,10 @@ namespace wax
 			EdgemapSamples = 25,
 			DeleteEdgemap = 26,
 
-			SurfaceUpdate2 = 27,
+			BitmapUpdate2 = 27,
 			Fence = 28,
 			SetEdgemapTint = 29,
-			SurfacePalette = 30,		// Palette of surface just created, split over chunks like SurfacePixels.
+			BitmapPalette = 30,		// Palette of bitmap just created, split over chunks like BitmapPixels.
 
 			CreateWarpmap = 31,			// Since 3.4. Followed by WarpmapUpdate, WarpmapVertices and WarpmapTriangles with all its content.
 			WarpmapUpdate = 32,			// Flags (see WarpmapFlags), vertices and triangles that following WarpmapVertices and WarpmapTriangles chunks hold, and periods.

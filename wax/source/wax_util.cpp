@@ -22,7 +22,7 @@
 #include <wax_types.h>
 #include <wax_util.h>
 #include <wax_geo.h>
-#include <wax_surface.h>
+#include <wax_bitmap.h>
 #include <wax_device.h>
 #include <wax_patches.h>
 #include <wax_base.h>

@@ -31,7 +31,7 @@ public:
 
 	bool init(GfxDevice * pDevice, const RectSPX& canvas, wapp::API * pAppAPI)
 	{
-		m_pImg = pAppAPI->loadSurface("resources/mipmaptest.png", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Bilinear });
+		m_pImg = pAppAPI->loadBitmap("resources/mipmaptest.png", pDevice->bitmapFactory(), { .sampleMethod = SampleMethod::Bilinear });
 		if (!m_pImg)
 			return false;
 
@@ -250,7 +250,7 @@ private:
 
 	Color		m_segmentColors[c_segments] = { Color::Red, Color::Orange, Color::Yellow, Color::Green, Color::Blue };
 
-	Surface_p	m_pImg;
+	Bitmap_p	m_pImg;
 
 	Tint_p		m_pMultiStop;
 	Tint_p		m_pHardEdges;

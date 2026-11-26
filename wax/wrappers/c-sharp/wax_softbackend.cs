@@ -13,9 +13,9 @@ public class SoftBackend : Backend
     }
 
     //____ DefineCanvas() _____________________________________________________
-    public bool DefineCanvas(CanvasRef reference, SoftSurface surface)
+    public bool DefineCanvas(CanvasRef reference, SoftBitmap bitmap)
     {
-        return (wax_defineSoftBackendCanvas(_obj, reference, surface.CHandle()) == 1);
+        return (wax_defineSoftBackendCanvas(_obj, reference, bitmap.CHandle()) == 1);
     }
 
     //____ Static Add Kernel Methods _________________________________________________
@@ -33,7 +33,7 @@ public class SoftBackend : Backend
     private static extern IntPtr wax_createSoftBackend();
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int wax_defineSoftBackendCanvas(IntPtr backend, CanvasRef canvas, IntPtr softSurface);
+    private static extern int wax_defineSoftBackendCanvas(IntPtr backend, CanvasRef canvas, IntPtr softBitmap);
 
 
 

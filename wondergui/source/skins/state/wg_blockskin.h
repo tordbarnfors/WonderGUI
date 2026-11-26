@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_stateskin.h>
-#include <wax_surface.h>
+#include <wax_bitmap.h>
 #include <wax_tint.h>
 
 #include <vector>
@@ -87,6 +87,7 @@ namespace wg
 		struct Blueprint
 		{
 			Axis		axis = Axis::Y;
+			Bitmap_p	bitmap;					// Mandatory!
 			BlendMode	blendMode = BlendMode::Blend;
 			pts			blockSpacing = 0;
 			Color		color = Color::Undefined;
@@ -104,7 +105,6 @@ namespace wg
 			Border		spacing;
 			std::vector<StateBP>	states;
 			
-			Surface_p	surface;					// Mandatory!
 			Tint_p	tint;
 		};
 
@@ -112,11 +112,11 @@ namespace wg
 		//.____ Creation __________________________________________
 
 		static BlockSkin_p	create(const Blueprint& blueprint);
-		static BlockSkin_p  create(Surface * pSurface, Border frame = { 0 } );
-		static BlockSkin_p	create(Surface * pSurface, Rect block, Border frame = { 0 } );
+		static BlockSkin_p  create(Bitmap * pBitmap, Border frame = { 0 } );
+		static BlockSkin_p	create(Bitmap * pBitmap, Rect block, Border frame = { 0 } );
 	//protected:
-		static BlockSkin_p	create(Surface * pSurface, Rect firstBlock, std::initializer_list<State> stateBlocks, Border frame = { 0 }, Axis axis = Axis::Y, pts spacing = 0);
-		static BlockSkin_p	create(Surface * pSurface, std::initializer_list<State> stateBlocks, Border frame = { 0 }, Axis axis = Axis::Y, pts spacing = 0);
+		static BlockSkin_p	create(Bitmap * pBitmap, Rect firstBlock, std::initializer_list<State> stateBlocks, Border frame = { 0 }, Axis axis = Axis::Y, pts spacing = 0);
+		static BlockSkin_p	create(Bitmap * pBitmap, std::initializer_list<State> stateBlocks, Border frame = { 0 }, Axis axis = Axis::Y, pts spacing = 0);
 	//public:
 
 
@@ -128,9 +128,9 @@ namespace wg
 
 		//.____ Deprecated ____________________________________________________
 
-		static BlockSkin_p createStatic(Surface * pSurface, Rect block, Border frame = Border(0));
-		static BlockSkin_p createClickable(Surface * pSurface, Size blockGeo, Coord blockStartOfs, Size blockPitch, Border blockFrame = Border(0));
-		static BlockSkin_p createStaticFromSurface(Surface * pSurface, Border frame = Border(0));
+		static BlockSkin_p createStatic(Bitmap * pBitmap, Rect block, Border frame = Border(0));
+		static BlockSkin_p createClickable(Bitmap * pBitmap, Size blockGeo, Coord blockStartOfs, Size blockPitch, Border blockFrame = Border(0));
+		static BlockSkin_p createStaticFromBitmap(Bitmap * pBitmap, Border frame = Border(0));
 
 		//.____ Internal ________________________________________________________
 
@@ -154,7 +154,7 @@ namespace wg
 
 	protected:
 
-		BlockSkin(Surface * pSurface, Rect block, Border frame);
+		BlockSkin(Bitmap * pBitmap, Rect block, Border frame);
 		BlockSkin(const Blueprint& blueprint);
 		~BlockSkin();
 
@@ -176,7 +176,7 @@ namespace wg
 
 
 		NinePatch		m_ninePatch;		// Block offset is undefined.
-		Surface_p		m_pSurface;
+		Bitmap_p		m_pBitmap;
 		Tint_p		m_pTint;
 
 		BlendMode		m_blendMode = BlendMode::Blend;

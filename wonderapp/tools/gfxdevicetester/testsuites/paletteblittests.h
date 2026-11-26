@@ -20,11 +20,11 @@ public:
 
 	bool init(GfxDevice * pDevice, const RectI& canvas, wapp::API * pAppAPI)
 	{
-		m_pLeaves = pAppAPI->loadSurface("resources/blaetter.surf", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Nearest } );
+		m_pLeaves = pAppAPI->loadBitmap("resources/blaetter.surf", pDevice->bitmapFactory(), { .sampleMethod = SampleMethod::Nearest } );
 		if (!m_pLeaves)
 			return false;
 
-		m_pLeavesInterpolated = pAppAPI->loadSurface("resources/blaetter.surf", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Bilinear } );
+		m_pLeavesInterpolated = pAppAPI->loadBitmap("resources/blaetter.surf", pDevice->bitmapFactory(), { .sampleMethod = SampleMethod::Bilinear } );
 		if (!m_pLeavesInterpolated)
 			return false;
 
@@ -104,8 +104,8 @@ public:
 	}
 
 private:
-	Surface_p	m_pLeaves;
-	Surface_p	m_pLeavesInterpolated;
+	Bitmap_p	m_pLeaves;
+	Bitmap_p	m_pLeavesInterpolated;
 
 	float rot = 35;
 	float scale = 5.0f;

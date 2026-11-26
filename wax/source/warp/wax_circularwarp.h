@@ -38,7 +38,7 @@ namespace wax
 	 * The width of the source goes around the circle, starting at startAngle and covering sweep
 	 * degrees. Its height goes from topRadius (top of the source) to bottomRadius (bottom of the
 	 * source), either of which can be the larger. With a sweep of 360 degrees the source wraps
-	 * around and an edgemap or surface that is tiling joins seamlessly. A smaller sweep gives an arc.
+	 * around and an edgemap or bitmap that is tiling joins seamlessly. A smaller sweep gives an arc.
 	 *
 	 * The Warpmap is made for a source of sourceSize (see WarpGenerator).
 	 *

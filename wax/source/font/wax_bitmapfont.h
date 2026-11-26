@@ -26,7 +26,7 @@
 #include <unordered_map>
 #include <wax_geo.h>
 #include <wax_font.h>
-#include <wax_surface.h>
+#include <wax_bitmap.h>
 
 namespace wax
 {
@@ -42,7 +42,7 @@ namespace wax
 	public:
 		//.____ Creation __________________________________________
 
-		static BitmapFont_p	create( Surface * pSurf, const char * pGlyphSpec, Font * pBackupFont = nullptr ) { return BitmapFont_p(new BitmapFont(pSurf,pGlyphSpec,pBackupFont)); }
+		static BitmapFont_p	create( Bitmap * pBitmap, const char * pGlyphSpec, Font * pBackupFont = nullptr ) { return BitmapFont_p(new BitmapFont(pBitmap,pGlyphSpec,pBackupFont)); }
 
 		//.____ Identification __________________________________________
 
@@ -73,30 +73,30 @@ namespace wax
 		inline bool			isMonospace() override { return m_bMonospace; }
 		inline bool			isMonochrome() override { return m_bMonochrome; }
 
-		inline Surface_p	surface() { return m_pSurface;}
+		inline Bitmap_p	bitmap() { return m_pBitmap;}
 		
 	protected:
-		BitmapFont( Surface * pSurf, const char * pGlyphSpec, Font * pBackupFont );
+		BitmapFont( Bitmap * pBitmap, const char * pGlyphSpec, Font * pBackupFont );
 		~BitmapFont();
 
-		void _insertGlyphs(Surface* pSurf, const char* pGlyphSpec);
+		void _insertGlyphs(Bitmap* pBitmap, const char* pGlyphSpec);
 
 		class MyGlyph
 		{
 		public:
 //			MyGlyph();
-//			MyGlyph( int advance, int16_t bearingX, int16_t bearingY, uint32_t kerningIndex, Font * pFont, Surface * pSurf, const RectSPX& rect );
+//			MyGlyph( int advance, int16_t bearingX, int16_t bearingY, uint32_t kerningIndex, Font * pFont, Bitmap * pBitmap, const RectSPX& rect );
 
 			spx			advance = 0;
 			uint32_t	kerningIndex = 0;		//
 
-			Surface_p 	pSurface;			// Set to null if no bitmap for glyph could be found.
+			Bitmap_p 	pBitmap;			// Set to null if no bitmap for glyph could be found.
 			RectSPX		rect;
 			spx			bearingX = 0;			// x offset when rendering the glyph (negated offset to glyph origin)
 			spx			bearingY = 0;			// y offset when rendering the glyph (negated offset to glyph origin)
 		};
 
-		Surface_p	m_pSurface;
+		Bitmap_p	m_pBitmap;
 		
 		const MyGlyph *	_findGlyph( char32_t chr ) const;
 		MyGlyph *		_glyphSlot( char32_t chr );

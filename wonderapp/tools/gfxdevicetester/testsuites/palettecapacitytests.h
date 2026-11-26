@@ -29,7 +29,7 @@ public:
 		Setup setups[c_nbSetups] = { { 8, 8, ColorSpace::Linear }, { 8, 16, ColorSpace::Linear },
 									 { 5, 5, ColorSpace::sRGB }, { 256, 256, ColorSpace::Linear } };
 
-		auto pFactory = pDevice->surfaceFactory();
+		auto pFactory = pDevice->bitmapFactory();
 
 		for (int s = 0; s < c_nbSetups; s++)
 		{
@@ -57,17 +57,17 @@ public:
 			{
 				SampleMethod method = m == 0 ? SampleMethod::Nearest : SampleMethod::Bilinear;
 
-				m_pIndexed[s][m] = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::Index_8, _.colorSpace = setup.colorSpace,
+				m_pIndexed[s][m] = pFactory->createBitmap(WGBP(Bitmap, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::Index_8, _.colorSpace = setup.colorSpace,
 																_.sampleMethod = method, _.palette = palette, _.paletteSize = setup.size, _.paletteCapacity = setup.capacity),
 														   indices, PixelFormat::Index_8, c_srcSize, palette, setup.size);
 
-				m_pDirect[s][m] = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::ARGB_8, _.colorSpace = setup.colorSpace,
+				m_pDirect[s][m] = pFactory->createBitmap(WGBP(Bitmap, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::ARGB_8, _.colorSpace = setup.colorSpace,
 																_.sampleMethod = method),
 														  (uint8_t*)pixels, PixelFormat::ARGB_8, c_srcSize * 4);
 			}
 		}
 
-		m_pA8Canvas = pFactory->createSurface(WGBP(Surface, _.size = canvas.size() / 64, _.format = PixelFormat::Alpha_8, _.canvas = true, _.sampleMethod = SampleMethod::Nearest));
+		m_pA8Canvas = pFactory->createBitmap(WGBP(Bitmap, _.size = canvas.size() / 64, _.format = PixelFormat::Alpha_8, _.canvas = true, _.sampleMethod = SampleMethod::Nearest));
 
 		m_pTint = Tint::create(Color(Color8(255, 255, 255, 255)), Color(Color8(255, 64, 0, 200)), { 0.f, 0.f }, { 1.f, 1.f });
 		m_pBrush = Blurbrush::create();
@@ -129,7 +129,7 @@ private:
 		return true;
 	}
 
-	void _drawOps(GfxDevice * pDevice, const RectSPX& canvas, Surface * pNearest, Surface * pBilinear, spx ofsX)
+	void _drawOps(GfxDevice * pDevice, const RectSPX& canvas, Bitmap * pNearest, Bitmap * pBilinear, spx ofsX)
 	{
 		const spx col1 = ofsX + 64 * 4, col2 = ofsX + 64 * 130;
 
@@ -171,9 +171,9 @@ private:
 	static const int c_srcSize = 16;
 	static const int c_nbSetups = 4;
 
-	Surface_p	m_pIndexed[c_nbSetups][2];		// Nearest, bilinear.
-	Surface_p	m_pDirect[c_nbSetups][2];
-	Surface_p	m_pA8Canvas;
+	Bitmap_p	m_pIndexed[c_nbSetups][2];		// Nearest, bilinear.
+	Bitmap_p	m_pDirect[c_nbSetups][2];
+	Bitmap_p	m_pA8Canvas;
 	Tint_p		m_pTint;
 	Blurbrush_p	m_pBrush;
 };

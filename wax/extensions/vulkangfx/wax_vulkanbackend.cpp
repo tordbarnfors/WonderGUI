@@ -21,8 +21,8 @@
 =========================================================================*/
 
 #include <wax_vulkanbackend.h>
-#include <wax_vulkansurface.h>
-#include <wax_vulkansurfacefactory.h>
+#include <wax_vulkanbitmap.h>
+#include <wax_vulkanbitmapfactory.h>
 #include <wax_vulkanedgemap.h>
 #include <wax_vulkanedgemapfactory.h>
 #include <wax_vulkanwarpmap.h>
@@ -121,7 +121,7 @@ namespace wax
 
 	VulkanBackend::VulkanBackend()
 	{
-		m_pSurfaceFactory = VulkanSurfaceFactory::create();
+		m_pBitmapFactory = VulkanBitmapFactory::create();
 		m_pEdgemapFactory = VulkanEdgemapFactory::create();
 		m_pWarpmapFactory = VulkanWarpmapFactory::create();
 
@@ -514,7 +514,7 @@ namespace wax
 	//____ _flush() ______________________________________________________________
 	//
 	// Submits what we have recorded so far and goes on recording into a new command buffer of the
-	// same frame, with the state of the session put back. Called when a surface needs the GPU to
+	// same frame, with the state of the session put back. Called when a bitmap needs the GPU to
 	// catch up with us before it does something of its own, see VulkanContext::beginOneShot().
 	// Semaphores of the owner wait for endRender().
 
@@ -594,11 +594,11 @@ namespace wax
 		return m_bRecording && !VulkanContext::isDeviceLost();
 	}
 
-	//____ _isNativeSurface() ____________________________________________________
+	//____ _isNativeBitmap() ____________________________________________________
 
-	bool VulkanBackend::_isNativeSurface( const Object * pObject ) const
+	bool VulkanBackend::_isNativeBitmap( const Object * pObject ) const
 	{
-		return pObject && _isOfType(pObject->typeInfo(), VulkanSurface::TYPEINFO);
+		return pObject && _isOfType(pObject->typeInfo(), VulkanBitmap::TYPEINFO);
 	}
 
 	//____ _isNativeEdgemap() ____________________________________________________
@@ -617,10 +617,10 @@ namespace wax
 
 	//____ _beginSessionOnDevice() _______________________________________________
 
-	void VulkanBackend::_beginSessionOnDevice( Surface * pCanvas )
+	void VulkanBackend::_beginSessionOnDevice( Bitmap * pCanvas )
 	{
 		m_bDefaultCanvasInUse = false;
-		m_pTargetSurface = nullptr;
+		m_pTargetBitmap = nullptr;
 		m_target = Target();
 	}
 
@@ -634,18 +634,18 @@ namespace wax
 
 	//____ _releaseCanvas() ______________________________________________________
 	//
-	// Canvases go back to rest when we are done with them: surfaces where they can be read as blit
+	// Canvases go back to rest when we are done with them: bitmaps where they can be read as blit
 	// source, the default canvas where its owner wants it.
 
 	void VulkanBackend::_releaseCanvas()
 	{
 		_endRendering();
 
-		if (m_pTargetSurface)
+		if (m_pTargetBitmap)
 		{
-			VulkanContext::transition(m_cmd, m_pTargetSurface->image(), m_pTargetSurface->layout(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-			m_pTargetSurface->setLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-			m_pTargetSurface = nullptr;
+			VulkanContext::transition(m_cmd, m_pTargetBitmap->image(), m_pTargetBitmap->layout(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			m_pTargetBitmap->setLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			m_pTargetBitmap = nullptr;
 		}
 
 		if (m_bDefaultCanvasInUse)
@@ -705,18 +705,18 @@ namespace wax
 
 	//____ _bindCanvas() _________________________________________________________
 
-	bool VulkanBackend::_bindCanvas( Surface * pCanvas, SizeI& size, CanvasKind& kind )
+	bool VulkanBackend::_bindCanvas( Bitmap * pCanvas, SizeI& size, CanvasKind& kind )
 	{
 		if (!m_bRecording)
 			return false;
 
-		VulkanSurface * pSurface = static_cast<VulkanSurface*>(pCanvas);
+		VulkanBitmap * pBitmap = static_cast<VulkanBitmap*>(pCanvas);
 
-		if (pSurface && (!pSurface->image() || !pSurface->attachmentView()))
+		if (pBitmap && (!pBitmap->image() || !pBitmap->attachmentView()))
 		{
-			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Surface can not be used as canvas, rendering to default canvas instead.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Bitmap can not be used as canvas, rendering to default canvas instead.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			pSurface = nullptr;
+			pBitmap = nullptr;
 		}
 
 		// Whatever we rendered into before is done now, unless it is the default canvas, which
@@ -724,36 +724,36 @@ namespace wax
 
 		_endRendering();
 
-		if (m_pTargetSurface && m_pTargetSurface != pSurface)
+		if (m_pTargetBitmap && m_pTargetBitmap != pBitmap)
 		{
-			VulkanContext::transition(m_cmd, m_pTargetSurface->image(), m_pTargetSurface->layout(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-			m_pTargetSurface->setLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			VulkanContext::transition(m_cmd, m_pTargetBitmap->image(), m_pTargetBitmap->layout(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			m_pTargetBitmap->setLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		}
 
-		m_pTargetSurface = nullptr;
+		m_pTargetBitmap = nullptr;
 		m_target = Target();
 		m_activePipeline = VK_NULL_HANDLE;		// Pipelines are made for the format of the canvas.
 
-		if (pSurface)
+		if (pBitmap)
 		{
 			// Gets any pixels the CPU wrote into the texture before we render over it.
 
-			_recordUploads(pSurface);
-			pSurface->notifyRendered();
+			_recordUploads(pBitmap);
+			pBitmap->notifyRendered();
 
 			if (!m_bRecording)
 				return false;
 
-			VulkanContext::transition(m_cmd, pSurface->image(), pSurface->layout(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-			pSurface->setLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			VulkanContext::transition(m_cmd, pBitmap->image(), pBitmap->layout(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			pBitmap->setLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-			m_pTargetSurface = pSurface;
-			m_target.image = pSurface->image();
-			m_target.view = pSurface->attachmentView();
-			m_target.format = pSurface->vkFormat();
-			m_target.size = pSurface->pixelSize();
+			m_pTargetBitmap = pBitmap;
+			m_target.image = pBitmap->image();
+			m_target.view = pBitmap->attachmentView();
+			m_target.format = pBitmap->vkFormat();
+			m_target.size = pBitmap->pixelSize();
 
-			kind = _canvasKind(pSurface);
+			kind = _canvasKind(pBitmap);
 		}
 		else
 		{
@@ -850,7 +850,7 @@ namespace wax
 	//____ _createPipeline() _____________________________________________________
 	//
 	// Blending is that of GpuBackend::_blendState(), in Vulkan terms. An alpha only canvas is R8
-	// here rather than A8, see VulkanSurface.
+	// here rather than A8, see VulkanBitmap.
 
 	VkPipeline VulkanBackend::_createPipeline( PipelineKind kind, const BlendState& blend, VkFormat format )
 	{
@@ -1085,37 +1085,37 @@ namespace wax
 
 	//____ _prepareBlitSource() __________________________________________________
 
-	void VulkanBackend::_prepareBlitSource( Surface * pSurface )
+	void VulkanBackend::_prepareBlitSource( Bitmap * pBitmap )
 	{
-		_recordUploads(static_cast<VulkanSurface*>(pSurface));
+		_recordUploads(static_cast<VulkanBitmap*>(pBitmap));
 	}
 
 	//____ _recordUploads() ______________________________________________________
 	//
-	// Has what the CPU has written to a surface copied to its texture, in our command buffer, so
+	// Has what the CPU has written to a bitmap copied to its texture, in our command buffer, so
 	// in front of what we record from here on and with no wait. Copies can't be inside a render
 	// pass, which the next draw begins again.
 	//
 	// Recorded but unsubmitted work of other backends might read the texture. It goes in front
 	// of our copies, as it would have had it been submitted already.
 
-	void VulkanBackend::_recordUploads( VulkanSurface * pSurface )
+	void VulkanBackend::_recordUploads( VulkanBitmap * pBitmap )
 	{
-		if (!m_bRecording || !pSurface->hasUploads())
+		if (!m_bRecording || !pBitmap->hasUploads())
 			return;
 
 		_endRendering();
 
 		VulkanContext::flushBackends(this);
 
-		pSurface->recordUploads(m_cmd);
+		pBitmap->recordUploads(m_cmd);
 	}
 
 	//____ _bindBlitTexture() ____________________________________________________
 
-	bool VulkanBackend::_bindBlitTexture( Surface * pSurface )
+	bool VulkanBackend::_bindBlitTexture( Bitmap * pBitmap )
 	{
-		auto pSource = static_cast<VulkanSurface*>(pSurface);
+		auto pSource = static_cast<VulkanBitmap*>(pBitmap);
 
 		if (!m_bRecording || !pSource->image() || !pSource->sampleView())
 			return false;
@@ -1153,12 +1153,12 @@ namespace wax
 
 	//____ _bindBlitSampler() ____________________________________________________
 
-	void VulkanBackend::_bindBlitSampler( Surface * pSurface, bool bClip )
+	void VulkanBackend::_bindBlitSampler( Bitmap * pBitmap, bool bClip )
 	{
 		if (!m_bRecording)
 			return;
 
-		int index = (bClip ? 4 : 0) + (pSurface->isTiling() ? 2 : 0) + (pSurface->sampleMethod() == SampleMethod::Bilinear ? 1 : 0);
+		int index = (bClip ? 4 : 0) + (pBitmap->isTiling() ? 2 : 0) + (pBitmap->sampleMethod() == SampleMethod::Bilinear ? 1 : 0);
 
 		_pushSampler(Binding::Sampler, m_samplers[index]);
 	}
@@ -1204,21 +1204,21 @@ namespace wax
 	// Makes each mip level from the one above it with a linear blit, which averages the four
 	// texels under each, as the mipmap shaders of DX12Backend do. Outside of rendering.
 
-	void VulkanBackend::_generateMipmaps( VulkanSurface * pSurface )
+	void VulkanBackend::_generateMipmaps( VulkanBitmap * pBitmap )
 	{
-		int nLevels = pSurface->mipLevels();
-		VkImage image = pSurface->image();
+		int nLevels = pBitmap->mipLevels();
+		VkImage image = pBitmap->image();
 
 		if (nLevels < 2 || !image)
 		{
-			pSurface->clearMipmapStale();
+			pBitmap->clearMipmapStale();
 			return;
 		}
 
-		VulkanContext::transition(m_cmd, image, pSurface->layout(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 0, 1);
-		VulkanContext::transition(m_cmd, image, pSurface->layout(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, uint32_t(nLevels - 1));
+		VulkanContext::transition(m_cmd, image, pBitmap->layout(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 0, 1);
+		VulkanContext::transition(m_cmd, image, pBitmap->layout(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, uint32_t(nLevels - 1));
 
-		SizeI size = pSurface->pixelSize();
+		SizeI size = pBitmap->pixelSize();
 
 		for (int level = 1; level < nLevels; level++)
 		{
@@ -1237,8 +1237,8 @@ namespace wax
 		}
 
 		VulkanContext::transition(m_cmd, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-		pSurface->setLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-		pSurface->clearMipmapStale();
+		pBitmap->setLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		pBitmap->clearMipmapStale();
 	}
 
 	//____ setDefaultCanvas() ____________________________________________________
@@ -1291,11 +1291,11 @@ namespace wax
 		return &m_dummyCanvas;
 	}
 
-	//____ surfaceFactory() ______________________________________________________
+	//____ bitmapFactory() ______________________________________________________
 
-	SurfaceFactory_p VulkanBackend::surfaceFactory()
+	BitmapFactory_p VulkanBackend::bitmapFactory()
 	{
-		return m_pSurfaceFactory;
+		return m_pBitmapFactory;
 	}
 
 	//____ edgemapFactory() ______________________________________________________
@@ -1316,14 +1316,14 @@ namespace wax
 
 	bool VulkanBackend::canBeBlitSource(const TypeInfo& type) const
 	{
-		return _isOfType(type, VulkanSurface::TYPEINFO);
+		return _isOfType(type, VulkanBitmap::TYPEINFO);
 	}
 
 	//____ canBeCanvas() _________________________________________________________
 
 	bool VulkanBackend::canBeCanvas(const TypeInfo& type) const
 	{
-		return _isOfType(type, VulkanSurface::TYPEINFO);
+		return _isOfType(type, VulkanBitmap::TYPEINFO);
 	}
 
 	//____ waitForCompletion() ___________________________________________________

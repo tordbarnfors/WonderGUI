@@ -1,0 +1,159 @@
+/*=========================================================================
+
+                             >>> WonderGUI <<<
+
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
+
+                                -----------
+
+  The WonderGUI UI Toolkit is free software; you can redistribute
+  this file and/or modify it under the terms of the GNU General Public
+  License as published by the Free Software Foundation; either
+  version 2 of the License, or (at your option) any later version.
+
+                                -----------
+
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
+
+=========================================================================*/
+#ifndef WAX_VULKANBITMAP_DOT_H
+#define WAX_VULKANBITMAP_DOT_H
+#pragma once
+
+#include <wax_gpubitmap.h>
+#include <wax_vulkancontext.h>
+
+#include <memory>
+#include <vector>
+
+namespace wax
+{
+
+	class VulkanBitmap;
+	typedef	StrongPtr<VulkanBitmap>	VulkanBitmap_p;
+	typedef	WeakPtr<VulkanBitmap>		VulkanBitmap_wp;
+
+	//____ VulkanBitmap ________________________________________________________
+	/**
+	 * @brief Bitmap for VulkanBackend.
+	 *
+	 * Built on GpuBitmap, which has our pixels, if we keep any, and knows what the texture lacks
+	 * of them. What is to be sent is copied to the texture when it is used, by buffers made for
+	 * it, in the command buffer of the backend that uses it.
+	 *
+	 * Formats, as DX12Bitmap has them: ARGB_8 is B8G8R8A8, XRGB_8 and the 565 formats (widened
+	 * to XRGB_8) B8G8R8A8 read with alpha 1, Alpha_8 is R8 read as alpha, and palette based
+	 * bitmaps hold their indexes in R8_UINT or R16_UINT with the palette in a buffer of float4.
+	 * sRGB bitmaps have _SRGB formats. Pixels are always little endian.
+	 *
+	 * Between uses the texture rests in SHADER_READ_ONLY_OPTIMAL. layout() is what it is in at the
+	 * end of what has been recorded, which VulkanBackend keeps up to date as it records. A texture
+	 * nothing has been sent to or rendered into is still in UNDEFINED, which it can be taken out
+	 * of like any other, with whatever it holds.
+	 */
+
+	class VulkanBitmap : public GpuBitmap
+	{
+		friend class VulkanBackend;
+
+	public:
+
+		//.____ Creation __________________________________________
+
+		static VulkanBitmap_p	create( const Blueprint& blueprint);
+		static VulkanBitmap_p	create( const Blueprint& blueprint, Blob* pBlob, int pitch = 0);
+
+		static VulkanBitmap_p	create( const Blueprint& blueprint, const uint8_t* pPixels,
+										PixelFormat format = PixelFormat::Undefined, int pitch = 0,
+										const Color8* pPalette = nullptr, int paletteSize = 0);
+
+		static VulkanBitmap_p	create(const Blueprint& blueprint, const uint8_t* pPixels,
+										const PixelDescription& pixelDescription, int pitch = 0,
+										const Color8* pPalette = nullptr, int paletteSize = 0);
+
+		//.____ Identification __________________________________________
+
+		const TypeInfo& typeInfo(void) const override;
+		const static TypeInfo	TYPEINFO;
+
+		//.____ Geometry _________________________________________________
+
+		static SizeI			maxSize();
+
+		//.____ Misc __________________________________________________________
+
+		// Used by VulkanBackend.
+
+		VkImage					image() const { return m_image.image; }
+		VkImageView				sampleView() const { return m_sampleView; }		// Reads alpha 1 from XRGB, R as alpha from Alpha_8.
+		VkImageView				attachmentView() const { return m_attachmentView; }	// Null unless a canvas.
+		VkFormat				vkFormat() const { return m_vkFormat; }
+		VkBuffer				paletteBuffer() const { return m_palette.buffer; }
+
+		VkImageLayout			layout() const { return m_layout; }
+		void					setLayout( VkImageLayout layout ) { m_layout = layout; }
+
+		// For VulkanBackend, before the bitmap is drawn from or into: hasUploads() says if the
+		// CPU has written something the texture lacks, and recordUploads() records the copies of
+		// it into a command buffer, outside a render pass.
+
+		bool					hasUploads() const { return !m_pulls.empty() || (m_pPixels && !m_dirtyRect.isEmpty()); }
+		void					recordUploads( VkCommandBuffer cmd );
+
+	protected:
+		VulkanBitmap(const Blueprint& blueprint, const PixelSource& source);
+		~VulkanBitmap();
+
+		// What GpuBitmap has us do.
+
+		PixelFormat		_setTextureFormat( PixelFormat format ) override;	// Vulkan has no 565 we can count on, they are widened to XRGB_8.
+		bool			_createDeviceObjects() override;					// Image, views and palette buffer. All or none.
+		Staging *		_allocStaging( SizeI size, bool bReadable ) override;
+		void			_pull( Staging * pStaging, const RectI& rect, CoordI dest ) override;
+		bool			_readBack( const RectI& rect, uint8_t * pDest, int destPitch ) override;
+
+		void			_dropDeviceObjects();
+
+		// Staging memory is a buffer of its own, which lives until the GPU is done with the
+		// last copy from it.
+
+		struct StagingBuffer
+		{
+			~StagingBuffer();
+
+			VulkanContext::Buffer	buffer;
+		};
+
+		struct VulkanStaging : public Staging
+		{
+			std::shared_ptr<StagingBuffer>	pBuffer;
+		};
+
+		// What is to be copied to the texture.
+
+		struct Pull
+		{
+			std::shared_ptr<StagingBuffer>	pBuffer;
+			VkDeviceSize	offset;				// Of the first pixel in the buffer.
+			int				pitch;
+			SizeI			size;
+			CoordI			dest;				// Where in the texture.
+		};
+
+		std::vector<Pull>		m_pulls;
+
+		VulkanContext::Image	m_image;
+		VulkanContext::Buffer	m_palette;			// Palette based bitmaps only. Capacity, then the colors.
+
+		VkImageView		m_sampleView = VK_NULL_HANDLE;
+		VkImageView		m_attachmentView = VK_NULL_HANDLE;
+
+		VkFormat		m_vkFormat = VK_FORMAT_UNDEFINED;
+		VkImageLayout	m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+	};
+
+} // namespace wax
+#endif // WAX_VULKANBITMAP_DOT_H

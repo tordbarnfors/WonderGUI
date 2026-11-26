@@ -14,12 +14,12 @@ public:
 
 	bool init(GfxDevice * pDevice, const RectI& canvas, wapp::API * pAppAPI)
 	{
-		m_pStdSurface = pAppAPI->loadSurface("resources/mipmaptest.png", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Bilinear } );
-		if (!m_pStdSurface)
+		m_pStdBitmap = pAppAPI->loadBitmap("resources/mipmaptest.png", pDevice->bitmapFactory(), { .sampleMethod = SampleMethod::Bilinear } );
+		if (!m_pStdBitmap)
 			return false;
 
-		m_pMipSurface = pAppAPI->loadSurface("resources/mipmaptest.png", pDevice->surfaceFactory(), { .mipmap = true, .sampleMethod = SampleMethod::Bilinear } );
-		if (!m_pMipSurface)
+		m_pMipBitmap = pAppAPI->loadBitmap("resources/mipmaptest.png", pDevice->bitmapFactory(), { .mipmap = true, .sampleMethod = SampleMethod::Bilinear } );
+		if (!m_pMipBitmap)
 			return false;
 
 		return true;
@@ -27,8 +27,8 @@ public:
 	 
 	bool exit(GfxDevice * pDevice, const RectI& canvas)
 	{
-		m_pStdSurface = nullptr;
-		m_pMipSurface = nullptr;
+		m_pStdBitmap = nullptr;
+		m_pMipBitmap = nullptr;
 		return true;
 	}
 
@@ -40,13 +40,13 @@ public:
 
 	bool setMipmapped(GfxDevice * pDevice, const RectI& canvas)
 	{
-		pDevice->setBlitSource(m_pMipSurface);
+		pDevice->setBlitSource(m_pMipBitmap);
 		return true;
 	}
 
 	bool setStandard(GfxDevice * pDevice, const RectI& canvas)
 	{
-		pDevice->setBlitSource(m_pStdSurface);
+		pDevice->setBlitSource(m_pStdBitmap);
 		return true;
 	}
 
@@ -59,6 +59,6 @@ public:
 
 
 private:
-	Surface_p	m_pStdSurface;
-	Surface_p	m_pMipSurface;
+	Bitmap_p	m_pStdBitmap;
+	Bitmap_p	m_pMipBitmap;
 };

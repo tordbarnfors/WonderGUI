@@ -15,10 +15,10 @@ set(SOURCES
 	wax_dx12warpmapfactory.cpp
 	wax_dx12warpmapfactory.h
 	wax_dx12shaders.cpp
-	wax_dx12surface.cpp
-	wax_dx12surface.h
-	wax_dx12surfacefactory.cpp
-	wax_dx12surfacefactory.h
+	wax_dx12bitmap.cpp
+	wax_dx12bitmap.h
+	wax_dx12bitmapfactory.cpp
+	wax_dx12bitmapfactory.h
 )
 
 # The shaders are shared with VulkanBackend, see ../hlsl/README.md.

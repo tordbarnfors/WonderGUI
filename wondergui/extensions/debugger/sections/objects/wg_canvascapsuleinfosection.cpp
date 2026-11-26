@@ -44,7 +44,7 @@ namespace wg
 			objectRow( "Canvas: ",                  [](CanvasCapsule* c) -> Object* { return c->canvas(); } ),
 			objectRow( "Glow canvas: ",             [](CanvasCapsule* c) -> Object* { return c->glowCanvas(); } ),
 			objectRow( "Layers: ",                  [](CanvasCapsule* c) -> Object* { return c->canvasLayers(); } ),
-			objectRow( "Surface factory: ",         [](CanvasCapsule* c) -> Object* { return c->surfaceFactory(); } ),
+			objectRow( "Bitmap factory: ",         [](CanvasCapsule* c) -> Object* { return c->bitmapFactory(); } ),
 			textRow  ( "Pixel format: ",            [](CanvasCapsule* c) { return toString(c->format()); } ),
 			textRow  ( "Color space: ",             [](CanvasCapsule* c) { return toString(c->colorSpace()); } ),
 			intRow   ( "Render layer: ",            [](CanvasCapsule* c) { return c->renderLayer(); } ),

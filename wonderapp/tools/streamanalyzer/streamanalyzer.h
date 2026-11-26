@@ -61,7 +61,7 @@ public:
 	
 private:
 
-	void		_resetStream();							// Clear displays, delete surfaces.
+	void		_resetStream();							// Clear displays, delete bitmaps.
 	void		_playFrames( int begin, int end, bool bOptimize, TextEditor * pBackendLogDisplay );
 	void		_logFrames( int begin, int end, bool bOptimize, TextEditor * pDisplay );
 	void		_updateFrameCounterAndSlider();
@@ -76,7 +76,7 @@ private:
 	void		_displayFrameStatistics();
 
 	ScrollPanel_p	_standardScrollPanel();
-	Widget_p		_buildSurfaceDisplayWithIndexTag( Surface * pSurf, int index );
+	Widget_p		_buildBitmapDisplayWithIndexTag( Bitmap * pBitmap, int index );
 	Widget_p		_buildEdgemapDisplayWithIndexTag( Edgemap * pEdgemap, int index );
 
 	wapp::API * 		m_pAppAPI = nullptr;
@@ -88,7 +88,7 @@ private:
 	BackendLogger_p		m_pBackendLogger;
 	StreamTrimBackend_p	m_pStreamTrimGfxBackend;
 
-	SurfaceFactory_p	m_pStreamSurfaceFactory;
+	BitmapFactory_p	m_pStreamBitmapFactory;
 	char *				m_pLinearCanvasBuffer = nullptr;
 	
 	Blob_p				m_pStreamBlob;
@@ -98,9 +98,9 @@ private:
 
 	
 	vector<GfxStream::iterator>	m_frames;
-	vector<Surface_p>			m_screens;
-	vector<Surface_p>			m_debugOverlays;
-	vector<SurfaceDisplay_p>	m_overlayDisplays;
+	vector<Bitmap_p>			m_screens;
+	vector<Bitmap_p>			m_debugOverlays;
+	vector<BitmapDisplay_p>	m_overlayDisplays;
 	vector<StackPanel_p>		m_screenStacks;
 
 	
@@ -125,9 +125,9 @@ private:
 	struct RecordedSteps
 	{
 		CanvasRef	canvas;
-		Surface_p	before;
-		Surface_p	change;
-		Surface_p	after;
+		Bitmap_p	before;
+		Bitmap_p	change;
+		Bitmap_p	after;
 	};
 
 	vector<RecordedSteps>	m_recordedSteps;

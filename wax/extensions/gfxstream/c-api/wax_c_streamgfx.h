@@ -26,51 +26,51 @@
 #include <wax_c_types.h>
 #include <wax_c_geo.h>
 #include <wax_c_gfxstream.h>
-#include <wax_c_surface.h>
+#include <wax_c_bitmap.h>
 #include <wax_c_edgemap.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-	typedef struct wax_mirrorSurfaceBP_struct	// NOT BINARY EQUIVALENT!
+	typedef struct wax_mirrorBitmapBP_struct	// NOT BINARY EQUIVALENT!
 	{
-		wax_canvasRef	canvasRef;				// Stream to specified reference, otherwise create surface and stream to that.
+		wax_canvasRef	canvasRef;				// Stream to specified reference, otherwise create bitmap and stream to that.
 		wax_obj			encoder;				// Required
-		wax_obj			surface;				// Required
-		int				streamOnCreate;			// If true, surface content will be streamed immediately after creation.
-	} wax_mirrorSurfaceBP;
+		wax_obj			bitmap;				// Required
+		int				streamOnCreate;			// If true, bitmap content will be streamed immediately after creation.
+	} wax_mirrorBitmapBP;
 
 
 
 	WAX_EXPORT wax_obj	wax_createStreamBackend(wax_obj streamEncoder, int maxEdges );
-	WAX_EXPORT int		wax_defineStreamBackendCanvasWithSurface( wax_obj streamBackend, wax_canvasRef ref, wax_obj surface );
+	WAX_EXPORT int		wax_defineStreamBackendCanvasWithBitmap( wax_obj streamBackend, wax_canvasRef ref, wax_obj bitmap );
 	WAX_EXPORT int		wax_defineStreamBackendCanvas( wax_obj streamBackend, wax_canvasRef ref, wax_sizeI pixelSize, wax_pixelFormat pixelFormat, int scale,
 													  wax_colorSpace colorSpace, wax_byteOrder byteOrder );
 
     WAX_EXPORT void      wax_encodeCanvasList(wax_obj streamBackend);
     WAX_EXPORT void      wax_encodeTick(wax_obj streamBackend, int32_t microsecPassed);        // Microsec since last tick (or beginning of stream if first
 
-	WAX_EXPORT wax_obj	wax_createRemoteSurface(wax_obj streamEncoder, wax_surfaceBP* blueprint);
-	WAX_EXPORT wax_obj	wax_createRemoteSurfaceFromBlob(wax_obj streamEncoder, const wax_surfaceBP* blueprint, wax_obj blob, int pitch);
-	WAX_EXPORT wax_obj	wax_createRemoteSurfaceFromBitmap(wax_obj streamEncoder, wax_obj factory, const wax_surfaceBP* blueprint, const uint8_t* pPixels,
+	WAX_EXPORT wax_obj	wax_createRemoteBitmap(wax_obj streamEncoder, wax_bitmapBP* blueprint);
+	WAX_EXPORT wax_obj	wax_createRemoteBitmapFromBlob(wax_obj streamEncoder, const wax_bitmapBP* blueprint, wax_obj blob, int pitch);
+	WAX_EXPORT wax_obj	wax_createRemoteBitmapFromBitmap(wax_obj streamEncoder, wax_obj factory, const wax_bitmapBP* blueprint, const uint8_t* pPixels,
 												   wax_pixelFormat pixelFormat, int pitch, const wax_color8 * pPalette );
-	WAX_EXPORT wax_obj	wax_createRemoteSurfaceFromRawData(wax_obj streamEncoder, wax_obj factory, const wax_surfaceBP* blueprint, const uint8_t* pPixels,
+	WAX_EXPORT wax_obj	wax_createRemoteBitmapFromRawData(wax_obj streamEncoder, wax_obj factory, const wax_bitmapBP* blueprint, const uint8_t* pPixels,
 													const wax_pixelDescription * pPixelDescription, int pitch, const wax_color8 * pPalette );
 
 
 
-	WAX_EXPORT wax_obj	wax_createRemoteSurfaceFactory(wax_obj streamEncoder);
+	WAX_EXPORT wax_obj	wax_createRemoteBitmapFactory(wax_obj streamEncoder);
 
-	WAX_EXPORT void      wax_setRememberRemoteSurfacesCreated(wax_obj remoteSurfaceFactory, int bRemember);
-	WAX_EXPORT void      wax_recreateRemoteSurfaces(wax_obj remoteSurfaceFactory);
+	WAX_EXPORT void      wax_setRememberRemoteBitmapsCreated(wax_obj remoteBitmapFactory, int bRemember);
+	WAX_EXPORT void      wax_recreateRemoteBitmaps(wax_obj remoteBitmapFactory);
 
-	WAX_EXPORT wax_obj	wax_createMirrorSurface(wax_obj streamEncoder, wax_mirrorSurfaceBP* blueprint);
+	WAX_EXPORT wax_obj	wax_createMirrorBitmap(wax_obj streamEncoder, wax_mirrorBitmapBP* blueprint);
 
-	WAX_EXPORT wax_obj	wax_createMirrorSurfaceFactory(wax_obj streamEncoder, wax_obj backingSurfaceFactory );
+	WAX_EXPORT wax_obj	wax_createMirrorBitmapFactory(wax_obj streamEncoder, wax_obj backingBitmapFactory );
 
-	WAX_EXPORT void      wax_setRememberMirrorSurfacesCreated(wax_obj mirrorSurfaceFactory, int bRemember);
-	WAX_EXPORT void      wax_streamMirrorSurfacesAsNew(wax_obj remoteSurfaceFactory);
+	WAX_EXPORT void      wax_setRememberMirrorBitmapsCreated(wax_obj mirrorBitmapFactory, int bRemember);
+	WAX_EXPORT void      wax_streamMirrorBitmapsAsNew(wax_obj remoteBitmapFactory);
 
 
 	WAX_EXPORT wax_obj	wax_createStreamEdgemap( wax_obj streamEncoder, const wax_edgemapBP* blueprint );

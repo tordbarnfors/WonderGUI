@@ -1,0 +1,133 @@
+#include <string.h>
+
+#include "bitmapfile.h"
+
+#include <wondergui.h>
+#include <wax_softbitmap.h>
+#include <wax_softbitmapfactory.h>
+#include <wax_lzcompression.h>
+#include <wax_rlecompression.h>
+#include <wax_qoicompression.h>
+
+using namespace wg;
+using namespace wax;
+
+//____ bitmapPixels() ________________________________________________________
+
+static std::vector<uint8_t> bitmapPixels(Bitmap * pBitmap)
+{
+	auto pixbuf = pBitmap->allocPixelBuffer();
+	pBitmap->pushPixels(pixbuf);
+
+	int lineBytes = pixbuf.rect.w * pBitmap->pixelBits() / 8;
+
+	std::vector<uint8_t> v;
+	for( int y = 0 ; y < pixbuf.rect.h ; y++ )
+		v.insert(v.end(), pixbuf.pixels + y * pixbuf.pitch, pixbuf.pixels + y * pixbuf.pitch + lineBytes);
+
+	pBitmap->freePixelBuffer(pixbuf);
+	return v;
+}
+
+BitmapFileTest::BitmapFileTest()
+{
+	ADD_TEST(paddedPixelsTest);
+	ADD_TEST(compressedPaletteTest);
+}
+
+BitmapFileTest::~BitmapFileTest()
+{
+}
+
+
+bool BitmapFileTest::init(std::ostream& output)
+{
+	return true;
+}
+
+//____ paddedPixelsTest() _____________________________________________________
+//
+// Pixels with padding at the end of each line, as bitmaps of some backends have,
+// must be saved without the padding, also when compressed.
+
+bool BitmapFileTest::paddedPixelsTest(std::ostream& output)
+{
+	const int width = 5;
+	const int height = 7;
+	const int pitch = 32;				// 20 bytes of pixels and 12 of padding per line.
+
+	std::vector<uint8_t> memory(pitch * height);
+	std::vector<uint8_t> expected;
+
+	for( int y = 0 ; y < height ; y++ )
+	{
+		for( int x = 0 ; x < pitch ; x++ )
+		{
+			uint8_t value = x < width * 4 ? uint8_t(x / 8 + y * 3) : uint8_t(0xA0 + x);		// Padding differs from pixels.
+			memory[y * pitch + x] = value;
+
+			if( x < width * 4 )
+				expected.push_back(value);
+		}
+	}
+
+	auto pBitmap = SoftBitmap::createInPlace( { .format = PixelFormat::ARGB_8, .size = {width,height} }, memory.data(), pitch );
+	auto pReader = BitmapReader::create( { .factory = SoftBitmapFactory::create() } );
+
+	Compressor_p compressors[] = { nullptr, LZCompressor::create(), RLECompressor::create( { .primSize = 4 } ), QOICompressor::create() };
+
+	for( auto& pCompressor : compressors )
+	{
+		auto pWriter = BitmapWriter::create( { .pixelCompressor = pCompressor } );
+		auto pBlob = pWriter->writeBitmapToBlob(pBitmap);
+		TEST_ASSERT( pBlob != nullptr );
+
+		auto pLoaded = pReader->readBitmapFromBlob(pBlob);
+		TEST_ASSERT( pLoaded && pLoaded->pixelSize() == SizeI(width,height) );
+		TEST_ASSERT( bitmapPixels(pLoaded) == expected );
+	}
+
+	return true;
+}
+
+//____ compressedPaletteTest() ________________________________________________
+
+bool BitmapFileTest::compressedPaletteTest(std::ostream& output)
+{
+	const int width = 9;
+	const int height = 4;
+	const int paletteSize = 37;
+
+	Color8 palette[paletteSize];
+	for( int i = 0 ; i < paletteSize ; i++ )
+		palette[i] = Color8( uint8_t(i * 7), uint8_t(i < 10 ? 0 : 255), uint8_t(i * 3), 255 );
+
+	uint8_t pixels[width * height];
+	for( int i = 0 ; i < width * height ; i++ )
+		pixels[i] = uint8_t(i % paletteSize);
+
+	auto pBitmap = SoftBitmap::create( { .palette = palette, .paletteSize = paletteSize, .format = PixelFormat::Index_8, .size = {width,height} },
+										 pixels, PixelFormat::Index_8, 0, palette, paletteSize );
+	TEST_ASSERT( pBitmap != nullptr );
+
+	auto pReader = BitmapReader::create( { .factory = SoftBitmapFactory::create() } );
+
+	Compressor_p compressors[] = { LZCompressor::create(), RLECompressor::create( { .primSize = 1 } ), RLECompressor::create( { .primSize = 4 } ) };
+
+	for( auto& pCompressor : compressors )
+	{
+		auto pWriter = BitmapWriter::create( { .paletteCompressor = pCompressor } );
+		auto pBlob = pWriter->writeBitmapToBlob(pBitmap);
+		TEST_ASSERT( pBlob != nullptr );
+
+		auto pHeader = (const BitmapFileHeader*) pBlob->data();
+		TEST_ASSERT( pHeader->paletteCompression == pCompressor->idToken() );
+
+		auto pLoaded = pReader->readBitmapFromBlob(pBlob);
+		TEST_ASSERT( pLoaded && pLoaded->pixelFormat() == PixelFormat::Index_8 && pLoaded->paletteSize() == paletteSize );
+		TEST_ASSERT( memcmp(pLoaded->palette(), palette, sizeof(palette)) == 0 );
+		TEST_ASSERT( bitmapPixels(pLoaded) == std::vector<uint8_t>(pixels, pixels + sizeof(pixels)) );
+	}
+
+	return true;
+}

@@ -120,11 +120,11 @@ namespace wg
 		  _.skin = dbgkit::Skins::Plate));
 
 		auto pAutoRefreshIcon = BlockSkin::create(WGBP(BlockSkin,
-			  _.surface = bp.icons,
+			  _.bitmap = bp.icons,
 			  _.firstBlock = { 48,48,16,16 } ));
 
 		auto pRefreshIcon = BlockSkin::create(WGBP(BlockSkin,
-			  _.surface = bp.icons,
+			  _.bitmap = bp.icons,
 			  _.firstBlock = { 0,0,16,16 } ));
 
 		auto pAutoRefreshButton = WGCREATE(dbgkit::ToggleButton, _.icon.skin = pAutoRefreshIcon);

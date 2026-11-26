@@ -142,7 +142,7 @@ namespace wg
 			}
 		}
 
-		// Calc size of index table for surface and color, get their index masks & shifts.
+		// Calc size of index table for bitmap and color, get their index masks & shifts.
 
 		int	sizeIndexEntries;
 		int	colorIndexEntries;

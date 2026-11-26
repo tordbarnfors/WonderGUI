@@ -34,7 +34,7 @@
 // header_shell.h -- this file's un-generated content is copied verbatim
 // from header_shell.h). Companion image: resources/glossyblue_skinblocks.png,
 // rendered at 2x pt density (see common/theme_lib.py) -- load it with
-// Surface::Blueprint.scale = 128 for correct hidpi sizing.
+// Bitmap::Blueprint.scale = 128 for correct hidpi sizing.
 
 #include <wg_base.h>				// Base::setDefaultStyle() / setDefaultTextLayout()
 #include <wax_base.h>			// wax::Base::reportError() for the scale check in init()
@@ -203,9 +203,9 @@ namespace wg::glossyblue
 	//
 	// glossyblue_skinblocks.png is a 2x-density image: every coordinate in the
 	// generated Skins:: section below is in pts at 1pt = 2px. BlockSkin resolves
-	// those pts against the SURFACE's scale (wg_blockskin.cpp does
-	// roundToPixels(ptsToSpx(_firstBlock, pSurface->scale()))), and
-	// Surface::Blueprint.scale defaults to 0, which Surface resolves to 64 (1x).
+	// those pts against the BITMAP's scale (wg_blockskin.cpp does
+	// roundToPixels(ptsToSpx(_firstBlock, pBitmap->scale()))), and
+	// Bitmap::Blueprint.scale defaults to 0, which Bitmap resolves to 64 (1x).
 	// A PNG carries no density information, so nothing can infer this for you.
 	//
 	// Loaded at the default scale, every block is read at half its size from
@@ -213,12 +213,12 @@ namespace wg::glossyblue
 	// sampled from the wrong part of the atlas. That is a miserable thing to
 	// debug, so refuse it here instead:
 	//
-	//     auto pSkinBlocks = SomeSurface::create( WGBP(Surface,
+	//     auto pSkinBlocks = SomeBitmap::create( WGBP(Bitmap,
 	//         _.size  = atlasSize,        // whatever the PNG actually is
 	//         _.scale = 128,              // <-- REQUIRED, 2x density atlas
 	//         _.format = PixelFormat::ARGB_8 ), pPixels, ... );
 	//
-	inline bool init(Font* pNormal, Font* pBold, Font* pItalic, Font* pMonospace, Surface* pSkinBlocks )
+	inline bool init(Font* pNormal, Font* pBold, Font* pItalic, Font* pMonospace, Bitmap* pSkinBlocks )
 	{
 		if( !pNormal || !pBold || !pItalic || !pMonospace || !pSkinBlocks )
 			return false;
@@ -226,9 +226,9 @@ namespace wg::glossyblue
 		if( pSkinBlocks->scale() != 128 )
 		{
 			wax::Base::reportError( ErrorLevel::Error, ErrorCode::InvalidParam,
-				"glossyblue: skinblocks surface must be created with scale = 128. "
+				"glossyblue: skinblocks bitmap must be created with scale = 128. "
 				"It is a 2x-density atlas, and at any other scale every block is "
-				"sampled from the wrong place. Add _.scale = 128 to its Surface blueprint.",
+				"sampled from the wrong place. Add _.scale = 128 to its Bitmap blueprint.",
 				nullptr, nullptr, __func__, __FILE__, __LINE__ );
 			return false;
 		}
@@ -1315,7 +1315,7 @@ namespace wg::glossyblue
 
 			// The CLOSED box. Separate from `entryTextStyle` below on purpose, and
 			// NOT the same style: the closed box is a raised control in the blue
-			// accent colour -- the same surface as a Button -- so its text is
+			// accent colour -- the same bitmap as a Button -- so its text is
 			// white, while the drop-down list is drawn on Skins::Canvas and stays
 			// dark. Two backgrounds, two styles. Sharing one, which the kit did
 			// while it was working around the engine, left the closed box with

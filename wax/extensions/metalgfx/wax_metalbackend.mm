@@ -23,7 +23,7 @@
 #import "Foundation/Foundation.h"
 
 #include <wax_metalbackend.h>
-#include <wax_metalsurfacefactory.h>
+#include <wax_metalbitmapfactory.h>
 #include <wax_metaledgemapfactory.h>
 #include <wax_metaledgemap.h>
 #include <wax_metalwarpmapfactory.h>
@@ -80,7 +80,7 @@ MetalBackend::MetalBackend()
 
 	// Samplers, as those of DX12Backend and VulkanBackend: tiling sources repeat, ClipBlit reads
 	// transparent black outside the source and everything else, including Blur, reads the edge
-	// pixels. Mip levels are only there for mipmapped surfaces.
+	// pixels. Mip levels are only there for mipmapped bitmaps.
 
 	MTLSamplerDescriptor *desc = [MTLSamplerDescriptor new];
 
@@ -144,14 +144,14 @@ const TypeInfo& MetalBackend::typeInfo(void) const
 
 bool MetalBackend::canBeBlitSource(const TypeInfo& type) const
 {
-	return (type == MetalSurface::TYPEINFO);
+	return (type == MetalBitmap::TYPEINFO);
 }
 
 //____ canBeCanvas() __________________________________________________________
 
 bool MetalBackend::canBeCanvas(const TypeInfo& type) const
 {
-	return (type == MetalSurface::TYPEINFO);
+	return (type == MetalBitmap::TYPEINFO);
 }
 
 //____ waitForCompletion() ___________________________________________________
@@ -171,14 +171,14 @@ void MetalBackend::waitForCompletion()
 	}
 }
 
-//____ surfaceFactory() _______________________________________________________
+//____ bitmapFactory() _______________________________________________________
 
-SurfaceFactory_p MetalBackend::surfaceFactory()
+BitmapFactory_p MetalBackend::bitmapFactory()
 {
-	if( !m_pSurfaceFactory )
-		m_pSurfaceFactory = MetalSurfaceFactory::create();
+	if( !m_pBitmapFactory )
+		m_pBitmapFactory = MetalBitmapFactory::create();
 
-	return m_pSurfaceFactory;
+	return m_pBitmapFactory;
 }
 
 //____ edgemapFactory() ______________________________________________________
@@ -242,7 +242,7 @@ bool MetalBackend::setDefaultCanvas( MTLRenderPassDescriptor* renderPassDesc, Si
 
 //____ _toMetalFormat() _______________________________________________________
 //
-// The texture formats of canvases, as MetalSurface has them.
+// The texture formats of canvases, as MetalBitmap has them.
 
 bool MetalBackend::_toMetalFormat( PixelFormat format, ColorSpace colorSpace, MTLPixelFormat& metalFormat )
 {
@@ -290,11 +290,11 @@ bool MetalBackend::_isRecording() const
 	return s_metalDevice != nil && s_metalCommandQueue != nil;
 }
 
-//____ _isNativeSurface() ____________________________________________________
+//____ _isNativeBitmap() ____________________________________________________
 
-bool MetalBackend::_isNativeSurface( const Object * pObject ) const
+bool MetalBackend::_isNativeBitmap( const Object * pObject ) const
 {
-	return pObject && _isOfType(pObject->typeInfo(), MetalSurface::TYPEINFO);
+	return pObject && _isOfType(pObject->typeInfo(), MetalBitmap::TYPEINFO);
 }
 
 //____ _isNativeEdgemap() ____________________________________________________
@@ -313,7 +313,7 @@ bool MetalBackend::_isNativeWarpmap( const Object * pObject ) const
 
 //____ _beginSessionOnDevice() _______________________________________________
 
-void MetalBackend::_beginSessionOnDevice( Surface * pCanvas )
+void MetalBackend::_beginSessionOnDevice( Bitmap * pCanvas )
 {
 	// The command buffer and encoders we get from Metal are autoreleased and the
 	// command buffer keeps our buffers alive. If no autorelease pool is drained
@@ -325,7 +325,7 @@ void MetalBackend::_beginSessionOnDevice( Surface * pCanvas )
 	m_commandBuffer = [s_metalCommandQueue commandBuffer];
 	m_commandBuffer.label = @"MetalBackend";
 
-	m_pCanvasSurface = nullptr;
+	m_pCanvasBitmap = nullptr;
 	m_bDefaultCanvasLoaded = false;
 	m_targetFormat = MTLPixelFormatInvalid;
 	m_targetSize = SizeI();
@@ -369,7 +369,7 @@ void MetalBackend::_endSessionOnDevice()
 	m_extrasBuffer = nil;
 	m_buffers = FrameBuffers();
 
-	m_pCanvasSurface = nullptr;
+	m_pCanvasBitmap = nullptr;
 	m_targetSize = SizeI();
 	m_targetFormat = MTLPixelFormatInvalid;
 	m_activePipeline = nil;
@@ -422,45 +422,45 @@ bool MetalBackend::_reserveFrameBuffers( int nVertices, int nColors, int nExtras
 
 //____ _bindCanvas() _________________________________________________________
 
-bool MetalBackend::_bindCanvas( Surface * pCanvas, SizeI& size, CanvasKind& kind )
+bool MetalBackend::_bindCanvas( Bitmap * pCanvas, SizeI& size, CanvasKind& kind )
 {
 	if( !m_commandBuffer )
 		return false;
 
-	auto pSurface = static_cast<MetalSurface*>(pCanvas);
+	auto pBitmap = static_cast<MetalBitmap*>(pCanvas);
 
-	if( pSurface && (pSurface->m_texture == nil || (pSurface->m_texture.usage & MTLTextureUsageRenderTarget) == 0) )
+	if( pBitmap && (pBitmap->m_texture == nil || (pBitmap->m_texture.usage & MTLTextureUsageRenderTarget) == 0) )
 	{
-		Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Surface can not be used as canvas, rendering to default canvas instead.",
+		Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Bitmap can not be used as canvas, rendering to default canvas instead.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
-		pSurface = nullptr;
+		pBitmap = nullptr;
 	}
 
 	// A render pass per canvas. What was bound belongs to the one that ends.
 
 	_endEncoding();
 
-	m_pCanvasSurface = pSurface;
+	m_pCanvasBitmap = pBitmap;
 	m_activePipeline = nil;
 	m_boundTexture = nil;
 	m_boundSampler = nil;
 	m_boundEdgemapOrPalette = nil;
 
-	if( pSurface )
+	if( pBitmap )
 	{
 		// Anything the CPU has written goes in before we render over it, in a command buffer
-		// that is ahead of ours in the queue. From here on the pixels of the surface are the
+		// that is ahead of ours in the queue. From here on the pixels of the bitmap are the
 		// older copy and its mip levels stale, as DX12Backend and VulkanBackend have it.
 		//
 		// What we render isn't in the texture until our command buffer has been committed, when
 		// the session ends. Pixels asked for before that are read back without it.
 
-		pSurface->syncTexture();
-		pSurface->notifyRendered();
+		pBitmap->syncTexture();
+		pBitmap->notifyRendered();
 
-		m_targetFormat = pSurface->m_texture.pixelFormat;
-		m_targetSize = pSurface->pixelSize();
-		kind = _canvasKind(pSurface);
+		m_targetFormat = pBitmap->m_texture.pixelFormat;
+		m_targetSize = pBitmap->pixelSize();
+		kind = _canvasKind(pBitmap);
 	}
 	else
 	{
@@ -507,10 +507,10 @@ bool MetalBackend::_beginEncoding()
 
 	MTLRenderPassDescriptor * pDescriptor;
 
-	if( m_pCanvasSurface )
+	if( m_pCanvasBitmap )
 	{
 		pDescriptor = [MTLRenderPassDescriptor renderPassDescriptor];		// Autoreleased.
-		pDescriptor.colorAttachments[0].texture = m_pCanvasSurface->m_texture;
+		pDescriptor.colorAttachments[0].texture = m_pCanvasBitmap->m_texture;
 		pDescriptor.colorAttachments[0].loadAction = MTLLoadActionLoad;
 		pDescriptor.colorAttachments[0].storeAction = MTLStoreActionStore;
 	}
@@ -538,7 +538,7 @@ bool MetalBackend::_beginEncoding()
 		return false;
 	}
 
-	m_renderEncoder.label = m_pCanvasSurface ? @"MetalBackend Render to Surface Pass" : @"MetalBackend Render Pass";
+	m_renderEncoder.label = m_pCanvasBitmap ? @"MetalBackend Render to Bitmap Pass" : @"MetalBackend Render Pass";
 
 	_bindEncoderState();
 	return true;
@@ -856,19 +856,19 @@ void MetalBackend::_resetScissor()
 
 //____ _prepareBlitSource() __________________________________________________
 //
-// What the CPU has written to the pixels of the surface is sent to its texture, in a command
+// What the CPU has written to the pixels of the bitmap is sent to its texture, in a command
 // buffer of its own that is committed here, and so ahead of ours in the queue.
 
-void MetalBackend::_prepareBlitSource( Surface * pSurface )
+void MetalBackend::_prepareBlitSource( Bitmap * pBitmap )
 {
-	static_cast<MetalSurface*>(pSurface)->syncTexture();
+	static_cast<MetalBitmap*>(pBitmap)->syncTexture();
 }
 
 //____ _bindBlitTexture() ____________________________________________________
 
-bool MetalBackend::_bindBlitTexture( Surface * pSurface )
+bool MetalBackend::_bindBlitTexture( Bitmap * pBitmap )
 {
-	auto pSource = static_cast<MetalSurface*>(pSurface);
+	auto pSource = static_cast<MetalBitmap*>(pBitmap);
 
 	if( !m_renderEncoder || pSource->m_texture == nil )
 		return false;
@@ -909,12 +909,12 @@ bool MetalBackend::_bindBlitTexture( Surface * pSurface )
 
 //____ _bindBlitSampler() ____________________________________________________
 
-void MetalBackend::_bindBlitSampler( Surface * pSurface, bool bClip )
+void MetalBackend::_bindBlitSampler( Bitmap * pBitmap, bool bClip )
 {
 	if( !m_renderEncoder )
 		return;
 
-	int index = (bClip ? 4 : 0) + (pSurface->isTiling() ? 2 : 0) + (pSurface->sampleMethod() == SampleMethod::Bilinear ? 1 : 0);
+	int index = (bClip ? 4 : 0) + (pBitmap->isTiling() ? 2 : 0) + (pBitmap->sampleMethod() == SampleMethod::Bilinear ? 1 : 0);
 
 	[m_renderEncoder setFragmentSamplerState:m_samplers[index] atIndex:c_blitSampler];
 	m_boundSampler = m_samplers[index];
@@ -960,17 +960,17 @@ void MetalBackend::_drawWarpmap( Warpmap * pWarpmap, const RectI * pPatches, int
 
 //____ _generateMipmaps() _____________________________________________________
 //
-// Draws each mip level of the surface from the one above it, in render passes
+// Draws each mip level of the bitmap from the one above it, in render passes
 // of their own on our command buffer. Metal's generateMipmapsForTexture would
 // do it for us, but makes no promise to filter an _sRGB texture in linear
 // space, and on some GPUs doesn't: a fine black and white pattern came out a
 // darker grey than on GL and DX12. Called between render passes.
 
-void MetalBackend::_generateMipmaps( MetalSurface * pSurface )
+void MetalBackend::_generateMipmaps( MetalBitmap * pBitmap )
 {
-	pSurface->m_bMipmapStale = false;
+	pBitmap->m_bMipmapStale = false;
 
-	id<MTLTexture> texture = pSurface->m_texture;
+	id<MTLTexture> texture = pBitmap->m_texture;
 	int nLevels = (int) texture.mipmapLevelCount;
 
 	if( nLevels < 2 || !m_commandBuffer )

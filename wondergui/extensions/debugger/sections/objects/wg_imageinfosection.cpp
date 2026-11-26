@@ -39,7 +39,7 @@ namespace wg
 		auto pPanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 
 		auto pTable = _createRows({
-			objectRow( "Image surface: ",    [](Image* i) -> Object* { return i->imageSurface().rawPtr(); } ),
+			objectRow( "Image bitmap: ",    [](Image* i) -> Object* { return i->imageBitmap().rawPtr(); } ),
 			intRow   ( "Image mark alpha: ", [](Image* i) { return i->imageMarkAlpha(); } )
 		});
 

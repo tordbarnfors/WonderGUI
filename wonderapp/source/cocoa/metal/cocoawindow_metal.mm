@@ -21,8 +21,8 @@
 =========================================================================*/
 #include <cocoagfxbackend.h>
 
-#include <wax_metalsurface.h>
-#include <wax_metalsurfacefactory.h>
+#include <wax_metalbitmap.h>
+#include <wax_metalbitmapfactory.h>
 #include <wax_metaledgemapfactory.h>
 #include <wax_metalbackend.h>
 
@@ -127,8 +127,8 @@ bool initGfxBackend()
 	auto pDevice = GfxDeviceGen2::create(pBackend);
 	wg::Base::setDefaultDevice(pDevice);
 
-	auto pSurfaceFactory = MetalSurfaceFactory::create();
-	wg::Base::setDefaultSurfaceFactory(pSurfaceFactory);
+	auto pBitmapFactory = MetalBitmapFactory::create();
+	wg::Base::setDefaultBitmapFactory(pBitmapFactory);
 
 	auto pEdgemapFactory = MetalEdgemapFactory::create();
 	wg::Base::setDefaultEdgemapFactory(pEdgemapFactory);

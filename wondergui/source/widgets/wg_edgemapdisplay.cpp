@@ -145,12 +145,12 @@ namespace wg
 			float relativeX = (_ofs.x - destRect.x) / (float) destRect.w;
 			float relativeY = (_ofs.y - destRect.y) / (float) destRect.h;
 
-			SizeSPX surfSize = m_pSurface->pixelSize() * 64;
-			CoordSPX ofsInSurface = { spx(relativeX * surfSize.w), spx(relativeY * surfSize.h) };
+			SizeSPX bitmapSize = m_pBitmap->pixelSize() * 64;
+			CoordSPX ofsInBitmap = { spx(relativeX * bitmapSize.w), spx(relativeY * bitmapSize.h) };
 
-			if( RectSPX(0,0,surfSize).contains(ofsInSurface) )
+			if( RectSPX(0,0,bitmapSize).contains(ofsInBitmap) )
 			{
-				if( m_pSurface->alpha(ofsInSurface) > 0 )
+				if( m_pBitmap->alpha(ofsInBitmap) > 0 )
 					return true;
 			}
 		}

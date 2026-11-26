@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <win32window.h>
 #include <windows.h>
-#include <wax_softsurface.h>
+#include <wax_softbitmap.h>
 
 extern std::wstring _stringToWString(const std::string& str);
 
@@ -63,7 +63,7 @@ Win32Window::Win32Window(wapp::Window* pUserWindow, wg::Placement origin, wg::Co
 		int scale = dpi * 64 / 96; // 96 DPI is 100% scaling
 
 
-		auto pCanvas = wax::SoftSurface::createInPlace({
+		auto pCanvas = wax::SoftBitmap::createInPlace({
 			.canvas = true,
 			.format = PixelFormat::ARGB_8,
 			.scale = scale,
@@ -172,9 +172,9 @@ void Win32Window::onResize(int widthInPixels, int heightInPixels)
 	UINT dpi = GetDpiForWindow(m_windowHandle);
 	int scale = dpi * 64 / 96; // 96 DPI is 100% scaling
 
-	// Update root panel's surface
+	// Update root panel's bitmap
 
-	auto pCanvas = wax::SoftSurface::createInPlace({
+	auto pCanvas = wax::SoftBitmap::createInPlace({
 		.canvas = true,
 		.format = PixelFormat::ARGB_8,
 		.scale = scale,

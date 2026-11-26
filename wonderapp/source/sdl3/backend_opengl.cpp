@@ -21,8 +21,8 @@
 =========================================================================*/
 #include <sdlwindow.h>
 
-#include <wax_glsurface.h>
-#include <wax_glsurfacefactory.h>
+#include <wax_glbitmap.h>
+#include <wax_glbitmapfactory.h>
 #include <wax_gledgemapfactory.h>
 #include <wax_glbackend.h>
 
@@ -37,7 +37,7 @@ using namespace wax;
 
 //____ SDLWindowGL ____________________________________________________________
 //
-// Wax renders into a surface of our own, which keeps what was rendered between
+// Wax renders into a bitmap of our own, which keeps what was rendered between
 // frames, as only the dirty rects are drawn. Each frame that rendered anything is
 // copied to the back buffer of the window and swapped in. Drawing directly into
 // the front buffer of the window shows nothing on Wayland, where a window isn't
@@ -58,7 +58,7 @@ private:
 	void	_createCanvas();
 	void	_present();
 
-	GlSurface_p	m_pCanvas;
+	GlBitmap_p	m_pCanvas;
 	bool		m_bPresentPending = false;		// Rendered while hidden, so not yet swapped in.
 };
 
@@ -116,8 +116,8 @@ bool backend_specific_init()
 
 	wg::Base::setDefaultDevice(pGlDevice);
 
-	auto pSurfaceFactory = GlSurfaceFactory::create();
-	wg::Base::setDefaultSurfaceFactory(pSurfaceFactory);
+	auto pBitmapFactory = GlBitmapFactory::create();
+	wg::Base::setDefaultBitmapFactory(pBitmapFactory);
 
 	auto pEdgemapFactory = GlEdgemapFactory::create();
 	wg::Base::setDefaultEdgemapFactory(pEdgemapFactory);
@@ -220,12 +220,12 @@ void SDLWindowGL::onWindowSizeUpdated()
 
 void SDLWindowGL::_createCanvas()
 {
-	m_pCanvas = GlSurface::create( WGBP(Surface, _.canvas = true, _.format = PixelFormat::XRGB_8, _.scale = _scale(), _.size = _sizeInPixels() ) );
+	m_pCanvas = GlBitmap::create( WGBP(Bitmap, _.canvas = true, _.format = PixelFormat::XRGB_8, _.scale = _scale(), _.size = _sizeInPixels() ) );
 }
 
 //____ _present() _____________________________________________________________
 //
-// Surfaces are upside down to GL, so the canvas is flipped when copied. The bytes
+// Bitmaps are upside down to GL, so the canvas is flipped when copied. The bytes
 // are copied as they are, so the window gets sRGB whether it is sRGB-capable or not.
 // The window gets alpha 1 from a canvas that has none, see _createCanvas().
 

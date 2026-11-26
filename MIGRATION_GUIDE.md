@@ -16,7 +16,7 @@ differently, is added to this guide in the same commit.
 6. [Renamed terms](#renamed-terms)
 7. [Text](#text)
 8. [Widgets](#widgets)
-9. [Surfaces](#surfaces)
+9. [Bitmaps](#bitmaps)
 10. [Backends](#backends)
 11. [Warpmaps](#warpmaps)
 12. [WonderApp](#wonderapp)
@@ -57,8 +57,8 @@ Then, on v4:
 - [ ] `setDefaultGfxDevice()` → `setDefaultDevice()` and the like; `wg_static_cast` →
       `wax_static_cast`; `WG_IS_LITTLE_ENDIAN` → `WAX_IS_LITTLE_ENDIAN`.
 - [ ] `HiColor` → `Color`, `Color8::Red` → `Color::Red`.
-- [ ] The renamed terms: `throwError` → `reportError`, `origo` → `origin`, `hotspot` → `pivot`,
-      `baggage` → `userData`, in every name they are part of.
+- [ ] The renamed terms: `Surface` → `Bitmap`, `throwError` → `reportError`, `origo` → `origin`,
+      `hotspot` → `pivot`, `baggage` → `userData`, in every name they are part of.
 - [ ] `String`, `CharSeq`, `CharBuffer` → `std::string` and `std::string_view`, UTF-8.
 - [ ] `BasicTextLayout` → `PlainTextLayout`.
 - [ ] Per-character styles → `MarkdownTextLayout`, or a `FlowTextLayout` of your own.
@@ -92,7 +92,7 @@ most tools), `WONDERGUI_FETCH_DEPS` and the default `WAPPLIB` (`wappsdl2gl`) are
 
 | breaking-changes | v4 |
 |---|---|
-| `src/wondergear/`, `src/wondergfx/` | `wax/source/`, with the subfolders `compression/`, `edgemap/`, `font/`, `surface/`, `warp/` |
+| `src/wondergear/`, `src/wondergfx/` | `wax/source/`, with the subfolders `compression/`, `edgemap/`, `font/`, `bitmap/`, `warp/` |
 | `src/wondergear/c-api/`, `src/wondergfx/c-api/` | `wax/c-api/` |
 | `src/extensions/{softgfx,gfxstream,openglgfx,dx12gfx,metalgfx,freetypefont}` | `wax/extensions/` (new: `vulkangfx`, `sdlgpugfx`, and `hlsl` with the shared shaders) |
 | `src/wondergui/` | `wondergui/source/`, with `wondergui.h` in `wondergui/` |
@@ -228,7 +228,7 @@ keeps compiling:
 - objects and pointers (`Object`, `StrongPtr`, `WeakPtr`, `Blob`, `Finalizer_p`, ...), containers
   and memory classes
 - the geometry types (`CoordSPX`, `RectI`, ...), `Patches`, `Spans`
-- `Surface`, `SurfaceFactory`, `PixelBuffer`, the surface reader and writer
+- `Bitmap`, `BitmapFactory`, `PixelBuffer`, the bitmap reader and writer
 - `Edgemap` and its factory and shapes, `Warpmap` and its factory, `WarpGenerator` and the warps
 - `Font`, `BitmapFont`, `SysFont`, `DummyFont`, `BitmapCache`
 - `Printer`, `Tint`, `ColorStop`, the transitions, `Blurbrush`, `CanvasLayers`, `BackendLogger`
@@ -251,7 +251,7 @@ These need `wax::` or `using namespace wax;`. Old code that uses them in `wg` fa
 | `wg_dynamic_cast<>()`, `wg_static_cast<>()` | `wax_dynamic_cast<>()`, `wax_static_cast<>()` |
 
 New in `wax`, and not in `wg` under these names: `Backend`, `Device`, `DeviceGen2`,
-`DeviceFactory`, `Base`, `Context`, `Util`, `GpuBackend`, `GpuSurface`.
+`DeviceFactory`, `Base`, `Context`, `Util`, `GpuBackend`, `GpuBitmap`.
 
 **With both `using namespace wg;` and `using namespace wax;`,** `Base` and `Util` are ambiguous, as
 they are different things in the two. Write `wg::Base::init()` or `wax::Base::...`. Every other
@@ -266,7 +266,7 @@ Surface; }` conflicts with the using-declaration (an error in clang, accepted by
 // before
 namespace wg { class Surface; class SoftBackend; }
 // after
-namespace wax { class Surface; class SoftBackend; }
+namespace wax { class Bitmap; class SoftBackend; }
 ```
 
 ### Headers
@@ -368,12 +368,12 @@ wax::Base::exit();
 
   wax::addSoftKernels<c_myKernels>(pSoftBackend);
   ```
-- **`SoftSurface::tileMaskX()` and `tileMaskY()`** are replaced by `wrapTilePos(CoordI)`.
+- **`SoftSurface::tileMaskX()` and `tileMaskY()`** are replaced by `SoftBitmap::wrapTilePos(CoordI)`.
 - **Class names:** the `TYPEINFO` names follow the renames: "Device", "Backend",
   "DeviceFactory", "SoftDeviceFactory" and so on, where they were "GfxDevice", "GfxBackend", ...
   Errors from `Base` give the class name "Base", where it was "GearBase", and messages say "Wax"
   where they said "WonderGUI". This only matters to code that compares these strings.
-- **`SurfaceReader`** without a `factory` in its Blueprint uses `Base::defaultSurfaceFactory()`,
+- **`BitmapReader`** without a `factory` in its Blueprint uses `Base::defaultBitmapFactory()`,
   where it crashed.
 - **`Object::isInstanceOf()`** reports an error for a circular `TYPEINFO` chain, where it hung.
 
@@ -439,16 +439,19 @@ parameter, enum and C API names, and the text of messages and documentation. The
 aliases with the old names, so code with them fails to compile. A search and replace of the old
 word, keeping its case, is enough for most code.
 
-LegacyGUI keeps its own names (`WgOrigo`, `SetHotspot()`, ...). Types that are renamed in
-WonderGUI and Wax get aliases with their old names in LegacyGUI, so legacy code keeps compiling:
-`wg::SampleOrigo`. Renamed methods and fields can't get such aliases.
+LegacyGUI keeps its own names (`WgOrigo`, `SetHotspot()`, `SetSurfaceFactory()`, ...). Types
+that are renamed in WonderGUI and Wax get aliases with their old names in LegacyGUI, so legacy
+code keeps compiling: `wg::SampleOrigo`, `wg::Surface`, `wg::Surface_p`, `wg::Surface_wp`,
+`wg::SurfaceFactory`, `wg::SurfaceFactory_p` and `wg::SurfaceFactory_wp`. Renamed methods and
+fields can't get such aliases.
 
 ### Blueprint fields in alphabetical order
 
 Blueprint fields are in alphabetical order, so renamed fields have moved: `userData` is now
-near the end of each Blueprint, where `baggage` was first, and `origin` comes before `pivot` in
-`FlexPanelSlot::Blueprint`. C++20 code with designated initializers must list them in that
-order, or it fails to compile:
+near the end of each Blueprint, where `baggage` was first, `origin` comes before `pivot` in
+`FlexPanelSlot::Blueprint`, and `bitmap` and `bitmapFactory` come near the start, where
+`surface` and `surfaceFactory` were near the end. C++20 code with designated initializers must
+list them in that order, or it fails to compile:
 
 ```cpp
 // before
@@ -459,6 +462,33 @@ pPanel->slots.pushBack(pWidget, { .origin = Placement::Center, .pivot = Placemen
 
 Blueprints filled in with `WGBP()` or `_.userData = ...` don't depend on the order. The C API
 structs keep the order they had.
+
+### `Surface` → `Bitmap`
+
+`Surface` is `Bitmap`, in every name with *Surface* or the abbreviation *surf* in it, file
+names included. The surfaces of other libraries keep their names (`SDL_Surface`, `IOSurface`,
+`VkSurfaceKHR`), and so does the file format: files are still `.surf`, with `SURF` in their
+header, so existing files load as before.
+
+| Before | After |
+|---|---|
+| `Surface`, `Surface_p`, `Surface_wp`, `SurfaceFactory` | `Bitmap`, `Bitmap_p`, `Bitmap_wp`, `BitmapFactory` |
+| `SoftSurface`, `GlSurface`, `DX12Surface`, `MetalSurface`, `VulkanSurface`, `SdlGpuSurface`, `GpuSurface`, and their factories | `SoftBitmap`, `GlBitmap`, `DX12Bitmap`, `MetalBitmap`, `VulkanBitmap`, `SdlGpuBitmap`, `GpuBitmap`, ... |
+| `MirrorSurface`, `RemoteSurface`, `PluginSurface`, and their factories | `MirrorBitmap`, `RemoteBitmap`, `PluginBitmap`, ... |
+| `SurfaceReader`, `SurfaceWriter`, `SurfaceFileHeader`, `SurfaceFileInspector`, `surfaceFileLayout()` | `BitmapReader`, `BitmapWriter`, `BitmapFileHeader`, `BitmapFileInspector`, `bitmapFileLayout()` |
+| `readSurfaceFromStream()` and the other read and write functions | `readBitmapFromStream()`, ... |
+| `SurfaceDisplay` (widget) | `BitmapDisplay` |
+| `Base::setDefaultSurfaceFactory()`, `defaultSurfaceFactory()` | `setDefaultBitmapFactory()`, `defaultBitmapFactory()` |
+| `surfaceFactory()` of backends, devices and factories, `createSurface()` | `bitmapFactory()`, `createBitmap()` |
+| `CanvasInfo::pSurface`, `Glyph::pSurface` | `pBitmap` |
+| Blueprint fields `surface`, `surfaceFactory`, `canvasSurface`, ... (`BlockSkin`, `TileSkin`, `RootPanel`, `MirrorBitmap`, `StreamPlayer`, ...) | `bitmap`, `bitmapFactory`, `canvasBitmap`, ... |
+| `wapp::API::loadSurface()` | `loadBitmap()` |
+| Headers `wax_surface.h`, `wax_surfacefactory.h`, `wax_softsurface.h`, `wg_surfacedisplay.h`, ... | `wax_bitmap.h`, `wax_bitmapfactory.h`, `wax_softbitmap.h`, `wg_bitmapdisplay.h`, ... |
+| Folder `wax/source/surface/` | `wax/source/bitmap/` |
+| Tools `image2surf`, `surfviewer` | `image2bitmap`, `bitmapviewer` |
+| C: `wax_surfaceBP`, `wax_createSurface()`, `wax_c_surface.h`, ... | `wax_bitmapBP`, `wax_createBitmap()`, `wax_c_bitmap.h`, ... |
+| Plugin interface: `wg_surface_calls`, `wg_surfacefactory_calls` | `wg_bitmap_calls`, `wg_bitmapfactory_calls`, with the same members in the same order |
+| C#: `Surface`, `SurfaceFactory`, ... | `Bitmap`, `BitmapFactory`, ... |
 
 ### `throwError` → `reportError`
 
@@ -492,10 +522,10 @@ structs keep the order they had.
 | Before | After |
 |---|---|
 | `Widget::baggage()`, `setBaggage()`, `hasBaggage()` | `userData()`, `setUserData()`, `hasUserData()` |
-| `Surface::baggage()`, `setBaggage()` | `userData()`, `setUserData()` |
-| `Blueprint::baggage` of every widget, the surfaces and the other objects that have one | `Blueprint::userData` |
-| C: `wax_setSurfaceBaggage()`, `wax_getSurfaceBaggage()` | `wax_setSurfaceUserData()`, `wax_getSurfaceUserData()` |
-| Plugin interface: `setSurfaceBaggage`, `getSurfaceBaggage` | `setSurfaceUserData`, `getSurfaceUserData`, at the same place |
+| `Surface::baggage()`, `setBaggage()` | `Bitmap::userData()`, `setUserData()` |
+| `Blueprint::baggage` of every widget, the bitmaps and the other objects that have one | `Blueprint::userData` |
+| C: `wax_setSurfaceBaggage()`, `wax_getSurfaceBaggage()` | `wax_setBitmapUserData()`, `wax_getBitmapUserData()` |
+| Plugin interface: `setSurfaceBaggage`, `getSurfaceBaggage` | `setBitmapUserData`, `getBitmapUserData`, at the same place |
 
 ## Text
 
@@ -683,52 +713,52 @@ back. Workarounds for clicks that went missing after closing the debugger can go
 - Code that still uses `TextTool` or `CharSeq` must include and link LegacyGUI.
 - `Base::init()` no longer calls `TextTool::setDefaultBreakRules()`. `TextTool` sets up its own.
 
-## Surfaces
+## Bitmaps
 
 ### `Blueprint::buffered` is replaced by a restorer
 
-`Surface::Blueprint::buffered` is removed (a compile error), and `restorer` is new:
+`Surface::Blueprint::buffered` is removed (a compile error), and `Bitmap::Blueprint::restorer` is new:
 
 ```cpp
-typedef std::function<bool(Surface* pSurface)> Restorer;
+typedef std::function<bool(Bitmap* pBitmap)> Restorer;
 ```
 
-A surface of a GPU backend keeps a copy of its pixels in memory, **unless it has a restorer.**
+A bitmap of a GPU backend keeps a copy of its pixels in memory, **unless it has a restorer.**
 With one, the copy isn't kept, and the restorer writes the content again when the backend has
 lost it. A canvas never keeps a copy.
 
 - `buffered = true` is now what you get by default. Delete the line.
 - With the default `buffered = false`, GlSurface kept no copy. **A GL application that gives no
-  restorer now uses about twice the memory for its surfaces.** Give a restorer to surfaces whose
+  restorer now uses about twice the memory for its bitmaps.** Give a restorer to bitmaps whose
   content you can write again: images from files, for example.
 
 ```cpp
 // before
 auto pSurf = pFactory->createSurface(WGBP(Surface, _.size = {256,256}, _.format = PixelFormat::ARGB_8, _.buffered = true));
 // after, keeps its pixels
-auto pSurf = pFactory->createSurface(WGBP(Surface, _.size = {256,256}, _.format = PixelFormat::ARGB_8));
+auto pBitmap = pFactory->createBitmap(WGBP(Bitmap, _.size = {256,256}, _.format = PixelFormat::ARGB_8));
 // after, keeps no copy, writes them again when needed
-auto pSurf = pFactory->createSurface(WGBP(Surface, _.size = {256,256}, _.format = PixelFormat::ARGB_8,
-    _.restorer = [path](Surface* p) { /* write all pixels, e.g. allocPixelBuffer() + pullPixels() */ return true; }));
+auto pBitmap = pFactory->createBitmap(WGBP(Bitmap, _.size = {256,256}, _.format = PixelFormat::ARGB_8,
+    _.restorer = [path](Bitmap* p) { /* write all pixels, e.g. allocPixelBuffer() + pullPixels() */ return true; }));
 // after, content that is written every frame anyway
-    _.restorer = Surface::declineRestore
+    _.restorer = Bitmap::declineRestore
 ```
 
 A restorer returns true when it has written the whole content, or false to decline: then the
-surface is transparent black and `isContentLost()` is true. What it captures must live as long as
-the surface, or until `dropRestorer()`, which makes the surface decline from then on.
+bitmap is transparent black and `isContentLost()` is true. What it captures must live as long as
+the bitmap, or until `dropRestorer()`, which makes the bitmap decline from then on.
 
 `isContentLost()` is now virtual, and goes back to false once the restorer has returned true or
-the whole surface has been written by one `pullPixels()`. A surface made from the Blueprint of
+the whole bitmap has been written by one `pullPixels()`. A bitmap made from the Blueprint of
 another, with `convert()` for example, gets its restorer too.
 
 Restorers are only called by DX12Backend, when it replaces its device. VulkanBackend stops on a
 lost device, SdlGpuBackend isn't told of one, and GL and Metal don't lose textures. On those, a
 restorer only decides what is kept in memory.
 
-What a surface of a GPU backend keeps, by kind:
+What a bitmap of a GPU backend keeps, by kind:
 
-| Surface | Kept in memory | After a lost device | Reading pixels |
+| Bitmap | Kept in memory | After a lost device | Reading pixels |
 |---|---|---|---|
 | no restorer | all pixels | sent again | in place |
 | with a restorer | an alpha map, none if it is opaque | the restorer is called | read back from the GPU, waits for it |
@@ -739,7 +769,7 @@ What a surface of a GPU backend keeps, by kind:
 
 ### Reading pixels needs `pushPixels()`
 
-On a canvas, and on a surface with a restorer, `allocPixelBuffer()` gives memory for the rectangle
+On a canvas, and on a bitmap with a restorer, `allocPixelBuffer()` gives memory for the rectangle
 whose content is undefined until `pushPixels()` reads the texture back. `pullPixels()` copies it
 into the texture: if you skipped `pushPixels()`, write all of the rectangle.
 
@@ -758,21 +788,21 @@ pCanvas->freePixelBuffer(pixbuf);
 
 ### Other changes
 
-- `DX12Surface::create()`, and `VulkanSurface`, return null for a Blueprint they can't make a
-  texture for. DX12Surface used to return a surface without a texture. Check what `create()` and
+- `DX12Bitmap::create()`, and `VulkanBitmap`, return null for a Blueprint they can't make a
+  texture for. DX12Surface used to return one without a texture. Check what `create()` and
   the factories return.
 - A `Blob` given to `create()` is copied, not taken over, and its pitch no longer has to be a
   multiple of 4.
-- `fillColor` of the Blueprint is used by every GPU surface, VulkanSurface and SdlGpuSurface
+- `fillColor` of the Blueprint is used by every GPU bitmap, VulkanBitmap and SdlGpuBitmap
   included. With `Color::Undefined`, the content is unspecified.
-- **GlSurface:** `unload()`, `isLoaded()`, `reload()`, `totalTexturePixels()`,
+- **GlBitmap:** `unload()`, `isLoaded()`, `reload()`, `totalTexturePixels()`,
   `totalBackingPixels()`, `paletteTextureWidth()` and `paletteTextureHeight()` are removed.
   `getPaletteTexture()` names a buffer texture of float4 now. Pixels are little-endian, as on the
-  other GPU surfaces.
-- **MetalSurface:** `unload()`, `isLoaded()`, `reload()` and `getPaletteTexture()` are removed.
+  other GPU bitmaps.
+- **MetalBitmap:** `unload()`, `isLoaded()`, `reload()` and `getPaletteTexture()` are removed.
   Use `sampleTexture()` and `paletteColors()`.
-- **DX12Surface:** `paletteBuffer()` is removed. `isIndexed()`, `mipLevels()`, `isMipmapStale()`,
-  `clearMipmapStale()` and `notifyRendered()` are in the base class `GpuSurface` now, and can be
+- **DX12Bitmap:** `paletteBuffer()` is removed. `isIndexed()`, `mipLevels()`, `isMipmapStale()`,
+  `clearMipmapStale()` and `notifyRendered()` are in the base class `GpuBitmap` now, and can be
   called as before.
 
 ## Backends
@@ -807,12 +837,12 @@ once per backend, so a warning can come once per window.
 - Replacing the device works as before: `setDevice(nullptr, nullptr)`, then `setDevice(device,
   queue)`, then `setDefaultCanvas()` on every backend, and redraw everything. New: the second
   `setDevice()` calls the restorers.
-  - A surface with a restorer gets it called even if the old device still worked.
+  - A bitmap with a restorer gets it called even if the old device still worked.
   - A canvas without a restorer is read back if the old device works, else cleared with
     `isContentLost()`.
   - **A canvas created with pixels or a `fillColor` and never rendered into comes back cleared,**
     with `isContentLost()`. It used to get its pixels back.
-  - A surface whose restorer declined is cleared, with `isContentLost()`: write it again, as a
+  - A bitmap whose restorer declined is cleared, with `isContentLost()`: write it again, as a
     lost canvas.
 
   `_recoverDevice()` in `wonderapp/source/sdl3/backend_dx12.cpp` does all of it.
@@ -824,14 +854,14 @@ once per backend, so a warning can come once per window.
   command buffers is defined. `metalCommandQueue()` is new.
 - The shaders are compiled when first needed, as Metal Shading Language 2.3. **That needs macOS 11
   or later when the application runs.**
-- A MetalSurface sends its pixels to its texture when it is used. An application that writes
-  surfaces every frame hasn't been tried.
+- A MetalBitmap sends its pixels to its texture when it is used. An application that writes
+  bitmaps every frame hasn't been tried.
 
 ### SoftBackend and LinearBackend
 
 What they draw changed in places, fixing what was wrong:
 
-- Surfaces of any size tile correctly. Before, sizes that weren't a power of two tiled at the
+- Bitmaps of any size tile correctly. Before, sizes that weren't a power of two tiled at the
   nearest smaller power of two, with a warning.
 - Straight tiles were wrong when the width wasn't a multiple of the tile, and off by a pixel for
   negative offsets.
@@ -845,9 +875,9 @@ What they draw changed in places, fixing what was wrong:
 `dualSrcBlend` enabled, and the extensions `VulkanBackend::requiredDeviceExtensions()` returns.
 
 ```cpp
-VulkanBackend::setDevice(instance, physicalDevice, device, queue, queueFamily);   // before any backend or surface
+VulkanBackend::setDevice(instance, physicalDevice, device, queue, queueFamily);   // before any backend or bitmap
 auto pBackend = VulkanBackend::create();
-Base::setDefaultSurfaceFactory(pBackend->surfaceFactory());                        // and the edgemap and warpmap factories
+Base::setDefaultBitmapFactory(pBackend->bitmapFactory());                        // and the edgemap and warpmap factories
 
 pBackend->setDefaultCanvas(image, view, format, restingLayout, sizeSPX, scale);   // per window and resize
 
@@ -870,7 +900,7 @@ which picks Vulkan, D3D12 or Metal.
 
 ```cpp
 SDL_GPUDevice* pDev = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV | SDL_GPU_SHADERFORMAT_DXIL | SDL_GPU_SHADERFORMAT_MSL, debug, nullptr);
-SdlGpuBackend::setDevice(pDev);              // before any backend or surface, setDevice(nullptr) when all are gone
+SdlGpuBackend::setDevice(pDev);              // before any backend or bitmap, setDevice(nullptr) when all are gone
 auto pBackend = SdlGpuBackend::create();
 pBackend->setDefaultCanvas(texture, format, sizeSPX, scale);
 ```
@@ -915,7 +945,7 @@ Warpmaps too.
 
 How an application links a framework is unchanged: `${WAPP_INCDIRS}` and `${WAPPLIB}`. The API in
 `wonderapp.h`, `wappwindow.h` and `wappwindowapi.h` is the same, apart from the renames of Wax.
-`Blob`, `Surface` and `SurfaceFactory` are forward-declared in `namespace wax` in `wappapi.h`.
+`Blob`, `Bitmap` and `BitmapFactory` are forward-declared in `namespace wax` in `wappapi.h`.
 
 ### Frameworks
 
@@ -935,7 +965,7 @@ window can get another size than on `wappsdl2*` on a scaled display.
 
 ### Behaviour changes
 
-- **`loadSurface()` uses stb_image on every framework.** Images with a palette (8-bit PNG, GIF)
+- **`loadBitmap()` uses stb_image on every framework.** Images with a palette (8-bit PNG, GIF)
   come back as `XRGB_8` or `ARGB_8`, where SDL_image gave `Index_8`. Grey images do too. Formats
   are those of stb_image: PNG, JPEG, BMP, GIF, TGA, PSD, HDR, PIC and PNM. QOI, SVG, TIFF, WebP,
   AVIF and others that SDL_image read are gone.
@@ -943,7 +973,7 @@ window can get another size than on `wappsdl2*` on a scaled display.
   `openLibrary()`, `loadSymbol()` and `closeLibrary()` work, where they were stubs. The default
   edgemap and warpmap factories are set, where creating an edgemap or a warp without a factory
   crashed.
-- `loadSurface()` gives no restorer, so loaded images keep their pixels on all backends.
+- `loadBitmap()` gives no restorer, so loaded images keep their pixels on all backends.
 
 Known limitations on v4: the SDL frameworks ignore SIGTERM and SDL_QUIT, so an application only
 quits when its windows are closed or `update()` returns false, and `Window::setSize()`,
@@ -969,36 +999,36 @@ Every `wg_` function and type of the graphics library is `wax_`, and every `WG_`
 | `wg_setDefaultGfxDevice()`, `wg_defaultGfxDevice()` | `wax_setDefaultDevice()`, `wax_defaultDevice()` |
 | `wg_createGfxDevice()` | `wax_createDevice()` |
 | `wg_setPrinterGfxDevice()`, `wg_printerGfxDevice()` | `wax_setPrinterDevice()`, `wax_printerDevice()` |
-| `wg_surfaceBP.buffered`, `WG_SAVE_BUFFERED_FLAG` | removed; `wax_surfaceBP` has `restorer` and `restorerData` |
+| `wg_surfaceBP.buffered`, `WG_SAVE_BUFFERED_FLAG` | removed; `wax_bitmapBP` has `restorer` and `restorerData` |
 
-New: `wax_surfaceIsContentLost()`, `wax_declineSurfaceRestore()`, `wax_dropSurfaceRestorer()`.
+New: `wax_bitmapIsContentLost()`, `wax_declineBitmapRestore()`, `wax_dropBitmapRestorer()`.
 
 Functions that create objects return NULL on failure, where they crashed: creating a FreeType
-font without a blob, a surface from a missing glyph, reading a surface from bad data, and creating
-edgemaps, surfaces, mirror surfaces and canvas layers from an invalid Blueprint. Check for NULL.
+font without a blob, a bitmap from a missing glyph, reading a bitmap from bad data, and creating
+edgemaps, bitmaps, mirror bitmaps and canvas layers from an invalid Blueprint. Check for NULL.
 
 WonderGUI's own C API (`wg_c_types.h`, `wg_c_hostbridge.h`, in `wondergui/extensions/plugin`)
 keeps its `wg_` prefix, and uses `wax_obj`.
 
 ### Plugins
 
-`wax_surfaceBP` has another layout, and the surface calls of the plugin interface have two more
-at the end (`surfaceIsContentLost`, `dropSurfaceRestorer`). **Hosts and plugins must be rebuilt
+`wax_bitmapBP` has another layout, and the bitmap calls of the plugin interface have two more
+at the end (`bitmapIsContentLost`, `dropBitmapRestorer`). **Hosts and plugins must be rebuilt
 together.** A new plugin refuses to start in an old host.
 
-- A restorer in the Blueprint of a plugin's surface is passed on, and the host calls it.
-  `PluginSurface::isContentLost()` asks the host.
-- `PluginSurfaceFactory` returns null when the host can't create the surface. It returned a
-  surface around null.
-- `userData` and `finalizer` in the Blueprint of a plugin's surface are lost. Set them on the
-  surface afterwards.
+- A restorer in the Blueprint of a plugin's bitmap is passed on, and the host calls it.
+  `PluginBitmap::isContentLost()` asks the host.
+- `PluginBitmapFactory` returns null when the host can't create the bitmap. It returned a
+  bitmap around null.
+- `userData` and `finalizer` in the Blueprint of a plugin's bitmap are lost. Set them on the
+  bitmap afterwards.
 
 ### C# wrapper
 
 It is in `wax/wrappers/c-sharp/Wax/Wax.csproj`, `namespace Wax`. `GfxBase` is `Base`, `GfxBackend`
 is `Backend`, `GfxDevice` is `Device`, `Printer.SetGfxDevice()` is `SetDevice()` and
-`SetDefaultGfxDevice()` is `SetDefaultDevice()`. `Surface.IsContentLost()` and
-`Surface.DropRestorer()` are new. It doesn't build on v4, nor on breaking-changes (see
+`SetDefaultGfxDevice()` is `SetDefaultDevice()`. `Bitmap.IsContentLost()` and
+`Bitmap.DropRestorer()` are new. It doesn't build on v4, nor on breaking-changes (see
 KNOWN_ISSUES.md).
 
 ## Changes that compile but behave differently
@@ -1015,15 +1045,15 @@ The compiler finds none of these. Go through them after your code compiles.
 | `Color8` from a named `Color` before `Base::init()` | transparent black | [Colors](#the-named-colors-are-in-color-at-12-bits) |
 | `auto c = Color::Red` is a `Color` | 12-bit channels read as 8-bit | [Colors](#the-named-colors-are-in-color-at-12-bits) |
 | ScrollCapsule's minimum size | layouts shrink | [Widgets](#scrollcapsule) |
-| GPU surfaces keep their pixels without a restorer | more memory, about twice for GL | [Surfaces](#blueprintbuffered-is-replaced-by-a-restorer) |
-| Reading a canvas without `pushPixels()` | garbage pixels | [Surfaces](#reading-pixels-needs-pushpixels) |
+| GPU bitmaps keep their pixels without a restorer | more memory, about twice for GL | [Bitmaps](#blueprintbuffered-is-replaced-by-a-restorer) |
+| Reading a canvas without `pushPixels()` | garbage pixels | [Bitmaps](#reading-pixels-needs-pushpixels) |
 | DX12: a canvas never rendered into, after a lost device | comes back cleared | [Backends](#dx12backend) |
-| DX12Surface and VulkanSurface return null for a bad Blueprint | a crash if not checked | [Surfaces](#other-changes) |
+| DX12Bitmap and VulkanBitmap return null for a bad Blueprint | a crash if not checked | [Bitmaps](#other-changes) |
 | GlBackend draws into the framebuffer that is bound | widgets in the wrong place | [Backends](#glbackend) |
 | GL programs compiled when first needed | a small hitch the first time | [Backends](#glbackend) |
 | MetalBackend needs macOS 11 | pipelines fail on older macOS | [Backends](#metalbackend) |
 | SoftBackend tiling and nearest blits fixed | output changes where it was wrong | [Backends](#softbackend-and-linearbackend) |
-| `loadSurface()` with stb_image | no `Index_8` surfaces, fewer formats | [WonderApp](#behaviour-changes) |
+| `loadBitmap()` with stb_image | no `Index_8` bitmaps, fewer formats | [WonderApp](#behaviour-changes) |
 | SDL3 frameworks size windows in points | other window sizes on scaled displays | [WonderApp](#frameworks) |
 | C API creation functions return NULL | a crash if not checked | [C API](#c-api) |
 | Class names of `TYPEINFO`: `Device`, `Backend`, `Base`, ...; error messages say "Wax" | code comparing these strings | [Wax](#classes-and-methods-without-the-gfx-prefix) |

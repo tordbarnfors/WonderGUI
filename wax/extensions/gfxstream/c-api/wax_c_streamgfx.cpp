@@ -24,10 +24,10 @@
 
 #include <wax_streambackend.h>
 #include <wax_streamwarpmapfactory.h>
-#include <wax_remotesurface.h>
-#include <wax_remotesurfacefactory.h>
-#include <wax_mirrorsurface.h>
-#include <wax_mirrorsurfacefactory.h>
+#include <wax_remotebitmap.h>
+#include <wax_remotebitmapfactory.h>
+#include <wax_mirrorbitmap.h>
+#include <wax_mirrorbitmapfactory.h>
 
 #include <wax_streamedgemap.h>
 #include <wax_streamedgemapfactory.h>
@@ -46,9 +46,9 @@ wax_obj wax_createStreamBackend(wax_obj streamEncoder, int maxEdges )
 	return static_cast<Object*>(pObj.rawPtr());
 }
 
-int wax_defineStreamBackendCanvasWithSurface( wax_obj streamBackend, wax_canvasRef ref, wax_obj surface )
+int wax_defineStreamBackendCanvasWithBitmap( wax_obj streamBackend, wax_canvasRef ref, wax_obj bitmap )
 {
-	return getPtr(streamBackend)->defineCanvas( (CanvasRef) ref, static_cast<RemoteSurface*>(reinterpret_cast<Object*>(surface)) );
+	return getPtr(streamBackend)->defineCanvas( (CanvasRef) ref, static_cast<RemoteBitmap*>(reinterpret_cast<Object*>(bitmap)) );
 }
 
 int wax_defineStreamBackendCanvas( wax_obj streamBackend, wax_canvasRef ref, wax_sizeI pixelSize, wax_pixelFormat pixelFormat, int scale,
@@ -70,69 +70,69 @@ void wax_encodeTick(wax_obj streamBackend, int32_t microsecPassed)
 	getPtr(streamBackend)->encodeTick(microsecPassed);
 }
 
-wax_obj wax_createRemoteSurface(wax_obj streamEncoder, const wax_surfaceBP* blueprint)
+wax_obj wax_createRemoteBitmap(wax_obj streamEncoder, const wax_bitmapBP* blueprint)
 {
-	Surface::Blueprint	bp;
-	convertSurfaceBlueprint(&bp, blueprint);
+	Bitmap::Blueprint	bp;
+	convertBitmapBlueprint(&bp, blueprint);
 	auto pEncoder = static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder));
 
-	auto p = RemoteSurface::create(pEncoder, bp);
+	auto p = RemoteBitmap::create(pEncoder, bp);
 	p->retain();
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
 
-wax_obj wax_createRemoteSurfaceFromBlob(wax_obj streamEncoder, const wax_surfaceBP* blueprint, wax_obj blob, int pitch)
+wax_obj wax_createRemoteBitmapFromBlob(wax_obj streamEncoder, const wax_bitmapBP* blueprint, wax_obj blob, int pitch)
 {
-	Surface::Blueprint	bp;
-	convertSurfaceBlueprint(&bp, blueprint);
+	Bitmap::Blueprint	bp;
+	convertBitmapBlueprint(&bp, blueprint);
 	auto pEncoder = static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder));
 
-	auto p = RemoteSurface::create(pEncoder, bp, static_cast<Blob*>(reinterpret_cast<Object*>(blob)), pitch );
+	auto p = RemoteBitmap::create(pEncoder, bp, static_cast<Blob*>(reinterpret_cast<Object*>(blob)), pitch );
 	p->retain();
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wax_obj	wax_createRemoteSurfaceFromBitmap(wax_obj streamEncoder, wax_obj factory, const wax_surfaceBP* blueprint, const uint8_t* pPixels,
+wax_obj	wax_createRemoteBitmapFromBitmap(wax_obj streamEncoder, wax_obj factory, const wax_bitmapBP* blueprint, const uint8_t* pPixels,
 									   wax_pixelFormat pixelFormat, int pitch, const wax_color8 * pPalette )
 {
-	Surface::Blueprint	bp;
-	convertSurfaceBlueprint(&bp, blueprint);
+	Bitmap::Blueprint	bp;
+	convertBitmapBlueprint(&bp, blueprint);
 	auto pEncoder = static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder));
 
-	auto p = RemoteSurface::create(pEncoder, bp, pPixels, (PixelFormat) pixelFormat, pitch, (const Color8*) pPalette);
+	auto p = RemoteBitmap::create(pEncoder, bp, pPixels, (PixelFormat) pixelFormat, pitch, (const Color8*) pPalette);
 	p->retain();
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wax_obj	wax_createRemoteSurfaceFromRawData(wax_obj streamEncoder, wax_obj factory, const wax_surfaceBP* blueprint, const uint8_t* pPixels,
+wax_obj	wax_createRemoteBitmapFromRawData(wax_obj streamEncoder, wax_obj factory, const wax_bitmapBP* blueprint, const uint8_t* pPixels,
 										const wax_pixelDescription * pPixelDescription, int pitch, const wax_color8 * pPalette )
 {
-	Surface::Blueprint	bp;
-	convertSurfaceBlueprint(&bp, blueprint);
+	Bitmap::Blueprint	bp;
+	convertBitmapBlueprint(&bp, blueprint);
 	auto pEncoder = static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder));
 
-	auto p = RemoteSurface::create(pEncoder, bp, pPixels, *(PixelDescription*) pPixelDescription, pitch, (const Color8*) pPalette);
+	auto p = RemoteBitmap::create(pEncoder, bp, pPixels, *(PixelDescription*) pPixelDescription, pitch, (const Color8*) pPalette);
 	p->retain();
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
 
-wax_obj wax_createRemoteSurfaceFactory(wax_obj streamEncoder)
+wax_obj wax_createRemoteBitmapFactory(wax_obj streamEncoder)
 {
-	auto p = RemoteSurfaceFactory::create(static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder)));
+	auto p = RemoteBitmapFactory::create(static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder)));
 	p->retain();
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wax_obj wax_createMirrorSurface(wax_obj streamEncoder, wax_mirrorSurfaceBP* blueprint)
+wax_obj wax_createMirrorBitmap(wax_obj streamEncoder, wax_mirrorBitmapBP* blueprint)
 {
-	MirrorSurface::Blueprint	bp;
+	MirrorBitmap::Blueprint	bp;
 	bp.canvasRef = (CanvasRef) blueprint->canvasRef;
 	bp.encoder = static_cast<StreamEncoder*>(reinterpret_cast<Object*>(blueprint->encoder));
-	bp.surface = static_cast<Surface*>(reinterpret_cast<Object*>(blueprint->surface));
+	bp.bitmap = static_cast<Bitmap*>(reinterpret_cast<Object*>(blueprint->bitmap));
 	bp.streamOnCreate = blueprint->streamOnCreate != 0;
-	auto p = MirrorSurface::create(bp);
+	auto p = MirrorBitmap::create(bp);
 	if( !p )
 		return nullptr;
 
@@ -140,33 +140,33 @@ wax_obj wax_createMirrorSurface(wax_obj streamEncoder, wax_mirrorSurfaceBP* blue
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wax_obj wax_createMirrorSurfaceFactory(wax_obj streamEncoder, wax_obj backingSurfaceFactory)
+wax_obj wax_createMirrorBitmapFactory(wax_obj streamEncoder, wax_obj backingBitmapFactory)
 {
 	auto pEncoder = static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder));
-	auto pBackingFactory = static_cast<SurfaceFactory*>(reinterpret_cast<Object*>(backingSurfaceFactory));
-	auto p = MirrorSurfaceFactory::create(pEncoder, pBackingFactory);
+	auto pBackingFactory = static_cast<BitmapFactory*>(reinterpret_cast<Object*>(backingBitmapFactory));
+	auto p = MirrorBitmapFactory::create(pEncoder, pBackingFactory);
 	p->retain();
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-void wax_setRememberRemoteSurfacesCreated(wax_obj remoteSurfaceFactory, int bRemember)
+void wax_setRememberRemoteBitmapsCreated(wax_obj remoteBitmapFactory, int bRemember)
 {
-	static_cast<RemoteSurfaceFactory*>(reinterpret_cast<Object*>(remoteSurfaceFactory))->setRememberSurfacesCreated(bRemember == 1);
+	static_cast<RemoteBitmapFactory*>(reinterpret_cast<Object*>(remoteBitmapFactory))->setRememberBitmapsCreated(bRemember == 1);
 }
 
-void wax_recreateRemoteSurfaces(wax_obj remoteSurfaceFactory)
+void wax_recreateRemoteBitmaps(wax_obj remoteBitmapFactory)
 {
-	static_cast<RemoteSurfaceFactory*>(reinterpret_cast<Object*>(remoteSurfaceFactory))->recreateRemoteSurfaces();
+	static_cast<RemoteBitmapFactory*>(reinterpret_cast<Object*>(remoteBitmapFactory))->recreateRemoteBitmaps();
 }
 
-void wax_setRememberMirrorSurfacesCreated(wax_obj mirrorSurfaceFactory, int bRemember)
+void wax_setRememberMirrorBitmapsCreated(wax_obj mirrorBitmapFactory, int bRemember)
 {
-	static_cast<MirrorSurfaceFactory*>(reinterpret_cast<Object*>(mirrorSurfaceFactory))->setRememberSurfacesCreated(bRemember == 1);
+	static_cast<MirrorBitmapFactory*>(reinterpret_cast<Object*>(mirrorBitmapFactory))->setRememberBitmapsCreated(bRemember == 1);
 }
 
-void wax_streamMirrorSurfacesAsNew(wax_obj mirrorSurfaceFactory)
+void wax_streamMirrorBitmapsAsNew(wax_obj mirrorBitmapFactory)
 {
-	static_cast<MirrorSurfaceFactory*>(reinterpret_cast<Object*>(mirrorSurfaceFactory))->streamAllAsNew();
+	static_cast<MirrorBitmapFactory*>(reinterpret_cast<Object*>(mirrorBitmapFactory))->streamAllAsNew();
 }
 
 wax_obj wax_createStreamEdgemap(wax_obj streamEncoder, const wax_edgemapBP* blueprint )

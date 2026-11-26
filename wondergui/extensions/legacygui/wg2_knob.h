@@ -22,9 +22,9 @@
 #ifndef WG2_KNOB_DOT_H
 #define WG2_KNOB_DOT_H
 
-#include <wax_surface.h>
+#include <wax_bitmap.h>
 
-#include <wax_surfacefactory.h>
+#include <wax_bitmapfactory.h>
 
 #ifndef WG2_WIDGET_DOT_H
 #	include <wg2_widget.h>

@@ -58,6 +58,13 @@ typedef wg::SampleMethod   WgScaleMode;
 namespace wg
 {
 	using SampleOrigo = SampleOrigin;
+
+	using Surface = Bitmap;
+	using Surface_p = Bitmap_p;
+	using Surface_wp = Bitmap_wp;
+	using SurfaceFactory = BitmapFactory;
+	using SurfaceFactory_p = BitmapFactory_p;
+	using SurfaceFactory_wp = BitmapFactory_wp;
 }
 typedef wg::PixelFormat WgPixelType;
 

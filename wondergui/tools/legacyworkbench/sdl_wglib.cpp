@@ -3,8 +3,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 //#include <wg_surface_sdl.h>
-#include <wax_softsurface.h>
-#include <wax_softsurfacefactory.h>
+#include <wax_softbitmap.h>
+#include <wax_softbitmapfactory.h>
 #include <wax_bitmapfont.h>
 #include <wglegacygui.h>
 
@@ -191,7 +191,7 @@ namespace sdl_wglib
 		bp2.format = type;
 		
 		
-        wg::Surface_p pSurf = factory->createSurface( bp2, (uint8_t*) bmp->pixels, pixelFormat, bmp->pitch );
+        wg::Surface_p pSurf = factory->createBitmap( bp2, (uint8_t*) bmp->pixels, pixelFormat, bmp->pitch );
 
 		if( !pSurf )
 		{
@@ -252,6 +252,7 @@ namespace sdl_wglib
 
 		wg::BlockSkin::Blueprint	sliderBtnBP {
 			.axis = wg::Axis::X,
+			.bitmap = pSurface,
 			.blockSpacing = 2,
 			.frame = 3,
 			.padding = 4,
@@ -260,8 +261,7 @@ namespace sdl_wglib
 				wg::State::Hovered, {},
 				wg::State::Pressed, {},
 				wg::State::Disabled, {}
-			},
-			.surface = pSurface
+			}
 		};
 		
 		sliderBtnBP.firstBlock = wg::Rect(1,HSLIDER_BTN_OFS,17,17);
@@ -284,6 +284,7 @@ namespace sdl_wglib
 
 		auto pSliderBlocks	= wg::BlockSkin::create( {
 			.axis = wg::Axis::X,
+			.bitmap = pSurface,
 			.blockSpacing = 2,
 			.firstBlock = wg::Rect(1,SLIDER_OFS,8,8),
 			.frame = 2,
@@ -293,14 +294,14 @@ namespace sdl_wglib
 				wg::State::Hovered, {},
 				wg::State::Pressed, {},
 				wg::State::Disabled, {}
-			},
-			.surface = pSurface
+			}
 			} );
 		
-		auto pSliderBackBlocks	= wg::BlockSkin::create( { .firstBlock = wg::Rect(1,SLIDER_BACK_OFS,5,5), .frame = 2, .padding = 2, .surface = pSurface } );
+		auto pSliderBackBlocks	= wg::BlockSkin::create( { .bitmap = pSurface, .firstBlock = wg::Rect(1,SLIDER_BACK_OFS,5,5), .frame = 2, .padding = 2 } );
 		
 		auto pResizeButtonBlocks = wg::BlockSkin::create( {
 			.axis = wg::Axis::X,
+			.bitmap = pSurface,
 			.blockSpacing = 2,
 			.firstBlock = wg::Rect(1,RESIZE_BUTTON_OFS,20,20),
 			.frame = 3,
@@ -310,12 +311,12 @@ namespace sdl_wglib
 				wg::State::Hovered, {},
 				wg::State::Pressed, {},
 				wg::State::Disabled, {}
-			},
-			.surface = pSurface
+			}
 			} );
 		
 		auto pCheckboxIconSkin = wg::BlockSkin::create( {
 			.axis = wg::Axis::X,
+			.bitmap = pSurface,
 			.blockSpacing = 2,
 			.firstBlock = wg::Rect(1,CHECKBOX_OFS,11,11),
 			.frame = 2,
@@ -329,12 +330,12 @@ namespace sdl_wglib
 				wg::State::CheckedHovered, {},
 				wg::State::CheckedPressed, {},
 				wg::State::DisabledChecked, {},
-			},
-			.surface = pSurface
+			}
 		} );
 		
 		auto pRadiobuttonIconSkin = wg::BlockSkin::create( {
 			.axis = wg::Axis::X,
+			.bitmap = pSurface,
 			.blockSpacing = 2,
 			.firstBlock = wg::Rect(1,RADIOBUTTON_OFS,11,11),
 			.frame = 2,
@@ -347,12 +348,12 @@ namespace sdl_wglib
 				wg::State::CheckedHovered, {},
 				wg::State::CheckedPressed, {},
 				wg::State::DisabledChecked, {}
-			},
-			.surface = pSurface
+			}
 		});
 		
 		auto pButtonBlocks = wg::BlockSkin::create( {
 			.axis = wg::Axis::X,
+			.bitmap = pSurface,
 			.blockSpacing = 2,
 			.firstBlock = wg::Rect( 1, BUTTON_OFS, 8, 8 ),
 			.frame = 3,
@@ -362,7 +363,6 @@ namespace sdl_wglib
 				wg::State::Pressed, {},
 				wg::State::Disabled, {}
 			},
-			.surface = pSurface,
 		});
 		
 //		auto pButtonBlocks = WgBlockset::CreateFromRects(pSurface, buttonRects[0], buttonRects[1], buttonRects[2], buttonRects[3], WG_OPAQUE);
@@ -390,6 +390,7 @@ namespace sdl_wglib
 
 		auto pPlateBlocks	= wg::BlockSkin::create( {
 			.axis = wg::Axis::X,
+			.bitmap = pSurface,
 			.blockSpacing = 2,
 			.firstBlock = wg::Rect(1,PLATE_OFS,8,8),
 			.frame = 3,
@@ -399,19 +400,19 @@ namespace sdl_wglib
 				wg::State::Hovered, {},
 				wg::State::Pressed, {},
 				wg::State::Disabled, {}
-			},
-			.surface = pSurface
+			}
 			} );
 
 
-		auto pHSplitBlocks = wg::BlockSkin::create( { .firstBlock = wg::Rect( 1,SPLITS_AND_FRAME_OFS,8,2 ), .surface = pSurface } );
+		auto pHSplitBlocks = wg::BlockSkin::create( { .bitmap = pSurface, .firstBlock = wg::Rect( 1,SPLITS_AND_FRAME_OFS,8,2 ) } );
 
-		auto pVSplitBlocks = wg::BlockSkin::create( { .firstBlock =  { 11,SPLITS_AND_FRAME_OFS,2,8}, .surface = pSurface } );
+		auto pVSplitBlocks = wg::BlockSkin::create( { .bitmap = pSurface, .firstBlock =  { 11,SPLITS_AND_FRAME_OFS,2,8} } );
 
-		auto pFrameBlocks = wg::BlockSkin::create( { .firstBlock =  { 1,SPLITS_AND_FRAME_OFS,8,8 }, .frame = 2, .padding = 3, .surface = pSurface });
+		auto pFrameBlocks = wg::BlockSkin::create( { .bitmap = pSurface, .firstBlock =  { 1,SPLITS_AND_FRAME_OFS,8,8 }, .frame = 2, .padding = 3 });
 
 		auto pComboBlocks	= wg::BlockSkin::create( {
 			.axis = wg::Axis::X,
+			.bitmap = pSurface,
 			.blockSpacing = 2,
 			.firstBlock = wg::Rect(1,COMBOBOX_OFS,23,20),
 			.frame = {1,1,20,1},
@@ -421,8 +422,7 @@ namespace sdl_wglib
 				wg::State::Hovered, {},
 				wg::State::Pressed, {},
 				wg::State::Disabled, {}
-			},
-			.surface = pSurface
+			}
 			} );
 
 //		auto pBgCheckeredGreyBlocks = WgBlockset::CreateFromRect( pSurface, WgRect(0,TILES_OFS,64,64), WG_OPAQUE | WG_TILE_ALL );

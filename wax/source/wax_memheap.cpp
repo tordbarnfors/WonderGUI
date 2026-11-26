@@ -255,7 +255,7 @@ namespace wax
 
 //____ drawFragmentMap() ______________________________________________________
 /*
-void MemHeap::drawFragmentMap( int nSectors, uint16_t * pSectorTable, Surface * pSurface16bits )
+void MemHeap::drawFragmentMap( int nSectors, uint16_t * pSectorTable, Bitmap * pBitmap16bits )
 {
 	for( int i = 0 ; i < nSectors ; i++ )
 		pSectorTable[i] = 0;
@@ -299,7 +299,7 @@ void MemHeap::drawFragmentMap( int nSectors, uint16_t * pSectorTable, Surface * 
 	
 	// Start drawing the fragment map.
 
-	PixelBuffer buffer = pSurface16bits->allocPixelBuffer();
+	PixelBuffer buffer = pBitmap16bits->allocPixelBuffer();
 
 	// Try out pixelsize for our sectors
 	
@@ -312,13 +312,13 @@ void MemHeap::drawFragmentMap( int nSectors, uint16_t * pSectorTable, Surface * 
 
 	// Generate pixel values for the colors we want.
 	
-	uint16_t colEmpty 	= pSurface16bits->colorToPixel( Color::LightGreen );
-	uint16_t colFrag 	= pSurface16bits->colorToPixel( Color::Yellow );
-	uint16_t colFull 	= pSurface16bits->colorToPixel( Color::Red );
+	uint16_t colEmpty 	= pBitmap16bits->colorToPixel( Color::LightGreen );
+	uint16_t colFrag 	= pBitmap16bits->colorToPixel( Color::Yellow );
+	uint16_t colFull 	= pBitmap16bits->colorToPixel( Color::Red );
 
-	// Clear surface
+	// Clear bitmap
 	
-	pSurface16bits->fill(Color::Black);
+	pBitmap16bits->fill(Color::Black);
 	
 	// Draw fragment map.
 
@@ -359,8 +359,8 @@ void MemHeap::drawFragmentMap( int nSectors, uint16_t * pSectorTable, Surface * 
 			pPixels += secSize;
 	}
 	
-	pSurface16bits->pullPixels(buffer);
-	pSurface16bits->freePixelBuffer(buffer);
+	pBitmap16bits->pullPixels(buffer);
+	pBitmap16bits->freePixelBuffer(buffer);
 }
 */
 

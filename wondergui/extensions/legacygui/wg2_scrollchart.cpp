@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wg2_scrollchart.h>
-#include <wax_surfacefactory.h>
+#include <wax_bitmapfactory.h>
 #include <wg2_gfxdevice.h>
 #include <wg2_pen.h>
 #include <wg2_base.h>
@@ -1559,7 +1559,7 @@ void WgScrollChart::_regenCanvas()
 			colorSpace = pDevice ? pDevice->canvas(wg::CanvasRef::Default).colorSpace : wg::ColorSpace::sRGB;
 		}
 
-		m_pCanvas = m_pFactory->createSurface( WGBP(Surface,
+		m_pCanvas = m_pFactory->createBitmap( WGBP(Surface,
 													_.size = sz,
 													_.format = m_pixelType,
 													_.colorSpace = colorSpace,

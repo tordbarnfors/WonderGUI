@@ -28,7 +28,7 @@
 
 namespace wax 
 {
-	class Surface;
+	class Bitmap;
 
 
 	class MemHeap
@@ -40,7 +40,7 @@ namespace wax
 		void *		malloc( int bytes );
 		void		free( void * pBuffer );
 
-//		void		drawFragmentMap( int nSections, uint16_t * pSectionTable, Surface * pSurface );
+//		void		drawFragmentMap( int nSections, uint16_t * pSectionTable, Bitmap * pBitmap );
 
 		void		setDebugLevel( int level );
 		

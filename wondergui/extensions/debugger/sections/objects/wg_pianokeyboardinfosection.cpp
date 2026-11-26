@@ -33,7 +33,7 @@ namespace wg
 	PianoKeyboardInfoSection::PianoKeyboardInfoSection(const DebugTheme& theme, IDebugContext* pContext, PianoKeyboard * pInspected)
 		: TypedInfoSection<PianoKeyboard>( theme, pContext, PianoKeyboard::TYPEINFO.className, pInspected )
 	{
-		//TODO: Layout (number of white keys, black key positions) and key surfaces have no public getters
+		//TODO: Layout (number of white keys, black key positions) and key bitmaps have no public getters
 		//TODO: Pressed/selected keys (number of keys has no public getter)
 
 		this->slot = _createRows({

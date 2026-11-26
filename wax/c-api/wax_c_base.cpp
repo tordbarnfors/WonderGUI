@@ -68,15 +68,15 @@ wax_obj wax_defaultBitmapCache()
 	return (wax_obj) static_cast<Object*>(pCache);
 }
 
-void wax_setDefaultSurfaceFactory( wax_obj factory )
+void wax_setDefaultBitmapFactory( wax_obj factory )
 {
-	SurfaceFactory* pFactory = static_cast<SurfaceFactory*>(reinterpret_cast<Object*>(factory));
-	return Base::setDefaultSurfaceFactory(pFactory);
+	BitmapFactory* pFactory = static_cast<BitmapFactory*>(reinterpret_cast<Object*>(factory));
+	return Base::setDefaultBitmapFactory(pFactory);
 }
 
-wax_obj wax_defaultSurfaceFactory()
+wax_obj wax_defaultBitmapFactory()
 {
-	SurfaceFactory * pFactory = Base::defaultSurfaceFactory();
+	BitmapFactory * pFactory = Base::defaultBitmapFactory();
 	return (wax_obj) static_cast<Object*>(pFactory);
 }
 

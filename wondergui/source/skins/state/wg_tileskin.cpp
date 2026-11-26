@@ -35,13 +35,13 @@ namespace wg
 	//____ create() _______________________________________________________________
 
 
-	TileSkin_p TileSkin::create(Surface * pSurface, Color color, int layer )
+	TileSkin_p TileSkin::create(Bitmap * pBitmap, Color color, int layer )
 	{
-		if (pSurface == nullptr || !pSurface->isTiling() )
+		if (pBitmap == nullptr || !pBitmap->isTiling() )
 			return nullptr;
 
 		Blueprint bp;
-		bp.surface = pSurface;
+		bp.bitmap = pBitmap;
 		bp.color = color;
 		bp.layer = layer;
 
@@ -50,7 +50,7 @@ namespace wg
 
 	TileSkin_p TileSkin::create(const Blueprint& blueprint)
 	{
-		if (blueprint.surface == nullptr || !blueprint.surface->isTiling())
+		if (blueprint.bitmap == nullptr || !blueprint.bitmap->isTiling())
 			return nullptr;
 
 
@@ -65,7 +65,7 @@ namespace wg
 		m_blendMode		= bp.blendMode;
 		m_pTint		= bp.tint;
 
-		// Generate lists of states that affects shift, color and surface.
+		// Generate lists of states that affects shift, color and bitmap.
 
 		State	shiftingStates[State::NbStates];
 		Coord	stateShifts[State::NbStates];
@@ -73,20 +73,20 @@ namespace wg
 		State	colorStates[State::NbStates];
 		Color stateColors[State::NbStates];
 
-		State	surfaceStates[State::NbStates];
-		Surface * stateSurfaces[State::NbStates];
+		State	bitmapStates[State::NbStates];
+		Bitmap * stateBitmaps[State::NbStates];
 
 		int 	nbShiftingStates = 1;
 		int		nbColorStates = 1;
-		int		nbSurfaceStates = 1;
+		int		nbBitmapStates = 1;
 
 		shiftingStates[0] = State::Default;
 		colorStates[0] = State::Default;
-		surfaceStates[0] = State::Default;
+		bitmapStates[0] = State::Default;
 
 		stateShifts[0] = {0,0};
 		stateColors[0] = bp.color;
-		stateSurfaces[0] = bp.surface;
+		stateBitmaps[0] = bp.bitmap;
 
 		for (auto& stateInfo : bp.states)
 		{
@@ -100,11 +100,11 @@ namespace wg
 				m_bContentShifting = true;
 			}
 
-			if (stateInfo.data.surface)
+			if (stateInfo.data.bitmap)
 			{
-				int index = stateInfo.state == State::Default ? 0 : nbSurfaceStates++;
-				surfaceStates[index] = stateInfo.state;
-				stateSurfaces[index] = stateInfo.data.surface;
+				int index = stateInfo.state == State::Default ? 0 : nbBitmapStates++;
+				bitmapStates[index] = stateInfo.state;
+				stateBitmaps[index] = stateInfo.data.bitmap;
 			}
 
 			if(stateInfo.data.color != Color::Undefined )
@@ -115,25 +115,25 @@ namespace wg
 			}
 		}
 
-		// Calc size of index table for surface and color, get their index masks & shifts.
+		// Calc size of index table for bitmap and color, get their index masks & shifts.
 
-		int	surfaceIndexEntries;
+		int	bitmapIndexEntries;
 		int	colorIndexEntries;
 
-		std::tie(surfaceIndexEntries,m_stateSurfaceIndexMask,m_stateSurfaceIndexShift) = calcStateToIndexParam(nbSurfaceStates, surfaceStates);
+		std::tie(bitmapIndexEntries,m_stateBitmapIndexMask,m_stateBitmapIndexShift) = calcStateToIndexParam(nbBitmapStates, bitmapStates);
 		std::tie(colorIndexEntries,m_stateColorIndexMask,m_stateColorIndexShift) = calcStateToIndexParam(nbColorStates, colorStates);
 
 
 		// Calculate memory needed for all state data
 
 		int shiftBytes 		= _bytesNeededForContentShiftData(nbShiftingStates, shiftingStates);
-		int surfaceBytes	= sizeof(Surface*) * nbSurfaceStates;
+		int bitmapBytes	= sizeof(Bitmap*) * nbBitmapStates;
 		int colorBytes		= sizeof(Color) * nbColorStates;
-		int indexBytes		= surfaceIndexEntries+colorIndexEntries;
+		int indexBytes		= bitmapIndexEntries+colorIndexEntries;
 
 		// Allocate and pupulate memory for state data
 
-		m_pStateData = malloc(shiftBytes + surfaceBytes + colorBytes + indexBytes);
+		m_pStateData = malloc(shiftBytes + bitmapBytes + colorBytes + indexBytes);
 
 		auto pDest = (uint8_t*) m_pStateData;
 
@@ -143,17 +143,17 @@ namespace wg
 
 		pDest += shiftBytes;
 
-		auto pSurfaces = (Surface**) pDest;
-		for( int i = 0 ; i < nbSurfaceStates ; i++ )
+		auto pBitmaps = (Bitmap**) pDest;
+		for( int i = 0 ; i < nbBitmapStates ; i++ )
 		{
-			pSurfaces[i] = stateSurfaces[i];
-			pSurfaces[i]->retain();
+			pBitmaps[i] = stateBitmaps[i];
+			pBitmaps[i]->retain();
 		}
 
-		m_pStateSurfaces = pSurfaces;
-		m_nbStateSurfaces = nbSurfaceStates;
+		m_pStateBitmaps = pBitmaps;
+		m_nbStateBitmaps = nbBitmapStates;
 
-		pDest += surfaceBytes;
+		pDest += bitmapBytes;
 
 		auto pColors = (Color*) pDest;
 		for( int i = 0 ; i < nbColorStates ; i++ )
@@ -163,10 +163,10 @@ namespace wg
 
 		pDest += colorBytes;
 
-		m_pStateSurfaceIndexTab = pDest;
-		m_pStateColorIndexTab = pDest + surfaceIndexEntries;
+		m_pStateBitmapIndexTab = pDest;
+		m_pStateColorIndexTab = pDest + bitmapIndexEntries;
 
-		generateStateToIndexTab(m_pStateSurfaceIndexTab, nbSurfaceStates, surfaceStates);
+		generateStateToIndexTab(m_pStateBitmapIndexTab, nbBitmapStates, bitmapStates);
 		generateStateToIndexTab(m_pStateColorIndexTab, nbColorStates, colorStates);
 	}
 
@@ -174,8 +174,8 @@ namespace wg
 
 	TileSkin::~TileSkin()
 	{
-		for( int i = 0 ; i < m_nbStateSurfaces ; i++ )
-			m_pStateSurfaces[i]->release();
+		for( int i = 0 ; i < m_nbStateBitmaps ; i++ )
+			m_pStateBitmaps[i]->release();
 
 		free(m_pStateData);
 	}
@@ -195,16 +195,16 @@ namespace wg
 	{
 		int idx = state;
 
-		Surface * pSurf = _getSurface(state);
+		Bitmap * pBitmap = _getBitmap(state);
 
-		if( !pSurf )
+		if( !pBitmap )
 			return;
 
 		RectSPX canvas = _canvas - align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_overflow, scale));
 
 		RenderSettingsWithTint settings(pDevice, m_layer, m_blendMode, _getColor(state), canvas, m_pTint);
 
-		pDevice->setBlitSource(pSurf);
+		pDevice->setBlitSource(pBitmap);
 		pDevice->scaleTile(canvas,scale/64.f);
 	}
 
@@ -213,13 +213,13 @@ namespace wg
 	SizeSPX TileSkin::_defaultSize(int scale) const
 	{
 		SizeSPX content = align(ptsToSpx(m_padding,scale));
-		SizeSPX surface;
+		SizeSPX bitmap;
 
-		Surface * pSurface = m_pStateSurfaces[0];
-		if (pSurface)
-			surface = align(ptsToSpx(pSurface->pointSize(),scale));
+		Bitmap * pBitmap = m_pStateBitmaps[0];
+		if (pBitmap)
+			bitmap = align(ptsToSpx(pBitmap->pointSize(),scale));
 
-		return SizeSPX::max(content, surface) + align(ptsToSpx(m_spacing, scale));
+		return SizeSPX::max(content, bitmap) + align(ptsToSpx(m_spacing, scale));
 	}
 
 	//____ _markTest() _____________________________________________________________
@@ -228,7 +228,7 @@ namespace wg
 	{
 		//TODO: Take gradient and tintColor into account.
 
-		Surface * pSurf = _getSurface(state);
+		Bitmap * pBitmap = _getBitmap(state);
 
 		int alpha = alphaOverride == -1 ? m_markAlpha : alphaOverride;
 
@@ -239,7 +239,7 @@ namespace wg
 		
 		canvas += align(ptsToSpx(m_overflow, scale));
 
-		return markTestTileRect(_ofs, pSurf, canvas, scale, alpha);
+		return markTestTileRect(_ofs, pBitmap, canvas, scale, alpha);
 	}
 
 	//____ _dirtyRect() ______________________________________________________
@@ -253,7 +253,7 @@ namespace wg
 
 		RectSPX canvas = _canvas - align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_overflow, scale));
 
-		if(_getSurface(oldState) != _getSurface(newState))
+		if(_getBitmap(oldState) != _getBitmap(newState))
 			return canvas;
 		
 		return StateSkin::_dirtyRect(canvas, scale, newState, oldState, newValue, oldValue, newValue2, oldValue2, 
@@ -264,10 +264,10 @@ namespace wg
 
 	RectSPX TileSkin::_coverage(const RectSPX& geo, int scale, State state) const
 	{
-		Surface * pSurface = _getSurface(state);
+		Bitmap * pBitmap = _getBitmap(state);
 		const Color& color = _getColor(state);
 
-		if (color.a == 4096 && pSurface->isOpaque())
+		if (color.a == 4096 && pBitmap->isOpaque())
 			return geo - align(ptsToSpx(m_spacing,scale)) + align(ptsToSpx(m_overflow,scale));
 		else
 			return RectSPX();

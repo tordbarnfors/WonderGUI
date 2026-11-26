@@ -10,15 +10,15 @@
  *
  * In order to keep the example small, we are making some assumptions,
  * for example that the screen surface is either 24 or 32 bits graphics
- * with the RGB elements in the same order as SoftSurface keeps them,
+ * with the RGB elements in the same order as SoftBitmap keeps them,
  * which is usually the case on normal PC's. In environments where this
- * is not the case, either specific Surface and GfxDevice classes
+ * is not the case, either specific Bitmap and GfxDevice classes
  * will need to be provided or graphics needs to be rendered to an interim
- * surface from which blocks can be copied and translated to the output
+ * bitmap from which blocks can be copied and translated to the output
  * format.
  *
  * If you want to use WonderGUI with SDL3, there are better examples to use
- * as a template. Use the SDL3 specific Surface/GfxDevice classes that
+ * as a template. Use the SDL3 specific Bitmap/GfxDevice classes that
  * better integrate with SDL3's video API, giving you better performance
  * and transparent support for images and windows of other pixel formats.
  *
@@ -33,7 +33,7 @@
 #include <SDL3/SDL_main.h>
 #include <wondergui.h>
 
-#include <wax_softsurface.h>
+#include <wax_softbitmap.h>
 #include <wax_device_gen2.h>
 #include <wax_softbackend.h>
 #include <wax_softkernels_default.h>
@@ -73,8 +73,8 @@ int main ( int argc, char** argv )
 
 	wg::Base::init(nullptr);
 
-	// The software renderer needs a SoftSurface as its canvas,
-	// so we wrap the SDL WindowSurface into a SoftSurface.
+	// The software renderer needs a SoftBitmap as its canvas,
+	// so we wrap the SDL window surface into a SoftBitmap.
 
 	PixelFormat format = PixelFormat::Undefined;
 
@@ -82,7 +82,7 @@ int main ( int argc, char** argv )
 		format = PixelFormat::XRGB_8;			// 24-bit window surfaces are not supported.
 
 	Blob_p pCanvasBlob = Blob::create( pWinSurf->pixels, 0);
-	SoftSurface_p pCanvas = SoftSurface::create( WGBP(Surface,
+	SoftBitmap_p pCanvas = SoftBitmap::create( WGBP(Bitmap,
 													  _.size = SizeI(pWinSurf->w,pWinSurf->h),
 													  _.format = format,
 													  _.canvas = true),
@@ -119,7 +119,7 @@ int main ( int argc, char** argv )
 		SDL_Surface * pSDLSurf = SDL_LoadBMP( "simple_button.bmp" );
 		// Pixels in the bmp are 24-bit, blue in the first byte.
 
-		SoftSurface_p pButtonSurface = SoftSurface::create( WGBP(Surface,
+		SoftBitmap_p pButtonBitmap = SoftBitmap::create( WGBP(Bitmap,
 																 _.size = SizeI( pSDLSurf->w, pSDLSurf->h ),
 																 _.format = PixelFormat::XRGB_8 ),
 															(unsigned char*) pSDLSurf->pixels,
@@ -140,7 +140,7 @@ int main ( int argc, char** argv )
 		pFlexPanel->setSkin( ColorSkin::create(Color::Bisque) );
 
 		// Now we create the button, using a clickable skin built from the BMP
-		// with the button graphics. First we specify the Surface and a rectangle
+		// with the button graphics. First we specify the Bitmap and a rectangle
 		// for the first image. Then follows the states that we have images for,
 		// the border that creates the nine stretch-zones of the image
 		// (NinePatch style) and the axis in which the images are lined up.
@@ -148,7 +148,7 @@ int main ( int argc, char** argv )
 		// pixels and that it should be centered.
 
 		Button_p pButton = Button::create();
-		pButton->setSkin(BlockSkin::create( { .axis = Axis::X, .frame = Border(3,3,3,3), .states = { State::Hovered, {}, State::Pressed, {}, State::Disabled, {} }, .surface = pButtonSurface }));
+		pButton->setSkin(BlockSkin::create( { .axis = Axis::X, .bitmap = pButtonBitmap, .frame = Border(3,3,3,3), .states = { State::Hovered, {}, State::Pressed, {}, State::Disabled, {} } }));
 		pFlexPanel->slots.pushFront(pButton, { .origin = Placement::Center, .size = {80,33} });
 
 		// Finally we add a callback to the click-event of the button.

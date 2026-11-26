@@ -86,9 +86,9 @@ namespace wg
 
 					pos.x += pFont->kerning(* pPrevGlyph, * pGlyph);
 
-					if( pGlyph->pSurface )
+					if( pGlyph->pBitmap )
 					{
-						pDevice->setBlitSource(pGlyph->pSurface);
+						pDevice->setBlitSource(pGlyph->pBitmap);
 						pDevice->blit(CoordSPX(pos.x + pGlyph->bearingX, pos.y + pGlyph->bearingY), pGlyph->rect);
 					}
 					pos.x += pGlyph->advance;

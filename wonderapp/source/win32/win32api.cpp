@@ -107,16 +107,16 @@ cleanup:
 	return pBlob;
 }
 
-//____ loadSurface() __________________________________________________________
+//____ loadBitmap() __________________________________________________________
 //
-// NOTE: Surfaces are created through the SurfaceFactory (the one passed in,
-// or wg::Base::defaultSurfaceFactory() otherwise) rather than a hardcoded surface
+// NOTE: Bitmaps are created through the BitmapFactory (the one passed in,
+// or wg::Base::defaultBitmapFactory() otherwise) rather than a hardcoded bitmap
 // class, so this works correctly regardless of which rendering backend
 // (software, DX12, ...) is currently active.
 
-wg::Surface_p Win32API::loadSurface(const std::string& path, wg::SurfaceFactory* pFactory, const wg::Surface::Blueprint& _bp)
+wg::Bitmap_p Win32API::loadBitmap(const std::string& path, wg::BitmapFactory* pFactory, const wg::Bitmap::Blueprint& _bp)
 {
-	return wappLoadSurface(path, pFactory, _bp);
+	return wappLoadBitmap(path, pFactory, _bp);
 }
 
 //____ initDefaultWidgetKit() ____________________________________________________

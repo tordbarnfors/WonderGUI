@@ -25,7 +25,7 @@
 
 
 #include <wg_pluginfont.h>
-#include <wg_pluginsurface.h>
+#include <wg_pluginbitmap.h>
 #include <wg_types.h>
 
 namespace wg
@@ -57,7 +57,7 @@ namespace wg
 		PluginBitmapFont( wax_obj cFont );
 		~PluginBitmapFont();
 		
-		PluginSurface_p		m_pSurface;
+		PluginBitmap_p		m_pBitmap;
 	};
 
 

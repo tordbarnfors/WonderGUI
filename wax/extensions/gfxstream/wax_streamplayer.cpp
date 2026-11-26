@@ -36,17 +36,17 @@ namespace wax
 
 	//____ create() ___________________________________________________________
 
-	StreamPlayer_p StreamPlayer::create(Backend * pBackend, SurfaceFactory * pSurfaceFactory, EdgemapFactory * pEdgemapFactory )
+	StreamPlayer_p StreamPlayer::create(Backend * pBackend, BitmapFactory * pBitmapFactory, EdgemapFactory * pEdgemapFactory )
 	{
-		return new StreamPlayer(pBackend, pSurfaceFactory, pEdgemapFactory);
+		return new StreamPlayer(pBackend, pBitmapFactory, pEdgemapFactory);
 	}
 
 	//____ constructor _____________________________________________________________
 
-	StreamPlayer::StreamPlayer(Backend * pBackend, SurfaceFactory * pSurfaceFactory, EdgemapFactory * pEdgemapFactory) : input(this)
+	StreamPlayer::StreamPlayer(Backend * pBackend, BitmapFactory * pBitmapFactory, EdgemapFactory * pEdgemapFactory) : input(this)
 	{
 		m_pBackend = pBackend;
-		m_pSurfaceFactory = pSurfaceFactory;
+		m_pBitmapFactory = pBitmapFactory;
 		m_pEdgemapFactory = pEdgemapFactory;
 
 		m_pDecoder = StreamDecoder::create();
@@ -102,16 +102,16 @@ namespace wax
 	{
 		m_vObjects.clear();
 
-		m_surfaceDataBuffers.clear();
+		m_bitmapDataBuffers.clear();
 		m_edgemapDataBuffers.clear();
-		m_pendingSurfaces.clear();
+		m_pendingBitmaps.clear();
 		m_warpmapDataBuffers.clear();
 
 		m_updateObject = 0;
 		m_updateCanvasRef = CanvasRef::None;
 
 		m_baseCanvasRef     = CanvasRef::None;
-		m_baseCanvasSurface = nullptr;
+		m_baseCanvasBitmap = nullptr;
 		m_vActionObjects.clear();
 
 		m_streamMajorVersion = 0;
@@ -384,11 +384,11 @@ namespace wax
 			m_sessionInfo.nWarpDraws = nWarpDraws;
 
 			m_baseCanvasRef = canvasRef;
-			m_baseCanvasSurface = canvasId > 0 ? static_cast<Surface*>(m_vObjects[canvasId].rawPtr()) : nullptr;
+			m_baseCanvasBitmap = canvasId > 0 ? static_cast<Bitmap*>(m_vObjects[canvasId].rawPtr()) : nullptr;
 
 			if (nUpdateRects == 0)
 			{
-				SizeSPX canvasSize = m_baseCanvasSurface ? m_baseCanvasSurface->pixelSize()*64 : m_pBackend->canvasInfo(canvasRef)->size;
+				SizeSPX canvasSize = m_baseCanvasBitmap ? m_baseCanvasBitmap->pixelSize()*64 : m_pBackend->canvasInfo(canvasRef)->size;
 
 				m_updateRectsDataBuffer.reset(sizeof(RectSPX));
 
@@ -398,7 +398,7 @@ namespace wax
 				if (m_bStoreDirtyRects && canvasRef != CanvasRef::None)
 					m_dirtyRects[(int)canvasRef].add(canvasSize);
 
-				m_pBackend->beginSession(m_baseCanvasRef, m_baseCanvasSurface, 0, nullptr, &m_sessionInfo);
+				m_pBackend->beginSession(m_baseCanvasRef, m_baseCanvasBitmap, 0, nullptr, &m_sessionInfo);
 			}
 			break;
 		}
@@ -408,7 +408,7 @@ namespace wax
 			m_pBackend->endSession();
 
 			m_baseCanvasRef = CanvasRef::None;
-			m_baseCanvasSurface = nullptr;
+			m_baseCanvasBitmap = nullptr;
 			break;
 		}
 
@@ -451,7 +451,7 @@ namespace wax
 					break;
 				}
 
-				m_pBackend->setCanvas( static_cast<Surface*>(m_vObjects[objectId].rawPtr()) );
+				m_pBackend->setCanvas( static_cast<Bitmap*>(m_vObjects[objectId].rawPtr()) );
 			}
 
 			break;
@@ -587,7 +587,7 @@ namespace wax
 					}
 				}
 
-				m_pBackend->beginSession(m_baseCanvasRef, m_baseCanvasSurface, nRects,(RectSPX*)m_updateRectsDataBuffer.pBuffer, &m_sessionInfo);
+				m_pBackend->beginSession(m_baseCanvasRef, m_baseCanvasBitmap, nRects,(RectSPX*)m_updateRectsDataBuffer.pBuffer, &m_sessionInfo);
 			}
 
 
@@ -595,10 +595,10 @@ namespace wax
 		}
 
 
-		case GfxStream::ChunkId::CreateSurface:
+		case GfxStream::ChunkId::CreateBitmap:
 		{
 			uint16_t	objectId;
-			Surface::Blueprint	bp;
+			Bitmap::Blueprint	bp;
 
 			uint8_t		bigEndian;
 
@@ -634,39 +634,39 @@ namespace wax
 				m_vObjects.resize(objectId + 16, nullptr);
 			else if( m_vObjects[objectId] != nullptr )
 			{
-				Base::reportError(ErrorLevel::Warning, ErrorCode::InvalidParam, "CreateSurface with objectId that already is in use. The old object will be replaced.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::reportError(ErrorLevel::Warning, ErrorCode::InvalidParam, "CreateBitmap with objectId that already is in use. The old object will be replaced.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			}
 
-			// A palette follows in SurfacePalette chunks. The surface is created once all of it
-			// has arrived, since a surface gets its palette when created.
+			// A palette follows in BitmapPalette chunks. The bitmap is created once all of it
+			// has arrived, since a bitmap gets its palette when created.
 
 			if (bp.paletteSize > 0)
 			{
 				m_vObjects[objectId] = nullptr;
 
-				auto it = std::find_if(m_pendingSurfaces.begin(), m_pendingSurfaces.end(), [objectId](const PendingSurface& p) { return p.objectId == objectId; });
-				if (it != m_pendingSurfaces.end())
-					m_pendingSurfaces.erase(it);
+				auto it = std::find_if(m_pendingBitmaps.begin(), m_pendingBitmaps.end(), [objectId](const PendingBitmap& p) { return p.objectId == objectId; });
+				if (it != m_pendingBitmaps.end())
+					m_pendingBitmaps.erase(it);
 
-				m_pendingSurfaces.push_back({ objectId, bp, {} });
+				m_pendingBitmaps.push_back({ objectId, bp, {} });
 			}
 			else
-				m_vObjects[objectId] = m_pSurfaceFactory->createSurface(bp);
+				m_vObjects[objectId] = m_pBitmapFactory->createBitmap(bp);
 
 			break;
 		}
 
-		case GfxStream::ChunkId::SurfacePalette:
+		case GfxStream::ChunkId::BitmapPalette:
 		{
 			GfxStream::DataInfo dataInfo;
 			decoder >> dataInfo;
 
 			uint16_t objectId = uint16_t(dataInfo.objectId);
 
-			auto it = std::find_if(m_pendingSurfaces.begin(), m_pendingSurfaces.end(), [objectId](const PendingSurface& p) { return p.objectId == objectId; });
-			if (it == m_pendingSurfaces.end())
+			auto it = std::find_if(m_pendingBitmaps.begin(), m_pendingBitmaps.end(), [objectId](const PendingBitmap& p) { return p.objectId == objectId; });
+			if (it == m_pendingBitmaps.end())
 			{
-				Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePalette chunk for a surface that isn't waiting for its palette.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "BitmapPalette chunk for a bitmap that isn't waiting for its palette.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				m_pDecoder->skip(header.size - dataInfo.encodedSize);
 				break;
 			}
@@ -675,9 +675,9 @@ namespace wax
 
 			if (it->palette.size > 0)
 			{
-				// All of the palette has arrived, create the surface.
+				// All of the palette has arrived, create the bitmap.
 
-				Surface::Blueprint bp = it->blueprint;
+				Bitmap::Blueprint bp = it->blueprint;
 
 				if (it->palette.size == bp.paletteSize * int(sizeof(Color8)))
 				{
@@ -686,18 +686,18 @@ namespace wax
 					if (objectId >= m_vObjects.size())
 						m_vObjects.resize(objectId + 16, nullptr);
 
-					m_vObjects[objectId] = m_pSurfaceFactory->createSurface(bp);
+					m_vObjects[objectId] = m_pBitmapFactory->createBitmap(bp);
 				}
 				else
-					Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePalette size doesn't match the palette size given in CreateSurface. Surface not created.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "BitmapPalette size doesn't match the palette size given in CreateBitmap. Bitmap not created.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
-				m_pendingSurfaces.erase(it);
+				m_pendingBitmaps.erase(it);
 			}
 
 			break;
 		}
 
-		case GfxStream::ChunkId::SurfaceUpdate:
+		case GfxStream::ChunkId::BitmapUpdate:
 		{
 			uint16_t	objectId;
 			RectI		rect;
@@ -707,29 +707,29 @@ namespace wax
 
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr )
 			{
-				Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfaceUpdate with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "BitmapUpdate with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
 			}
 
-			auto& buffer = m_surfaceDataBuffers.emplace_back(wax_static_cast<Surface_p>(m_vObjects[objectId]));
+			auto& buffer = m_bitmapDataBuffers.emplace_back(wax_static_cast<Bitmap_p>(m_vObjects[objectId]));
 
 			buffer.rects.resize(1);
 			buffer.rects[0] = rect;
 
 			if (m_updateCanvasRef != CanvasRef::None)
 			{
-				Base::reportError(ErrorLevel::Critical, ErrorCode::IllegalCall, "Received old-style SurfaceUpdate chunk while CanvasRef-based SurfaceUpdate in progress. These can not be processed in parallel, system is now unstable!", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::reportError(ErrorLevel::Critical, ErrorCode::IllegalCall, "Received old-style BitmapUpdate chunk while CanvasRef-based BitmapUpdate in progress. These can not be processed in parallel, system is now unstable!", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			}
 
 			m_updateObject = objectId;
 			break;
 		}
 
-		case GfxStream::ChunkId::SurfaceUpdate2:
+		case GfxStream::ChunkId::BitmapUpdate2:
 		{
 			CanvasRef	canvasRef;
 			uint8_t		dummy;
-			uint16_t	surfaceId;
+			uint16_t	bitmapId;
 			uint16_t	nRects;
 			PixelFormat	format;
 			ColorSpace	colorSpace;
@@ -737,26 +737,26 @@ namespace wax
 
 			decoder >> canvasRef;
 			decoder >> dummy;
-			decoder >> surfaceId;
+			decoder >> bitmapId;
 			decoder >> nRects;
 			decoder >> format;
 			decoder >> colorSpace;
 			decoder >> bigEndian;
 
 
-			Surface_p pSurf;
+			Bitmap_p pBitmap;
 			if( canvasRef != CanvasRef::None )
-				pSurf = m_pBackend->canvasInfo(canvasRef)->pSurface;
-			else if( surfaceId < m_vObjects.size() && m_vObjects[surfaceId] != nullptr )
-				pSurf = wax_static_cast<Surface_p>(m_vObjects[surfaceId]);
+				pBitmap = m_pBackend->canvasInfo(canvasRef)->pBitmap;
+			else if( bitmapId < m_vObjects.size() && m_vObjects[bitmapId] != nullptr )
+				pBitmap = wax_static_cast<Bitmap_p>(m_vObjects[bitmapId]);
 			else
 			{
-				Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfaceUpdate2 with invalid surfaceId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "BitmapUpdate2 with invalid bitmapId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				m_pDecoder->skip(nRects * 16);	// Skip rects
 				break;
 			}
 	
-			auto& buffer = m_surfaceDataBuffers.emplace_back(pSurf);
+			auto& buffer = m_bitmapDataBuffers.emplace_back(pBitmap);
 
 			buffer.format = format;
 			buffer.colorSpace = colorSpace;
@@ -770,45 +770,45 @@ namespace wax
 			break;
 		}
 
-		case GfxStream::ChunkId::SurfacePixels:
+		case GfxStream::ChunkId::BitmapPixels:
 		{
 			GfxStream::DataInfo dataInfo;
 			decoder >> dataInfo;
 
-			Surface_p pSurface;
+			Bitmap_p pBitmap;
 
 			if (dataInfo.objectId > 0)
 			{
 				if( dataInfo.objectId >= m_vObjects.size() || m_vObjects[dataInfo.objectId] == nullptr )
 				{
-					Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePixel with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "BitmapPixel with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					m_pDecoder->skip(header.size - dataInfo.encodedSize);
 					break;
 				}
 
-				pSurface = wax_static_cast<Surface_p>(m_vObjects[dataInfo.objectId]);
+				pBitmap = wax_static_cast<Bitmap_p>(m_vObjects[dataInfo.objectId]);
 			}
 			else
 			{
 				if( m_updateCanvasRef != CanvasRef::None )
-					pSurface = m_pBackend->canvasInfo(m_updateCanvasRef)->pSurface;
+					pBitmap = m_pBackend->canvasInfo(m_updateCanvasRef)->pBitmap;
 				else if( m_updateObject > 0 )
-					pSurface = wax_static_cast<Surface_p>(m_vObjects[m_updateObject]);
+					pBitmap = wax_static_cast<Bitmap_p>(m_vObjects[m_updateObject]);
 				else
 				{
-					Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePixel chunk with no valid surface reference", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "BitmapPixel chunk with no valid bitmap reference", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					m_pDecoder->skip(header.size - dataInfo.encodedSize);
 					break;
 				}
 			}
 
-			auto it = m_surfaceDataBuffers.begin();
-			while( it != m_surfaceDataBuffers.end() && it->pSurface != pSurface )
+			auto it = m_bitmapDataBuffers.begin();
+			while( it != m_bitmapDataBuffers.end() && it->pBitmap != pBitmap )
 				it++;
 
-			if( it == m_surfaceDataBuffers.end() )
+			if( it == m_bitmapDataBuffers.end() )
 			{
-				Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePixel chunk, but surface has not been prepared by preceeding SurfaceUpdate chunk", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "BitmapPixel chunk, but bitmap has not been prepared by preceeding BitmapUpdate chunk", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				m_pDecoder->skip(header.size - dataInfo.encodedSize);
 				break;
 			}
@@ -823,10 +823,10 @@ namespace wax
 				for( size_t i = 1 ; i < it->rects.size() ; i++ )
 					bounds.growToContain(it->rects[i]);
 
-				auto pixelBuffer = pSurface->allocPixelBuffer(bounds);
-				int pixelBits = pSurface->pixelBits();
+				auto pixelBuffer = pBitmap->allocPixelBuffer(bounds);
+				int pixelBits = pBitmap->pixelBits();
 
-				// The surface might hold its pixels in another layout than the one streamed,
+				// The bitmap might hold its pixels in another layout than the one streamed,
 				// like when a backend doesn't support the format. Then we convert.
 
 				bool bSameLayout = it->format == PixelFormat::Undefined ||
@@ -854,22 +854,22 @@ namespace wax
 					}
 					else
 					{
-						int dstPaletteSize = pSurface->paletteSize();
+						int dstPaletteSize = pBitmap->paletteSize();
 
-						PixelTools::copyPixels(rect.w, rect.h, pSource, srcDesc, it->colorSpace, 0, pixelBuffer.palette, pSurface->paletteSize(),
+						PixelTools::copyPixels(rect.w, rect.h, pSource, srcDesc, it->colorSpace, 0, pixelBuffer.palette, pBitmap->paletteSize(),
 											   pDest, pixelBuffer.format, pixelBuffer.colorSpace, pixelBuffer.bigEndian,
-											   pixelBuffer.pitch - PixelTools::bytesPerLine(*pSurface->pixelDescription(), rect.w),
-											   const_cast<Color8*>(pixelBuffer.palette), dstPaletteSize, pSurface->paletteCapacity());
+											   pixelBuffer.pitch - PixelTools::bytesPerLine(*pBitmap->pixelDescription(), rect.w),
+											   const_cast<Color8*>(pixelBuffer.palette), dstPaletteSize, pBitmap->paletteCapacity());
 						pSource += srcSpan * rect.h;
 					}
 				}
 
-				// Copy pixels into surface and clean up
+				// Copy pixels into bitmap and clean up
 
-				pSurface->pullPixels(pixelBuffer);
-				pSurface->freePixelBuffer(pixelBuffer);
+				pBitmap->pullPixels(pixelBuffer);
+				pBitmap->freePixelBuffer(pixelBuffer);
 
-				m_surfaceDataBuffers.erase(it);
+				m_bitmapDataBuffers.erase(it);
 				m_updateObject = 0;
 				m_updateCanvasRef = CanvasRef::None;
 			}
@@ -877,7 +877,7 @@ namespace wax
 			break;
 		}
 
-		case GfxStream::ChunkId::FillSurface:
+		case GfxStream::ChunkId::FillBitmap:
 		{
 			uint16_t	objectId;
 			RectI		region;
@@ -889,34 +889,34 @@ namespace wax
 
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr )
 			{
-				Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "FillSurface with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "FillBitmap with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
 			}
 
-			static_cast<Surface*>(m_vObjects[objectId].rawPtr())->fill(region, col);
+			static_cast<Bitmap*>(m_vObjects[objectId].rawPtr())->fill(region, col);
 			break;
 		}
 /*
-		case GfxStream::ChunkId::CopySurface:
+		case GfxStream::ChunkId::CopyBitmap:
 		{
-			uint16_t	destSurfaceId;
-			uint16_t	sourceSurfaceId;
+			uint16_t	destBitmapId;
+			uint16_t	sourceBitmapId;
 			RectI		sourceRect;
 			CoordI		dest;
 
-			decoder >> destSurfaceId;
-			decoder >> sourceSurfaceId;
+			decoder >> destBitmapId;
+			decoder >> sourceBitmapId;
 			decoder >> sourceRect;
 			decoder >> dest;
 
-			Surface * pDest	  = m_vSurfaces[destSurfaceId];
-			Surface * pSource = m_vSurfaces[sourceSurfaceId];
+			Bitmap * pDest	  = m_vBitmaps[destBitmapId];
+			Bitmap * pSource = m_vBitmaps[sourceBitmapId];
 
 			pDest->copyFrom(pSource, sourceRect, dest);
 			break;
 		}
 */
-		case GfxStream::ChunkId::DeleteSurface:
+		case GfxStream::ChunkId::DeleteBitmap:
 		{
 			uint16_t	objectId;
 
@@ -924,16 +924,16 @@ namespace wax
 
 			// Might still be waiting for its palette.
 
-			auto itPending = std::find_if(m_pendingSurfaces.begin(), m_pendingSurfaces.end(), [objectId](const PendingSurface& p) { return p.objectId == objectId; });
-			if (itPending != m_pendingSurfaces.end())
+			auto itPending = std::find_if(m_pendingBitmaps.begin(), m_pendingBitmaps.end(), [objectId](const PendingBitmap& p) { return p.objectId == objectId; });
+			if (itPending != m_pendingBitmaps.end())
 			{
-				m_pendingSurfaces.erase(itPending);
+				m_pendingBitmaps.erase(itPending);
 				break;
 			}
 
-			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr || !m_vObjects[objectId]->isInstanceOf(Surface::TYPEINFO) )
+			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr || !m_vObjects[objectId]->isInstanceOf(Bitmap::TYPEINFO) )
 			{
-				Base::reportError(ErrorLevel::Warning, ErrorCode::InvalidParam, "DeleteSurface with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::reportError(ErrorLevel::Warning, ErrorCode::InvalidParam, "DeleteBitmap with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
 			}
 

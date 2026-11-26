@@ -31,7 +31,7 @@ typedef void* wax_obj;
 
 namespace wg
 {
-	class PluginSurface;
+	class PluginBitmap;
 	class PluginGfxDevice;
 	typedef	StrongPtr<PluginGfxDevice>	PluginGfxDevice_p;
 	typedef	WeakPtr<PluginGfxDevice>		PluginGfxDevice_wp;

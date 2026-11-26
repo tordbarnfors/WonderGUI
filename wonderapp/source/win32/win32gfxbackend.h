@@ -23,7 +23,7 @@
 
 //____ initGfxBackend() / exitGfxBackend() __________________________________
 //
-// Backend-specific setup and teardown of WonderGUI's default SurfaceFactory
+// Backend-specific setup and teardown of WonderGUI's default BitmapFactory
 // and GfxDevice. 
 
 void initGfxBackend();

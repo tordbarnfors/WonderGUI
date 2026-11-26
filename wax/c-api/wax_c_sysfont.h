@@ -29,7 +29,7 @@
 extern "C" {
 #endif
 
-WAX_EXPORT wax_obj		wax_createSysFont(wax_obj surfaceFactory, wax_obj backupFont);
+WAX_EXPORT wax_obj		wax_createSysFont(wax_obj bitmapFactory, wax_obj backupFont);
 
 #ifdef __cplusplus
 }

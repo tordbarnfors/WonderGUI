@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wax_streampump.h>
-#include <wax_surface.h>
+#include <wax_bitmap.h>
 #include <wax_patches.h>
 #include <wax_base.h>
 
@@ -415,7 +415,7 @@ namespace wax
 					{
 						if (canvasRef == CanvasRef::None)
 						{
-							// We can't mask writes to surfaces, they might be used as source for blits before last frame.
+							// We can't mask writes to bitmaps, they might be used as source for blits before last frame.
 
 							pTrimBackend->addNonMaskingSession();
 						}

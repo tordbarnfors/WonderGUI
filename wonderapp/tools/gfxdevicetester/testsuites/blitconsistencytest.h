@@ -26,21 +26,21 @@ public:
 
 	bool init(GfxDevice * pDevice, const RectSPX& canvas, wapp::API * pAppAPI)
 	{
-		m_pPalette = pAppAPI->loadSurface("resources/stretchblit_consistency.png", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Nearest });
+		m_pPalette = pAppAPI->loadBitmap("resources/stretchblit_consistency.png", pDevice->bitmapFactory(), { .sampleMethod = SampleMethod::Nearest });
 		if (!m_pPalette)
 			return false;
 
-		m_pFrame = pAppAPI->loadSurface("resources/white_frame_256x256.png", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Nearest });
+		m_pFrame = pAppAPI->loadBitmap("resources/white_frame_256x256.png", pDevice->bitmapFactory(), { .sampleMethod = SampleMethod::Nearest });
 		if (!m_pFrame)
 			return false;
 
-		m_pGrid = pAppAPI->loadSurface("resources/grid_31x31.png", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Nearest });
+		m_pGrid = pAppAPI->loadBitmap("resources/grid_31x31.png", pDevice->bitmapFactory(), { .sampleMethod = SampleMethod::Nearest });
         if (!m_pGrid)
             return false;
 
-		m_pPaletteBilinear = m_pPalette->convert( { .sampleMethod = SampleMethod::Bilinear }, pDevice->surfaceFactory() );
-		m_pFrameBilinear = m_pFrame->convert( { .sampleMethod = SampleMethod::Bilinear }, pDevice->surfaceFactory() );
-		m_pGridBilinear = m_pGrid->convert( { .sampleMethod = SampleMethod::Bilinear }, pDevice->surfaceFactory() );
+		m_pPaletteBilinear = m_pPalette->convert( { .sampleMethod = SampleMethod::Bilinear }, pDevice->bitmapFactory() );
+		m_pFrameBilinear = m_pFrame->convert( { .sampleMethod = SampleMethod::Bilinear }, pDevice->bitmapFactory() );
+		m_pGridBilinear = m_pGrid->convert( { .sampleMethod = SampleMethod::Bilinear }, pDevice->bitmapFactory() );
 
 		return true;
 	}
@@ -155,10 +155,10 @@ public:
 
 
 private:
-	Surface_p	m_pPalette;
-	Surface_p	m_pPaletteBilinear;
-	Surface_p	m_pFrame;
-	Surface_p	m_pFrameBilinear;
-	Surface_p   m_pGrid;
-	Surface_p   m_pGridBilinear;
+	Bitmap_p	m_pPalette;
+	Bitmap_p	m_pPaletteBilinear;
+	Bitmap_p	m_pFrame;
+	Bitmap_p	m_pFrameBilinear;
+	Bitmap_p   m_pGrid;
+	Bitmap_p   m_pGridBilinear;
 };

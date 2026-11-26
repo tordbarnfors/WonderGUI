@@ -96,7 +96,7 @@ Allows for fine control of which widgets or rectangular areas accepts mouse inte
 
 ### CanvasCapsule
 
-The child and the rest of the branch is rendered into a separate canvas Surface, from which graphics is copied when widgets need to be redrawn. This can significantly speed up rendering of complex and detailed (parts of) GUI when these widgets needs to be redrawn more often than they change, e.g. when they are above animated backgrounds or moved around a lot.
+The child and the rest of the branch is rendered into a separate canvas Bitmap, from which graphics is copied when widgets need to be redrawn. This can significantly speed up rendering of complex and detailed (parts of) GUI when these widgets needs to be redrawn more often than they change, e.g. when they are above animated backgrounds or moved around a lot.
 
 ### LabelCapsule
 
@@ -190,11 +190,11 @@ Displays a text-entry with a drop-down menu from which to select entries.
 
 ### CanvasDisplay
 
-Similar to SurfaceDisplay but displays the content of a CanvasCapsule instead. Useful for live thumbnails and such.
+Similar to BitmapDisplay but displays the content of a CanvasCapsule instead. Useful for live thumbnails and such.
 
-### SurfaceDisplay
+### BitmapDisplay
 
-Displays the content of a Surface. Display is automatically updated when content of surface is modified. Surface can be zoomed and panned.
+Displays the content of a Bitmap. Display is automatically updated when content of bitmap is modified. Bitmap can be zoomed and panned.
 
 
 

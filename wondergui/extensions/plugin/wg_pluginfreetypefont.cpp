@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wg_plugincalls.h>
 #include <wg_pluginfreetypefont.h>
-#include <wg_pluginsurface.h>
+#include <wg_pluginbitmap.h>
 
 namespace wg
 {
@@ -74,14 +74,14 @@ namespace wg
 			glyph.bearingX	= cGlyph.bearingX;
 			glyph.bearingY	= cGlyph.bearingY;
 
-			glyph.pSurface = m_pCache->wrapperSurface(cGlyph.surface);
+			glyph.pBitmap = m_pCache->wrapperBitmap(cGlyph.bitmap);
 		}
 		else
 		{
 			glyph.advance = 0;
 			glyph.fontRef = 0;
 			glyph.kerningIndex = 0;
-			glyph.pSurface = nullptr;
+			glyph.pBitmap = nullptr;
 		}
 
 		return;

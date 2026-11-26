@@ -21,7 +21,7 @@
 =========================================================================*/
 /*
 	TODO: Support kerning.
-	TODO: Support multiple font-files and surfaces.
+	TODO: Support multiple font-files and bitmaps.
 	TODO: Support fallback-font.
 	TODO: Set advance on whitespace glyph from whitespace-advance.
 	TODO: Support charGap, just like lineGap, add onto all glyphs advance.
@@ -98,9 +98,9 @@ namespace wax
 
 	//____ constructor ____________________________________________________________
 
-	BitmapFont::BitmapFont(Surface* pSurf, const char* pGlyphSpec, Font * pBackupFont ) : Font(pBackupFont)
+	BitmapFont::BitmapFont(Bitmap* pBitmap, const char* pGlyphSpec, Font * pBackupFont ) : Font(pBackupFont)
 	{
-		m_pSurface		= pSurf;
+		m_pBitmap		= pBitmap;
 
 		m_nKerningGlyphs= 0;
 		m_pKerningTable = 0;
@@ -118,7 +118,7 @@ namespace wax
 		for( int i = 0 ; i < 256 ; i++ )
 			m_glyphTab[i] = nullptr;
 
-		_insertGlyphs(pSurf, pGlyphSpec);
+		_insertGlyphs(pBitmap, pGlyphSpec);
 	}
 
 
@@ -148,7 +148,7 @@ namespace wax
 	bool BitmapFont::hasGlyph( char32_t chr )
 	{
 		const MyGlyph * pGlyph = _findGlyph(chr);
-		return pGlyph && pGlyph->pSurface;
+		return pGlyph && pGlyph->pBitmap;
 	}
 
 
@@ -158,7 +158,7 @@ namespace wax
 	{
 		const MyGlyph * pGlyph = _findGlyph(chr);
 
-		if( pGlyph && pGlyph->pSurface )
+		if( pGlyph && pGlyph->pBitmap )
 		{
 			glyph.fontRef = this;
 			glyph.advance = pGlyph->advance;
@@ -178,12 +178,12 @@ namespace wax
 	{
 		const MyGlyph * pGlyph = _findGlyph(chr);
 
-		if( pGlyph && pGlyph->pSurface )
+		if( pGlyph && pGlyph->pBitmap )
 		{
 			glyph.fontRef		= this;
 			glyph.advance		= pGlyph->advance;
 			glyph.kerningIndex	= pGlyph->kerningIndex;
-			glyph.pSurface		= pGlyph->pSurface;
+			glyph.pBitmap		= pGlyph->pBitmap;
 			glyph.rect			= pGlyph->rect;
 			glyph.bearingX		= pGlyph->bearingX;
 			glyph.bearingY		= pGlyph->bearingY;
@@ -193,7 +193,7 @@ namespace wax
 		glyph.fontRef = 0;
 		glyph.advance = 0;
 		glyph.kerningIndex = 0;
-		glyph.pSurface = nullptr;
+		glyph.pBitmap = nullptr;
 		return;
 	}
 
@@ -244,7 +244,7 @@ namespace wax
 
 	//____ _insertGlyphs() _________________________________________________________
 
-	void BitmapFont::_insertGlyphs( Surface * pSurf, const char* pGlyphSpec )
+	void BitmapFont::_insertGlyphs( Bitmap * pBitmap, const char* pGlyphSpec )
 	{
 		// Get section pointers
 
@@ -319,7 +319,7 @@ namespace wax
 			linegap = (int) strtol(pLineGap + 8, nullptr, 10);
 
 
-		// Read charmap and surface-grid
+		// Read charmap and bitmap-grid
 
 		int	maxAdvance = 0;
 		int maxDescend = 0;
@@ -331,8 +331,8 @@ namespace wax
 			readUTF8Char(pChar);
 
 
-		PixelBuffer pixelBuffer = pSurf->allocPixelBuffer();
-		pSurf->pushPixels(pixelBuffer);
+		PixelBuffer pixelBuffer = pBitmap->allocPixelBuffer();
+		pBitmap->pushPixels(pixelBuffer);
 
 		GridWalker	gw(pixelBuffer);
 
@@ -359,13 +359,13 @@ namespace wax
 				{
 					auto * pGlyph = _glyphSlot(ch);
 
-					if (!pGlyph->pSurface)
+					if (!pGlyph->pBitmap)
 					{
 						pGlyph->advance = r.w * 64;
 						pGlyph->bearingX = 0;
 						pGlyph->bearingY = -baseline*64;
 						pGlyph->kerningIndex = 0;
-						pGlyph->pSurface = pSurf;
+						pGlyph->pBitmap = pBitmap;
 						pGlyph->rect = r * 64;
 
 						if (firstAdvance == -1)
@@ -386,7 +386,7 @@ namespace wax
 			}
 		}
 
-		pSurf->freePixelBuffer(pixelBuffer);
+		pBitmap->freePixelBuffer(pixelBuffer);
 
 		// Fill in font data.
 

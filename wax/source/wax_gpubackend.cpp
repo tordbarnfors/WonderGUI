@@ -321,12 +321,12 @@ namespace wax
 
 	//____ _canvasKind() _________________________________________________________
 
-	GpuBackend::CanvasKind GpuBackend::_canvasKind( const Surface * pSurface )
+	GpuBackend::CanvasKind GpuBackend::_canvasKind( const Bitmap * pBitmap )
 	{
-		if( pSurface->pixelFormat() == PixelFormat::Alpha_8 )
+		if( pBitmap->pixelFormat() == PixelFormat::Alpha_8 )
 			return CanvasKind::AlphaOnly;
 
-		auto pDesc = pSurface->pixelDescription();
+		auto pDesc = pBitmap->pixelDescription();
 
 		if( pDesc->type != PixelType::Index && pDesc->A_mask == 0 )
 			return CanvasKind::WithoutAlpha;
@@ -380,16 +380,16 @@ namespace wax
 
 	//____ beginSession() ________________________________________________________
 
-	void GpuBackend::beginSession(CanvasRef canvasRef, Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, const SessionInfo* pInfo)
+	void GpuBackend::beginSession(CanvasRef canvasRef, Bitmap* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, const SessionInfo* pInfo)
 	{
-		Surface * pCanvasSurface = nullptr;
+		Bitmap * pCanvasBitmap = nullptr;
 
 		if (pCanvas)
 		{
-			if (_isNativeSurface(pCanvas))
-				pCanvasSurface = pCanvas;
+			if (_isNativeBitmap(pCanvas))
+				pCanvasBitmap = pCanvas;
 			else
-				Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Canvas is not a surface of this backend, rendering to default canvas instead.",
+				Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Canvas is not a bitmap of this backend, rendering to default canvas instead.",
 					this, &typeInfo(), __func__, __FILE__, __LINE__);
 		}
 
@@ -398,7 +398,7 @@ namespace wax
 
 		m_bInSession = true;
 
-		_beginSessionOnDevice(pCanvasSurface);
+		_beginSessionOnDevice(pCanvasBitmap);
 
 		// Sessions start with default state, changes arrive as StateChange commands.
 
@@ -413,7 +413,7 @@ namespace wax
 		// DeviceGen2, so no extra clipping is needed here.
 
 		m_pActiveCanvas = nullptr;
-		_setCanvas(pCanvasSurface);
+		_setCanvas(pCanvasBitmap);
 	}
 
 	//____ endSession() __________________________________________________________
@@ -438,11 +438,11 @@ namespace wax
 	// Called between processCommands() within a session, when a render layer has a canvas of its
 	// own.
 
-	void GpuBackend::setCanvas(Surface* pSurface)
+	void GpuBackend::setCanvas(Bitmap* pBitmap)
 	{
-		if (pSurface && !_isNativeSurface(pSurface))
+		if (pBitmap && !_isNativeBitmap(pBitmap))
 		{
-			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Canvas is not a surface of this backend.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "Canvas is not a bitmap of this backend.",
 				this, &typeInfo(), __func__, __FILE__, __LINE__);
 			return;
 		}
@@ -451,7 +451,7 @@ namespace wax
 			return;					// Nothing to render into it with, see processCommands().
 
 		_resetStates();
-		_setCanvas(pSurface);
+		_setCanvas(pBitmap);
 	}
 
 	void GpuBackend::setCanvas(CanvasRef ref)
@@ -471,7 +471,7 @@ namespace wax
 
 	//____ _setCanvas() __________________________________________________________
 
-	void GpuBackend::_setCanvas(Surface* pCanvas)
+	void GpuBackend::_setCanvas(Bitmap* pCanvas)
 	{
 		// We can't read from what we paint into.
 
@@ -629,7 +629,7 @@ namespace wax
 				case Command::Blur:
 				{
 					// All four carry the same payload and cover the same geometry. Whether the
-					// source is clamped or tiled is a property of the surface, and the rects have
+					// source is clamped or tiled is a property of the bitmap, and the rects have
 					// already been clipped by DeviceGen2, so only a blur draws differently - it
 					// reads nine texels per pixel instead of one.
 
@@ -718,7 +718,7 @@ namespace wax
 		{
 			Object * pObject = _object(state.blitSource);
 
-			_setBlitSource( _isNativeSurface(pObject) ? static_cast<Surface*>(pObject) : nullptr, state.blitSource );
+			_setBlitSource( _isNativeBitmap(pObject) ? static_cast<Bitmap*>(pObject) : nullptr, state.blitSource );
 		}
 
 		// Tint color and tint are independent. The tint color goes into every color _addColor()
@@ -1216,34 +1216,34 @@ namespace wax
 
 	//____ _setBlitSource() ______________________________________________________
 
-	void GpuBackend::_setBlitSource(Surface* pSurface, uint32_t objectIndex)
+	void GpuBackend::_setBlitSource(Bitmap* pBitmap, uint32_t objectIndex)
 	{
-		m_pBlitSource = pSurface;
+		m_pBlitSource = pBitmap;
 		m_blitSourceObject = objectIndex;
 		m_bBlitSourceBound = false;
 		m_bBlitSourceIndexed = false;
 
-		if (!pSurface)
+		if (!pBitmap)
 			return;
 
-		// Reading from the surface we are painting into can't work, the texture can't be render
+		// Reading from the bitmap we are painting into can't work, the texture can't be render
 		// target and shader resource at the same time.
 
-		if (pSurface == m_pActiveCanvas)
+		if (pBitmap == m_pActiveCanvas)
 		{
 			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
-				"Can't blit from the surface we are rendering into.", this, &typeInfo(), __func__, __FILE__, __LINE__);
+				"Can't blit from the bitmap we are rendering into.", this, &typeInfo(), __func__, __FILE__, __LINE__);
 			m_pBlitSource = nullptr;
 			return;
 		}
 
-		// Make sure the texture holds everything written to the surface.
+		// Make sure the texture holds everything written to the bitmap.
 
-		_prepareBlitSource(pSurface);
+		_prepareBlitSource(pBitmap);
 
-		m_blitSourceSize = pSurface->pixelSize();
-		m_bBlitSourceAlphaOnly = (pSurface->pixelFormat() == PixelFormat::Alpha_8);
-		m_bBlitSourceIndexed = (pSurface->pixelDescription()->type == PixelType::Index);
+		m_blitSourceSize = pBitmap->pixelSize();
+		m_bBlitSourceAlphaOnly = (pBitmap->pixelFormat() == PixelFormat::Alpha_8);
+		m_bBlitSourceIndexed = (pBitmap->pixelDescription()->type == PixelType::Index);
 	}
 
 	//____ _bindBlitSource() _____________________________________________________
@@ -1797,7 +1797,7 @@ namespace wax
 			*m_buffers.pExtrasPtr++ = { float(pEdgemap->m_nbSegments - 1), float(pEdgemap->_flatColorsOfs()), float(pEdgemap->_tintTableOfs()), float(pEdgemap->_rawSamplesOfs()) };
 		else
 		{
-			// A surface that isn't tiling is read as if the edge pixels of the source rectangle
+			// A bitmap that isn't tiling is read as if the edge pixels of the source rectangle
 			// continued outside it, see warpBlitCoverage() in warp.hlsl.
 
 			float clampInset = m_pBlitSource->isTiling() ? 0.f : m_pBlitSource->sampleMethod() == SampleMethod::Bilinear ? 0.5f : 1.f / 256;

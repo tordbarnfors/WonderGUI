@@ -23,15 +23,15 @@
 #include <iostream>
 
 /*
-#include <wg_streamsurface.h>
-#include <wg_streamsurfacefactory.h>
+#include <wg_streambitmap.h>
+#include <wg_streambitmapfactory.h>
 #include <wax_streamplayer.h>
 */
 
 #include <wax_device_gen2.h>
 
-#include <wax_softsurface.h>
-#include <wax_softsurfacefactory.h>
+#include <wax_softbitmap.h>
+#include <wax_softbitmapfactory.h>
 #include <wax_softedgemapfactory.h>
 #include <wax_softbackend.h>
 #include <wax_softkernels_default.h>
@@ -92,7 +92,7 @@ wax::StreamPlayer_p       g_pStreamPlayer;
 wg::StreamGfxDevice_p       g_pStreamGfxDevice;
 wg::StreamSurfaceFactory_p  g_pStreamSurfaceFactory;
  */
-wax::SoftSurfaceFactory_p    g_pSoftSurfaceFactory;
+wax::SoftBitmapFactory_p    g_pSoftSurfaceFactory;
 wg::SurfaceFactory_p	    g_pSurfaceFactory;
 wg::EdgemapFactory_p	    g_pEdgemapFactory;
 wg::GfxDevice_p		        g_pGfxDevice;
@@ -242,7 +242,7 @@ int main ( int argc, char** argv )
 	if (SDL_BYTESPERPIXEL(pScreen->format) == 4)
 		type = WgPixelType::ARGB_8;					// 24-bit window surfaces are not supported.
 
-	auto pCanvas = wax::SoftSurface::create( WGBP(Surface,
+	auto pCanvas = wax::SoftBitmap::create( WGBP(Surface,
 												 _.size = WgSize(width,height),
 												 _.format = type,
 												 _.canvas = true ),
@@ -260,14 +260,14 @@ int main ( int argc, char** argv )
 	g_pGfxDevice = pGfxDevice;
 	g_pCanvas = pCanvas;
 	
-	g_pSoftSurfaceFactory = wax::SoftSurfaceFactory::create();
+	g_pSoftSurfaceFactory = wax::SoftBitmapFactory::create();
 	g_pSurfaceFactory = g_pSoftSurfaceFactory;
 	g_pEdgemapFactory = wax::SoftEdgemapFactory::create();
 
 #endif
 	
 	WgBase::setDefaultDevice(g_pGfxDevice);
-	WgBase::setDefaultSurfaceFactory(g_pSurfaceFactory);
+	WgBase::setDefaultBitmapFactory(g_pSurfaceFactory);
 	WgBase::setDefaultEdgemapFactory(g_pEdgemapFactory);
 
 	
@@ -535,7 +535,7 @@ bool scrollChartTest(WgRootPanel* pRoot)
 	pBaseFlex->SetSkin(wg::ColorSkin::create(WgColor::Blue));
 
 	auto pChart = new WgScrollChart();
-	pChart->SetSurfaceFactory(WgBase::defaultSurfaceFactory());
+	pChart->SetSurfaceFactory(WgBase::defaultBitmapFactory());
 	pChart->SetSkin(wg::ColorSkin::create(WgColor::DarkGreen));
 
 	pChart->SetValueRange(100, -100);
@@ -1107,7 +1107,7 @@ void shadowLayerTest( WgRootPanel * pRoot )
 {
 	auto pImgSurface = sdl_wglib::LoadSurface("resources/shadow.png", g_pSurfaceFactory );
 	
-	auto pShadowSkin = wg::BlockSkin::create( { .firstBlock = {0,128,128,0}, .padding = {0,128,128,0}, .surface = pImgSurface } );
+	auto pShadowSkin = wg::BlockSkin::create( { .bitmap = pImgSurface, .firstBlock = {0,128,128,0}, .padding = {0,128,128,0} } );
 	
 	
 	auto pShadowLayer = new WgShadowLayer();
@@ -1257,7 +1257,7 @@ bool tooltipLayerTest(WgRootPanel * pRoot)
 	auto pTooltipLayer = new WgTooltipLayer();
 
 	wg::Surface_p pTooltipBg = sdl_wglib::LoadSurface("resources/tooltip_under_bg.png", g_pSurfaceFactory);
-	auto pSkin = wg::BlockSkin::create( { .frame = wg::Border( 10,4,3,4 ), .padding = { 10,4,4,4 }, .surface = pTooltipBg }  );
+	auto pSkin = wg::BlockSkin::create( { .bitmap = pTooltipBg, .frame = wg::Border( 10,4,3,4 ), .padding = { 10,4,4,4 } }  );
 //        pSkin->setRigidPartX(5, 16, wg::YSections::Top | wg::YSections::Center | wg::YSections::Bottom);
 
 /*

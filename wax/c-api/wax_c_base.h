@@ -38,8 +38,8 @@ WAX_EXPORT void		wax_setErrorHandler(void (*errorHandler)(const wax_errorInfo * 
 
 WAX_EXPORT wax_obj	wax_defaultBitmapCache();
 
-WAX_EXPORT void	wax_setDefaultSurfaceFactory( wax_obj factory );
-WAX_EXPORT wax_obj	wax_defaultSurfaceFactory();
+WAX_EXPORT void	wax_setDefaultBitmapFactory( wax_obj factory );
+WAX_EXPORT wax_obj	wax_defaultBitmapFactory();
 
 WAX_EXPORT void	wax_setDefaultEdgemapFactory( wax_obj factory );
 WAX_EXPORT wax_obj	wax_defaultEdgemapFactory();

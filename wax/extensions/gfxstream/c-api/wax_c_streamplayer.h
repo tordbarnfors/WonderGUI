@@ -33,7 +33,7 @@ extern "C" {
 	typedef	void(*wax_streamPlayerFence_func)(uint16_t fenceID, uint32_t fenceValue);
 
 
-	WAX_EXPORT wax_obj		wax_createStreamPlayer(wax_obj backend, wax_obj surfaceFactory, wax_obj edgemapFactory);
+	WAX_EXPORT wax_obj		wax_createStreamPlayer(wax_obj backend, wax_obj bitmapFactory, wax_obj edgemapFactory);
 
 	WAX_EXPORT wax_component	wax_getStreamPlayerInput(wax_obj streamPlayer);
 

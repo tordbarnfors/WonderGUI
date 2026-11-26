@@ -27,7 +27,7 @@
 #include <wg2_layer.h>
 #include <wax_dataset.h>
 #include <wg2_key.h>
-#include <wax_surfacefactory.h>
+#include <wax_bitmapfactory.h>
 
 //____ WgDragNDropHook ___________________________________________________________
 

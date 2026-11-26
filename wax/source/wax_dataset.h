@@ -67,7 +67,7 @@ namespace wax
 
 	Dataset is a template class that can be used to embedd a class or struct
 	into a reference counted Wax object. The main purpose is to allow
-	any arbitrary class to be used as user data for a Widget or Surface, providing
+	any arbitrary class to be used as user data for a Widget or Bitmap, providing
 	additional application specific data, but it can be used for anything.
 
 	The embedded class is provided as a public member named "data".

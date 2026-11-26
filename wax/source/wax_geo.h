@@ -445,9 +445,9 @@ namespace wax
 	//____ Rect<T> ___________________________________________________________
 
 	/**
-		@brief Specifies a rectangular area of a 2D surface through position and size.
+		@brief Specifies a rectangular area of a 2D bitmap through position and size.
 
-		Class Template for specifying a rectangular area of a 2D surface through position and size.
+		Class Template for specifying a rectangular area of a 2D bitmap through position and size.
 
 		Specializations include:
 

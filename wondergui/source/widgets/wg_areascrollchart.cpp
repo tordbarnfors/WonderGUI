@@ -205,9 +205,9 @@ namespace wg
 	}
 
 
-	//____ _renderOnScrollSurface() ___________________________________________
+	//____ _renderOnScrollBitmap() ___________________________________________
 
-	void AreaScrollChart::_renderOnScrollSurface( GfxDevice * pDevice, SizeSPX canvasSize, spx rightEdgeOfs, int64_t rightEdgeTimestamp, spx dirtLen )
+	void AreaScrollChart::_renderOnScrollBitmap( GfxDevice * pDevice, SizeSPX canvasSize, spx rightEdgeOfs, int64_t rightEdgeTimestamp, spx dirtLen )
 	{
 		int microsecPerPixel = m_displayTime / (canvasSize.w / 64);
 

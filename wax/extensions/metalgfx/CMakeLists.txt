@@ -6,10 +6,10 @@ set(SOURCES
 	wax_metaldevicefactory.h
 	wax_metaldevicefactory.mm
 	wax_metalshaders.mm
-	wax_metalsurface.h
-	wax_metalsurface.mm
-	wax_metalsurfacefactory.h
-	wax_metalsurfacefactory.mm
+	wax_metalbitmap.h
+	wax_metalbitmap.mm
+	wax_metalbitmapfactory.h
+	wax_metalbitmapfactory.mm
 	wax_metaledgemap.h
 	wax_metaledgemap.mm
 	wax_metaledgemapfactory.h

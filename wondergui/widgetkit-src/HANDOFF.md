@@ -158,11 +158,11 @@ blue raised control, the list is on `Skins::Canvas`.
 
 Full detail in the pipeline doc; these are the ones that cost the most time.
 
-**The atlas is 2x and the surface must say so.** `BlockSkin` resolves every pts
-value against the *surface's* scale, and `Surface::Blueprint.scale` defaults to
-0 → 64 (1x). A PNG carries no density. The surface **must** be created with
+**The atlas is 2x and the bitmap must say so.** `BlockSkin` resolves every pts
+value against the *bitmap's* scale, and `Bitmap::Blueprint.scale` defaults to
+0 → 64 (1x). A PNG carries no density. The bitmap **must** be created with
 `_.scale = 128`. At the default it does not fail — it renders garbage. `init()`
-now refuses a surface whose `scale() != 128`. Two reported "bugs" during the
+now refuses a bitmap whose `scale() != 128`. Two reported "bugs" during the
 session turned out to be this.
 
 **Nested Blueprints are replaced, never merged.**
@@ -229,9 +229,9 @@ on press-drag-release vs. click semantics.
    directory — likeliest shape is a second kit dir sharing `specs/` and
    `palette.yaml`.
 
-2. **Switch the atlas from PNG to `.surf`.** `SurfaceFileHeader` carries
+2. **Switch the atlas from PNG to `.surf`.** `BitmapFileHeader` carries
    `int16_t scale`, so the reader could set it from the file and the scale
-   footgun above disappears permanently. There is no `Surface::setScale()`, so
+   footgun above disappears permanently. There is no `Bitmap::setScale()`, so
    the kit cannot correct it itself today.
 
 3. **Scrollbar button sizes are coupled.** The 16pt dimension must keep matching

@@ -75,7 +75,7 @@ namespace workbench
 
 		// Loads from the resources directory.
 
-		wg::Surface_p	loadSurface(const std::string& path, const wg::Surface::Blueprint& blueprint = wg::Surface::Blueprint());
+		wg::Bitmap_p	loadBitmap(const std::string& path, const wg::Bitmap::Blueprint& blueprint = wg::Bitmap::Blueprint());
 		wg::Blob_p		loadBlob(const std::string& path);
 
 		// Removed when the test is left.

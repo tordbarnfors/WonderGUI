@@ -44,8 +44,8 @@ namespace wg
 			textRow  ( "Resize placement: ",       [](Glow* g) { return toString(g->resizePlacement()); } ),
 			boolRow  ( "Stretch on resize: ",      [](Glow* g) { return g->stretchOnResize(); } ),
 			boolRow  ( "Clear on resize: ",        [](Glow* g) { return g->clearOnResize(); } ),
-			objectRow( "Surface 1: ",              [](Glow* g) -> Object* { return g->m_surface[0]; } ),
-			objectRow( "Surface 2: ",              [](Glow* g) -> Object* { return g->m_surface[1]; } ),
+			objectRow( "Bitmap 1: ",              [](Glow* g) -> Object* { return g->m_bitmap[0]; } ),
+			objectRow( "Bitmap 2: ",              [](Glow* g) -> Object* { return g->m_bitmap[1]; } ),
 			textRow  ( "Seed blend: ",             [](Glow* g) { return toString(g->seedBlend()); } ),
 			textRow  ( "Glow blend: ",             [](Glow* g) { return toString(g->glowBlend()); } )
 		});

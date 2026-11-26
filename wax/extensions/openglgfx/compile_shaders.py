@@ -31,8 +31,8 @@
 #   Discard         SPIR-V for Vulkan 1.3 makes discard a demote, which GLSL 3.3 doesn't have, so the
 #                   SPIR-V is for Vulkan 1.1, where it is a kill. The shaders take their
 #                   derivatives before they can discard, see warp.hlsl, so it makes no difference.
-#   Y               GL draws into surfaces with y pointing up, from the first row of the texture,
-#                   and into the window with y pointing up from its bottom row. Surfaces keep their
+#   Y               GL draws into bitmaps with y pointing up, from the first row of the texture,
+#                   and into the window with y pointing up from its bottom row. Bitmaps keep their
 #                   first row at the top, as on the other backends, which makes them upside down
 #                   to GL: the vertex shaders flip y by glCanvas.x for them. In the window it is
 #                   gl_FragCoord that is upside down to the shaders, so they get the position as

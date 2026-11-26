@@ -48,7 +48,7 @@ namespace wg
 
 		pBasePanel->slots.pushBack( _createButtonRow(true,true), WGBP(PackPanelSlot, _.weight = 0.f) );
 
-		auto pDisplayBackground = WGCREATE(TileSkin, _.surface = theme.transparencyGrid, _.spacing = 8, _.padding = 8);
+		auto pDisplayBackground = WGCREATE(TileSkin, _.bitmap = theme.transparencyGrid, _.spacing = 8, _.padding = 8);
 
 		m_pSkinDisplay = WGCREATE(SkinDisplay, _.skin = pDisplayBackground, _.displaySkin = pSkin);
 

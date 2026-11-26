@@ -264,12 +264,12 @@ void WgPluginRoot::_render(wax_obj device, const RectSPX& _canvas, const RectSPX
 	WgPluginBase::setContext(m_pContext);
 
 
-	wax_obj hSurfFactory = PluginCalls::gfxDevice->surfaceFactory(device);
+	wax_obj hBitmapFactory = PluginCalls::gfxDevice->bitmapFactory(device);
 	wax_obj hWaveFactory = PluginCalls::gfxDevice->edgemapFactory(device);
 
-	auto pSurfFactory = PluginSurfaceFactory::create(hSurfFactory);
+	auto pBitmapFactory = PluginBitmapFactory::create(hBitmapFactory);
 	auto pWaveFactory = PluginEdgemapFactory::create(hWaveFactory);
-	auto pDevice = PluginGfxDevice::create(device, pSurfFactory, pWaveFactory);
+	auto pDevice = PluginGfxDevice::create(device, pBitmapFactory, pWaveFactory);
 
 	WgPatches patches;
 

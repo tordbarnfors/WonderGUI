@@ -67,11 +67,11 @@ public:
 
 	bool init(GfxDevice * pDevice, const RectI& canvas, wapp::API * pAppAPI)
 	{
-		m_pImg = pAppAPI->loadSurface("resources/small_tile.png", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Bilinear, .tiling = true });
+		m_pImg = pAppAPI->loadBitmap("resources/small_tile.png", pDevice->bitmapFactory(), { .sampleMethod = SampleMethod::Bilinear, .tiling = true });
 		if (!m_pImg)
 			return false;
 
-		auto pFactory = pDevice->surfaceFactory();
+		auto pFactory = pDevice->bitmapFactory();
 
 		for (int i = 0; i < 2; i++)
 		{
@@ -384,7 +384,7 @@ private:
 	// Opaque pattern where each pixel differs from its neighbors: red and green ramps
 	// along x and y, and blue that changes with every step in either direction.
 
-	Surface_p _createPattern(SurfaceFactory* pFactory, SizeI size, SampleMethod method)
+	Bitmap_p _createPattern(BitmapFactory* pFactory, SizeI size, SampleMethod method)
 	{
 		std::vector<Color8> pixels(size.w * size.h);
 
@@ -392,7 +392,7 @@ private:
 			for (int x = 0; x < size.w; x++)
 				pixels[y * size.w + x] = Color8(uint8_t(x * 255 / (size.w - 1)), uint8_t(y * 255 / (size.h - 1)), uint8_t(((x ^ y) & 7) * 36), 255);
 
-		return pFactory->createSurface(WGBP(Surface, _.size = size, _.format = PixelFormat::ARGB_8, _.sampleMethod = method, _.tiling = true),
+		return pFactory->createBitmap(WGBP(Bitmap, _.size = size, _.format = PixelFormat::ARGB_8, _.sampleMethod = method, _.tiling = true),
 									   (uint8_t*)pixels.data(), PixelFormat::ARGB_8);
 	}
 
@@ -417,7 +417,7 @@ private:
 		}
 	}
 
-	Surface_p	m_pImg;
-	Surface_p	m_pPow2[2];
-	Surface_p	m_pNPOT[2];
+	Bitmap_p	m_pImg;
+	Bitmap_p	m_pPow2[2];
+	Bitmap_p	m_pNPOT[2];
 };

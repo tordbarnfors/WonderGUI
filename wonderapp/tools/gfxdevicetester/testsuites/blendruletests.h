@@ -35,28 +35,28 @@ public:
 
 	bool init(GfxDevice * pDevice, const RectSPX& canvas, wapp::API * pAppAPI)
 	{
-		m_pLogo = pAppAPI->loadSurface("resources/logo-200.png", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Bilinear });
+		m_pLogo = pAppAPI->loadBitmap("resources/logo-200.png", pDevice->bitmapFactory(), { .sampleMethod = SampleMethod::Bilinear });
 		if (!m_pLogo)
 			return false;
 
 		SizeI canvasSize = canvas.size() / 64;
 
-		m_pLayer = pDevice->surfaceFactory()->createSurface(WGBP(Surface,
+		m_pLayer = pDevice->bitmapFactory()->createBitmap(WGBP(Bitmap,
 			_.size = canvasSize,
 			_.format = PixelFormat::ARGB_8,
 			_.canvas = true));
 
-		m_pAlphaCanvas = pDevice->surfaceFactory()->createSurface(WGBP(Surface,
+		m_pAlphaCanvas = pDevice->bitmapFactory()->createBitmap(WGBP(Bitmap,
 			_.size = canvasSize,
 			_.format = PixelFormat::Alpha_8,
 			_.canvas = true));
 
-		m_pOpaqueCanvas = pDevice->surfaceFactory()->createSurface(WGBP(Surface,
+		m_pOpaqueCanvas = pDevice->bitmapFactory()->createBitmap(WGBP(Bitmap,
 			_.size = canvasSize,
 			_.format = PixelFormat::XRGB_8,
 			_.canvas = true));
 
-		// Alpha-only surface with a soft round spot, like the light of a lamp.
+		// Alpha-only bitmap with a soft round spot, like the light of a lamp.
 
 		const int spotSize = 128;
 		uint8_t spot[spotSize * spotSize];
@@ -70,7 +70,7 @@ public:
 				spot[y * spotSize + x] = uint8_t(std::lround(light * 255));
 			}
 
-		m_pSpot = pDevice->surfaceFactory()->createSurface(WGBP(Surface,
+		m_pSpot = pDevice->bitmapFactory()->createBitmap(WGBP(Bitmap,
 			_.size = { spotSize, spotSize },
 			_.format = PixelFormat::Alpha_8,
 			_.sampleMethod = SampleMethod::Bilinear),
@@ -418,10 +418,10 @@ private:
 		return Color(colors[mode]);
 	}
 
-	Surface_p		m_pLogo;
-	Surface_p		m_pLayer;
-	Surface_p		m_pAlphaCanvas;
-	Surface_p		m_pOpaqueCanvas;
-	Surface_p		m_pSpot;
+	Bitmap_p		m_pLogo;
+	Bitmap_p		m_pLayer;
+	Bitmap_p		m_pAlphaCanvas;
+	Bitmap_p		m_pOpaqueCanvas;
+	Bitmap_p		m_pSpot;
 	Edgemap_p		m_pEdgemap;
 };

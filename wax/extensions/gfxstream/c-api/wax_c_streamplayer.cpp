@@ -31,13 +31,13 @@ inline StreamPlayer* getPtr(wax_obj obj) {
 	return static_cast<StreamPlayer*>(reinterpret_cast<Object*>(obj));
 }
 
-wax_obj wax_createStreamPlayer(wax_obj backend, wax_obj surfaceFactory, wax_obj edgemapFactory)
+wax_obj wax_createStreamPlayer(wax_obj backend, wax_obj bitmapFactory, wax_obj edgemapFactory)
 {
 	Backend* pBackend = static_cast<Backend*>(reinterpret_cast<Object*>(backend));
-	SurfaceFactory* pSurfaceFactory = static_cast<SurfaceFactory*>(reinterpret_cast<Object*>(surfaceFactory));
+	BitmapFactory* pBitmapFactory = static_cast<BitmapFactory*>(reinterpret_cast<Object*>(bitmapFactory));
 	EdgemapFactory* pEdgemapFactory = static_cast<EdgemapFactory*>(reinterpret_cast<Object*>(edgemapFactory));
 
-	auto p = StreamPlayer::create(pBackend, pSurfaceFactory, pEdgemapFactory);
+	auto p = StreamPlayer::create(pBackend, pBitmapFactory, pEdgemapFactory);
 	p->retain();
 	return p.rawPtr();
 }

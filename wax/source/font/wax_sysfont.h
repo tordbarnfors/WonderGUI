@@ -25,7 +25,7 @@
 
 #include <wax_geo.h>
 #include <wax_font.h>
-#include <wax_surfacefactory.h>
+#include <wax_bitmapfactory.h>
 
 namespace wax
 {
@@ -41,7 +41,7 @@ namespace wax
 	public:
 		//.____ Creation __________________________________________
 
-		static SysFont_p	create( SurfaceFactory * pFactory, Font * pBackupFont = nullptr );
+		static SysFont_p	create( BitmapFactory * pFactory, Font * pBackupFont = nullptr );
 
 		//.____ Identification __________________________________________
 
@@ -73,10 +73,10 @@ namespace wax
 		inline bool		isMonochrome() override { return true; }
 
 	protected:
-		SysFont(SurfaceFactory * pFactory, Font * pBackupFont);
+		SysFont(BitmapFactory * pFactory, Font * pBackupFont);
 		~SysFont();
 
-		Surface_p		m_pSurface;
+		Bitmap_p		m_pBitmap;
 	};
 
 

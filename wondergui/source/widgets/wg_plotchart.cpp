@@ -133,9 +133,9 @@ namespace wg
 					spx canvasSize = Util::alignUp(size);
 					spx offset = (canvasSize - size) / 2;
 
-					auto pSurface = pDevice->surfaceFactory()->createSurface(WGBP(Surface, _.format = PixelFormat::ARGB_8, _.colorSpace = colorSpace, _.size = { canvasSize / 64, canvasSize / 64 }, _.canvas = true));
+					auto pBitmap = pDevice->bitmapFactory()->createBitmap(WGBP(Bitmap, _.format = PixelFormat::ARGB_8, _.colorSpace = colorSpace, _.size = { canvasSize / 64, canvasSize / 64 }, _.canvas = true));
 
-					pDevice->beginCanvasUpdate(pSurface);
+					pDevice->beginCanvasUpdate(pBitmap);
 					pDevice->setBlendMode(BlendMode::Replace);
 					pDevice->fill(Color::Transparent);
 					pDevice->setBlendMode(BlendMode::Blend);
@@ -153,7 +153,7 @@ namespace wg
 					pDevice->drawRing(dot);
 					pDevice->endCanvasUpdate();
 
-					entry.m_sprite = pSurface;
+					entry.m_sprite = pBitmap;
 				}
 
 				SizeSPX center = entry.m_sprite->pixelSize() * 32;

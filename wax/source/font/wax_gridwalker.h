@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wax_types.h>
-#include <wax_surface.h>
+#include <wax_bitmap.h>
 #include <cassert>
 
 namespace wax

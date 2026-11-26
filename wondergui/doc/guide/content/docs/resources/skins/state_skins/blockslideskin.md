@@ -24,15 +24,15 @@ This skin was specially made to make iOS-style toggle buttons possible, where sw
 | slideDistance  | no           | The distance (in pts) graphics will slide when entering slideState. |
 | slideDuration  | no           | Duration of slide in milliseconds. Defaults to 250.          |
 | slideState     | no           | The state that triggers sliding. Defaults to StateBits::Selected. |
-| spacing        | no           | Spacing between lanes in the surface.                        |
-| surface        | no           | Surface containing the lanes.                                |
+| spacing        | no           | Spacing between lanes in the bitmap.                        |
+| bitmap        | no           | Bitmap containing the lanes.                                |
 | blockless      | only         | Specified state has no block lane, just other properties.    |
 
 
 
 ## Concept
 
-The concept of BlockSlideSkin is similar to BlockSkin in that you have a surface with multiple blocks of graphics lined up next to each other and switch between them depending on the state of the widget.
+The concept of BlockSlideSkin is similar to BlockSkin in that you have a bitmap with multiple blocks of graphics lined up next to each other and switch between them depending on the state of the widget.
 
 Now instead of thinking of these as blocks, think about them as lanes that a block that has the same width, but shorter length than the slide can slide along. The lanes are switched depending on the state of the widget, just like blocks are switched in BlockSkin, except for one specific state where we instead slide the block across the lane to the other side. This is called the *slideState* and is by default set to *Selected*, making the block slide along the lane to switch side when widget enters or leaves state Selected.
 
@@ -44,13 +44,13 @@ Alternatively you can use *CanvasLayers* to render your BlockSlideSkin in a lowe
 
 ## Configuration
 
-Let's configure a typical iOS-style toggle button. We start with a surface that looks like this:
+Let's configure a typical iOS-style toggle button. We start with a bitmap that looks like this:
 
 ![sliding_statebutton](/docs/manual/sliding_statebutton.png)
 
-This surface has three "lanes" lined up vertically. The top one is for state *Default*, the second for *Hovered* and the third for *Disabled*. These needs to be lined up vertically since we will slide the block horizontally. If we were to create sliders that would slide vertically, we would need to line them up horizontally. In other words, the lanes needs to be placed next to each other, not after each other.
+This bitmap has three "lanes" lined up vertically. The top one is for state *Default*, the second for *Hovered* and the third for *Disabled*. These needs to be lined up vertically since we will slide the block horizontally. If we were to create sliders that would slide vertically, we would need to line them up horizontally. In other words, the lanes needs to be placed next to each other, not after each other.
 
-The size of this particular surface is 132x108 points, i.e. the three lanes are 132x35 points each.
+The size of this particular bitmap is 132x108 points, i.e. the three lanes are 132x35 points each.
 
 We start by defining the lanes in the blueprint. We do so by defining a rectangle for the first lane, any spacing between the lanes and which states we have lanes for:
 
@@ -60,7 +60,7 @@ We start by defining the lanes in the blueprint. We do so by defining a rectangl
 .states = { State::Default, State::Hovered, State::Disabled }
 ```
 
-Actually, in this case we don't really need to specify firstLane since BlockSlideSkin will calculate size of firstLane if not defined, assuming that the lanes covers the whole surface.
+Actually, in this case we don't really need to specify firstLane since BlockSlideSkin will calculate size of firstLane if not defined, assuming that the lanes covers the whole bitmap.
 
 Secondly we define the length of the block and which direction it should slide when widget enters the state set in *slideState*:
 
@@ -89,7 +89,7 @@ auto pSliderSkin = BlockSlideSkin::create({
 	.slideState = StateBits::Selected,
 	.spacing = 0,
 	.states = { State::Default, {}, State::Hovered, {}, State::Disabled, {} },
-	.surface = pSliderSurf 
+	.bitmap = pSliderBitmap 
 });
 ```
 

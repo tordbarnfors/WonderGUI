@@ -21,8 +21,8 @@
 =========================================================================*/
 
 #include <wax_sdlgpubackend.h>
-#include <wax_sdlgpusurface.h>
-#include <wax_sdlgpusurfacefactory.h>
+#include <wax_sdlgpubitmap.h>
+#include <wax_sdlgpubitmapfactory.h>
 #include <wax_sdlgpuedgemap.h>
 #include <wax_sdlgpuedgemapfactory.h>
 #include <wax_sdlgpuwarpmap.h>
@@ -87,7 +87,7 @@ namespace wax
 
 	SdlGpuBackend::SdlGpuBackend()
 	{
-		m_pSurfaceFactory = SdlGpuSurfaceFactory::create();
+		m_pBitmapFactory = SdlGpuBitmapFactory::create();
 		m_pEdgemapFactory = SdlGpuEdgemapFactory::create();
 		m_pWarpmapFactory = SdlGpuWarpmapFactory::create();
 
@@ -243,11 +243,11 @@ namespace wax
 		return m_bRendering;
 	}
 
-	//____ _isNativeSurface() ____________________________________________________
+	//____ _isNativeBitmap() ____________________________________________________
 
-	bool SdlGpuBackend::_isNativeSurface( const Object * pObject ) const
+	bool SdlGpuBackend::_isNativeBitmap( const Object * pObject ) const
 	{
-		return pObject && _isOfType(pObject->typeInfo(), SdlGpuSurface::TYPEINFO);
+		return pObject && _isOfType(pObject->typeInfo(), SdlGpuBitmap::TYPEINFO);
 	}
 
 	//____ _isNativeEdgemap() ____________________________________________________
@@ -266,7 +266,7 @@ namespace wax
 
 	//____ _beginSessionOnDevice() _______________________________________________
 
-	void SdlGpuBackend::_beginSessionOnDevice( Surface * pCanvas )
+	void SdlGpuBackend::_beginSessionOnDevice( Bitmap * pCanvas )
 	{
 		m_ops.clear();
 		m_patches.clear();
@@ -404,28 +404,28 @@ namespace wax
 
 	//____ _bindCanvas() _________________________________________________________
 
-	bool SdlGpuBackend::_bindCanvas( Surface * pCanvas, SizeI& size, CanvasKind& kind )
+	bool SdlGpuBackend::_bindCanvas( Bitmap * pCanvas, SizeI& size, CanvasKind& kind )
 	{
 		if (!m_bRendering)
 			return false;
 
-		auto pSurface = static_cast<SdlGpuSurface*>(pCanvas);
+		auto pBitmap = static_cast<SdlGpuBitmap*>(pCanvas);
 
-		if (pSurface && (!pSurface->m_bCanvas || !pSurface->texture()))
+		if (pBitmap && (!pBitmap->m_bCanvas || !pBitmap->texture()))
 		{
-			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Surface can not be used as canvas, rendering to default canvas instead.",
+			Base::reportError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Bitmap can not be used as canvas, rendering to default canvas instead.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			pSurface = nullptr;
+			pBitmap = nullptr;
 		}
 
 		m_bTargetBound = false;
-		m_bSessionOnDefaultCanvas = (pSurface == nullptr);
+		m_bSessionOnDefaultCanvas = (pBitmap == nullptr);
 
-		if (pSurface)
+		if (pBitmap)
 		{
-			size = pSurface->pixelSize();
-			kind = _canvasKind(pSurface);
-			m_targetFormat = pSurface->textureFormat();
+			size = pBitmap->pixelSize();
+			kind = _canvasKind(pBitmap);
+			m_targetFormat = pBitmap->textureFormat();
 		}
 		else
 		{
@@ -437,8 +437,8 @@ namespace wax
 			m_targetFormat = m_defaultFormat;
 		}
 
-		_holdForSession(pSurface);
-		_record(Op::BindCanvas, 0, 0, pSurface);
+		_holdForSession(pBitmap);
+		_record(Op::BindCanvas, 0, 0, pBitmap);
 
 		m_bTargetBound = true;
 		m_targetSize = size;
@@ -748,15 +748,15 @@ namespace wax
 	//
 	// What the CPU has written to it is uploaded when the session is played back, see _execute().
 
-	void SdlGpuBackend::_prepareBlitSource( Surface * pSurface )
+	void SdlGpuBackend::_prepareBlitSource( Bitmap * pBitmap )
 	{
 	}
 
 	//____ _bindBlitTexture() ____________________________________________________
 
-	bool SdlGpuBackend::_bindBlitTexture( Surface * pSurface )
+	bool SdlGpuBackend::_bindBlitTexture( Bitmap * pBitmap )
 	{
-		auto pSource = static_cast<SdlGpuSurface*>(pSurface);
+		auto pSource = static_cast<SdlGpuBitmap*>(pBitmap);
 
 		if (!m_bTargetBound || !pSource->texture())
 			return false;
@@ -774,15 +774,15 @@ namespace wax
 	// Palette based sources are read with Load(), but a sampler goes with the texture, which had
 	// better not filter what is indexes. Clipping is up to the shaders, see the samplers.
 
-	void SdlGpuBackend::_bindBlitSampler( Surface * pSurface, bool bClip )
+	void SdlGpuBackend::_bindBlitSampler( Bitmap * pBitmap, bool bClip )
 	{
 		if (!m_bTargetBound)
 			return;
 
-		bool bIndexed = static_cast<SdlGpuSurface*>(pSurface)->isIndexed();
-		bool bBilinear = !bIndexed && pSurface->sampleMethod() == SampleMethod::Bilinear;
+		bool bIndexed = static_cast<SdlGpuBitmap*>(pBitmap)->isIndexed();
+		bool bBilinear = !bIndexed && pBitmap->sampleMethod() == SampleMethod::Bilinear;
 
-		_record(Op::BindSampler, (pSurface->isTiling() ? 2 : 0) + (bBilinear ? 1 : 0));
+		_record(Op::BindSampler, (pBitmap->isTiling() ? 2 : 0) + (bBilinear ? 1 : 0));
 	}
 
 	//____ _bindEdgemap() ________________________________________________________
@@ -826,7 +826,7 @@ namespace wax
 	//
 	// A session on the default canvas whose owner has given a command buffer, see
 	// setCommandBuffer(), has its render pass there instead, for the owner to submit. What comes
-	// before the render pass is still submitted here, so all that surfaces, edgemaps and Warpmaps
+	// before the render pass is still submitted here, so all that bitmaps, edgemaps and Warpmaps
 	// have is on its way to the GPU when a session has ended, and only draws into a texture that
 	// nothing of ours reads wait for the owner.
 
@@ -897,7 +897,7 @@ namespace wax
 			switch (op.op)
 			{
 				case Op::BindCanvas:
-					_executeBindCanvas(static_cast<SdlGpuSurface*>(op.pObject));
+					_executeBindCanvas(static_cast<SdlGpuBitmap*>(op.pObject));
 					break;
 
 				case Op::SetPipeline:
@@ -928,7 +928,7 @@ namespace wax
 
 				case Op::BindBlitTexture:
 				{
-					auto pSource = static_cast<SdlGpuSurface*>(op.pObject);
+					auto pSource = static_cast<SdlGpuBitmap*>(op.pObject);
 
 					m_pExecBlitTexture = pSource->texture();
 
@@ -1000,7 +1000,7 @@ namespace wax
 			if (op.op != Op::BindBlitTexture)
 				continue;
 
-			auto pSource = static_cast<SdlGpuSurface*>(op.pObject);
+			auto pSource = static_cast<SdlGpuBitmap*>(op.pObject);
 
 			if (!pSource->isMipmapStale())
 				continue;
@@ -1045,12 +1045,12 @@ namespace wax
 		{
 			const TypeInfo& type = pObject->typeInfo();
 
-			if (_isOfType(type, SdlGpuSurface::TYPEINFO))
+			if (_isOfType(type, SdlGpuBitmap::TYPEINFO))
 			{
-				auto pSurface = static_cast<SdlGpuSurface*>(pObject.rawPtr());
+				auto pBitmap = static_cast<SdlGpuBitmap*>(pObject.rawPtr());
 
-				if (pSurface->_hasUploads())
-					pSurface->_recordUploads(pCopyPass, uploads);
+				if (pBitmap->_hasUploads())
+					pBitmap->_recordUploads(pCopyPass, uploads);
 			}
 			else if (_isOfType(type, SdlGpuEdgemap::TYPEINFO))
 				static_cast<SdlGpuEdgemap*>(pObject.rawPtr())->_recordUpload(uploads);
@@ -1063,7 +1063,7 @@ namespace wax
 
 	//____ _executeBindCanvas() __________________________________________________
 
-	void SdlGpuBackend::_executeBindCanvas( SdlGpuSurface * pCanvas )
+	void SdlGpuBackend::_executeBindCanvas( SdlGpuBitmap * pCanvas )
 	{
 		_endPass();
 
@@ -1279,11 +1279,11 @@ namespace wax
 		return &m_dummyCanvas;
 	}
 
-	//____ surfaceFactory() ______________________________________________________
+	//____ bitmapFactory() ______________________________________________________
 
-	SurfaceFactory_p SdlGpuBackend::surfaceFactory()
+	BitmapFactory_p SdlGpuBackend::bitmapFactory()
 	{
-		return m_pSurfaceFactory;
+		return m_pBitmapFactory;
 	}
 
 	//____ edgemapFactory() ______________________________________________________
@@ -1304,14 +1304,14 @@ namespace wax
 
 	bool SdlGpuBackend::canBeBlitSource(const TypeInfo& type) const
 	{
-		return _isOfType(type, SdlGpuSurface::TYPEINFO);
+		return _isOfType(type, SdlGpuBitmap::TYPEINFO);
 	}
 
 	//____ canBeCanvas() _________________________________________________________
 
 	bool SdlGpuBackend::canBeCanvas(const TypeInfo& type) const
 	{
-		return _isOfType(type, SdlGpuSurface::TYPEINFO);
+		return _isOfType(type, SdlGpuBitmap::TYPEINFO);
 	}
 
 	//____ waitForCompletion() ___________________________________________________

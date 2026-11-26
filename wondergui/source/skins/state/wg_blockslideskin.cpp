@@ -44,7 +44,7 @@ namespace wg
 
 	BlockSlideSkin::BlockSlideSkin( const Blueprint& bp) : StateSkin(bp)
 	{	
-		m_pSurface = bp.surface;
+		m_pBitmap = bp.bitmap;
 		m_slideDirection = bp.slideDirection == Direction::Undefined ? Direction::Right : bp.slideDirection;
 		m_slideDuration = bp.slideDuration;
 		m_slideState = bp.slideState;
@@ -72,13 +72,13 @@ namespace wg
 
 			if (slideAxis == Axis::X)
 			{
-				lane.w = m_pSurface->pointWidth();
-				lane.h = (m_pSurface->pointHeight() - bp.blockSpacing * (nStateBlocks - 1)) / nStateBlocks;
+				lane.w = m_pBitmap->pointWidth();
+				lane.h = (m_pBitmap->pointHeight() - bp.blockSpacing * (nStateBlocks - 1)) / nStateBlocks;
 			}
 			else
 			{
-				lane.w = (m_pSurface->pointWidth() - bp.blockSpacing * (nStateBlocks - 1)) / nStateBlocks;
-				lane.h = m_pSurface->pointHeight();
+				lane.w = (m_pBitmap->pointWidth() - bp.blockSpacing * (nStateBlocks - 1)) / nStateBlocks;
+				lane.h = m_pBitmap->pointHeight();
 			}
 		}
 		
@@ -218,7 +218,7 @@ namespace wg
 
 	SizeSPX BlockSlideSkin::_defaultSize(int scale) const
 	{
-		// Default size is when each point of the surface maps to a point of the skinarea,
+		// Default size is when each point of the bitmap maps to a point of the skinarea,
 		// independent of differences in scale.
 
 		return align(ptsToSpx(m_blockSize, scale))  + align(ptsToSpx(m_spacing, scale));
@@ -228,14 +228,14 @@ namespace wg
 
 	void BlockSlideSkin::_render(GfxDevice* pDevice, const RectSPX& _canvas, int scale, State state, float value, float value2, int animPos, float* pStateFractions) const
 	{
-		if (!m_pSurface)
+		if (!m_pBitmap)
 			return;
 
 		RectSPX canvas = _canvas - align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_overflow, scale));
 
 		RenderSettingsWithTint settings(pDevice, m_layer, m_blendMode, _getColor(state), canvas, m_pTint);
 
-		pDevice->setBlitSource(m_pSurface);
+		pDevice->setBlitSource(m_pBitmap);
 
 		RectSPX source = _partInCanvas(scale, state, pStateFractions);
 
@@ -390,7 +390,7 @@ namespace wg
 		bool bOpaque = false;
 		bool bTintDecides = false;
 
-		if (!m_pSurface)
+		if (!m_pBitmap)
 			bOpaque = false;
 		else if (m_blendMode == BlendMode::Replace)
 			bOpaque = true;
@@ -398,7 +398,7 @@ namespace wg
 			bOpaque = false;
 		else if (m_blendMode == BlendMode::Blend)
 		{
-			bOpaque = m_pSurface->isOpaque();
+			bOpaque = m_pBitmap->isOpaque();
 			bTintDecides = bOpaque;
 		}
 		else

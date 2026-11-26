@@ -3,8 +3,8 @@
 #include "qoi.h"
 
 #include <wondergui.h>
-#include <wax_softsurface.h>
-#include <wax_softsurfacefactory.h>
+#include <wax_softbitmap.h>
+#include <wax_softbitmapfactory.h>
 #include <wax_qoicompression.h>
 
 using namespace wg;
@@ -73,18 +73,18 @@ static std::vector<uint8_t> bigEndianPixels()
 	return v;
 }
 
-static std::vector<uint8_t> surfacePixels(Surface * pSurface)
+static std::vector<uint8_t> bitmapPixels(Bitmap * pBitmap)
 {
-	auto pixbuf = pSurface->allocPixelBuffer();
-	pSurface->pushPixels(pixbuf);
+	auto pixbuf = pBitmap->allocPixelBuffer();
+	pBitmap->pushPixels(pixbuf);
 
-	int lineBytes = pixbuf.rect.w * pSurface->pixelBits() / 8;
+	int lineBytes = pixbuf.rect.w * pBitmap->pixelBits() / 8;
 
 	std::vector<uint8_t> v;
 	for( int y = 0 ; y < pixbuf.rect.h ; y++ )
 		v.insert(v.end(), pixbuf.pixels + y * pixbuf.pitch, pixbuf.pixels + y * pixbuf.pitch + lineBytes);
 
-	pSurface->freePixelBuffer(pixbuf);
+	pBitmap->freePixelBuffer(pixbuf);
 	return v;
 }
 
@@ -94,7 +94,7 @@ QOITest::QOITest()
 	ADD_TEST(decompressTest);
 	ADD_TEST(writeQOITest);
 	ADD_TEST(readQOITest);
-	ADD_TEST(surfaceFileTest);
+	ADD_TEST(bitmapFileTest);
 }
 
 QOITest::~QOITest()
@@ -221,38 +221,38 @@ bool QOITest::decompressTest(std::ostream& output)
 bool QOITest::writeQOITest(std::ostream& output)
 {
 	auto le = littleEndianPixels();
-	auto pWriter = SurfaceWriter::create();
+	auto pWriter = BitmapWriter::create();
 
 	// ARGB_8 is saved with 4 channels.
 
-	auto pSurface = SoftSurface::create( { .format = PixelFormat::ARGB_8, .size = {16,6} }, le.data(), wax::Util::pixelFormatToDescription(PixelFormat::ARGB_8, false) );
+	auto pBitmap = SoftBitmap::create( { .format = PixelFormat::ARGB_8, .size = {16,6} }, le.data(), wax::Util::pixelFormatToDescription(PixelFormat::ARGB_8, false) );
 
-	auto pBlob = pWriter->writeSurfaceToQOIBlob(pSurface);
+	auto pBlob = pWriter->writeBitmapToQOIBlob(pBitmap);
 	TEST_ASSERT( pBlob && pBlob->size() == int(sizeof(c_qoiFileRGBA)) && memcmp(pBlob->data(), c_qoiFileRGBA, sizeof(c_qoiFileRGBA)) == 0 );
 
 	std::ostringstream stream;
-	TEST_ASSERT( pWriter->writeSurfaceToQOIStream(stream, pSurface) );
+	TEST_ASSERT( pWriter->writeBitmapToQOIStream(stream, pBitmap) );
 	TEST_ASSERT( stream.str().size() == sizeof(c_qoiFileRGBA) && memcmp(stream.str().data(), c_qoiFileRGBA, sizeof(c_qoiFileRGBA)) == 0 );
 
 	// Big endian gives the same file.
 
-	auto pSurfaceBE = SoftSurface::create( { .bigEndian = true, .format = PixelFormat::ARGB_8, .size = {16,6} }, le.data(), wax::Util::pixelFormatToDescription(PixelFormat::ARGB_8, false) );
+	auto pBitmapBE = SoftBitmap::create( { .bigEndian = true, .format = PixelFormat::ARGB_8, .size = {16,6} }, le.data(), wax::Util::pixelFormatToDescription(PixelFormat::ARGB_8, false) );
 
-	pBlob = pWriter->writeSurfaceToQOIBlob(pSurfaceBE);
+	pBlob = pWriter->writeBitmapToQOIBlob(pBitmapBE);
 	TEST_ASSERT( pBlob && pBlob->size() == int(sizeof(c_qoiFileRGBA)) && memcmp(pBlob->data(), c_qoiFileRGBA, sizeof(c_qoiFileRGBA)) == 0 );
 
 	// XRGB_8 is saved with 3 channels.
 
-	auto pSurfaceX = SoftSurface::create( { .format = PixelFormat::XRGB_8, .size = {16,6} }, le.data(), wax::Util::pixelFormatToDescription(PixelFormat::ARGB_8, false) );
+	auto pBitmapX = SoftBitmap::create( { .format = PixelFormat::XRGB_8, .size = {16,6} }, le.data(), wax::Util::pixelFormatToDescription(PixelFormat::ARGB_8, false) );
 
-	pBlob = pWriter->writeSurfaceToQOIBlob(pSurfaceX);
+	pBlob = pWriter->writeBitmapToQOIBlob(pBitmapX);
 	TEST_ASSERT( pBlob && pBlob->size() == int(sizeof(c_qoiFileRGB)) && memcmp(pBlob->data(), c_qoiFileRGB, sizeof(c_qoiFileRGB)) == 0 );
 
 	// Linear color space is marked in header.
 
-	auto pSurfaceLinear = SoftSurface::create( { .colorSpace = ColorSpace::Linear, .format = PixelFormat::ARGB_8, .size = {16,6} }, le.data(), wax::Util::pixelFormatToDescription(PixelFormat::ARGB_8, false) );
+	auto pBitmapLinear = SoftBitmap::create( { .colorSpace = ColorSpace::Linear, .format = PixelFormat::ARGB_8, .size = {16,6} }, le.data(), wax::Util::pixelFormatToDescription(PixelFormat::ARGB_8, false) );
 
-	pBlob = pWriter->writeSurfaceToQOIBlob(pSurfaceLinear);
+	pBlob = pWriter->writeBitmapToQOIBlob(pBitmapLinear);
 	TEST_ASSERT( pBlob && ((uint8_t*)pBlob->data())[13] == 1 && memcmp(((uint8_t*)pBlob->data()) + 14, c_qoiFileRGBA + 14, sizeof(c_qoiFileRGBA) - 14) == 0 );
 
 	return true;
@@ -263,7 +263,7 @@ bool QOITest::writeQOITest(std::ostream& output)
 bool QOITest::readQOITest(std::ostream& output)
 {
 	auto le = littleEndianPixels();
-	auto pReader = SurfaceReader::create( { .factory = SoftSurfaceFactory::create() } );
+	auto pReader = BitmapReader::create( { .factory = SoftBitmapFactory::create() } );
 
 	// From stream, which should be left right after the image.
 
@@ -272,9 +272,9 @@ bool QOITest::readQOITest(std::ostream& output)
 
 	std::istringstream stream(data);
 
-	auto pSurface = pReader->readSurfaceFromStream(stream);
-	TEST_ASSERT( pSurface && pSurface->pixelFormat() == PixelFormat::ARGB_8 && pSurface->colorSpace() == ColorSpace::sRGB );
-	TEST_ASSERT( pSurface->pixelSize() == SizeI(16,6) && surfacePixels(pSurface) == le );
+	auto pBitmap = pReader->readBitmapFromStream(stream);
+	TEST_ASSERT( pBitmap && pBitmap->pixelFormat() == PixelFormat::ARGB_8 && pBitmap->colorSpace() == ColorSpace::sRGB );
+	TEST_ASSERT( pBitmap->pixelSize() == SizeI(16,6) && bitmapPixels(pBitmap) == le );
 
 	std::string rest;
 	stream >> rest;
@@ -285,18 +285,18 @@ bool QOITest::readQOITest(std::ostream& output)
 	auto pBlob = Blob::create(sizeof(c_qoiFileRGBA));
 	memcpy(pBlob->data(), c_qoiFileRGBA, sizeof(c_qoiFileRGBA));
 
-	pSurface = pReader->readSurfaceFromBlob(pBlob);
-	TEST_ASSERT( pSurface && surfacePixels(pSurface) == le );
+	pBitmap = pReader->readBitmapFromBlob(pBlob);
+	TEST_ASSERT( pBitmap && bitmapPixels(pBitmap) == le );
 
-	pSurface = pReader->readSurfaceFromMemory((const char*) c_qoiFileRGBA);
-	TEST_ASSERT( pSurface && surfacePixels(pSurface) == le );
+	pBitmap = pReader->readBitmapFromMemory((const char*) c_qoiFileRGBA);
+	TEST_ASSERT( pBitmap && bitmapPixels(pBitmap) == le );
 
 	// 3 channels gives XRGB_8.
 
-	pSurface = pReader->readSurfaceFromMemory((const char*) c_qoiFileRGB);
-	TEST_ASSERT( pSurface && pSurface->pixelFormat() == PixelFormat::XRGB_8 );
+	pBitmap = pReader->readBitmapFromMemory((const char*) c_qoiFileRGB);
+	TEST_ASSERT( pBitmap && pBitmap->pixelFormat() == PixelFormat::XRGB_8 );
 
-	auto pixels = surfacePixels(pSurface);
+	auto pixels = bitmapPixels(pBitmap);
 	TEST_ASSERT( pixels.size() == le.size() );
 
 	for( size_t i = 0 ; i < pixels.size() ; i += 4 )
@@ -305,33 +305,33 @@ bool QOITest::readQOITest(std::ostream& output)
 	// Truncated image fails.
 
 	std::istringstream truncated( std::string( (const char*) c_qoiFileRGBA, sizeof(c_qoiFileRGBA) - 12 ) );
-	TEST_ASSERT( pReader->readSurfaceFromStream(truncated) == nullptr );
+	TEST_ASSERT( pReader->readBitmapFromStream(truncated) == nullptr );
 
 	return true;
 }
 
-//____ surfaceFileTest() ______________________________________________________
+//____ bitmapFileTest() ______________________________________________________
 
-bool QOITest::surfaceFileTest(std::ostream& output)
+bool QOITest::bitmapFileTest(std::ostream& output)
 {
 	auto le = littleEndianPixels();
-	auto pSurface = SoftSurface::create( { .format = PixelFormat::ARGB_8, .size = {16,6} }, le.data(), wax::Util::pixelFormatToDescription(PixelFormat::ARGB_8, false) );
+	auto pBitmap = SoftBitmap::create( { .format = PixelFormat::ARGB_8, .size = {16,6} }, le.data(), wax::Util::pixelFormatToDescription(PixelFormat::ARGB_8, false) );
 
-	// Pixel data of a surface file with QOI compression is the same as in a QOI file.
+	// Pixel data of a bitmap file with QOI compression is the same as in a QOI file.
 
-	auto pWriter = SurfaceWriter::create( { .pixelCompressor = QOICompressor::create( { .bigEndian = false } ) } );
-	auto pBlob = pWriter->writeSurfaceToBlob(pSurface);
+	auto pWriter = BitmapWriter::create( { .pixelCompressor = QOICompressor::create( { .bigEndian = false } ) } );
+	auto pBlob = pWriter->writeBitmapToBlob(pBitmap);
 
-	auto pHeader = (const SurfaceFileHeader*) pBlob->data();
+	auto pHeader = (const BitmapFileHeader*) pBlob->data();
 	auto pPixelData = ((const uint8_t*) pBlob->data()) + pHeader->headerBytes + pHeader->paletteBytes;
 
 	TEST_ASSERT( pHeader->pixelCompression == QOICompressor::ID_TOKEN );
 	TEST_ASSERT( pHeader->pixelBytes - pHeader->pixelDataPadding == int(sizeof(c_qoiFileRGBA)) - c_qoiHeaderSize );
 	TEST_ASSERT( memcmp(pPixelData, c_qoiFileRGBA + c_qoiHeaderSize, sizeof(c_qoiFileRGBA) - c_qoiHeaderSize) == 0 );
 
-	auto pReader = SurfaceReader::create( { .factory = SoftSurfaceFactory::create() } );
-	auto pLoaded = pReader->readSurfaceFromBlob(pBlob);
-	TEST_ASSERT( pLoaded && surfacePixels(pLoaded) == le );
+	auto pReader = BitmapReader::create( { .factory = SoftBitmapFactory::create() } );
+	auto pLoaded = pReader->readBitmapFromBlob(pBlob);
+	TEST_ASSERT( pLoaded && bitmapPixels(pLoaded) == le );
 
 	return true;
 }

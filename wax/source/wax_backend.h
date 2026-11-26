@@ -36,8 +36,8 @@
 
 
 #include <wax_geo.h>
-#include <wax_surface.h>
-#include <wax_surfacefactory.h>
+#include <wax_bitmap.h>
+#include <wax_bitmapfactory.h>
 #include <wax_edgemapfactory.h>
 #include <wax_canvaslayers.h>
 
@@ -98,7 +98,7 @@ namespace wax
 			Fill,
 			Line,
 			Blit,
-			ClipBlit,					// Might be blitting from outside source surface.
+			ClipBlit,					// Might be blitting from outside source bitmap.
 			Tile,
 			Blur,
 			DrawEdgemap,
@@ -338,10 +338,10 @@ namespace wax
 		virtual void	beginRender() = 0;
 		virtual void	endRender() = 0;
 		
-		virtual void	beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo = nullptr ) = 0;
+		virtual void	beginSession( CanvasRef canvasRef, Bitmap * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo = nullptr ) = 0;
 		virtual void	endSession() = 0;
 
-		virtual void	setCanvas( Surface * pSurface ) = 0;
+		virtual void	setCanvas( Bitmap * pBitmap ) = 0;
 		virtual void	setCanvas( CanvasRef ref ) = 0;
 
 		virtual void	setObjects(Object* const * pBeg, Object* const * pEnd) = 0;
@@ -357,7 +357,7 @@ namespace wax
 
 		virtual const CanvasInfo *	canvasInfo(CanvasRef ref) const = 0;
 
-		virtual SurfaceFactory_p	surfaceFactory() = 0;
+		virtual BitmapFactory_p	bitmapFactory() = 0;
 		virtual EdgemapFactory_p	edgemapFactory() = 0;
 		virtual WarpmapFactory_p	warpmapFactory() = 0;
 
@@ -370,18 +370,18 @@ namespace wax
 
 		//.____ Uploads ______________________________________________________
 
-		// Pixels written to a surface by the CPU have to reach the GPU before the
-		// surface can be drawn. Backends that defer those uploads do them when the
-		// surface is first used, which puts all of them in front of the first frame
+		// Pixels written to a bitmap by the CPU have to reach the GPU before the
+		// bitmap can be drawn. Backends that defer those uploads do them when the
+		// bitmap is first used, which puts all of them in front of the first frame
 		// that needs them. submitUploads() lets you choose when the GPU does that
 		// work instead, e.g. right after loading, so the copies run while the CPU is
 		// still busy building the GUI.
 		//
-		// Nothing depends on calling it: whatever is still pending when a surface is
+		// Nothing depends on calling it: whatever is still pending when a bitmap is
 		// drawn is uploaded then. It does not wait for the GPU to finish, use
 		// waitForCompletion() for that.
 		//
-		// maxBytes limits how much is sent in one call, counted in whole surfaces and
+		// maxBytes limits how much is sent in one call, counted in whole bitmaps and
 		// never less than one, so the work can be spread over several calls. A
 		// negative value sends everything. Not allowed during a session.
 		//

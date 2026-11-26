@@ -13,7 +13,7 @@ ColorSkin is the most simple StateSkin. It fills the whole are with a single col
 | Property  | Set in state | Description                 |
 | --------- | ----------- | --------------------------- |
 | blendMode | no          | BlendMode to use for fill.  |
-| color     | yes | Tint color for the surface. |
+| color     | yes | Tint color for the bitmap. |
 
 ## Examples
 

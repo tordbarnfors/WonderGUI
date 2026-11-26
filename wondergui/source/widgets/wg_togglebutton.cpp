@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wg_togglebutton.h>
-#include <wax_surface.h>
+#include <wax_bitmap.h>
 #include <wax_device.h>
 #include <wg_util.h>
 #include <wg_msgrouter.h>

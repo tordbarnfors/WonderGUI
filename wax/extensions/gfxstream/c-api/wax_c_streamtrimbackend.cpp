@@ -40,14 +40,14 @@ void wax_addNonMaskingSession(wax_obj streamTrimBackend)
 	getPtr(streamTrimBackend)->addNonMaskingSession();
 }
 
-void wax_addFullyMaskingSession(wax_obj streamTrimBackend,  wax_canvasRef canvasRef, wax_obj canvasSurface )
+void wax_addFullyMaskingSession(wax_obj streamTrimBackend,  wax_canvasRef canvasRef, wax_obj canvasBitmap )
 {
-	getPtr(streamTrimBackend)->addFullyMaskingSession((CanvasRef) canvasRef, static_cast<Surface*>(reinterpret_cast<Object*>(canvasSurface)));
+	getPtr(streamTrimBackend)->addFullyMaskingSession((CanvasRef) canvasRef, static_cast<Bitmap*>(reinterpret_cast<Object*>(canvasBitmap)));
 }
 
-void wax_addMaskingSession(wax_obj streamTrimBackend,  wax_canvasRef canvasRef, wax_obj canvasSurface, int nMaskingRects, const wax_rectSPX * pMaskingRects )
+void wax_addMaskingSession(wax_obj streamTrimBackend,  wax_canvasRef canvasRef, wax_obj canvasBitmap, int nMaskingRects, const wax_rectSPX * pMaskingRects )
 {
-	getPtr(streamTrimBackend)->addMaskingSession((CanvasRef) canvasRef, static_cast<Surface*>(reinterpret_cast<Object*>(canvasSurface)), nMaskingRects, (const RectSPX*) pMaskingRects );
+	getPtr(streamTrimBackend)->addMaskingSession((CanvasRef) canvasRef, static_cast<Bitmap*>(reinterpret_cast<Object*>(canvasBitmap)), nMaskingRects, (const RectSPX*) pMaskingRects );
 }
 
 void wax_clearSessionMasks(wax_obj streamTrimBackend)

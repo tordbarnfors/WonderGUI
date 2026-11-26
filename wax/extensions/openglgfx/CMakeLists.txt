@@ -7,10 +7,10 @@ set(SOURCES
 	compile_shaders.py
 	wax_gldevicefactory.cpp
 	wax_gldevicefactory.h
-	wax_glsurface.cpp
-	wax_glsurface.h
-	wax_glsurfacefactory.cpp
-	wax_glsurfacefactory.h
+	wax_glbitmap.cpp
+	wax_glbitmap.h
+	wax_glbitmapfactory.cpp
+	wax_glbitmapfactory.h
 	wax_gledgemap.cpp
 	wax_gledgemap.h
 	wax_gledgemapfactory.cpp

@@ -94,7 +94,7 @@ namespace wax
 		{
 			CanvasData(int _id) : id(_id), framesPlayed(0) {}
 
-			int id;				// surfaceId + canvasRef << 16;
+			int id;				// bitmapId + canvasRef << 16;
 			std::vector<CanvasFrame>	frames;
 			int framesPlayed;
 		};

@@ -20,10 +20,10 @@
 #include <wax.h>
 #include <waxgfxstream.h>
 
-#include <wax_softsurface.h>
+#include <wax_softbitmap.h>
 #include <wax_softedgemap.h>
 #include <wax_softedgemapfactory.h>
-#include <wax_softsurfacefactory.h>
+#include <wax_softbitmapfactory.h>
 #include <wax_softbackend.h>
 #include <wax_softkernels_default.h>
 #include <wax_device_gen2.h>
@@ -34,19 +34,19 @@ using namespace std;
 
 
 void			processEvents();
-void			renderOutput( Device * pDevice, Surface * pWindowCanvas, Surface * pStreamCanvas );
+void			renderOutput( Device * pDevice, Bitmap * pWindowCanvas, Bitmap * pStreamCanvas );
 void * 			loadFile( const char * pPath );
 Blob_p 			loadBlob( const char * pPath );
-SoftSurface_p	loadImage( const char * pPath );
+SoftBitmap_p	loadImage( const char * pPath );
 
 void playDelayFrames(Device_p pDevice, int nFrames);
 
 void playRectangleDance(Device_p pDevice, CanvasRef canvas);
 void playRectangleDanceDualScreen(Device_p pDevice, CanvasRef canvasRef1, CanvasRef canvasRef2 );
 void playScroll(Device_p pDevice, RectI canvas );
-void playLogoFadeIn(Device_p pDevice, CanvasRef canvasRef, SurfaceFactory_p pFactory );
-void playSurfaceStressTest(Device_p pDevice, CanvasRef canvasRef, SurfaceFactory_p pFactory );
-void playImageStreamingTest(Device_p pDevice, CanvasRef canvasRef, SurfaceFactory_p pFactory );
+void playLogoFadeIn(Device_p pDevice, CanvasRef canvasRef, BitmapFactory_p pFactory );
+void playBitmapStressTest(Device_p pDevice, CanvasRef canvasRef, BitmapFactory_p pFactory );
+void playImageStreamingTest(Device_p pDevice, CanvasRef canvasRef, BitmapFactory_p pFactory );
 void playBounceRects(Device_p pDevice, CanvasRef canvasRef);
 void playDualScreenBounceRects(Device_p pDevice, CanvasRef canvasRef1, CanvasRef canvasRef2);
 void playDirectUpdate(Device_p pDevice, CanvasRef canvasRef );
@@ -101,7 +101,7 @@ int main ( int argc, char** argv )
 		type = PixelFormat::ARGB_8;					// 24-bit window surfaces are not supported.
 		
 	Blob_p pCanvasBlob = Blob::create( pWinSurf->pixels, 0);	
-	SoftSurface_p pCanvas = SoftSurface::create({ .canvas = true, .format = type, .size = SizeI(pWinSurf->w,pWinSurf->h) }, pCanvasBlob, pWinSurf->pitch);
+	SoftBitmap_p pCanvas = SoftBitmap::create({ .canvas = true, .format = type, .size = SizeI(pWinSurf->w,pWinSurf->h) }, pCanvasBlob, pWinSurf->pitch);
     
 	SoftBackend_p pGfxBackend = SoftBackend::create();
 	addDefaultSoftKernels(pGfxBackend);
@@ -117,7 +117,7 @@ int main ( int argc, char** argv )
 
 	SDL_Surface * pFontSurf = IMG_Load( "../resources/anuvverbubbla_8x8.png" );
 //	convertSDLFormat( &format, pFontSurf->format );
-	SoftSurface_p pFontImg = SoftSurface::create( SizeI(pFontSurf->w,pFontSurf->h), PixelFormat::ARGB_8, (unsigned char*) pFontSurf->pixels, pFontSurf->pitch);
+	SoftBitmap_p pFontImg = SoftBitmap::create( SizeI(pFontSurf->w,pFontSurf->h), PixelFormat::ARGB_8, (unsigned char*) pFontSurf->pixels, pFontSurf->pitch);
 	SDL_FreeSurface( pFontSurf );
 		
 	BitmapFont_p pBmpFont = BitmapFont::create( pFontImg, pFontSpec );
@@ -140,13 +140,13 @@ int main ( int argc, char** argv )
 	// Setup streaming
 	//------------------------------------------------------
     
-	auto pStreamOutputCanvas1 = SoftSurface::create( WAXBP(Surface,
+	auto pStreamOutputCanvas1 = SoftBitmap::create( WAXBP(Bitmap,
 														  _.size = {800,480},
 														  _.format = PixelFormat::ARGB_8,
 														  _.canvas = true) );
 
 /*
-	auto pStreamOutputCanvas2 = SoftSurface::create( WAXBP(Surface,
+	auto pStreamOutputCanvas2 = SoftBitmap::create( WAXBP(Bitmap,
 														  _.size = {800,480},
 														  _.format = PixelFormat::ARGB_8,
 														  _.canvas = true) );
@@ -160,7 +160,7 @@ int main ( int argc, char** argv )
 
 //	auto pStreamPlug = GfxStreamPlug::create();
 
-//	auto pGfxPlayer = StreamPlayer::create(pGfxDevice, SoftSurfaceFactory::create());
+//	auto pGfxPlayer = StreamPlayer::create(pGfxDevice, SoftBitmapFactory::create());
 
 	// Writer
 
@@ -194,7 +194,7 @@ int main ( int argc, char** argv )
 
 	// Player
 
-	auto pStreamPlayer = StreamPlayer::create(pGfxBackend, SoftSurfaceFactory::create(), SoftEdgemapFactory::create() );
+	auto pStreamPlayer = StreamPlayer::create(pGfxBackend, SoftBitmapFactory::create(), SoftEdgemapFactory::create() );
 	 
 
 	// Streampump taking from buffer and feeding logger and/or player
@@ -203,7 +203,7 @@ int main ( int argc, char** argv )
 
 	auto pStreamPump = StreamPump::create(StreamSource_p(pStreamBuffer, pStreamBuffer->output), StreamSink_p( pAfterBufferSplitter, pAfterBufferSplitter->input) );
 
-	// StreamGfxDevice and StreamSurfaceFactory feeding encoder
+	// StreamGfxDevice and StreamBitmapFactory feeding encoder
 
 	auto pLZCompressor = LZCompressor::create();
 	auto pSPXCompressor = SPXCompressor::create();
@@ -229,14 +229,14 @@ int main ( int argc, char** argv )
 
 	auto pStreamDevice = DeviceGen2::create(pStreamBackend);
 
-	auto pSurfaceFactory = RemoteSurfaceFactory::create(pEncoder);
+	auto pBitmapFactory = RemoteBitmapFactory::create(pEncoder);
 
 
 //	pStreamPlug->openOutput(0);
 //	auto pStreamLogger = StreamLogger::create(pStreamPlug->output[0], std::cout);
 
 //	pStreamPlug->openOutput(1);
-//	auto pGfxPlayer = StreamPlayer::create(pStreamPlug->output[1], pGfxDevice, SoftSurfaceFactory::create());
+//	auto pGfxPlayer = StreamPlayer::create(pStreamPlug->output[1], pGfxDevice, SoftBitmapFactory::create());
     
     //------------------------------------------------------
     // Setup stream saving
@@ -262,12 +262,12 @@ int main ( int argc, char** argv )
 //   playDirectUpdate( pStreamDevice, CanvasRef::Canvas_1 );
 //   playRectangleDance( pStreamDevice, CanvasRef::Canvas_1 );
 //	  playRectangleDanceDualScreen( pStreamDevice, CanvasRef::Canvas_1, CanvasRef::Canvas_2 );
-    playLogoFadeIn( pStreamDevice, CanvasRef::Canvas_1, pSurfaceFactory );
-//    playSurfaceStressTest( pStreamDevice, CanvasRef::Canvas_1, pSurfaceFactory );
+    playLogoFadeIn( pStreamDevice, CanvasRef::Canvas_1, pBitmapFactory );
+//    playBitmapStressTest( pStreamDevice, CanvasRef::Canvas_1, pBitmapFactory );
 //	playBounceRects( pStreamDevice, CanvasRef::Canvas_1 );
 //	playDualScreenBounceRects( pStreamDevice, CanvasRef::Canvas_1, CanvasRef::Canvas_2 );
 
-//	playImageStreamingTest( pStreamDevice, CanvasRef::Canvas_1, pSurfaceFactory );
+//	playImageStreamingTest( pStreamDevice, CanvasRef::Canvas_1, pBitmapFactory );
 
 	//------------------------------------------------------
 	// Save stream to file
@@ -284,12 +284,12 @@ int main ( int argc, char** argv )
 	// Setup graphics
 	//------------------------------------------------------
 
-//	auto pSoftSurfaceFactory = SoftSurfaceFactory::create();
+//	auto pSoftBitmapFactory = SoftBitmapFactory::create();
 
 
-	SoftSurface_p pSplashImage = loadImage("resources/splash.png");
-	Surface_p pSplashSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::ARGB_8, .size = pSplashImage->pixelSize() });
-	pSplashSurface->copy( CoordI(), pSplashImage );
+	SoftBitmap_p pSplashImage = loadImage("resources/splash.png");
+	Bitmap_p pSplashBitmap = pBitmapFactory->createBitmap({ .format = PixelFormat::ARGB_8, .size = pSplashImage->pixelSize() });
+	pSplashBitmap->copy( CoordI(), pSplashImage );
 
 
 
@@ -299,7 +299,7 @@ int main ( int argc, char** argv )
     
 	pStreamDevice->fill( RectI( 0,0,width,height ), Color::Blue);
 	pStreamDevice->fill( RectI( 10,10,100,100 ), Color::Red);
-    pStreamDevice->setBlitSource(pSplashSurface);
+    pStreamDevice->setBlitSource(pSplashBitmap);
     
 	pStreamDevice->blit( { 120,10 } );
     pStreamDevice->endCanvasUpdate();
@@ -388,7 +388,7 @@ void processEvents()
 // Draws the stream output on the window: a background with two framed output
 // areas, the first one showing the stream canvas.
 
-void renderOutput( Device * pDevice, Surface * pWindowCanvas, Surface * pStreamCanvas )
+void renderOutput( Device * pDevice, Bitmap * pWindowCanvas, Bitmap * pStreamCanvas )
 {
 	const RectI	frames[2] = { {10,10,804,484}, {244 + 20,10,804,484} };
 	const int	border = 2;
@@ -472,9 +472,9 @@ void * loadFile( const char * pPath )
 
 //____ loadImage() _____________________________________________________________
 //
-// Loads an image in any format stb_image supports as an ARGB_8 SoftSurface.
+// Loads an image in any format stb_image supports as an ARGB_8 SoftBitmap.
 
-SoftSurface_p loadImage( const char * pPath )
+SoftBitmap_p loadImage( const char * pPath )
 {
 	int width, height, channels;
 	stbi_uc * pPixels = stbi_load( pPath, &width, &height, &channels, 4 );
@@ -495,21 +495,21 @@ SoftSurface_p loadImage( const char * pPath )
 	desc.B_mask = 0x00FF0000;
 	desc.A_mask = 0xFF000000;
 
-	auto pSurface = SoftSurface::create( { .format = PixelFormat::ARGB_8, .size = {width,height} }, pPixels, desc, width*4 );
+	auto pBitmap = SoftBitmap::create( { .format = PixelFormat::ARGB_8, .size = {width,height} }, pPixels, desc, width*4 );
 	stbi_image_free( pPixels );
-	return pSurface;
+	return pBitmap;
 }
 
 //____ playImageStreamingTest() _______________________________________________
 
-void playImageStreamingTest(Device_p pDevice, CanvasRef canvasRef, SurfaceFactory_p pFactory )
+void playImageStreamingTest(Device_p pDevice, CanvasRef canvasRef, BitmapFactory_p pFactory )
 {
-	SoftSurface_p pOrgSurf = loadImage( "Flow Studio Boot Image.png" );
-	SizeI logoSize = pOrgSurf->pixelSize();
+	SoftBitmap_p pOrgBitmap = loadImage( "Flow Studio Boot Image.png" );
+	SizeI logoSize = pOrgBitmap->pixelSize();
 
-	Surface_p pLogoSurf = pFactory->createSurface({ .format = PixelFormat::ARGB_8, .size = logoSize });
+	Bitmap_p pLogoBitmap = pFactory->createBitmap({ .format = PixelFormat::ARGB_8, .size = logoSize });
 
-	pLogoSurf->copy( CoordI(), pOrgSurf );
+	pLogoBitmap->copy( CoordI(), pOrgBitmap );
 	
 	SizeI canvasSize = pDevice->canvas(canvasRef).size;
 
@@ -517,7 +517,7 @@ void playImageStreamingTest(Device_p pDevice, CanvasRef canvasRef, SurfaceFactor
 	pDevice->beginRender();
 	pDevice->beginCanvasUpdate(canvasRef);
 	
-	pDevice->setBlitSource(pLogoSurf);
+	pDevice->setBlitSource(pLogoBitmap);
 	pDevice->blit( {0,0} );
 	
 	pDevice->endCanvasUpdate();
@@ -526,29 +526,29 @@ void playImageStreamingTest(Device_p pDevice, CanvasRef canvasRef, SurfaceFactor
 }
 
 
-//____ playSurfaceStressTest() _________________________________________________
+//____ playBitmapStressTest() _________________________________________________
 
-void playSurfaceStressTest(Device_p pDevice, CanvasRef canvasRef, SurfaceFactory_p pFactory )
+void playBitmapStressTest(Device_p pDevice, CanvasRef canvasRef, BitmapFactory_p pFactory )
 {
-	SoftSurface_p pOrgSurf = loadImage( "resources/logo-200.png" );
-	SizeI logoSize = pOrgSurf->pixelSize();
+	SoftBitmap_p pOrgBitmap = loadImage( "resources/logo-200.png" );
+	SizeI logoSize = pOrgBitmap->pixelSize();
 
-	Surface_p pLogoSurf = pFactory->createSurface({ .format = PixelFormat::Alpha_8, .size = logoSize });
+	Bitmap_p pLogoBitmap = pFactory->createBitmap({ .format = PixelFormat::Alpha_8, .size = logoSize });
 
-    pLogoSurf->copy( CoordI(), pOrgSurf );
+    pLogoBitmap->copy( CoordI(), pOrgBitmap );
     
     SizeI canvasSize = pDevice->canvas(canvasRef).size/64;
 
     int ticker = 0;
     int length = 600;
     
-    Surface_p pOldCanvas;
+    Bitmap_p pOldCanvas;
     
     SizeI backCanvasSize( 800,480 );
 
     while (ticker < length)
     {
-		auto pCanvas = pFactory->createSurface( WAXBP(Surface, _.size = backCanvasSize, _.format = PixelFormat::BGR_565, _.colorSpace = ColorSpace::Linear, _.bigEndian = true, _.canvas = true ) );
+		auto pCanvas = pFactory->createBitmap( WAXBP(Bitmap, _.size = backCanvasSize, _.format = PixelFormat::BGR_565, _.colorSpace = ColorSpace::Linear, _.bigEndian = true, _.canvas = true ) );
         
         
         
@@ -566,7 +566,7 @@ void playSurfaceStressTest(Device_p pDevice, CanvasRef canvasRef, SurfaceFactory
         }
 
         
-        pDevice->setBlitSource(pLogoSurf);
+        pDevice->setBlitSource(pLogoBitmap);
         pDevice->setTintColor(Color(4096,4096,4096,4096));
 //        pDevice->rotScaleBlit( canvasSize, -ticker, 1.f );
 //        pDevice->blit( CoordI( (canvasSize.w - logoSize.w)/2, (canvasSize.h - logoSize.h)/2 ));
@@ -595,14 +595,14 @@ void playSurfaceStressTest(Device_p pDevice, CanvasRef canvasRef, SurfaceFactory
 
 //____ playLogoFadeIn() _________________________________________________
 
-void playLogoFadeIn(Device_p pDevice, CanvasRef canvasRef, SurfaceFactory_p pFactory )
+void playLogoFadeIn(Device_p pDevice, CanvasRef canvasRef, BitmapFactory_p pFactory )
 {
-	SoftSurface_p pOrgSurf = loadImage( "resources/logo-200.png" );
-	SizeI logoSize = pOrgSurf->pixelSize();
+	SoftBitmap_p pOrgBitmap = loadImage( "resources/logo-200.png" );
+	SizeI logoSize = pOrgBitmap->pixelSize();
 
-	Surface_p pLogoSurf = pFactory->createSurface({ .format = PixelFormat::Alpha_8, .size = logoSize });
+	Bitmap_p pLogoBitmap = pFactory->createBitmap({ .format = PixelFormat::Alpha_8, .size = logoSize });
 
-    pLogoSurf->copy( CoordI(), pOrgSurf );
+    pLogoBitmap->copy( CoordI(), pOrgBitmap );
     
     SizeI canvasSize = pDevice->canvas(canvasRef).size/64;
 
@@ -615,7 +615,7 @@ void playLogoFadeIn(Device_p pDevice, CanvasRef canvasRef, SurfaceFactory_p pFac
         
         pDevice->fill(Color::Black);
         
-        pDevice->setBlitSource(pLogoSurf);
+        pDevice->setBlitSource(pLogoBitmap);
         pDevice->setTintColor(Color(4096,4096,4096,ticker*4096/(length-1)));
         pDevice->blit( CoordSPX( (canvasSize.w - logoSize.w)/2*64, (canvasSize.h - logoSize.h)/2*64 ));
         
@@ -662,14 +662,14 @@ void playDirectUpdate(Device_p pDevice, CanvasRef canvasRef )
 
 	auto& canvasInfo = pDevice->canvas(canvasRef);
 
-	SoftSurface_p	pMyCanvas = SoftSurface::create( { 	.canvas = true,
+	SoftBitmap_p	pMyCanvas = SoftBitmap::create( { 	.canvas = true,
 														.format = canvasInfo.format,
 														.size = canvasInfo.size / 64 });
 
-	MirrorSurface_p	pMyMirror = MirrorSurface::create({
+	MirrorBitmap_p	pMyMirror = MirrorBitmap::create({
+		.bitmap = pMyCanvas,
 		.compressor = LZCompressor::create(),
-		.encoder = s_pEncoder,
-		.surface = pMyCanvas
+		.encoder = s_pEncoder
 	});
 
 

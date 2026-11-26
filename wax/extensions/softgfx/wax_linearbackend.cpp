@@ -87,7 +87,7 @@ namespace wax
 		def.size = size;
 		def.scale = scale;
 		def.ref = ref;
-		def.pSurface = nullptr;
+		def.pBitmap = nullptr;
 		def.format = pixelFormat;
 		def.colorSpace = colorSpace == ColorSpace::Undefined ? ColorSpace::sRGB : colorSpace;
 		def.bigEndian = bBigEndian;
@@ -113,7 +113,7 @@ namespace wax
 
 	//____ beginSession() _______________________________________________________
 
-	void LinearBackend::beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
+	void LinearBackend::beginSession( CanvasRef canvasRef, Bitmap * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
 	{
 		// We prepare our canvas segments as much as we can, i.e. we resize the vector
 		// and fill in the rect. Pitch and pBuffer depends on canvas.
@@ -151,9 +151,9 @@ namespace wax
 
 	//____ setCanvas() ___________________________________________________________
 
-	void LinearBackend::setCanvas( Surface * pSurface )
+	void LinearBackend::setCanvas( Bitmap * pBitmap )
 	{
-		SoftBackend::setCanvas(pSurface);
+		SoftBackend::setCanvas(pBitmap);
 
 		if( m_activeCanvas != CanvasRef::None )
 		{
@@ -236,7 +236,7 @@ namespace wax
 
 				if (statesChanged & uint8_t(StateChange::BlitSource))
 				{
-					auto pBlitSource = static_cast<SoftSurface*>(m_pObjectsBeg[readObjectIndex(p)]);
+					auto pBlitSource = static_cast<SoftBitmap*>(m_pObjectsBeg[readObjectIndex(p)]);
 
 					if (!pBlitSource || !m_pBlitSource || pBlitSource->softFormat() != m_pBlitSource->softFormat() ||
 						pBlitSource->sampleMethod() != m_pBlitSource->sampleMethod())
@@ -336,7 +336,7 @@ namespace wax
 				{
 					char errorMsg[1024];
 
-					snprintf(errorMsg, 1024, "Failed fill operation. LinearBackend is missing fill kernel for TintMode::%s, BlendMode::%s onto surface of format %s.",
+					snprintf(errorMsg, 1024, "Failed fill operation. LinearBackend is missing fill kernel for TintMode::%s, BlendMode::%s onto bitmap of format %s.",
 						toString(m_colTrans.mode),
 						toString(mode),
 						toString(m_canvasSoftFormat));
@@ -532,7 +532,7 @@ namespace wax
 
 					char errorMsg[1024];
 
-					snprintf(errorMsg, 1024, "Failed drawLine operation. LinearBackend is missing clipLine kernel for BlendMode::%s onto surface of format %s.",
+					snprintf(errorMsg, 1024, "Failed drawLine operation. LinearBackend is missing clipLine kernel for BlendMode::%s onto bitmap of format %s.",
 						toString(m_blendMode),
 						toString(m_canvasSoftFormat));
 
@@ -944,7 +944,7 @@ namespace wax
 
 					char errorMsg[1024];
 
-					snprintf(errorMsg, 1024, "Failed draw segments operation. LinearBackend is missing segments kernel %s tint for BlendMode::%s onto surface of format %s.",
+					snprintf(errorMsg, 1024, "Failed draw segments operation. LinearBackend is missing segments kernel %s tint for BlendMode::%s onto bitmap of format %s.",
 						tinting.bPerPixel ? "with" : "without",
 						toString(m_blendMode),
 						toString(m_canvasSoftFormat));
@@ -1220,7 +1220,7 @@ namespace wax
 
 	void LinearBackend::_onePassLinearStraightBlit(uint8_t * pDst, int destPitch, int width, int height, CoordI src, const Transform& matrix, CoordI patchPos, StraightBlitOp_p pPassOneOp)
 	{
-		const SoftSurface * pSource = m_pBlitSource;
+		const SoftBitmap * pSource = m_pBlitSource;
 
 		int srcPixelBytes = pSource->m_pPixelDescription->bits / 8;
 		int dstPixelBytes = m_canvasPixelBytes;
@@ -1241,7 +1241,7 @@ namespace wax
 
 	void LinearBackend::_twoPassLinearStraightBlit(uint8_t * pDst, int destPitch, int width, int height, CoordI src, const Transform& matrix, CoordI patchPos, StraightBlitOp_p pPassOneOp)
 	{
-		SoftSurface * pSource = m_pBlitSource;
+		SoftBitmap * pSource = m_pBlitSource;
 
 		int srcPixelBytes = pSource->m_pPixelDescription->bits / 8;
 		int dstPixelBytes = m_canvasPixelBytes;
@@ -1328,7 +1328,7 @@ namespace wax
 
 	void LinearBackend::_twoPassLinearTransform(	uint8_t * pDst, int destPitch, int destWidth, int destHeight, BinalCoord pos, const binalInt transformMatrix[2][2],	CoordI patchPos, TransformBlitOp_p pPassOneOp, StraightBlitOp_p pPassTwoOp)
 	{
-		const SoftSurface * pSource = m_pBlitSource;
+		const SoftBitmap * pSource = m_pBlitSource;
 
 		int dstPixelBytes = m_canvasPixelBytes;
 

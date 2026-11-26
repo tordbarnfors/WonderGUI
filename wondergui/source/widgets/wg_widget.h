@@ -227,8 +227,8 @@ namespace wg
 		void				bringIntoView( Border margin = 0);
 		void				bringIntoView( Rect area, Border margin = 0 );
 
-		Surface_p			screenshot( const Surface::Blueprint& bp = Surface::Blueprint() );
-		Surface_p			screenshot(const Rect& rect, const Surface::Blueprint& bp = Surface::Blueprint() );
+		Bitmap_p			screenshot( const Bitmap::Blueprint& bp = Bitmap::Blueprint() );
+		Bitmap_p			screenshot(const Rect& rect, const Bitmap::Blueprint& bp = Bitmap::Blueprint() );
 
         inline bool         mouseOnWidget(const Coord& coord) const;
 

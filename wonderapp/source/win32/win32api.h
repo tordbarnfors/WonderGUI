@@ -36,8 +36,8 @@ public:
 	int64_t						time() override;
 
 	wg::Blob_p 					loadBlob(const std::string& path, bool bNullTerminate = false) override;
-	wg::Surface_p 				loadSurface(const std::string& path, wg::SurfaceFactory* pFactory = nullptr,
-											const wg::Surface::Blueprint& bp = wg::Surface::Blueprint()) override;
+	wg::Bitmap_p 				loadBitmap(const std::string& path, wg::BitmapFactory* pFactory = nullptr,
+											const wg::Bitmap::Blueprint& bp = wg::Bitmap::Blueprint()) override;
 
 	bool						initDefaultWidgetKit() override;
 

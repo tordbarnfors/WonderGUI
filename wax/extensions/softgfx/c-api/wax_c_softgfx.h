@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wax_c_types.h>
-#include <wax_c_surface.h>
+#include <wax_c_bitmap.h>
 #include <wax_c_edgemap.h>
 
 #ifdef __cplusplus
@@ -32,17 +32,17 @@ extern "C" {
 #endif
 
 WAX_EXPORT wax_obj	wax_createSoftBackend(void);
-WAX_EXPORT int		wax_defineSoftBackendCanvas( wax_obj backend, wax_canvasRef ref, wax_obj softSurface );
+WAX_EXPORT int		wax_defineSoftBackendCanvas( wax_obj backend, wax_canvasRef ref, wax_obj softBitmap );
 
 
-WAX_EXPORT wax_obj	wax_createSoftSurface(const wax_surfaceBP* blueprint);
-WAX_EXPORT wax_obj	wax_createSoftSurfaceFromBlob(const wax_surfaceBP* blueprint, wax_obj blob, int pitch);
-WAX_EXPORT wax_obj	wax_createSoftSurfaceFromBitmap(	wax_obj factory, const wax_surfaceBP* blueprint, const uint8_t* pPixels,
+WAX_EXPORT wax_obj	wax_createSoftBitmap(const wax_bitmapBP* blueprint);
+WAX_EXPORT wax_obj	wax_createSoftBitmapFromBlob(const wax_bitmapBP* blueprint, wax_obj blob, int pitch);
+WAX_EXPORT wax_obj	wax_createSoftBitmapFromBitmap(	wax_obj factory, const wax_bitmapBP* blueprint, const uint8_t* pPixels,
 													wax_pixelFormat pixelFormat, int pitch, const wax_color8 * pPalette, int paletteSize );
-WAX_EXPORT wax_obj	wax_createSoftSurfaceFromRawData(wax_obj factory, const wax_surfaceBP* blueprint, const uint8_t* pPixels,
+WAX_EXPORT wax_obj	wax_createSoftBitmapFromRawData(wax_obj factory, const wax_bitmapBP* blueprint, const uint8_t* pPixels,
 													const wax_pixelDescription * pPixelDescription, int pitch, const wax_color8 * pPalette, int paletteSize );
 
-WAX_EXPORT wax_obj	wax_createSoftSurfaceFactory(void);
+WAX_EXPORT wax_obj	wax_createSoftBitmapFactory(void);
 
 
 WAX_EXPORT wax_obj	wax_createSoftEdgemap( const wax_edgemapBP* blueprint );

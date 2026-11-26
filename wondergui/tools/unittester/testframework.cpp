@@ -11,8 +11,8 @@
 #include "tests/slotlinks.h"
 #include "tests/qoi.h"
 #include "tests/rangeallocator.h"
-#include "tests/surfacefile.h"
-#include "tests/surfacefill.h"
+#include "tests/bitmapfile.h"
+#include "tests/bitmapfill.h"
 #include "tests/softshapes.h"
 #include "tests/shaperender.h"
 #include "tests/edgemap.h"
@@ -39,8 +39,8 @@ TestFramework::TestFramework( std::ostream& output ) :
 	addCollection( new SlotLinksTest() );
 	addCollection( new QOITest() );
 	addCollection( new RangeAllocatorTest() );
-	addCollection( new SurfaceFileTest() );
-	addCollection( new SurfaceFillTest() );
+	addCollection( new BitmapFileTest() );
+	addCollection( new BitmapFillTest() );
 	addCollection( new SoftShapesTest() );
 	addCollection( new ShapeRenderTest() );
 	addCollection( new EdgemapTest() );

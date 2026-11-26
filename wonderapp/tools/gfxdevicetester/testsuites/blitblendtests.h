@@ -22,11 +22,11 @@ public:
 
 	bool init(GfxDevice * pDevice, const RectI& canvas, wapp::API * pAppAPI)
 	{
-		m_pSplash = pAppAPI->loadSurface("resources/splash.png", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Nearest } );
+		m_pSplash = pAppAPI->loadBitmap("resources/splash.png", pDevice->bitmapFactory(), { .sampleMethod = SampleMethod::Nearest } );
 		if (!m_pSplash)
 			return false;
 
-		m_pBackground = pAppAPI->loadSurface("resources/What-Goes-Up-3.bmp", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Nearest } );
+		m_pBackground = pAppAPI->loadBitmap("resources/What-Goes-Up-3.bmp", pDevice->bitmapFactory(), { .sampleMethod = SampleMethod::Nearest } );
 		if (!m_pBackground)
 			return false;
 
@@ -163,8 +163,8 @@ public:
 		return true;
 	}
 
-	Surface_p	m_pBackground;
-	Surface_p	m_pSplash;
+	Bitmap_p	m_pBackground;
+	Bitmap_p	m_pSplash;
 
 
 };

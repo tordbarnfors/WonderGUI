@@ -26,7 +26,7 @@
 #include <wax_backend.h>
 #include <wax_tinttools.h>
 #include <wax_softtint.h>
-#include <wax_softsurface.h>
+#include <wax_softbitmap.h>
 #include <wax_softformat.h>
 #include <wax_softshapes.h>
 #include <wax_softwarpmap.h>
@@ -87,10 +87,10 @@ namespace wax
 		void	beginRender() override;
 		void	endRender() override;
 	
-		void	beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo = nullptr ) override;
+		void	beginSession( CanvasRef canvasRef, Bitmap * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo = nullptr ) override;
 		void	endSession() override;
 
-		void	setCanvas( Surface * pSurface ) override;
+		void	setCanvas( Bitmap * pBitmap ) override;
 		void	setCanvas( CanvasRef ref ) override;
 
 		void	setObjects(Object* const * pBeg, Object* const * pEnd) override;
@@ -104,11 +104,11 @@ namespace wax
 
 		//.____ Misc _________________________________________________________
 
-		bool	defineCanvas(CanvasRef ref, SoftSurface* pSurface);
+		bool	defineCanvas(CanvasRef ref, SoftBitmap* pBitmap);
 
 		const CanvasInfo *	canvasInfo(CanvasRef ref) const override;
 
-		SurfaceFactory_p	surfaceFactory() override;
+		BitmapFactory_p	bitmapFactory() override;
 		EdgemapFactory_p	edgemapFactory() override;
 		WarpmapFactory_p	warpmapFactory() override;
 
@@ -194,8 +194,8 @@ namespace wax
 		typedef	void(*LineOp_p)(uint8_t* pRow, int rowInc, int pixelInc, int length, int width, int pos, int slope, Color color, const ColTrans& tint, CoordI patchPos);
 		typedef	void(*ClipLineOp_p)(int clipStart, int clipEnd, uint8_t* pRow, int rowInc, int pixelInc, int length, int width, int pos, int slope, Color color, const ColTrans& tint, CoordI patchPos);
 		typedef	void(*FillOp_p)(uint8_t* pDst, int pitchX, int pitchY, int nLines, int lineLength, Color col, const ColTrans& tint, CoordI patchPos);
-		typedef	void(*StraightBlitOp_p)(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const Pitches& pitches, int nLines, int lineLength, const ColTrans& tint, CoordI patchPos, const Transform * pMatrix);
-		typedef	void(*TransformBlitOp_p)(const SoftSurface* pSrcSurf, BinalCoord pos, const binalInt matrix[2][2], uint8_t* pDst, int dstPitchX, int dstPitchY, int nLines, int lineLength, const ColTrans& tint, CoordI patchPos);
+		typedef	void(*StraightBlitOp_p)(const uint8_t* pSrc, uint8_t* pDst, const SoftBitmap* pSrcBitmap, const Pitches& pitches, int nLines, int lineLength, const ColTrans& tint, CoordI patchPos, const Transform * pMatrix);
+		typedef	void(*TransformBlitOp_p)(const SoftBitmap* pSrcBitmap, BinalCoord pos, const binalInt matrix[2][2], uint8_t* pDst, int dstPitchX, int dstPitchY, int nLines, int lineLength, const ColTrans& tint, CoordI patchPos);
 		typedef void(*SegmentOp_p)(int clipBeg, int clipEnd, uint8_t* pStripStart, int pixelPitch, int nEdges, SegmentEdge* pEdges, const int16_t* pSegmentColors, const Color * pSegmentTintmap, int segmentTintmapPitch, const bool* pTransparentSegments, const bool* pOpaqueSegments, const ColTrans& tint);
 		typedef void(*CoverageOp_p)(uint8_t* pDst, int pixelPitch, int length, const CoveragePixel* pPixels, const ColTrans& tint);
 
@@ -436,11 +436,11 @@ namespace wax
 
 			// WarpBlit
 
-			int64_t			sourcePos[2];		// Source rectangle position in surface.
-			int64_t			readMin[2];			// Range of positions read from a non-tiling surface, which stays within the
+			int64_t			sourcePos[2];		// Source rectangle position in bitmap.
+			int64_t			readMin[2];			// Range of positions read from a non-tiling bitmap, which stays within the
 			int64_t			readMax[2];			// source rectangle, in kernel positions (relative to pixel centers if bilinear).
 			bool			bBilinear;
-			bool			bTileRead;			// Surface is tiling, read with ReadOp::Tile.
+			bool			bTileRead;			// Bitmap is tiling, read with ReadOp::Tile.
 			TransformBlitOp_p	pReadOp;		// Reads into a Color buffer.
 			TransformBlitOp_p	pDirectOp;		// Draws straight onto the canvas, for cells inside the source. Null if not usable, see _beginWarp().
 		};
@@ -471,7 +471,7 @@ namespace wax
 
 		std::vector<CanvasInfo>	m_definedCanvases;
 
-		SurfaceFactory_p	m_pSurfaceFactory;
+		BitmapFactory_p	m_pBitmapFactory;
 		EdgemapFactory_p	m_pEdgemapFactory;
 		WarpmapFactory_p	m_pWarpmapFactory;
 
@@ -491,10 +491,10 @@ namespace wax
 
 		// Canvas related
 
-		SoftSurface_p		m_pCanvas;
+		SoftBitmap_p		m_pCanvas;
 		PixelBuffer			m_buffer;
-		uint8_t*			m_pCanvasPixels;	// Pixels of render layer surface
-		int					m_canvasPixelBytes = 0;			// Bytes per pixel of render layer surface
+		uint8_t*			m_pCanvasPixels;	// Pixels of render layer bitmap
+		int					m_canvasPixelBytes = 0;			// Bytes per pixel of render layer bitmap
 		SoftFormat			m_canvasSoftFormat = SoftFormat::Undefined;
 		int					m_canvasPitch = 0;
 
@@ -505,7 +505,7 @@ namespace wax
 
 		ColTrans			m_colTrans;
 
-		SoftSurface_p		m_pBlitSource;
+		SoftBitmap_p		m_pBlitSource;
 
 		bool				m_bBlitFunctionNeedsUpdate = true;
 
@@ -566,7 +566,7 @@ namespace wax
 
 
 //		PixelBuffer		m_canvasPixelBuffer;
-//		uint8_t* m_pCanvasPixels;	// Pixels of render layer surface
+//		uint8_t* m_pCanvasPixels;	// Pixels of render layer bitmap
 
 		static int				s_lineThicknessTable[17];
 

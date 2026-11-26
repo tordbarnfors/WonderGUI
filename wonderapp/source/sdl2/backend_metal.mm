@@ -22,8 +22,8 @@
 
 #include <sdlwindow.h>
 
-#include <wax_metalsurface.h>
-#include <wax_metalsurfacefactory.h>
+#include <wax_metalbitmap.h>
+#include <wax_metalbitmapfactory.h>
 #include <wax_metaledgemapfactory.h>
 #include <wax_metalbackend.h>
 
@@ -45,7 +45,7 @@ private:
 
 	SDL_Renderer *      m_pSDLRenderer = 0;
 	MetalBackend_p		m_pBackend;
-	MetalSurface_p		m_pCanvas;
+	MetalBitmap_p		m_pCanvas;
 };
 
 
@@ -66,8 +66,8 @@ bool backend_specific_init()
 	auto pDevice = GfxDeviceGen2::create(pBackend);
 	wg::Base::setDefaultDevice(pDevice);
 
-	auto pSurfaceFactory = MetalSurfaceFactory::create();
-	wg::Base::setDefaultSurfaceFactory(pSurfaceFactory);
+	auto pBitmapFactory = MetalBitmapFactory::create();
+	wg::Base::setDefaultBitmapFactory(pBitmapFactory);
 
 	auto pEdgemapFactory = MetalEdgemapFactory::create();
 	wg::Base::setDefaultEdgemapFactory(pEdgemapFactory);
@@ -131,7 +131,7 @@ SDLWindowMetal::SDLWindowMetal(wapp::Window* pUserWindow, wg::Placement origin, 
 		m_pBackend = wax_static_cast<MetalBackend_p>(static_cast<GfxDeviceGen2*>(wg::Base::defaultDevice().rawPtr())->backend());
 		m_pBackend->setDefaultCanvas(nullptr, {int(geo.w),int(geo.h)}, PixelFormat::ARGB_8);
 
-		m_pCanvas = MetalSurface::create({.canvas = true, .format = PixelFormat::ARGB_8, .scale = int(scaleFactor)*64, .size = {int(geo.w*scaleFactor),int(geo.h*scaleFactor)} });
+		m_pCanvas = MetalBitmap::create({.canvas = true, .format = PixelFormat::ARGB_8, .scale = int(scaleFactor)*64, .size = {int(geo.w*scaleFactor),int(geo.h*scaleFactor)} });
 
 	}
 
@@ -217,7 +217,7 @@ void SDLWindowMetal::onWindowSizeUpdated( int w, int h )
 		pass.colorAttachments[0].storeAction = MTLStoreActionStore;
 		pass.colorAttachments[0].texture = surface.texture;
 
-		m_pCanvas = MetalSurface::create({.canvas = true, .format = PixelFormat::ARGB_8, .scale = int(scaleFactor*64), .size = {w,h} });
+		m_pCanvas = MetalBitmap::create({.canvas = true, .format = PixelFormat::ARGB_8, .scale = int(scaleFactor*64), .size = {w,h} });
 		m_pRootPanel->setCanvas(m_pCanvas);
 		m_pRootPanel->render();
 

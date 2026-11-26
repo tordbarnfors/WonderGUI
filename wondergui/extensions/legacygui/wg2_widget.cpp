@@ -26,7 +26,7 @@
 #include <wg2_util.h>
 #include <wax_dataset.h>
 #include <wax_base.h>
-#include <wax_surfacefactory.h>
+#include <wax_bitmapfactory.h>
 #include <wg_util.h>
 
 #	include <wg2_rootpanel.h>
@@ -256,7 +256,7 @@ wg::Surface_p WgWidget::Screenshot( const wg::Surface::Blueprint& bp )
 wg::Surface_p WgWidget::Screenshot( const WgRect& _rect, const wg::Surface::Blueprint& _bp )
 {
 	auto pDevice = wax::Base::defaultDevice();
-	auto pFactory =  wax::Base::defaultSurfaceFactory();
+	auto pFactory =  wax::Base::defaultBitmapFactory();
 
 	if( !pDevice || !pFactory )
 		return nullptr;
@@ -276,7 +276,7 @@ wg::Surface_p WgWidget::Screenshot( const WgRect& _rect, const wg::Surface::Blue
 		bp.colorSpace = pDevice->isRendering() ? pDevice->canvas().colorSpace : pDevice->canvas(wg::CanvasRef::Default).colorSpace;
 	bp.scale = m_scale/4096.f*64;
 	
-	auto pCanvas = pFactory->createSurface( bp );
+	auto pCanvas = pFactory->createBitmap( bp );
     if(!pCanvas)
         return nullptr;
 

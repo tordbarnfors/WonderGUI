@@ -6,7 +6,7 @@ weight: 30
 
 # BlockSkin
 
-A BlockSkin uses blocks of bitmap graphics in a Surface to represent the different states. One block of graphics (from the same surface) is used for each state specified in the Blueprint. All the blocks have the same size.
+A BlockSkin uses blocks of bitmap graphics in a Bitmap to represent the different states. One block of graphics (from the same bitmap) is used for each state specified in the Blueprint. All the blocks have the same size.
 
 The location and size of the first block is specified by the *firstBlock* property in the Blueprint. The rest of the blocks are lined up either vertically or horizontally as specified by *axis* with optionally some spacing specified by the *spacing* property.
 
@@ -14,7 +14,7 @@ The location and size of the first block is specified by the *firstBlock* proper
 
 | Property       | Set in state    | Description                                                  |
 | -------------- | -------------- | ------------------------------------------------------------ |
-| axis           | no             | Axis along which blocks in surface are line up.              |
+| axis           | no             | Axis along which blocks in bitmap are line up.              |
 | blendMode      | no             | BlendMode to use for all blocks.                             |
 | blockless | only | Set in state if state has no block defined. |
 | color          | yes   | Tint color for the block.                                    |
@@ -23,8 +23,8 @@ The location and size of the first block is specified by the *firstBlock* proper
 | gradient       | no             | Tint gradient for all blocks.                                |
 | rigidPartX     | no             | Specifies an optional vertical column that doesn't stretch along X-axis. |
 | rigidPartY     | no             | Specifies an optional horizontal row that doesn't stretch along Y-axis. |
-| spacing        | no             | Spacing between blocks in the surface.                       |
-| surface        | no             | Surface containing the blocks.                               |
+| spacing        | no             | Spacing between blocks in the bitmap.                       |
+| bitmap        | no             | Bitmap containing the blocks.                               |
 
 *RigidPartX* & *rigidPartY* are structs with properties:
 
@@ -124,7 +124,7 @@ auto pButtonSkin = BlockSkin::create( {
     .frame = 4,
     .states ={ State::Default, State::Hovered, 
                State::Pressed, State::Disabled }
-    .surface = pSurf,
+    .bitmap = pBitmap,
 
 });
 ```
@@ -148,7 +148,7 @@ auto pButtonSkin = BlockSkin::create( {
     .frame = 4,
     .states ={ State::Default, State::Hovered, 
               { State::Pressed, { .contentShift = {2,2} }, State::Disabled }
-    .surface = pSurf,
+    .bitmap = pBitmap,
 });
 ```
 

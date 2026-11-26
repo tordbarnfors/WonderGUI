@@ -21,8 +21,8 @@
 =========================================================================*/
 #include <sdlwindow.h>
 
-#include <wax_softsurface.h>
-#include <wax_softsurfacefactory.h>
+#include <wax_softbitmap.h>
+#include <wax_softbitmapfactory.h>
 #include <wax_softedgemapfactory.h>
 #include <wax_softbackend.h>
 #include <wax_softkernels_default.h>
@@ -43,7 +43,7 @@ public:
 
 private:
 
-	wg::Surface_p	_generateWindowSurface();
+	wg::Bitmap_p	_generateWindowBitmap();
 };
 
 
@@ -59,8 +59,8 @@ bool backend_specific_init()
 
 	wg::Base::setDefaultDevice(pSoftDevice);
 
-	auto pSurfaceFactory = SoftSurfaceFactory::create();
-	wg::Base::setDefaultSurfaceFactory(pSurfaceFactory);
+	auto pBitmapFactory = SoftBitmapFactory::create();
+	wg::Base::setDefaultBitmapFactory(pBitmapFactory);
 
 	auto pEdgemapFactory = SoftEdgemapFactory::create();
 	wg::Base::setDefaultEdgemapFactory(pEdgemapFactory);
@@ -99,15 +99,15 @@ SDLWindowSoftware::SDLWindowSoftware(wapp::Window* pUserWindow, wg::Placement or
 	if (!_createSDLWindow(title, origin, pos, size, 0, resizable, open))
 		return;
 
-	auto pWindowSurface = _generateWindowSurface();
-	if (pWindowSurface == nullptr)
+	auto pWindowBitmap = _generateWindowBitmap();
+	if (pWindowBitmap == nullptr)
 	{
 		SDL_DestroyWindow(m_pSDLWindow);
 		m_pSDLWindow = nullptr;
 		return;
 	}
 
-	m_pRootPanel = RootPanel::create( { .canvasSurface = pWindowSurface } );
+	m_pRootPanel = RootPanel::create( { .canvasBitmap = pWindowBitmap } );
 
 	//TODO: This is ugly. It should be handled when windows gets focused.
 
@@ -154,18 +154,18 @@ void SDLWindowSoftware::onWindowSizeUpdated()
 	// The window surface is invalid after a resize and SDL_GetWindowSurface()
 	// gives us a new one.
 
-    auto pWindowSurface = _generateWindowSurface();
-	if (!pWindowSurface)
+    auto pWindowBitmap = _generateWindowBitmap();
+	if (!pWindowBitmap)
 		return;
 
-	m_pRootPanel->setCanvas(pWindowSurface);
+	m_pRootPanel->setCanvas(pWindowBitmap);
 	_notifyUserWindowOfResize();
     render();
 }
 
-//____ _generateWindowSurface() _______________________________________________
+//____ _generateWindowBitmap() _______________________________________________
 
-Surface_p SDLWindowSoftware::_generateWindowSurface()
+Bitmap_p SDLWindowSoftware::_generateWindowBitmap()
 {
 	SDL_Surface* pWinSurf = SDL_GetWindowSurface(m_pSDLWindow);
 	if (pWinSurf == nullptr)
@@ -189,7 +189,7 @@ Surface_p SDLWindowSoftware::_generateWindowSurface()
 	}
 
 	Blob_p pCanvasBlob = Blob::create(pWinSurf->pixels, 0);
-	auto pWindowSurface = SoftSurface::create( WGBP(Surface, _.size = {pWinSurf->w, pWinSurf->h}, _.format = format, _.canvas = true, _.scale = _scale() ), pCanvasBlob, pWinSurf->pitch);
+	auto pWindowBitmap = SoftBitmap::create( WGBP(Bitmap, _.size = {pWinSurf->w, pWinSurf->h}, _.format = format, _.canvas = true, _.scale = _scale() ), pCanvasBlob, pWinSurf->pitch);
 
-	return pWindowSurface;
+	return pWindowBitmap;
 }

@@ -34,7 +34,7 @@ namespace wg
 		: TypedInfoSection<ScrollChart>( theme, pContext, ScrollChart::TYPEINFO.className, pInspected )
 	{
 		//TODO: Max display time, latency, latest timestamp (protected)
-		//TODO: Surface factory, scroll surface, pixel format, scrolling state (private, no getters)
+		//TODO: Bitmap factory, scroll bitmap, pixel format, scrolling state (private, no getters)
 
 		this->slot = _createRows({
 			textRow( "Flip: ",                   [](ScrollChart* c) { return toString(c->flip()); } ),

@@ -1,6 +1,6 @@
 LEFTOVERS
 
-Surface::alpha   	- ev Coord med _alpha(CoordSPX)
-Surface::fill		- pts-based?
-Surface::copyFrom	- pts-based?
+Bitmap::alpha   	- ev Coord med _alpha(CoordSPX)
+Bitmap::fill		- pts-based?
+Bitmap::copyFrom	- pts-based?
 

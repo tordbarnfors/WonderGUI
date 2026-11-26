@@ -39,13 +39,13 @@ private:
 	void 			updateListRow( int row, int srcSize, int compressedSize, int compressMicroSec, int decompressMicroSec );
 
 
-	struct TestSurface
+	struct TestBitmap
 	{
 		std::string 	name;
-		Surface_p		pSurface;
+		Bitmap_p		pBitmap;
 	};
 
-	std::vector<TestSurface>	m_testSurfaces;
+	std::vector<TestBitmap>	m_testBitmaps;
 
 	TablePanel_p	m_pResultTable;
 

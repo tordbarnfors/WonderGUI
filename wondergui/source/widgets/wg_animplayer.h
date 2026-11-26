@@ -132,7 +132,7 @@ namespace wg
 		int				_playPosToTimestamp(int playPos) const;
 
 		void			_didSetAnimFrameSize(AnimFrames* pComponent) override;
-		void			_didSetAnimSurface(AnimFrames* pComponent) override;
+		void			_didSetAnimBitmap(AnimFrames* pComponent) override;
 		void			_didAddEntries(AnimFrame* pEntry, int nb) override;
 		void			_didMoveEntries(AnimFrame* pFrom, AnimFrame* pTo, int nb) override;
 		void			_willEraseEntries(AnimFrame* pEntry, int nb) override;

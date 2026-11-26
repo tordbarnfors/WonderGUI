@@ -17,17 +17,17 @@ public:
 
 	bool init(GfxDevice * pDevice, const RectI& canvas, wapp::API * pAppAPI)
 	{
-		m_pOne = pAppAPI->loadSurface("resources/one.png", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Nearest } );
-		m_pTwo = pAppAPI->loadSurface("resources/two.png", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Nearest } );
-		m_pThree = pAppAPI->loadSurface("resources/three.png", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Nearest } );
+		m_pOne = pAppAPI->loadBitmap("resources/one.png", pDevice->bitmapFactory(), { .sampleMethod = SampleMethod::Nearest } );
+		m_pTwo = pAppAPI->loadBitmap("resources/two.png", pDevice->bitmapFactory(), { .sampleMethod = SampleMethod::Nearest } );
+		m_pThree = pAppAPI->loadBitmap("resources/three.png", pDevice->bitmapFactory(), { .sampleMethod = SampleMethod::Nearest } );
 		if (!m_pOne || !m_pTwo || !m_pThree)
 			return false;
 
-		m_pBackground = pAppAPI->loadSurface("resources/What-Goes-Up-3.bmp", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Nearest } );
+		m_pBackground = pAppAPI->loadBitmap("resources/What-Goes-Up-3.bmp", pDevice->bitmapFactory(), { .sampleMethod = SampleMethod::Nearest } );
 		if (!m_pBackground)
 			return false;
 
-		m_pCanvas = pDevice->surfaceFactory()->createSurface( WGBP(Surface,
+		m_pCanvas = pDevice->bitmapFactory()->createBitmap( WGBP(Bitmap,
 																   _.size = canvas/64,
 																   _.format = PixelFormat::ARGB_8,
 																   _.canvas = true
@@ -116,9 +116,9 @@ public:
 	}
 
 
-	Surface_p	m_pCanvas;
-	Surface_p	m_pBackground;
-	Surface_p	m_pOne, m_pTwo, m_pThree;
+	Bitmap_p	m_pCanvas;
+	Bitmap_p	m_pBackground;
+	Bitmap_p	m_pOne, m_pTwo, m_pThree;
 	CanvasLayers_p	m_pLayerStack1;
 
 };

@@ -30,7 +30,7 @@
 
 namespace wax
 {
-	class Surface;
+	class Bitmap;
 }
 
 namespace wg

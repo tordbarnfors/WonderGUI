@@ -23,9 +23,9 @@
 #include <wg_plugingfxdevice.h>
 #include <wg_pluginwarpmap.h>
 #include <algorithm>
-#include <wg_pluginsurface.h>
+#include <wg_pluginbitmap.h>
 #include <wg_pluginedgemap.h>
-#include <wg_pluginsurfacefactory.h>
+#include <wg_pluginbitmapfactory.h>
 #include <wg_plugincanvaslayers.h>
 
 #include <wg_base.h>
@@ -42,20 +42,20 @@ namespace wg
 
 	//____ create() _______________________________________________________________
 
-	PluginGfxDevice_p PluginGfxDevice::create( wax_obj object, PluginSurfaceFactory * pSurfaceFactory, PluginEdgemapFactory * pEdgemapFactory )
+	PluginGfxDevice_p PluginGfxDevice::create( wax_obj object, PluginBitmapFactory * pBitmapFactory, PluginEdgemapFactory * pEdgemapFactory )
 	{
-		PluginGfxDevice_p p(new PluginGfxDevice( object, pSurfaceFactory, pEdgemapFactory ));
+		PluginGfxDevice_p p(new PluginGfxDevice( object, pBitmapFactory, pEdgemapFactory ));
 		return p;
 	}
 
 
 	//____ constructor _____________________________________________________________
 
-	PluginGfxDevice::PluginGfxDevice( wax_obj object, PluginSurfaceFactory * pSurfaceFactory, PluginEdgemapFactory * pEdgemapFactory )
+	PluginGfxDevice::PluginGfxDevice( wax_obj object, PluginBitmapFactory * pBitmapFactory, PluginEdgemapFactory * pEdgemapFactory )
 	{
         PluginCalls::object->retain(object);
 		m_cDevice = object;
-        m_pSurfaceFactory = pSurfaceFactory;
+        m_pBitmapFactory = pBitmapFactory;
         m_pEdgemapFactory = pEdgemapFactory;
 		
 		// Incomplete initialization of m_canvas.
@@ -94,15 +94,15 @@ namespace wg
         info2.scale = info.scale;
         info2.size.w = info.size.w;
         info2.size.h = info.size.h;
-        info2.pSurface = nullptr;       // Not supported. Can't give access to C++ object on other side of CABI-wall.
+        info2.pBitmap = nullptr;       // Not supported. Can't give access to C++ object on other side of CABI-wall.
         return info2;
     }
 
-	//____ surfaceFactory() ______________________________________________________
+	//____ bitmapFactory() ______________________________________________________
 
-	SurfaceFactory_p PluginGfxDevice::surfaceFactory()
+	BitmapFactory_p PluginGfxDevice::bitmapFactory()
 	{
-        return m_pSurfaceFactory;
+        return m_pBitmapFactory;
 	}
 
     //____ edgemapFactory() ______________________________________________________
@@ -275,12 +275,12 @@ namespace wg
 
     //____ setBlitSource() _______________________________________________________
 
-    bool PluginGfxDevice::setBlitSource(Surface * pSource)
+    bool PluginGfxDevice::setBlitSource(Bitmap * pSource)
     {
-        if (!pSource || !pSource->isInstanceOf(PluginSurface::TYPEINFO) )
+        if (!pSource || !pSource->isInstanceOf(PluginBitmap::TYPEINFO) )
             return false;
 
-        int retVal = PluginCalls::gfxDevice->setBlitSource(m_cDevice, static_cast<PluginSurface*>(pSource)->cObject());
+        int retVal = PluginCalls::gfxDevice->setBlitSource(m_cDevice, static_cast<PluginBitmap*>(pSource)->cObject());
 
         if( retVal )
             m_pBlitSource = pSource;
@@ -290,7 +290,7 @@ namespace wg
 
     //____ PluginGfxDevice::blitSource() ________________________________________
 
-    Surface_p PluginGfxDevice::blitSource() const
+    Bitmap_p PluginGfxDevice::blitSource() const
     {
         // This method can not be correctly implemented without huge performance loss,
 		// so we just assume that blitSource also was set through plugin.
@@ -428,7 +428,7 @@ namespace wg
 		return _beginCanvasUpdate(ref, nullptr, nUpdateRects, pUpdateRects, pLayers, startLayer);
 	}
 
-	bool PluginGfxDevice::beginCanvasUpdate(Surface * pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers * pLayers, int startLayer)
+	bool PluginGfxDevice::beginCanvasUpdate(Bitmap * pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers * pLayers, int startLayer)
 	{
 		return _beginCanvasUpdate(CanvasRef::None, pCanvas, nUpdateRects, pUpdateRects, pLayers, startLayer);
 	}
@@ -451,7 +451,7 @@ namespace wg
 		else
 		{
 			m_canvas.ref = CanvasRef::None;
-			m_canvas.pSurface = nullptr;
+			m_canvas.pBitmap = nullptr;
 			m_canvas.size.clear();
 
 			m_pCanvasLayers = nullptr;
@@ -780,7 +780,7 @@ namespace wg
 
     //.____ _beginCanvasUpdate() ______________________________________________
 
-    bool PluginGfxDevice::_beginCanvasUpdate(CanvasRef canvasRef, Surface * pCanvasSurface, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers * pLayers, int startLayer)
+    bool PluginGfxDevice::_beginCanvasUpdate(CanvasRef canvasRef, Bitmap * pCanvasBitmap, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers * pLayers, int startLayer)
     {
 		SizeSPX sz;
 		PixelFormat format;
@@ -791,10 +791,10 @@ namespace wg
 			sz = info.size;
 			format = info.format;
 		}
-		else if( pCanvasSurface )
+		else if( pCanvasBitmap )
 		{
-			sz = pCanvasSurface->pixelSize()*64;
-			format = pCanvasSurface->pixelFormat();
+			sz = pCanvasBitmap->pixelSize()*64;
+			format = pCanvasBitmap->pixelFormat();
 		}
 		else
 		{
@@ -827,7 +827,7 @@ namespace wg
 		m_canvasStack.push_back({ m_canvas, m_pCanvasLayers });
 
 		m_canvas.ref = canvasRef;
-		m_canvas.pSurface = pCanvasSurface;
+		m_canvas.pBitmap = pCanvasBitmap;
 		m_canvas.size = sz;
 		m_canvas.format = format;
 
@@ -844,7 +844,7 @@ namespace wg
 		}
 		else
 		{
-			PluginCalls::gfxDevice->beginCanvasUpdateWithSurface(m_cDevice, static_cast<PluginSurface*>(pCanvasSurface)->cObject(), nUpdateRects, (wax_rectSPX*)pUpdateRects, cAPILayers, startLayer);
+			PluginCalls::gfxDevice->beginCanvasUpdateWithBitmap(m_cDevice, static_cast<PluginBitmap*>(pCanvasBitmap)->cObject(), nUpdateRects, (wax_rectSPX*)pUpdateRects, cAPILayers, startLayer);
 		}
 		return true;
     }

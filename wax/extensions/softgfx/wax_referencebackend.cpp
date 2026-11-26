@@ -21,7 +21,7 @@
 =========================================================================*/
 
 #include <wax_referencebackend.h>
-#include <wax_softsurfacefactory.h>
+#include <wax_softbitmapfactory.h>
 #include <wax_softedgemapfactory.h>
 #include <wax_softwarpmapfactory.h>
 #include <wax_softwarpmap.h>
@@ -123,12 +123,12 @@ namespace wax
 
 	void ReferenceBackend::endRender()
 	{
-		setCanvas((Surface*) nullptr);
+		setCanvas((Bitmap*) nullptr);
 	}
 
 	//____ beginSession() _______________________________________________________
 
-	void ReferenceBackend::beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
+	void ReferenceBackend::beginSession( CanvasRef canvasRef, Bitmap * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
 	{
 		// We don't need the update rects. Everything we draw is within them anyway.
 
@@ -156,10 +156,10 @@ namespace wax
 			return;
 		}
 
-		setCanvas(pInfo->pSurface);
+		setCanvas(pInfo->pBitmap);
 	}
 
-	void ReferenceBackend::setCanvas(Surface* pSurface)
+	void ReferenceBackend::setCanvas(Bitmap* pBitmap)
 	{
 		// Give the pixels of the previous canvas back.
 
@@ -172,19 +172,19 @@ namespace wax
 
 		// Start using the new canvas, if we can.
 
-		if (pSurface)
+		if (pBitmap)
 		{
-			PixelFormat format = pSurface->pixelFormat();
+			PixelFormat format = pBitmap->pixelFormat();
 
 			if (format != PixelFormat::ARGB_8 && format != PixelFormat::XRGB_8 && format != PixelFormat::RGB_565 &&
 				format != PixelFormat::BGR_565 && format != PixelFormat::Alpha_8)
 			{
-				Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "ReferenceBackend can't render to surfaces of this pixel format.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::reportError(ErrorLevel::Error, ErrorCode::InvalidParam, "ReferenceBackend can't render to bitmaps of this pixel format.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			}
 			else
 			{
-				m_pCanvas = pSurface;
-				m_canvasBuffer = pSurface->allocPixelBuffer();
+				m_pCanvas = pBitmap;
+				m_canvasBuffer = pBitmap->allocPixelBuffer();
 				m_bAlphaOnlyCanvas = (format == PixelFormat::Alpha_8);
 				m_bCanvasHasAlpha = (format == PixelFormat::ARGB_8 || format == PixelFormat::Alpha_8);
 			}
@@ -409,7 +409,7 @@ namespace wax
 			if (m_pBlitSource)
 				m_pBlitSource->freePixelBuffer(m_blitSourceBuffer);
 
-			m_pBlitSource = static_cast<Surface*>(m_pObjectsBeg[readObjectIndex(p)]);
+			m_pBlitSource = static_cast<Bitmap*>(m_pObjectsBeg[readObjectIndex(p)]);
 
 			if (m_pBlitSource)
 				m_blitSourceBuffer = m_pBlitSource->allocPixelBuffer();
@@ -884,7 +884,7 @@ namespace wax
 
 		Colors are taken at the center of the pixel: the blit source is sampled there by its sample
 		method, as if the edge pixels of the source rectangle continued outside it (or wrapping around
-		the surface if it is tiling), and the tints of edgemap segments are evaluated there. A center
+		the bitmap if it is tiling), and the tints of edgemap segments are evaluated there. A center
 		in the gap between copies on a periodic axis is taken in the nearest copy.
 	*/
 
@@ -1128,7 +1128,7 @@ namespace wax
 
 				if (!pEdgemap)
 				{
-					// A non-tiling surface is read as if the edge pixels of the source rectangle
+					// A non-tiling bitmap is read as if the edge pixels of the source rectangle
 					// continued outside it: positions are kept between the centers of its edge pixels
 					// when bilinear, inside it when nearest.
 
@@ -1515,7 +1515,7 @@ namespace wax
 	//____ _over() ________________________________________________________________
 	/*
 		Porter-Duff 'over': src placed on top of dst. Where dst is transparent, more of src shows
-		through, so drawing onto a transparent surface and then blending that surface onto a
+		through, so drawing onto a transparent bitmap and then blending that bitmap onto a
 		background gives the same result as drawing directly onto the background.
 
 		This is the same as averaging the colors of src and dst as premultiplied colors, with src
@@ -3029,16 +3029,16 @@ namespace wax
 
 	//____ defineCanvas() _____________________________________________
 
-	bool ReferenceBackend::defineCanvas(CanvasRef ref, SoftSurface* pSurface)
+	bool ReferenceBackend::defineCanvas(CanvasRef ref, SoftBitmap* pBitmap)
 	{
 		auto it = std::find_if(m_definedCanvases.begin(), m_definedCanvases.end(), [ref](CanvasInfo& entry) { return (ref == entry.ref); });
 
 		if (it != m_definedCanvases.end())
 			m_definedCanvases.erase(it);
 
-		if (pSurface)
-			m_definedCanvases.push_back(CanvasInfo(ref, pSurface, pSurface->pixelSize() * 64, pSurface->pixelFormat(), pSurface->scale(),
-												   pSurface->colorSpace(), pSurface->isBigEndian()));
+		if (pBitmap)
+			m_definedCanvases.push_back(CanvasInfo(ref, pBitmap, pBitmap->pixelSize() * 64, pBitmap->pixelFormat(), pBitmap->scale(),
+												   pBitmap->colorSpace(), pBitmap->isBigEndian()));
 		return true;
 	}
 
@@ -3054,14 +3054,14 @@ namespace wax
 		return nullptr;
 	}
 
-	//____ surfaceFactory() ___________________________________________________
+	//____ bitmapFactory() ___________________________________________________
 
-	SurfaceFactory_p ReferenceBackend::surfaceFactory()
+	BitmapFactory_p ReferenceBackend::bitmapFactory()
 	{
-		if (!m_pSurfaceFactory)
-			m_pSurfaceFactory = SoftSurfaceFactory::create();
+		if (!m_pBitmapFactory)
+			m_pBitmapFactory = SoftBitmapFactory::create();
 
-		return m_pSurfaceFactory;
+		return m_pBitmapFactory;
 	}
 
 	//____ edgemapFactory() ___________________________________________________
@@ -3095,14 +3095,14 @@ namespace wax
 
 	bool ReferenceBackend::canBeBlitSource(const TypeInfo& type) const
 	{
-		return (type == SoftSurface::TYPEINFO);
+		return (type == SoftBitmap::TYPEINFO);
 	}
 
 	//____ canBeCanvas() ______________________________________________
 
 	bool ReferenceBackend::canBeCanvas(const TypeInfo& type) const
 	{
-		// Any surface that can give us a pixel buffer of a format we know.
+		// Any bitmap that can give us a pixel buffer of a format we know.
 
 		return true;
 	}

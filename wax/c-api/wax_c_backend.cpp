@@ -44,9 +44,9 @@ void wax_backendEndRender( wax_obj backend )
 	getPtr(backend)->endRender();
 }
 
-void wax_backendBeginSession( wax_obj backend, wax_canvasRef canvasRef, wax_obj canvasSurface, int nUpdateRects, const wax_rectSPX * pUpdateRects, const wax_sessionInfo * pInfo )
+void wax_backendBeginSession( wax_obj backend, wax_canvasRef canvasRef, wax_obj canvasBitmap, int nUpdateRects, const wax_rectSPX * pUpdateRects, const wax_sessionInfo * pInfo )
 {
-	getPtr(backend)->beginSession( (CanvasRef) canvasRef, static_cast<Surface*>(reinterpret_cast<Object*>(canvasSurface)), nUpdateRects, (const RectSPX*) pUpdateRects, (const Backend::SessionInfo *) pInfo );
+	getPtr(backend)->beginSession( (CanvasRef) canvasRef, static_cast<Bitmap*>(reinterpret_cast<Object*>(canvasBitmap)), nUpdateRects, (const RectSPX*) pUpdateRects, (const Backend::SessionInfo *) pInfo );
 }
 
 void wax_backendEndSession( wax_obj backend )
@@ -54,9 +54,9 @@ void wax_backendEndSession( wax_obj backend )
 	getPtr(backend)->endSession();
 }
 
-void wax_backendSetCanvasWithSurface( wax_obj backend, wax_obj surface )
+void wax_backendSetCanvasWithBitmap( wax_obj backend, wax_obj bitmap )
 {
-	getPtr(backend)->setCanvas(static_cast<Surface*>(reinterpret_cast<Object*>(surface)));
+	getPtr(backend)->setCanvas(static_cast<Bitmap*>(reinterpret_cast<Object*>(bitmap)));
 }
 
 void wax_backendSetCanvasWithRef( wax_obj backend, wax_canvasRef canvas )
@@ -92,12 +92,12 @@ void wax_backendProcessCommands(wax_obj backend, const uint16_t* pBeg, const uin
 wax_canvasInfo wax_backendCanvasInfo(wax_obj backend, wax_canvasRef ref)
 {
 	auto canvasInfo = getPtr(backend)->canvasInfo((CanvasRef)ref);
-	return { (wax_canvasRef)canvasInfo->ref, canvasInfo->pSurface, {canvasInfo->size.w, canvasInfo->size.h}, canvasInfo->scale };
+	return { (wax_canvasRef)canvasInfo->ref, canvasInfo->pBitmap, {canvasInfo->size.w, canvasInfo->size.h}, canvasInfo->scale };
 }
 
-wax_obj wax_backendSurfaceFactory(wax_obj backend)
+wax_obj wax_backendBitmapFactory(wax_obj backend)
 {
-	return getPtr(backend)->surfaceFactory().rawPtr();
+	return getPtr(backend)->bitmapFactory().rawPtr();
 }
 
 wax_obj wax_backendEdgemapFactory(wax_obj backend)

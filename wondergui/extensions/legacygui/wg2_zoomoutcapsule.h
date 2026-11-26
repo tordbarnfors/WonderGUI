@@ -27,7 +27,7 @@
 #	include <wg2_capsule.h>
 #endif
 
-#include <wax_surfacefactory.h>
+#include <wax_bitmapfactory.h>
 #include <wg2_types.h>
 #include <wg2_color.h>
 

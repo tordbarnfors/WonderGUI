@@ -132,10 +132,10 @@ namespace wg
 			SizeI usedSize = _glowResolution();
 			m_resolution = pixelSize;
 
-			if (m_surface[0] && m_surface[0]->pixelSize() != pixelSize)
+			if (m_bitmap[0] && m_bitmap[0]->pixelSize() != pixelSize)
 			{
-				m_surface[0] = nullptr;
-				m_surface[1] = nullptr;
+				m_bitmap[0] = nullptr;
+				m_bitmap[1] = nullptr;
 				_requestRender();
 			}
 		}
@@ -218,55 +218,55 @@ namespace wg
 
 	//____ _render() __________________________________________________________
 
-	void Glow::_render(GfxDevice* pDevice, const RectSPX& canvas, Surface_p pSeed, const RectSPX& seedArea)
+	void Glow::_render(GfxDevice* pDevice, const RectSPX& canvas, Bitmap_p pSeed, const RectSPX& seedArea)
 	{
 		if (!m_bActive)
 			return;
 
-		// Glow surfaces have the color space of the canvas we are rendered onto. If that
+		// Glow bitmaps have the color space of the canvas we are rendered onto. If that
 		// has changed, we start over.
 
 		ColorSpace colorSpace = pDevice->canvas().colorSpace;
 
-		if (m_surface[0] && m_surface[0]->colorSpace() != colorSpace)
+		if (m_bitmap[0] && m_bitmap[0]->colorSpace() != colorSpace)
 		{
-			m_surface[0] = nullptr;
-			m_surface[1] = nullptr;
+			m_bitmap[0] = nullptr;
+			m_bitmap[1] = nullptr;
 		}
 
-		// Glow builds up over frames, so if either surface lost its content with
+		// Glow builds up over frames, so if either bitmap lost its content with
 		// the device of a GPU backend, we start over with both.
 
-		if ((m_surface[0] && m_surface[0]->isContentLost()) || (m_surface[1] && m_surface[1]->isContentLost()))
+		if ((m_bitmap[0] && m_bitmap[0]->isContentLost()) || (m_bitmap[1] && m_bitmap[1]->isContentLost()))
 		{
-			m_surface[0] = nullptr;
-			m_surface[1] = nullptr;
+			m_bitmap[0] = nullptr;
+			m_bitmap[1] = nullptr;
 		}
 
-		// Possibly regenerate the glow surfaces
+		// Possibly regenerate the glow bitmaps
 
-		if (m_surface[1] == nullptr)
+		if (m_bitmap[1] == nullptr)
 		{
-			m_surface[1] = _createGlowCanvas(pDevice->surfaceFactory(), colorSpace);
-			pDevice->beginCanvasUpdate(m_surface[1]);
+			m_bitmap[1] = _createGlowCanvas(pDevice->bitmapFactory(), colorSpace);
+			pDevice->beginCanvasUpdate(m_bitmap[1]);
 			pDevice->fill(Color::Black);
 			pDevice->endCanvasUpdate();
 
-			if (m_surface[0] == nullptr)
+			if (m_bitmap[0] == nullptr)
 			{
 				// Both are missing, we just recreate and clear them.
 
-				m_surface[0] = _createGlowCanvas(pDevice->surfaceFactory(), colorSpace);
+				m_bitmap[0] = _createGlowCanvas(pDevice->bitmapFactory(), colorSpace);
 				m_bClear = true;
 			}
 			else
 			{
-				pDevice->beginCanvasUpdate(m_surface[1]);
+				pDevice->beginCanvasUpdate(m_bitmap[1]);
 				pDevice->fill(Color::Black);
 
-				pDevice->setBlitSource(m_surface[0]);
-				SizeSPX destSize = (m_surface[1]->pixelSize() * 64) - SizeSPX(128, 128);
-				SizeSPX sourceSize = (m_surface[0]->pixelSize() * 64) - SizeSPX(128, 128);
+				pDevice->setBlitSource(m_bitmap[0]);
+				SizeSPX destSize = (m_bitmap[1]->pixelSize() * 64) - SizeSPX(128, 128);
+				SizeSPX sourceSize = (m_bitmap[0]->pixelSize() * 64) - SizeSPX(128, 128);
 
 				if (m_bStretchOnResize)
 				{
@@ -281,12 +281,12 @@ namespace wg
 
 				pDevice->endCanvasUpdate();
 
-				m_surface[0] = _createGlowCanvas(pDevice->surfaceFactory(), colorSpace);
-				pDevice->beginCanvasUpdate(m_surface[0]);
+				m_bitmap[0] = _createGlowCanvas(pDevice->bitmapFactory(), colorSpace);
+				pDevice->beginCanvasUpdate(m_bitmap[0]);
 				pDevice->fill(Color::Black);
 				pDevice->endCanvasUpdate();
 
-				std::swap(m_surface[0], m_surface[1]);
+				std::swap(m_bitmap[0], m_bitmap[1]);
 			}
 		}
 
@@ -294,7 +294,7 @@ namespace wg
 
 		if (m_bClear)
 		{
-			pDevice->beginCanvasUpdate(m_surface[0]);
+			pDevice->beginCanvasUpdate(m_bitmap[0]);
 			pDevice->fill(Color::Black);
 			pDevice->endCanvasUpdate();
 
@@ -305,10 +305,10 @@ namespace wg
 
 		int microsecBetweenUpdates = 1000000 / m_refreshRate;
 
-		RectSPX srcRect = m_surface[0]->pixelSize() * 64;
+		RectSPX srcRect = m_bitmap[0]->pixelSize() * 64;
 		srcRect -= BorderSPX(64);
 
-		RectSPX destRect = m_surface[1]->pixelSize() * 64;
+		RectSPX destRect = m_bitmap[1]->pixelSize() * 64;
 		destRect -= BorderSPX(64);
 
 		float scaleX = destRect.w / (float) canvas.w;
@@ -322,8 +322,8 @@ namespace wg
 
 		while (m_microSecAccumulator >= microsecBetweenUpdates)
 		{
-			pDevice->beginCanvasUpdate(m_surface[1]);
-			pDevice->setBlitSource(m_surface[0]);
+			pDevice->beginCanvasUpdate(m_bitmap[1]);
+			pDevice->setBlitSource(m_bitmap[0]);
 			pDevice->setBlurbrush(m_pBrush);
 			pDevice->blur(destRect.pos(), srcRect);
 			pDevice->setTintColor(m_seedTint);
@@ -332,7 +332,7 @@ namespace wg
 			pDevice->stretchBlit(scaledSeedRect);
 			pDevice->endCanvasUpdate();
 
-			std::swap(m_surface[0], m_surface[1]);
+			std::swap(m_bitmap[0], m_bitmap[1]);
 
 			m_microSecAccumulator -= microsecBetweenUpdates;
 
@@ -347,7 +347,7 @@ namespace wg
 
 		pDevice->setBlendMode(m_glowBlend);
 		pDevice->setTintColor(m_glowTint);
-		pDevice->setBlitSource(m_surface[0]);
+		pDevice->setBlitSource(m_bitmap[0]);
 		pDevice->stretchBlit(canvas, destRect);
 
 		pDevice->setTintColor(c);
@@ -360,10 +360,10 @@ namespace wg
 	{
 		if (m_resolution.isEmpty())
 		{
-			m_surface[1] = nullptr;
+			m_bitmap[1] = nullptr;
 
 			if (m_bClearOnResize)
-				m_surface[0] = nullptr;
+				m_bitmap[0] = nullptr;
 		}
 	}
 
@@ -379,14 +379,14 @@ namespace wg
 
 	//____ _createGlowCanvas() ________________________________________________
 
-	Surface_p Glow::_createGlowCanvas( SurfaceFactory * pFactory, ColorSpace colorSpace )
+	Bitmap_p Glow::_createGlowCanvas( BitmapFactory * pFactory, ColorSpace colorSpace )
 	{
-		// Glow surfaces have a border that is not used to make sampling at corners
+		// Glow bitmaps have a border that is not used to make sampling at corners
 		// work better.
 
 		SizeI pixelSize = _glowResolution() + SizeI(2, 2);
 
-		return pFactory->createSurface(WGBP(Surface, _.size = pixelSize, _.format = PixelFormat::XRGB_8, _.colorSpace = colorSpace, _.canvas = true));
+		return pFactory->createBitmap(WGBP(Bitmap, _.size = pixelSize, _.format = PixelFormat::XRGB_8, _.colorSpace = colorSpace, _.canvas = true));
 	}
 
 };

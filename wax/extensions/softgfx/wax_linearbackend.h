@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wax_softbackend.h>
-#include <wax_softsurface.h>
+#include <wax_softbitmap.h>
 
 namespace wax
 {
@@ -75,10 +75,10 @@ namespace wax
 
 		//.____ Rendering ________________________________________________
 	
-		void	beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo = nullptr ) override;
+		void	beginSession( CanvasRef canvasRef, Bitmap * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo = nullptr ) override;
 		void	endSession() override;
 
-		void	setCanvas( Surface * pSurface ) override;
+		void	setCanvas( Bitmap * pBitmap ) override;
 		void	setCanvas( CanvasRef ref ) override;
 
 

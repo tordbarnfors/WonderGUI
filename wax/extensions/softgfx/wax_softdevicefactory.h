@@ -44,9 +44,9 @@ namespace wax
 
 		struct Blueprint
 		{
-			//TODO: Replace defaultCanvasSurface with flexible canvas definitions.
+			//TODO: Replace defaultCanvasBitmap with flexible canvas definitions.
 
-			SoftSurface_p								defaultCanvasSurface;
+			SoftBitmap_p								defaultCanvasBitmap;
 			std::vector<bool(*)(SoftBackend*)>			kernels;
 		};
 
@@ -68,7 +68,7 @@ namespace wax
 		SoftDeviceFactory(const Blueprint& bp);
 		virtual ~SoftDeviceFactory() {}
 
-		SoftSurface_p	m_pDefaultCanvasSurface;
+		SoftBitmap_p	m_pDefaultCanvasBitmap;
 
 		std::vector<bool(*)(SoftBackend*)>	m_kernels;
 	};

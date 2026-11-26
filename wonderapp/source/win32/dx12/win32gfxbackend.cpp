@@ -24,7 +24,7 @@
 
 #include <wondergui.h>
 
-#include <wax_dx12surfacefactory.h>
+#include <wax_dx12bitmapfactory.h>
 #include <wax_dx12backend.h>
 
 #include <dx12_wrapper.h>
@@ -53,7 +53,7 @@ static ULONGLONG		s_nextRecoveryAttempt = 0;
 //____ _recoverDevice() _______________________________________________________
 //
 // Everything has to let go of the old device before D3D12 gives us a new one:
-// the windows their swap chains, DX12Backend everything it and the surfaces
+// the windows their swap chains, DX12Backend everything it and the bitmaps
 // and edgemaps have on it, and the wrapper the device itself. Then it all
 // comes back on the new device.
 
@@ -156,8 +156,8 @@ void initGfxBackend()
 
 	g_pDX12Wrapper = new DX12Wrapper();
 
-	auto pFactory = wax::DX12SurfaceFactory::create();
-	Base::setDefaultSurfaceFactory(pFactory);
+	auto pFactory = wax::DX12BitmapFactory::create();
+	Base::setDefaultBitmapFactory(pFactory);
 
 	auto pBackend = wax::DX12Backend::create(g_pDX12Wrapper->dx12Device(), g_pDX12Wrapper->renderCommandQueue());
 

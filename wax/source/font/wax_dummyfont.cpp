@@ -109,7 +109,7 @@ namespace wax
 		glyph.fontRef = nullptr;
 		glyph.advance = 0;
 		glyph.kerningIndex = 0;
-		glyph.pSurface = nullptr;
+		glyph.pBitmap = nullptr;
 	}
 
 

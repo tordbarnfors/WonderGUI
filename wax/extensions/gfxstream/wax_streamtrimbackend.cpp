@@ -56,7 +56,7 @@ namespace wax
 
 	//____ beginSession() ______________________________________________________
 
-	void StreamTrimBackend::beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
+	void StreamTrimBackend::beginSession( CanvasRef canvasRef, Bitmap * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
 	{
 		if (!m_pBackend)
 			return;
@@ -117,10 +117,10 @@ namespace wax
 
 	//____ setCanvas() _______________________________________________
 
-	void StreamTrimBackend::setCanvas(Surface* pSurface)
+	void StreamTrimBackend::setCanvas(Bitmap* pBitmap)
 	{
 		if (m_pBackend)
-			m_pBackend->setCanvas(pSurface);
+			m_pBackend->setCanvas(pBitmap);
 	}
 
 	void StreamTrimBackend::setCanvas(CanvasRef ref)
@@ -208,14 +208,14 @@ namespace wax
 		return m_pBackend->canvasInfo(ref);
 	}
 
-	//____ surfaceFactory() ___________________________________________________
+	//____ bitmapFactory() ___________________________________________________
 
-	SurfaceFactory_p StreamTrimBackend::surfaceFactory()
+	BitmapFactory_p StreamTrimBackend::bitmapFactory()
 	{
 		if( !m_pBackend)
 			return nullptr;
 
-		return m_pBackend->surfaceFactory();
+		return m_pBackend->bitmapFactory();
 	}
 
 	//____ edgemapFactory() ______________________________________________________
@@ -289,7 +289,7 @@ namespace wax
 
 	//____ addFullyMaskingSession() ______________________________________________
 
-	void StreamTrimBackend::addFullyMaskingSession( CanvasRef canvasRef, Surface * pCanvas )
+	void StreamTrimBackend::addFullyMaskingSession( CanvasRef canvasRef, Bitmap * pCanvas )
 	{
 		m_masks.emplace_back();
 		auto& mask = m_masks.back();
@@ -300,7 +300,7 @@ namespace wax
 
 	//____ addMaskingSession() _______________________________________________
 
-	void StreamTrimBackend::addMaskingSession( CanvasRef canvasRef, Surface * pCanvas, int nMaskingRects, const RectSPX * pMaskingRects )
+	void StreamTrimBackend::addMaskingSession( CanvasRef canvasRef, Bitmap * pCanvas, int nMaskingRects, const RectSPX * pMaskingRects )
 	{
 		m_masks.emplace_back();
 		auto& mask = m_masks.back();

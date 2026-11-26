@@ -249,12 +249,12 @@ namespace wg
 
 		PluginBase::setContext(m_pContext);
 
-		wax_obj hSurfFactory = PluginCalls::gfxDevice->surfaceFactory(device);
+		wax_obj hBitmapFactory = PluginCalls::gfxDevice->bitmapFactory(device);
 		wax_obj hWaveFactory = PluginCalls::gfxDevice->edgemapFactory(device);
 
-		auto pSurfFactory = PluginSurfaceFactory::create(hSurfFactory);
+		auto pBitmapFactory = PluginBitmapFactory::create(hBitmapFactory);
 		auto pWaveFactory = PluginEdgemapFactory::create(hWaveFactory);
-		auto pDevice = PluginGfxDevice::create(device, pSurfFactory, pWaveFactory);
+		auto pDevice = PluginGfxDevice::create(device, pBitmapFactory, pWaveFactory);
 
 		slot._widget()->_render(pDevice, { _canvas.x, _canvas.y, _canvas.w, _canvas.h }, { _window.x, _window.y, _window.w, _window.h });
 	}

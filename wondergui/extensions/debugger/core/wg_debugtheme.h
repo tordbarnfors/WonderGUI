@@ -50,14 +50,14 @@ namespace wg
 		//.____ Creation __________________________________________
 		//
 		// Both frontends get their look from here, so that they can't drift apart.
-		// The icons surface holds 16x16 icons, the transparency grid is a
-		// chessboard pattern or similar, shown behind partly transparent surfaces.
+		// The icons bitmap holds 16x16 icons, the transparency grid is a
+		// chessboard pattern or similar, shown behind partly transparent bitmaps.
 		// Either can be null, in which case the embedded default is created with
-		// the default surface factory.
+		// the default bitmap factory.
 		//
 		// The oldskool widget kit must be initialized first, see acquireWidgetKit().
 
-		static DebugTheme			create( Surface * pIcons = nullptr, Surface * pTransparencyGrid = nullptr );
+		static DebugTheme			create( Bitmap * pIcons = nullptr, Bitmap * pTransparencyGrid = nullptr );
 
 		//.____ Widget kit ________________________________________
 		//
@@ -72,13 +72,13 @@ namespace wg
 
 		//.____ Resources _________________________________________
 
-		Surface_p					icons;
+		Bitmap_p					icons;
 
-		Surface_p					transparencyGrid;
+		Bitmap_p					transparencyGrid;
 
 		//.____ Icon skins ________________________________________
 		//
-		// Blocks picked out of the icons surface.
+		// Blocks picked out of the icons bitmap.
 
 		Skin_p						refreshIcon;
 		Skin_p						selectIcon;

@@ -24,7 +24,7 @@
 
 using namespace wax;
 
-void convertSurfaceBlueprint(Surface::Blueprint* pDest, const wax_surfaceBP* pSource)
+void convertBitmapBlueprint(Bitmap::Blueprint* pDest, const wax_bitmapBP* pSource)
 {
 	if( pSource->byteOrder != WAX_BYTEORDER_NATIVE )
 		pDest->bigEndian = (pSource->byteOrder == WAX_BYTEORDER_BIG_ENDIAN);
@@ -45,7 +45,7 @@ void convertSurfaceBlueprint(Surface::Blueprint* pDest, const wax_surfaceBP* pSo
 		wax_restorer_func pFunc = pSource->restorer;
 		void * pData = pSource->restorerData;
 
-		pDest->restorer = [pFunc,pData](Surface * pSurface) { return pFunc( static_cast<Object*>(pSurface), pData ) != 0; };
+		pDest->restorer = [pFunc,pData](Bitmap * pBitmap) { return pFunc( static_cast<Object*>(pBitmap), pData ) != 0; };
 	}
 
 	pDest->sampleMethod = (SampleMethod)pSource->sampleMethod;

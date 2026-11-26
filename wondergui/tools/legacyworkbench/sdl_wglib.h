@@ -6,7 +6,7 @@
 #include <wg2_types.h>
 #include <wg2_widget.h>
 
-#include <wax_surface.h>
+#include <wax_bitmap.h>
 #include <wax_font.h>
 
 namespace wax

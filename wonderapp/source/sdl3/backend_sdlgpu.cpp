@@ -22,7 +22,7 @@
 #include <sdlwindow.h>
 
 #include <wax_sdlgpubackend.h>
-#include <wax_sdlgpusurface.h>
+#include <wax_sdlgpubitmap.h>
 
 #include <algorithm>
 #include <cstdlib>
@@ -37,7 +37,7 @@ using namespace wax;
 //
 // Renders with the GPU API of SDL, which picks Vulkan, Direct3D 12 or Metal.
 //
-// Wax renders into a surface of our own, which keeps what was rendered between
+// Wax renders into a bitmap of our own, which keeps what was rendered between
 // frames, as only the dirty rects are drawn. Each frame that rendered anything is
 // copied to a texture of the window's swap chain and presented, since those don't
 // keep their content.
@@ -83,7 +83,7 @@ private:
 	bool	_present();
 	bool	_renderDirect();
 
-	SdlGpuSurface_p	m_pCanvas;						// Null when drawing straight into the swap chain.
+	SdlGpuBitmap_p	m_pCanvas;						// Null when drawing straight into the swap chain.
 	bool			m_bDirect = false;				// Draws straight into the swap chain.
 	bool			m_bClaimed = false;				// Has a swap chain of the device.
 	bool			m_bPresentPending = false;		// Rendered but not yet presented.
@@ -121,7 +121,7 @@ bool backend_specific_init()
 	auto pDevice = GfxDeviceGen2::create(g_pBackend);
 	wg::Base::setDefaultDevice(pDevice);
 
-	wg::Base::setDefaultSurfaceFactory(g_pBackend->surfaceFactory());
+	wg::Base::setDefaultBitmapFactory(g_pBackend->bitmapFactory());
 	wg::Base::setDefaultEdgemapFactory(g_pBackend->edgemapFactory());
 	wg::Base::setDefaultWarpmapFactory(g_pBackend->warpmapFactory());
 
@@ -130,7 +130,7 @@ bool backend_specific_init()
 
 //____ backend_specific_exit() ________________________________________________
 //
-// Surfaces and such of the app may outlive us, in which case the device is left
+// Bitmaps and such of the app may outlive us, in which case the device is left
 // for the process to clean up.
 
 void backend_specific_exit()
@@ -284,7 +284,7 @@ void SDLWindowGPU::_createCanvas()
 		return;
 	}
 
-	m_pCanvas = SdlGpuSurface::create( WGBP(Surface, _.canvas = true, _.format = PixelFormat::ARGB_8, _.scale = _scale(), _.size = _sizeInPixels() ) );
+	m_pCanvas = SdlGpuBitmap::create( WGBP(Bitmap, _.canvas = true, _.format = PixelFormat::ARGB_8, _.scale = _scale(), _.size = _sizeInPixels() ) );
 }
 
 //____ _present() _____________________________________________________________

@@ -25,7 +25,7 @@
 
 #include <wax_backend.h>
 #include <wax_streamencoder.h>
-#include <wax_remotesurface.h>
+#include <wax_remotebitmap.h>
 #include <wax_compression.h>
 
 #include <functional>
@@ -39,8 +39,8 @@ namespace wax
 
 	class StreamBackend : public Backend
 	{
-		friend class RemoteSurface;
-		friend class MirrorSurface;
+		friend class RemoteBitmap;
+		friend class MirrorBitmap;
 		friend class StreamEdgemap;
 		friend class StreamWarpmap;
 
@@ -75,10 +75,10 @@ namespace wax
 		void	beginRender() override;
 		void	endRender() override;
 
-		void	beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo = nullptr ) override;
+		void	beginSession( CanvasRef canvasRef, Bitmap * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo = nullptr ) override;
 		void	endSession() override;
 
-		void	setCanvas( Surface * pSurface ) override;
+		void	setCanvas( Bitmap * pBitmap ) override;
 		void	setCanvas( CanvasRef ref ) override;
 
 		void	setObjects(Object* const * pBeg, Object* const * pEnd) override;
@@ -92,7 +92,7 @@ namespace wax
 
 		//.____ Misc ________________________________________________________________
 
-		bool	defineCanvas( CanvasRef ref, RemoteSurface * pSurface );
+		bool	defineCanvas( CanvasRef ref, RemoteBitmap * pBitmap );
 		bool	defineCanvas( CanvasRef ref, const SizeI& pixelSize, PixelFormat pixelFormat, int scale = 64,
 							  ColorSpace colorSpace = ColorSpace::sRGB, bool bBigEndian = (WAX_IS_BIG_ENDIAN == 1) );
 
@@ -102,7 +102,7 @@ namespace wax
 
 		const CanvasInfo *	canvasInfo(CanvasRef ref) const override;
 
-		SurfaceFactory_p	surfaceFactory() override;
+		BitmapFactory_p	bitmapFactory() override;
 		EdgemapFactory_p	edgemapFactory() override;
 		WarpmapFactory_p	warpmapFactory() override;
 
@@ -120,7 +120,7 @@ namespace wax
 		StreamBackend(const Blueprint& blueprint );
 		~StreamBackend();
 
-		// Static so it can be used by StreamSurface and StreamEdgemap as well.
+		// Static so it can be used by StreamBitmap and StreamEdgemap as well.
 
 		static void _compressSplitAndEncode( StreamEncoder * pEncoder, GfxStream::ChunkId chunkType, uint16_t objectID, Compressor * pCompressor, const void * pBeg, const void * pEnd );
 
@@ -128,7 +128,7 @@ namespace wax
 		StreamEncoder_p			m_pEncoder;
 		int						m_maxEdges;
 
-		SurfaceFactory_p		m_pSurfaceFactory;
+		BitmapFactory_p		m_pBitmapFactory;
 		EdgemapFactory_p		m_pEdgemapFactory;
 		WarpmapFactory_p	m_pWarpmapFactory;
 

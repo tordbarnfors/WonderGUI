@@ -48,7 +48,7 @@ namespace wg
 			glyph.advance = 0;
 			glyph.kerningIndex = 0;
 			glyph.fontRef = nullptr;
-			glyph.pSurface = nullptr;
+			glyph.pBitmap = nullptr;
 			return;
 		}
 
@@ -700,9 +700,9 @@ namespace wg
 						if( bLineHasEllipsis && lineX + glyph.advance + ellipsisLength > canvas.w - (lineStart.x - canvas.x) )
 							break;
 
-						if( glyph.pSurface )
+						if( glyph.pBitmap )
 						{
-							pDevice->setBlitSource(glyph.pSurface);
+							pDevice->setBlitSource(glyph.pBitmap);
 							pDevice->blit( CoordSPX(lineStart.x + cursor.glyphX() + glyph.bearingX, baseline + glyph.bearingY), glyph.rect );
 						}
 
@@ -760,9 +760,9 @@ namespace wg
 					pDevice->setTintColor( baseTint * baseAttr.color );
 					bRecalcColor = true;
 
-					if( ellipsisGlyph.pSurface )
+					if( ellipsisGlyph.pBitmap )
 					{
-						pDevice->setBlitSource(ellipsisGlyph.pSurface);
+						pDevice->setBlitSource(ellipsisGlyph.pBitmap);
 
 						spx x = lineStart.x + ellipsisX;
 						for( int n = 0 ; n < nbEllipsisGlyphs ; n++ )

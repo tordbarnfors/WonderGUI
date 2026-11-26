@@ -38,7 +38,7 @@ namespace wax
 
 	//____ VulkanContext ________________________________________________________
 	/**
-	 * @brief The Vulkan device shared by VulkanBackends and their surfaces, edgemaps and Warpmaps.
+	 * @brief The Vulkan device shared by VulkanBackends and their bitmaps, edgemaps and Warpmaps.
 	 *
 	 * Set by VulkanBackend::setDevice(). All of Wax's work goes to one queue, in one sequence of
 	 * submissions counted by a timeline semaphore, which is what lets resources move freely between
@@ -144,7 +144,7 @@ namespace wax
 
 		//.____ One-shot commands _________________________________________________
 
-		// For surfaces reading back: records commands into a command buffer of our own, which endOneShot()
+		// For bitmaps reading back: records commands into a command buffer of our own, which endOneShot()
 		// submits and waits for. Everything backends have recorded is submitted first, so that the
 		// one-shot commands come after it, as they are meant to.
 

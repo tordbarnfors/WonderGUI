@@ -61,43 +61,43 @@ namespace wg
 
 
 		auto pRecordIcon = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = bp.icons,
+			_.bitmap = bp.icons,
 			_.firstBlock = { 0,16,16,16 },
 			_.axis = Axis::X,
 			_.states = { State::Default, State::Checked }));
 
 		auto pTicksIcon = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = bp.icons,
+			_.bitmap = bp.icons,
 			_.firstBlock = { 32,16,16,16 },
 			_.axis = Axis::X));
 
 		auto pPointerIcon = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = bp.icons,
+			_.bitmap = bp.icons,
 			_.firstBlock = { 48,16,16,16 },
 			_.axis = Axis::X));
 
 		auto pDragIcon = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = bp.icons,
+			_.bitmap = bp.icons,
 			_.firstBlock = { 0,32,16,16 },
 			_.axis = Axis::X));
 
 		auto pButtonIcon = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = bp.icons,
+			_.bitmap = bp.icons,
 			_.firstBlock = { 16,32,16,16 },
 			_.axis = Axis::X));
 
 		auto pKeyIcon = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = bp.icons,
+			_.bitmap = bp.icons,
 			_.firstBlock = { 32,32,16,16 },
 			_.axis = Axis::X));
 
 		auto pPointerStyleIcon = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = bp.icons,
+			_.bitmap = bp.icons,
 			_.firstBlock = { 0,48,20,16 },
 			_.axis = Axis::X));
 
 		auto pClearIcon = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = bp.icons,
+			_.bitmap = bp.icons,
 			_.firstBlock = { 32,48,16,16 },
 			_.axis = Axis::X));
 

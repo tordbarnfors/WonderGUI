@@ -28,8 +28,8 @@
 
 #ifdef __cplusplus
 
-#include <wax_surface.h>
-#include <wax_c_surface.h>
+#include <wax_bitmap.h>
+#include <wax_c_bitmap.h>
 
 #include <wax_edgemap.h>
 #include <wax_c_edgemap.h>
@@ -40,7 +40,7 @@
 #include <wax_c_warpmap.h>
 
 
-WAX_NO_EXPORT void convertSurfaceBlueprint(wax::Surface::Blueprint* pDest, const wax_surfaceBP* pSource);
+WAX_NO_EXPORT void convertBitmapBlueprint(wax::Bitmap::Blueprint* pDest, const wax_bitmapBP* pSource);
 WAX_NO_EXPORT void convertEdgemapBlueprint(wax::Edgemap::Blueprint* pDest, const wax_edgemapBP* pSource, wax::Tint_p * pSpaceForTints );	// pSpaceForTints needs room for bp.segments pointers.
 WAX_NO_EXPORT void convertWarpmapBlueprint(wax::Warpmap::Blueprint* pDest, const wax_warpmapBP* pSource);
 

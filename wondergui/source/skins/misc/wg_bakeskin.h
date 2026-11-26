@@ -23,7 +23,7 @@
 #define WG_BAKESKIN_DOT_H
 #pragma once
 
-#include <wax_surface.h>
+#include <wax_bitmap.h>
 #include <wg_skin.h>
 #include <wax_color.h>
 #include <wax_tint.h>
@@ -46,6 +46,7 @@ namespace wg
 
 		struct Blueprint
 		{
+			Bitmap_p	bitmap;
 			BlendMode	blendMode = BlendMode::Undefined;
 			Color		color = Color::Undefined;
 			int			layer = -1;
@@ -54,14 +55,13 @@ namespace wg
 			bool		skinInSkin = true;
 			std::vector<Skin_p>	skins;
 
-			Surface_p	surface;
 			Tint_p	tint;
 		};
 
 		//.____ Creation __________________________________________
 
 		static BakeSkin_p	create( const Blueprint& blueprint );
-		static BakeSkin_p	create( Surface * pBakeSurface, std::initializer_list<Skin_p> skins );
+		static BakeSkin_p	create( Bitmap * pBakeBitmap, std::initializer_list<Skin_p> skins );
 
 		//.____ Identification __________________________________________
 
@@ -98,7 +98,7 @@ namespace wg
 
 	protected:
 		BakeSkin(const Blueprint& blueprint);
-		BakeSkin(Surface* pBakeSurface, std::initializer_list<Skin_p> skins);
+		BakeSkin(Bitmap* pBakeBitmap, std::initializer_list<Skin_p> skins);
 		~BakeSkin();
 
 		void			_incUseCount() override;
@@ -110,7 +110,7 @@ namespace wg
 
 		std::vector<Skin_p>	m_skins;
 
-		Surface_p			m_pBakeSurface;
+		Bitmap_p			m_pBakeBitmap;
 		BlendMode			m_blendMode = BlendMode::Undefined;
 		Color				m_tintColor = Color::White;
 		Tint_p			m_pTint;

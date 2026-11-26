@@ -29,8 +29,8 @@
 extern "C" {
 #endif
 
-WAX_EXPORT wax_obj		wax_createBitmapFont( wax_obj surface, char * pGlyphSpec, wax_obj backupFont );
-WAX_EXPORT wax_obj		wax_getBitmapFontSurface( wax_obj bitmapFont );
+WAX_EXPORT wax_obj		wax_createBitmapFont( wax_obj bitmap, char * pGlyphSpec, wax_obj backupFont );
+WAX_EXPORT wax_obj		wax_getBitmapFontBitmap( wax_obj bitmapFont );
 
 
 #ifdef __cplusplus

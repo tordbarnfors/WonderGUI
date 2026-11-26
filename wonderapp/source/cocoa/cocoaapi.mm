@@ -94,11 +94,11 @@ Blob_p CocoaAPI::loadBlob(const std::string& path, bool bNullTerminate)
 	return pBlob;
 }
 
-//____ loadSurface() ______________________________________________________
+//____ loadBitmap() ______________________________________________________
 
-Surface_p CocoaAPI::loadSurface(const std::string& path, SurfaceFactory* pFactory, const Surface::Blueprint& _bp)
+Bitmap_p CocoaAPI::loadBitmap(const std::string& path, BitmapFactory* pFactory, const Bitmap::Blueprint& _bp)
 {
-	return wappLoadSurface(path, pFactory, _bp);
+	return wappLoadBitmap(path, pFactory, _bp);
 }
 
 //____ initDefaultWidgetKit() ____________________________________________________

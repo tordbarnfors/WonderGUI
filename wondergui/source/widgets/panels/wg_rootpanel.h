@@ -66,9 +66,9 @@ namespace wg
 
 		struct Blueprint
 		{
+			Bitmap_p		canvasBitmap;
 			CanvasLayers_p	canvasLayers;
 			CanvasRef		canvasRef = CanvasRef::None;
-			Surface_p		canvasSurface;
 			Skin_p			debugOverlay;
 			int				debugAfterglow = 4;
 			Finalizer_p		finalizer = nullptr;
@@ -85,7 +85,7 @@ namespace wg
 
 		static RootPanel_p	create();
 		static RootPanel_p	create(const Blueprint& blueprint);
-		static RootPanel_p	create(Surface* pCanvasSurface, GfxDevice* pDevice = nullptr);
+		static RootPanel_p	create(Bitmap* pCanvasBitmap, GfxDevice* pDevice = nullptr);
 		static RootPanel_p	create(CanvasRef canvasRef, GfxDevice* pDevice = nullptr);
 
 		//.____ Components ____________________________________
@@ -151,7 +151,7 @@ namespace wg
 		uintptr_t				windowRef() const { return m_windowRef; }
 
 
-		bool					setCanvas(Surface* pCanvasSurface);
+		bool					setCanvas(Bitmap* pCanvasBitmap);
 		bool					setCanvas(CanvasRef canvasRef);
 		inline const CanvasInfo&canvasInfo() const;
 		inline SizeI			canvasSize() const;
@@ -177,7 +177,7 @@ namespace wg
 	protected:
 		RootPanel();
 		RootPanel(const Blueprint& bp);
-		RootPanel(Surface* pCanvasSurface, GfxDevice* pGfxDevice );
+		RootPanel(Bitmap* pCanvasBitmap, GfxDevice* pGfxDevice );
 		RootPanel(CanvasRef canvasRef, GfxDevice* pGfxDevice);
 		~RootPanel();
 

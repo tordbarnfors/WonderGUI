@@ -51,8 +51,8 @@
       <Compile Include="..\wax_types.cs">
         <Link>wax_types.cs</Link>
       </Compile>
-      <Compile Include="..\wax_mirrorsurface.cs" Link="wax_mirrorsurface.cs" />
-      <Compile Include="..\wax_mirrorsurfacefactory.cs" Link="wax_mirrorsurfacefactory.cs" />
+      <Compile Include="..\wax_mirrorbitmap.cs" Link="wax_mirrorbitmap.cs" />
+      <Compile Include="..\wax_mirrorbitmapfactory.cs" Link="wax_mirrorbitmapfactory.cs" />
       <Compile Include="..\wax_objekt.cs">
         <Link>wax_objekt.cs</Link>
       </Compile>
@@ -62,11 +62,11 @@
       <Compile Include="..\wax_softbackend.cs">
         <Link>wax_softbackend.cs</Link>
       </Compile>
-      <Compile Include="..\wax_softsurface.cs">
-        <Link>wax_softsurface.cs</Link>
+      <Compile Include="..\wax_softbitmap.cs">
+        <Link>wax_softbitmap.cs</Link>
       </Compile>
-      <Compile Include="..\wax_softsurfacefactory.cs">
-        <Link>wax_softsurfacefactory.cs</Link>
+      <Compile Include="..\wax_softbitmapfactory.cs">
+        <Link>wax_softbitmapfactory.cs</Link>
       </Compile>
       <Compile Include="..\wax_streambackend.cs">
         <Link>wax_streambackend.cs</Link>
@@ -80,14 +80,14 @@
       <Compile Include="..\wax_streamwriter.cs">
         <Link>wax_streamwriter.cs</Link>
       </Compile>
-      <Compile Include="..\wax_surface.cs">
-        <Link>wax_surface.cs</Link>
+      <Compile Include="..\wax_bitmap.cs">
+        <Link>wax_bitmap.cs</Link>
       </Compile>
-      <Compile Include="..\wax_surfacefactory.cs">
-        <Link>wax_surfacefactory.cs</Link>
+      <Compile Include="..\wax_bitmapfactory.cs">
+        <Link>wax_bitmapfactory.cs</Link>
       </Compile>
-      <Compile Include="..\wax_surfacewriter.cs">
-        <Link>wax_surfacewriter.cs</Link>
+      <Compile Include="..\wax_bitmapwriter.cs">
+        <Link>wax_bitmapwriter.cs</Link>
       </Compile>
       <Compile Include="..\wax_sysfont.cs">
         <Link>wax_sysfont.cs</Link>

@@ -35,17 +35,17 @@ public:
 	Listener() {};
 	virtual ~Listener() = default;
 
-	void _cacheSurfaceAdded(Surface* pSurface) override { m_data.addFunc(static_cast<Object*>(pSurface),m_data.addPtr,m_data.addInt); }
-	void _cacheSurfacesRemoved(int nSurfaces, Surface* pSurfaces[]) override
+	void _cacheBitmapAdded(Bitmap* pBitmap) override { m_data.addFunc(static_cast<Object*>(pBitmap),m_data.addPtr,m_data.addInt); }
+	void _cacheBitmapsRemoved(int nBitmaps, Bitmap* pBitmaps[]) override
 	{
-		wax_obj * pObjects = (wax_obj*) Base::memStackAlloc(sizeof(wax_obj)*nSurfaces);
+		wax_obj * pObjects = (wax_obj*) Base::memStackAlloc(sizeof(wax_obj)*nBitmaps);
 		
-		for( int i = 0 ; i < nSurfaces ; i++ )
-			pObjects[i] = static_cast<Object*>(pSurfaces[i]);
+		for( int i = 0 ; i < nBitmaps ; i++ )
+			pObjects[i] = static_cast<Object*>(pBitmaps[i]);
 		
-		m_data.removeFunc(nSurfaces,pObjects,m_data.removePtr,m_data.removeInt);
+		m_data.removeFunc(nBitmaps,pObjects,m_data.removePtr,m_data.removeInt);
 		
-		Base::memStackFree(sizeof(wax_obj)*nSurfaces);
+		Base::memStackFree(sizeof(wax_obj)*nBitmaps);
 	}
 	void _cacheCleared() override { m_data.clearFunc( m_data.addPtr, m_data.addInt ); }
 	
@@ -54,9 +54,9 @@ public:
 };
 
 
-wax_obj wax_createBitmapCache( int maxSize, wax_obj surfaceFactory )
+wax_obj wax_createBitmapCache( int maxSize, wax_obj bitmapFactory )
 {
-	SurfaceFactory * pFactory = surfaceFactory == 0 ? nullptr : static_cast<SurfaceFactory*>(reinterpret_cast<Object*>(surfaceFactory));
+	BitmapFactory * pFactory = bitmapFactory == 0 ? nullptr : static_cast<BitmapFactory*>(reinterpret_cast<Object*>(bitmapFactory));
 
 	auto p = BitmapCache::create(maxSize,pFactory);
 	p->retain();
@@ -102,27 +102,27 @@ void wax_removeCacheListener(wax_obj bitmapCache, wax_cacheListener listener )
 
 wax_cacheSlot wax_getCacheSlot(wax_obj bitmapCache, wax_sizeI size)
 {
-	Surface_p	pSurf;
+	Bitmap_p	pBitmap;
 	CoordI		coord;
 	
-	std::tie(pSurf,coord) = getPtr(bitmapCache)->getCacheSlot({size.w,size.h});
+	std::tie(pBitmap,coord) = getPtr(bitmapCache)->getCacheSlot({size.w,size.h});
 
-	return {static_cast<Object*>(pSurf.rawPtr()),{coord.x,coord.y}};
+	return {static_cast<Object*>(pBitmap.rawPtr()),{coord.x,coord.y}};
 }
 
-int wax_getNbCacheSurfaces(wax_obj bitmapCache)
+int wax_getNbCacheBitmaps(wax_obj bitmapCache)
 {
-	return getPtr(bitmapCache)->nbSurfaces();
+	return getPtr(bitmapCache)->nbBitmaps();
 }
 
 
-int wax_getCacheSurfaces(wax_obj bitmapCache, int maxSurfaces, wax_obj * pArray )
+int wax_getCacheBitmaps(wax_obj bitmapCache, int maxBitmaps, wax_obj * pArray )
 {
-	auto surfVector = getPtr(bitmapCache)->getSurfaces();
-	int amount = std::min(maxSurfaces, (int)surfVector.size());
+	auto bitmapVector = getPtr(bitmapCache)->getBitmaps();
+	int amount = std::min(maxBitmaps, (int)bitmapVector.size());
 	
 	for( int i = 0 ; i < amount ; i++ )
-		pArray[i] = surfVector[i].rawPtr();
+		pArray[i] = bitmapVector[i].rawPtr();
 	
 	return amount;
 }

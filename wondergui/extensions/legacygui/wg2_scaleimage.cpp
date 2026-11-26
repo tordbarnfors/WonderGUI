@@ -187,7 +187,7 @@ void WgScaleImage::_generateSurface( wg::ColorSpace colorSpace )
 	// resample() works on the pixel values as they are, so we resample in the color
 	// space of the source and convert afterwards if needed.
 
-	auto pSurface = m_pSurfaceFactory->createSurface( WGBP(Surface,
+	auto pSurface = m_pSurfaceFactory->createBitmap( WGBP(Surface,
 														_.size = m_imgRect.size(),
 														_.format = WgPixelType::ARGB_8,
 														_.colorSpace = m_pOrgSurface->colorSpace() ));

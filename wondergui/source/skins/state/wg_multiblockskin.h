@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_stateskin.h>
-#include <wax_surface.h>
+#include <wax_bitmap.h>
 
 #include <initializer_list>
 #include <utility>
@@ -58,9 +58,9 @@ namespace wg
 
 		//.____ Appearance _________________________________________________
 
-		int		addLayer(Surface * pSurf, Coord ofs);
-		int		addLayer(Surface * pSurf, Coord blockStartOfs, Size blockPitch, std::initializer_list<State> stateBlocks);		// DEPRECATED!!!
-		int		addLayer(Surface * pSurf, std::initializer_list<State> stateBlocks, Axis axis = Axis::Y, pts spacing = 0, Coord blockStartOfs = { 0,0 } );
+		int		addLayer(Bitmap * pBitmap, Coord ofs);
+		int		addLayer(Bitmap * pBitmap, Coord blockStartOfs, Size blockPitch, std::initializer_list<State> stateBlocks);		// DEPRECATED!!!
+		int		addLayer(Bitmap * pBitmap, std::initializer_list<State> stateBlocks, Axis axis = Axis::Y, pts spacing = 0, Coord blockStartOfs = { 0,0 } );
 
 		bool	setLayerColor(int layerIdx, Color tintColor);
 		bool	setLayerColor(int layerIdx, std::initializer_list< std::pair<State,Color> > stateColors);
@@ -89,7 +89,7 @@ namespace wg
 
 		struct LayerData
 		{
-			Surface *			pSurface;
+			Bitmap *			pBitmap;
 			BlendMode			blendMode;
 //			Bitmask<uint32_t>   stateBlockMask = 0;
 //			Bitmask<uint32_t>   stateColorMask = 1;         // Normal state always exist for colors and is by default white.

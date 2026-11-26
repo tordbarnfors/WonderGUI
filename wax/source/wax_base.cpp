@@ -113,7 +113,7 @@ namespace wax
 
 		// We need to make sure our objects are destroyed before continuing.
 
-		s_pContext->pDefaultSurfaceFactory = nullptr;
+		s_pContext->pDefaultBitmapFactory = nullptr;
 		s_pContext->pDefaultEdgemapFactory = nullptr;
 		s_pContext->pDefaultWarpmapFactory = nullptr;
 		s_pContext->pDefaultDevice = nullptr;
@@ -300,11 +300,11 @@ namespace wax
 		return s_pContext->pDefaultBitmapCache;
 	}
 
-	//____ setDefaultSurfaceFactory() ____________________________________________
+	//____ setDefaultBitmapFactory() ____________________________________________
 
-	void Base::setDefaultSurfaceFactory( SurfaceFactory * pFactory )
+	void Base::setDefaultBitmapFactory( BitmapFactory * pFactory )
 	{
-		s_pContext->pDefaultSurfaceFactory = pFactory;
+		s_pContext->pDefaultBitmapFactory = pFactory;
 	}
 
 	//____ setDefaultEdgemapFactory() ____________________________________________

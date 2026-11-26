@@ -427,7 +427,7 @@ bool backend_specific_init()
 	auto pDevice = GfxDeviceGen2::create(g_pBackend);
 	wg::Base::setDefaultDevice(pDevice);
 
-	wg::Base::setDefaultSurfaceFactory(g_pBackend->surfaceFactory());
+	wg::Base::setDefaultBitmapFactory(g_pBackend->bitmapFactory());
 	wg::Base::setDefaultEdgemapFactory(g_pBackend->edgemapFactory());
 	wg::Base::setDefaultWarpmapFactory(g_pBackend->warpmapFactory());
 
@@ -436,7 +436,7 @@ bool backend_specific_init()
 
 //____ backend_specific_exit() ________________________________________________
 //
-// Surfaces and such of the app may outlive us, in which case they are left for
+// Bitmaps and such of the app may outlive us, in which case they are left for
 // the process to clean up, and so is the device.
 
 void backend_specific_exit()

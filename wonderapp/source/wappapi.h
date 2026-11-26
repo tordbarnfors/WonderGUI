@@ -29,14 +29,14 @@
 namespace wax
 {
 	class Blob;
-	class Surface;
-	class SurfaceFactory;
+	class Bitmap;
+	class BitmapFactory;
 }
 
 namespace wg
 {
 	typedef    wg::StrongPtr<Blob>        Blob_p;
-	typedef    wg::StrongPtr<Surface>     Surface_p;
+	typedef    wg::StrongPtr<Bitmap>     Bitmap_p;
 }
 
 namespace wapp
@@ -78,8 +78,8 @@ namespace wapp
 		virtual int64_t			time() = 0;					// Time in millisec since any arbitrary time before call to init().
 
 		virtual wg::Blob_p		loadBlob(const std::string& path, bool bNullTerminate = false) = 0;
-		virtual wg::Surface_p	loadSurface(const std::string& path, wg::SurfaceFactory* pFactory = nullptr,
-			const wg::Surface::Blueprint& blueprint = wg::Surface::Blueprint()) = 0;
+		virtual wg::Bitmap_p	loadBitmap(const std::string& path, wg::BitmapFactory* pFactory = nullptr,
+			const wg::Bitmap::Blueprint& blueprint = wg::Bitmap::Blueprint()) = 0;
 
 		virtual bool			initDefaultWidgetKit() = 0;
 

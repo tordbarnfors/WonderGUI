@@ -109,7 +109,7 @@ namespace wax
 		//____ Pixels _________________________________________________________
 
 		/**
-		 * GPU backends keep the colors of surfaces with alpha premultiplied in their textures, so
+		 * GPU backends keep the colors of bitmaps with alpha premultiplied in their textures, so
 		 * that blending and filtering work on premultiplied colors, and hand them out straight.
 		 * This converts ARGB_8 pixels, 32-bit words with alpha in the high byte, from pSrc into
 		 * pDst, which may be the same, in linear light for sRGB pixels. Every pixel of pDst is
@@ -131,7 +131,7 @@ namespace wax
 		/**
 		 * A palette as the shaders read it: a float4 holding the capacity, so that an index past
 		 * the end can be caught, followed by a float4 per entry, converted to linear the way
-		 * SoftSurface unpacks it and premultiplied, like the pixels of surfaces with alpha, so
+		 * SoftBitmap unpacks it and premultiplied, like the pixels of bitmaps with alpha, so
 		 * the shaders can use the colors as they are and interpolate between them. Entries are in
 		 * colorSpace. pDest gets capacity + 1 float4 and is only written to.
 		 */
