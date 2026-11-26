@@ -1508,8 +1508,32 @@ renders into GL_SRGB8.
   images own their pixels either way, and as uncovering a window under X without a compositor
   sends an expose event, which has the whole window drawn again.
 
-Not compiled: the change for wappcocoametal, which Windows has nothing to build with. Not run:
-wappsdl3vk on a display, or with a driver that leaves out what is covered.
+On a Mac (a874f953, x86_64, Debug, a display at scale 1), against wappcocoametal of v4:
+`macos-wappcocoametal` builds with no fix, unittester passes and gfxdevicetester gives the same
+lines, 13 that differ of 266, with the validation of Metal on and silent, also for widgetbench
+and editera. Their windows are the same as before pixel for pixel: idle, at seven sizes, and
+after a live resize by dragging a corner inwards, during which every picture had the content
+laid out for its size. Clicking in widgetbench and the blinking caret of editera gave pictures
+that are each one of the states v4 gives, never a mix, so nothing old was shown.
+
+- **Core Animation does count a surface it shows as in use,** on that Mac, which is the reading
+  the window stands on: `IOSurfaceIsInUse()` was true for the surface the layer showed, and for
+  the one shown until then right after the layer got another, in every frame logged, and free
+  again by the next frame. A Metal texture of ours on a surface doesn't make it in use. No
+  frame had to wait for a buffer, in 134 logged.
+- **Three buffers get made,** as the one shown before is still in use when the next frame comes
+  soon after. That is what a CAMetalLayer has of drawables at most, and the canvas is saved.
+- **The wait for the GPU** was 0.23 ms on average for a caret blink or a click, 0.79 ms at
+  most, and 0.54 ms on average for a frame of a live resize.
+- **A live resize makes new buffers for every step,** 54 in one drag. It looked the same as
+  before; what making them costs was not timed.
+- **Checked in the headers there:** `kIOSurfaceColorSpace` takes what
+  `CGColorSpaceCopyPropertyList()` gives, as the window has it. Nothing says which storage mode
+  a texture on an IOSurface should have, nor that copying with a blit encoder needs a usage, and
+  the validation of Metal accepts them as they are.
+
+Not run: wappcocoametal on a Retina display or with a window dragged larger, and wappsdl3vk on
+a display, or with a driver that leaves out what is covered.
 
 Also seen, and not changed: the main loops wait a fixed time each turn, 10 ms with SDL3, which
 keeps a window under 100 frames a second, 1 ms with Win32, and up to 10 ms for an event with
