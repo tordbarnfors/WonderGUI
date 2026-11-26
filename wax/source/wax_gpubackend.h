@@ -114,6 +114,7 @@ namespace wax
 			ShapeBox,			// Shapes, coverage worked out per pixel, see GpuShapes. A pixel
 			ShapeRing,			// shader for each kind, see ../extensions/hlsl/shape.hlsl.
 			ShapeLine,			// Lines with caps.
+			ShapePolyline,		// Polylines, a quad for each segment.
 			WarpEdgemap,		// Warps, coverage worked out per pixel, see warp.hlsl.
 			WarpBlit,
 			WarpPaletteBlit,
@@ -359,6 +360,7 @@ namespace wax
 		void				_drawScissored( const RectSPX * pClipRects, int nClipRects, int firstVertex, int nVertices );
 		void				_drawEdgemap( const uint16_t*& pCmd, const RectSPX*& pRects, int nRects, bool bTile );
 		void				_drawShape( ShapeKind kind, const uint16_t * pPayload, const RectSPX * pRects, int nRects, const Color * pColors );
+		void				_drawPolyline( const uint16_t * pPayload, const RectSPX * pRects, int nRects, const Color * pColors );
 		void				_drawWarp( Command cmd, const WarpParams& params, const RectSPX * pRects );
 
 		// What we tell the error handler of once for each backend, as it would come again with
@@ -489,6 +491,7 @@ namespace wax
 
 		std::vector<GpuShapes::Segment>		m_shapeSegments;		// Segments of the shape being drawn.
 		std::vector<GpuTools::CappedLine>	m_cappedLines;			// Lines with caps of the line command being drawn.
+		std::vector<CoordF>					m_polylineQuads;		// Quads of the segments of the polyline being drawn.
 	};
 
 } // namespace wax

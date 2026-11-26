@@ -10,9 +10,10 @@
 // pixels blended twice at a joint would show as darker spots and background showing through
 // between two segments as lighter ones.
 //
-// Polylines that cross themselves or turn back within less than their thickness may be blended
-// once or twice where they do, depending on the backend, so the tests with those are in opaque
-// colors and only there to show that nothing else goes wrong.
+// Polylines that cross themselves or come back to within their thickness of themselves may be
+// blended once or several times where they do, depending on the backend, so the tests with those
+// are in opaque colors and only there to show that nothing else goes wrong. GPU backends also
+// leave slivers out of the tightest turns, see KNOWN_ISSUES.md.
 
 class PolylineTests : public TestSuite
 {
@@ -349,7 +350,10 @@ private:
 
 	void angleGrid(GfxDevice * pDevice, double thickness, double length)
 	{
-		const double turns[8] = { 8, -25, 45, -72, 90, -118, 145, -168 };
+		// No sharper than that the sides of the two segments still meet on the inside of the
+		// turn with the thickest of the grids, see tightTurns() for sharper ones.
+
+		const double turns[8] = { 8, -25, 45, -72, 90, -118, 135, -140 };
 
 		for (int c = 0; c < 8; c++)
 		{

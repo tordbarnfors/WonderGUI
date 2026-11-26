@@ -60,6 +60,8 @@ namespace SdlGpuShaders
 		{ "shapeRingPSDual", Stage::Pixel, 0, 2, { Resource::Colors, Resource::Extras }, 4 },
 		{ "shapeLinePS", Stage::Pixel, 0, 2, { Resource::Colors, Resource::Extras }, 3 },
 		{ "shapeLinePSDual", Stage::Pixel, 0, 2, { Resource::Colors, Resource::Extras }, 4 },
+		{ "shapePolylinePS", Stage::Pixel, 0, 2, { Resource::Colors, Resource::Extras }, 3 },
+		{ "shapePolylinePSDual", Stage::Pixel, 0, 2, { Resource::Colors, Resource::Extras }, 4 },
 		{ "warpEdgemapPS", Stage::Pixel, 0, 3, { Resource::Colors, Resource::Extras, Resource::EdgemapOrPalette }, 3 },
 		{ "warpEdgemapPSDual", Stage::Pixel, 0, 3, { Resource::Colors, Resource::Extras, Resource::EdgemapOrPalette }, 4 },
 		{ "warpBlitPS", Stage::Pixel, 1, 2, { Resource::Colors, Resource::Extras }, 3 },

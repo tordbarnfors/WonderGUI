@@ -12,7 +12,8 @@ Each shader is a few of these files put one after the other, listed in
 - `constants.hlsl` first, for all but the mipmap shaders: the constants set between draws.
 - `output.hlsl` and `tint.hlsl` next, for the pixel shaders that draw into canvases.
 - `warp.hlsl` before the warp pixel shaders.
-- `shape.hlsl` before the shape pixel shaders, one for each kind of shape.
+- `shape.hlsl` before the shape pixel shaders, one for each kind of shape, and `line.hlsl` after
+  it for those of lines with caps and of polylines, which cover pixels the same way.
 - Then the `vs_*.hlsl` or `ps_*.hlsl` file itself.
 
 DX12Backend gets them as bytecode, compiled by FXC of the Windows SDK into

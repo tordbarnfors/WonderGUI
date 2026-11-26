@@ -387,5 +387,145 @@ namespace wax
 
 			return c_lineEntries;
 		}
+
+		//____ writePolyline() ________________________________________________
+
+		int writePolyline(const Backend::PolylinePayload& polyline, float* pEntries, CoordF* pQuads)
+		{
+			const int nPoints = polyline.nPoints;
+			const int nSegments = nPoints - 1;
+
+			if (nSegments < 1 || polyline.thickness <= 0 || polyline.join != 0)
+				return 0;
+
+			const double r = polyline.thickness / 128.0;
+
+			struct Dir { double x, y, length; };
+
+			auto direction = [&polyline](int segment)
+			{
+				const CoordSPX from = polyline.point(segment), to = polyline.point(segment + 1);
+				const double dx = (to.x - double(from.x)) / 64, dy = (to.y - double(from.y)) / 64;
+				const double length = std::sqrt(dx * dx + dy * dy);
+
+				return Dir{ dx / length, dy / length, length };
+			};
+
+			// Caps, as for lines: what they are to the shader and how far they reach beyond
+			// their endpoint.
+
+			const double c_maxReach = 65536.0;
+
+			const LineCaps caps = polyline.resolvedCaps();
+			const LineCap ends[2] = { caps.begin, caps.end };
+			const Dir endDirs[2] = { direction(0), direction(nSegments - 1) };
+
+			double reach[2];
+			float codes[2];
+
+			for (int i = 0; i < 2; i++)
+			{
+				const LineCapShape shape = ends[i].shape;
+				const double ux = endDirs[i].x, uy = endDirs[i].y;
+
+				if ((shape == LineCapShape::Vertical && ux == 0.0) || (shape == LineCapShape::Horizontal && uy == 0.0))
+					return 0;
+
+				switch (shape)
+				{
+					case LineCapShape::Square:
+					case LineCapShape::Round:
+						reach[i] = r;
+						break;
+					case LineCapShape::Vertical:
+						reach[i] = std::min(r * std::abs(uy / ux), c_maxReach);
+						break;
+					case LineCapShape::Horizontal:
+						reach[i] = std::min(r * std::abs(ux / uy), c_maxReach);
+						break;
+					default:
+						reach[i] = 0.0;
+						break;
+				}
+
+				int spear = shape == LineCapShape::Spear ? std::min(std::max((ends[i].spearLength + 12) / 25, 1), 32) : 0;
+				codes[i] = float(int(shape) + 8 * spear);
+			}
+
+			pEntries[0] = float(r);
+			pEntries[1] = codes[0];
+			pEntries[2] = codes[1];
+			pEntries[3] = 0.f;
+
+			// Points and segments. The quad of a segment is the band from before its first point
+			// to after its last, by what the cap or the round join there reaches, a pixel and a
+			// half wider all around as for lines.
+
+			const double margin = 1.5;
+
+			float* p = pEntries + 4;
+			Dir before = { 0, 0, 0 };
+
+			for (int i = 0; i < nPoints; i++)
+			{
+				const double x = polyline.point(i).x / 64.0;
+				const double y = polyline.point(i).y / 64.0;
+
+				const Dir dir = i < nSegments ? direction(i) : Dir{ 0, 0, 0 };
+
+				// Direction of the polyline at the point, which the line halving the joint is
+				// at right angle to.
+
+				double alongX = 0, alongY = 0;
+
+				if (i > 0 && i < nSegments)
+				{
+					alongX = before.x + dir.x;
+					alongY = before.y + dir.y;
+
+					const double length = std::sqrt(alongX * alongX + alongY * alongY);
+
+					if (length < 1e-9)
+					{
+						alongX = -before.y;
+						alongY = before.x;
+					}
+					else
+					{
+						alongX /= length;
+						alongY /= length;
+					}
+				}
+
+				p[0] = float(x);
+				p[1] = float(y);
+				p[2] = float(alongX);
+				p[3] = float(alongY);
+				p[4] = float(dir.x);
+				p[5] = float(dir.y);
+				p[6] = float(dir.length);
+				p[7] = float(i);
+				p += 8;
+
+				if (i < nSegments)
+				{
+					const double a0 = -(i == 0 ? reach[0] : r) - margin;
+					const double a1 = dir.length + (i == nSegments - 1 ? reach[1] : r) + margin;
+					const double w = r + margin;
+
+					auto corner = [&](double a, double across) { return CoordF(float(x + a * dir.x - across * dir.y), float(y + a * dir.y + across * dir.x)); };
+
+					CoordF* pQuad = pQuads + i * 4;
+					pQuad[0] = corner(a0, -w);
+					pQuad[1] = corner(a1, -w);
+					pQuad[2] = corner(a1, w);
+					pQuad[3] = corner(a0, w);
+				}
+
+				before = dir;
+			}
+
+			return polylineEntries(nPoints);
+		}
 }
 }

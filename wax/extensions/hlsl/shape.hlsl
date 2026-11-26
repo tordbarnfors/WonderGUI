@@ -1,7 +1,7 @@
 // writeOutput() and premul() come from output.hlsl, the tint, tintColor(),
 // evalTintBlock() and the colors buffer from tint.hlsl, which are put in front of
-// this file, and one of ps_shape_box.hlsl, ps_shape_ring.hlsl and ps_shape_line.hlsl
-// after it.
+// this file, and one of ps_shape_box.hlsl, ps_shape_ring.hlsl, ps_shape_line.hlsl and
+// ps_shape_polyline.hlsl after it, the last two with line.hlsl in between.
 //
 // Shapes (Command::DrawShape and lines with caps), see GpuShapes for the entries read
 // from the extras buffer. The coverage of each pixel by each segment is worked out

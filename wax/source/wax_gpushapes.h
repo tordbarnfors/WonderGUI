@@ -70,6 +70,9 @@ namespace wax
 	 *
 	 * Caps are LineCapShape, never None, plus 8 times the length of a spear in quarters of
 	 * the thickness. A line of no length runs along x.
+	 *
+	 * Polylines (ShapeKind::Polyline) have entries of their own, see writePolyline() and
+	 * ps_shape_polyline.hlsl, and are drawn in a quad for each of their segments.
 	 */
 
 	namespace GpuShapes
@@ -121,6 +124,23 @@ namespace wax
 		 */
 
 		int		writeLine(CoordSPX begin, CoordSPX end, spx thickness, LineCaps caps, float* pEntries, CoordF* pQuad);
+
+		/**
+		 * Entries of a polyline (ShapeKind::Polyline) of nPoints points.
+		 */
+
+		inline int	polylineEntries(int nPoints) { return 1 + nPoints * 2; }
+
+		/**
+		 * Writes the entries of a polyline, see ps_shape_polyline.hlsl for what they are, and
+		 * for each segment the four corners of a quad on the canvas, in pixels and in order
+		 * around it, that holds every pixel the segment and the joins at its ends touch. The
+		 * quad of segment i is to be given entry 1 + i * 2, counted from the first entry of
+		 * the polyline, whose fourth value is for the offset of the color in the color buffer.
+		 * Returns the number of entries, 0 if there is nothing to draw.
+		 */
+
+		int		writePolyline(const Backend::PolylinePayload& polyline, float* pEntries, CoordF* pQuads);
 	}
 }
 

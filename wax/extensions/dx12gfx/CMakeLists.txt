@@ -28,6 +28,7 @@ set(SHADER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../hlsl)
 set(SHADERS
 
 	../hlsl/constants.hlsl
+	../hlsl/line.hlsl
 	../hlsl/output.hlsl
 	../hlsl/ps_blit.hlsl
 	../hlsl/ps_blit_palette.hlsl
@@ -40,6 +41,7 @@ set(SHADERS
 	../hlsl/ps_segments.hlsl
 	../hlsl/ps_shape_box.hlsl
 	../hlsl/ps_shape_line.hlsl
+	../hlsl/ps_shape_polyline.hlsl
 	../hlsl/ps_shape_ring.hlsl
 	../hlsl/ps_warp_blit.hlsl
 	../hlsl/ps_warp_blit_palette.hlsl

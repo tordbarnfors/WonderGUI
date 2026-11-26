@@ -64,7 +64,7 @@ namespace wax
 
 	bool GpuBackend::_hasPartialCoverage( PipelineKind kind )
 	{
-		return kind == PipelineKind::FillAA || kind == PipelineKind::Line || kind == PipelineKind::ShapeBox || kind == PipelineKind::ShapeRing || kind == PipelineKind::ShapeLine || _isWarp(kind);
+		return kind == PipelineKind::FillAA || kind == PipelineKind::Line || kind == PipelineKind::ShapeBox || kind == PipelineKind::ShapeRing || kind == PipelineKind::ShapeLine || kind == PipelineKind::ShapePolyline || _isWarp(kind);
 	}
 
 	//____ _isWarp() _____________________________________________________________
@@ -101,6 +101,7 @@ namespace wax
 			case PipelineKind::ShapeBox:
 			case PipelineKind::ShapeRing:
 			case PipelineKind::ShapeLine:
+			case PipelineKind::ShapePolyline:
 				return "shapeVS";
 
 			case PipelineKind::WarpEdgemap:
@@ -130,6 +131,7 @@ namespace wax
 			case PipelineKind::ShapeBox:		return bDualSource ? "shapeBoxPSDual" : "shapeBoxPS";
 			case PipelineKind::ShapeRing:		return bDualSource ? "shapeRingPSDual" : "shapeRingPS";
 			case PipelineKind::ShapeLine:		return bDualSource ? "shapeLinePSDual" : "shapeLinePS";
+			case PipelineKind::ShapePolyline:	return bDualSource ? "shapePolylinePSDual" : "shapePolylinePS";
 			case PipelineKind::WarpEdgemap:		return bDualSource ? "warpEdgemapPSDual" : "warpEdgemapPS";
 			case PipelineKind::WarpBlit:		return bDualSource ? "warpBlitPSDual" : "warpBlitPS";
 			case PipelineKind::WarpPaletteBlit:	return bDualSource ? "warpPaletteBlitPSDual" : "warpPaletteBlitPS";
@@ -1623,6 +1625,9 @@ namespace wax
 
 	void GpuBackend::_drawShape(ShapeKind kind, const uint16_t* pPayload, const RectSPX* pRects, int nRects, const Color* pColors)
 	{
+		if (kind == ShapeKind::Polyline)
+			return _drawPolyline(pPayload, pRects, nRects, pColors);
+
 		int maxEntries, nSegments;
 		GpuShapes::measure(kind, pPayload, maxEntries, nSegments);
 
@@ -1705,6 +1710,64 @@ namespace wax
 		}
 
 		_draw(firstVertex, nRects * 6);
+	}
+
+	//____ _drawPolyline() _______________________________________________________
+	//
+	// A polyline, drawn by its own shape shader in a quad around each segment, see
+	// GpuShapes::writePolyline(), once for each clip rectangle with the scissor set to it, as
+	// lines are. Its color is written as given, the tint color comes with the white color of
+	// the vertices.
+
+	void GpuBackend::_drawPolyline(const uint16_t* pPayload, const RectSPX* pRects, int nRects, const Color* pColors)
+	{
+		const PolylinePayload polyline = decodePolyline(pPayload);
+
+		const int nSegments = polyline.nPoints - 1;
+		const int nEntries = GpuShapes::polylineEntries(polyline.nPoints);
+
+		if (nSegments < 1 || polyline.join != 0)
+		{
+			Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, "Failed DrawShape operation. Unsupported kind of polyline.",
+				this, &typeInfo(), __func__, __FILE__, __LINE__);
+			return;
+		}
+
+		if (!_setPipeline(PipelineKind::ShapePolyline))
+			return;
+
+		if (m_buffers.pExtrasEnd - m_buffers.pExtrasPtr < nEntries)
+			return _reportBufferFull("Extras", Report::ShapesDropped);
+
+		if (m_buffers.pVertexEnd - m_buffers.pVertexPtr < nSegments * 6)
+			return _reportBufferFull("Vertex", Report::ShapesDropped);
+
+		if (m_buffers.pColorEnd - m_buffers.pColorPtr < 2)
+			return _reportBufferFull("Color", Report::ShapesDropped);
+
+		if ((int)m_polylineQuads.size() < nSegments * 4)
+			m_polylineQuads.resize(nSegments * 4);
+
+		Extras* pEntries = m_buffers.pExtrasPtr;
+
+		if (GpuShapes::writePolyline(polyline, (float*) pEntries, m_polylineQuads.data()) == 0)
+			return;
+
+		int colorOfs = _addColor(Color::White);
+
+		pEntries[0].w = float(m_buffers.pColorPtr - m_buffers.pColorBeg);
+		pColors[0].toLinearFloat(&m_buffers.pColorPtr->r);
+		m_buffers.pColorPtr++;
+
+		int extrasOfs = int(pEntries - m_buffers.pExtrasBeg);
+		m_buffers.pExtrasPtr += nEntries;
+
+		int firstVertex = int(m_buffers.pVertexPtr - m_buffers.pVertexBeg);
+
+		for (int i = 0; i < nSegments; i++)
+			_addQuad(m_polylineQuads.data() + i * 4, colorOfs, extrasOfs + 1 + i * 2);
+
+		_drawScissored(pRects, nRects, firstVertex, nSegments * 6);
 	}
 
 	//____ _drawWarp() ___________________________________________________________
@@ -1889,7 +1952,8 @@ namespace wax
 	//             entries, and any state change and shape segment may carry a tint.
 	//   Extras:   two per rect (blits need two, subpixel fills and patches fewer), the entries of a
 	//             line with caps per line, 18 per blur for its brush, two per edgemap draw, three
-	//             per warp and the entries of shapes, see GpuShapes.
+	//             per warp and the entries of shapes, see GpuShapes. Polylines have two per point
+	//             besides those counted for any shape, and six vertices per segment.
 
 	void GpuBackend::_reserveBuffers(const SessionInfo* pInfo)
 	{
@@ -1899,7 +1963,7 @@ namespace wax
 		{
 			int nLines = pInfo->nLineCoords / 2;
 
-			nVertices = pInfo->nRects * 6 + nLines * 6;
+			nVertices = pInfo->nRects * 6 + nLines * 6 + pInfo->nPolylinePoints * 6;
 
 			// Overhead of a tint block besides the stop colors, which are in nColors.
 
@@ -1908,7 +1972,8 @@ namespace wax
 
 			nColors = pInfo->nColors + pInfo->nBlit + pInfo->nBlur + pInfo->nEdgemapDraws + pInfo->nShapeDraws + pInfo->nWarpDraws + pInfo->nLines
 					+ (pInfo->nStateChanges + pInfo->nShapeTints) * c_tintBlockOverhead;
-			nExtras = pInfo->nRects * 2 + nLines * GpuShapes::c_lineEntries + pInfo->nBlur * 18 + pInfo->nEdgemapDraws * 2 + pInfo->nWarpDraws * 3 + GpuShapes::maxSessionEntries(*pInfo);
+			nExtras = pInfo->nRects * 2 + nLines * GpuShapes::c_lineEntries + pInfo->nBlur * 18 + pInfo->nEdgemapDraws * 2 + pInfo->nWarpDraws * 3 + GpuShapes::maxSessionEntries(*pInfo)
+					+ pInfo->nPolylinePoints * 2;
 		}
 		else
 		{
