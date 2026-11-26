@@ -248,7 +248,7 @@ namespace wg
 //		if (!m_bOpaque)
 		{
 			pDevice->setBlendMode(BlendMode::Replace);
-			pDevice->fill(Color::Transparent);
+			pDevice->fill(Color8::Transparent);
 			pDevice->setBlendMode(BlendMode::Blend);
 		}
 

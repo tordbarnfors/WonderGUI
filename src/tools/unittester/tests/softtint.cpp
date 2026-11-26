@@ -208,7 +208,7 @@ bool SoftTintTest::init(std::ostream& output)
 
 bool SoftTintTest::lookupTableTest(std::ostream& output)
 {
-	HiColor red = Color::Red, white = Color::White, blue = Color::Blue, green = Color::Green, yellow = Color::Yellow;
+	HiColor red = Color8::Red, white = Color8::White, blue = Color8::Blue, green = Color8::Green, yellow = Color8::Yellow;
 
 	std::vector<std::vector<ColorStop>> stopSets = {
 		{ {0.f, red}, {0.3f, yellow}, {0.6f, green}, {1.f, blue} },
@@ -292,7 +292,7 @@ bool SoftTintTest::tintRowsTest(std::ostream& output)
 {
 	const double c_maxError = 2.0 / 1024;
 
-	HiColor red = Color::Red, blue = Color::Blue, yellow = Color::Yellow, green = Color::Green, white = Color::White;
+	HiColor red = Color8::Red, blue = Color8::Blue, yellow = Color8::Yellow, green = Color8::Green, white = Color8::White;
 
 	std::vector<std::pair<std::string, Tint_p>> tints;
 
@@ -449,7 +449,7 @@ bool SoftTintTest::tintRowsTest(std::ostream& output)
 
 bool SoftTintTest::tintedRenderingTest(std::ostream& output)
 {
-	HiColor red = Color::Red, blue = Color::Blue, yellow = Color::Yellow, green = Color::Green, white = Color::White;
+	HiColor red = Color8::Red, blue = Color8::Blue, yellow = Color8::Yellow, green = Color8::Green, white = Color8::White;
 
 	const SizeI	canvasSize = { 256, 256 };
 

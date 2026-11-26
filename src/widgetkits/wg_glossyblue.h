@@ -71,28 +71,28 @@ namespace wg::glossyblue
 		// so a flat surface (the capsule label skins, app code) sits flush against
 		// a real Plate or Canvas. Border needs no such treatment: a bitmap's
 		// outline is a flat colour already.
-		inline const Color	Plate = Color(208,215,224);		// measured: centre pixel of parts/Plate.png
-		inline const Color	Border = Color(140,148,160);		// palette: panel.border
-		inline const Color	Canvas = Color(241,244,247);		// measured: centre pixel of parts/Canvas.png
+		inline const Color8	Plate = Color8(208,215,224);		// measured: centre pixel of parts/Plate.png
+		inline const Color8	Border = Color8(140,148,160);		// palette: panel.border
+		inline const Color8	Canvas = Color8(241,244,247);		// measured: centre pixel of parts/Canvas.png
 
 		// The channel a scrollbar handle runs in: midway between Plate and the old
-		// hardcoded Color(150,156,166). Plate alone made the track vanish into the
+		// hardcoded Color8(150,156,166). Plate alone made the track vanish into the
 		// panel; the old value read as a dark trench cut into it.
-		inline const Color	ScrollbarTrack = Color(186,192,201);
-		inline const Color	Titlebar = Color(196,214,236);
-		inline const Color	TitlebarBorder = Color(110,140,175);
-		inline const Color	TitlebarSelected = Color(99,168,235);		// palette: raised.top
-		inline const Color	TitlebarBorderSelected = Color(20,62,110);		// palette: raised.border
+		inline const Color8	ScrollbarTrack = Color8(186,192,201);
+		inline const Color8	Titlebar = Color8(196,214,236);
+		inline const Color8	TitlebarBorder = Color8(110,140,175);
+		inline const Color8	TitlebarSelected = Color8(99,168,235);		// palette: raised.top
+		inline const Color8	TitlebarBorderSelected = Color8(20,62,110);		// palette: raised.border
 
 		// The theme's blue accent, for app code that wants to match it.
-		inline const Color	Accent = Color(33,100,173);		// palette: raised.bottom
-		inline const Color	AccentHovered = Color(48,124,200);		// palette: hover.bottom
+		inline const Color8	Accent = Color8(33,100,173);		// palette: raised.bottom
+		inline const Color8	AccentHovered = Color8(48,124,200);		// palette: hover.bottom
 
 		// Selected text: white on a saturated theme blue (between Accent and
 		// AccentHovered). 5.6:1 contrast, and both colours are painted with
 		// BlendMode::Replace so they do not depend on the widget's tint.
-		inline const Color	TextSelection = Color(40,105,180);
-		inline const Color	TextSelectionText = Color(255,255,255);
+		inline const Color8	TextSelection = Color8(40,105,180);
+		inline const Color8	TextSelectionText = Color8(255,255,255);
 		// >>> END GENERATED COLORS <<<
 	}
 
@@ -383,7 +383,7 @@ namespace wg::glossyblue
 
 		_pSelectableEntrySkin = BoxSkin::create(WGBP(BoxSkin,
 			_.markAlpha = 0,
-			_.states = { {State::Default, Color::Transparent,Color::Transparent},
+			_.states = { {State::Default, Color8::Transparent,Color8::Transparent},
 						 {State::Hovered, HiColor(Colors::Accent).withAlpha(700), HiColor(Colors::Accent).withAlpha(1400)},
 						 {State::Selekted, HiColor(Colors::Accent).withAlpha(1400),HiColor(Colors::Accent).withAlpha(2400) }
 			}
@@ -412,7 +412,7 @@ namespace wg::glossyblue
 			// list's default width (entryDefault.w + listPadding.w), so nothing
 			// gets truncated.
 			_.padding = { 0, 6, 0, 6 },
-			_.states = { {State::Default, Color::Transparent, Color::Transparent},
+			_.states = { {State::Default, Color8::Transparent, Color8::Transparent},
 						 {State::Hovered, HiColor(Colors::Accent).withAlpha(700), HiColor(Colors::Accent).withAlpha(1400)},
 						 {State::Selekted, HiColor(Colors::Accent).withAlpha(1400),HiColor(Colors::Accent).withAlpha(2400) }
 			}

@@ -46,7 +46,7 @@ namespace wg
 		{
 			HiColor		backColor = HiColor::Transparent;
 			BlendMode	blendMode = BlendMode::Blend;
-			HiColor		color = Color::Blue;
+			HiColor		color = Color8::Blue;
 			Size		defaultSize;						// Mandatory
 			Direction	direction = Direction::Right;
 			Finalizer_p	finalizer = nullptr;

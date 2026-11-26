@@ -250,7 +250,7 @@ int main ( int argc, char** argv )
 	//------------------------------------------------------
 
 	FlexPanel_p pFlexPanel = FlexPanel::create();
-	pFlexPanel->setSkin( StaticColorSkin::create(Color::Beige)/*pImgSkin*/  );
+	pFlexPanel->setSkin( StaticColorSkin::create(Color8::Beige)/*pImgSkin*/  );
 	pRoot->child = pFlexPanel;
 
 
@@ -283,21 +283,21 @@ int main ( int argc, char** argv )
 		pVert->children << pFillerSouth;
 
 		TextEditor_p pText = TextEditor::create();
-		pText->setSkin( StaticColorSkin::create( Color::Black ) );
+		pText->setSkin( StaticColorSkin::create( Color8::Black ) );
 		
 		
 		TextStyle_p pBig = TextStyle::create();
 		pBig->setSize( 16 );
 		
 		TextStyle_p pRed = TextStyle::create();
-		pRed->setColor( Color::Red );
+		pRed->setColor( Color8::Red );
 		pRed->setSize( 25 );
 
 		TextStyle_p pAnuv = TextStyle::create();
 		pAnuv->setFont( pBmpFont );
 
 		TextStyle_p pLink = TextStyle::create();
-		pLink->setColor(Color::Green );
+		pLink->setColor(Color8::Green );
 		pLink->setLink( TextLink::create( "www.somewhere.net" ) );
 
 		pText->text.set( "This is a\npiece of TEXT with LINK" );

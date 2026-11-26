@@ -114,7 +114,7 @@ int main ( int argc, char** argv )
 	Textprop prop;
 
 	prop.setFont(pFont);
-	prop.setColor( Color::white );
+	prop.setColor( Color8::white );
 	prop.setSize(8);
 
 	Base::setDefaultTextprop( prop.register() );
@@ -282,7 +282,7 @@ RootPanel_p setupGUI( const GfxDevice_p& pDevice )
 
 	FlexPanel_p pBottom = FlexPanel::create();
 	pPopupLayer->setBaseWidget( pBottom );
-	pBottom->setSkin( ColorSkin::create( Color::black ) );
+	pBottom->setSkin( ColorSkin::create( Color8::black ) );
 
 	// Main Flex
 
@@ -381,7 +381,7 @@ RootPanel_p setupGUI( const GfxDevice_p& pDevice )
 
 		pList->setSkin( pPlate );
 		pList->setEntrySkin( pDB->getSkin("listentry"));
-		pList->setLassoSkin( BoxSkin::create( Color(0,0,255,64), Borders(1), Color(0,0,255,128)) );
+		pList->setLassoSkin( BoxSkin::create( Color8(0,0,255,64), Borders(1), Color8(0,0,255,128)) );
 		pList->setSelectMode( WG_SELECT_MULTI );
 //		pList->setOrientation( WG_HORIZONTAL );
 

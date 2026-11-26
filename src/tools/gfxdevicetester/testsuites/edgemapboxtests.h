@@ -26,22 +26,22 @@ public:
 		spec.rect = { canvas.x + 20 * 64, canvas.y + 20 * 64, canvas.w - 40 * 64, canvas.h - 40 * 64 };
 		spec.radius = { 40 * 64, 40 * 64, 40 * 64, 40 * 64 };
 		spec.outline = { 3 * 64, 3 * 64, 3 * 64, 3 * 64 };
-		spec.fillColor = Color::Blue;
-		spec.outlineColor = Color::White;
+		spec.fillColor = Color8::Blue;
+		spec.outlineColor = Color8::White;
 		m_pRoundedBox = create(spec);
 
 		spec.rect = { canvas.x + 20 * 64 + 19, canvas.y + 40 * 64 + 38, canvas.w - 60 * 64 - 13, canvas.h - 100 * 64 - 22 };
 		spec.radius = { 16 * 64, 60 * 64, 0, 30 * 64 };
 		spec.outline = { 96, 3 * 64, 32, 6 * 64 };
-		spec.fillColor = Color::Orange;
-		spec.outlineColor = Color::Indigo;
+		spec.fillColor = Color8::Orange;
+		spec.outlineColor = Color8::Indigo;
 		m_pBetweenPixels = create(spec);
 
 		spec.rect = { canvas.x + 20 * 64, canvas.y + canvas.h / 2 - 30 * 64, canvas.w - 40 * 64, 60 * 64 };
 		spec.radius = { 30 * 64, 30 * 64, 30 * 64, 30 * 64 };
 		spec.outline = { 2 * 64, 2 * 64, 2 * 64, 2 * 64 };
-		spec.fillColor = Color::Green;
-		spec.outlineColor = Color::White;
+		spec.fillColor = Color8::Green;
+		spec.outlineColor = Color8::White;
 		m_pPill = create(spec);
 
 		return m_pRoundedBox && m_pBetweenPixels && m_pPill;

@@ -22,12 +22,12 @@ Accessing pixels directly through PixelBuffers are the exception. Using pixel bu
 To clear a surface you simply fill it with the color you want, using the fill() method. A rectangle can be specified in which case only that rectangle will be filled.
 
 ```c++
-pMySurface->fill( Color::Black );
+pMySurface->fill( Color8::Black );
 
-pMySurface->fill( {10,10,200,100}, Color::White );
+pMySurface->fill( {10,10,200,100}, Color8::White );
 ```
 
-The alpha channel is written as well as the color components. No blending takes place. To clear the alpha channel, simply specify a color with 0 alpha or just use Color::Transparent.
+The alpha channel is written as well as the color components. No blending takes place. To clear the alpha channel, simply specify a color with 0 alpha or just use Color8::Transparent.
 
 
 
@@ -113,7 +113,7 @@ After the call, the struct called *bufferInfo* contains the following informatio
 | ------- | ------------ | ------------------------------------------------------------ |
 | format  | PixelFormat  | The format of the pixels in the buffer (same as the Surface). |
 | pixels  | uint8_t*     | A pointer to the top-left pixel in the buffer.               |
-| palette | const Color* | Pointer at palette if format uses a palette.                 |
+| palette | const Color8* | Pointer at palette if format uses a palette.                 |
 | rect    | RectI        | The area of the Surface the buffer maps to, which is the same as the rectangle provided the allocPixelBuffer() call (or the whole surface if no rectangle provided). |
 | pitch   | int          | Distance in bytes from beginning of one row of pixels to the next. |
 

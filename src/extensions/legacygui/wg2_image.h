@@ -51,8 +51,8 @@ public:
 	void            SetImage( wg::Surface * pSurface );
 	wg::Surface_p   GetImage() const { return m_pImage; }
 
-	void			SetImageTint( wg::Color color);
-	wg::Color		ImageTint() const { return m_imageTint; }
+	void			SetImageTint( wg::Color8 color);
+	wg::Color8		ImageTint() const { return m_imageTint; }
 
 	WgSize			PreferredPixelSize() const;
 
@@ -79,7 +79,7 @@ private:
 
 	wg::Surface_p   m_pImage;
 	bool			m_bKeepAspectRatio = false;
-	wg::Color		m_imageTint = wg::Color::White;
+	wg::Color8		m_imageTint = wg::Color8::White;
 };
 
 

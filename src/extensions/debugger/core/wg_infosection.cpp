@@ -43,7 +43,7 @@ namespace wg
 		: LabelCapsule( theme.classCapsule )
 		, m_pContext(pContext)
 	{
-		m_pIndentationSkin = ColorSkin::create(Color::Transparent, { 0,0,0,16 });
+		m_pIndentationSkin = ColorSkin::create(Color8::Transparent, { 0,0,0,16 });
 
 		label.setText(pLabel);
 	}
@@ -411,7 +411,7 @@ namespace wg
 				pContext->objectSelected(pPointer, nullptr);
 			});
 
-			TextStyle_p pStyle = WGCREATE(TextStyle, _.link = pLink, _.color = Color::DarkRed, _.decoration = TextDecoration::Underline);
+			TextStyle_p pStyle = WGCREATE(TextStyle, _.link = pLink, _.color = Color8::DarkRed, _.decoration = TextDecoration::Underline);
 
 			buff.setStyle(pStyle, ofs, 1000);
 		}

@@ -363,10 +363,10 @@ bool LineRenderTest::capsCommandTest(std::ostream& output)
 
 	pDevice->beginRender();
 	pDevice->beginCanvasUpdate(pCanvas);
-	pDevice->drawLine({ 64, 64 }, { 64 * 20, 64 * 8 }, Color::Black, 64);
-	pDevice->drawLine({ 64, 64 }, { 64 * 20, 64 * 8 }, Color::Black, 64, LineCap::Round);
-	pDevice->drawLine({ 64, 64 }, { 64 * 20, 64 * 8 }, Color::Black, 64, { LineCap::Flat, LineCap::Spear(50) });
-	pDevice->drawLine({ 64 * 4, 64 * 4 }, Direction::Down, 64 * 10, Color::Black, 128, LineCap::Square);
+	pDevice->drawLine({ 64, 64 }, { 64 * 20, 64 * 8 }, Color8::Black, 64);
+	pDevice->drawLine({ 64, 64 }, { 64 * 20, 64 * 8 }, Color8::Black, 64, LineCap::Round);
+	pDevice->drawLine({ 64, 64 }, { 64 * 20, 64 * 8 }, Color8::Black, 64, { LineCap::Flat, LineCap::Spear(50) });
+	pDevice->drawLine({ 64 * 4, 64 * 4 }, Direction::Down, 64 * 10, Color8::Black, 128, LineCap::Square);
 	pDevice->endCanvasUpdate();
 	pDevice->endRender();
 

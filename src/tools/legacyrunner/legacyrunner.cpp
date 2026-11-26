@@ -95,14 +95,14 @@ bool MyApp::_setupGUI(wapp::API* pAPI)
 
 	
 	auto pBasePanel = FlexPanel::create();
-	pBasePanel->setSkin(ColorSkin::create(Color::Beige));
+	pBasePanel->setSkin(ColorSkin::create(Color8::Beige));
 
 	m_pBasePanel = pBasePanel;
 
 	m_pWindow->mainCapsule()->slot = pBasePanel;
 	
 	
-	auto pLegacyRoot = LegacyRootCapsule::create( { .skin = ColorSkin::create(Color::Black) });
+	auto pLegacyRoot = LegacyRootCapsule::create( { .skin = ColorSkin::create(Color8::Black) });
 	
 //	auto pLegacyRoot = Filler::create( { .skin = ColorSkin::create(Color::Black) } );
 	
@@ -140,8 +140,8 @@ WgWidget * MyApp::_buildLegacyGUI()
 	pDisplay->SetEditMode(WgTextEditMode::Editable);
 	pDisplay->SetText("\nTEXT  1.");
 	pDisplay->SetSkin( ColorSkin::create({
-		.states = { { State::Default, Color::Pink },
-			{ State::Hovered, Color::Red }
+		.states = { { State::Default, Color8::Pink },
+			{ State::Hovered, Color8::Red }
 		}
 	}));
 

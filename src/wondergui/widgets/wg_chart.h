@@ -275,7 +275,7 @@ class Chart;
 
 		SkinSlot		m_displaySkin;
 
-		HiColor			m_gridColor = Color::DarkGray;
+		HiColor			m_gridColor = Color8::DarkGray;
 		pts				m_gridThickness = 1;
 		TextStyle_p		m_pTextStyle;
 		TextLayout_p	m_pTextLayout;

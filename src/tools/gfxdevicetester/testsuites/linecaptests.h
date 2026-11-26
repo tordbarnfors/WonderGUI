@@ -51,7 +51,7 @@ public:
 	bool clearTint(GfxDevice * pDevice, const RectSPX& canvas)
 	{
 		pDevice->clearTint();
-		pDevice->setTintColor(Color::White);
+		pDevice->setTintColor(Color8::White);
 		return true;
 	}
 

@@ -49,7 +49,7 @@ public:
 
 	bool setCanvas(GfxDevice * pDevice, const RectI& canvas)
 	{
-		m_pCanvas->fill(Color::Transparent);
+		m_pCanvas->fill(Color8::Transparent);
 		pDevice->beginCanvasUpdate(m_pCanvas);
 		return true;
 	}
@@ -101,7 +101,7 @@ public:
 		ofs++;
 
 		pDevice->setBlendMode(BlendMode::Invert);
-		pDevice->fill(RectI(6, 80 + ofs * 20, 500, 15)*64, Color::White);
+		pDevice->fill(RectI(6, 80 + ofs * 20, 500, 15)*64, Color8::White);
 		ofs++;
 
 		pDevice->setBlendMode(BlendMode::Blend);

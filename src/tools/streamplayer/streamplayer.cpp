@@ -297,7 +297,7 @@ bool MyApp::_setupGUI(wapp::API* pAPI)
 
 	//
 
-	auto pBgSkin = ColorSkin::create( Color::PapayaWhip );
+	auto pBgSkin = ColorSkin::create( Color8::PapayaWhip );
 
 	m_pDisplay = SurfaceDisplay::create( WGBP(SurfaceDisplay,
 											  _.skin = pBgSkin));

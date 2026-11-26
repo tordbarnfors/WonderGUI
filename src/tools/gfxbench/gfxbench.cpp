@@ -80,7 +80,7 @@ bool GfxBench::_setupGUI(API* pAPI)
 
 	//
 
-	auto pBgSkin = ColorSkin::create( Color::PapayaWhip );
+	auto pBgSkin = ColorSkin::create( Color8::PapayaWhip );
 
 	auto pFlexPanel = FlexPanel::create({ 
 		.edgePolicy = EdgePolicy::Clip,
@@ -88,7 +88,7 @@ bool GfxBench::_setupGUI(API* pAPI)
 		});
 
 	auto pFiller = Filler::create({
-		.skin = ColorSkin::create(Color::Navy)
+		.skin = ColorSkin::create(Color8::Navy)
 		});
 
 	pFlexPanel->slots.pushBack(pFiller, { .pos = {10,10}, .size = {150,50} });

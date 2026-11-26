@@ -262,7 +262,7 @@ namespace wg
 			else
 			{
 				pDevice->beginCanvasUpdate(m_surface[1]);
-				pDevice->fill(Color::Black);
+				pDevice->fill(Color8::Black);
 
 				pDevice->setBlitSource(m_surface[0]);
 				SizeSPX destSize = (m_surface[1]->pixelSize() * 64) - SizeSPX(128, 128);

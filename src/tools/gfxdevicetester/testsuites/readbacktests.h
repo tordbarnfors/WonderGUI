@@ -96,7 +96,7 @@ public:
 			pDevice->stretchBlit({ 64 * 216, y, size });
 
 			spx marker = std::min(spx(64 * 24), size.h);
-			pDevice->fill({ 64 * 440, y, marker, marker }, bAlphaOk[i] ? HiColor(Color::Green) : HiColor(Color::Red));
+			pDevice->fill({ 64 * 440, y, marker, marker }, bAlphaOk[i] ? HiColor(Color8::Green) : HiColor(Color8::Red));
 
 			y += size.h + 64 * 8;
 		}

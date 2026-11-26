@@ -247,7 +247,7 @@ Widget_p MyApp::createDisplayPanel()
 {
 	auto pWindow = _standardScrollPanel();
 
-	pWindow->setSkin(ColorSkin::create({ .color = Color::DarkSlateBlue }));
+	pWindow->setSkin(ColorSkin::create({ .color = Color8::DarkSlateBlue }));
 	pWindow->setSizeConstraints(SizeConstraint::None, SizeConstraint::GreaterOrEqual);
 	pWindow->setChildPlacement(Placement::Center);
 
@@ -501,7 +501,7 @@ Widget_p MyApp::createLogPanel()
 	
 	auto pResourcesPanel = PackPanel::create();
 	pResourcesPanel->setAxis(Axis::Y);
-	pResourcesPanel->setSkin(ColorSkin::create(Color::Black));
+	pResourcesPanel->setSkin(ColorSkin::create(Color8::Black));
 	pResourcesWindow->slot = pResourcesPanel;
 	
 	m_pResourcePanel = pResourcesPanel;
@@ -557,7 +557,7 @@ Widget_p MyApp::createNavigationPanel()
 	m_pProgressText = pProgressText;
 
 	auto pSlider = Slider::create({ .handle = m_pButtonSkin,
-									 .skin = ColorSkin::create(Color::Black)
+									 .skin = ColorSkin::create(Color8::Black)
 		});
 
 	Base::msgRouter()->addRoute(pSlider, MsgType::ValueUpdate, [this](Msg* pMsg)
@@ -1548,7 +1548,7 @@ void MyApp::_updateDebugOverlays()
 
 		pDevice->beginCanvasUpdate(m_debugOverlays[i]);
 		pDevice->setBlendMode(BlendMode::Replace);
-		pDevice->fill(Color::Transparent);
+		pDevice->fill(Color8::Transparent);
 		pDevice->setBlendMode(BlendMode::Blend);
 		for( int x = 0 ; x < nRects ; x++ )
 		{

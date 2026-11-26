@@ -73,7 +73,7 @@ DLLEXPORTPREFIX int init( wg_plugin_interface * pInterface, void * pRealHostBrid
 	
 	auto pMainPanel = PackPanel::create();
 	pMainPanel->setAxis(Axis::Y);
-	pMainPanel->setSkin(ColorSkin::create({ .color = Color::DarkGray, .padding = 4 }));
+	pMainPanel->setSkin(ColorSkin::create({ .color = Color8::DarkGray, .padding = 4 }));
 
 	auto pLayout = PackLayout::create({
 		.expandFactor = PackLayout::Factor::Weight
@@ -81,9 +81,9 @@ DLLEXPORTPREFIX int init( wg_plugin_interface * pInterface, void * pRealHostBrid
 
 	pMainPanel->setLayout(pLayout);
 
-	auto pSkin1 = ColorSkin::create({ .states = { {State::Default, Color::Red}, {State::Hovered, Color::Pink}, {State::Pressed, Color::DarkRed} }  });
-	auto pSkin2 = ColorSkin::create({ .states = { {State::Default, Color::Green}, {State::Hovered, Color::LightGreen}, {State::Pressed, Color::DarkGreen} }  });
-	auto pSkin3 = ColorSkin::create({ .states = { {State::Default, Color::Blue}, {State::Hovered, Color::LightBlue}, {State::Pressed, Color::DarkBlue} }  });
+	auto pSkin1 = ColorSkin::create({ .states = { {State::Default, Color8::Red}, {State::Hovered, Color8::Pink}, {State::Pressed, Color8::DarkRed} }  });
+	auto pSkin2 = ColorSkin::create({ .states = { {State::Default, Color8::Green}, {State::Hovered, Color8::LightGreen}, {State::Pressed, Color8::DarkGreen} }  });
+	auto pSkin3 = ColorSkin::create({ .states = { {State::Default, Color8::Blue}, {State::Hovered, Color8::LightBlue}, {State::Pressed, Color8::DarkBlue} }  });
 
 	
 	auto pFiller1 = TextEditor::create({ .skin = pSkin1 });
@@ -173,17 +173,17 @@ bool areaChartTest(ComponentPtr<DynamicSlot> pEntry)
 {
 	auto pFlex = FlexPanel::create();
 
-	pFlex->setSkin(ColorSkin::create(Color::LightYellow));
+	pFlex->setSkin(ColorSkin::create(Color8::LightYellow));
 
 	auto pGraph = AreaChart::create(WGBP(AreaChart,
 		_.displayCeiling = 0.5f,
 		_.displayFloor = - 0.5f,
 		_.displaySkin = BoxSkin::create( WGBP(BoxSkin,
-												_.color = Color::Black,
-												_.outlineColor = Color::Green,
+												_.color = Color8::Black,
+												_.outlineColor = Color8::Green,
 												_.padding = 2,
 												_.outlineThickness = 2 )),
-		_.skin = ColorSkin::create(Color::Pink)
+		_.skin = ColorSkin::create(Color8::Pink)
 	));
 
 
@@ -196,7 +196,7 @@ bool areaChartTest(ComponentPtr<DynamicSlot> pEntry)
 
 	pGraph->entries.pushBack( {
 		.bottomOutlineThickness = 0,
-		.outlineColor = Color::Red,
+		.outlineColor = Color8::Red,
 		.topOutlineThickness = 5
 		});
 
@@ -237,13 +237,13 @@ bool areaChartTest(ComponentPtr<DynamicSlot> pEntry)
 	}
 
 
-	Color colors[6] = { Color::Red, Color::Green, Color::Blue, Color::Yellow, Color::Pink, Color::Brown };
+	Color8 colors[6] = { Color8::Red, Color8::Green, Color8::Blue, Color8::Yellow, Color8::Pink, Color8::Brown };
 
 	for (int i = 0; i < 6; i++)
 	{
 		pGraph->entries.pushBack({
 			.bottomOutlineThickness = 0,
-			.color = Color::Transparent,
+			.color = Color8::Transparent,
 			.outlineColor = colors[i],
 			.topOutlineThickness = 2,
 			});
@@ -281,12 +281,12 @@ bool areaChartTest(ComponentPtr<DynamicSlot> pEntry)
 
 bool canvasCapsuleGlowTest(ComponentPtr<DynamicSlot> pEntry)
 {
-	auto pBack = FlexPanel::create({ .skin = ColorSkin::create(Color::Black) });
+	auto pBack = FlexPanel::create({ .skin = ColorSkin::create(Color8::Black) });
 	*pEntry = pBack;
 
-	auto pMyStyle = TextStyle::create( WGOVR(Base::defaultStyle()->blueprint(), _.size = 30, _.color = Color::White ));
+	auto pMyStyle = TextStyle::create( WGOVR(Base::defaultStyle()->blueprint(), _.size = 30, _.color = Color8::White ));
 
-	auto pSimpleButtonSkin = ColorSkin::create( Color::Blue );
+	auto pSimpleButtonSkin = ColorSkin::create( Color8::Blue );
 	
 
 	auto pGlowCapsule = CanvasCapsule::create();
@@ -309,7 +309,7 @@ bool canvasCapsuleGlowTest(ComponentPtr<DynamicSlot> pEntry)
 	pGlowCapsule->glow.setActive(true);
 
 
-	pGlowCapsule->setSkin(BoxSkin::create({ .color = HiColor::Transparent, .outlineColor = Color::Yellow, .outlineThickness = 50, .padding = 50 }));
+	pGlowCapsule->setSkin(BoxSkin::create({ .color = HiColor::Transparent, .outlineColor = Color8::Yellow, .outlineThickness = 50, .padding = 50 }));
 
 	pBack->slots.pushBack(pGlowCapsule, { .pos = {  50, 50}, .size = {300,0} });
 
@@ -329,8 +329,8 @@ bool canvasCapsuleGlowTest(ComponentPtr<DynamicSlot> pEntry)
 	auto pGradientWhite = Button::create({ .label = {.text = "GRADIENT WHITE" }, .skin = pSimpleButtonSkin });
 	auto pGradientBlack = Button::create({ .label = {.text = "GRADIENT BLACK" }, .skin = pSimpleButtonSkin });
 
-	Base::msgRouter()->addRoute(pTintWhite, MsgType::Select, [pGlowCapsule,pTransition](Msg* pMsg) {pGlowCapsule->setTintColor(Color::White, pTransition); });
-	Base::msgRouter()->addRoute(pTintBlack, MsgType::Select, [pGlowCapsule, pTransition](Msg* pMsg) {pGlowCapsule->setTintColor(Color::Black, pTransition); });
+	Base::msgRouter()->addRoute(pTintWhite, MsgType::Select, [pGlowCapsule,pTransition](Msg* pMsg) {pGlowCapsule->setTintColor(Color8::White, pTransition); });
+	Base::msgRouter()->addRoute(pTintBlack, MsgType::Select, [pGlowCapsule, pTransition](Msg* pMsg) {pGlowCapsule->setTintColor(Color8::Black, pTransition); });
 
 	auto pTintTransition = ValueTransition::create(1000*1000, TransitionCurve::EaseOut);
 

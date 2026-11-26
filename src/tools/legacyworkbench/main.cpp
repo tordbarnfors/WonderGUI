@@ -331,7 +331,7 @@ int main ( int argc, char** argv )
 
 	wg::TextStyle::Blueprint bp;
 	bp.font = pFont;
-	bp.color = wg::Color::White;
+	bp.color = wg::Color8::White;
 	bp.size = 10;
 	
 	auto pTextStyle = wg::TextStyle::create( bp );
@@ -666,7 +666,7 @@ bool flipCanvasTest(WgRootPanel* pRoot)
 	auto pCanvasCapsule = new WgCanvasCapsule();
 	pCanvasCapsule->SetFlip(wg::GfxFlip::Rot90);
 	pCanvasCapsule->SetChild(pSizeConstrainer);
-	pCanvasCapsule->SetSkin(wg::ColorSkin::create(wg::Color::Cyan));
+	pCanvasCapsule->SetSkin(wg::ColorSkin::create(wg::Color8::Cyan));
 	
 	pBaseFlex->AddChild( pCanvasCapsule, {10,10} );
 
@@ -1187,9 +1187,9 @@ void shadowLayerTest( WgRootPanel * pRoot )
 bool pianoKeyboardTest(WgRootPanel * pRoot)
 {
 	auto pBaseLayer = new WgFlexPanel();
-	pBaseLayer->SetSkin(wg::ColorSkin::create(wg::Color::PapayaWhip));
+	pBaseLayer->SetSkin(wg::ColorSkin::create(wg::Color8::PapayaWhip));
 
-	auto pSkin = wg::ColorSkin::create( { .color = wg::Color::Black, .padding = { 60,10,10,10 } });
+	auto pSkin = wg::ColorSkin::create( { .color = wg::Color8::Black, .padding = { 60,10,10,10 } });
 	
 	{
 
@@ -1241,7 +1241,7 @@ bool pianoKeyboardTest(WgRootPanel * pRoot)
 bool rangeSliderTest(WgRootPanel* pRoot)
 {
 	auto pBaseLayer = new WgFlexPanel();
-	pBaseLayer->SetSkin(wg::ColorSkin::create(wg::Color::PapayaWhip));
+	pBaseLayer->SetSkin(wg::ColorSkin::create(wg::Color8::PapayaWhip));
 
 	auto pHandleSkin = wg::ColorSkin::create( {
 		.color = wg::Color8(0x7F808080),
@@ -1255,8 +1255,8 @@ bool rangeSliderTest(WgRootPanel* pRoot)
 	auto pSliderX = new WgRangeSlider();
 	{
 		auto pBgSkin = wg::FillMeterSkin::create( {
-			.backColor = wg::Color::Black,
-			.color = wg::Color::Green,
+			.backColor = wg::Color8::Black,
+			.color = wg::Color8::Green,
 			.direction = wg::Direction::Right,
 			.padding = wg::Border(),
 			.spacing = wg::Border(0, 10, 0, 10)
@@ -1272,8 +1272,8 @@ bool rangeSliderTest(WgRootPanel* pRoot)
 	auto pSliderY = new WgRangeSlider();
 	{
 		auto pBgSkin = wg::FillMeterSkin::create( {
-			.backColor = wg::Color::Black,
-			.color = wg::Color::Green,
+			.backColor = wg::Color8::Black,
+			.color = wg::Color8::Green,
 			.direction = wg::Direction::Up,
 			.padding = wg::Border(),
 			.spacing = wg::Border(10, 0, 10, 0)
@@ -1299,12 +1299,12 @@ bool rangeSliderTest(WgRootPanel* pRoot)
 bool canvasCapsuleTest(WgRootPanel* pRoot)
 {
 	auto pBaseLayer = new WgFlexPanel();
-	pBaseLayer->SetSkin(wg::ColorSkin::create(wg::Color::PapayaWhip));
+	pBaseLayer->SetSkin(wg::ColorSkin::create(wg::Color8::PapayaWhip));
 
 	auto pCanvas = new WgCanvasCapsule();
 	pCanvas->SetSurfaceFactory(g_pSurfaceFactory);
 
-	pCanvas->SetCanvasFillColor(wg::Color(255,255,255,128));
+	pCanvas->SetCanvasFillColor(wg::Color8(255,255,255,128));
 	
 //    auto pFiller = new WgFiller();
 //    pFiller->SetColors( WgColorset::Create(wg::Color(255,255,255,0)) );
@@ -1347,19 +1347,19 @@ bool tooltipLayerTest(WgRootPanel * pRoot)
 	});
 */
 
-	auto pTooltipSkin = wg::BoxSkin::create( { .color = wg::Color::White, .outlineColor = wg::Color::Black, .outlineThickness = 1, .padding = 2 } );
+	auto pTooltipSkin = wg::BoxSkin::create( { .color = wg::Color8::White, .outlineColor = wg::Color8::Black, .outlineThickness = 1, .padding = 2 } );
 
 	auto pBaseLayer = new WgFlexPanel();
-	pBaseLayer->SetSkin( wg::ColorSkin::create(wg::Color::PapayaWhip) );
+	pBaseLayer->SetSkin( wg::ColorSkin::create(wg::Color8::PapayaWhip) );
 
 
 	auto pWidget1 = new WgFiller();
-	pWidget1->SetColors( WgColorset::Create(wg::Color::Blue) );
+	pWidget1->SetColors( WgColorset::Create(wg::Color8::Blue) );
 	pWidget1->SetTooltipString( wg::String("This is widget 1.") );
 	pBaseLayer->AddChild(pWidget1, WgRect(10, 10, 100, 100));
 
 	auto pWidget2 = new WgFiller();
-	pWidget2->SetColors( WgColorset::Create(wg::Color::Green) );
+	pWidget2->SetColors( WgColorset::Create(wg::Color8::Green) );
 	pWidget2->SetTooltipString( wg::String("This is widget 2.") );
 	pBaseLayer->AddChild(pWidget2, WgRect(150, 20, 170, 100));
 
@@ -1396,10 +1396,10 @@ bool flowPanelTest(WgRootPanel* pRoot)
 	
 
 	auto pBaseLayer = new WgFlexPanel();
-	pBaseLayer->SetSkin(wg::ColorSkin::create(wg::Color::PapayaWhip));
+	pBaseLayer->SetSkin(wg::ColorSkin::create(wg::Color8::PapayaWhip));
 
 	auto pFlow1 = new WgFlowPanel();
-	pFlow1->SetSkin(wg::ColorSkin::create(wg::Color::Black));
+	pFlow1->SetSkin(wg::ColorSkin::create(wg::Color8::Black));
 
 	for( int i = 0 ; i < 10 ; i++ )
 	{
@@ -1415,7 +1415,7 @@ bool flowPanelTest(WgRootPanel* pRoot)
 
 	auto pFlow2 = new WgFlowPanel();
 	pFlow2->SetOrientation(wg::Axis::Y);
-	pFlow2->SetSkin(wg::ColorSkin::create(wg::Color::Black));
+	pFlow2->SetSkin(wg::ColorSkin::create(wg::Color8::Black));
 
 	for( int i = 0 ; i < 10 ; i++ )
 	{
@@ -1524,17 +1524,17 @@ bool packPanelHierarchyTest(WgRootPanel* pRoot)
 	WgPackPanel* pOuterPack = new WgPackPanel();
 	pOuterPack->SetOrientation(wg::Axis::Y);
 	pOuterPack->SetSizeBroker(pSizeBroker);
-	pOuterPack->SetSkin(wg::ColorSkin::create(wg::Color::Red));
+	pOuterPack->SetSkin(wg::ColorSkin::create(wg::Color8::Red));
 
 	pRoot->SetChild(pOuterPack);
 
 	WgFiller* pUpperBar = new WgFiller();
-	pUpperBar->SetColors(WgColorset::Create(wg::Color::Blue));
+	pUpperBar->SetColors(WgColorset::Create(wg::Color8::Blue));
 	pUpperBar->SetPreferredPointSize({ 100,30 });
 	pOuterPack->AddChild(pUpperBar)->SetWeight(10.f);
 
 	WgTextDisplay* pTextDisplay = new WgTextDisplay();
-	pTextDisplay->SetSkin( wg::ColorSkin::create( wg::Color::DarkGrey ));
+	pTextDisplay->SetSkin( wg::ColorSkin::create( wg::Color8::DarkGrey ));
 	pTextDisplay->SetText("Inner Text\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n9\n8\n7\n6\n5\n4\n3\n2\n1\nLast Line");
 
 	WgScrollPanel* pScroller = new WgScrollPanel();
@@ -1543,12 +1543,12 @@ bool packPanelHierarchyTest(WgRootPanel* pRoot)
 	pOuterPack->AddChild(pScroller)->SetWeight(1.f);
 
 	WgFiller* pLowerBar = new WgFiller();
-	pLowerBar->SetColors(WgColorset::Create(wg::Color::Blue));
+	pLowerBar->SetColors(WgColorset::Create(wg::Color8::Blue));
 	pLowerBar->SetPreferredPointSize({ 100,30 });
 	pOuterPack->AddChild(pLowerBar)->SetWeight(9.f);
 
 	WgFiller* pExpander = new WgFiller();
-	pExpander->SetColors(WgColorset::Create(wg::Color::Black));
+	pExpander->SetColors(WgColorset::Create(wg::Color8::Black));
 	pExpander->SetPreferredPointSize({ 100,1000 });
 	pOuterPack->AddChild(pExpander)->SetWeight(0.f);
 

@@ -157,9 +157,9 @@ namespace wg::oldskool
 
 		_pSelectableEntrySkin = BoxSkin::create(WGBP(BoxSkin,
 			_.markAlpha = 0,
-			_.states = { {State::Default, Color::Transparent,Color::Transparent},
-						 {State::Hovered, HiColor(Color::LightCyan).withAlpha(1024), HiColor(Color::DarkCyan).withAlpha(1024)},
-						 {State::Selekted, Color::LightCyan,Color::DarkCyan }
+			_.states = { {State::Default, Color8::Transparent,Color8::Transparent},
+						 {State::Hovered, HiColor(Color8::LightCyan).withAlpha(1024), HiColor(Color8::DarkCyan).withAlpha(1024)},
+						 {State::Selekted, Color8::LightCyan,Color8::DarkCyan }
 			}
 		));
 
@@ -222,15 +222,15 @@ namespace wg::oldskool
 		));
 
 		Skins::SelectBoxEntry = BoxSkin::create(WGBP(BoxSkin,
-			_.states = { {State::Default, Color::Transparent, Color::Transparent},
-						 {State::Hovered, HiColor(Color::LightCyan).withAlpha(2048), HiColor(Color::DarkCyan).withAlpha(2048)},
-						 {State::Selekted, Color::LightCyan,Color::DarkCyan }
+			_.states = { {State::Default, Color8::Transparent, Color8::Transparent},
+						 {State::Hovered, HiColor(Color8::LightCyan).withAlpha(2048), HiColor(Color8::DarkCyan).withAlpha(2048)},
+						 {State::Selekted, Color8::LightCyan,Color8::DarkCyan }
 			}
 		));
 
 		Skins::ScrollbarTrack = BoxSkin::create(WGBP(BoxSkin,
-			_.color = Color::DarkGray,
-			_.outlineColor = Color::Black,
+			_.color = Color8::DarkGray,
+			_.outlineColor = Color8::Black,
 			_.outlineThickness = 1,
 			_.padding = 0));
 

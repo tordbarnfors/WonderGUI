@@ -80,7 +80,7 @@ bool MyApp::_setupGUI(API* pAPI)
 
 	//
 
-	auto pBgSkin = ColorSkin::create( Color::PapayaWhip );
+	auto pBgSkin = ColorSkin::create( Color8::PapayaWhip );
 
 	auto pTextDisplay = TextDisplay::create({
 

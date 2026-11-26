@@ -57,7 +57,7 @@ public:
 			pDevice->setBlitSource(m_pSurfaces[i]);
 			pDevice->stretchBlit({ 64 * 8, y, size });
 
-			pDevice->fill({ 64 * 16 + size.w, y, size.h, size.h }, _readsAsFilled(i) ? HiColor(Color::Green) : HiColor(Color::Red));
+			pDevice->fill({ 64 * 16 + size.w, y, size.h, size.h }, _readsAsFilled(i) ? HiColor(Color8::Green) : HiColor(Color8::Red));
 
 			y += size.h + 64 * 8;
 		}

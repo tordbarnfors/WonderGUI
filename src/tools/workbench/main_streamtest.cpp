@@ -246,7 +246,7 @@ int main ( int argc, char** argv )
 
 
 	LambdaPanel_p pBasePanel = LambdaPanel::create();
-	pBasePanel->setSkin( ColorSkin::create(Color::Burlywood) );
+	pBasePanel->setSkin( ColorSkin::create(Color8::Burlywood) );
 	pPopupLayer->base = pBasePanel;
 
 
@@ -412,8 +412,8 @@ int main ( int argc, char** argv )
 
 
 	pStreamDevice->beginRender();
-	pStreamDevice->fill({ 0,0,width,height }, Color::Black);
-	pStreamDevice->fill({ 10,10,100,100 }, Color::Red);
+	pStreamDevice->fill({ 0,0,width,height }, Color8::Black);
+	pStreamDevice->fill({ 10,10,100,100 }, Color8::Red);
 	pStreamDevice->clipBlit({ 0,0,width,height }, pSplashSurface, pSplashSurface->size(), { 120,10 });
 	pStreamDevice->endRender();
 
@@ -711,10 +711,10 @@ void playRectangleDance(GfxDevice_p pDevice, RectI canvas )
 	{
 		pDevice->beginRender();
 
-		pDevice->fill( canvas, Color::Black);
-		pDevice->fill({ canvas.pos() + positionSprite(moveDim, ticker, 0, 3),spriteSize }, Color::Red);
-		pDevice->fill({ canvas.pos() + positionSprite(moveDim, ticker, 1, 3),spriteSize }, Color::Green);
-		pDevice->fill({ canvas.pos() + positionSprite(moveDim, ticker, 2, 3),spriteSize }, Color::Blue);
+		pDevice->fill( canvas, Color8::Black);
+		pDevice->fill({ canvas.pos() + positionSprite(moveDim, ticker, 0, 3),spriteSize }, Color8::Red);
+		pDevice->fill({ canvas.pos() + positionSprite(moveDim, ticker, 1, 3),spriteSize }, Color8::Green);
+		pDevice->fill({ canvas.pos() + positionSprite(moveDim, ticker, 2, 3),spriteSize }, Color8::Blue);
 
 		pDevice->endRender();
 		ticker++;
@@ -768,13 +768,13 @@ void playInitButtonRow(GfxDevice_p pDevice, RectI canvas)
 
 	pDevice->beginRender();
 
-	pDevice->fill({ 0,0,canvas.w,canvas.h / 4 }, Color::LightGray);
+	pDevice->fill({ 0,0,canvas.w,canvas.h / 4 }, Color8::LightGray);
 
 	RectI r = buttonRect;
 	for (int i = 0; i < 4; i++)
 	{
-		pDevice->fill(r, Color::White);
-		pDevice->fill(r - BorderI(4), Color::DarkBlue);
+		pDevice->fill(r, Color8::White);
+		pDevice->fill(r - BorderI(4), Color8::DarkBlue);
 		r += buttonPitch;
 	}
 
@@ -782,11 +782,11 @@ void playInitButtonRow(GfxDevice_p pDevice, RectI canvas)
 
 	sliderRect = { canvas.w / 32,canvas.h / 4, 263, canvas.h / 8 - canvas.h / 32 };
 
-	pDevice->fill({0, canvas.h / 4, canvas.w, canvas.h / 8}, Color::LightGray);
+	pDevice->fill({0, canvas.h / 4, canvas.w, canvas.h / 8}, Color8::LightGray);
 
-	pDevice->fill( sliderRect, Color::White);
+	pDevice->fill( sliderRect, Color8::White);
 	sliderRect -= BorderI(4);
-	pDevice->fill( sliderRect, Color::DarkBlue);
+	pDevice->fill( sliderRect, Color8::DarkBlue);
 
 	pDevice->endRender();
 }
@@ -794,14 +794,14 @@ void playInitButtonRow(GfxDevice_p pDevice, RectI canvas)
 void playButtonPress(GfxDevice_p pDevice, int button)
 {
 	pDevice->beginRender();
-	pDevice->fill(buttonRect + buttonPitch*button - BorderI(4), Color::LightBlue);
+	pDevice->fill(buttonRect + buttonPitch*button - BorderI(4), Color8::LightBlue);
 	pDevice->endRender();
 }
 
 void playButtonRelease(GfxDevice_p pDevice, int button)
 {
 	pDevice->beginRender();
-	pDevice->fill(buttonRect + buttonPitch*button - BorderI(4), Color::DarkBlue);
+	pDevice->fill(buttonRect + buttonPitch*button - BorderI(4), Color8::DarkBlue);
 	pDevice->endRender();
 }
 void playSetSlider(GfxDevice_p pDevice, float percentage)
@@ -809,8 +809,8 @@ void playSetSlider(GfxDevice_p pDevice, float percentage)
 	int w = (int) (sliderRect.w*percentage);
 
 	pDevice->beginRender();
-	pDevice->fill( sliderRect, Color::DarkBlue);
-	pDevice->fill({ sliderRect.x,sliderRect.y,w,sliderRect.h }, Color::Yellow);
+	pDevice->fill( sliderRect, Color8::DarkBlue);
+	pDevice->fill({ sliderRect.x,sliderRect.y,w,sliderRect.h }, Color8::Yellow);
 	pDevice->endRender();
 
 }

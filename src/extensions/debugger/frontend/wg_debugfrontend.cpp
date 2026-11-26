@@ -373,7 +373,7 @@ namespace wg
 		auto pWorkspaceReorder = WGCREATE(ReorderCapsule, _.dragOutside = false, _.usePickHandles = true );
 		pWorkspaceScroller->slot = pWorkspaceReorder;
 
-		auto pWorkspace = WGCREATE(PackPanel, _.axis = Axis::X, _.skin = ColorSkin::create( Color::Navy ));
+		auto pWorkspace = WGCREATE(PackPanel, _.axis = Axis::X, _.skin = ColorSkin::create( Color8::Navy ));
 		pWorkspaceReorder->slot = pWorkspace;
 
 		//

@@ -92,7 +92,7 @@ bool MyApp::_setupGUI(wapp::API* pAPI)
 		
 	
 	auto pBasePanel = FlexPanel::create();
-	pBasePanel->setSkin(ColorSkin::create(Color::Beige));
+	pBasePanel->setSkin(ColorSkin::create(Color8::Beige));
 	auto pControlPanel = _createControlPanel();
 	auto pStretchPanel = _createStretchPanel();
 
@@ -302,9 +302,9 @@ Widget_p MyApp::_createStretchPanel()
 	auto pBase = FlexPanel::create();
 
 	auto pPackPanel = PackPanel::create();
-	pPackPanel->setSkin(ColorSkin::create(Color::LightGrey));
+	pPackPanel->setSkin(ColorSkin::create(Color8::LightGrey));
 
-	auto pItemSkin = BoxSkin::create(1, Color::AntiqueWhite, Color::Black, 2);
+	auto pItemSkin = BoxSkin::create(1, Color8::AntiqueWhite, Color8::Black, 2);
 
 	for (int i = 0; i < 5; i++)
 		pPackPanel->slots << TextEditor::create({ .skin = pItemSkin } );

@@ -24,7 +24,7 @@ public:
 		m_pBlurSurface[0] = pDevice->surfaceFactory()->createSurface( { .canvas = true, .format = PixelFormat::XRGB_8, .size = canvas.size() / 64 } );
 		m_pBlurSurface[1] = pDevice->surfaceFactory()->createSurface( { .canvas = true, .format = PixelFormat::XRGB_8, .size = canvas.size() / 64 } );
 
-		m_pGradient = Tint::create(Color::Red, Color::Blue, {0,0}, {1,0});
+		m_pGradient = Tint::create(Color8::Red, Color8::Blue, {0,0}, {1,0});
 
 		return true;
 	}
@@ -51,7 +51,7 @@ public:
 
 	bool setTintAndBlurbrush(GfxDevice* pDevice, const RectI& canvas)
 	{
-		pDevice->setTintColor(Color::Blue);
+		pDevice->setTintColor(Color8::Blue);
 		setBlurbrush(pDevice, canvas);
 		return true;
 	}
