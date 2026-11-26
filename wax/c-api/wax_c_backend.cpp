@@ -28,6 +28,7 @@ using namespace wax;
 static_assert(sizeof(wax_sessionInfo) == sizeof(Backend::SessionInfo), "wax_sessionInfo differs in size from Backend::SessionInfo!");
 static_assert(offsetof(wax_sessionInfo, nWarpDraws) == offsetof(Backend::SessionInfo, nWarpDraws), "wax_sessionInfo isn't binary equivalent to Backend::SessionInfo!");
 static_assert(offsetof(wax_sessionInfo, nShapeTints) == offsetof(Backend::SessionInfo, nShapeTints), "wax_sessionInfo isn't binary equivalent to Backend::SessionInfo!");
+static_assert(offsetof(wax_sessionInfo, nPolylinePoints) == offsetof(Backend::SessionInfo, nPolylinePoints), "wax_sessionInfo isn't binary equivalent to Backend::SessionInfo!");
 
 inline Backend* getPtr(wax_obj obj) {
 	return static_cast<Backend*>(reinterpret_cast<Object*>(obj));

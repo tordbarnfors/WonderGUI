@@ -22,6 +22,7 @@
 #include <wax_backend.h>
 
 #include <cstring>
+#include <cstdlib>
 #include <algorithm>
 
 namespace wax
@@ -116,6 +117,51 @@ uint32_t Backend::RingPayload::sliceSize(int slice) const
 uint16_t Backend::RingPayload::sliceFlags(int slice) const
 {
 	return pSlices[slice * c_ringSliceWords + 2];
+}
+
+//____ decodePolyline() ___________________________________________________
+
+Backend::PolylinePayload Backend::decodePolyline(const uint16_t* pPayload)
+{
+	PolylinePayload polyline;
+
+	polyline.thickness = pPayload[0];
+	polyline.caps = decodeLineCaps(pPayload[1]);
+	polyline.join = pPayload[2];
+	polyline.joinParam = pPayload[3];
+	polyline.flags = pPayload[4];
+	polyline.nPoints = pPayload[5];
+	polyline.pPoints = pPayload + c_polylinePayloadWords;
+	return polyline;
+}
+
+//____ PolylinePayload::point() ___________________________________________
+
+CoordSPX Backend::PolylinePayload::point(int index) const
+{
+	spx values[2];
+	std::memcpy(values, pPoints + index * c_polylinePointWords, 8);
+	return { values[0], values[1] };
+}
+
+//____ PolylinePayload::resolvedCaps() ____________________________________
+
+LineCaps Backend::PolylinePayload::resolvedCaps() const
+{
+	auto resolve = [](LineCap cap, CoordSPX from, CoordSPX to)
+	{
+		if (cap.shape == LineCapShape::None)
+		{
+			bool bAlongX = std::abs(int64_t(to.x) - from.x) > std::abs(int64_t(to.y) - from.y);
+			cap.shape = bAlongX ? LineCapShape::Vertical : LineCapShape::Horizontal;
+		}
+		return cap;
+	};
+
+	if (nPoints < 2)
+		return caps;
+
+	return LineCaps(resolve(caps.begin, point(0), point(1)), resolve(caps.end, point(nPoints - 2), point(nPoints - 1)));
 }
 
 //____ decodeWarp() _______________________________________________________

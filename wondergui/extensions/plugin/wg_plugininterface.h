@@ -289,6 +289,8 @@ typedef struct wg_gfxdevice_calls_struct
 	void				(*drawLineWithCaps)(wax_obj device, wax_coordSPX begin, wax_coordSPX end, wax_color color, wax_spx thickness, wax_lineCap beginCap, wax_lineCap endCap);
 	void				(*drawStraightLineWithCaps)(wax_obj device, wax_coordSPX begin, wax_direction dir, wax_spx length, wax_color color, wax_spx thickness, wax_lineCap beginCap, wax_lineCap endCap);
 
+	void				(*drawPolyline)(wax_obj device, int nPoints, const wax_coordSPX* pPoints, wax_color color, wax_spx thickness, wax_lineCap beginCap, wax_lineCap endCap);
+
 } wg_gfxdevice_calls;
 
 /*

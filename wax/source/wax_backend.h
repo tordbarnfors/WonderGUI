@@ -89,6 +89,7 @@ namespace wax
 			int		nShapeDraws;		// Number of DrawShape commands.
 			int		nShapeSegments;		// Total number of segments (fill, outline, slices...) of all shapes.
 			int		nShapeTints;		// Total number of Tints encoded in DrawShape commands.
+			int		nPolylinePoints;	// Total number of points of all polylines (ShapeKind::Polyline).
 		};
 
 		enum class Command : uint16_t
@@ -180,7 +181,7 @@ namespace wax
 			The command starts at a 32-bit boundary (padded with Command::None if needed), so
 			32-bit values in the payload are aligned. Backends that don't support a kind of
 			shape can skip it using nWords, nRects and nColors. Payloads can be decoded with
-			decodeRoundedBox() and decodeRing().
+			decodeRoundedBox(), decodeRing() and decodePolyline().
 
 			ShapeKind::RoundedBox payload:
 
@@ -218,12 +219,31 @@ namespace wax
 			  is drawn, then the colors of the encoded tints.
 
 			  Segments are numbered back (0), outline (1), hub (2) and slices (3...).
+
+			ShapeKind::Polyline payload:
+
+			  uint16	thickness		spx.
+			  uint16	caps			See decodeLineCaps(). A cap of 0, LineCap::None, is cut along the minor
+										axis of its segment, see Polylines in wax_device.h.
+			  uint16	join			0, round joins. Reserved for other joins.
+			  uint16	joinParam		Reserved for a parameter of the join, 0.
+			  uint16	flags			Reserved, 0.
+			  uint16	nPoints			At least 3, no point the same as the one before it.
+			  per point:
+			    int32	x, y			spx.
+
+			  Colors: the color of the polyline.
+
+			  The rects are the clip rectangles within the pixels the polyline may touch. Unlike those
+			  of other shapes they don't have to be drawn all over, but may be: a backend can draw the
+			  polyline in geometry of its own, clipped to each rect.
 		*/
 
 		enum class ShapeKind : uint16_t
 		{
 			RoundedBox = 1,
-			Ring = 2
+			Ring = 2,
+			Polyline = 3
 		};
 
 		enum class RingFlags : uint16_t
@@ -255,6 +275,8 @@ namespace wax
 		static constexpr int		c_roundedBoxPayloadWords = 28;		// RoundedBox payload before its tints.
 		static constexpr int		c_ringPayloadWords = 18;			// Ring payload before its slices...
 		static constexpr int		c_ringSliceWords = 4;				// ...and the words of each.
+		static constexpr int		c_polylinePayloadWords = 6;			// Polyline payload before its points...
+		static constexpr int		c_polylinePointWords = 4;			// ...and the words of each.
 		static constexpr uint32_t	c_shapeFullTurn = 0x80000000;		// Angles and slice sizes of Ring.
 
 		// Decoded DrawShape payloads, see decodeRoundedBox() and decodeRing().
@@ -285,8 +307,27 @@ namespace wax
 			uint16_t		sliceFlags(int slice) const;	// See RingSliceFlags.
 		};
 
+		struct PolylinePayload
+		{
+			spx				thickness;
+			LineCaps		caps;					// As given, see resolvedCaps().
+			uint16_t		join;					// 0 for round joins.
+			uint16_t		joinParam;
+			uint16_t		flags;
+			int				nPoints;
+			const uint16_t*	pPoints;				// See point().
+
+			CoordSPX		point(int index) const;
+
+			// Caps with LineCap::None replaced by Vertical or Horizontal, the cut along the minor
+			// axis of the first or last segment.
+
+			LineCaps		resolvedCaps() const;
+		};
+
 		static RoundedBoxPayload	decodeRoundedBox(const uint16_t* pPayload);
 		static RingPayload			decodeRing(const uint16_t* pPayload);
+		static PolylinePayload		decodePolyline(const uint16_t* pPayload);
 
 		// Decoded WarpBlit and WarpDrawEdgemap commands, see decodeWarp().
 

@@ -246,7 +246,14 @@ namespace wax
 					decoder >> filler;
 				}
 
-				if( header.size > 52 )
+				int32_t		nPolylinePoints = 0;
+
+				if( header.size >= 56 )
+					decoder >> nPolylinePoints;
+
+				if( header.size > 56 )
+					decoder.skip(header.size - 56);
+				else if( header.size > 52 && header.size < 56 )
 					decoder.skip(header.size - 52);
 				else if( header.size > 48 && header.size < 52 )
 					decoder.skip(header.size - 48);
@@ -272,6 +279,7 @@ namespace wax
 				m_charStream << "    nShapeTints = " << nShapeTints << std::endl;
 				m_charStream << "    nShapeSegments = " << nShapeSegments << std::endl;
 				m_charStream << "    nWarpDraws = " << nWarpDraws << std::endl;
+				m_charStream << "    nPolylinePoints = " << nPolylinePoints << std::endl;
 
 				break;
 			}

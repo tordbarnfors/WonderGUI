@@ -74,6 +74,7 @@ typedef struct wax_sessionInfo_struct		// Binary equivalent of Backend::SessionI
 	int		nShapeDraws;		// Number of DrawShape commands.
 	int		nShapeSegments;		// Total number of segments (fill, outline, slices...) of all shapes.
 	int		nShapeTints;		// Total number of Tints encoded in DrawShape commands.
+	int		nPolylinePoints;	// Total number of points of all polylines.
 
 } wax_sessionInfo;
 

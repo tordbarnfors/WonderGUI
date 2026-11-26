@@ -175,6 +175,7 @@ extern "C" {
 	WAX_EXPORT void			wax_drawStraightLine(wax_obj device, wax_coordSPX begin, wax_direction dir, wax_spx length, wax_color color, wax_spx thickness);
 	WAX_EXPORT void			wax_drawLineWithCaps(wax_obj device, wax_coordSPX begin, wax_coordSPX end, wax_color color, wax_spx thickness, wax_lineCap beginCap, wax_lineCap endCap);
 	WAX_EXPORT void			wax_drawStraightLineWithCaps(wax_obj device, wax_coordSPX begin, wax_direction dir, wax_spx length, wax_color color, wax_spx thickness, wax_lineCap beginCap, wax_lineCap endCap);
+	WAX_EXPORT void			wax_drawPolyline(wax_obj device, int nPoints, const wax_coordSPX* pPoints, wax_color color, wax_spx thickness, wax_lineCap beginCap, wax_lineCap endCap);
 
 	// Blit methods
 

@@ -201,6 +201,39 @@ namespace wax
 		LineCap		end;
 	};
 
+	//____ Polylines __________________________________________________________
+	/*
+		A polyline, drawn by Device::drawPolyline(), is a line through a number of points,
+		with the same thickness all the way and placed with subpixel precision.
+
+		Its segments, the lines from one point to the next, each end flat at the points in
+		between and are joined there by a round join: where the polyline turns, the wedge left
+		open between the ends of the two segments on the outside of the turn is filled by that
+		part of a disc around the point, with the diameter of the thickness. The ends of the
+		polyline get the caps, see LineCap. LineCap::None is cut along the minor axis of the
+		first or last segment through the endpoint, without rounding the endpoint to whole pixels.
+
+		Segments and joins are drawn together: each pixel is blended once, with the part of it
+		covered by any of them, so a joint is as transparent as the rest of a polyline in a
+		transparent color and no background shows through in it. This is what sets a polyline
+		apart from lines drawn one after another.
+
+		That only holds for segments joined to each other. Where the polyline crosses itself,
+		or comes back to within its thickness of itself, segments that aren't joined cover the
+		same pixels. Backends may blend those pixels once or several times, so in a transparent
+		color they can come out darker than the rest and differ between backends. Draw such
+		polylines in opaque colors, or avoid them.
+
+		Points that are the same as the point before them are left out. A polyline with one
+		segment is drawn as by drawLine(), and one where all points are the same as a line
+		of zero length. A Vertical end on a first or last segment with no horizontal extent,
+		or a Horizontal end on one with no vertical extent, leaves nothing of the polyline
+		to draw. An end is only cut out of its own segment, so a Vertical, Horizontal or Spear
+		end reaching beyond the first joint leaves the rest of the polyline as it is.
+
+		The tint and tint color of the device apply as for any other draw.
+	*/
+
 	//____ CanvasInfo _________________________________________________________
 
 	struct CanvasInfo
@@ -252,6 +285,7 @@ namespace wax
 
 		static constexpr int		maxSegments() { return c_maxSegments; }
 		static constexpr int		maxRingSlices() { return c_maxRingSlices; }
+		static constexpr int		maxPolylinePoints() { return c_maxPolylinePoints; }
 		
 		//.____ Geometry _________________________________________________
 
@@ -323,6 +357,11 @@ namespace wax
 	 	virtual void	drawLine( CoordSPX begin, CoordSPX end, Color color, spx thickness = 64, LineCaps caps = LineCaps() ) = 0;
 		virtual void	drawLine( CoordSPX begin, Direction dir, spx length, Color color, spx thickness = 64, LineCaps caps = LineCaps() ) = 0;
 
+		// A line through nPoints points with round joins, see Polylines above. At most
+		// maxPolylinePoints() points.
+
+		virtual void	drawPolyline( int nPoints, const CoordSPX * pPoints, Color color, spx thickness = 64, LineCaps caps = LineCaps() ) = 0;
+
 		// Shapes
 
 		virtual void	drawRoundedBox( const RoundedBoxSpec& spec ) = 0;
@@ -387,6 +426,7 @@ namespace wax
 
 		const static int	c_maxSegments = 16;
 		const static int	c_maxRingSlices = 256;
+		const static int	c_maxPolylinePoints = 16000;
 	};
 
 

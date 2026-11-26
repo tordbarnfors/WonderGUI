@@ -162,6 +162,7 @@ namespace wax
 		
 		void	drawLine(CoordSPX begin, CoordSPX end, Color color, spx thickness = 64, LineCaps caps = LineCaps()) override;
 		void	drawLine(CoordSPX begin, Direction dir, spx length, Color color, spx thickness = 64, LineCaps caps = LineCaps()) override;
+		void	drawPolyline(int nPoints, const CoordSPX * pPoints, Color color, spx thickness = 64, LineCaps caps = LineCaps()) override;
 
 		// Shapes
 

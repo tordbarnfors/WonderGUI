@@ -83,6 +83,7 @@ namespace wax
 				*m_pOStream << "    ShapeDraws:    " << pInfo->nShapeDraws << std::endl;
 				*m_pOStream << "    ShapeSegments: " << pInfo->nShapeSegments << std::endl;
 				*m_pOStream << "    ShapeTints:    " << pInfo->nShapeTints << std::endl;
+				*m_pOStream << "    PolylinePoints: " << pInfo->nPolylinePoints << std::endl;
 
 				*m_pOStream << "    LineCoords:    " << pInfo->nLineCoords << std::endl;
 				*m_pOStream << "    LineClipRects: " << pInfo->nLineClipRects << std::endl;
@@ -509,6 +510,19 @@ namespace wax
 							<< (has(RingFlags::HasOutlineTint) ? " outlineTint" : "") << (has(RingFlags::HasHubTint) ? " hubTint" : "")
 							<< (has(RingFlags::HasBackTint) ? " backTint" : "")
 							<< " split into " << nRects << " rectangles." << std::endl;
+					}
+					else if (kind == ShapeKind::Polyline)
+					{
+						const PolylinePayload polyline = decodePolyline(pPayload);
+
+						*m_pOStream << "    DrawShape: Polyline thickness: " << polyline.thickness
+							<< " caps: " << toString(polyline.caps.begin.shape) << ", " << toString(polyline.caps.end.shape)
+							<< " join: " << polyline.join << " points:";
+
+						for (int i = 0; i < polyline.nPoints; i++)
+							*m_pOStream << " (" << polyline.point(i).x << ", " << polyline.point(i).y << ")";
+
+						*m_pOStream << " within " << nRects << " rectangles." << std::endl;
 					}
 					else
 						*m_pOStream << "    DrawShape: unknown kind " << int(kind) << ", " << nWords << " words, split into " << nRects << " rectangles." << std::endl;

@@ -237,6 +237,7 @@ static void populateBody(wg_c_calls_body * pBody)
 	pBody->gfxDevice.warpDrawEdgemap		= LOCKED(wax_warpDrawEdgemap);
 	pBody->gfxDevice.drawLineWithCaps		= LOCKED(wax_drawLineWithCaps);
 	pBody->gfxDevice.drawStraightLineWithCaps = LOCKED(wax_drawStraightLineWithCaps);
+	pBody->gfxDevice.drawPolyline			= LOCKED(wax_drawPolyline);
 
 /*
 	pBody->streamBuffer.structSize				= sizeof(wg_streambuffer_calls);

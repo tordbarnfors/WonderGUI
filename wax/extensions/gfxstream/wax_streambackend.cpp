@@ -113,7 +113,7 @@ namespace wax
 
 	void StreamBackend::beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
 	{
-		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::BeginSession, 0, 52 };
+		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::BeginSession, 0, 56 };
 
 		(*m_pEncoder) << (pCanvas ? static_cast<RemoteSurface*>(pCanvas)->inStreamId() : (uint16_t) 0);
 		(*m_pEncoder) << canvasRef;
@@ -142,6 +142,8 @@ namespace wax
 
 		(*m_pEncoder) << (uint16_t) std::min(pInfo->nWarpDraws, 0xFFFF);			// Since 3.4
 		(*m_pEncoder) << (uint16_t) 0;												// Filler to align.
+
+		(*m_pEncoder) << (int32_t) pInfo->nPolylinePoints;							// Since 3.5
 
 		if( nUpdateRects > 0 )
 			_compressSplitAndEncode( m_pEncoder, GfxStream::ChunkId::UpdateRects, 0, m_pRectCompressor, (const spx*) pUpdateRects, (const spx*) (pUpdateRects + nUpdateRects) );

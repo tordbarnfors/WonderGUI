@@ -383,6 +383,11 @@ void wax_drawLineWithCaps(wax_obj device, wax_coordSPX begin, wax_coordSPX end, 
 	getPtr(device)->drawLine({ begin.x, begin.y }, { end.x, end.y }, *(Color*)&color, (spx)thickness, { toLineCap(beginCap), toLineCap(endCap) });
 }
 
+void wax_drawPolyline(wax_obj device, int nPoints, const wax_coordSPX* pPoints, wax_color color, wax_spx thickness, wax_lineCap beginCap, wax_lineCap endCap)
+{
+	getPtr(device)->drawPolyline(nPoints, (const CoordSPX*) pPoints, *(Color*)&color, (spx)thickness, { toLineCap(beginCap), toLineCap(endCap) });
+}
+
 void wax_drawStraightLineWithCaps(wax_obj device, wax_coordSPX begin, wax_direction dir, wax_spx length, wax_color color, wax_spx thickness, wax_lineCap beginCap, wax_lineCap endCap)
 {
 	getPtr(device)->drawLine({ begin.x, begin.y }, (Direction)dir, (spx)length, *(Color*)&color, (spx)thickness, { toLineCap(beginCap), toLineCap(endCap) });

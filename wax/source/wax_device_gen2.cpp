@@ -1546,6 +1546,151 @@ int DeviceGen2::_addShapeClipRects(const RectSPX& area)
 	return nRects;
 }
 
+//____ drawPolyline() ________________________________________________________
+
+void DeviceGen2::drawPolyline(int nPoints, const CoordSPX * pPoints, Color color, spx thickness, LineCaps caps)
+{
+	if (!m_pActiveCanvas)
+	{
+		Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to draw polyline on.",
+			this, &TYPEINFO, __func__, __FILE__, __LINE__);
+
+		return;
+	}
+
+	if (nPoints > c_maxPolylinePoints)
+	{
+		Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Polyline has more points than Device::maxPolylinePoints().",
+			this, &TYPEINFO, __func__, __FILE__, __LINE__);
+
+		return;
+	}
+
+	if (nPoints < 1 || !pPoints || thickness <= 0 || thickness > 65535)
+		return;
+
+	// Skip calls that won't affect destination
+
+	if (color.a == 0 && (m_renderState.blendMode == BlendMode::Blend))
+		return;
+
+	// Points that differ from the one before them, and what they span.
+
+	int nDistinct = 1;
+	CoordSPX secondPoint = pPoints[0];
+
+	int64_t left = pPoints[0].x, right = pPoints[0].x;
+	int64_t top = pPoints[0].y, bottom = pPoints[0].y;
+
+	for (int i = 1; i < nPoints; i++)
+	{
+		if (pPoints[i] == pPoints[i - 1])
+			continue;
+
+		if (nDistinct == 1)
+			secondPoint = pPoints[i];
+
+		nDistinct++;
+
+		left = std::min(left, int64_t(pPoints[i].x));
+		right = std::max(right, int64_t(pPoints[i].x));
+		top = std::min(top, int64_t(pPoints[i].y));
+		bottom = std::max(bottom, int64_t(pPoints[i].y));
+	}
+
+	// One segment, or none, is a line.
+
+	if (nDistinct <= 2)
+	{
+		drawLine(pPoints[0], secondPoint, color, thickness, caps);
+		return;
+	}
+
+	if (m_stateChanges != 0)
+		_encodeStateChanges();
+
+	// Clip rectangles within what the polyline can touch. Joins and caps reach half the
+	// thickness from the points, the corners of a square cap a little further, and a Vertical
+	// or Horizontal end as far as its segment is steep. An end left as None isn't, as it is
+	// cut along the minor axis of its segment.
+
+	bool bFarReach = false;
+
+	for (LineCap cap : { caps.begin, caps.end })
+		if (cap.shape == LineCapShape::Vertical || cap.shape == LineCapShape::Horizontal)
+			bFarReach = true;
+
+	int nRects;
+
+	if (bFarReach)
+	{
+		const RectSPX* pClipRects = m_pActiveClipList->pRects;
+		nRects = m_pActiveClipList->nRects;
+
+		for (int i = 0; i < nRects; i++)
+			m_pActiveLayer->rects.push_back(pClipRects[i]);
+	}
+	else
+	{
+		const int64_t reach = thickness + 64;
+		const int64_t limit = int64_t(1) << 30;
+
+		left = std::max(left - reach, -limit);
+		top = std::max(top - reach, -limit);
+		right = std::min(right + reach, limit);
+		bottom = std::min(bottom + reach, limit);
+
+		if (right <= left || bottom <= top)
+			return;
+
+		nRects = _addShapeClipRects({ spx(left), spx(top), spx(right - left), spx(bottom - top) });
+	}
+
+	if (nRects == 0)
+		return;
+
+	// Write command, aligned to 32 bits.
+
+	const int nWords = Backend::c_polylinePayloadWords + nDistinct * Backend::c_polylinePointWords;
+
+	auto& commands = m_pActiveLayer->commands;
+
+	commands.secureSpace((Backend::c_drawShapeHeaderWords + nWords + 1) * 2);
+
+	if (commands.size() % 4 != 0)
+		commands.pushUnchecked(uint16_t(Command::None));
+
+	m_pActiveLayer->latestCommand = Command::DrawShape;
+	m_pActiveLayer->latestCommandOfs = (int)commands.size();
+
+	commands.pushUnchecked(uint16_t(Command::DrawShape));
+	commands.pushUnchecked(uint16_t(Backend::ShapeKind::Polyline));
+	commands.pushUnchecked(uint16_t(nRects));
+	commands.pushUnchecked(uint16_t(1));							// Colors.
+	commands.pushUnchecked(uint16_t(nWords));
+	commands.pushUnchecked(uint16_t(0));
+
+	commands.pushUnchecked(uint16_t(thickness));
+	commands.pushUnchecked(Backend::encodeLineCaps(caps));
+	commands.pushUnchecked(uint16_t(0));							// Join, round.
+	commands.pushUnchecked(uint16_t(0));							// Parameter of join, reserved.
+	commands.pushUnchecked(uint16_t(0));							// Flags, reserved.
+	commands.pushUnchecked(uint16_t(nDistinct));
+
+	commands.pushUnchecked(pPoints[0]);
+
+	for (int i = 1; i < nPoints; i++)
+		if (pPoints[i] != pPoints[i - 1])
+			commands.pushUnchecked(pPoints[i]);
+
+	m_pActiveLayer->colors.push_back(color);
+
+	auto& info = m_pActiveCanvas->sessionInfo;
+	info.nShapeDraws++;
+	info.nShapeSegments++;
+	info.nPolylinePoints += nDistinct;
+}
+
 //____ drawRoundedBox() ______________________________________________________
 
 void DeviceGen2::drawRoundedBox(const RoundedBoxSpec& spec)

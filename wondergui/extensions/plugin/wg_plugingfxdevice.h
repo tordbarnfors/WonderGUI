@@ -135,6 +135,7 @@ namespace wg
 
         void    drawLine( CoordSPX begin, CoordSPX end, Color color, spx thickness = 64, LineCaps caps = LineCaps() ) override;
         void    drawLine( CoordSPX begin, Direction dir, int length, Color col, spx thickness = 64, LineCaps caps = LineCaps() ) override;
+        void    drawPolyline( int nPoints, const CoordSPX * pPoints, Color color, spx thickness = 64, LineCaps caps = LineCaps() ) override;
 
         void    drawRoundedBox(const RoundedBoxSpec& spec) override;
         void    drawRing(const RingSpec& spec) override;

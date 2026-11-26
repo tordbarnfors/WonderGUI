@@ -487,6 +487,13 @@ namespace wg
             PluginCalls::gfxDevice->drawLineWithCaps(m_cDevice, { begin.x, begin.y }, { end.x, end.y }, *(wax_color*)&color, thickness, toCLineCap(caps.begin), toCLineCap(caps.end));
     }
 
+    //____ drawPolyline() ______________________________________________________
+
+    void PluginGfxDevice::drawPolyline(int nPoints, const CoordSPX * pPoints, Color color, spx thickness, LineCaps caps)
+    {
+        PluginCalls::gfxDevice->drawPolyline(m_cDevice, nPoints, (const wax_coordSPX*) pPoints, *(wax_color*)&color, thickness, toCLineCap(caps.begin), toCLineCap(caps.end));
+    }
+
     void PluginGfxDevice::drawLine(CoordSPX begin, Direction dir, int length, Color color, spx thickness, LineCaps caps)
     {
         if( caps.isNone() )

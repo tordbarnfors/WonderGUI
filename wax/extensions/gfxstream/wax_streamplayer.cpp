@@ -354,7 +354,16 @@ namespace wax
 				decoder >> filler;
 			}
 
-			if( header.size > 52 )
+			// Points of polylines, since 3.5.
+
+			int32_t		nPolylinePoints = 0;
+
+			if( header.size >= 56 )
+				decoder >> nPolylinePoints;
+
+			if( header.size > 56 )
+				decoder.skip(header.size - 56);
+			else if( header.size > 52 && header.size < 56 )
 				decoder.skip(header.size - 52);
 			else if( header.size > 48 && header.size < 52 )
 				decoder.skip(header.size - 48);
@@ -382,6 +391,7 @@ namespace wax
 			m_sessionInfo.nShapeTints = nShapeTints;
 			m_sessionInfo.nShapeSegments = nShapeSegments;
 			m_sessionInfo.nWarpDraws = nWarpDraws;
+			m_sessionInfo.nPolylinePoints = nPolylinePoints;
 
 			m_baseCanvasRef = canvasRef;
 			m_baseCanvasSurface = canvasId > 0 ? static_cast<Surface*>(m_vObjects[canvasId].rawPtr()) : nullptr;
