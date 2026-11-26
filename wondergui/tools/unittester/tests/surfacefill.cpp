@@ -33,7 +33,7 @@ static std::vector<uint8_t> surfacePixels(Surface * pSurface)
 
 //____ blueprint() ____________________________________________________________
 
-static Surface::Blueprint blueprint(PixelFormat format, HiColor fillColor)
+static Surface::Blueprint blueprint(PixelFormat format, Color fillColor)
 {
 	bool bIndexed = (format == PixelFormat::Index_8);
 
@@ -44,9 +44,9 @@ static Surface::Blueprint blueprint(PixelFormat format, HiColor fillColor)
 //
 // What Surface::fill() makes of the color, which is what the fill color should give.
 
-static std::vector<uint8_t> filledPixels(PixelFormat format, HiColor color)
+static std::vector<uint8_t> filledPixels(PixelFormat format, Color color)
 {
-	auto pSurface = SoftSurface::create(blueprint(format, HiColor::Undefined));
+	auto pSurface = SoftSurface::create(blueprint(format, Color::Undefined));
 	pSurface->fill(color);
 	return surfacePixels(pSurface);
 }
@@ -74,11 +74,11 @@ bool SurfaceFillTest::softSurfaceTest(std::ostream& output)
 {
 	const PixelFormat formats[] = { PixelFormat::ARGB_8, PixelFormat::XRGB_8, PixelFormat::RGB_565, PixelFormat::BGR_565, PixelFormat::Alpha_8, PixelFormat::Index_8 };
 
-	const HiColor colors[] = { HiColor(Color8(200, 100, 50, 128)), HiColor(Color8(40, 160, 220, 255)), HiColor::TransparentBlack };
+	const Color colors[] = { Color(Color8(200, 100, 50, 128)), Color(Color8(40, 160, 220, 255)), Color::TransparentBlack };
 
 	for( PixelFormat format : formats )
 	{
-		for( HiColor color : colors )
+		for( Color color : colors )
 		{
 			auto pSurface = SoftSurface::create(blueprint(format, color));
 
@@ -90,7 +90,7 @@ bool SurfaceFillTest::softSurfaceTest(std::ostream& output)
 	// The blueprint of a surface doesn't carry the fill color on: it says how the surface
 	// was to start out, not what it is.
 
-	auto pSurface = SoftSurface::create(blueprint(PixelFormat::ARGB_8, HiColor::White));
+	auto pSurface = SoftSurface::create(blueprint(PixelFormat::ARGB_8, Color::White));
 	TEST_ASSERT( pSurface->blueprint().fillColor.isUndefined() );
 
 	return true;
@@ -106,7 +106,7 @@ bool SurfaceFillTest::suppliedPixelsTest(std::ostream& output)
 	for( int i = 0 ; i < int(sizeof(pixels)) ; i++ )
 		pixels[i] = uint8_t(i * 7 + 3);
 
-	auto bp = blueprint(PixelFormat::ARGB_8, HiColor::White);
+	auto bp = blueprint(PixelFormat::ARGB_8, Color::White);
 
 	auto pSurface = SoftSurface::create(bp, pixels, PixelFormat::ARGB_8, 5 * 4);
 
@@ -125,10 +125,10 @@ bool SurfaceFillTest::streamTest(std::ostream& output)
 	auto pPlayer = StreamPlayer::create(SoftBackend::create(), SoftSurfaceFactory::create(), SoftEdgemapFactory::create());
 	auto pEncoder = StreamEncoder::create(StreamSink_p(pPlayer, pPlayer->input));
 
-	HiColor color = HiColor(Color8(200, 100, 50, 128));
+	Color color = Color(Color8(200, 100, 50, 128));
 
 	auto pFilled = RemoteSurface::create(pEncoder, blueprint(PixelFormat::ARGB_8, color));
-	auto pIndexed = RemoteSurface::create(pEncoder, blueprint(PixelFormat::Index_8, HiColor(s_palette[2])));
+	auto pIndexed = RemoteSurface::create(pEncoder, blueprint(PixelFormat::Index_8, Color(s_palette[2])));
 	pEncoder->flush();
 
 	std::vector<Surface*> surfaces;
@@ -144,7 +144,7 @@ bool SurfaceFillTest::streamTest(std::ostream& output)
 	TEST_ASSERT( surfacePixels(surfaces[0]) == filledPixels(PixelFormat::ARGB_8, color) );
 
 	TEST_ASSERT( surfaces[1]->pixelFormat() == PixelFormat::Index_8 );
-	TEST_ASSERT( surfacePixels(surfaces[1]) == filledPixels(PixelFormat::Index_8, HiColor(s_palette[2])) );
+	TEST_ASSERT( surfacePixels(surfaces[1]) == filledPixels(PixelFormat::Index_8, Color(s_palette[2])) );
 
 	return true;
 }
@@ -177,7 +177,7 @@ bool SurfaceFillTest::oldStreamTest(std::ostream& output)
 	*pEncoder << int(0);						// paletteCapacity
 	*pEncoder << int(0);						// paletteSize
 
-	HiColor color = HiColor(Color8(40, 160, 220, 255));
+	Color color = Color(Color8(40, 160, 220, 255));
 
 	auto pFilled = RemoteSurface::create(pEncoder, blueprint(PixelFormat::ARGB_8, color));
 	pEncoder->flush();

@@ -322,18 +322,18 @@ namespace wax
 	void SoftSurface::_makePalette4096()
 	{
 		if( !m_pPalette4096 )
-			m_pPalette4096 = new HiColor[m_paletteCapacity];
+			m_pPalette4096 = new Color[m_paletteCapacity];
 
-		HiColor * p = m_pPalette4096;
+		Color * p = m_pPalette4096;
 
-		const int16_t* pUnpackTab = m_colorSpace == ColorSpace::Linear ? HiColor::unpackLinearTab : HiColor::unpackSRGBTab;
+		const int16_t* pUnpackTab = m_colorSpace == ColorSpace::Linear ? Color::unpackLinearTab : Color::unpackSRGBTab;
 
 		for (int i = 0; i < m_paletteSize; i++)
 		{
 			p[i].r = pUnpackTab[m_pPalette[i].r];
 			p[i].g = pUnpackTab[m_pPalette[i].g];
 			p[i].b = pUnpackTab[m_pPalette[i].b];
-			p[i].a = HiColor::unpackLinearTab[m_pPalette[i].a];
+			p[i].a = Color::unpackLinearTab[m_pPalette[i].a];
 		}
 	}
 

@@ -82,12 +82,12 @@ auto pMySkin = LambdaSkin::create({
 	.renderFunc = [](GfxDevice* pDevice,const RectSPX& canvas, 
                      int scale, State state, float value1, float value2)
 	{
-		pDevice->fill( canvas, Color8::White );
+		pDevice->fill( canvas, Color::White );
 
-		RingSlice slice = { .size = 1.f, .color = Color8::Green };
+		RingSlice slice = { .size = 1.f, .color = Color::Green };
 
 		pDevice->drawRing({ .rect = canvas, .thickness = scale*6, .outline = scale*1,
-		                    .nSlices = 1, .pSlices = &slice, .outlineColor = Color8::Black });
+		                    .nSlices = 1, .pSlices = &slice, .outlineColor = Color::Black });
 	}
     .ignoreState = true,
     .ignoreValue = true
@@ -111,7 +111,7 @@ auto pMySkin = LambdaSkin::create({
 	{
 		RectSPX canv = canvas;
 		canv.w = canvas.w * value1;
-		pDevice->fill( canv, Color8::Green );
+		pDevice->fill( canv, Color::Green );
 	},
 	.ignoreState = true
 });

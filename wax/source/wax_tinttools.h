@@ -65,7 +65,7 @@ namespace wax
 
 		//____ Colors _________________________________________________________
 
-		HiColor			mixColors(HiColor from, HiColor to, float fraction);		// Interpolates the sRGB values.
+		Color			mixColors(Color from, Color to, float fraction);		// Interpolates the sRGB values.
 
 		//____ Encoding _______________________________________________________
 		/**
@@ -100,7 +100,7 @@ namespace wax
 			int			nStops;
 			float		geo[4];					// See CanvasGeometry.
 			uint16_t	stopPos16[Tint::c_maxStops];	// Same positions as encoded, 0 -> 65535 for 0.0 -> 1.0.
-			HiColor		stopColors[Tint::c_maxStops];
+			Color		stopColors[Tint::c_maxStops];
 		};
 
 		struct DecodedTint
@@ -109,8 +109,8 @@ namespace wax
 			TintLayer	layers[Tint::c_maxMixComponents];
 		};
 
-		int				encodeTint(const Tint* pTint, const RectSPX& rect, uint16_t* pWords, HiColor* pColors, int& nColors);	// Returns number of words. pTint may be null.
-		const uint16_t*	decodeTint(const uint16_t* pWords, const HiColor*& pColors, DecodedTint& output);						// Returns pointer to word after the tint.
+		int				encodeTint(const Tint* pTint, const RectSPX& rect, uint16_t* pWords, Color* pColors, int& nColors);	// Returns number of words. pTint may be null.
+		const uint16_t*	decodeTint(const uint16_t* pWords, const Color*& pColors, DecodedTint& output);						// Returns pointer to word after the tint.
 		int				encodedTintSize(const uint16_t* pWords, int& nColors);													// Number of words, for skipping.
 
 		//____ Serialization ______________________________________________________
@@ -147,12 +147,12 @@ namespace wax
 		// Integer math only, so that software renderers can use it on CPUs without FPU. Colors are interpolated
 		// exactly and rounded to nearest.
 
-		void			buildLUT(const TintLayer& layer, int entries, HiColor* pOutput, HiColor multiplier = HiColor::White);
+		void			buildLUT(const TintLayer& layer, int entries, Color* pOutput, Color multiplier = Color::White);
 
 		// Color at a position along a decoded layer, in the same fixed point as stopPos16 (0 -> 65535 for
 		// 0.0 -> 1.0). No spread applied (e.g. Pad). Integer math only.
 
-		HiColor			layerColorAtFixed(const TintLayer& layer, int position, HiColor multiplier = HiColor::White);
+		Color			layerColorAtFixed(const TintLayer& layer, int position, Color multiplier = Color::White);
 
 		// Size of lookup table for a layer, as (1 << bits) + 1 entries. Based on the length of the gradient
 		// in pixels, two entries per pixel, 2 to 2048+1 entries. -1 for a flat layer.
@@ -184,7 +184,7 @@ namespace wax
 
 		int				gpuTintBlockSize(const DecodedTint& tint);		// In float4 units.
 		int				gpuTintBlockMaxSize(int nLayers, int nStops);	// Upper bound for a tint with given total layers and stops, in float4 units.
-		void			writeGpuTintBlock(const DecodedTint& tint, float* pOutput, HiColor multiplier = HiColor::White);
+		void			writeGpuTintBlock(const DecodedTint& tint, float* pOutput, Color multiplier = Color::White);
 
 
 		//____ applySpread() __________________________________________________

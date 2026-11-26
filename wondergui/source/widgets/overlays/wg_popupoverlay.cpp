@@ -565,7 +565,7 @@ namespace wg
 		{
 			WidgetRenderContext * p = &renderList[i];
 
-			HiColor tint = HiColor::White;
+			Color tint = Color::White;
 
 			if (p->pSlot->m_state == Slot::State::Opening && m_openingFadeMs > 0 )
 				tint.a = 4096 * p->pSlot->m_stateCounter / m_openingFadeMs;
@@ -577,7 +577,7 @@ namespace wg
 				p->pSlot->_widget()->_render(pDevice, p->geo, p->geo);
 			else
 			{
-				HiColor oldTint = pDevice->tintColor();
+				Color oldTint = pDevice->tintColor();
 				pDevice->setTintColor(oldTint*tint);
 				p->pSlot->_widget()->_render(pDevice, p->geo, p->geo);
 				pDevice->setTintColor(oldTint);

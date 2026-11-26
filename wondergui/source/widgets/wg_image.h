@@ -58,7 +58,7 @@ namespace wg
 			Surface_p		image;
 			int				imageMarkAlpha = 1;
 			Rect			imageRect;
-			HiColor			imageTint = HiColor::White;
+			Color			imageTint = Color::White;
 			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
 			bool			pickable = false;
 			uint8_t			pickCategory = 0;
@@ -89,8 +89,8 @@ namespace wg
 		void				setImage( Surface * pSurface, const Rect& rect );	///< @brief Set image to display.
 		void				setImage( Surface * pSurface );						///< @brief Set image to display.
 
-		void				setImageTint(HiColor tint);
-		HiColor				imageTint() const { return m_imageTint; }
+		void				setImageTint(Color tint);
+		Color				imageTint() const { return m_imageTint; }
 
 		inline Surface_p	imageSurface() const;								///< @brief Get surface of image displayed.
 		inline Rect			imageRect() const;									///< @brief Get area of surface rectangle of image displayed.
@@ -134,7 +134,7 @@ namespace wg
 
 		Surface_p		m_pSurface;
 		Rect			m_rect;
-		HiColor			m_imageTint = HiColor::White;
+		Color			m_imageTint = Color::White;
 		int				m_imageMarkAlpha = 1;
 		SizePolicy2D	m_sizePolicy = SizePolicy2D::Stretch;
 		Placement		m_placement = Placement::Center;

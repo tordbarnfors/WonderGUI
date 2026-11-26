@@ -29,7 +29,7 @@ You can get a callback when a surface is modified by adding an Observer.
 | bigEndian       | Byte order of the pixels. Defaults to the byte order of the system. |
 | canvas          | Must be set to true if surface might be used as canvas by the GfxDevice. This might affect performance. Defaults to false. |
 | colorSpace      | Color space of the pixels, sRGB or Linear. Defaults to sRGB. Colors given to WonderGUI are always sRGB, while blending always is done in linear space. |
-| fillColor       | The color a surface created without pixels is filled with. Defaults to HiColor::Undefined, in which case nothing is filled in and the content of the surface is unspecified until you have drawn or written to all of it. Ignored when pixels are supplied. |
+| fillColor       | The color a surface created without pixels is filled with. Defaults to Color::Undefined, in which case nothing is filled in and the content of the surface is unspecified until you have drawn or written to all of it. Ignored when pixels are supplied. |
 | finalizer       | A function that is called right before the Skin is destroyed. |
 | palette         | A pointer at an array of Color8 objects used as the palette if pixel format is indexed or bitplanes. Mandatory if pixel format is indexed or bitplanes. Defautls to nullptr. |
 | paletteCapacity | Allows for setting the size of the palette to a larger value than paletteSize for later adding of colors. No pixel index may have a larger value than paletteCapacity. Defaults to the value of paletteSize. |

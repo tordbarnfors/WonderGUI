@@ -41,9 +41,9 @@ namespace wg
 			{
 				if( data.size != -1 )
 					entry.data.size = data.size;
-				if( data.color != HiColor::Undefined )
+				if( data.color != Color::Undefined )
 					entry.data.color = data.color;
-				if( data.backColor != HiColor::Undefined )
+				if( data.backColor != Color::Undefined )
 					entry.data.backColor = data.backColor;
 				if( data.decoration != TextDecoration::Undefined )
 					entry.data.decoration = data.decoration;
@@ -86,10 +86,10 @@ namespace wg
 		pts		stateSizes[State::NbStates];
 
 		State	colorStates[State::NbStates];
-		HiColor stateColors[State::NbStates];
+		Color stateColors[State::NbStates];
 
 		State	backColorStates[State::NbStates];
-		HiColor stateBackColors[State::NbStates];
+		Color stateBackColors[State::NbStates];
 
 		State	decorationStates[State::NbStates];
 		TextDecoration stateDecorations[State::NbStates];
@@ -120,14 +120,14 @@ namespace wg
 				stateSizes[index] = stateInfo.data.size;
 			}
 
-			if(stateInfo.data.color != HiColor::Undefined )
+			if(stateInfo.data.color != Color::Undefined )
 			{
 				int index = _findOrAddState(searchFor,colorStates,nbColorStates);
 				colorStates[index] = stateInfo.state;
 				stateColors[index] = stateInfo.data.color;
 			}
 
-			if(stateInfo.data.backColor != HiColor::Undefined )
+			if(stateInfo.data.backColor != Color::Undefined )
 			{
 				int index = _findOrAddState(searchFor,backColorStates,nbBackColorStates);
 				backColorStates[index] = stateInfo.state;
@@ -157,8 +157,8 @@ namespace wg
 
 		// Calculate memory needed for all state data
 
-		int colorBytes		= sizeof(HiColor) * nbColorStates;
-		int backColorBytes	= sizeof(HiColor) * nbBackColorStates;
+		int colorBytes		= sizeof(Color) * nbColorStates;
+		int backColorBytes	= sizeof(Color) * nbBackColorStates;
 		int sizeBytes		= sizeof(pts) * nbSizeStates;
 		int decorationBytes	= sizeof(TextDecoration) * nbDecorationStates;
 
@@ -172,14 +172,14 @@ namespace wg
 
 		auto pDest = (uint8_t*) m_pStateData;
 
-		auto pColors = (HiColor*) pDest;
+		auto pColors = (Color*) pDest;
 		for( int i = 0 ; i < nbColorStates ; i++ )
 			pColors[i] = stateColors[i];
 
 		m_pColors = pColors;
 		pDest += colorBytes;
 
-		auto pBackColors = (HiColor*) pDest;
+		auto pBackColors = (Color*) pDest;
 		for( int i = 0 ; i < nbBackColorStates ; i++ )
 			pBackColors[i] = stateBackColors[i];
 
@@ -280,10 +280,10 @@ namespace wg
 				pDest->size = Util::align( spx(pDest->size * m_sizeScale) );
 		}
 
-		if( pDest->color == HiColor::Undefined )
+		if( pDest->color == Color::Undefined )
 		{
-			const HiColor& defColor = s_pDefaultStyle->_getColor(state);
-			pDest->color = defColor == HiColor::Undefined ? HiColor::Black : defColor;
+			const Color& defColor = s_pDefaultStyle->_getColor(state);
+			pDest->color = defColor == Color::Undefined ? Color::Black : defColor;
 		}
 
 		if( pDest->decoration == TextDecoration::Undefined )
@@ -292,7 +292,7 @@ namespace wg
 			pDest->decoration = defDecoration == TextDecoration::Undefined ? TextDecoration::None : defDecoration;
 		}
 
-		if (pDest->backColor == HiColor::Undefined)
+		if (pDest->backColor == Color::Undefined)
 			pDest->backColor = s_pDefaultStyle->_getBackColor(state);
 
 		if (pDest->blendMode == BlendMode::Undefined)
@@ -330,12 +330,12 @@ namespace wg
 		else if( decoration != TextDecoration::Undefined )
 			pDest->decoration |= decoration;
 
-		HiColor color = _getColor(state);
-		if( color != HiColor::Undefined )
+		Color color = _getColor(state);
+		if( color != Color::Undefined )
 			pDest->color = color;
 
-		HiColor backColor = _getBackColor(state);
-		if (backColor != HiColor::Undefined)
+		Color backColor = _getBackColor(state);
+		if (backColor != Color::Undefined)
 			pDest->backColor = backColor;
 	}
 

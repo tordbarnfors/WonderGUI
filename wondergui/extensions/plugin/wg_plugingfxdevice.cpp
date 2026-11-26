@@ -177,18 +177,18 @@ namespace wg
 
     //____ setTintColor() _____________________________________________________
 
-    void PluginGfxDevice::setTintColor( HiColor color )
+    void PluginGfxDevice::setTintColor( Color color )
     {
         PluginCalls::gfxDevice->setTintColor(m_cDevice, *(wax_color*)&color);
     }
 
     //____ tintColor() ________________________________________________________
 
-    HiColor PluginGfxDevice::tintColor() const
+    Color PluginGfxDevice::tintColor() const
     {
         wax_color col = PluginCalls::gfxDevice->getTintColor(m_cDevice);
 
-        return *(HiColor*)&col;
+        return *(Color*)&col;
     }
 
     //____ clearTintColor() ___________________________________________________
@@ -358,18 +358,18 @@ namespace wg
 
 	//____ setFixedBlendColor() __________________________________________________
 
-	void PluginGfxDevice::setFixedBlendColor( HiColor color )
+	void PluginGfxDevice::setFixedBlendColor( Color color )
 	{
 		PluginCalls::gfxDevice->setFixedBlendColor(m_cDevice, *(wax_color*)&color);
 	}
 
 	//____ fixedBlendColor() _____________________________________________________
 
-	HiColor PluginGfxDevice::fixedBlendColor() const
+	Color PluginGfxDevice::fixedBlendColor() const
 	{
 		wax_color col = PluginCalls::gfxDevice->getFixedBlendColor(m_cDevice);
 
-		return *(HiColor*)&col;
+		return *(Color*)&col;
 	}
 
     //____ setRenderLayer() _______________________________________________________
@@ -462,12 +462,12 @@ namespace wg
 
     //____ fill() __________________________________________________________________
 
-    void PluginGfxDevice::fill( HiColor _col )
+    void PluginGfxDevice::fill( Color _col )
     {
         PluginCalls::gfxDevice->fill( m_cDevice, *(wax_color*)&_col );
     }
 
-    void PluginGfxDevice::fill( const RectSPX& _rect, HiColor _col )
+    void PluginGfxDevice::fill( const RectSPX& _rect, Color _col )
     {
         PluginCalls::gfxDevice->fillRect(m_cDevice, (wax_rectSPX*) &_rect, *(wax_color*)&_col);
     }
@@ -479,7 +479,7 @@ namespace wg
         return { (wax_lineCapShape) cap.shape, cap.spearLength };
     }
 
-    void PluginGfxDevice::drawLine(CoordSPX begin, CoordSPX end, HiColor color, spx thickness, LineCaps caps)
+    void PluginGfxDevice::drawLine(CoordSPX begin, CoordSPX end, Color color, spx thickness, LineCaps caps)
     {
         if( caps.isNone() )
             PluginCalls::gfxDevice->drawLine(m_cDevice, { begin.x, begin.y }, { end.x, end.y }, *(wax_color*)&color, thickness);
@@ -487,7 +487,7 @@ namespace wg
             PluginCalls::gfxDevice->drawLineWithCaps(m_cDevice, { begin.x, begin.y }, { end.x, end.y }, *(wax_color*)&color, thickness, toCLineCap(caps.begin), toCLineCap(caps.end));
     }
 
-    void PluginGfxDevice::drawLine(CoordSPX begin, Direction dir, int length, HiColor color, spx thickness, LineCaps caps)
+    void PluginGfxDevice::drawLine(CoordSPX begin, Direction dir, int length, Color color, spx thickness, LineCaps caps)
     {
         if( caps.isNone() )
             PluginCalls::gfxDevice->drawStraightLine(m_cDevice, { begin.x, begin.y }, (wax_direction) dir, length, * (wax_color*)&color, thickness);

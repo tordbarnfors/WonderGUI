@@ -55,13 +55,13 @@ public:
 		{
 			const RestorerCase& c = c_restorerCases[i];
 			m_pRestorerSurfaces[i] = pFactory->createSurface(WGBP(Surface, _.size = { c_restorerWidth, c_restorerHeight }, _.format = c.format, _.colorSpace = c.colorSpace,
-																  _.fillColor = HiColor(c.fill), _.identity = i, _.restorer = _restoreFill, _.sampleMethod = SampleMethod::Nearest));
+																  _.fillColor = Color(c.fill), _.identity = i, _.restorer = _restoreFill, _.sampleMethod = SampleMethod::Nearest));
 		}
 
 		for (int i = 0; i < 2; i++)
 		{
 			m_pStreamSurfaces[i] = pFactory->createSurface(WGBP(Surface, _.size = { c_streamSize, c_streamSize }, _.format = PixelFormat::XRGB_8, _.colorSpace = ColorSpace::Linear,
-																_.fillColor = HiColor::Black, _.restorer = i == 1 ? Surface::declineRestore : nullptr,
+																_.fillColor = Color::Black, _.restorer = i == 1 ? Surface::declineRestore : nullptr,
 																_.sampleMethod = SampleMethod::Nearest));
 		}
 		return true;
@@ -99,9 +99,9 @@ public:
 			{
 				pDevice->beginCanvasUpdate(pCanvas);
 				pDevice->setBlendMode(BlendMode::Replace);
-				pDevice->fill(HiColor(Color8(10, 20, 30, 40)));
-				pDevice->fill(RectSPX(64 * (1 + round), 64, 64 * (c.w / 2), 64 * (c.h / 2)), HiColor(Color8(200, 150, 100, uint8_t(100 + round * 100))));
-				pDevice->fill(RectSPX(64 * (c.w - 2), 64 * (c.h - 2), 64, 64), HiColor(Color8(50, 250, 50, 255)));
+				pDevice->fill(Color(Color8(10, 20, 30, 40)));
+				pDevice->fill(RectSPX(64 * (1 + round), 64, 64 * (c.w / 2), 64 * (c.h / 2)), Color(Color8(200, 150, 100, uint8_t(100 + round * 100))));
+				pDevice->fill(RectSPX(64 * (c.w - 2), 64 * (c.h - 2), 64, 64), Color(Color8(50, 250, 50, 255)));
 				pDevice->setBlendMode(BlendMode::Blend);
 				pDevice->endCanvasUpdate();
 			}
@@ -124,7 +124,7 @@ public:
 		}
 
 		pDevice->setBlendMode(BlendMode::Replace);
-		pDevice->fill(canvas, HiColor(Color8(60, 60, 90, 255)));
+		pDevice->fill(canvas, Color(Color8(60, 60, 90, 255)));
 		pDevice->setBlendMode(BlendMode::Blend);
 
 		spx y = 64 * 8;
@@ -139,7 +139,7 @@ public:
 			pDevice->stretchBlit({ 64 * 216, y, size });
 
 			spx marker = std::min(spx(64 * 24), size.h);
-			pDevice->fill({ 64 * 440, y, marker, marker }, bAlphaOk[i] ? HiColor(Color8::Green) : HiColor(Color8::Red));
+			pDevice->fill({ 64 * 440, y, marker, marker }, bAlphaOk[i] ? Color(Color::Green) : Color(Color::Red));
 
 			y += size.h + 64 * 8;
 		}
@@ -159,8 +159,8 @@ public:
 
 			pDevice->beginCanvasUpdate(pCanvas);
 			pDevice->setBlendMode(BlendMode::Replace);
-			pDevice->fill(HiColor(Color8(10, 20, 30, 40)));
-			pDevice->fill(RectSPX(64, 64, 64 * (c.w / 2), 64 * (c.h / 2)), HiColor(Color8(200, 150, 100, 200)));
+			pDevice->fill(Color(Color8(10, 20, 30, 40)));
+			pDevice->fill(RectSPX(64, 64, 64 * (c.w / 2), 64 * (c.h / 2)), Color(Color8(200, 150, 100, 200)));
 			pDevice->setBlendMode(BlendMode::Blend);
 			pDevice->endCanvasUpdate();
 
@@ -170,7 +170,7 @@ public:
 
 			auto buffer = pCanvas->allocPixelBuffer({ 0, 0, c.w, c.h });
 			wax::PixelTools::fillBitmap(buffer.pixels, buffer.format, buffer.colorSpace, buffer.bigEndian, buffer.pitch, written,
-										HiColor(Color8(250, 100, 50, 128)), buffer.palette);
+										Color(Color8(250, 100, 50, 128)), buffer.palette);
 			pCanvas->pullPixels(buffer, written);
 			pCanvas->freePixelBuffer(buffer);
 
@@ -193,7 +193,7 @@ public:
 		}
 
 		pDevice->setBlendMode(BlendMode::Replace);
-		pDevice->fill(canvas, HiColor(Color8(60, 60, 90, 255)));
+		pDevice->fill(canvas, Color(Color8(60, 60, 90, 255)));
 		pDevice->setBlendMode(BlendMode::Blend);
 
 		spx y = 64 * 8;
@@ -208,7 +208,7 @@ public:
 			pDevice->stretchBlit({ 64 * 216, y, SizeSPX((c.w - c.w / 2) * 3, c.h * 3) * 64 });
 
 			spx marker = std::min(spx(64 * 24), size.h);
-			pDevice->fill({ 64 * 440, y, marker, marker }, bAlphaOk[i] ? HiColor(Color8::Green) : HiColor(Color8::Red));
+			pDevice->fill({ 64 * 440, y, marker, marker }, bAlphaOk[i] ? Color(Color::Green) : Color(Color::Red));
 
 			y += size.h + 64 * 8;
 		}
@@ -235,7 +235,7 @@ public:
 
 			auto buffer = pSurface->allocPixelBuffer(written);
 			wax::PixelTools::fillBitmap(buffer.pixels, buffer.format, buffer.colorSpace, buffer.bigEndian, buffer.pitch, { 0, 0, written.w, written.h },
-										HiColor(c.write), buffer.palette);
+										Color(c.write), buffer.palette);
 			pSurface->pullPixels(buffer);
 			pSurface->freePixelBuffer(buffer);
 
@@ -260,7 +260,7 @@ public:
 		}
 
 		pDevice->setBlendMode(BlendMode::Replace);
-		pDevice->fill(canvas, HiColor(Color8(60, 60, 90, 255)));
+		pDevice->fill(canvas, Color(Color8(60, 60, 90, 255)));
 		pDevice->setBlendMode(BlendMode::Blend);
 
 		SizeSPX size = SizeSPX(w * 3, h * 3) * 64;
@@ -273,7 +273,7 @@ public:
 			pDevice->setBlitSource(m_pRestorerCopies[i]);
 			pDevice->stretchBlit({ 64 * 216, y, SizeSPX((w - w / 2) * 3, h * 3) * 64 });
 
-			pDevice->fill({ 64 * 440, y, 64 * 24, 64 * 24 }, bAlphaOk[i] ? HiColor(Color8::Green) : HiColor(Color8::Red));
+			pDevice->fill({ 64 * 440, y, 64 * 24, 64 * 24 }, bAlphaOk[i] ? Color(Color::Green) : Color(Color::Red));
 
 			y += size.h + 64 * 8;
 		}
@@ -296,7 +296,7 @@ private:
 
 	static bool _restoreFill(Surface * pSurface)
 	{
-		pSurface->fill(HiColor(c_restorerCases[pSurface->identity()].fill));
+		pSurface->fill(Color(c_restorerCases[pSurface->identity()].fill));
 		return true;
 	}
 

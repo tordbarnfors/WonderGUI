@@ -77,7 +77,7 @@ namespace wg
 		for (int i = 0; i < State::NbStates; i++)
 		{
 			layer.blockOfs[i] = ofs;
-			layer.tintColor[i] = HiColor::White;
+			layer.tintColor[i] = Color::White;
 
 			_updateStateOpacity(i);
 		}
@@ -99,7 +99,7 @@ namespace wg
 		//
 
 		for (int i = 0; i < State::NbStates; i++)
-			layer.tintColor[i] = HiColor::White;
+			layer.tintColor[i] = Color::White;
 
 		bool		statesSpecified[StateEnum_size];
 		for( int i = 0 ; i < StateEnum_size ; i++ )
@@ -156,7 +156,7 @@ namespace wg
 
 	//____ setLayerColor() _________________________________________________________
 
-	bool MultiBlockSkin::setLayerColor(int layerIdx, HiColor tintColor)
+	bool MultiBlockSkin::setLayerColor(int layerIdx, Color tintColor)
 	{
 		auto& layer = m_layers.at(layerIdx-1);
 
@@ -173,13 +173,13 @@ namespace wg
 	}
 
 
-	bool MultiBlockSkin::setLayerColor(int layerIdx, std::initializer_list< std::pair<State,HiColor> > stateColors)
+	bool MultiBlockSkin::setLayerColor(int layerIdx, std::initializer_list< std::pair<State,Color> > stateColors)
 	{
 		auto& layer = m_layers.at(layerIdx-1);
 
 		// Set default color for normal state.
 
-		layer.tintColor[0] = HiColor::White;
+		layer.tintColor[0] = Color::White;
 
 		//
 
@@ -264,11 +264,11 @@ namespace wg
 		}
 
 		BlendMode	orgBlendMode = pDevice->blendMode();
-		HiColor		orgTintColor = pDevice->tintColor();
+		Color		orgTintColor = pDevice->tintColor();
 
 		BlendMode	blendMode = orgBlendMode;
-		HiColor		tintColor = orgTintColor;
-		HiColor		mixedTint = orgTintColor;
+		Color		tintColor = orgTintColor;
+		Color		mixedTint = orgTintColor;
 
 		for (auto& layer : m_layers)
 		{

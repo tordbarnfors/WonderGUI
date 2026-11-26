@@ -78,8 +78,8 @@ namespace wg
 		DrawerPanel_p		_createRectDrawer(std::string_view label, const Rect& rect);
 		void				_refreshRectDrawer(DrawerPanel* pRectDrawer, const Rect& rect, Rect& displayedRect);
 
-		DrawerPanel_p		_createColorDrawer(std::string_view label, const HiColor& color);
-		void				_refreshColorDrawer(DrawerPanel* pColorDrawer, const HiColor& color, HiColor& displayedColor );
+		DrawerPanel_p		_createColorDrawer(std::string_view label, const Color& color);
+		void				_refreshColorDrawer(DrawerPanel* pColorDrawer, const Color& color, Color& displayedColor );
 
 		DrawerPanel_p		_createBorderDrawer(std::string_view label, const Border& border);
 		void				_refreshBorderDrawer(DrawerPanel* pBorderDrawer, const Border& border, Border& displayedBorder );

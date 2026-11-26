@@ -539,13 +539,13 @@ void WgText::setStyle( wg::TextStyle * pStyle )
 
 bool WgText::setColor( const WgColor color )
 {
-	if( m_pBaseStyle && m_pBaseStyle->isColorStatic() && m_pBaseStyle->color(wg::State::Default) == wg::HiColor(color) )
+	if( m_pBaseStyle && m_pBaseStyle->isColorStatic() && m_pBaseStyle->color(wg::State::Default) == wg::Color(color) )
 		return false;
 
 	auto bp = m_pBaseStyle ? m_pBaseStyle->blueprint() : wg::TextStyle::Blueprint();
 	bp.color = color;
 	for( auto& state : bp.states )
-		state.data.color = wg::HiColor::Undefined;
+		state.data.color = wg::Color::Undefined;
 	
 	m_pBaseStyle = wg::TextStyle::create(bp);
 	return true;
@@ -553,7 +553,7 @@ bool WgText::setColor( const WgColor color )
 
 bool WgText::setColor( const WgColor color, wg::State state )
 {
-	if( m_pBaseStyle && m_pBaseStyle->color(state) == wg::HiColor(color) )
+	if( m_pBaseStyle && m_pBaseStyle->color(state) == wg::Color(color) )
 		return false;
 
 	auto bp = m_pBaseStyle->blueprint();
@@ -593,10 +593,10 @@ void WgText::clearStyle()
 void WgText::clearColor()
 {
 	auto bp = m_pBaseStyle->blueprint();
-	bp.color = wg::HiColor::Undefined;
+	bp.color = wg::Color::Undefined;
 
 	for( auto& state : bp.states )
-		state.data.color = wg::HiColor::Undefined;
+		state.data.color = wg::Color::Undefined;
 	
 	m_pBaseStyle = wg::TextStyle::create(bp);
 }
@@ -607,7 +607,7 @@ void WgText::clearColor( wg::State state )
 
 	for( auto& stat : bp.states )
 		if(stat.state == state )
-			stat.data.color = wg::HiColor::Undefined;
+			stat.data.color = wg::Color::Undefined;
 	
 	m_pBaseStyle = wg::TextStyle::create(bp);
 }

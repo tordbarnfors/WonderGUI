@@ -31,7 +31,7 @@ namespace
 		pDevice->beginRender();
 		pDevice->beginCanvasUpdate(pCanvas);
 		pDevice->setBlendMode(BlendMode::Replace);
-		pDevice->fill(HiColor::Black);
+		pDevice->fill(Color::Black);
 		pDevice->setBlendMode(BlendMode::Blend);
 		draw(pDevice);
 		pDevice->endCanvasUpdate();
@@ -68,19 +68,19 @@ namespace
 		std::vector<Case> out;
 		RoundedBoxSpec s;
 
-		s = {}; s.rect = pixels(10, 10, 140, 140); s.radius = corners(20, 20, 20, 20); s.outline = border(2, 2, 2, 2); s.fillColor = Color8::Red; s.outlineColor = Color8::White;
+		s = {}; s.rect = pixels(10, 10, 140, 140); s.radius = corners(20, 20, 20, 20); s.outline = border(2, 2, 2, 2); s.fillColor = Color::Red; s.outlineColor = Color::White;
 		out.push_back({ "Box on pixels", s });
 
-		s = {}; s.rect = pixels(10.3, 20.6, 130.25, 110.5); s.radius = corners(8, 30, 0, 18); s.outline = border(1.5, 3, 0.5, 6); s.fillColor = Color8::Red; s.outlineColor = Color8::White;
+		s = {}; s.rect = pixels(10.3, 20.6, 130.25, 110.5); s.radius = corners(8, 30, 0, 18); s.outline = border(1.5, 3, 0.5, 6); s.fillColor = Color::Red; s.outlineColor = Color::White;
 		out.push_back({ "Box between pixels", s });
 
-		s = {}; s.rect = pixels(10.4, 10.7, 120.25, 90.5); s.outline = border(2.25, 2.25, 2.25, 2.25); s.fillColor = Color8::Blue; s.outlineColor = Color8::Yellow;
+		s = {}; s.rect = pixels(10.4, 10.7, 120.25, 90.5); s.outline = border(2.25, 2.25, 2.25, 2.25); s.fillColor = Color::Blue; s.outlineColor = Color::Yellow;
 		out.push_back({ "Square corners", s });
 
-		s = {}; s.rect = pixels(10, 60, 140, 40); s.radius = corners(100, 100, 100, 100); s.outline = border(3, 3, 3, 3); s.fillColor = Color8::Green; s.outlineColor = Color8::White;
+		s = {}; s.rect = pixels(10, 60, 140, 40); s.radius = corners(100, 100, 100, 100); s.outline = border(3, 3, 3, 3); s.fillColor = Color::Green; s.outlineColor = Color::White;
 		out.push_back({ "Pill", s });
 
-		s = {}; s.rect = pixels(10.5, 10.5, 139, 139); s.radius = corners(15, 35, 15, 35); s.outline = border(20, 20, 20, 20); s.fillColor = Color8::Gray; s.outlineColor = Color8::Cyan;
+		s = {}; s.rect = pixels(10.5, 10.5, 139, 139); s.radius = corners(15, 35, 15, 35); s.outline = border(20, 20, 20, 20); s.fillColor = Color::Gray; s.outlineColor = Color::Cyan;
 		out.push_back({ "Thick outline", s });
 
 		return out;
@@ -127,7 +127,7 @@ bool EdgemapBoxTest::accuracyTest(std::ostream& output)
 		{
 			int diff = 0;
 			for (int ch = 0; ch < 3; ch++)
-				diff = std::max(diff, std::abs(HiColor::unpackLinearTab[edge[i + ch]] - HiColor::unpackLinearTab[ref[i + ch]]));
+				diff = std::max(diff, std::abs(Color::unpackLinearTab[edge[i + ch]] - Color::unpackLinearTab[ref[i + ch]]));
 
 			worst = std::max(worst, diff);
 			if (diff > 4096 / 16)
@@ -163,8 +163,8 @@ bool EdgemapBoxTest::updateTest(std::ostream& output)
 	resized.radius[1] = 10 * 64;
 
 	RoundedBoxSpec recolored = resized;
-	recolored.fillColor = Color8::Blue;
-	recolored.outlineColor = Color8::Yellow;
+	recolored.fillColor = Color::Blue;
+	recolored.outlineColor = Color::Yellow;
 
 	for (auto* pSpec : { &resized, &recolored })
 	{
@@ -202,13 +202,13 @@ bool EdgemapBoxTest::nothingDrawnTest(std::ostream& output)
 	spec.rect = pixels(10, 10, 50, 30);
 	spec.radius = corners(5, 5, 5, 5);
 	spec.outline = border(2, 2, 2, 2);
-	spec.outlineColor = HiColor::Undefined;
+	spec.outlineColor = Color::Undefined;
 
 	auto pBox = EdgemapBox::create(WGBP(EdgemapBox, _.factory = pFactory), spec);
 	TEST_ASSERT(pBox != nullptr && pBox->pieces().empty());
 
 	spec.rect = {};
-	spec.fillColor = Color8::Red;
+	spec.fillColor = Color::Red;
 	TEST_ASSERT(pBox->update(spec));
 	pBox->generate();
 	TEST_ASSERT(pBox->pieces().empty());
@@ -227,19 +227,19 @@ bool EdgemapBoxTest::drawnTwiceTest(std::ostream& output)
 
 	RoundedBoxSpec first = cases()[1].spec;
 	RoundedBoxSpec second = first;
-	second.fillColor = Color8::Blue;
-	second.outlineColor = Color8::Yellow;
+	second.fillColor = Color::Blue;
+	second.outlineColor = Color::Yellow;
 
 	// Not until generated.
 
-	auto hasColors = [](Edgemap* pEdgemap, const std::vector<HiColor>& colors)
+	auto hasColors = [](Edgemap* pEdgemap, const std::vector<Color>& colors)
 	{
 		return std::equal(colors.begin(), colors.end(), pEdgemap->flatColors(), pEdgemap->flatColors() + pEdgemap->renderSegments());
 	};
 
 	auto pBox = EdgemapBox::create(WGBP(EdgemapBox, _.factory = pFactory), first);
 	Edgemap* pBefore = pBox->pieces()[0].pEdgemap;
-	std::vector<HiColor> colorsBefore(pBefore->flatColors(), pBefore->flatColors() + pBefore->renderSegments());
+	std::vector<Color> colorsBefore(pBefore->flatColors(), pBefore->flatColors() + pBefore->renderSegments());
 
 	TEST_ASSERT(pBox->update(second));
 	TEST_ASSERT(pBox->pieces()[0].pEdgemap == pBefore && hasColors(pBefore, colorsBefore));

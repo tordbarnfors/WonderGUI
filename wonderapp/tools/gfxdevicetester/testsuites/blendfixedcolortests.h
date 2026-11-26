@@ -35,7 +35,7 @@ public:
 
 		pDevice->setBlitSource(m_pSplash);
 		
-		HiColor bg[6] = { Color8::Black, Color8::White, Color8::Red, Color8::Green, Color8::Blue, Color8::Yellow };
+		Color bg[6] = { Color::Black, Color::White, Color::Red, Color::Green, Color::Blue, Color::Yellow };
 		_background(pDevice, canvas, bg);
 		pDevice->setBlendMode(BlendMode::BlendFixedColor);
 		
@@ -45,7 +45,7 @@ public:
 
 			for( int i = 0 ; i < 16 ; i++ )
 			{
-				pDevice->setTintColor(HiColor(4096, 4096, 4096, 4096*i/15));
+				pDevice->setTintColor(Color(4096, 4096, 4096, 4096*i/15));
 				
 				RectSPX r = {i*32, y*32, 32, 32};
 				pDevice->stretchBlit( r*64 );
@@ -53,7 +53,7 @@ public:
 		}
 
 		pDevice->setBlendMode(oldBlendMode);
-		pDevice->setTintColor(HiColor::White);
+		pDevice->setTintColor(Color::White);
 		return true;
 	}
 
@@ -63,7 +63,7 @@ public:
 
 		pDevice->setBlitSource(m_pSplash);
 		
-		HiColor bg[6] = { Color8::Black, Color8::White, Color8::Red, Color8::Green, Color8::Blue, Color8::Yellow };
+		Color bg[6] = { Color::Black, Color::White, Color::Red, Color::Green, Color::Blue, Color::Yellow };
 		_background(pDevice, canvas, bg);
 		pDevice->setBlendMode(BlendMode::BlendFixedColor);
 		
@@ -74,7 +74,7 @@ public:
 			for( int i = 0 ; i < 16 ; i++ )
 			{
 				RectSPX r = {i*32, y*32, 32, 32};
-				RingSlice slice = { 1.f, HiColor(4096, 4096, 4096, 4096*i/15), nullptr };
+				RingSlice slice = { 1.f, Color(4096, 4096, 4096, 4096*i/15), nullptr };
 
 				RingSpec ring;
 				ring.rect = r*64;
@@ -97,7 +97,7 @@ public:
 		auto oldBlendMode = pDevice->blendMode();
 
 	
-		HiColor bg[6] = { Color8::Black, Color8::White, Color8::Red, Color8::Green, Color8::Blue, Color8::Yellow };
+		Color bg[6] = { Color::Black, Color::White, Color::Red, Color::Green, Color::Blue, Color::Yellow };
 		_background(pDevice, canvas, bg);
 		pDevice->setBlendMode(BlendMode::BlendFixedColor);
 		
@@ -110,7 +110,7 @@ public:
 			for( int i = 0 ; i < 16 ; i++ )
 			{
 				RectSPX r = {i*32, y*32, 32, 32};
-				pDevice->fill( r*64, HiColor(4096, 4096, 4096, 4096*i/15) );
+				pDevice->fill( r*64, Color(4096, 4096, 4096, 4096*i/15) );
 			}
 
 		}
@@ -124,7 +124,7 @@ public:
 		auto oldBlendMode = pDevice->blendMode();
 
 	
-		HiColor bg[6] = { Color8::Black, Color8::White, Color8::Red, Color8::Green, Color8::Blue, Color8::Yellow };
+		Color bg[6] = { Color::Black, Color::White, Color::Red, Color::Green, Color::Blue, Color::Yellow };
 		_background(pDevice, canvas, bg);
 		pDevice->setBlendMode(BlendMode::BlendFixedColor);
 		
@@ -141,7 +141,7 @@ public:
 
 				
 				RectSPX r = {i*32, y*32, 32, 32};
-				pDevice->drawLine( beg*64, end*64, HiColor(4096, 4096, 4096, 4096*i/15), 64*4 );
+				pDevice->drawLine( beg*64, end*64, Color(4096, 4096, 4096, 4096*i/15), 64*4 );
 			}
 
 		}
@@ -161,7 +161,7 @@ private:
 	// normally instead, so the rows are filled with their fixed blend colors to make the
 	// results the same either way.
 
-	void _background(GfxDevice * pDevice, const RectSPX& canvas, const HiColor * pColors)
+	void _background(GfxDevice * pDevice, const RectSPX& canvas, const Color * pColors)
 	{
 		pDevice->setBlendMode(BlendMode::Replace);
 

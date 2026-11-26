@@ -504,8 +504,8 @@ WgHook * WgTooltipLayer::_prevHookWithGeo(WgRect& geo, WgHook * pHook) const
 WgWidget * WgTooltipLayer::_defaultTooltipGenerator(Placement& placement, const WgWidget* pHovered, const WgBorders& margin)
 {
 	BoxSkin::Blueprint bp;
-	bp.color = Color8::LightYellow;
-	bp.outlineColor = Color8::Black;
+	bp.color = Color::LightYellow;
+	bp.outlineColor = Color::Black;
 	bp.outlineThickness = 1;
 	bp.padding = 2;
 	

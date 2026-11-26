@@ -79,7 +79,7 @@ private:
 
 	wg::Surface_p   m_pImage;
 	bool			m_bKeepAspectRatio = false;
-	wg::Color8		m_imageTint = wg::Color8::White;
+	wg::Color8		m_imageTint = wg::Color::White;
 };
 
 

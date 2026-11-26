@@ -35,11 +35,11 @@ public:
 		if (!m_pImg)
 			return false;
 
-		HiColor red = Color8::Red;
-		HiColor green = Color8::Green;
-		HiColor blue = Color8::Blue;
-		HiColor white = Color8::White;
-		HiColor yellow = Color8::Yellow;
+		Color red = Color::Red;
+		Color green = Color::Green;
+		Color blue = Color::Blue;
+		Color white = Color::White;
+		Color yellow = Color::Yellow;
 
 		m_pMultiStop = Tint::create( { {0.f, red}, {0.3f, yellow}, {0.6f, green}, {1.f, blue} }, {0.1f, 0.f}, {0.9f, 1.f} );
 
@@ -57,7 +57,7 @@ public:
 			bp.shape = TintShape::Radial;
 			bp.center = { 0.4f, 0.6f };
 			bp.radius = { 0.5f, 0.3f };
-			bp.stops = { {0.f, white}, {0.5f, yellow}, {1.f, HiColor(0, 0, 4096, 2048)} };
+			bp.stops = { {0.f, white}, {0.5f, yellow}, {1.f, Color(0, 0, 4096, 2048)} };
 			m_pRadialFit = Tint::create(bp);
 		}
 
@@ -87,7 +87,7 @@ public:
 			bp.stops = { {0.f, white}, {1.f, m_segmentColors[i]} };
 			m_segmentTints[i] = Tint::create(bp);
 
-			m_segmentMixTints[i] = Tint::mix( Tint::create(m_segmentColors[i], HiColor::Black, {0,0}, {1,1}), m_segmentTints[i], 0.5f );
+			m_segmentMixTints[i] = Tint::mix( Tint::create(m_segmentColors[i], Color::Black, {0,0}, {1,1}), m_segmentTints[i], 0.5f );
 		}
 
 		spx samples[c_segments-1][512+1];
@@ -133,7 +133,7 @@ public:
 
 	bool cleanup(GfxDevice * pDevice, const RectSPX& canvas)
 	{
-		pDevice->setTintColor(Color8::White);
+		pDevice->setTintColor(Color::White);
 		pDevice->clearTint();
 		return true;
 	}
@@ -173,7 +173,7 @@ public:
 	bool setRadialAndTintColor(GfxDevice * pDevice, const RectSPX& canvas)
 	{
 		pDevice->setTint(canvas, m_pRadialFit);
-		pDevice->setTintColor(HiColor(4096, 2048, 4096, 3072));
+		pDevice->setTintColor(Color(4096, 2048, 4096, 3072));
 		return true;
 	}
 
@@ -195,13 +195,13 @@ public:
 	{
 		pDevice->setBlitSource(m_pImg);
 		pDevice->setTint(canvas, m_pMix);
-		pDevice->setTintColor(HiColor(2048, 4096, 4096, 3072));
+		pDevice->setTintColor(Color(2048, 4096, 4096, 3072));
 		return true;
 	}
 
 	bool setTintColor(GfxDevice * pDevice, const RectSPX& canvas)
 	{
-		pDevice->setTintColor(HiColor(4096, 4096, 2048, 2048));
+		pDevice->setTintColor(Color(4096, 4096, 2048, 2048));
 		return true;
 	}
 
@@ -209,14 +209,14 @@ public:
 
 	bool fill(GfxDevice * pDevice, const RectSPX& canvas)
 	{
-		pDevice->fill(canvas, Color8::White);
+		pDevice->fill(canvas, Color::White);
 		return true;
 	}
 
 	bool subpixelFill(GfxDevice * pDevice, const RectSPX& canvas)
 	{
-		pDevice->fill(RectSPX(canvas.x + 10*64 + 21, canvas.y + 12*64 + 40, canvas.w/2 + 13, canvas.h/3 + 7), Color8::White);
-		pDevice->fill(RectSPX(canvas.x + canvas.w/2 + 33, canvas.y + canvas.h/2 + 5, canvas.w/3 + 50, canvas.h/3 + 60), HiColor(4096, 4096, 4096, 2048));
+		pDevice->fill(RectSPX(canvas.x + 10*64 + 21, canvas.y + 12*64 + 40, canvas.w/2 + 13, canvas.h/3 + 7), Color::White);
+		pDevice->fill(RectSPX(canvas.x + canvas.w/2 + 33, canvas.y + canvas.h/2 + 5, canvas.w/3 + 50, canvas.h/3 + 60), Color(4096, 4096, 4096, 2048));
 		return true;
 	}
 
@@ -248,7 +248,7 @@ private:
 
 	static const int c_segments = 5;
 
-	HiColor		m_segmentColors[c_segments] = { Color8::Red, Color8::Orange, Color8::Yellow, Color8::Green, Color8::Blue };
+	Color		m_segmentColors[c_segments] = { Color::Red, Color::Orange, Color::Yellow, Color::Green, Color::Blue };
 
 	Surface_p	m_pImg;
 

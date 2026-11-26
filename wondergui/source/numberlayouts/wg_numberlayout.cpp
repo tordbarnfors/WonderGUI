@@ -48,7 +48,7 @@ namespace wg
 		TextAttr		baseAttr;
 		pBaseStyle->exportAttr(state, &baseAttr, scale);
 
-		HiColor	baseTint = pDevice->tintColor();
+		Color	baseTint = pDevice->tintColor();
 
 		Glyph glyph[2];
 		Glyph* pGlyph = &glyph[0];

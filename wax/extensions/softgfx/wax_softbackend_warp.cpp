@@ -428,7 +428,7 @@ namespace wax
 									 !(bAlphaOnly && (m_blendMode == BlendMode::Multiply || m_blendMode == BlendMode::Min)));
 
 			const bool bDeviceFlat = m_softTint.isFlat();
-			const HiColor deviceColor = bDeviceFlat ? m_softTint.flatColor() : HiColor::White;
+			const Color deviceColor = bDeviceFlat ? m_softTint.flatColor() : Color::White;
 
 			for (int seg = 0; seg < nSegments; seg++)
 			{
@@ -438,7 +438,7 @@ namespace wax
 				w.bTinted[seg] = !segTint.isFlat();
 
 				const uint16_t* pNoWords = nullptr;
-				const HiColor* pNoColors = nullptr;
+				const Color* pNoColors = nullptr;
 
 				if (w.bTinted[seg])
 					m_shapeSegments[seg].bActive = false;
@@ -447,7 +447,7 @@ namespace wax
 
 				w.flat[seg] = segTint.flatColor();
 
-				HiColor c = (w.bTinted[seg] ? HiColor::White : segTint.flatColor()) * deviceColor;
+				Color c = (w.bTinted[seg] ? Color::White : segTint.flatColor()) * deviceColor;
 
 				w.mix[seg][0] = int16_t((c.b * c.a) >> 12);
 				w.mix[seg][1] = int16_t((c.g * c.a) >> 12);
@@ -457,7 +457,7 @@ namespace wax
 		}
 		else
 		{
-			// Source is read into a HiColor buffer with the first pass of two-pass blits, then
+			// Source is read into a Color buffer with the first pass of two-pass blits, then
 			// drawn with the coverage kernel.
 
 			SoftSurface* pSource = m_pBlitSource;
@@ -517,7 +517,7 @@ namespace wax
 			{
 				char errorMsg[1024];
 
-				snprintf(errorMsg, 1024, "Failed WarpBlit operation. SoftBackend is missing transform kernel reading %s into HiColor buffer.",
+				snprintf(errorMsg, 1024, "Failed WarpBlit operation. SoftBackend is missing transform kernel reading %s into Color buffer.",
 					toString(srcFormat));
 
 				Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
@@ -1406,19 +1406,19 @@ namespace wax
 
 		// Device tint along the row, unless flat and already in the colors.
 
-		const HiColor* pDevice = nullptr;
-		HiColor deviceFlat = m_softTint.flatColor();
+		const Color* pDevice = nullptr;
+		Color deviceFlat = m_softTint.flatColor();
 
 		if (!m_softTint.isFlat())
 		{
-			HiColor* p = _warpBuffer(c_maxSegments + 1, xEnd - xBeg);
+			Color* p = _warpBuffer(c_maxSegments + 1, xEnd - xBeg);
 			m_softTint.generate(xBeg, y, 1, 0, xEnd - xBeg, p);
 			pDevice = p - xBeg;
 		}
 
 		// Adds a pixel of a color (not premultiplied, without device tint), covered by coverage.
 
-		auto addColoredPixel = [&](int x, HiColor c, int coverage = 4096)
+		auto addColoredPixel = [&](int x, Color c, int coverage = 4096)
 		{
 			c = pDevice ? c * pDevice[x] : c * deviceFlat;
 
@@ -1500,7 +1500,7 @@ namespace wax
 			{
 				// Fully covered, colors for each pixel.
 
-				HiColor* pColors = _warpBuffer(c_maxSegments, length);
+				Color* pColors = _warpBuffer(c_maxSegments, length);
 
 				if (w.pEdgemap)
 					_warpTintSpan(w.pEdgemap->m_segmentTints[kind], pos[0], pos[1], step[0], step[1], length, pColors);
@@ -1588,7 +1588,7 @@ namespace wax
 				if (!bAny)
 					continue;
 
-				HiColor* pColors = _warpBuffer(c_maxSegments, length);
+				Color* pColors = _warpBuffer(c_maxSegments, length);
 
 				// Runs of fully covered pixels go straight onto the canvas as for solid spans, when the
 				// blit allows it, which long spans with the border of the source in them need to be fast.
@@ -1746,7 +1746,7 @@ namespace wax
 					{
 						// Each segment by its own result, see _beginWarp(). Device tint included here.
 
-						HiColor c = w.bTinted[seg] ? m_warpBuffers[seg][k] : w.flat[seg];
+						Color c = w.bTinted[seg] ? m_warpBuffers[seg][k] : w.flat[seg];
 						c = pDevice ? c * pDevice[x] : c * deviceFlat;
 
 						int a = _warpOpaqueAlpha(c.a);
@@ -1758,7 +1758,7 @@ namespace wax
 					}
 					else if (w.bTinted[seg])
 					{
-						HiColor c = m_warpBuffers[seg][k];
+						Color c = m_warpBuffers[seg][k];
 						if (!pDevice)
 							c = c * deviceFlat;
 
@@ -1782,7 +1782,7 @@ namespace wax
 
 				if (pDevice && !w.bOpaquePaint)
 				{
-					const HiColor& t = pDevice[x];
+					const Color& t = pDevice[x];
 					int ta = t.a;
 
 					px.b = int16_t((int64_t(sumB >> 12) * ((t.b * ta) >> 12)) >> 12);
@@ -2041,11 +2041,11 @@ namespace wax
 	// Colors of a segment tint for positions (x,y), (x+dx, y+dy) ... in edgemap pixels, wrapped into the periods
 	// with a center in the gap between copies in the nearest one (see WarpSetup::colorLow).
 
-	void SoftBackend::_warpTintSpan(const SoftTint& tint, int64_t x, int64_t y, int64_t dx, int64_t dy, int length, HiColor* pOutput)
+	void SoftBackend::_warpTintSpan(const SoftTint& tint, int64_t x, int64_t y, int64_t dx, int64_t dy, int length, Color* pOutput)
 	{
 		if (tint.isFlat())
 		{
-			HiColor c = tint.flatColor();
+			Color c = tint.flatColor();
 			for (int i = 0; i < length; i++)
 				pOutput[i] = c;
 			return;
@@ -2071,7 +2071,7 @@ namespace wax
 		all covered.
 	*/
 
-	bool SoftBackend::_warpReadSpan(int64_t x, int64_t y, int64_t dx, int64_t dy, int length, HiColor* pOutput, const int* pCoverage,
+	bool SoftBackend::_warpReadSpan(int64_t x, int64_t y, int64_t dx, int64_t dy, int length, Color* pOutput, const int* pCoverage,
 									uint8_t* pDirect, CoordI directPos, uint8_t* pDrawn)
 	{
 		const WarpSetup& w = m_warp;
@@ -2189,7 +2189,7 @@ namespace wax
 
 	//____ _warpBuffer() ________________________________________________________
 
-	HiColor* SoftBackend::_warpBuffer(int index, int length)
+	Color* SoftBackend::_warpBuffer(int index, int length)
 	{
 		auto& buffer = m_warpBuffers[index];
 		if ((int)buffer.size() < length)

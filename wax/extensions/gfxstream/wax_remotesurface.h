@@ -78,8 +78,8 @@ namespace wax
 
 		//.____  Rendering ____________________________________________________
 
-		bool		fill(HiColor col) override;
-		bool		fill(const RectI& region, HiColor col ) override;
+		bool		fill(Color col) override;
+		bool		fill(const RectI& region, Color col ) override;
 
 		//.____ Misc __________________________________________________________
 
@@ -101,7 +101,7 @@ namespace wax
 		StreamEncoder_p	m_pEncoder;
 		uint16_t		m_inStreamId;		// Id of this surface in the stream.
 		bool			m_bDynamic;
-		HiColor			m_fillColor = HiColor::Undefined;	// Set when created without pixels, sent with each CreateSurface.
+		Color			m_fillColor = Color::Undefined;	// Set when created without pixels, sent with each CreateSurface.
 		std::vector<Color8>	m_palette;		// Our copy of the palette, which m_pPalette points into.
 	};
 } // namespace wax

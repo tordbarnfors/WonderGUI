@@ -85,7 +85,7 @@ public:
 			for (int spl = 0; spl <= c_edgemapWidth; spl++)
 				samples[edge][spl] = int((10 + edge * 22 + std::sin(spl / 9.0 + edge * 2) * 8) * 64);
 
-		HiColor colors[3] = { HiColor::Transparent, HiColor(4096, 1024, 0, 2400), HiColor(0, 2048, 4096, 4096) };
+		Color colors[3] = { Color::Transparent, Color(4096, 1024, 0, 2400), Color(0, 2048, 4096, 4096) };
 
 		m_pEdgemap = pDevice->edgemapFactory()->createEdgemap(WGBP(Edgemap,
 			_.size = { c_edgemapWidth, c_edgemapHeight },
@@ -117,7 +117,7 @@ public:
 	{
 		pDevice->beginCanvasUpdate(m_pLayer);
 		pDevice->setBlendMode(BlendMode::Replace);
-		pDevice->fill(HiColor::Transparent);
+		pDevice->fill(Color::Transparent);
 
 		spx rowHeight = canvas.h / c_nbEffectModes;
 		spx columnWidth = canvas.w / 5;
@@ -128,13 +128,13 @@ public:
 
 			pDevice->setBlendMode(BlendMode::Blend);
 			for (int column = 0; column < 5; column++)
-				pDevice->fill(RectSPX(column * columnWidth, rowRect.y + 4 * 64, columnWidth, rowHeight - 8 * 64), HiColor(Color8(220, 120, 50, uint8_t(column * 255 / 4))));
+				pDevice->fill(RectSPX(column * columnWidth, rowRect.y + 4 * 64, columnWidth, rowHeight - 8 * 64), Color(Color8(220, 120, 50, uint8_t(column * 255 / 4))));
 
 			pDevice->setBlendMode(c_effectModes[row]);
 			pDevice->setTintColor(effectColor(row));
 			pDevice->setBlitSource(m_pSpot);
 			pDevice->stretchBlit(rowRect);
-			pDevice->setTintColor(HiColor::White);
+			pDevice->setTintColor(Color::White);
 		}
 
 		pDevice->setBlendMode(BlendMode::Blend);
@@ -158,7 +158,7 @@ public:
 		for (int row = 0; row < c_nbEffectModes; row++)
 		{
 			spx y = row * rowHeight;
-			HiColor color = effectColor(row);
+			Color color = effectColor(row);
 
 			pDevice->setBlendMode(c_effectModes[row]);
 
@@ -185,7 +185,7 @@ public:
 	{
 		pDevice->beginCanvasUpdate(m_pLayer);
 		pDevice->setBlendMode(BlendMode::Replace);
-		pDevice->fill(HiColor::Transparent);
+		pDevice->fill(Color::Transparent);
 
 		spx columnWidth = canvas.w / 4;
 		spx rowHeight = canvas.h / 4;
@@ -194,12 +194,12 @@ public:
 
 		for (int column = 0; column < 4; column++)
 			for (int row = 0; row < 4; row++)
-				pDevice->fill(RectSPX(column * columnWidth, row * rowHeight, columnWidth / 2, rowHeight), HiColor(Color8(40, 200, 90, uint8_t(255 - row * 60))));
+				pDevice->fill(RectSPX(column * columnWidth, row * rowHeight, columnWidth / 2, rowHeight), Color(Color8(40, 200, 90, uint8_t(255 - row * 60))));
 
 		// Morph over the whole column with a different source in each row, column by column
 		// with increasing morph factor.
 
-		HiColor sources[4] = { HiColor::Transparent, HiColor(Color8(230, 40, 160, 255)), HiColor(Color8(230, 40, 160, 100)), HiColor(Color8(255, 255, 255, 30)) };
+		Color sources[4] = { Color::Transparent, Color(Color8(230, 40, 160, 255)), Color(Color8(230, 40, 160, 100)), Color(Color8(255, 255, 255, 30)) };
 
 		pDevice->setBlendMode(BlendMode::Morph);
 
@@ -228,8 +228,8 @@ public:
 	{
 		pDevice->beginCanvasUpdate(m_pAlphaCanvas);
 		pDevice->setBlendMode(BlendMode::Replace);
-		pDevice->fill(RectSPX(0, 0, canvas.w / 2, canvas.h), HiColor(0, 0, 0, 2048));
-		pDevice->fill(RectSPX(canvas.w / 2, 0, canvas.w - canvas.w / 2, canvas.h), HiColor(0, 0, 0, 4096));
+		pDevice->fill(RectSPX(0, 0, canvas.w / 2, canvas.h), Color(0, 0, 0, 2048));
+		pDevice->fill(RectSPX(canvas.w / 2, 0, canvas.w - canvas.w / 2, canvas.h), Color(0, 0, 0, 4096));
 
 		BlendMode modes[c_nbEffectModes + 3] = { BlendMode::Replace, BlendMode::Blend, BlendMode::Morph,
 												 BlendMode::Add, BlendMode::Subtract, BlendMode::Multiply, BlendMode::Invert, BlendMode::Min, BlendMode::Max };
@@ -242,9 +242,9 @@ public:
 			spx y = row * rowHeight;
 
 			pDevice->setBlendMode(modes[row]);
-			pDevice->fill(RectSPX(10 * 64 + 21, y + 6 * 64 + 40, canvas.w - 20 * 64 - 50, rowHeight / 2 - 8 * 64 + 7), HiColor(0, 0, 0, 1600));
-			pDevice->fill(RectSPX(40 * 64 + 50, y + rowHeight / 2 + 2 * 64 + 10, 150 * 64 + 13, rowHeight / 2 - 8 * 64 - 30), HiColor(0, 0, 0, 3500));
-			pDevice->drawLine({ 200 * 64, y + rowHeight - 4 * 64 }, { 330 * 64, y + rowHeight / 2 + 4 * 64 }, HiColor(0, 0, 0, 3000), 3 * 64 + 20);
+			pDevice->fill(RectSPX(10 * 64 + 21, y + 6 * 64 + 40, canvas.w - 20 * 64 - 50, rowHeight / 2 - 8 * 64 + 7), Color(0, 0, 0, 1600));
+			pDevice->fill(RectSPX(40 * 64 + 50, y + rowHeight / 2 + 2 * 64 + 10, 150 * 64 + 13, rowHeight / 2 - 8 * 64 - 30), Color(0, 0, 0, 3500));
+			pDevice->drawLine({ 200 * 64, y + rowHeight - 4 * 64 }, { 330 * 64, y + rowHeight / 2 + 4 * 64 }, Color(0, 0, 0, 3000), 3 * 64 + 20);
 			pDevice->drawEdgemap({ 360 * 64, y + rowHeight / 2 - 10 * 64 }, m_pEdgemap);
 		}
 
@@ -252,12 +252,12 @@ public:
 		pDevice->endCanvasUpdate();
 
 		pDevice->setBlendMode(BlendMode::Replace);
-		pDevice->fill(HiColor(Color8(30, 40, 70)));
+		pDevice->fill(Color(Color8(30, 40, 70)));
 		pDevice->setBlendMode(BlendMode::Blend);
-		pDevice->setTintColor(HiColor(Color8(255, 230, 160)));
+		pDevice->setTintColor(Color(Color8(255, 230, 160)));
 		pDevice->setBlitSource(m_pAlphaCanvas);
 		pDevice->blit({ 0,0 });
-		pDevice->setTintColor(HiColor::White);
+		pDevice->setTintColor(Color::White);
 		return true;
 	}
 
@@ -294,11 +294,11 @@ public:
 		drawStripes(pDevice, canvas);
 
 		spx rowHeight = canvas.h / 4;
-		HiColor colors[4] = { HiColor(Color8(250, 200, 40, 255)), HiColor(Color8(250, 200, 40, 128)), HiColor(Color8(250, 200, 40, 40)), HiColor::Transparent };
+		Color colors[4] = { Color(Color8(250, 200, 40, 255)), Color(Color8(250, 200, 40, 128)), Color(Color8(250, 200, 40, 40)), Color::Transparent };
 
 		BlendMode modes[3] = { BlendMode::Replace, BlendMode::Morph, BlendMode::BlendFixedColor };
 
-		pDevice->setFixedBlendColor(HiColor(Color8(20, 20, 200, 128)));
+		pDevice->setFixedBlendColor(Color(Color8(20, 20, 200, 128)));
 
 		for (int row = 0; row < 4; row++)
 		{
@@ -311,7 +311,7 @@ public:
 
 		pDevice->setBlendMode(BlendMode::Replace);
 		pDevice->drawEdgemap({ 380 * 64, 30 * 64 }, m_pEdgemap);
-		pDevice->drawLine({ 370 * 64, 120 * 64 }, { 500 * 64, 300 * 64 }, HiColor(Color8(255, 255, 255, 128)), 6 * 64 + 20);
+		pDevice->drawLine({ 370 * 64, 120 * 64 }, { 500 * 64, 300 * 64 }, Color(Color8(255, 255, 255, 128)), 6 * 64 + 20);
 
 		pDevice->setBlendMode(BlendMode::Blend);
 		pDevice->endCanvasUpdate();
@@ -331,13 +331,13 @@ public:
 	{
 		pDevice->beginCanvasUpdate(m_pLayer);
 		pDevice->setBlendMode(BlendMode::Replace);
-		pDevice->fill(HiColor::Transparent);
-		pDevice->fill(RectSPX(0, 0, canvas.w, canvas.h / 2), HiColor(Color8(220, 30, 30)));
+		pDevice->fill(Color::Transparent);
+		pDevice->fill(RectSPX(0, 0, canvas.w, canvas.h / 2), Color(Color8(220, 30, 30)));
 
-		pDevice->setFixedBlendColor(HiColor(Color8(20, 20, 200, 128)));
+		pDevice->setFixedBlendColor(Color(Color8(20, 20, 200, 128)));
 
 		BlendMode modes[3] = { BlendMode::Replace, BlendMode::BlendFixedColor, BlendMode::Morph };
-		HiColor colors[3] = { HiColor(Color8(0, 0, 0, 128)), HiColor(Color8(250, 200, 40, 200)), HiColor::Transparent };
+		Color colors[3] = { Color(Color8(0, 0, 0, 128)), Color(Color8(250, 200, 40, 200)), Color::Transparent };
 
 		spx columnWidth = canvas.w / 3;
 
@@ -374,7 +374,7 @@ private:
 
 	void drawStripes(GfxDevice * pDevice, const RectSPX& canvas)
 	{
-		HiColor stripes[8] = { Color8(0, 0, 0), Color8(255, 255, 255), Color8(128, 128, 128), Color8(200, 60, 40),
+		Color stripes[8] = { Color8(0, 0, 0), Color8(255, 255, 255), Color8(128, 128, 128), Color8(200, 60, 40),
 							   Color8(40, 160, 60), Color8(40, 70, 200), Color8(230, 220, 60), Color8(60, 30, 80) };
 
 		pDevice->setBlendMode(BlendMode::Replace);
@@ -391,12 +391,12 @@ private:
 	void drawCheckerboard(GfxDevice * pDevice, const RectSPX& canvas)
 	{
 		pDevice->setBlendMode(BlendMode::Replace);
-		pDevice->fill(canvas, HiColor(Color8(90, 90, 90)));
+		pDevice->fill(canvas, Color(Color8(90, 90, 90)));
 
 		spx square = 16 * 64;
 		for (spx y = 0; y < canvas.h; y += square)
 			for (spx x = (y / square) % 2 ? square : 0; x < canvas.w; x += square * 2)
-				pDevice->fill(RectSPX(canvas.x + x, canvas.y + y, square, square), HiColor(Color8(160, 160, 160)));
+				pDevice->fill(RectSPX(canvas.x + x, canvas.y + y, square, square), Color(Color8(160, 160, 160)));
 
 		pDevice->setBlendMode(BlendMode::Blend);
 	}
@@ -408,14 +408,14 @@ private:
 
 	inline static const BlendMode c_effectModes[c_nbEffectModes] = { BlendMode::Add, BlendMode::Subtract, BlendMode::Multiply, BlendMode::Invert, BlendMode::Min, BlendMode::Max };
 
-	// Color for each effect mode. Not a static table, since converting Color8 to HiColor needs
+	// Color for each effect mode. Not a static table, since converting Color8 to Color needs
 	// tables that wax::Base sets up at runtime.
 
-	static HiColor effectColor(int mode)
+	static Color effectColor(int mode)
 	{
 		const Color8 colors[c_nbEffectModes] = { Color8(120, 180, 255), Color8(120, 180, 255), Color8(80, 200, 255),
 												 Color8(255, 255, 255), Color8(30, 40, 120), Color8(255, 240, 120) };
-		return HiColor(colors[mode]);
+		return Color(colors[mode]);
 	}
 
 	Surface_p		m_pLogo;

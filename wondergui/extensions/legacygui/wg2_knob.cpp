@@ -973,9 +973,9 @@ void WgKnob::_redrawBackBuffer(WgRect region)
 
 				if (bLinear)
 				{
-					col.r = wg::HiColor::packLinearTab[wg::HiColor::unpackSRGBTab[col.r]];
-					col.g = wg::HiColor::packLinearTab[wg::HiColor::unpackSRGBTab[col.g]];
-					col.b = wg::HiColor::packLinearTab[wg::HiColor::unpackSRGBTab[col.b]];
+					col.r = wg::Color::packLinearTab[wg::Color::unpackSRGBTab[col.r]];
+					col.g = wg::Color::packLinearTab[wg::Color::unpackSRGBTab[col.g]];
+					col.b = wg::Color::packLinearTab[wg::Color::unpackSRGBTab[col.b]];
 				}
 
 				color = (col.b) | ((col.g) << 8) | ((col.r) << 16) | ((col.a) << 24);

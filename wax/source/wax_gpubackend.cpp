@@ -515,7 +515,7 @@ namespace wax
 
 	void GpuBackend::_resetStates()
 	{
-		m_tintColor = HiColor::White;
+		m_tintColor = Color::White;
 		m_pixelConstants.tintOfs = -1;
 		m_activeBlendMode = BlendMode::Blend;
 		m_morphFactor = 0.5f;
@@ -557,7 +557,7 @@ namespace wax
 
 	//____ setColors() ___________________________________________________________
 
-	void GpuBackend::setColors(const HiColor* pBeg, const HiColor* pEnd)
+	void GpuBackend::setColors(const Color* pBeg, const Color* pEnd)
 	{
 		m_pColorsBeg = pBeg;
 		m_pColorsEnd = pEnd;
@@ -593,7 +593,7 @@ namespace wax
 			return;
 
 		const RectSPX*	pRects = m_pRectsPtr;
-		const HiColor*	pColors = m_pColorsPtr;
+		const Color*	pColors = m_pColorsPtr;
 
 		auto p = pBeg;
 		while (p < pEnd)
@@ -616,7 +616,7 @@ namespace wax
 				case Command::Fill:
 				{
 					int32_t nRects = *p++;
-					HiColor col = *pColors++;
+					Color col = *pColors++;
 
 					_drawFillRects(pRects, nRects, col);
 					pRects += nRects;
@@ -789,7 +789,7 @@ namespace wax
 	// of the pixels along its edges worked out, which is a different pipeline and an entry in the
 	// extras buffer. A single command can hold both kinds, so runs are drawn as the kind changes.
 
-	void GpuBackend::_drawFillRects(const RectSPX* pRects, int nRects, HiColor color)
+	void GpuBackend::_drawFillRects(const RectSPX* pRects, int nRects, Color color)
 	{
 		if (nRects <= 0)
 			return;
@@ -893,7 +893,7 @@ namespace wax
 	// by another, and a command with only those would otherwise switch pipelines twice, which on
 	// GlBackend on Windows took more time than drawing a short line.
 
-	void GpuBackend::_drawLines(const uint16_t*& pCmd, const RectSPX*& pRects, const HiColor*& pColors, int nClipRects, int nLines)
+	void GpuBackend::_drawLines(const uint16_t*& pCmd, const RectSPX*& pRects, const Color*& pColors, int nClipRects, int nLines)
 	{
 		const RectSPX* pClipRects = pRects;
 		pRects += nClipRects;
@@ -906,7 +906,7 @@ namespace wax
 			// The data of a line we can't draw has to be stepped through too, or we lose track of
 			// where we are in the command stream.
 
-			HiColor col = *pColors++;
+			Color col = *pColors++;
 
 			auto p32 = (const spx*) pCmd;
 
@@ -1007,7 +1007,7 @@ namespace wax
 		if (!_setPipeline(PipelineKind::ShapeLine))
 			return;
 
-		int colorOfs = _addColor(HiColor::White);
+		int colorOfs = _addColor(Color::White);
 		if (colorOfs < 0)
 			return;
 
@@ -1048,7 +1048,7 @@ namespace wax
 
 	//____ _addColor() ___________________________________________________________
 
-	int GpuBackend::_addColor(HiColor color)
+	int GpuBackend::_addColor(Color color)
 	{
 		if (m_buffers.pColorPtr == m_buffers.pColorEnd)
 		{
@@ -1367,7 +1367,7 @@ namespace wax
 		// _addColor() multiplies by the tint, so what a blit wants here is white. Passing the tint
 		// would apply it twice.
 
-		int colorOfs = bDraw ? _addColor(HiColor::White) : -1;
+		int colorOfs = bDraw ? _addColor(Color::White) : -1;
 
 		if (colorOfs < 0)
 			bDraw = false;
@@ -1557,7 +1557,7 @@ namespace wax
 		// _addColor() multiplies by the tint, so white is what gets the tint applied exactly once.
 		// Passing the tint itself would square it.
 
-		int colorOfs = _addColor(HiColor::White);
+		int colorOfs = _addColor(Color::White);
 
 		// What the vertex shader gets the place in the edgemap from, as for a blit: the column (u)
 		// and the distance down it (v) at the top left corner with where that corner is, and the
@@ -1621,7 +1621,7 @@ namespace wax
 	// and tint blocks of its segments in the color buffer. Its segment colors are written as given,
 	// the tint color comes with the white color of the vertices, as for edgemaps.
 
-	void GpuBackend::_drawShape(ShapeKind kind, const uint16_t* pPayload, const RectSPX* pRects, int nRects, const HiColor* pColors)
+	void GpuBackend::_drawShape(ShapeKind kind, const uint16_t* pPayload, const RectSPX* pRects, int nRects, const Color* pColors)
 	{
 		int maxEntries, nSegments;
 		GpuShapes::measure(kind, pPayload, maxEntries, nSegments);
@@ -1644,7 +1644,7 @@ namespace wax
 
 		// _addColor() multiplies by the tint color, so white is what gets it applied exactly once.
 
-		int colorOfs = _addColor(HiColor::White);
+		int colorOfs = _addColor(Color::White);
 		if (colorOfs < 0)
 			return;
 
@@ -1677,7 +1677,7 @@ namespace wax
 			if (seg.pTint)
 			{
 				TintTools::DecodedTint tint;
-				const HiColor* pTintColors = seg.pTintColors;
+				const Color* pTintColors = seg.pTintColors;
 				TintTools::decodeTint(seg.pTint, pTintColors, tint);
 
 				int blockSize = TintTools::gpuTintBlockSize(tint);
@@ -1765,7 +1765,7 @@ namespace wax
 
 		// _addColor() multiplies by the tint color, so white is what gets it applied exactly once.
 
-		int colorOfs = _addColor(HiColor::White);
+		int colorOfs = _addColor(Color::White);
 		if (colorOfs < 0)
 			return;
 

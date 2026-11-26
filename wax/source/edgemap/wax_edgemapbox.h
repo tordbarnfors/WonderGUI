@@ -116,7 +116,7 @@ namespace wax
 		bool				m_bOutline = false;					// Has an outline, otherwise m_inner isn't used.
 		double				m_centerX = 0, m_centerY = 0;
 
-		HiColor				m_colors[2];						// Fill and outline.
+		Color				m_colors[2];						// Fill and outline.
 		bool				m_bFillDrawn = false;
 		bool				m_bOutlineDrawn = false;
 

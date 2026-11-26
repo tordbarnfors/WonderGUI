@@ -105,7 +105,7 @@ public:
 
 	bool draw(GfxDevice * pDevice, const RectSPX& canvas)
 	{
-		HiColor stripes[6] = { Color8(0, 0, 0), Color8(96, 96, 96), Color8(200, 200, 200),
+		Color stripes[6] = { Color8(0, 0, 0), Color8(96, 96, 96), Color8(200, 200, 200),
 							   Color8(255, 255, 255), Color8(220, 60, 40), Color8(40, 90, 210) };
 
 		BlendMode mode = pDevice->blendMode();

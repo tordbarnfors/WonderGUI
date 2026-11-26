@@ -13,12 +13,12 @@ namespace
 	void build(TestContext& ctx)
 	{
 		auto pItemSkin = BoxSkin::create({
-			.color = Color8::LightYellow,
-			.outlineColor = Color8::Black,
+			.color = Color::LightYellow,
+			.outlineColor = Color::Black,
 			.outlineThickness = 1,
 			.padding = 8,
 			.states = {
-				{State::Hovered, Color8::LightCyan}
+				{State::Hovered, Color::LightCyan}
 			}
 		});
 

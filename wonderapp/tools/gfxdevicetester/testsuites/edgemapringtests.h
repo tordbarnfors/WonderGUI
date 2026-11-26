@@ -24,16 +24,16 @@ public:
 			return EdgemapRing::create(WGBP(EdgemapRing, _.factory = pDevice->edgemapFactory()), spec);
 		};
 
-		std::vector<RingSlice> seven = { { 0.1f, Color8::Red }, { 0.2f, Color8::Orange }, { 0.05f, Color8::Yellow }, { 0.15f, Color8::Green },
-										 { 0.25f, Color8::Blue }, { 0.13f, Color8::Indigo }, { 0.12f, Color8::Violet } };
+		std::vector<RingSlice> seven = { { 0.1f, Color::Red }, { 0.2f, Color::Orange }, { 0.05f, Color::Yellow }, { 0.15f, Color::Green },
+										 { 0.25f, Color::Blue }, { 0.13f, Color::Indigo }, { 0.12f, Color::Violet } };
 
 		RingSpec spec;
 
 		spec.rect = canvas;
 		spec.thickness = 20 * 64;
 		spec.outline = 2 * 64;
-		spec.outlineColor = Color8::White;
-		m_pOutlinedDonut = create(spec, { { 1.f, Color8::Blue } });
+		spec.outlineColor = Color::White;
+		m_pOutlinedDonut = create(spec, { { 1.f, Color::Blue } });
 
 		// Center between pixels.
 
@@ -46,16 +46,16 @@ public:
 		spec.rect = { canvas.x + 20 * 64, canvas.y + 20 * 64, canvas.w - 40 * 64, canvas.w - 40 * 64 };
 		spec.thickness = canvas.w / 6;
 		spec.outline = 2 * 64;
-		spec.outlineColor = Color8::White;
-		spec.hubColor = Color8::DarkGray;
+		spec.outlineColor = Color::White;
+		spec.hubColor = Color::DarkGray;
 		m_pDonutChart = create(spec, seven);
 
 		spec = {};
 		spec.rect = { canvas.x + 40 * 64, canvas.y + 40 * 64, canvas.w - 80 * 64, canvas.w - 80 * 64 };
 		spec.thickness = 24 * 64;
 		spec.start = 0.625f;
-		spec.backColor = HiColor(4096, 4096, 4096, 1024);
-		m_pGauge = create(spec, { { 0.45f, Color8::Cyan }, { 0.3f, HiColor::Undefined } });
+		spec.backColor = Color(4096, 4096, 4096, 1024);
+		m_pGauge = create(spec, { { 0.45f, Color::Cyan }, { 0.3f, Color::Undefined } });
 
 		return m_pOutlinedDonut && m_pPieChart && m_pDonutChart && m_pGauge;
 	}

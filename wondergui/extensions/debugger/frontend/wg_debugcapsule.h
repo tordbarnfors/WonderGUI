@@ -133,9 +133,9 @@ namespace wg
 				m_pSelectionSkin = bp.selectionSkin;
 			else
 				m_pSelectionSkin = BoxSkin::create( WGBP(BoxSkin,
-														 _.color = HiColor(Color8::LightCyan).withAlpha(2048);
+														 _.color = Color(Color::LightCyan).withAlpha(2048);
 														 _.outlineThickness = 1,
-														 _.outlineColor = Color8::DarkCyan;
+														 _.outlineColor = Color::DarkCyan;
 													) );
 			_startReceiveUpdates();
 

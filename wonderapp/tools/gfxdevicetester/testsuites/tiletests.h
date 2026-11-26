@@ -379,7 +379,7 @@ private:
 
 	static const int NEAREST = 0, BILINEAR = 1;
 
-	inline static const HiColor c_tint = HiColor(4096, 3000, 2000, 4096);
+	inline static const Color c_tint = Color(4096, 3000, 2000, 4096);
 
 	// Opaque pattern where each pixel differs from its neighbors: red and green ramps
 	// along x and y, and blue that changes with every step in either direction.

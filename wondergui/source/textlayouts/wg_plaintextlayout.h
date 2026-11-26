@@ -52,9 +52,9 @@ namespace wg
 			float		paragraphSpacing	= 0.f;					// Add to lineSpacing at hard line endings.
 			Placement	placement			= Placement::NorthWest;
 			BlendMode	selectionBackBlend	= BlendMode::Invert;
-			HiColor		selectionBackColor	= HiColor::White;
+			Color		selectionBackColor	= Color::White;
 			BlendMode	selectionCharBlend	= BlendMode::Invert;
-			HiColor		selectionCharColor	= HiColor::White;
+			Color		selectionCharColor	= Color::White;
 			int			tabWidth			= 8;					// Number of whitespace characters a tab corresonds to.
 			bool		wrap				= false;
 		};

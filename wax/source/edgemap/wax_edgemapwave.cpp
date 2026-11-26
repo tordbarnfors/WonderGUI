@@ -143,7 +143,7 @@ namespace wax
 
 	//____ setColor() _____________________________________________________________
 
-	bool EdgemapWave::setColor( HiColor col )
+	bool EdgemapWave::setColor( Color col )
 	{
 		if( !col.isValid() )
 			return false;
@@ -169,7 +169,7 @@ namespace wax
 
 	//____ setOutlineColor() _____________________________________________________
 
-	bool EdgemapWave::setOutlineColor( HiColor col )
+	bool EdgemapWave::setOutlineColor( Color col )
 	{
 		if( !col.isValid() )
 			return false;
@@ -619,7 +619,7 @@ namespace wax
 	{
 		Edgemap * pEdgemap = m_pieces[0].pEdgemap;
 
-		HiColor	colors[5];
+		Color	colors[5];
 		int nSegments = _generateColorPalette(colors);
 		pEdgemap->setColors( 0, nSegments, colors );
 
@@ -637,7 +637,7 @@ namespace wax
 	{
 		EdgemapFactory_p pFactory = _factoryOrDefault(m_pFactory);
 
-		HiColor	colors[5];
+		Color	colors[5];
 		Tint_p	tints[5];
 
 		int nSegments = _generateColorPalette( colors );
@@ -658,16 +658,16 @@ namespace wax
 
 	//____ _generateColorPalette() _______________________________________________
 
-	int EdgemapWave::_generateColorPalette( HiColor * pDest )
+	int EdgemapWave::_generateColorPalette( Color * pDest )
 	{
-		HiColor * p = pDest;
-		* p++ = Color8::Transparent;
+		Color * p = pDest;
+		* p++ = Color::Transparent;
 		if( m_bHasOutlines )
 			* p++ = m_outlineColor;
 		* p++ = m_color;
 		if( m_bHasOutlines )
 			* p++ = m_outlineColor;
-		* p++ = Color8::Transparent;
+		* p++ = Color::Transparent;
 
 		return int(p - pDest);
 	}

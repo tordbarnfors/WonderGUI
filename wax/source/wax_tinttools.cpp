@@ -30,7 +30,7 @@ namespace wax
 {
 namespace TintTools
 {
-	// HiColor channels are sRGB, so Tints are interpolated directly on them. Renderers
+	// Color channels are sRGB, so Tints are interpolated directly on them. Renderers
 	// convert the resulting colors to linear before blending.
 
 	//____ canvasGeometry() ___________________________________________________
@@ -100,7 +100,7 @@ namespace TintTools
 
 	//____ mixColors() ________________________________________________________
 
-	HiColor mixColors(HiColor from, HiColor to, float fraction)
+	Color mixColors(Color from, Color to, float fraction)
 	{
 		if (fraction <= 0.f)
 			return from;
@@ -109,7 +109,7 @@ namespace TintTools
 
 		auto lerp = [fraction](float a, float b) { return (int) std::lround(a + (b - a) * fraction); };
 
-		return HiColor(lerp(from.r, to.r), lerp(from.g, to.g), lerp(from.b, to.b), lerp(from.a, to.a));
+		return Color(lerp(from.r, to.r), lerp(from.g, to.g), lerp(from.b, to.b), lerp(from.a, to.a));
 	}
 
 	//____ _floorDiv() ________________________________________________________
@@ -122,7 +122,7 @@ namespace TintTools
 
 	//____ _clampedStopColor() ________________________________________________
 
-	static inline void _clampedStopColor(const HiColor& color, int* pOut)
+	static inline void _clampedStopColor(const Color& color, int* pOut)
 	{
 		auto clamp = [](int v) { return v < 0 ? 0 : v > 4096 ? 4096 : v; };
 
@@ -134,7 +134,7 @@ namespace TintTools
 
 	//____ buildLUT() _________________________________________________________
 
-	void buildLUT(const TintLayer& layer, int entries, HiColor* pOutput, HiColor multiplier)
+	void buildLUT(const TintLayer& layer, int entries, Color* pOutput, Color multiplier)
 	{
 		// Entry i is sampled at (i + 0.5) / (entries - 1), so that a renderer that looks up floor(position * (entries - 1))
 		// gets the color of the middle of the span the entry covers and hard edges end up exactly on entry boundaries.
@@ -152,7 +152,7 @@ namespace TintTools
 
 		if (entries == 1 || nStops <= 1)
 		{
-			HiColor color = layerColorAtFixed(layer, 0, multiplier);
+			Color color = layerColorAtFixed(layer, 0, multiplier);
 			for (int i = 0; i < entries; i++)
 				pOutput[i] = color;
 			return;
@@ -163,7 +163,7 @@ namespace TintTools
 
 		const int	spans = std::min(entries, 4097) - 1;
 		const int	entryStep = 2 * 65535;
-		const bool	bMultiply = (multiplier != HiColor::White);
+		const bool	bMultiply = (multiplier != Color::White);
 
 		int		colors[Tint::c_maxStops][4];
 		for (int s = 0; s < nStops; s++)
@@ -171,7 +171,7 @@ namespace TintTools
 
 		auto put = [&](int i, const int* pColor)
 		{
-			HiColor& out = pOutput[i];
+			Color& out = pOutput[i];
 			out.r = (int16_t) pColor[0];
 			out.g = (int16_t) pColor[1];
 			out.b = (int16_t) pColor[2];
@@ -255,7 +255,7 @@ namespace TintTools
 
 	//____ layerColorAtFixed() ________________________________________________
 
-	HiColor layerColorAtFixed(const TintLayer& layer, int position, HiColor multiplier)
+	Color layerColorAtFixed(const TintLayer& layer, int position, Color multiplier)
 	{
 		// Same choice of stops as buildLUT(): right limit at hard edges, except for a hard edge
 		// at the first stop, which is left of it.
@@ -288,8 +288,8 @@ namespace TintTools
 				color[c] = from[c] + _floorDiv(2 * (to[c] - from[c]) * ofs + span, 2 * span);
 		}
 
-		HiColor out(color[0], color[1], color[2], color[3]);
-		return multiplier == HiColor::White ? out : out * multiplier;
+		Color out(color[0], color[1], color[2], color[3]);
+		return multiplier == Color::White ? out : out * multiplier;
 	}
 
 	//____ lutBitsForLayer() __________________________________________________
@@ -358,7 +358,7 @@ namespace TintTools
 
 	//____ writeGpuTintBlock() ________________________________________________
 
-	void writeGpuTintBlock(const DecodedTint& tint, float* pOutput, HiColor multiplier)
+	void writeGpuTintBlock(const DecodedTint& tint, float* pOutput, Color multiplier)
 	{
 		float* p = pOutput;
 
@@ -390,7 +390,7 @@ namespace TintTools
 
 			for (int i = 0; i < nStops; i++)
 			{
-				HiColor c = layer.stopColors[i] * multiplier;
+				Color c = layer.stopColors[i] * multiplier;
 
 				p[0] = c.r / 4096.f;
 				p[1] = c.g / 4096.f;
@@ -403,7 +403,7 @@ namespace TintTools
 
 	//____ encodeTint() _______________________________________________________
 
-	int encodeTint(const Tint* pTint, const RectSPX& rect, uint16_t* pWords, HiColor* pColors, int& nColors)
+	int encodeTint(const Tint* pTint, const RectSPX& rect, uint16_t* pWords, Color* pColors, int& nColors)
 	{
 		uint16_t* p = pWords;
 		nColors = 0;
@@ -491,7 +491,7 @@ namespace TintTools
 
 	//____ decodeTint() _______________________________________________________
 
-	const uint16_t* decodeTint(const uint16_t* pWords, const HiColor*& pColors, DecodedTint& output)
+	const uint16_t* decodeTint(const uint16_t* pWords, const Color*& pColors, DecodedTint& output)
 	{
 		const uint16_t* p = pWords;
 
@@ -525,7 +525,7 @@ namespace TintTools
 			for (int i = 0; i < nStops; i++)
 			{
 				uint16_t pos = *p++;
-				HiColor color = *pColors++;
+				Color color = *pColors++;
 
 				if (i < nStored)
 				{

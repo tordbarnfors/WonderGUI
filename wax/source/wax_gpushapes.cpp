@@ -56,7 +56,7 @@ namespace wax
 
 			// Steps past an encoded tint if bTinted, returns where it starts or null.
 
-			const uint16_t* takeTint(bool bTinted, const uint16_t*& pTint, const HiColor*& pTintColors, const HiColor*& pColorsOfTint)
+			const uint16_t* takeTint(bool bTinted, const uint16_t*& pTint, const Color*& pTintColors, const Color*& pColorsOfTint)
 			{
 				if (!bTinted)
 				{
@@ -75,7 +75,7 @@ namespace wax
 
 			//____ writeRoundedBox() __________________________________________
 
-			int writeRoundedBox(const uint16_t* pPayload, const HiColor* pColors, float* pEntries, Segment* pSegments)
+			int writeRoundedBox(const uint16_t* pPayload, const Color* pColors, float* pEntries, Segment* pSegments)
 			{
 				using Flags = Backend::RoundedBoxFlags;
 
@@ -110,13 +110,13 @@ namespace wax
 				const bool bOutlineDrawn = has(Flags::HasOutline);
 
 				const uint16_t* pTint = box.pTints;
-				const HiColor* pTintColors = pColors + (bFill ? 1 : 0) + (bOutlineDrawn ? 1 : 0);
+				const Color* pTintColors = pColors + (bFill ? 1 : 0) + (bOutlineDrawn ? 1 : 0);
 
 				auto segment = [&](Segment& seg, int entry, bool bDrawn, bool bTinted)
 				{
 					seg.entry = entry;
 					seg.bDrawn = bDrawn;
-					seg.color = bDrawn ? *pColors++ : HiColor::Transparent;
+					seg.color = bDrawn ? *pColors++ : Color::Transparent;
 					seg.pTint = takeTint(bTinted, pTint, pTintColors, seg.pTintColors);
 					put(pEntries, entry, -1.f, -1.f, 0.f, 0.f);
 				};
@@ -128,7 +128,7 @@ namespace wax
 
 			//____ writeRing() ________________________________________________
 
-			int writeRing(const uint16_t* pPayload, const HiColor* pColors, float* pEntries, Segment* pSegments)
+			int writeRing(const uint16_t* pPayload, const Color* pColors, float* pEntries, Segment* pSegments)
 			{
 				using Flags = Backend::RingFlags;
 				using SliceFlags = Backend::RingSliceFlags;
@@ -196,7 +196,7 @@ namespace wax
 				const int backEntry = 5;
 				const int firstSliceEntry = 8;
 
-				const HiColor* pTintColors = pColors + (has(Flags::HasOutline) ? 1 : 0) + (has(Flags::HasHub) ? 1 : 0) + (has(Flags::HasBack) ? 1 : 0);
+				const Color* pTintColors = pColors + (has(Flags::HasOutline) ? 1 : 0) + (has(Flags::HasHub) ? 1 : 0) + (has(Flags::HasBack) ? 1 : 0);
 				for (int i = 0; i < nSlices; i++)
 					if (sliceHas(i, SliceFlags::Drawn))
 						pTintColors++;
@@ -207,7 +207,7 @@ namespace wax
 				{
 					seg.entry = entry;
 					seg.bDrawn = bDrawn;
-					seg.color = bDrawn ? *pColors++ : HiColor::Transparent;
+					seg.color = bDrawn ? *pColors++ : Color::Transparent;
 					seg.pTint = takeTint(bTinted, pTint, pTintColors, seg.pTintColors);
 					put(pEntries, entry, -1.f, -1.f, 0.f, 0.f);
 				};
@@ -286,7 +286,7 @@ namespace wax
 
 		//____ write() ________________________________________________________
 
-		int write(Backend::ShapeKind kind, const uint16_t* pPayload, const HiColor* pColors, float* pEntries, Segment* pSegments)
+		int write(Backend::ShapeKind kind, const uint16_t* pPayload, const Color* pColors, float* pEntries, Segment* pSegments)
 		{
 			if (kind == Backend::ShapeKind::RoundedBox)
 				return writeRoundedBox(pPayload, pColors, pEntries, pSegments);

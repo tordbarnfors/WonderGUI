@@ -47,13 +47,13 @@ namespace wg
 		struct Slice
 		{
 			float	size = -1.f;
-			HiColor	minColor;
-			HiColor	maxColor;
+			Color	minColor;
+			Color	maxColor;
 		};
 
 		struct Blueprint
 		{
-			HiColor		backColor = HiColor::Transparent;
+			Color		backColor = Color::Transparent;
 
 			BlendMode	blendMode = BlendMode::Blend;
 			Size		defaultSize;
@@ -66,12 +66,12 @@ namespace wg
 			// loss.
 
 			EdgemapFactory_p edgemapFactory;
-			HiColor		emptyColor = Color8::DarkBlue;
+			Color		emptyColor = Color::DarkBlue;
 
 			Finalizer_p	finalizer = nullptr;
 			Border		gfxPadding;
 
-			HiColor		hubColor = HiColor::Transparent;
+			Color		hubColor = Color::Transparent;
 			float		hubSize = 0.75f;
 
 			int			layer = -1;
@@ -143,9 +143,9 @@ namespace wg
 		Border		m_gfxPadding;
 
 		BlendMode	m_blendMode = BlendMode::Blend;
-		HiColor		m_hubColor = HiColor::Transparent;
-		HiColor		m_backColor = HiColor::Transparent;
-		HiColor		m_emptyColor = Color8::DarkBlue;
+		Color		m_hubColor = Color::Transparent;
+		Color		m_backColor = Color::Transparent;
+		Color		m_emptyColor = Color::DarkBlue;
 
 		Slice		m_slices[c_maxSlices];
 		int			m_nSlices;

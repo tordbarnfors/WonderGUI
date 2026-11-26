@@ -33,7 +33,7 @@ public:
 		m_colC = Color8(255, 80, 80, 255);
 		m_colD = Color8(80, 255, 120, 160);
 
-		HiColor colors[c_nbSegments] = { HiColor::Transparent, m_colA, m_colB, m_colC };
+		Color colors[c_nbSegments] = { Color::Transparent, m_colA, m_colB, m_colC };
 
 		float samples[c_nbEdges * (c_width + 1)];
 		for (int e = 0; e < c_nbEdges; e++)
@@ -85,7 +85,7 @@ public:
 
 	bool devTintColor(GfxDevice * pDevice, const RectSPX& canvas)
 	{
-		pDevice->setTintColor(HiColor(Color8(255, 200, 150, 220)));
+		pDevice->setTintColor(Color(Color8(255, 200, 150, 220)));
 		_draw(pDevice, canvas, 1);
 		pDevice->clearTintColor();
 		return true;
@@ -150,7 +150,7 @@ private:
 	bool _draw(GfxDevice * pDevice, const RectSPX& canvas, int kind, BlendMode blendMode = BlendMode::Blend)
 	{
 		pDevice->setBlendMode(BlendMode::Replace);
-		pDevice->fill(canvas, HiColor(Color8(30, 40, 50, 255)));
+		pDevice->fill(canvas, Color(Color8(30, 40, 50, 255)));
 		pDevice->setBlendMode(blendMode);
 
 		for (int flip = 0; flip < 12; flip++)
@@ -169,7 +169,7 @@ private:
 	static const int c_nbSegments = c_nbEdges + 1;
 	static const int c_nbKinds = 7;
 
-	HiColor		m_colA, m_colB, m_colC, m_colD;
+	Color		m_colA, m_colB, m_colC, m_colD;
 
 	Edgemap_p	m_pEdgemaps[c_nbKinds];
 	Tint_p		m_pVertical;

@@ -262,7 +262,7 @@ void WgGfxDevice::_printTextSpan( wg::GfxDevice * pDevice, WgPen& pen, const WgT
 
 	// Restore tint color.
 
-	if( pDevice->tintColor() != wg::HiColor(baseCol) )
+	if( pDevice->tintColor() != wg::Color(baseCol) )
 		pDevice->setTintColor(baseCol);
 }
 
@@ -391,7 +391,7 @@ void WgGfxDevice::_printEllipsisTextSpan( wg::GfxDevice * pDevice, WgPen& pen, c
 
 	// Restore tint color.
 
-	if( pDevice->tintColor() != wg::HiColor(baseCol) )
+	if( pDevice->tintColor() != wg::Color(baseCol) )
 		pDevice->setTintColor(baseCol);
 }
 
@@ -609,7 +609,7 @@ void WgGfxDevice::PrintLine( wg::GfxDevice * pDevice, WgPen& pen, const wg::Text
 
 	// Restore tint color.
 
-	if( pDevice->tintColor() != wg::HiColor(baseCol) )
+	if( pDevice->tintColor() != wg::Color(baseCol) )
 		pDevice->setTintColor(baseCol);
 }
 

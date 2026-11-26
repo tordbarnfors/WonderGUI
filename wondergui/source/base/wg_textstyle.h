@@ -49,9 +49,9 @@ namespace wg
 
 			Font_p			pFont;
 			spx				size = 0;
-			HiColor			color;
+			Color			color;
 			BlendMode		blendMode = BlendMode::Blend;
-			HiColor			backColor;
+			Color			backColor;
 			BlendMode		backBlendMode = BlendMode::Blend;
 			TextDecoration	decoration = TextDecoration::None;
 			TextLink_p		pLink;
@@ -79,8 +79,8 @@ namespace wg
 
 		struct StateData
 		{
-			HiColor			backColor = HiColor::Undefined;
-			HiColor			color = HiColor::Undefined;
+			Color			backColor = Color::Undefined;
+			Color			color = Color::Undefined;
 			TextDecoration	decoration = TextDecoration::Undefined;
 			pts				size = -1;
 		};
@@ -89,11 +89,11 @@ namespace wg
 		{
 			StateBP() {}
 			StateBP( State state, StateData data ) : state(state), data(data) {}
-			StateBP( State state, HiColor color ) : state(state) { data.color = color; }
+			StateBP( State state, Color color ) : state(state) { data.color = color; }
 			StateBP( State state, pts size ) : state(state)	{ data.size = size; }
 			StateBP( State state, TextDecoration decoration ) : state(state)	{ data.decoration = decoration; }
 
-			StateBP( State state, HiColor color, HiColor backColor ) : state(state)
+			StateBP( State state, Color color, Color backColor ) : state(state)
 			{
 				data.color = color;
 				data.backColor = backColor;
@@ -106,10 +106,10 @@ namespace wg
 
 		struct Blueprint
 		{
-			HiColor			backColor = HiColor::Transparent;
+			Color			backColor = Color::Transparent;
 			BlendMode		backBlendMode = BlendMode::Undefined;
 			BlendMode		blendMode = BlendMode::Undefined;
-			HiColor			color = HiColor::Undefined;
+			Color			color = Color::Undefined;
 			TextDecoration	decoration = TextDecoration::Undefined;
 			Finalizer_p		finalizer = nullptr;
 			Font_p			font = nullptr;
@@ -137,8 +137,8 @@ namespace wg
 		inline TextLink_p		link() const;
 		inline BlendMode		blendMode() const;
 		inline BlendMode		backBlendMode() const;
-		inline HiColor			color( State state ) const;
-		inline HiColor			backColor( State state ) const;
+		inline Color			color( State state ) const;
+		inline Color			backColor( State state ) const;
 		inline pts				size( State state ) const;
 		inline float			sizeScale() const { return m_sizeScale; }
 		inline TextDecoration 	decoration( State state ) const;
@@ -185,14 +185,14 @@ namespace wg
 						return m_pSizes[entry];
 		}
 
-		const HiColor&	_getColor(State state) const
+		const Color&	_getColor(State state) const
 		{
 						int idxTabEntry = (state.index() & m_colorIndexMask) >> m_colorIndexShift;
 						int entry = m_pColorIndexTab[idxTabEntry];
 						return m_pColors[entry];
 		}
 
-		const HiColor&	_getBackColor(State state) const
+		const Color&	_getBackColor(State state) const
 		{
 						int idxTabEntry = (state.index() & m_backColorIndexMask) >> m_backColorIndexShift;
 						int entry = m_pBackColorIndexTab[idxTabEntry];
@@ -222,12 +222,12 @@ namespace wg
 		uint8_t				m_colorIndexMask;
 		uint8_t				m_colorIndexShift;
 		uint8_t*			m_pColorIndexTab;			// Table with index values into m_pColors for each mode (72) or less.
-		HiColor*			m_pColors;					// Contains colors for states.
+		Color*			m_pColors;					// Contains colors for states.
 
 		uint8_t				m_backColorIndexMask;
 		uint8_t				m_backColorIndexShift;
 		uint8_t*			m_pBackColorIndexTab;		// Table with index values into m_pBackColors for each mode (72) or less.
-		HiColor*			m_pBackColors;				// Contains back colors for states.
+		Color*			m_pBackColors;				// Contains back colors for states.
 
 		uint8_t				m_decorationIndexMask;
 		uint8_t				m_decorationIndexShift;
@@ -262,13 +262,13 @@ namespace wg
 	}
 
 	//______________________________________________________________________________
-	inline HiColor TextStyle::color( State state ) const
+	inline Color TextStyle::color( State state ) const
 	{
 		return _getColor(state);
 	}
 
 	//______________________________________________________________________________
-	inline 	HiColor TextStyle::backColor( State state ) const
+	inline 	Color TextStyle::backColor( State state ) const
 	{
 		return _getBackColor(state);
 	}

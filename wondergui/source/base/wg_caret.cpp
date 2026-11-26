@@ -188,7 +188,7 @@ namespace wg
 			RectSPX r = dirtyRect(cell, scale);
 			BlendMode oldMode = pDevice->blendMode();
 			pDevice->setBlendMode(BlendMode::Invert);
-			pDevice->fill( r, HiColor::White );
+			pDevice->fill( r, Color::White );
 			pDevice->setBlendMode(oldMode);
 		}
 

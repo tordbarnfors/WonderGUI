@@ -50,7 +50,7 @@ namespace wg
 		struct StateData
 		{
 			bool			blockless = false;
-			HiColor			color = HiColor::Undefined;
+			Color			color = Color::Undefined;
 			Coord			contentShift;
 		};
 
@@ -59,7 +59,7 @@ namespace wg
 			StateBP() {}
 			StateBP( State state ) : state(state) {}
 			StateBP( State state, StateData data ) : state(state), data(data) {}
-			StateBP( State state, HiColor color, bool blockless = false ) : state(state) { data.color = color; data.blockless = blockless; }
+			StateBP( State state, Color color, bool blockless = false ) : state(state) { data.color = color; data.blockless = blockless; }
 			StateBP( State state, Coord contentShift, bool blockless = false ) : state(state)	{ data.contentShift = contentShift; data.blockless = blockless; }
 			
 			State			state = State::Default;
@@ -73,7 +73,7 @@ namespace wg
 
 			pts				blockLength;					// Required!
 			pts				blockSpacing = 0;
-			HiColor			color = HiColor::Undefined;
+			Color			color = Color::Undefined;
 
 			Finalizer_p		finalizer = nullptr;
 			Rect			firstLane;
@@ -131,7 +131,7 @@ namespace wg
 
 		RectSPX		_partInCanvas(int scale, State state, float* pStateFractions) const;
 
-		const HiColor&	_getColor(State state) const
+		const Color&	_getColor(State state) const
 		{
 			int idxTabEntry = (state.index() & m_colorIndexMask) >> m_colorIndexShift;
 			int entry = m_pColorIndexTab[idxTabEntry];
@@ -163,7 +163,7 @@ namespace wg
 		uint8_t		m_colorIndexMask;
 		uint8_t		m_colorIndexShift;
 		uint8_t*	m_pColorIndexTab;		// Table with index values into m_pStateColors for each mode (72) or less.
-		HiColor*	m_pColors;				// Contains colors for states.
+		Color*	m_pColors;				// Contains colors for states.
 
 		uint8_t		m_blockIndexMask;
 		uint8_t		m_blockIndexShift;

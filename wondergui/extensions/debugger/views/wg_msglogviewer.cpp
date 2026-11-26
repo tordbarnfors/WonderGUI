@@ -167,8 +167,8 @@ namespace wg
 
 		m_pMainPanel->slots.pushBack(m_pLogWindow, WGBP(PackPanelSlot, _.weight = 1.f));
 
-		m_entrySkin[0] = ColorSkin::create(HiColor::Transparent, 2);
-		m_entrySkin[1] = ColorSkin::create(HiColor(Color8::Blue).withAlpha(1024), 2);
+		m_entrySkin[0] = ColorSkin::create(Color::Transparent, 2);
+		m_entrySkin[1] = ColorSkin::create(Color(Color::Blue).withAlpha(1024), 2);
 
 		slot = m_pMainPanel;
 

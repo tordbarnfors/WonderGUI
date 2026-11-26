@@ -26,11 +26,11 @@ using namespace wax;
 
 //____ _fill_bgr565linear_noblend_notint() ____________________________________________________________
 
-static void _fill_bgr565linear_noblend_notint(uint8_t* pDst, int pitchX, int pitchY, int nLines, int lineLength, HiColor col, const SoftBackend::ColTrans& tint, CoordI patchPos)
+static void _fill_bgr565linear_noblend_notint(uint8_t* pDst, int pitchX, int pitchY, int nLines, int lineLength, Color col, const SoftBackend::ColTrans& tint, CoordI patchPos)
 {
 	// Generate our 32-bit double-pixel.
 
-	const uint8_t* pPackTab = HiColor::packLinearTab;
+	const uint8_t* pPackTab = Color::packLinearTab;
 
 	int16_t b = pPackTab[col.b];
 	int16_t g = pPackTab[col.g];
@@ -275,9 +275,9 @@ static void _straight_blit_alpha8_to_bgr565linear_notint_blend(const uint8_t* pS
 static void _straight_blit_alpha8_to_bgr565linear_flattint_blend(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform * pMatrix)
 {
 
-	uint8_t srcR = HiColor::packLinearTab[tint.flatTintColor.r] >> 3;
-	uint8_t srcG = HiColor::packLinearTab[tint.flatTintColor.g] >> 2;
-	uint8_t srcB = HiColor::packLinearTab[tint.flatTintColor.b] >> 3;
+	uint8_t srcR = Color::packLinearTab[tint.flatTintColor.r] >> 3;
+	uint8_t srcG = Color::packLinearTab[tint.flatTintColor.g] >> 2;
+	uint8_t srcB = Color::packLinearTab[tint.flatTintColor.b] >> 3;
 
 	// Copy loop
 
@@ -375,12 +375,12 @@ static void _straight_blit_bgra8linear_to_bgr565linear_notint_blend(const uint8_
 
 
 static uint16_t s_fixedBlendCache[256];
-static HiColor	s_fixedBlendCacheFgColor = HiColor::Undefined;
-static HiColor	s_fixedBlendCacheBgColor = HiColor::Undefined;
+static Color	s_fixedBlendCacheFgColor = Color::Undefined;
+static Color	s_fixedBlendCacheBgColor = Color::Undefined;
 
 //____ updateFixedBlendCache() ___________________________________________
 
-static void updateFixedBlendCache( HiColor bgCol, HiColor fgCol )
+static void updateFixedBlendCache( Color bgCol, Color fgCol )
 {
 	s_fixedBlendCacheBgColor = bgCol;
 	s_fixedBlendCacheFgColor = bgCol;

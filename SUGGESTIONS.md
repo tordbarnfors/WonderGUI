@@ -108,7 +108,7 @@ Layout constants are a natural use.
 
 To draw a GUI onto a transparent surface that is then laid over something else, the areas
 `RootPanel` redraws must first be cleared, or widgets that go away stay visible. What works is
-a root skin of `ColorSkin` with `BlendMode::Replace` and `HiColor::Transparent`. A sentence in
+a root skin of `ColorSkin` with `BlendMode::Replace` and `Color::Transparent`. A sentence in
 the guide, or a `RootPanel` blueprint member saying the canvas is an overlay, would save
 working it out.
 
@@ -171,7 +171,7 @@ and labels would replace that.
 
 ### A curve is an AreaChart with a transparent fill
 
-A line chart is made by giving an `AreaChart` entry `color = HiColor::Transparent`,
+A line chart is made by giving an `AreaChart` entry `color = Color::Transparent`,
 `bottomOutlineThickness = 0` and only top samples. That works well, but the only place that
 shows it is `wonderapp/tools/pluginworkbench/testplugin.cpp`. Worth a sentence in the guide's
 widget gallery.

@@ -176,7 +176,7 @@ namespace wax
 
 	//____ setColors() ___________________________________________________
 
-	void StreamTrimBackend::setColors(const HiColor* pBeg, const HiColor* pEnd)
+	void StreamTrimBackend::setColors(const Color* pBeg, const Color* pEnd)
 	{
 		if (m_pBackend)
 			m_pBackend->setColors(pBeg, pEnd);

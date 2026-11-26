@@ -168,7 +168,7 @@ namespace wax
 
 		//____ FirstPassBlits ________________________________________________
 
-		// Blits without tint or blend from source format s to DEST, which is the HiColor buffer
+		// Blits without tint or blend from source format s to DEST, which is the Color buffer
 		// (SoftFormat::Undefined) or the 8-bit linear buffer (SoftFormat::ARGB_8_linear).
 
 		template<SoftFormat DEST>
@@ -199,7 +199,7 @@ namespace wax
 
 		//____ SecondPassBlits _______________________________________________
 
-		// Blits with tint t and blend b from SRC, which is the HiColor buffer (SoftFormat::Undefined)
+		// Blits with tint t and blend b from SRC, which is the Color buffer (SoftFormat::Undefined)
 		// or the 8-bit linear buffer (SoftFormat::ARGB_8_linear), to destination format d.
 
 		template<const SoftKernelSpec& spec, SoftFormat SRC>
@@ -369,7 +369,7 @@ namespace wax
 					  "SoftKernelSpec: needs at least one tint mode, blend mode and destination format.");
 
 		// Two-pass blits go through the 8-bit linear buffer when both source and destination are
-		// linear, otherwise through the HiColor buffer, which is only needed when sRGB is involved.
+		// linear, otherwise through the Color buffer, which is only needed when sRGB is involved.
 
 		constexpr bool bFast8Blits = hasFormat(spec.srcFormats, true) && hasFormat(spec.destFormats, true);
 		constexpr bool bHiColorBlits = hasFormat(spec.srcFormats, false) || hasFormat(spec.destFormats, false);

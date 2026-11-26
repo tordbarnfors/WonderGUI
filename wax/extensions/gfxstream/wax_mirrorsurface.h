@@ -46,7 +46,7 @@ namespace wax
 			CanvasRef		canvasRef = CanvasRef::None;	// Stream to specified reference, otherwise create surface and stream to that.
 			Compressor_p	compressor;
 			StreamEncoder_p	encoder;						// Required
-			HiColor			fillColor = HiColor::Undefined;	// What the surface was created filled with, for the other end to do the same.
+			Color			fillColor = Color::Undefined;	// What the surface was created filled with, for the other end to do the same.
 			Finalizer_p		finalizer = nullptr;
 			Surface_p		surface;						// Required
 			bool			streamOnCreate = false;			// If true, surface content will be streamed immediately after creation.
@@ -81,8 +81,8 @@ namespace wax
 
 		//.____  Rendering ____________________________________________________
 
-		bool		fill(HiColor col) override;
-		bool		fill(const RectI& region, HiColor col) override;
+		bool		fill(Color col) override;
+		bool		fill(const RectI& region, Color col) override;
 
 		//.____ Misc __________________________________________________________
 
@@ -93,7 +93,7 @@ namespace wax
 		MirrorSurface(const Blueprint& blueprint);
 		~MirrorSurface();
 
-		void 	_sendCreateSurface( HiColor fillColor = HiColor::Undefined );
+		void 	_sendCreateSurface( Color fillColor = Color::Undefined );
 		void	_sendDeleteSurface();
 		void	_sendPixels(int nRects, const RectI* pRects);
 

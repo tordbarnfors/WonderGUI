@@ -60,7 +60,7 @@ namespace wax
 
 		struct Blueprint
 		{
-			const HiColor*		colors 		= nullptr;			// Flat colors, one color for each segment.
+			const Color*		colors 		= nullptr;			// Flat colors, one color for each segment.
 			Finalizer_p			finalizer	= nullptr;
 			int					segments	= 0;				// Mandatory.
 			SizeI				size;							// Mandatory.
@@ -84,10 +84,10 @@ namespace wax
 		virtual bool	setRenderSegments(int nSegments);
 		inline int		renderSegments() const { return m_nbRenderSegments; }
 
-		virtual bool	setColors( int begin, int end, const HiColor * pColors );
+		virtual bool	setColors( int begin, int end, const Color * pColors );
 		virtual bool	setColors( int begin, int end, const Tint_p * pTints );
 
-		inline const HiColor*	flatColors() const { return m_pFlatColors; }	// Flat color of each segment, for segments without Tint.
+		inline const Color*	flatColors() const { return m_pFlatColors; }	// Flat color of each segment, for segments without Tint.
 		inline const Tint_p*	tints() const { return m_pTints; }				// Tint of each segment, nullptr for flat colored segments.
 		inline bool				hasTints() const { return m_nbTints > 0; }
 
@@ -164,7 +164,7 @@ namespace wax
 		spx* m_pSamples = nullptr;						// Stored vertically, e.g. samples for first column for all edges before samples for second column etc
 														// Always m_size.w + 1 columns. For a tiling Edgemap the last column is a copy of the first.
 
-		HiColor*	m_pFlatColors = nullptr;	// Flat color for each segment.
+		Color*	m_pFlatColors = nullptr;	// Flat color for each segment.
 		Tint_p*		m_pTints = nullptr;			// Tint for each segment, nullptr for flat.
 		int			m_nbTints = 0;				// Number of segments with tints.
 

@@ -43,9 +43,9 @@ namespace
 		int		b, g, r, a;		// 0 -> 4096, linear.
 	};
 
-	C12 toC12(HiColor c)
+	C12 toC12(Color c)
 	{
-		HiColor l = c.toLinear();
+		Color l = c.toLinear();
 		return { l.b, l.g, l.r, l.a };
 	}
 
@@ -80,7 +80,7 @@ namespace
 
 	inline int unpack(const std::vector<uint8_t>& pixels, int x, int y, int channel)
 	{
-		return HiColor::unpackLinearTab[pixels[(y * c_canvasSize.w + x) * 4 + channel]];
+		return Color::unpackLinearTab[pixels[(y * c_canvasSize.w + x) * 4 + channel]];
 	}
 
 	inline int byteAt(const std::vector<uint8_t>& pixels, int x, int y, int channel)
@@ -218,8 +218,8 @@ namespace
 			for (int x = 0; x < c_canvasSize.w; x++)
 			{
 				C12 e = expected(x, y);
-				int want[4] = { HiColor::packLinearTab[std::clamp(e.b, 0, 4096)], HiColor::packLinearTab[std::clamp(e.g, 0, 4096)],
-								HiColor::packLinearTab[std::clamp(e.r, 0, 4096)], HiColor::packLinearTab[std::clamp(e.a, 0, 4096)] };
+				int want[4] = { Color::packLinearTab[std::clamp(e.b, 0, 4096)], Color::packLinearTab[std::clamp(e.g, 0, 4096)],
+								Color::packLinearTab[std::clamp(e.r, 0, 4096)], Color::packLinearTab[std::clamp(e.a, 0, 4096)] };
 
 				for (int ch = 0; ch < 4; ch++)
 				{
@@ -246,7 +246,7 @@ namespace
 		return spec;
 	}
 
-	const HiColor c_background = HiColor(800, 2500, 3600, 4096);
+	const Color c_background = Color(800, 2500, 3600, 4096);
 }
 
 //____ Constructor ____________________________________________________________
@@ -284,12 +284,12 @@ bool ShapeRenderTest::blendModesTest(std::ostream& output)
 
 	Coverage cov = coverageOf(spec);
 
-	HiColor fixedColor(1000, 3000, 2000, 2500);
+	Color fixedColor(1000, 3000, 2000, 2500);
 	float morphFactor = 0.3f;
 
 	// Second color is bright enough to saturate Add.
 
-	HiColor colors[2] = { HiColor(3000, 1500, 600, 3000), HiColor(4096, 3500, 3900, 3500) };
+	Color colors[2] = { Color(3000, 1500, 600, 3000), Color(4096, 3500, 3900, 3500) };
 
 	for (auto color : colors)
 	for (auto mode : modes)
@@ -357,8 +357,8 @@ bool ShapeRenderTest::fillAndOutlineTest(std::ostream& output)
 {
 	RoundedBoxSpec spec = testBox();
 	spec.outline = { 64 + 20, 64 * 3 + 5, 40, 64 * 2 };
-	spec.fillColor = HiColor(3000, 1500, 600, 4096);
-	spec.outlineColor = HiColor(200, 4000, 1000, 2600);
+	spec.fillColor = Color(3000, 1500, 600, 4096);
+	spec.outlineColor = Color(200, 4000, 1000, 2600);
 
 	Coverage cov = coverageOf(spec);
 
@@ -397,10 +397,10 @@ bool ShapeRenderTest::tintColorTest(std::ostream& output)
 {
 	RoundedBoxSpec spec = testBox();
 	spec.outline = { 64 * 2, 64 * 2, 64 * 2, 64 * 2 };
-	spec.fillColor = HiColor(3000, 1500, 600, 4096);
-	spec.outlineColor = HiColor(200, 4000, 1000, 4096);
+	spec.fillColor = Color(3000, 1500, 600, 4096);
+	spec.outlineColor = Color(200, 4000, 1000, 4096);
 
-	HiColor tintColor(4096, 2048, 1024, 4096);
+	Color tintColor(4096, 2048, 1024, 4096);
 
 	Coverage cov = coverageOf(spec);
 
@@ -445,11 +445,11 @@ bool ShapeRenderTest::gradientTintTest(std::ostream& output)
 {
 	RoundedBoxSpec spec = testBox();
 	spec.outline = { 64 * 3, 64 * 3, 64 * 3, 64 * 3 };
-	spec.fillColor = HiColor::White;
-	spec.outlineColor = HiColor::White;
+	spec.fillColor = Color::White;
+	spec.outlineColor = Color::White;
 
-	auto pFillTint = Tint::create(HiColor(4096, 0, 0, 4096), HiColor(0, 0, 4096, 4096));							// Vertical
-	auto pOutlineTint = Tint::create(HiColor(0, 4096, 0, 4096), HiColor(4096, 4096, 0, 4096), { 0.f, 0.f }, { 1.f, 0.f });	// Horizontal
+	auto pFillTint = Tint::create(Color(4096, 0, 0, 4096), Color(0, 0, 4096, 4096));							// Vertical
+	auto pOutlineTint = Tint::create(Color(0, 4096, 0, 4096), Color(4096, 4096, 0, 4096), { 0.f, 0.f }, { 1.f, 0.f });	// Horizontal
 
 	spec.pFillTint = pFillTint;
 	spec.pOutlineTint = pOutlineTint;
@@ -492,8 +492,8 @@ bool ShapeRenderTest::clipListTest(std::ostream& output)
 {
 	RoundedBoxSpec spec = testBox();
 	spec.outline = { 64 * 2, 64 * 2, 64 * 2, 64 * 2 };
-	spec.fillColor = HiColor(3000, 1500, 600, 3500);
-	spec.outlineColor = HiColor(200, 4000, 1000, 4096);
+	spec.fillColor = Color(3000, 1500, 600, 3500);
+	spec.outlineColor = Color(200, 4000, 1000, 4096);
 
 	RectSPX clips[2] = { { 64 * 3, 64 * 2, 64 * 20, 64 * 15 }, { 64 * 30, 64 * 20, 64 * 30, 64 * 25 } };
 
@@ -600,10 +600,10 @@ namespace
 
 		RoundedBoxSpec spec = testBox();
 		spec.outline = { 64 + 20, 64 * 3 + 5, 40, 64 * 2 };
-		spec.fillColor = HiColor(3000, 1500, 600, 3500);
-		spec.outlineColor = HiColor(200, 4000, 1000, 2600);
+		spec.fillColor = Color(3000, 1500, 600, 3500);
+		spec.outlineColor = Color(200, 4000, 1000, 2600);
 
-		auto pTint = Tint::create(HiColor(4096, 0, 0, 4096), HiColor(0, 0, 4096, 2000));
+		auto pTint = Tint::create(Color(4096, 0, 0, 4096), Color(0, 0, 4096, 2000));
 		spec.pOutlineTint = pTint;
 
 		pDevice->setBlendMode(BlendMode::Blend);
@@ -612,21 +612,21 @@ namespace
 		RoundedBoxSpec pill;
 		pill.rect = { 64 * 2 + 10, 64 * 30 + 50, 64 * 50, 64 * 12 + 20 };
 		pill.radius[0] = pill.radius[1] = pill.radius[2] = pill.radius[3] = 64 * 1000;
-		pill.fillColor = HiColor(4096, 4096, 0, 2048);
+		pill.fillColor = Color(4096, 4096, 0, 2048);
 
 		pDevice->setBlendMode(BlendMode::Replace);
 		drawRoundedBox(pDevice, pill, bCApi);
 
 		pDevice->setBlendMode(BlendMode::Add);
-		pDevice->setTintColor(HiColor(2048, 4096, 4096, 4096));
+		pDevice->setTintColor(Color(2048, 4096, 4096, 4096));
 		pill.rect.y -= 64 * 20 + 13;
 		drawRoundedBox(pDevice, pill, bCApi);
 		pDevice->clearTintColor();
 
-		auto pSliceTint = Tint::create(HiColor(4096, 4096, 4096, 4096), HiColor(0, 0, 0, 4096), { 0.f, 0.f }, { 1.f, 1.f });
+		auto pSliceTint = Tint::create(Color(4096, 4096, 4096, 4096), Color(0, 0, 0, 4096), { 0.f, 0.f }, { 1.f, 1.f });
 
-		RingSlice slices[4] = { { 0.2f, HiColor(4096, 0, 0, 4096) }, { 0.3f, HiColor(0, 4096, 0, 3000), pSliceTint },
-								{ 0.1f, HiColor(0, 0, 4096, 4096) }, { 0.15f, HiColor(4096, 4096, 0, 4096) } };
+		RingSlice slices[4] = { { 0.2f, Color(4096, 0, 0, 4096) }, { 0.3f, Color(0, 4096, 0, 3000), pSliceTint },
+								{ 0.1f, Color(0, 0, 4096, 4096) }, { 0.15f, Color(4096, 4096, 0, 4096) } };
 
 		RingSpec ring;
 		ring.rect = { 64 * 30 + 21, 64 * 3 + 9, 64 * 30 + 40, 64 * 30 + 40 };
@@ -635,9 +635,9 @@ namespace
 		ring.start = 0.85f;
 		ring.nSlices = 4;
 		ring.pSlices = slices;
-		ring.outlineColor = HiColor(1000, 1000, 1000, 4096);
-		ring.hubColor = HiColor(4096, 4096, 4096, 2000);
-		ring.backColor = HiColor(0, 0, 0, 1500);
+		ring.outlineColor = Color(1000, 1000, 1000, 4096);
+		ring.hubColor = Color(4096, 4096, 4096, 2000);
+		ring.backColor = Color(0, 0, 0, 1500);
 
 		pDevice->setBlendMode(BlendMode::Blend);
 		drawRing(pDevice, ring, bCApi);
@@ -805,8 +805,8 @@ bool ShapeRenderTest::alignedBoxTest(std::ostream& output)
 	RoundedBoxSpec spec;
 	spec.rect = { 64 * 4, 64 * 5, 64 * 30, 64 * 20 };
 	spec.outline = { 64 * 2, 64 * 3, 64 * 1, 64 * 4 };
-	spec.fillColor = HiColor(3000, 1500, 600, 4096);
-	spec.outlineColor = HiColor(200, 4000, 1000, 4096);
+	spec.fillColor = Color(3000, 1500, 600, 4096);
+	spec.outlineColor = Color(200, 4000, 1000, 4096);
 
 	Canvas canvas;
 	auto pDevice = createSoftDevice();
@@ -841,8 +841,8 @@ bool ShapeRenderTest::alignedBoxTest(std::ostream& output)
 bool ShapeRenderTest::boxSkinTest(std::ostream& output)
 {
 	auto pSkin = BoxSkin::create(WGBP(BoxSkin,
-		_.color = HiColor(3000, 1500, 600, 4096),
-		_.outlineColor = HiColor(200, 4000, 1000, 4096),
+		_.color = Color(3000, 1500, 600, 4096),
+		_.outlineColor = Color(200, 4000, 1000, 4096),
 		_.outlineThickness = { 2, 3, 2, 1 },
 		_.cornerRadius = { 8, 8, 3, 0 }));
 
@@ -869,8 +869,8 @@ bool ShapeRenderTest::boxSkinTest(std::ostream& output)
 	spec.rect = canvas;
 	spec.radius = { 64 * 8, 64 * 8, 64 * 3, 0 };
 	spec.outline = { 64 * 2, 64 * 3, 64 * 2, 64 * 1 };
-	spec.fillColor = HiColor(3000, 1500, 600, 4096);
-	spec.outlineColor = HiColor(200, 4000, 1000, 4096);
+	spec.fillColor = Color(3000, 1500, 600, 4096);
+	spec.outlineColor = Color(200, 4000, 1000, 4096);
 
 	Canvas boxCanvas;
 
@@ -914,8 +914,8 @@ bool ShapeRenderTest::boxSkinTest(std::ostream& output)
 
 bool ShapeRenderTest::ringTest(std::ostream& output)
 {
-	RingSlice slices[5] = { { 0.1f, HiColor(4096, 0, 0, 4096) }, { 0.25f, HiColor(0, 4096, 0, 4096) },
-							{ 0.05f, HiColor(0, 0, 4096, 4096) }, { 0.3f, HiColor(4096, 4096, 0, 4096) }, { 0.15f, HiColor(0, 4096, 4096, 4096) } };
+	RingSlice slices[5] = { { 0.1f, Color(4096, 0, 0, 4096) }, { 0.25f, Color(0, 4096, 0, 4096) },
+							{ 0.05f, Color(0, 0, 4096, 4096) }, { 0.3f, Color(4096, 4096, 0, 4096) }, { 0.15f, Color(0, 4096, 4096, 4096) } };
 
 	RingSpec ring;
 	ring.rect = { 64 * 3 + 21, 64 * 2 + 9, 64 * 50 + 40, 64 * 42 + 10 };
@@ -924,9 +924,9 @@ bool ShapeRenderTest::ringTest(std::ostream& output)
 	ring.start = 0.9f;
 	ring.nSlices = 5;
 	ring.pSlices = slices;
-	ring.outlineColor = HiColor(1000, 1000, 1000, 4096);
-	ring.hubColor = HiColor(4096, 4096, 4096, 4096);
-	ring.backColor = HiColor(2000, 0, 2000, 4096);
+	ring.outlineColor = Color(1000, 1000, 1000, 4096);
+	ring.hubColor = Color(4096, 4096, 4096, 4096);
+	ring.backColor = Color(2000, 0, 2000, 4096);
 
 	// Coverage, converted as GfxDeviceGen2 does.
 
@@ -964,7 +964,7 @@ bool ShapeRenderTest::ringTest(std::ostream& output)
 
 	auto pixels = canvas.read();
 
-	HiColor segmentColors[8] = { ring.backColor, ring.outlineColor, ring.hubColor, slices[0].color, slices[1].color, slices[2].color, slices[3].color, slices[4].color };
+	Color segmentColors[8] = { ring.backColor, ring.outlineColor, ring.hubColor, slices[0].color, slices[1].color, slices[2].color, slices[3].color, slices[4].color };
 	C12 colors[8];
 	for (int i = 0; i < 8; i++)
 		colors[i] = toC12(segmentColors[i]);
@@ -1002,7 +1002,7 @@ bool ShapeRenderTest::undefinedColorTest(std::ostream& output)
 	box.radius = 64 * 8;
 	box.outline = { 64 * 3, 64 * 3, 64 * 3, 64 * 3 };
 
-	RingSlice slice = { 1.f, HiColor(4096, 0, 0, 4096) };
+	RingSlice slice = { 1.f, Color(4096, 0, 0, 4096) };
 
 	RingSpec ring;
 	ring.rect = { 64 * 4, 64 * 2, 64 * 44, 64 * 44 };
@@ -1022,9 +1022,9 @@ bool ShapeRenderTest::undefinedColorTest(std::ostream& output)
 
 		if (bTransparent)
 		{
-			b.fillColor = HiColor::Transparent;
-			r.hubColor = HiColor::Transparent;
-			r.backColor = HiColor::Transparent;
+			b.fillColor = Color::Transparent;
+			r.hubColor = Color::Transparent;
+			r.backColor = Color::Transparent;
 		}
 
 		pDevice->beginRender();
@@ -1110,7 +1110,7 @@ namespace
 		pDevice->beginRender();
 		pDevice->beginCanvasUpdate(canvas.surface);
 		pDevice->setBlendMode(BlendMode::Replace);
-		pDevice->fill(HiColor::Transparent);
+		pDevice->fill(Color::Transparent);
 		pDevice->setBlendMode(BlendMode::Blend);
 		draw(pDevice);
 		pDevice->endCanvasUpdate();
@@ -1157,8 +1157,8 @@ bool ShapeRenderTest::referenceCoverageTest(std::ostream& output)
 
 	RoundedBoxSpec box = testBox();
 	box.outline = { 64 * 2 + 13, 64 * 3 + 40, 64 + 5, 64 * 4 + 22 };
-	box.fillColor = HiColor::White;
-	box.outlineColor = HiColor::White;
+	box.fillColor = Color::White;
+	box.outlineColor = Color::White;
 
 	auto boxPixels = renderWithReference([&](GfxDevice* pDevice) { pDevice->drawRoundedBox(box); });
 
@@ -1214,8 +1214,8 @@ bool ShapeRenderTest::referenceCoverageTest(std::ostream& output)
 	ring.start = 0.37f;
 	ring.nSlices = 3;
 	ring.pSlices = slices;
-	ring.outlineColor = HiColor::White;
-	ring.hubColor = HiColor::White;
+	ring.outlineColor = Color::White;
+	ring.hubColor = Color::White;
 
 	auto ringPixels = renderWithReference([&](GfxDevice* pDevice) { pDevice->drawRing(ring); });
 

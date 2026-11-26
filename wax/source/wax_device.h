@@ -82,8 +82,8 @@ namespace wax
 		RectSPX		rect;										// Outer edge of the box.
 		CornersSPX	radius;										// Corner radii.
 		BorderSPX	outline;									// Thickness of the outline along each side.
-		HiColor		fillColor = HiColor::Undefined;				// Not filled unless set.
-		HiColor		outlineColor = HiColor::Black;
+		Color		fillColor = Color::Undefined;				// Not filled unless set.
+		Color		outlineColor = Color::Black;
 		Tint*		pFillTint = nullptr;
 		Tint*		pOutlineTint = nullptr;
 	};
@@ -93,7 +93,7 @@ namespace wax
 	struct RingSlice
 	{
 		float		size = 0.f;						// Fraction of a full turn.
-		HiColor		color = HiColor::White;
+		Color		color = Color::White;
 		Tint*		pTint = nullptr;				// Placed in rect of ring.
 	};
 
@@ -130,11 +130,11 @@ namespace wax
 		const RingSlice*	pSlices = nullptr;
 		bool				bSquare = false;					// Outer edge follows rect.
 
-		HiColor				outlineColor = HiColor::Black;
+		Color				outlineColor = Color::Black;
 		Tint*				pOutlineTint = nullptr;
-		HiColor				hubColor = HiColor::Undefined;		// Inside the ring, not filled unless set.
+		Color				hubColor = Color::Undefined;		// Inside the ring, not filled unless set.
 		Tint*				pHubTint = nullptr;
-		HiColor				backColor = HiColor::Undefined;		// Rest of rect and the part of the ring not reached by slices, not filled unless set.
+		Color				backColor = Color::Undefined;		// Rest of rect and the part of the ring not reached by slices, not filled unless set.
 		Tint*				pBackTint = nullptr;
 	};
 
@@ -269,10 +269,10 @@ namespace wax
 		virtual int			clipListSize() const = 0;
 		virtual const RectSPX& clipBounds() const = 0;
 
-		virtual void		setTintColor(HiColor color) = 0;
+		virtual void		setTintColor(Color color) = 0;
 		virtual void		clearTintColor() = 0;
 		virtual bool		hasTintColor() const = 0;
-		virtual HiColor		tintColor() const = 0;
+		virtual Color		tintColor() const = 0;
 
 		virtual void		setTint(const RectSPX& rect, Tint* pTint) = 0;
 		virtual void		clearTint() = 0;
@@ -293,8 +293,8 @@ namespace wax
 		virtual Blurbrush_p	blurbrush() const = 0;
 
 		
-		virtual void		setFixedBlendColor( HiColor color ) = 0;
-		virtual HiColor		fixedBlendColor() const = 0;
+		virtual void		setFixedBlendColor( Color color ) = 0;
+		virtual Color		fixedBlendColor() const = 0;
 
 		virtual void		setRenderLayer(int layer) = 0;
 		virtual int			renderLayer() const = 0;
@@ -317,11 +317,11 @@ namespace wax
         
 		// Draw methods.
 
-		virtual void	fill(HiColor color) = 0;
-		virtual void	fill( const RectSPX& rect, HiColor color ) = 0;
+		virtual void	fill(Color color) = 0;
+		virtual void	fill( const RectSPX& rect, Color color ) = 0;
 
-	 	virtual void	drawLine( CoordSPX begin, CoordSPX end, HiColor color, spx thickness = 64, LineCaps caps = LineCaps() ) = 0;
-		virtual void	drawLine( CoordSPX begin, Direction dir, spx length, HiColor color, spx thickness = 64, LineCaps caps = LineCaps() ) = 0;
+	 	virtual void	drawLine( CoordSPX begin, CoordSPX end, Color color, spx thickness = 64, LineCaps caps = LineCaps() ) = 0;
+		virtual void	drawLine( CoordSPX begin, Direction dir, spx length, Color color, spx thickness = 64, LineCaps caps = LineCaps() ) = 0;
 
 		// Shapes
 

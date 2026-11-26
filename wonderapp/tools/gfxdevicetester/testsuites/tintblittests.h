@@ -47,7 +47,7 @@ public:
 
 	bool cleanup(GfxDevice * pDevice, const RectI& canvas)
 	{
-		pDevice->setTintColor(Color8::White);
+		pDevice->setTintColor(Color::White);
 		pDevice->clearTint();
 		return true;
 	}
@@ -62,35 +62,35 @@ public:
 	bool setFlatTint(GfxDevice * pDevice, const RectI& canvas)
 	{
 		pDevice->setBlitSource(m_pImg);
-		pDevice->setTintColor(Color8::Blue);
+		pDevice->setTintColor(Color::Blue);
 		return true;
 	}
 
 	bool setTintX(GfxDevice * pDevice, const RectI& canvas)
 	{
 		pDevice->setBlitSource(m_pImg);
-		pDevice->setTint(canvas, Tint::create(Color8::Red, Color8::Blue, {0,0}, {1,0}));
+		pDevice->setTint(canvas, Tint::create(Color::Red, Color::Blue, {0,0}, {1,0}));
 		return true;
 	}
 
 	bool setTintY(GfxDevice * pDevice, const RectI& canvas)
 	{
 		pDevice->setBlitSource(m_pImg);
-		pDevice->setTint(canvas, Tint::create(Color8::Red, Color8::Blue, {0,0}, {0,1}));
+		pDevice->setTint(canvas, Tint::create(Color::Red, Color::Blue, {0,0}, {0,1}));
 		return true;
 	}
 
 	bool setTintXY(GfxDevice * pDevice, const RectI& canvas)
 	{
 		pDevice->setBlitSource(m_pImg);
-		pDevice->setTint(canvas, Tint::create(Color8::Red, Color8::Blue, {0,0}, {1,1}));
+		pDevice->setTint(canvas, Tint::create(Color::Red, Color::Blue, {0,0}, {1,1}));
 		return true;
 	}
 
 	bool setOffsetTintXY(GfxDevice * pDevice, const RectI& canvas)
 	{
 		pDevice->setBlitSource(m_pImg);
-		pDevice->setTint(canvas, Tint::create(Color8::Red, Color8::Blue, {0,0}, {1,1}));
+		pDevice->setTint(canvas, Tint::create(Color::Red, Color::Blue, {0,0}, {1,1}));
 		return true;
 	}
 

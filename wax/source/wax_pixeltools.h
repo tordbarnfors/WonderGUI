@@ -35,7 +35,7 @@ namespace wax
 	 * Pixels are described by a PixelFormat (or PixelDescription), a ColorSpace and a byte order.
 	 * Conversion between any of them is supported. ColorSpace::Undefined is treated as sRGB.
 	 *
-	 * Colors (HiColor) given to these functions are sRGB, as everywhere else in Wax.
+	 * Colors (Color) given to these functions are sRGB, as everywhere else in Wax.
 	 *
 	 * Palettes are in the color space of the pixels they belong to.
 	 *
@@ -58,12 +58,12 @@ namespace wax
 						Color8* pDstPalette, int& dstPaletteEntries, int maxDstPaletteEntries);
 
 		void	fillBitmap(uint8_t* pBitmap, PixelFormat format, ColorSpace colorSpace, bool bigEndian, int pitch, const RectI& fillRect,
-						   HiColor color, const Color8* pPalette = nullptr, int paletteSize = 0);
+						   Color color, const Color8* pPalette = nullptr, int paletteSize = 0);
 
-		int		colorToPixelBytes(HiColor color, PixelFormat format, ColorSpace colorSpace, bool bigEndian, uint8_t pixelArea[18],
+		int		colorToPixelBytes(Color color, PixelFormat format, ColorSpace colorSpace, bool bigEndian, uint8_t pixelArea[18],
 								  const Color8* pPalette = nullptr, int paletteSize = 0);		// Bitplanes get one word per plane.
 
-		int		findBestMatchInPalette(HiColor color, ColorSpace paletteColorSpace, const Color8* pPalette, int paletteSize);
+		int		findBestMatchInPalette(Color color, ColorSpace paletteColorSpace, const Color8* pPalette, int paletteSize);
 
 		bool	extractAlphaChannel(PixelFormat format, bool bigEndian, const uint8_t* pSrc, int srcPitch, const RectI& srcRect,
 									uint8_t* pDst, int dstPitch, const Color8* pPalette);

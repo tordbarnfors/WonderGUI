@@ -57,7 +57,7 @@ public:
 		bool			tabLock = false;
 		std::string			tooltip;
 
-		HiColor			wireColor = HiColor::Black;
+		Color			wireColor = Color::Black;
 		pts				wireStub = 5;
 		pts				wireThickness = 1.f;
 	};
@@ -80,8 +80,8 @@ public:
 	bool	addWire( int fromNode, Placement fromAnchor, int toNode, Placement toAnchor );
 	bool	removeWire( int fromNode, int toNode );
 
-	bool	setWireColor( HiColor color );
-	HiColor	wireColor() const { return m_wireColor; }
+	bool	setWireColor( Color color );
+	Color	wireColor() const { return m_wireColor; }
 
 	void	setWireStub( pts length );
 	pts		wireStub() const { return m_wireStub; }
@@ -165,7 +165,7 @@ private:
 	NodePanel *		m_pObserved = nullptr;
 
 	spx				m_renderMargin = 64+64; 			// Size of border around wire positions that needs to be rendered to be on the safe side.
-	HiColor			m_wireColor = HiColor::Black;
+	Color			m_wireColor = Color::Black;
 	pts				m_wireThickness = 1;
 	bool			m_bOrthogonal = false;
 	pts				m_wireStub = 5;

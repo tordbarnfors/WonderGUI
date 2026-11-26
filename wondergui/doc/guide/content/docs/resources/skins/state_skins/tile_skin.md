@@ -29,7 +29,7 @@ A gradient can be set for the whole skin. The surface to tile and a color used f
 auto pTileSkin1 = TileSkin::create({ .surface = pSurface });
 
 auto pTileSkin2 = TileSkin::create({
-  .states ={{ State::Default, { .color = Color8::LightGray, .surface = pDefaultSurface },
+  .states ={{ State::Default, { .color = Color::LightGray, .surface = pDefaultSurface },
             { State::Hovered, { .surface = pDefaultSurface },
             { State::Pressed, { .contentShift = { 1, 1 }, 
                                 .surface = pPressedSurface }},
@@ -46,7 +46,7 @@ There are shorthand versions for specifying just a single surface with an option
 auto pTileSkin1 = TileSkin::create(pSurface);
 
 auto pTileSkin2 = TileSkin::create({
-  .states ={{ State::Default, { .color = Color8::LightGray, .surface = pDefaultSurface },
+  .states ={{ State::Default, { .color = Color::LightGray, .surface = pDefaultSurface },
             { State::Hovered, pDefaultSurface },
             { State::Pressed, { .contentShift = { 1, 1 }, 
                                 .surface = pPressedSurface }},

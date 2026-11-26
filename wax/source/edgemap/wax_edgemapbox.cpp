@@ -465,7 +465,7 @@ namespace wax
 					continue;
 
 				int color = colorOfLayer[l];
-				HiColor hiColor = color >= 0 ? m_colors[color] : HiColor::Transparent;
+				Color hiColor = color >= 0 ? m_colors[color] : Color::Transparent;
 				const spx* pEnds = l < 4 ? piece.crossings.data() + l : nullptr;
 
 				if (build.colors.empty() || hiColor != build.colors.back())

@@ -235,12 +235,12 @@ namespace wax
 
 	//____ fill() _____________________________________________________________
 
-	bool RemoteSurface::fill(HiColor color)
+	bool RemoteSurface::fill(Color color)
 	{
 		return fill(RectI(0, 0, pixelSize()), color );
 	}
 
-	bool RemoteSurface::fill(const RectI& region, HiColor color )
+	bool RemoteSurface::fill(const RectI& region, Color color )
 	{
 		*m_pEncoder << GfxStream::Header{ GfxStream::ChunkId::FillSurface, 0, 2+16+8 };
 		*m_pEncoder << m_inStreamId;

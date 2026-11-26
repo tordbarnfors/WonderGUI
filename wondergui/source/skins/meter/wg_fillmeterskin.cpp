@@ -43,7 +43,7 @@ namespace wg
 
 	FillMeterSkin::FillMeterSkin( const Blueprint& bp) : Skin(bp)
 	{
-		if (bp.minColor != HiColor::Undefined && bp.maxColor != HiColor::Undefined)
+		if (bp.minColor != Color::Undefined && bp.maxColor != Color::Undefined)
 		{
 			m_barColorEmpty = bp.minColor;
 			m_barColorFull	= bp.maxColor;
@@ -96,9 +96,9 @@ namespace wg
 	{
 		RectSPX canvas = _canvas - align(ptsToSpx(m_spacing, scale)) - align(ptsToSpx(m_gfxPadding, scale)) + align(ptsToSpx(m_overflow, scale));
 		
-		RenderSettingsWithTint settings(pDevice, m_layer, m_blendMode, HiColor::White, canvas, m_pTint );
+		RenderSettingsWithTint settings(pDevice, m_layer, m_blendMode, Color::White, canvas, m_pTint );
 
-		HiColor barColor = HiColor::mix(m_barColorEmpty, m_barColorFull, int(4096 * value));
+		Color barColor = Color::mix(m_barColorEmpty, m_barColorFull, int(4096 * value));
 
 		RectSPX barCanvas = align(_barFillArea(canvas, scale, value, value2));
 		pDevice->fill(barCanvas, barColor);
@@ -154,7 +154,7 @@ namespace wg
 		int alpha = alphaOverride == -1 ? m_markAlpha : alphaOverride;
 
 		if( _barFillArea(canvas, scale, value, value2).contains(ofs) )
-			return (HiColor::mix(m_barColorEmpty, m_barColorFull, int(4096*value)).a >= alpha);
+			return (Color::mix(m_barColorEmpty, m_barColorFull, int(4096*value)).a >= alpha);
 
 		return (m_backColor.a >= alpha);
 	}

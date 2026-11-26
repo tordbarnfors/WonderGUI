@@ -121,7 +121,7 @@ TextStyle_p TextSystemTest::_createStyle( int size )
 		return nullptr;
 
 	auto pFont = FreeTypeFont::create(pBlob);
-	return WGCREATE(TextStyle, _.color = HiColor::White, _.font = pFont, _.size = size);
+	return WGCREATE(TextStyle, _.color = Color::White, _.font = pFont, _.size = size);
 }
 
 //____ utf8Test() _____________________________________________________________
@@ -420,7 +420,7 @@ bool TextSystemTest::renderTest(std::ostream& output)
 		pDevice->beginRender();
 		pDevice->beginCanvasUpdate(pCanvas);
 		pDevice->setBlendMode(BlendMode::Replace);
-		pDevice->fill(HiColor::Black);
+		pDevice->fill(Color::Black);
 		pDevice->setBlendMode(BlendMode::Blend);
 
 		pLayout->render(&text, pDevice, RectSPX(0, 0, canvasSize.w*64, canvasSize.h*64));
@@ -673,7 +673,7 @@ bool TextSystemTest::markdownLinksTest(std::ostream& output)
 	auto pStyle = _createStyle();
 	TEST_ASSERT(pStyle != nullptr);
 
-	auto pLinkStyle = WGCREATE(TextStyle, _.color = Color8::Blue, _.decoration = TextDecoration::Underline);
+	auto pLinkStyle = WGCREATE(TextStyle, _.color = Color::Blue, _.decoration = TextDecoration::Underline);
 	auto pMarkdown = MarkdownTextLayout::create( WGBP(MarkdownTextLayout, _.link = pLinkStyle) );
 
 	TestText text( pMarkdown, pStyle, "See [docs](https://example.com \"Tip\") now" );
@@ -701,7 +701,7 @@ bool TextSystemTest::markdownSourceModeTest(std::ostream& output)
 	auto pStyle = _createStyle();
 	TEST_ASSERT(pStyle != nullptr);
 
-	auto pMarkupStyle = WGCREATE(TextStyle, _.color = Color8::Gray);
+	auto pMarkupStyle = WGCREATE(TextStyle, _.color = Color::Gray);
 	auto pPlain = PlainTextLayout::create();
 	auto pSource = MarkdownTextLayout::create( WGBP(MarkdownTextLayout, _.markup = pMarkupStyle, _.showMarkup = true) );
 
@@ -735,8 +735,8 @@ bool TextSystemTest::markdownRenderTest(std::ostream& output)
 	TEST_ASSERT(pStyle != nullptr);
 
 	auto pBigStyle = WGCREATE(TextStyle, _.sizeScale = 1.5f);
-	auto pCodeStyle = WGCREATE(TextStyle, _.backColor = HiColor(1024,1024,1024,4096));
-	auto pLinkStyle = WGCREATE(TextStyle, _.color = Color8::Blue, _.decoration = TextDecoration::Underline);
+	auto pCodeStyle = WGCREATE(TextStyle, _.backColor = Color(1024,1024,1024,4096));
+	auto pLinkStyle = WGCREATE(TextStyle, _.color = Color::Blue, _.decoration = TextDecoration::Underline);
 
 	auto pMarkdown = MarkdownTextLayout::create( WGBP(MarkdownTextLayout,
 		_.code = pCodeStyle,
@@ -761,7 +761,7 @@ bool TextSystemTest::markdownRenderTest(std::ostream& output)
 	pDevice->beginRender();
 	pDevice->beginCanvasUpdate(pCanvas);
 	pDevice->setBlendMode(BlendMode::Replace);
-	pDevice->fill(HiColor::Black);
+	pDevice->fill(Color::Black);
 	pDevice->setBlendMode(BlendMode::Blend);
 
 	pMarkdown->render(&text, pDevice, RectSPX(0, 0, canvasSize.w*64, canvasSize.h*64));
@@ -864,7 +864,7 @@ bool TextSystemTest::decorationTest(std::ostream& output)
 
 	auto renderRows = [&]( TextDecoration decoration )
 	{
-		auto pDecorated = WGCREATE(TextStyle, _.color = HiColor::White, _.decoration = decoration, _.font = pStyle->font(), _.size = 20);
+		auto pDecorated = WGCREATE(TextStyle, _.color = Color::White, _.decoration = decoration, _.font = pStyle->font(), _.size = 20);
 
 		TestText text( pLayout, pDecorated, "xxxxxxxx", canvasSize*64 );
 		baseline = pLayout->charPos(&text, 0).y / 64;
@@ -872,7 +872,7 @@ bool TextSystemTest::decorationTest(std::ostream& output)
 		pDevice->beginRender();
 		pDevice->beginCanvasUpdate(pCanvas);
 		pDevice->setBlendMode(BlendMode::Replace);
-		pDevice->fill(HiColor::Black);
+		pDevice->fill(Color::Black);
 		pDevice->setBlendMode(BlendMode::Blend);
 		pLayout->render(&text, pDevice, RectSPX(0, 0, canvasSize.w*64, canvasSize.h*64));
 		pDevice->endCanvasUpdate();
@@ -927,7 +927,7 @@ bool TextSystemTest::decorationTest(std::ostream& output)
 	auto pStrike = WGCREATE(TextStyle, _.decoration = TextDecoration::Strikethrough);
 	auto pUnderline = WGCREATE(TextStyle, _.decoration = TextDecoration::Underline);
 	auto pNone = WGCREATE(TextStyle, _.decoration = TextDecoration::None);
-	auto pUndefined = WGCREATE(TextStyle, _.color = Color8::Red);
+	auto pUndefined = WGCREATE(TextStyle, _.color = Color::Red);
 
 	TextAttr attr;
 	pStrike->exportAttr(State::Default, &attr, 64);
@@ -945,13 +945,13 @@ bool TextSystemTest::decorationTest(std::ostream& output)
 	// Markdown link inside strikethrough gets both.
 
 	auto pMarkdown = MarkdownTextLayout::create( WGBP(MarkdownTextLayout, _.link = pUnderline, _.strikethrough = pStrike) );
-	auto pMdStyle = WGCREATE(TextStyle, _.color = HiColor::White, _.font = pStyle->font(), _.size = 20);
+	auto pMdStyle = WGCREATE(TextStyle, _.color = Color::White, _.font = pStyle->font(), _.size = 20);
 	TestText md( pMarkdown, pMdStyle, "~~[xxxxxxxx](y)~~", canvasSize*64 );
 
 	pDevice->beginRender();
 	pDevice->beginCanvasUpdate(pCanvas);
 	pDevice->setBlendMode(BlendMode::Replace);
-	pDevice->fill(HiColor::Black);
+	pDevice->fill(Color::Black);
 	pDevice->setBlendMode(BlendMode::Blend);
 	pMarkdown->render(&md, pDevice, RectSPX(0, 0, canvasSize.w*64, canvasSize.h*64));
 	pDevice->endCanvasUpdate();

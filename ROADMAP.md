@@ -531,7 +531,7 @@ For SdlGpuBackend, still to do, see "SdlGpuBackend" under Decided:
 ### Surfaces created without pixels (2026-11)
 
 Decided with Tord: `Surface::Blueprint` has `fillColor`, which a surface created without pixels
-is filled with. It defaults to `HiColor::Undefined`, which fills nothing in and leaves the content
+is filled with. It defaults to `Color::Undefined`, which fills nothing in and leaves the content
 unspecified until all of it has been drawn or written. It was unspecified already on SoftSurface
 (memory as it came) and GlSurface (a texture given no pixels), while DX12Surface filled its pixels
 with zeroes and uploaded them, which cost more than making the surface for something like a
@@ -1422,3 +1422,24 @@ Not run: DX12Backend with RENDER_TARGET as resting state, direct mode on a displ
 GPU on Linux, and an application that commits command buffers of its own to the queue it gives
 MetalBackend. So of the backends, only SdlGpuBackend has drawn on top of an application's own
 graphics.
+
+### `Color` is the 12-bit color, the named colors with it (2026-11-26)
+
+`HiColor` is renamed `Color`, decided with Tord 2026-11-26. `Color` used to be a typedef of
+`Color8`, so this was done in two steps, to make code that says `Color` fail to compile instead of
+silently getting the other class: breaking-changes removed the typedef, so code updating to it has
+to write `HiColor` or `Color8`, and v4 then renamed `HiColor`. No `HiColor` alias is left.
+
+- **The named colors of the web palette are in `Color`,** with 12-bit channels,
+  `round(value / 255 * 4096)` as `scripts/colordef.rb` computes, the same values a conversion from
+  `Color8` gives. `Color8` has none any more. They are constant-initialized, so unlike a conversion
+  from `Color8` they can be used before `Base::init()` (see KNOWN_ISSUES). `LemonCiffon` is
+  spelled `LemonChiffon`.
+- **`WgColor` keeps its own,** as 8-bit `WgColor` constants under the old names, `LemonCiffon`
+  too. It is a class derived from `Color8` instead of a typedef, so that legacy code with
+  `WgColor::Black` still compiles.
+- **Internal names that are about the 12-bit format keep "HiColor",** such as the kernels of
+  SoftBackend that move pixels to and from 12-bit buffers (`m_pStraightMoveToHiColorKernels`,
+  `bHiColorBlits`).
+- **ReferenceBackend's own color in doubles is `LinearColor`,** as `Color` inside it would hide
+  `wax::Color`.

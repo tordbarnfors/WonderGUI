@@ -25,6 +25,6 @@
 #include <wax_color.h>
 
 
-static_assert( sizeof(wax_color) == sizeof(wax::HiColor), "wax_color differs in size from wax::HiColor!" );
-static_assert( std::is_trivially_copyable<wax::HiColor>::value, "HiColor is not trivially copyable!" );
+static_assert( sizeof(wax_color) == sizeof(wax::Color), "wax_color differs in size from wax::Color!" );
+static_assert( std::is_trivially_copyable<wax::Color>::value, "Color is not trivially copyable!" );
 

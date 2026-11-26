@@ -44,9 +44,9 @@ namespace wg
 
 		struct Blueprint
 		{
-			HiColor		backColor = HiColor::Transparent;
+			Color		backColor = Color::Transparent;
 			BlendMode	blendMode = BlendMode::Blend;
-			HiColor		color = Color8::Blue;
+			Color		color = Color::Blue;
 			Size		defaultSize;						// Mandatory
 			Direction	direction = Direction::Right;
 			Finalizer_p	finalizer = nullptr;
@@ -55,8 +55,8 @@ namespace wg
 			int			layer = -1;
 			int			markAlpha = 1;
 
-			HiColor		maxColor = HiColor::Undefined;		// Overrides color when both min/max are set
-			HiColor		minColor = HiColor::Undefined;
+			Color		maxColor = Color::Undefined;		// Overrides color when both min/max are set
+			Color		minColor = Color::Undefined;
 
 			Border		overflow;
 			Border		padding;
@@ -103,9 +103,9 @@ namespace wg
 		BlendMode	m_blendMode = BlendMode::Blend;
 		Direction	m_direction;
         pts		    m_minBarLength;
-		HiColor		m_barColorEmpty;
-		HiColor		m_barColorFull;
-		HiColor		m_backColor;
+		Color		m_barColorEmpty;
+		Color		m_barColorFull;
+		Color		m_backColor;
 		Size		m_defaultSize;
         bool        m_bCenteredBarOrigin = false;
 		Border		m_gfxPadding;

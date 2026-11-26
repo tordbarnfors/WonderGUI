@@ -152,7 +152,7 @@ const wax_rectSPX* wax_clipBounds(wax_obj device)
 
 void wax_setTintColor(wax_obj device, wax_color color)
 {
-	getPtr(device)->setTintColor( HiColor( color.r, color.g, color.b, color.a) );
+	getPtr(device)->setTintColor( Color( color.r, color.g, color.b, color.a) );
 }
 
 
@@ -265,7 +265,7 @@ wax_obj wax_getBlurbrush(wax_obj device)
 
 void wax_setFixedBlendColor(wax_obj device, wax_color color )
 {
-	getPtr(device)->setFixedBlendColor( HiColor( color.r, color.g, color.b, color.a) );
+	getPtr(device)->setFixedBlendColor( Color( color.r, color.g, color.b, color.a) );
 }
 
 
@@ -353,24 +353,24 @@ void wax_clearLayers(wax_obj device)
 
 void wax_fill(wax_obj device, wax_color col)
 {
-	getPtr(device)->fill( HiColor(col.r, col.g, col.b, col.a) );
+	getPtr(device)->fill( Color(col.r, col.g, col.b, col.a) );
 }
 
 void wax_fillRect(wax_obj device, const wax_rectSPX* rect, wax_color col)
 {
-	getPtr(device)->fill( *(const RectSPX*) rect, HiColor(col.r, col.g, col.b, col.a) );
+	getPtr(device)->fill( *(const RectSPX*) rect, Color(col.r, col.g, col.b, col.a) );
 }
 
 
 void wax_drawLine(wax_obj device, wax_coordSPX begin, wax_coordSPX end, wax_color color, wax_spx thickness)
 {
-	getPtr(device)->drawLine({ begin.x, begin.y }, { end.x, end.y }, * (HiColor*) &color, (spx) thickness);
+	getPtr(device)->drawLine({ begin.x, begin.y }, { end.x, end.y }, * (Color*) &color, (spx) thickness);
 }
 
 
 void wax_drawStraightLine(wax_obj device, wax_coordSPX begin, wax_direction dir, wax_spx length, wax_color color, wax_spx thickness)
 {
-	getPtr(device)->drawLine( { begin.x, begin.y }, (Direction) dir, (spx) length, *(HiColor*)&color, (spx)thickness );
+	getPtr(device)->drawLine( { begin.x, begin.y }, (Direction) dir, (spx) length, *(Color*)&color, (spx)thickness );
 }
 
 static LineCap toLineCap(wax_lineCap cap)
@@ -380,12 +380,12 @@ static LineCap toLineCap(wax_lineCap cap)
 
 void wax_drawLineWithCaps(wax_obj device, wax_coordSPX begin, wax_coordSPX end, wax_color color, wax_spx thickness, wax_lineCap beginCap, wax_lineCap endCap)
 {
-	getPtr(device)->drawLine({ begin.x, begin.y }, { end.x, end.y }, *(HiColor*)&color, (spx)thickness, { toLineCap(beginCap), toLineCap(endCap) });
+	getPtr(device)->drawLine({ begin.x, begin.y }, { end.x, end.y }, *(Color*)&color, (spx)thickness, { toLineCap(beginCap), toLineCap(endCap) });
 }
 
 void wax_drawStraightLineWithCaps(wax_obj device, wax_coordSPX begin, wax_direction dir, wax_spx length, wax_color color, wax_spx thickness, wax_lineCap beginCap, wax_lineCap endCap)
 {
-	getPtr(device)->drawLine({ begin.x, begin.y }, (Direction)dir, (spx)length, *(HiColor*)&color, (spx)thickness, { toLineCap(beginCap), toLineCap(endCap) });
+	getPtr(device)->drawLine({ begin.x, begin.y }, (Direction)dir, (spx)length, *(Color*)&color, (spx)thickness, { toLineCap(beginCap), toLineCap(endCap) });
 }
 
 
@@ -527,8 +527,8 @@ void wax_drawRoundedBox(wax_obj device, const wax_roundedBoxSpec* spec)
 		box.radius[i] = spec->radius[i];
 
 	box.outline = *(const BorderSPX*)&spec->outline;
-	box.fillColor = *(const HiColor*)&spec->fillColor;
-	box.outlineColor = *(const HiColor*)&spec->outlineColor;
+	box.fillColor = *(const Color*)&spec->fillColor;
+	box.outlineColor = *(const Color*)&spec->outlineColor;
 	box.pFillTint = static_cast<Tint*>(reinterpret_cast<Object*>(spec->fillTint));
 	box.pOutlineTint = static_cast<Tint*>(reinterpret_cast<Object*>(spec->outlineTint));
 
@@ -547,7 +547,7 @@ void wax_drawRing(wax_obj device, const wax_ringSpec* spec)
 
 	for (int i = 0; i < nCopied; i++)
 	{
-		new (&slices[i]) RingSlice{ spec->pSlices[i].size, *(const HiColor*)&spec->pSlices[i].color,
+		new (&slices[i]) RingSlice{ spec->pSlices[i].size, *(const Color*)&spec->pSlices[i].color,
 									static_cast<Tint*>(reinterpret_cast<Object*>(spec->pSlices[i].tint)) };
 	}
 
@@ -560,11 +560,11 @@ void wax_drawRing(wax_obj device, const wax_ringSpec* spec)
 	ring.nSlices = nSlices;
 	ring.pSlices = spec->pSlices ? slices : nullptr;
 	ring.bSquare = spec->bSquare != 0;
-	ring.outlineColor = *(const HiColor*)&spec->outlineColor;
+	ring.outlineColor = *(const Color*)&spec->outlineColor;
 	ring.pOutlineTint = static_cast<Tint*>(reinterpret_cast<Object*>(spec->outlineTint));
-	ring.hubColor = *(const HiColor*)&spec->hubColor;
+	ring.hubColor = *(const Color*)&spec->hubColor;
 	ring.pHubTint = static_cast<Tint*>(reinterpret_cast<Object*>(spec->hubTint));
-	ring.backColor = *(const HiColor*)&spec->backColor;
+	ring.backColor = *(const Color*)&spec->backColor;
 	ring.pBackTint = static_cast<Tint*>(reinterpret_cast<Object*>(spec->backTint));
 
 	getPtr(device)->drawRing(ring);

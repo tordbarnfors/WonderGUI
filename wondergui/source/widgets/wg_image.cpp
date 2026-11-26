@@ -84,7 +84,7 @@ namespace wg
 
 	//____ setImageTint() ______________________________________________________
 
-	void Image::setImageTint(HiColor tint)
+	void Image::setImageTint(Color tint)
 	{
 		if (tint != m_imageTint)
 		{
@@ -183,7 +183,7 @@ namespace wg
 			
 			RectSPX dest = rectFromPolicy(m_sizePolicy, m_placement, content, imgRect.size() );
 
-			bool bTint = (!m_imageTint.isUndefined() && m_imageTint != HiColor::White);
+			bool bTint = (!m_imageTint.isUndefined() && m_imageTint != Color::White);
 
 			if( bTint )
 				pDevice->setTintColor(m_imageTint);
@@ -192,7 +192,7 @@ namespace wg
 			pDevice->stretchBlit( dest, imgRect );
 
 			if (bTint)
-				pDevice->setTintColor(HiColor::White);
+				pDevice->setTintColor(Color::White);
 		}
 	}
 

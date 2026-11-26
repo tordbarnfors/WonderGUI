@@ -61,7 +61,7 @@ namespace wg
 		// Flat colors and tints are kept on both sides, the host's for rendering
 		// and ours for flatColors() and tints().
 
-		bool			setColors( int begin, int end, const HiColor * pColors ) override;
+		bool			setColors( int begin, int end, const Color * pColors ) override;
 		bool			setColors( int begin, int end, const Tint_p * pTints ) override;
 
 		void			exportBounds( spx * pMinMaxOutput, int nSections, int sectionWidth,

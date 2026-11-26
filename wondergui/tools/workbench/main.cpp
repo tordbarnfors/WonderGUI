@@ -247,7 +247,7 @@ namespace workbench
 			_.skin = oldskool::Skins::Plate
 		));
 
-		m_pTestArea = PaddingCapsule::create(WGBP(PaddingCapsule, _.skin = ColorSkin::create(Color8::White)));
+		m_pTestArea = PaddingCapsule::create(WGBP(PaddingCapsule, _.skin = ColorSkin::create(Color::White)));
 
 		auto pTestPanel = PackPanel::create(WGBP(PackPanel, _.axis = Axis::Y));
 		pTestPanel->slots.pushBack(m_pTitle, { .weight = 0.f });

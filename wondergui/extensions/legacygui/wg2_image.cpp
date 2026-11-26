@@ -209,14 +209,14 @@ void WgImage::_onRender( wg::GfxDevice * pDevice, const WgRect& _canvas, const W
 	{
 		if( m_imageTint.a != 0 )
 		{
-			if( m_imageTint != wg::Color8::White )
+			if( m_imageTint != wg::Color::White )
 				pDevice->setTintColor(m_imageTint);
 				
 			pDevice->setBlitSource(m_pImage);
 			pDevice->stretchBlit(_imageRect(_canvas)*64);
 			
-			if( m_imageTint != wg::Color8::White )
-				pDevice->setTintColor(wg::Color8::White);
+			if( m_imageTint != wg::Color::White )
+				pDevice->setTintColor(wg::Color::White);
 		}
 	}
 }

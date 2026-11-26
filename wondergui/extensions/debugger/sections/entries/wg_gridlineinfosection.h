@@ -63,7 +63,7 @@ namespace wg
 		~GridLineInfoSection() {}
 
 		DrawerPanel_p	m_pColorDrawer;
-		HiColor			m_displayedColor;
+		Color			m_displayedColor;
 	};
 
 } // namespace wg

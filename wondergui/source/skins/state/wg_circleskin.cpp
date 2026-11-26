@@ -55,7 +55,7 @@ namespace wg
 		Coord	stateShifts[State::NbStates];
 
 		State	colorStates[State::NbStates];
-		HiColor stateColors[State::NbStates];
+		Color stateColors[State::NbStates];
 
 		State	sizeStates[State::NbStates];
 		float	stateSizes[State::NbStates];
@@ -64,7 +64,7 @@ namespace wg
 		pts		stateThickness[State::NbStates];
 
 		State	outlineColorStates[State::NbStates];
-		HiColor stateOutlineColors[State::NbStates];
+		Color stateOutlineColors[State::NbStates];
 
 		State	outlineThicknessStates[State::NbStates];
 		pts		stateOutlineThickness[State::NbStates];
@@ -102,7 +102,7 @@ namespace wg
 				m_bContentShifting = true;
 			}
 
-			if (stateInfo.data.color != HiColor::Undefined)
+			if (stateInfo.data.color != Color::Undefined)
 			{
 				int index = stateInfo.state == State::Default ? 0 : nbColorStates++;
 				colorStates[index] = stateInfo.state;
@@ -123,7 +123,7 @@ namespace wg
 				stateThickness[index] = stateInfo.data.thickness;
 			}
 
-			if (stateInfo.data.outlineColor != HiColor::Undefined)
+			if (stateInfo.data.outlineColor != Color::Undefined)
 			{
 				int index = stateInfo.state == State::Default ? 0 : nbOutlineColorStates++;
 				outlineColorStates[index] = stateInfo.state;
@@ -157,10 +157,10 @@ namespace wg
 		// Calculate memory needed for all state data
 
 		int shiftBytes = _bytesNeededForContentShiftData(nbShiftingStates, shiftingStates);
-		int colorBytes = sizeof(HiColor) * nbColorStates;
+		int colorBytes = sizeof(Color) * nbColorStates;
 		int sizeBytes = sizeof(float) * nbSizeStates;
 		int thicknessBytes = sizeof(pts) * nbThicknessStates;
-		int outlineColorBytes = sizeof(HiColor) * nbOutlineColorStates;
+		int outlineColorBytes = sizeof(Color) * nbOutlineColorStates;
 		int outlineThicknessBytes = sizeof(pts) * nbOutlineThicknessStates;
 		int indexBytes = colorIndexEntries + sizeIndexEntries + thicknessIndexEntries + outlineColorIndexEntries + outlineThicknessIndexEntries;
 
@@ -176,14 +176,14 @@ namespace wg
 
 		pDest += shiftBytes;
 
-		auto pColors = (HiColor*)pDest;
+		auto pColors = (Color*)pDest;
 		for (int i = 0; i < nbColorStates; i++)
 			pColors[i] = stateColors[i];
 
 		m_pColors = pColors;
 		pDest += colorBytes;
 
-		auto pOutlineColors = (HiColor*)pDest;
+		auto pOutlineColors = (Color*)pDest;
 		for (int i = 0; i < nbOutlineColorStates; i++)
 			pOutlineColors[i] = stateOutlineColors[i];
 

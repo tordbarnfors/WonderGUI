@@ -86,9 +86,9 @@ namespace wax
 		{
 			int				entry;				// Entry to fill in.
 			bool			bDrawn;
-			HiColor			color;				// Straight sRGB, as given.
+			Color			color;				// Straight sRGB, as given.
 			const uint16_t*	pTint;				// Encoded tint, null if not tinted...
-			const HiColor*	pTintColors;		// ...and its colors.
+			const Color*	pTintColors;		// ...and its colors.
 		};
 
 		/**
@@ -109,7 +109,7 @@ namespace wax
 		 * pColors are the colors of the command.
 		 */
 
-		int		write(Backend::ShapeKind kind, const uint16_t* pPayload, const HiColor* pColors, float* pEntries, Segment* pSegments);
+		int		write(Backend::ShapeKind kind, const uint16_t* pPayload, const Color* pColors, float* pEntries, Segment* pSegments);
 
 		const int	c_lineKind = 3;
 		const int	c_lineEntries = 3;

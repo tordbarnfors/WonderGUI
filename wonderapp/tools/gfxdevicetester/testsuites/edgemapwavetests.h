@@ -18,10 +18,10 @@ public:
 
 		m_pWave = EdgemapWave::create( WGBP(EdgemapWave,
 											 _.size = canvas.size(),
-											 _.color = Color8::Blue,
+											 _.color = Color::Blue,
 											 _.bottomOutlineThickness = 10*64,
 											 _.topOutlineThickness = 3*64,
-											 _.outlineColor = Color8::Red,
+											 _.outlineColor = Color::Red,
 											 _.factory = pDevice->edgemapFactory()
 											 ) );
 		

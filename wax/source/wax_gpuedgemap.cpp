@@ -228,12 +228,12 @@ namespace wax
 			if( m_pTints[seg] && m_bHasTintSlots )
 			{
 				uint16_t	words[TintTools::c_maxEncodedTintWords];
-				HiColor		colors[TintTools::c_maxEncodedTintColors];
+				Color		colors[TintTools::c_maxEncodedTintColors];
 				int			nColors;
 
 				TintTools::encodeTint(m_pTints[seg], rect, words, colors, nColors);
 
-				const HiColor* pColors = colors;
+				const Color* pColors = colors;
 				TintTools::DecodedTint decoded;
 				TintTools::decodeTint(words, pColors, decoded);
 

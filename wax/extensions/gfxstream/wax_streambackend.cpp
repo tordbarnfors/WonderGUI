@@ -217,7 +217,7 @@ namespace wax
 
 	//____ setColors() ___________________________________________________________
 
-	void StreamBackend::setColors(const HiColor* pBeg, const HiColor* pEnd)
+	void StreamBackend::setColors(const Color* pBeg, const Color* pEnd)
 	{
 		_compressSplitAndEncode( m_pEncoder, GfxStream::ChunkId::Colors, 0, m_pColorCompressor, pBeg, pEnd );
 	}

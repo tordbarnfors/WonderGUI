@@ -538,8 +538,8 @@ namespace wg
 		TextAttr		baseAttr;
 		_baseStyle(pText)->exportAttr( state, &baseAttr, scale );
 
-		HiColor	baseTint = pDevice->tintColor();
-		HiColor	localTint = HiColor::White;
+		Color	baseTint = pDevice->tintColor();
+		Color	localTint = Color::White;
 
 		BlendMode renderMode = pDevice->blendMode();
 
@@ -614,7 +614,7 @@ namespace wg
 			spx		end;
 			spx		y;
 			spx		thickness;
-			HiColor	color;
+			Color	color;
 		};
 
 		std::vector<DecorationLine> decorationLines;
@@ -684,7 +684,7 @@ namespace wg
 					if( bRecalcColor )
 					{
 						if (bInSelection)
-							pDevice->setTintColor(baseTint * HiColor::blend(localTint, m_selectionCharColor, m_selectionCharBlend));
+							pDevice->setTintColor(baseTint * Color::blend(localTint, m_selectionCharColor, m_selectionCharBlend));
 						else
 							pDevice->setTintColor( baseTint * localTint );
 
@@ -715,7 +715,7 @@ namespace wg
 					{
 						const TextAttr& attr = cursor.attr();
 
-						HiColor color = bInSelection ? HiColor::blend(localTint, m_selectionCharColor, m_selectionCharBlend) : localTint;
+						Color color = bInSelection ? Color::blend(localTint, m_selectionCharColor, m_selectionCharBlend) : localTint;
 						spx thickness = std::max( spx(64), align(attr.size / 16) );
 
 						const TextDecoration kinds[2] = { TextDecoration::Underline, TextDecoration::Strikethrough };
@@ -806,9 +806,9 @@ namespace wg
 		State state = _state(pText);
 		int textLen = _length(pText);
 
-		HiColor baseColor = _baseStyle(pText)->backColor(state);
-		if( baseColor == HiColor::Undefined )
-			baseColor = HiColor::Transparent;
+		Color baseColor = _baseStyle(pText)->backColor(state);
+		if( baseColor == Color::Undefined )
+			baseColor = Color::Transparent;
 
 		if( pData->markup.runs.empty() )
 		{
@@ -819,10 +819,10 @@ namespace wg
 
 		// Render sections of text with different background colors, merging neighbours with same color.
 
-		HiColor	sectionColor = baseColor;
+		Color	sectionColor = baseColor;
 		int		sectionBegin = 0;
 
-		auto addSection = [&](int begin, HiColor color)
+		auto addSection = [&](int begin, Color color)
 		{
 			if( color == sectionColor )
 				return;
@@ -836,11 +836,11 @@ namespace wg
 
 		for( auto& run : pData->markup.runs )
 		{
-			HiColor color = baseColor;
+			Color color = baseColor;
 			for( int i = 0 ; i < run.nbStyles ; i++ )
 			{
-				HiColor c = run.styles[i]->backColor(state);
-				if( c != HiColor::Undefined )
+				Color c = run.styles[i]->backColor(state);
+				if( c != Color::Undefined )
 					color = c;
 			}
 
@@ -855,7 +855,7 @@ namespace wg
 	//____ _renderBackSection() ________________________________________________
 
 	void FlowTextLayout::_renderBackSection( TextItem * pText, GfxDevice * pDevice, const RectSPX& canvas,
-											int begChar, int endChar, HiColor color )
+											int begChar, int endChar, Color color )
 	{
 		RectSPX area = rectForRange( pText, begChar, endChar - begChar );
 

@@ -49,7 +49,7 @@ namespace wg
 			float		angleEnd = 360.f;
 
 			BlendMode	blendMode = BlendMode::Blend;
-			HiColor		color = HiColor::Undefined;
+			Color		color = Color::Undefined;
 			Size		defaultSize;						// Mandatory
 
 			Finalizer_p	finalizer = nullptr;
@@ -108,7 +108,7 @@ namespace wg
 		Border		m_gfxPadding;
 
 		BlendMode		m_blendMode = BlendMode::Blend;
-		HiColor			m_color = HiColor::White;
+		Color			m_color = Color::White;
 		Tint_p		m_pTint;
 		bool			m_bGradient = false;
 	};

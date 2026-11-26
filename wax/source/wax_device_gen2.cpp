@@ -340,19 +340,19 @@ const RectSPX& DeviceGen2::clipBounds() const
 
 //____ setTintColor() _______________________________________________________________
 
-void DeviceGen2::setTintColor(HiColor color)
+void DeviceGen2::setTintColor(Color color)
 {
 	if (color == m_renderState.tintColor)
 		return;
 
-	if( !color.isValid() && color != HiColor::Undefined )
+	if( !color.isValid() && color != Color::Undefined )
 	{
 		Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid tint color.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 #ifdef NDEBUG
 		return;
 #else
-		color = HiColor::ShowError;
+		color = Color::ShowError;
 #endif
 	}
 
@@ -367,7 +367,7 @@ void DeviceGen2::clearTintColor()
 	if (!m_renderState.tintColor.isUndefined() )
 	{
 		m_stateChanges |= int(StateChange::TintColor);
-		m_renderState.tintColor = HiColor::Undefined;
+		m_renderState.tintColor = Color::Undefined;
 	}
 }
 
@@ -375,14 +375,14 @@ void DeviceGen2::clearTintColor()
 
 bool DeviceGen2::hasTintColor() const
 {
-	return m_renderState.tintColor != HiColor::Undefined;
+	return m_renderState.tintColor != Color::Undefined;
 }
 
 //____ tintColor() ________________________________________________________
 
-HiColor DeviceGen2::tintColor() const
+Color DeviceGen2::tintColor() const
 {
-	return m_renderState.tintColor == HiColor::Undefined ? HiColor::White : m_renderState.tintColor;
+	return m_renderState.tintColor == Color::Undefined ? Color::White : m_renderState.tintColor;
 }
 
 
@@ -538,7 +538,7 @@ Blurbrush_p	DeviceGen2::blurbrush() const
 
 //____ setFixedBlendColor() _______________________________________________
 
-void DeviceGen2::setFixedBlendColor(HiColor color)
+void DeviceGen2::setFixedBlendColor(Color color)
 {
 	if (m_renderState.fixedBlendColor != color)
 	{
@@ -549,7 +549,7 @@ void DeviceGen2::setFixedBlendColor(HiColor color)
 
 //____ fixedBlendColor() __________________________________________________
 
-HiColor DeviceGen2::fixedBlendColor() const
+Color DeviceGen2::fixedBlendColor() const
 {
 	return m_renderState.fixedBlendColor;
 }
@@ -818,7 +818,7 @@ bool DeviceGen2::_beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpdate
 			else
 			{
 				setBlendMode(BlendMode::Replace);
-				fill(HiColor::TransparentBlack);
+				fill(Color::TransparentBlack);
 				setBlendMode(BlendMode::Blend);
 			}
 		}
@@ -928,7 +928,7 @@ void DeviceGen2::clearLayers()
 			else
 			{
 				setBlendMode(BlendMode::Replace);
-				fill(HiColor::TransparentBlack);
+				fill(Color::TransparentBlack);
 				setBlendMode(BlendMode::Blend);
 			}
 		}
@@ -1126,8 +1126,8 @@ void DeviceGen2::_doFlattenLayers()
 
 		if( !baseLayer.rects.empty() )
 		{
-			HiColor* pColorsBeg = baseLayer.colors.data();
-			HiColor* pColorsEnd = pColorsBeg + baseLayer.colors.size();
+			Color* pColorsBeg = baseLayer.colors.data();
+			Color* pColorsEnd = pColorsBeg + baseLayer.colors.size();
 			m_pBackend->setColors(pColorsBeg, pColorsEnd);
 		}
 
@@ -1171,8 +1171,8 @@ void DeviceGen2::_doFlattenLayers()
 
 			if( !layer.colors.empty() )
 			{
-				HiColor* pColorsBeg = layer.colors.data();
-				HiColor* pColorsEnd = pColorsBeg + layer.colors.size();
+				Color* pColorsBeg = layer.colors.data();
+				Color* pColorsEnd = pColorsBeg + layer.colors.size();
 				m_pBackend->setColors(pColorsBeg, pColorsEnd);
 			}
 
@@ -1211,8 +1211,8 @@ void DeviceGen2::_doFlattenLayers()
 
 			if( !layer.colors.empty() )
 			{
-				HiColor* pColorsBeg = layer.colors.data();
-				HiColor* pColorsEnd = pColorsBeg + layer.colors.size();
+				Color* pColorsBeg = layer.colors.data();
+				Color* pColorsEnd = pColorsBeg + layer.colors.size();
 				m_pBackend->setColors(pColorsBeg, pColorsEnd);
 			}
 
@@ -1264,7 +1264,7 @@ void DeviceGen2::_doFlattenLayers()
 
 //____ fill() _____________________________________________________________
 
-void DeviceGen2::fill(HiColor color)
+void DeviceGen2::fill(Color color)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -1313,7 +1313,7 @@ void DeviceGen2::fill(HiColor color)
 
 //____ fill() _____________________________________________________________
 
-void DeviceGen2::fill(const RectSPX& rect, HiColor color)
+void DeviceGen2::fill(const RectSPX& rect, Color color)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -1387,7 +1387,7 @@ void DeviceGen2::fill(const RectSPX& rect, HiColor color)
 
 //____ drawLine() (start/direction) __________________________________________
 
-void DeviceGen2::drawLine(CoordSPX begin, Direction dir, spx length, HiColor color, spx thickness, LineCaps caps)
+void DeviceGen2::drawLine(CoordSPX begin, Direction dir, spx length, Color color, spx thickness, LineCaps caps)
 {
 	if (dir == Direction::Undefined)
 		return;
@@ -1447,7 +1447,7 @@ void DeviceGen2::drawLine(CoordSPX begin, Direction dir, spx length, HiColor col
 
 //____ drawLine() (from/to) __________________________________________
 
-void DeviceGen2::drawLine(CoordSPX beg, CoordSPX end, HiColor color, spx thickness, LineCaps caps)
+void DeviceGen2::drawLine(CoordSPX beg, CoordSPX end, Color color, spx thickness, LineCaps caps)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -1512,7 +1512,7 @@ void DeviceGen2::drawLine(CoordSPX beg, CoordSPX end, HiColor color, spx thickne
 //____ _isShapeColorDrawn() __________________________________________________
 // Undefined colors are not drawn. Like fill(), transparent colors draw nothing in Blend mode.
 
-bool DeviceGen2::_isShapeColorDrawn(HiColor color) const
+bool DeviceGen2::_isShapeColorDrawn(Color color) const
 {
 	return !color.isUndefined() && !(color.a == 0 && m_renderState.blendMode == BlendMode::Blend);
 }
@@ -1619,7 +1619,7 @@ void DeviceGen2::drawRoundedBox(const RoundedBoxSpec& spec)
 	// Encode tints
 
 	uint16_t	tintWords[2][TintTools::c_maxEncodedTintWords];
-	HiColor		tintColors[2][TintTools::c_maxEncodedTintColors];
+	Color		tintColors[2][TintTools::c_maxEncodedTintColors];
 	int			nTintWords[2] = { 0, 0 };
 	int			nTintColors[2] = { 0, 0 };
 
@@ -1732,7 +1732,7 @@ void DeviceGen2::drawRing(const RingSpec& spec)
 		nSlices = c_maxRingSlices;
 	}
 
-	auto isDrawn = [this](HiColor color) { return _isShapeColorDrawn(color); };
+	auto isDrawn = [this](Color color) { return _isShapeColorDrawn(color); };
 
 	spx radius = std::min(rect.w, rect.h) / 2;
 	spx outline = std::max(spec.outline, 0);
@@ -1854,7 +1854,7 @@ void DeviceGen2::drawRing(const RingSpec& spec)
 	auto encodeTint = [&](Tint* pTint)
 	{
 		uint16_t	words[TintTools::c_maxEncodedTintWords];
-		HiColor		tintColors[TintTools::c_maxEncodedTintColors];
+		Color		tintColors[TintTools::c_maxEncodedTintColors];
 		int			nTintColors;
 
 		int nWords = TintTools::encodeTint(pTint, rect, words, tintColors, nTintColors);
@@ -3414,12 +3414,12 @@ void DeviceGen2::_transformBlitComplex(const RectSPX& _dest, CoordI src, const T
 void DeviceGen2::_resetState(RenderState& state)
 {
 	state.blitSource = nullptr;
-	state.tintColor = HiColor::Undefined;
+	state.tintColor = Color::Undefined;
 	state.tintRect.clear();
 	state.pTint = nullptr;
 	state.blendMode = BlendMode::Blend;
 	state.morphFactor = 0.5f;
-	state.fixedBlendColor = HiColor::White;
+	state.fixedBlendColor = Color::White;
 	state.pBlurbrush = nullptr;
 
 	m_stateChanges = 0;
@@ -3476,7 +3476,7 @@ void DeviceGen2::_encodeStateChanges()
 
 	if (m_stateChanges & uint8_t(StateChange::TintColor))
 	{
-		auto tintColor = newState.tintColor.isUndefined() ? HiColor::White : newState.tintColor;
+		auto tintColor = newState.tintColor.isUndefined() ? Color::White : newState.tintColor;
 
 		if (tintColor != encodedState.tintColor)
 		{
@@ -3492,7 +3492,7 @@ void DeviceGen2::_encodeStateChanges()
 		if (newState.pTint != encodedState.pTint || newState.tintRect != encodedState.tintRect)
 		{
 			uint16_t	words[TintTools::c_maxEncodedTintWords];
-			HiColor		colors[TintTools::c_maxEncodedTintColors];
+			Color		colors[TintTools::c_maxEncodedTintColors];
 			int			nColors;
 
 			int nWords = TintTools::encodeTint(newState.pTint, newState.tintRect, words, colors, nColors);

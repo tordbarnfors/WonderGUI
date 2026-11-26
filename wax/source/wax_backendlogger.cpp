@@ -204,7 +204,7 @@ namespace wax
 
 	//____ setColors() ________________________________________________________
 
-	void BackendLogger::setColors(const HiColor* pBeg, const HiColor* pEnd)
+	void BackendLogger::setColors(const Color* pBeg, const Color* pEnd)
 	{
 		if( m_pOStream )
 		{
@@ -214,7 +214,7 @@ namespace wax
 			m_pColorsEnd = pEnd;
 			m_pColorsPtr = pBeg;
 
-			const HiColor* p = pBeg;
+			const Color* p = pBeg;
 
 			while (p < pEnd)
 			{
@@ -259,7 +259,7 @@ namespace wax
 		{
 			*m_pOStream << "PROCESS COMMANDS:" << std::endl;
 
-			const HiColor* pColors	= m_pColorsPtr;
+			const Color* pColors	= m_pColorsPtr;
 			const RectSPX* pRects	= m_pRectsPtr;
 
 			// Objects are referred to by index in the object table. Print both, and
@@ -300,7 +300,7 @@ namespace wax
 
 					if (statesChanged & uint8_t(StateChange::TintColor))
 					{
-						const HiColor& col = *pColors++;
+						const Color& col = *pColors++;
 
 						*m_pOStream << "        TintColor: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
 					}
@@ -324,7 +324,7 @@ namespace wax
 
 								for (int i = 0; i < layer.nStops; i++)
 								{
-									const HiColor& col = layer.stopColors[i];
+									const Color& col = layer.stopColors[i];
 									*m_pOStream << "              stop " << layer.stopPos16[i] / 65535.f << ": " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
 								}
 							}
@@ -347,7 +347,7 @@ namespace wax
 
 					if (statesChanged & uint8_t(StateChange::FixedBlendColor))
 					{
-						const HiColor& col = *pColors++;
+						const Color& col = *pColors++;
 
 						*m_pOStream << "        FixedBlendColor: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
 					}
@@ -391,7 +391,7 @@ namespace wax
 				{
 					int32_t nRects = *p++;
 
-					const HiColor& col = *pColors++;
+					const Color& col = *pColors++;
 
 					*m_pOStream << "    Fill: " << nRects << " rects with color: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
 
@@ -427,7 +427,7 @@ namespace wax
 						spx thickness = *p++;
 						uint16_t capsWord = *p++;
 
-						HiColor col = * pColors++;
+						Color col = * pColors++;
 
 						*m_pOStream << "        from (" << beg.x << ", " << beg.y << ") to (" << end.x << ", " << end.y << ") with thickness " << thickness
 									<< " and color " << col.r << ", " << col.g << ", " << col.b << ", " << col.a;

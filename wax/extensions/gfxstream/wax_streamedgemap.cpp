@@ -203,14 +203,14 @@ void StreamEdgemap::_colorsUpdated(int beginSegment, int endSegment)
 	if( endSegment > beginSegment )
 	{
 		int nColors = endSegment - beginSegment;
-		int blockSize = 10 + nColors * sizeof(HiColor);
+		int blockSize = 10 + nColors * sizeof(Color);
 
 		encoder << GfxStream::Header{ GfxStream::ChunkId::SetEdgemapColors, 0, blockSize };
 		encoder << m_inStreamId;
 		encoder << beginSegment;
 		encoder << endSegment;
 
-		encoder << GfxStream::WriteBytes{ int(nColors*sizeof(HiColor)), m_pFlatColors + beginSegment };
+		encoder << GfxStream::WriteBytes{ int(nColors*sizeof(Color)), m_pFlatColors + beginSegment };
 	}
 
 	// Tints, one chunk per segment that has one.

@@ -24,8 +24,8 @@ public:
 
 	bool init(GfxDevice * pDevice, const RectI& canvas, wapp::API * pAppAPI)
 	{
-		m_pRadialTint = Tint::create(WGBP(Tint, _.shape = TintShape::Radial, _.stops = { {0.f, HiColor(4096,4096,4096,4096)}, {1.f, HiColor(1500,1500,1500,4096)} }));
-		m_pLinearTint = Tint::create(HiColor(4096, 4096, 4096, 4096), HiColor(1000, 1000, 2500, 4096));
+		m_pRadialTint = Tint::create(WGBP(Tint, _.shape = TintShape::Radial, _.stops = { {0.f, Color(4096,4096,4096,4096)}, {1.f, Color(1500,1500,1500,4096)} }));
+		m_pLinearTint = Tint::create(Color(4096, 4096, 4096, 4096), Color(1000, 1000, 2500, 4096));
 
 		for (int i = 0; i < 7; i++)
 			m_rainbow[i] = { m_sizes[i], m_colors[i] };
@@ -58,14 +58,14 @@ public:
 
 		RingSpec spec = ring(64 * 10 + 13, 64 * 260 + 41, 64 * 230, 0, 0.7f, 3, m_rainbow);
 		spec.outline = 64 * 3;
-		spec.outlineColor = HiColor::Black;
-		spec.backColor = HiColor(1000, 1000, 1000, 4096);
+		spec.outlineColor = Color::Black;
+		spec.backColor = Color(1000, 1000, 1000, 4096);
 		pDevice->drawRing(spec);
 
-		RingSlice single = { 1.f, HiColor(4096, 2000, 0, 4096) };
+		RingSlice single = { 1.f, Color(4096, 2000, 0, 4096) };
 		spec = ring(64 * 260 + 5, 64 * 260 + 11, 64 * 230, 0, 0.f, 1, &single);
 		spec.outline = 64 * 6;
-		spec.outlineColor = HiColor(1000, 500, 0, 4096);
+		spec.outlineColor = Color(1000, 500, 0, 4096);
 		pDevice->drawRing(spec);
 		return true;
 	}
@@ -77,17 +77,17 @@ public:
 
 		spec = ring(64 * 260 + 5, 64 * 10 + 11, 64 * 230, 64 * 60, 0.05f, 7, m_rainbow);
 		spec.outline = 64 * 2;
-		spec.outlineColor = HiColor::Black;
-		spec.hubColor = HiColor(4096, 4096, 4096, 4096);
+		spec.outlineColor = Color::Black;
+		spec.hubColor = Color(4096, 4096, 4096, 4096);
 		pDevice->drawRing(spec);
 
-		RingSlice single = { 1.f, HiColor(0, 2000, 4096, 4096) };
+		RingSlice single = { 1.f, Color(0, 2000, 4096, 4096) };
 		spec = ring(64 * 10 + 13, 64 * 260 + 41, 64 * 230, 64 * 8, 0.f, 1, &single);
 		pDevice->drawRing(spec);
 
 		spec = ring(64 * 260 + 5, 64 * 260 + 11, 64 * 230, 64 * 30, 0.f, 1, &single);
 		spec.outline = 64 * 4;
-		spec.outlineColor = HiColor(0, 0, 1500, 4096);
+		spec.outlineColor = Color(0, 0, 1500, 4096);
 		pDevice->drawRing(spec);
 		return true;
 	}
@@ -98,20 +98,20 @@ public:
 	{
 		for (int i = 0; i < 4; i++)
 		{
-			RingSlice slices[2] = { { 0.1f + i * 0.15f, HiColor(0, 3500, 1000, 4096) }, { 0.05f, HiColor(4096, 4096, 0, 4096) } };
+			RingSlice slices[2] = { { 0.1f + i * 0.15f, Color(0, 3500, 1000, 4096) }, { 0.05f, Color(4096, 4096, 0, 4096) } };
 
 			RingSpec spec = ring(64 * 10 + i * 64 * 125 + i * 9, 64 * 20, 64 * 115, 64 * 15, 0.625f, 2, slices);
-			spec.backColor = HiColor(1500, 1500, 1500, 4096);
-			spec.hubColor = HiColor(3800, 3800, 3800, 4096);
+			spec.backColor = Color(1500, 1500, 1500, 4096);
+			spec.hubColor = Color(3800, 3800, 3800, 4096);
 			pDevice->drawRing(spec);
 		}
 
 		for (int i = 0; i < 4; i++)
 		{
-			RingSlice slices[1] = { { 0.2f + i * 0.2f, HiColor(4096, 1000, 0, 4096) } };
+			RingSlice slices[1] = { { 0.2f + i * 0.2f, Color(4096, 1000, 0, 4096) } };
 
 			RingSpec spec = ring(64 * 10 + i * 64 * 125 + i * 17, 64 * 200 + i * 13, 64 * 115, 64 * 10, 0.f, 1, slices);
-			spec.backColor = HiColor(4096, 4096, 4096, 1500);
+			spec.backColor = Color(4096, 4096, 4096, 1500);
 			pDevice->drawRing(spec);
 		}
 		return true;
@@ -122,19 +122,19 @@ public:
 
 	bool axes(GfxDevice * pDevice, const RectI& canvas)
 	{
-		RingSlice slices[4] = { { 0.25f, HiColor(4096, 0, 0, 4096) }, { 0.25f, HiColor(0, 3500, 0, 4096) },
-								{ 0.25f, HiColor(0, 0, 4096, 4096) }, { 0.25f, HiColor(4096, 4096, 0, 4096) } };
+		RingSlice slices[4] = { { 0.25f, Color(4096, 0, 0, 4096) }, { 0.25f, Color(0, 3500, 0, 4096) },
+								{ 0.25f, Color(0, 0, 4096, 4096) }, { 0.25f, Color(4096, 4096, 0, 4096) } };
 
 		RingSpec pie = ring(64 * 10, 64 * 10, 64 * 115, 0, 0.875f, 4, slices);
 		pDevice->drawRing(pie);
 
 		RingSpec donut = ring(64 * 135, 64 * 10, 64 * 115, 64 * 30, 0.875f, 4, slices);
 		donut.outline = 64 * 2;
-		donut.hubColor = HiColor(3800, 3800, 3800, 4096);
+		donut.hubColor = Color(3800, 3800, 3800, 4096);
 		pDevice->drawRing(donut);
 
 		RingSpec gauge = ring(64 * 260, 64 * 10, 64 * 115, 64 * 20, 0.875f, 3, slices);
-		gauge.backColor = HiColor(1500, 1500, 1500, 4096);
+		gauge.backColor = Color(1500, 1500, 1500, 4096);
 		pDevice->drawRing(gauge);
 
 		pDevice->drawRing(ring(64 * 385, 64 * 10, 64 * 15, 0, 0.875f, 4, slices));
@@ -151,7 +151,7 @@ public:
 		for (int i = 0; i < 256; i++)
 		{
 			slices[i].size = 1.f / 256;
-			slices[i].color = HiColor((i * 16) % 4097, 4096 - (i * 16) % 4097, (i * 64) % 4097, 4096);
+			slices[i].color = Color((i * 16) % 4097, 4096 - (i * 16) % 4097, (i * 64) % 4097, 4096);
 		}
 
 		pDevice->drawRing(ring(64 * 10 + 13, 64 * 10 + 41, 64 * 300, 0, 0.f, 256, slices));
@@ -170,14 +170,14 @@ public:
 
 		spec = ring(64 * 260 + 5, 64 * 10 + 11, 64 * 230, 64 * 50, 0.1f, 7, m_rainbow);
 		spec.bSquare = true;
-		spec.hubColor = HiColor(4096, 4096, 4096, 4096);
+		spec.hubColor = Color(4096, 4096, 4096, 4096);
 		spec.outline = 64 * 2;
-		spec.outlineColor = HiColor::Black;
+		spec.outlineColor = Color::Black;
 		pDevice->drawRing(spec);
 
 		spec = ring(64 * 10 + 13, 64 * 260 + 41, 64 * 480, 0, 0.25f, 3, m_rainbow);
 		spec.rect.h = 64 * 200;
-		spec.backColor = HiColor(1000, 1000, 1000, 4096);
+		spec.backColor = Color(1000, 1000, 1000, 4096);
 		pDevice->drawRing(spec);
 		return true;
 	}
@@ -193,9 +193,9 @@ public:
 
 		spec = ring(64 * 260 + 5, 64 * 10 + 11, 64 * 230, 64 * 60, 0.f, 7, m_rainbow);
 		spec.outline = 64 * 5;
-		spec.outlineColor = HiColor::White;
+		spec.outlineColor = Color::White;
 		spec.pOutlineTint = m_pLinearTint;
-		spec.hubColor = HiColor::White;
+		spec.hubColor = Color::White;
 		spec.pHubTint = m_pRadialTint;
 		pDevice->drawRing(spec);
 
@@ -203,7 +203,7 @@ public:
 		pDevice->drawRing(ring(64 * 10 + 13, 64 * 260 + 41, 64 * 230, 64 * 70, 0.3f, 7, m_rainbow));
 		pDevice->clearTint();
 
-		pDevice->setTintColor(HiColor(4096, 4096, 4096, 2048));
+		pDevice->setTintColor(Color(4096, 4096, 4096, 2048));
 		pDevice->drawRing(ring(64 * 260 + 5, 64 * 260 + 11, 64 * 230, 0, 0.6f, 7, m_rainbow));
 		pDevice->clearTintColor();
 		return true;
@@ -221,7 +221,7 @@ public:
 
 			RingSpec spec = ring(x, y, size, i % 2 ? size / 4 : 0, i * 0.02f, 7, m_rainbow);
 			spec.outline = i % 3 == 0 ? 64 : 0;
-			spec.outlineColor = HiColor::Black;
+			spec.outlineColor = Color::Black;
 			pDevice->drawRing(spec);
 		}
 		return true;
@@ -230,13 +230,13 @@ public:
 	bool blendModes(GfxDevice * pDevice, const RectI& canvas)
 	{
 		for (int i = 0; i < 16; i++)
-			pDevice->fill(RectSPX(0, i * 64 * 32, canvas.w, 64 * 16), HiColor(i * 256, 4096 - i * 256, 2048, 4096));
+			pDevice->fill(RectSPX(0, i * 64 * 32, canvas.w, 64 * 16), Color(i * 256, 4096 - i * 256, 2048, 4096));
 
 		BlendMode modes[] = { BlendMode::Replace, BlendMode::Blend, BlendMode::Add, BlendMode::Subtract, BlendMode::Multiply,
 							  BlendMode::Invert, BlendMode::Min, BlendMode::Max, BlendMode::Morph, BlendMode::BlendFixedColor };
 
 		pDevice->setMorphFactor(0.5f);
-		pDevice->setFixedBlendColor(HiColor(0, 4096, 4096, 4096));
+		pDevice->setFixedBlendColor(Color(0, 4096, 4096, 4096));
 
 		for (int i = 0; i < 10; i++)
 		{
@@ -244,7 +244,7 @@ public:
 
 			RingSpec spec = ring(64 * 10 + (i % 5) * 64 * 100 + i * 7, 64 * 40 + (i / 5) * 64 * 200 + i * 11, 64 * 90, 64 * 25, 0.f, 7, m_rainbow);
 			spec.outline = 64 * 3;
-			spec.outlineColor = HiColor(500, 500, 4096, 4096);
+			spec.outlineColor = Color(500, 500, 4096, 4096);
 			pDevice->drawRing(spec);
 		}
 
@@ -260,6 +260,6 @@ private:
 
 	const float	m_sizes[7] = { 0.1f, 0.2f, 0.05f, 0.15f, 0.25f, 0.13f, 0.12f };
 
-	const HiColor m_colors[7] = {	HiColor(4096, 0, 0, 4096), HiColor(4096, 2000, 0, 4096), HiColor(4096, 4096, 0, 4096), HiColor(0, 4096, 0, 4096),
-									HiColor(0, 1000, 4096, 4096), HiColor(1500, 0, 4096, 4096), HiColor(3000, 0, 3000, 4096) };
+	const Color m_colors[7] = {	Color(4096, 0, 0, 4096), Color(4096, 2000, 0, 4096), Color(4096, 4096, 0, 4096), Color(0, 4096, 0, 4096),
+									Color(0, 1000, 4096, 4096), Color(1500, 0, 4096, 4096), Color(3000, 0, 3000, 4096) };
 };

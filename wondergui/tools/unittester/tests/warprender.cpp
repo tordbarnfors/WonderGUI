@@ -55,7 +55,7 @@ namespace
 
 	const SizeI c_canvasSize = { 160, 96 };
 
-	const HiColor c_background = HiColor(800, 1500, 2600, 4096);
+	const Color c_background = Color(800, 1500, 2600, 4096);
 
 	enum class TestBackend
 	{
@@ -215,17 +215,17 @@ namespace
 			samples[2 * (w + 1) + i] = spx(std::lround(h * (0.8 + 0.08 * std::sin(a * 4)) * 64));
 		}
 
-		HiColor colors[4] = { HiColor(4096, 4096, 4096, 4096), HiColor(400, 1800, 4000, 3500), HiColor(4000, 2000, 300, 4096), HiColor(0, 0, 0, 0) };
+		Color colors[4] = { Color(4096, 4096, 4096, 4096), Color(400, 1800, 4000, 3500), Color(4000, 2000, 300, 4096), Color(0, 0, 0, 0) };
 
 		Tint_p tints[4];
 		if (bTinted)
 		{
-			tints[1] = Tint::create(HiColor(4096, 4096, 0, 4096), HiColor(0, 4096, 4096, 2500), { 0.f, 0.f }, { 1.f, 0.f });
+			tints[1] = Tint::create(Color(4096, 4096, 0, 4096), Color(0, 4096, 4096, 2500), { 0.f, 0.f }, { 1.f, 0.f });
 
 			Tint::Blueprint radial;
 			radial.shape = TintShape::Radial;
 			radial.center = { 0.3f, 0.6f };
-			radial.stops = { { 0.f, HiColor(4096, 0, 4096, 4096) }, { 1.f, HiColor(0, 4096, 0, 3000) } };
+			radial.stops = { { 0.f, Color(4096, 0, 4096, 4096) }, { 1.f, Color(0, 4096, 0, 3000) } };
 			tints[2] = Tint::create(radial);
 		}
 
@@ -370,7 +370,7 @@ namespace
 		pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Bilinear));
 		pDevice->warpBlit({ 2 * 64, 50 * 64 }, makeRing(pDevice, 44, c_surfaceSource));
 
-		pDevice->setTint({ 50 * 64, 50 * 64, 44 * 64, 44 * 64 }, Tint::create(HiColor(4096, 4096, 4096, 4096), HiColor(4096, 1000, 1000, 2000)));
+		pDevice->setTint({ 50 * 64, 50 * 64, 44 * 64, 44 * 64 }, Tint::create(Color(4096, 4096, 4096, 4096), Color(4096, 1000, 1000, 2000)));
 		pDevice->warpBlit({ 50 * 64, 50 * 64 }, makeRing(pDevice, 44, c_rectSource, 270.f, -135.f), { 8 * 64, 0, 16 * 64, 16 * 64 }, { 5 * 64, 0 });
 		pDevice->clearTint();
 
@@ -481,14 +481,14 @@ bool WarpRenderTest::identityEdgemapTest(std::ostream& output)
 	auto direct = [&](GfxDevice* pDevice)
 	{
 		pDevice->drawEdgemap({ 5 * 64, 9 * 64 }, pEdgemap);
-		pDevice->setTint({ 0, 0, 160 * 64, 96 * 64 }, Tint::create(HiColor(4096, 4096, 4096, 4096), HiColor(1000, 4096, 2000, 3000), { 0.f, 0.f }, { 1.f, 1.f }));
+		pDevice->setTint({ 0, 0, 160 * 64, 96 * 64 }, Tint::create(Color(4096, 4096, 4096, 4096), Color(1000, 4096, 2000, 3000), { 0.f, 0.f }, { 1.f, 1.f }));
 		pDevice->drawEdgemap({ 70 * 64 + 20, 40 * 64 - 10 }, pEdgemap);
 	};
 
 	auto warped = [&](GfxDevice* pDevice)
 	{
 		pDevice->warpDrawEdgemap({ 5 * 64, 9 * 64 }, pWarpmap, pEdgemap);
-		pDevice->setTint({ 0, 0, 160 * 64, 96 * 64 }, Tint::create(HiColor(4096, 4096, 4096, 4096), HiColor(1000, 4096, 2000, 3000), { 0.f, 0.f }, { 1.f, 1.f }));
+		pDevice->setTint({ 0, 0, 160 * 64, 96 * 64 }, Tint::create(Color(4096, 4096, 4096, 4096), Color(1000, 4096, 2000, 3000), { 0.f, 0.f }, { 1.f, 1.f }));
 		pDevice->warpDrawEdgemap({ 70 * 64 + 20, 40 * 64 - 10 }, pWarpmap, pEdgemap);
 	};
 
@@ -516,7 +516,7 @@ bool WarpRenderTest::identityBlitTest(std::ostream& output)
 		{
 			pDevice->setBlitSource(pSurface);
 			pDevice->blit({ 3 * 64, 4 * 64 }, { 64 * 7, 64 * 2, 64 * 16, 64 * 12 });
-			pDevice->setTintColor(HiColor(4096, 2000, 4096, 3000));
+			pDevice->setTintColor(Color(4096, 2000, 4096, 3000));
 			pDevice->blit({ 40 * 64, 50 * 64 }, { 64 * 7, 64 * 2, 64 * 16, 64 * 12 });
 		};
 
@@ -524,7 +524,7 @@ bool WarpRenderTest::identityBlitTest(std::ostream& output)
 		{
 			pDevice->setBlitSource(pSurface);
 			pDevice->warpBlit({ 3 * 64, 4 * 64 }, pWarpmap, { 64 * 7, 64 * 2, 64 * 16, 64 * 12 });
-			pDevice->setTintColor(HiColor(4096, 2000, 4096, 3000));
+			pDevice->setTintColor(Color(4096, 2000, 4096, 3000));
 			pDevice->warpBlit({ 40 * 64, 50 * 64 }, pWarpmap, { 64 * 7, 64 * 2, 64 * 16, 64 * 12 });
 		};
 
@@ -756,7 +756,7 @@ bool WarpRenderTest::vertexCoverageTest(std::ostream& output)
 	auto pNone = disc(0, 0);
 	TEST_ASSERT(pFaded && pHalf && pFull && pNone);
 
-	auto scene = [&](Warpmap* pWarpmap, HiColor tint = HiColor::White)
+	auto scene = [&](Warpmap* pWarpmap, Color tint = Color::White)
 	{
 		return [=](GfxDevice* pDevice)
 		{
@@ -790,7 +790,7 @@ bool WarpRenderTest::vertexCoverageTest(std::ostream& output)
 
 	for (TestBackend backend : { TestBackend::Soft, TestBackend::Linear, TestBackend::Reference })
 	{
-		if (!compare(output, "Half coverage", render(backend, scene(pHalf)), "half coverage", render(backend, scene(pFull, HiColor(4096, 4096, 4096, 2048))), "half alpha", 2, 0, 2))
+		if (!compare(output, "Half coverage", render(backend, scene(pHalf)), "half coverage", render(backend, scene(pFull, Color(4096, 4096, 4096, 2048))), "half alpha", 2, 0, 2))
 			return false;
 
 		if (!compare(output, "No coverage", render(backend, scene(pNone)), "no coverage", render(backend, [](GfxDevice*) {}), "nothing drawn", 0))
@@ -829,7 +829,7 @@ bool WarpRenderTest::blendModesTest(std::ostream& output)
 		// BlendFixedColor blends onto the fixed color in SoftBackend, which gives the same as Blend,
 		// as ReferenceBackend draws it, where the canvas is that color.
 
-		const HiColor fixedColor = HiColor(4096, 0, 2000, 4096);
+		const Color fixedColor = Color(4096, 0, 2000, 4096);
 
 		auto scene = [&](GfxDevice* pDevice)
 		{
@@ -1411,8 +1411,8 @@ bool WarpRenderTest::seamColorTest(std::ostream& output)
 
 	// An edgemap without edges, its one segment a gradient across it.
 
-	HiColor color = HiColor::White;
-	Tint_p pGradient = Tint::create(HiColor(4096, 0, 0, 4096), HiColor(0, 4096, 1000, 4096), { 0.f, 0.f }, { 1.f, 0.f });
+	Color color = Color::White;
+	Tint_p pGradient = Tint::create(Color(4096, 0, 0, 4096), Color(0, 4096, 1000, 4096), { 0.f, 0.f }, { 1.f, 0.f });
 
 	Edgemap::Blueprint bp;
 	bp.size = { 48, 24 };

@@ -31,7 +31,7 @@ public:
 
 	bool init(GfxDevice * pDevice, const RectSPX& canvas, wapp::API * pAppAPI)
 	{
-		m_pTint = Tint::create( { {0.f, HiColor(4096, 1000, 1000, 4096)}, {0.5f, HiColor(4096, 4096, 1000, 4096)}, {1.f, HiColor(1000, 1000, 4096, 2500)} }, {0.f, 0.f}, {1.f, 1.f} );
+		m_pTint = Tint::create( { {0.f, Color(4096, 1000, 1000, 4096)}, {0.5f, Color(4096, 4096, 1000, 4096)}, {1.f, Color(1000, 1000, 4096, 2500)} }, {0.f, 0.f}, {1.f, 1.f} );
 		return true;
 	}
 
@@ -44,14 +44,14 @@ public:
 	bool setTint(GfxDevice * pDevice, const RectSPX& canvas)
 	{
 		pDevice->setTint(canvas, m_pTint);
-		pDevice->setTintColor(HiColor(4096, 4096, 4096, 3500));
+		pDevice->setTintColor(Color(4096, 4096, 4096, 3500));
 		return true;
 	}
 
 	bool clearTint(GfxDevice * pDevice, const RectSPX& canvas)
 	{
 		pDevice->clearTint();
-		pDevice->setTintColor(Color8::White);
+		pDevice->setTintColor(Color::White);
 		return true;
 	}
 
@@ -90,7 +90,7 @@ public:
 			double c = std::cos(angle), s = std::sin(angle);
 			double thickness = 1.0 + (i % 6) * 2.3;
 
-			lineFrom(pDevice, center.x + c * 60, center.y + s * 60, center.x + c * 230, center.y + s * 230, thickness, LineCap::Round, HiColor(4096, 3500, 1500, 3200));
+			lineFrom(pDevice, center.x + c * 60, center.y + s * 60, center.x + c * 230, center.y + s * 230, thickness, LineCap::Round, Color(4096, 3500, 1500, 3200));
 		}
 		return true;
 	}
@@ -104,8 +104,8 @@ public:
 			uint16_t length = uint16_t(25 + i * 775 / 15);
 			double y = 20 + i * 30.3;
 
-			lineFrom(pDevice, 20.4, y, 240.4, y + 4, 8.0, { LineCap::Flat, LineCap::Spear(length) }, HiColor(1500, 4096, 2500, 3500));
-			lineFrom(pDevice, 280.7, y + 10, 490.7, y - 6, 4.0, LineCap::Spear(length), HiColor(4096, 2000, 3500, 3500));
+			lineFrom(pDevice, 20.4, y, 240.4, y + 4, 8.0, { LineCap::Flat, LineCap::Spear(length) }, Color(1500, 4096, 2500, 3500));
+			lineFrom(pDevice, 280.7, y + 10, 490.7, y - 6, 4.0, LineCap::Spear(length), Color(4096, 2000, 3500, 3500));
 		}
 		return true;
 	}
@@ -123,7 +123,7 @@ public:
 				double y = 22 + i * 40 + i * 0.29;
 
 				LineCap cap = ((i + j) % 2) == 0 ? LineCap::Round : LineCap::Square;
-				lineFrom(pDevice, x, y, x, y, size, cap, HiColor(4096, 4096, 4096, 4096));
+				lineFrom(pDevice, x, y, x, y, size, cap, Color(4096, 4096, 4096, 4096));
 			}
 		}
 		return true;
@@ -140,7 +140,7 @@ public:
 		{
 			double base = 70 + chart * 120;
 			double thickness = 1.5 + chart * 3.0;
-			HiColor color = chart % 2 ? HiColor(4096, 2500, 500, 2800) : HiColor(800, 3000, 4096, 2800);
+			Color color = chart % 2 ? Color(4096, 2500, 500, 2800) : Color(800, 3000, 4096, 2800);
 
 			auto valueAt = [&](int i) { return base - 45 * std::sin(i * 0.37 + chart) * std::cos(i * 0.11); };
 
@@ -165,7 +165,7 @@ public:
 			for (int d = 0; d < 4; d++)
 			{
 				CoordSPX begin = { spx((60 + c * 120 + (d == 2 ? 80 : 0)) * 64 + 13), spx((40 + d * 120 + (d == 3 ? 80 : 0)) * 64 + 29) };
-				pDevice->drawLine(begin, dirs[d], 80 * 64, HiColor(4096, 4096, 2000, 3500), 64 * 6 + 20, caps[c]);
+				pDevice->drawLine(begin, dirs[d], 80 * 64, Color(4096, 4096, 2000, 3500), 64 * 6 + 20, caps[c]);
 			}
 		}
 		return true;
@@ -179,7 +179,7 @@ public:
 		// Stripes to blend onto.
 
 		for (int i = 0; i < 8; i++)
-			pDevice->fill(RectSPX(0, i * 64 * 64, canvas.w, 32 * 64), HiColor(i * 500, 2000, 4096 - i * 500, 4096));
+			pDevice->fill(RectSPX(0, i * 64 * 64, canvas.w, 32 * 64), Color(i * 500, 2000, 4096 - i * 500, 4096));
 
 		pDevice->setMorphFactor(0.4f);
 
@@ -188,8 +188,8 @@ public:
 			pDevice->setBlendMode(modes[m]);
 
 			double y = 30 + m * 54;
-			lineFrom(pDevice, 30.3, y, 230.3, y + 14, 12.0, LineCap::Round, HiColor(4096, 2000, 1000, 3000));
-			lineFrom(pDevice, 280.6, y + 14, 480.6, y, 9.0, { LineCap::Square, LineCap::Spear(300) }, HiColor(1000, 4096, 2000, 3000));
+			lineFrom(pDevice, 30.3, y, 230.3, y + 14, 12.0, LineCap::Round, Color(4096, 2000, 1000, 3000));
+			lineFrom(pDevice, 280.6, y + 14, 480.6, y, 9.0, { LineCap::Square, LineCap::Spear(300) }, Color(1000, 4096, 2000, 3000));
 		}
 
 		pDevice->setBlendMode(BlendMode::Blend);
@@ -201,7 +201,7 @@ private:
 
 	static constexpr double c_pi = 3.14159265358979323846;
 
-	void lineFrom(GfxDevice * pDevice, double x1, double y1, double x2, double y2, double thickness, LineCaps caps, HiColor color)
+	void lineFrom(GfxDevice * pDevice, double x1, double y1, double x2, double y2, double thickness, LineCaps caps, Color color)
 	{
 		pDevice->drawLine({ spx(std::lround(x1 * 64)), spx(std::lround(y1 * 64)) }, { spx(std::lround(x2 * 64)), spx(std::lround(y2 * 64)) },
 						  color, spx(std::lround(thickness * 64)), caps);
@@ -227,7 +227,7 @@ private:
 
 				RectSPX cell = { c * 64 * 64, r * 64 * 64, 64 * 64, 64 * 64 };
 				pDevice->pushClipList(1, &cell);
-				lineFrom(pDevice, cx - dx, cy - dy, cx + dx, cy + dy, thickness, lineCaps, HiColor(4096, 3000, 1200, 3000));
+				lineFrom(pDevice, cx - dx, cy - dy, cx + dx, cy + dy, thickness, lineCaps, Color(4096, 3000, 1200, 3000));
 				pDevice->popClipList();
 			}
 		}

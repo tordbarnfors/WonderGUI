@@ -105,10 +105,10 @@ namespace wax
 		int			clipListSize() const override;
 		const RectSPX& clipBounds() const override;
 
-		void		setTintColor(HiColor color) override;
+		void		setTintColor(Color color) override;
 		void		clearTintColor() override;
 		bool		hasTintColor() const override;
-		HiColor		tintColor() const override;
+		Color		tintColor() const override;
 
 
 		void		setTint(const RectSPX& rect, Tint* pTint) override;
@@ -129,8 +129,8 @@ namespace wax
 		void		setBlurbrush(Blurbrush* pBrush) override;
 		Blurbrush_p	blurbrush() const override;
 
-		void		setFixedBlendColor(HiColor color) override;
-		HiColor		fixedBlendColor() const override;
+		void		setFixedBlendColor(Color color) override;
+		Color		fixedBlendColor() const override;
 
 		void		setRenderLayer(int layer) override;
 		int			renderLayer() const override;
@@ -157,11 +157,11 @@ namespace wax
 
 		// Draw methods.
 
-		void	fill(HiColor color) override;
-		void	fill(const RectSPX& rect, HiColor color) override;
+		void	fill(Color color) override;
+		void	fill(const RectSPX& rect, Color color) override;
 		
-		void	drawLine(CoordSPX begin, CoordSPX end, HiColor color, spx thickness = 64, LineCaps caps = LineCaps()) override;
-		void	drawLine(CoordSPX begin, Direction dir, spx length, HiColor color, spx thickness = 64, LineCaps caps = LineCaps()) override;
+		void	drawLine(CoordSPX begin, CoordSPX end, Color color, spx thickness = 64, LineCaps caps = LineCaps()) override;
+		void	drawLine(CoordSPX begin, Direction dir, spx length, Color color, spx thickness = 64, LineCaps caps = LineCaps()) override;
 
 		// Shapes
 
@@ -238,8 +238,8 @@ namespace wax
 			Tint_p			pTint;
 			Blurbrush_p		pBlurbrush;
 
-			HiColor			tintColor = HiColor::Undefined;
-			HiColor			fixedBlendColor = HiColor::White;
+			Color			tintColor = Color::Undefined;
+			Color			fixedBlendColor = Color::White;
 
 			RectSPX			tintRect;
 			BlendMode		blendMode = BlendMode::Blend;
@@ -272,7 +272,7 @@ namespace wax
 			DynamicBuffer			commands;
 
 			std::vector<RectSPX>	rects;
-			std::vector<HiColor>	colors;
+			std::vector<Color>	colors;
 			std::vector<Object*>	objects;					// Object table, retained, referred to by index from commands.
 
 			ObjectCacheEntry		objectCache[1 << c_objectCacheBits];
@@ -323,7 +323,7 @@ namespace wax
 		void _stretchBlitWithRigidPartX(const RectSPX& src, const RectSPX& dst, spx rigidPartOfs, spx rigidPartLength, spx rigidPartLengthDst);
 		void _stretchBlitWithRigidPartY(const RectSPX& src, const RectSPX& dst, spx rigidPartOfs, spx rigidPartLength, spx rigidPartLengthDst);
 
-		bool _isShapeColorDrawn(HiColor color) const;
+		bool _isShapeColorDrawn(Color color) const;
 		int _addShapeClipRects(const RectSPX& area);
 
 		//

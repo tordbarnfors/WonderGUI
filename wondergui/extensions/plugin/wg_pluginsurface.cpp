@@ -181,12 +181,12 @@ namespace wg
 
 	//____ fill() _____________________________________________________________
 
-	bool PluginSurface::fill(HiColor color)
+	bool PluginSurface::fill(Color color)
 	{
 		return PluginCalls::surface->fillSurface(m_cSurface, *(wax_color*)&color);
 	}
 
-	bool PluginSurface::fill(const RectI& region, HiColor color )
+	bool PluginSurface::fill(const RectI& region, Color color )
 	{
 		return PluginCalls::surface->fillSurfaceRect( m_cSurface, (const wax_rectI*) &region, * (wax_color*)&color );
 	}

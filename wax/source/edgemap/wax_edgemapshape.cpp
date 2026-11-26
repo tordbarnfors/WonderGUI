@@ -126,7 +126,7 @@ namespace wax
 		nothing is changed, not even pieces built before and not yet generated.
 	*/
 
-	EdgemapShape::BuildResult EdgemapShape::_buildPieces( const std::vector<Layout>& layout, const RegionFunc& regions, const HiColor * pColors, EdgemapFactory * pFactory )
+	EdgemapShape::BuildResult EdgemapShape::_buildPieces( const std::vector<Layout>& layout, const RegionFunc& regions, const Color * pColors, EdgemapFactory * pFactory )
 	{
 		std::vector<Build>	builds;
 
@@ -160,7 +160,7 @@ namespace wax
 		edgemap has.
 	*/
 
-	bool EdgemapShape::_buildPiece( const Layout& layout, const RegionFunc& regions, const HiColor * pColors, Build& out )
+	bool EdgemapShape::_buildPiece( const Layout& layout, const RegionFunc& regions, const Color * pColors, Build& out )
 	{
 		const RectI& rect = layout.rect;
 		bool bRows = layout.bRows;
@@ -289,15 +289,15 @@ namespace wax
 
 		// Group neighbouring regions with the same color into segments.
 
-		auto colorOf = [pColors](int color) { return color >= 0 ? pColors[color] : HiColor::Transparent; };
+		auto colorOf = [pColors](int color) { return color >= 0 ? pColors[color] : Color::Transparent; };
 
 		std::vector<int> groupOf(nodes.size());				// Segment of each region.
-		std::vector<HiColor> colors;
+		std::vector<Color> colors;
 		bool bEmpty = true;
 
 		for (int k : order)
 		{
-			HiColor color = colorOf(nodes[k].color);
+			Color color = colorOf(nodes[k].color);
 			if (colors.empty() || color != colors.back())
 				colors.push_back(color);
 
@@ -435,7 +435,7 @@ namespace wax
 				if (bSamePlace)
 					capacity = stored.capacity >= nSegments ? stored.capacity : std::min(nSegments + 2, int(Edgemap::maxSegments));
 
-				std::vector<HiColor> colors = build.colors;
+				std::vector<Color> colors = build.colors;
 				colors.resize(capacity, build.colors.back());
 
 				SizeI size = build.bRows ? SizeI(build.rect.h, build.rect.w) : SizeI(build.rect.w, build.rect.h);

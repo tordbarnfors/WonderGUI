@@ -31,7 +31,7 @@ namespace
 		pDevice->beginRender();
 		pDevice->beginCanvasUpdate(pCanvas);
 		pDevice->setBlendMode(BlendMode::Replace);
-		pDevice->fill(HiColor::Black);
+		pDevice->fill(Color::Black);
 		pDevice->setBlendMode(BlendMode::Blend);
 		draw(pDevice);
 		pDevice->endCanvasUpdate();
@@ -64,14 +64,14 @@ namespace
 
 	std::vector<Case> cases()
 	{
-		std::vector<RingSlice> seven = { { 0.1f, Color8::Red }, { 0.2f, Color8::Orange }, { 0.05f, Color8::Yellow }, { 0.15f, Color8::Green },
-										 { 0.25f, Color8::Cyan }, { 0.13f, Color8::Blue }, { 0.12f, Color8::Magenta } };
+		std::vector<RingSlice> seven = { { 0.1f, Color::Red }, { 0.2f, Color::Orange }, { 0.05f, Color::Yellow }, { 0.15f, Color::Green },
+										 { 0.25f, Color::Cyan }, { 0.13f, Color::Blue }, { 0.12f, Color::Magenta } };
 
 		std::vector<Case> out;
 		RingSpec s;
 
-		s = {}; s.rect = pixels(8, 8, 144, 144); s.outline = 2 * 64; s.outlineColor = Color8::White;
-		out.push_back({ "Disc", s, { { 1.f, Color8::Red } } });
+		s = {}; s.rect = pixels(8, 8, 144, 144); s.outline = 2 * 64; s.outlineColor = Color::White;
+		out.push_back({ "Disc", s, { { 1.f, Color::Red } } });
 
 		s = {}; s.rect = pixels(8, 8, 144, 144);
 		out.push_back({ "Pie, center on pixel corner", s, seven });
@@ -79,17 +79,17 @@ namespace
 		s = {}; s.rect = pixels(8.3, 8.6, 143.25, 143.25); s.start = 0.1f;
 		out.push_back({ "Pie, center between pixels", s, seven });
 
-		s = {}; s.rect = pixels(8.3, 8.6, 143.25, 143.25); s.thickness = 40 * 64; s.outline = 2 * 64; s.outlineColor = Color8::White; s.hubColor = Color8::Gray;
+		s = {}; s.rect = pixels(8.3, 8.6, 143.25, 143.25); s.thickness = 40 * 64; s.outline = 2 * 64; s.outlineColor = Color::White; s.hubColor = Color::Gray;
 		out.push_back({ "Donut", s, seven });
 
-		s = {}; s.rect = pixels(20, 20, 120, 120); s.thickness = 12 * 64; s.start = 0.625f; s.backColor = HiColor(4096, 4096, 4096, 1024);
-		out.push_back({ "Gauge", s, { { 0.45f, Color8::Cyan }, { 0.3f, HiColor::Undefined } } });
+		s = {}; s.rect = pixels(20, 20, 120, 120); s.thickness = 12 * 64; s.start = 0.625f; s.backColor = Color(4096, 4096, 4096, 1024);
+		out.push_back({ "Gauge", s, { { 0.45f, Color::Cyan }, { 0.3f, Color::Undefined } } });
 
-		s = {}; s.rect = pixels(10.4, 40.2, 140.5, 80.7); s.thickness = 20 * 64; s.backColor = Color8::DarkBlue; s.hubColor = Color8::Gray;
-		out.push_back({ "Back in wide rect", s, { { 0.3f, Color8::Red }, { 0.3f, Color8::Orange }, { 0.2f, Color8::Yellow } } });
+		s = {}; s.rect = pixels(10.4, 40.2, 140.5, 80.7); s.thickness = 20 * 64; s.backColor = Color::DarkBlue; s.hubColor = Color::Gray;
+		out.push_back({ "Back in wide rect", s, { { 0.3f, Color::Red }, { 0.3f, Color::Orange }, { 0.2f, Color::Yellow } } });
 
-		s = {}; s.rect = pixels(20, 20, 120, 120); s.bSquare = true; s.outline = 3 * 64; s.outlineColor = Color8::White; s.thickness = 30 * 64; s.hubColor = Color8::Gray;
-		out.push_back({ "Square", s, { { 0.25f, Color8::Red }, { 0.25f, Color8::Orange }, { 0.25f, Color8::Yellow } } });
+		s = {}; s.rect = pixels(20, 20, 120, 120); s.bSquare = true; s.outline = 3 * 64; s.outlineColor = Color::White; s.thickness = 30 * 64; s.hubColor = Color::Gray;
+		out.push_back({ "Square", s, { { 0.25f, Color::Red }, { 0.25f, Color::Orange }, { 0.25f, Color::Yellow } } });
 
 		return out;
 	}
@@ -141,7 +141,7 @@ bool EdgemapRingTest::accuracyTest(std::ostream& output)
 		{
 			int diff = 0;
 			for (int ch = 0; ch < 3; ch++)
-				diff = std::max(diff, std::abs(HiColor::unpackLinearTab[edge[i + ch]] - HiColor::unpackLinearTab[ref[i + ch]]));
+				diff = std::max(diff, std::abs(Color::unpackLinearTab[edge[i + ch]] - Color::unpackLinearTab[ref[i + ch]]));
 
 			worst = std::max(worst, diff);
 			if (diff > 4096 / 16)
@@ -169,8 +169,8 @@ bool EdgemapRingTest::apexTest(std::ostream& output)
 	auto pRef = GfxDeviceGen2::create(ReferenceBackend::create());
 	auto pFactory = SoftEdgemapFactory::create();
 
-	std::vector<RingSlice> whole = { { 1.f, Color8::White } };
-	std::vector<RingSlice> slices = { { 0.2f, Color8::White }, { 0.3f, Color8::White }, { 0.5f, Color8::White } };
+	std::vector<RingSlice> whole = { { 1.f, Color::White } };
+	std::vector<RingSlice> slices = { { 0.2f, Color::White }, { 0.3f, Color::White }, { 0.5f, Color::White } };
 
 	struct ApexCase { RectSPX rect; spx thickness; std::vector<RingSlice>* pSlices; };
 
@@ -206,7 +206,7 @@ bool EdgemapRingTest::apexTest(std::ostream& output)
 			for (int x = centerX - 2; x <= centerX + 2; x++)
 			{
 				size_t i = (y * c_canvasSize.w + x) * 4;
-				worst = std::max(worst, std::abs(HiColor::unpackLinearTab[edge[i]] - HiColor::unpackLinearTab[ref[i]]));
+				worst = std::max(worst, std::abs(Color::unpackLinearTab[edge[i]] - Color::unpackLinearTab[ref[i]]));
 			}
 		}
 
@@ -235,11 +235,11 @@ bool EdgemapRingTest::updateTest(std::ostream& output)
 	std::vector<RingSlice> moved = from.slices;
 	moved[0].size = 0.3f;
 	moved[2].size = 0.02f;
-	moved[4].color = Color8::White;
+	moved[4].color = Color::White;
 
 	std::vector<RingSlice> recolored = from.slices;
 	for (auto& slice : recolored)
-		slice.color = Color8::Blue;
+		slice.color = Color::Blue;
 
 	RingSpec spec = from.spec;
 	spec.nSlices = int(from.slices.size());
@@ -285,7 +285,7 @@ bool EdgemapRingTest::nothingDrawnTest(std::ostream& output)
 {
 	auto pFactory = SoftEdgemapFactory::create();
 
-	RingSlice slice = { 1.f, HiColor::Undefined };
+	RingSlice slice = { 1.f, Color::Undefined };
 
 	RingSpec spec;
 	spec.rect = pixels(10, 10, 50, 50);
@@ -297,7 +297,7 @@ bool EdgemapRingTest::nothingDrawnTest(std::ostream& output)
 	TEST_ASSERT(pRing != nullptr && pRing->pieces().empty());
 
 	spec.rect = {};
-	slice.color = Color8::Red;
+	slice.color = Color::Red;
 	TEST_ASSERT(pRing->update(spec));
 	pRing->generate();
 	TEST_ASSERT(pRing->pieces().empty());
@@ -317,7 +317,7 @@ bool EdgemapRingTest::tooManySlicesTest(std::ostream& output)
 
 	std::vector<RingSlice> many(80);
 	for (int i = 0; i < 80; i++)
-		many[i] = { 1.f / 80, i % 2 ? Color8::Red : Color8::Blue };
+		many[i] = { 1.f / 80, i % 2 ? Color::Red : Color::Blue };
 
 	RingSpec spec;
 	spec.rect = pixels(8, 8, 144, 144);
@@ -326,7 +326,7 @@ bool EdgemapRingTest::tooManySlicesTest(std::ostream& output)
 
 	TEST_ASSERT(EdgemapRing::create(WGBP(EdgemapRing, _.factory = pFactory), spec) == nullptr);
 
-	std::vector<RingSlice> few = { { 0.3f, Color8::Red }, { 0.3f, Color8::Green }, { 0.4f, Color8::Blue } };
+	std::vector<RingSlice> few = { { 0.3f, Color::Red }, { 0.3f, Color::Green }, { 0.4f, Color::Blue } };
 
 	RingSpec fewSpec = spec;
 	fewSpec.nSlices = int(few.size());
@@ -338,7 +338,7 @@ bool EdgemapRingTest::tooManySlicesTest(std::ostream& output)
 	auto before = render(pSoft, [&](GfxDevice* p) { pRing->draw(p); });
 
 	TEST_ASSERT(!pRing->update(spec));
-	TEST_ASSERT(pRing->spec().nSlices == 3 && pRing->spec().pSlices[2].color == HiColor(Color8::Blue));
+	TEST_ASSERT(pRing->spec().nSlices == 3 && pRing->spec().pSlices[2].color == Color(Color::Blue));
 
 	auto after = render(pSoft, [&](GfxDevice* p) { pRing->draw(p); });
 	TEST_ASSERT(before == after);
@@ -370,7 +370,7 @@ bool EdgemapRingTest::drawnTwiceTest(std::ostream& output)
 
 	std::vector<RingSlice> recolored = from.slices;
 	for (auto& slice : recolored)
-		slice.color = Color8::Blue;
+		slice.color = Color::Blue;
 
 	RingSpec first = from.spec;
 	first.nSlices = int(from.slices.size());

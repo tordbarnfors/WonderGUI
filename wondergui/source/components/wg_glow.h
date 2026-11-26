@@ -56,10 +56,10 @@ namespace wg
 
 			SizeI				resolution;
 
-			HiColor				seedTint = HiColor::White;
+			Color				seedTint = Color::White;
 			BlendMode			seedBlend = BlendMode::Blend;
 
-			HiColor				glowTint = HiColor::White;
+			Color				glowTint = Color::White;
 			BlendMode			glowBlend = BlendMode::Add;
 
 			Placement			resizePlacement = Placement::NorthWest;
@@ -97,14 +97,14 @@ namespace wg
 		void				setPixelResolution(SizeI pixels);
 		SizeI				pixelResolution() const;
 
-		void				setSeedTint(HiColor seedTint);
-		HiColor				seedTint() const { return m_seedTint; }
+		void				setSeedTint(Color seedTint);
+		Color				seedTint() const { return m_seedTint; }
 
 		void				setSeedBlend(BlendMode seedBlend);
 		BlendMode			seedBlend() const { return m_seedBlend; }
 
-		void				setGlowTint(HiColor glowTint);
-		HiColor				glowTint() const { return m_glowTint; }
+		void				setGlowTint(Color glowTint);
+		Color				glowTint() const { return m_glowTint; }
 
 		void				setGlowBlend(BlendMode glowBlend);
 		BlendMode			glowBlend() const { return m_glowBlend; }
@@ -130,10 +130,10 @@ namespace wg
 		Surface_p			m_surface[2];
 		SizeI				m_resolution;
 
-		HiColor				m_seedTint = HiColor::White;
+		Color				m_seedTint = Color::White;
 		BlendMode			m_seedBlend = BlendMode::Blend;
 
-		HiColor				m_glowTint = HiColor::White;
+		Color				m_glowTint = Color::White;
 		BlendMode			m_glowBlend = BlendMode::Add;
 
 		int					m_microSecAccumulator = 0;

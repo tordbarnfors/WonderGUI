@@ -10,12 +10,15 @@ Each entry says what happens, where in the code, and anything known about the ca
 Found when Cybersim set WonderGUI up on its own, without WonderApp. None of them gives an
 error message.
 
-### A `HiColor` made from a `Color8` before `Base::init()` is transparent black
+### A `Color` made from a `Color8` before `Base::init()` is transparent black
 
-`HiColor::HiColor(Color8)` looks the channels up in `unpackLinearTab`, which `_initTables()`
+`Color::Color(Color8)` looks the channels up in `unpackLinearTab`, which `_initTables()`
 fills in when `Base::init()` runs. Before that the table is all zeros, so a color converted
-earlier, such as a constant at namespace scope (`const HiColor paper = Color8(0xF3F3F3);`),
+earlier, such as a constant at namespace scope (`const Color paper = Color8(0xF3F3F3);`),
 silently becomes transparent black and stays that way. Skins made with it draw nothing.
+Converting the other way, `Color8` from `Color`, goes through `packLinearTab` and has the
+same problem (`const Color8 paper = Color::Linen;`). The named colors of `Color` are
+constant-initialized, so `const Color paper = Color::Linen;` is safe.
 
 `wax/source/wax_color.cpp`
 

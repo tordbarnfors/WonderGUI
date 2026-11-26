@@ -74,7 +74,7 @@ namespace wg
 			bool			skinAroundCanvas = false;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
-			HiColor			tintColor		= HiColor::Undefined;
+			Color			tintColor		= Color::Undefined;
 			Tint_p		tint;
 			std::string			tooltip;
 		};
@@ -98,7 +98,7 @@ namespace wg
 		void		setPlacement(Placement placement);
 		Placement	placement() const { return m_placement; }
 
-		void		setTintColor(HiColor color, ColorTransition* pTransition = nullptr);
+		void		setTintColor(Color color, ColorTransition* pTransition = nullptr);
 		void		setTint(Tint * pTint, ValueTransition* pTransition = nullptr);
 		void		setBlendMode(BlendMode mode);
 
@@ -118,7 +118,7 @@ namespace wg
 			m_pTint			= bp.tint;
 			m_bSkinAroundCanvas = bp.skinAroundCanvas;
 			
-			if( bp.tintColor != HiColor::Undefined )
+			if( bp.tintColor != Color::Undefined )
 				m_tintColor	= bp.tintColor;
 
 			if (bp.canvas)
@@ -150,14 +150,14 @@ namespace wg
 		Placement			m_placement = Placement::Center;
 		bool				m_bSkinAroundCanvas = false;
 
-		HiColor				m_tintColor = HiColor::White;
+		Color				m_tintColor = Color::White;
 		Tint_p			m_pTint;
 		BlendMode			m_blendMode = BlendMode::Blend;
 
 		// Transitions
 
-		HiColor				m_startTintColor;
-		HiColor				m_endTintColor;
+		Color				m_startTintColor;
+		Color				m_endTintColor;
 
 		Tint_p			m_pStartTint;
 		Tint_p			m_pEndTint;

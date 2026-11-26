@@ -123,7 +123,7 @@ namespace wax
 		std::vector<Interval>	m_intervals;
 		std::vector<double>		m_boundaries;						// Angles of lines between intervals, in turns.
 
-		std::vector<HiColor>	m_colors;							// Back, outline, hub and slices.
+		std::vector<Color>	m_colors;							// Back, outline, hub and slices.
 
 		std::vector<Layout>		m_layout;
 		int			m_middleTop = 0, m_middleBottom = 0;			// Rows between the pieces of a square outline.

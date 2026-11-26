@@ -244,17 +244,17 @@ namespace wax
 		m_bBlitFunctionNeedsUpdate = true;
 
 		m_colTrans.mode = TintMode::None;
-		m_colTrans.flatTintColor = HiColor::White;
+		m_colTrans.flatTintColor = Color::White;
 		m_colTrans.bTintOpaque = true;
 		m_colTrans.tintRect.clear();
 		m_colTrans.pTintAxisX = nullptr;
 		m_colTrans.pTintAxisY = nullptr;
 		m_colTrans.morphFactor = 2048;
 
-		m_tintColor = HiColor::White;
+		m_tintColor = Color::White;
 		m_tint.nLayers = 0;
 		_updateTint();
-		m_colTrans.fixedBlendColor = HiColor::White;
+		m_colTrans.fixedBlendColor = Color::White;
 
 		_updateBlurRadius(s_defaultBlurRadius);
 
@@ -287,7 +287,7 @@ namespace wax
 
 	//____ setColors() _____________________________________________
 
-	void SoftBackend::setColors(const HiColor* pBeg, const HiColor* pEnd)
+	void SoftBackend::setColors(const Color* pBeg, const Color* pEnd)
 	{
 		m_pColorsBeg = pBeg;
 		m_pColorsEnd = pEnd;
@@ -307,7 +307,7 @@ namespace wax
 	void SoftBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int version)
 	{
 		const RectSPX *	pRects = m_pRectsPtr;
-		const HiColor*	pColors = m_pColorsPtr;
+		const Color*	pColors = m_pColorsPtr;
 
 		int 		customTransformStart = version == 1 ? GfxFlip_size : NbStandardTransforms;
 
@@ -393,7 +393,7 @@ namespace wax
 			{
 				int32_t nRects = *p++;
 
-				HiColor col = (*pColors++).toLinear();
+				Color col = (*pColors++).toLinear();
 
 				// Optimize calls
 
@@ -436,7 +436,7 @@ namespace wax
 
 				// Fills a rectangle of whole pixels with given kernel, taking tint into account.
 
-				auto fillPixels = [&](FillOp_p pOp, bool bRuns, const RectI& rect, HiColor color)
+				auto fillPixels = [&](FillOp_p pOp, bool bRuns, const RectI& rect, Color color)
 				{
 					_forTintSpans(rect, bRuns, [&](const RectI& sub)
 					{
@@ -559,7 +559,7 @@ namespace wax
 						{
 							if (alpha != 0)
 							{
-								HiColor color = col;
+								Color color = col;
 								color.a = alpha;
 								fillPixels(pEdgeFunc, bEdgeRuns, rect, color);
 							}
@@ -627,11 +627,11 @@ namespace wax
 
 				for (int line = 0; line < nLines; line++)
 				{
-					HiColor color = *pColors++;
-					HiColor fillColor = color.toLinear();
-					HiColor tintedColor = fillColor;
+					Color color = *pColors++;
+					Color fillColor = color.toLinear();
+					Color tintedColor = fillColor;
 
-					if( m_tintColor != HiColor::White )
+					if( m_tintColor != Color::White )
 						fillColor = fillColor * m_tintColor;
 
 					CoordSPX beg, end;
@@ -996,7 +996,7 @@ namespace wax
 				const RectSPX* pMyRects = pRects;
 				pRects += nRects;
 
-				const HiColor* pMyColors = pColors;
+				const Color* pMyColors = pColors;
 				pColors += nColors;
 
 				if (_beginShape(kind, pPayload, pMyColors))
@@ -1318,7 +1318,7 @@ namespace wax
 				m_pKernels[(int)destFormat]->pStraightBlitFromBGRA8Kernels[(int)tintMode][(int)blendMode] = pKernel;
 		}
 
-		if (destFormat == SoftFormat::Undefined && blendMode == BlendMode::Replace && tintMode == TintMode::None)			// Special case for HiColor destination.
+		if (destFormat == SoftFormat::Undefined && blendMode == BlendMode::Replace && tintMode == TintMode::None)			// Special case for Color destination.
 		{
 			m_pStraightMoveToHiColorKernels[(int)sourceFormat][(int)readOp] = pKernel;
 			success = true;
@@ -1363,7 +1363,7 @@ namespace wax
 			success = true;
 		}
 		
-		if( destFormat == SoftFormat::Undefined && blendMode == BlendMode::Replace && tintMode == TintMode::None )			// Special case for HiColor destination.
+		if( destFormat == SoftFormat::Undefined && blendMode == BlendMode::Replace && tintMode == TintMode::None )			// Special case for Color destination.
 		{
 			m_pTransformMoveToHiColorKernels[(int)sourceFormat][(int)sampleMethod][(int)edgeOp] = pKernel;
 			success = true;
@@ -1663,7 +1663,7 @@ namespace wax
 		BlendMode		clipBlendMode = m_blendMode;		// ClipBlits leave pixels outside the source alone, so not optimized below.
 
 		// Sources of formats no kernels can be made for are Undefined, which is the
-		// key of kernels for our own HiColor buffers, so we need to stop here.
+		// key of kernels for our own Color buffers, so we need to stop here.
 
 		if (srcFormat == SoftFormat::Undefined || m_pKernels[(int)dstFormat] == nullptr)
 			return;
@@ -1828,7 +1828,7 @@ namespace wax
 
 	//____ _setTintColor() ___________________________________________________
 
-	void SoftBackend::_setTintColor(HiColor color)
+	void SoftBackend::_setTintColor(Color color)
 	{
 		m_tintColor = color;
 		_updateTint();
@@ -1836,7 +1836,7 @@ namespace wax
 
 	//____ _setTint() __________________________________________________________
 
-	const uint16_t* SoftBackend::_setTint(const uint16_t* p, const HiColor*& pColors)
+	const uint16_t* SoftBackend::_setTint(const uint16_t* p, const Color*& pColors)
 	{
 		p = TintTools::decodeTint(p, pColors, m_tint);
 		_updateTint();
@@ -1860,7 +1860,7 @@ namespace wax
 
 		if (m_softTint.isFlat())
 		{
-			HiColor color = m_softTint.flatColor();
+			Color color = m_softTint.flatColor();
 
 			m_tintLayout = TintLayout::None;
 			m_colTrans.flatTintColor = color;
@@ -1971,7 +1971,7 @@ namespace wax
 		{
 			if (!t.bPerPixel && !t.bColorPerColumn)
 			{
-				HiColor col = pEdgemap->m_segmentTints[seg].flatColor() * global.flatColor();
+				Color col = pEdgemap->m_segmentTints[seg].flatColor() * global.flatColor();
 
 				t.colors[seg][0] = col.b;
 				t.colors[seg][1] = col.g;
@@ -1992,8 +1992,8 @@ namespace wax
 			int length = pEdgemap->m_size.h;
 
 			t.pitch = length;
-			t.bufferBytes = sizeof(HiColor) * (nSegments + 1) * length;
-			t.pColumns = (HiColor*)Base::memStackAlloc(t.bufferBytes);
+			t.bufferBytes = sizeof(Color) * (nSegments + 1) * length;
+			t.pColumns = (Color*)Base::memStackAlloc(t.bufferBytes);
 			t.pGlobal = t.pColumns + nSegments * length;
 		}
 	}
@@ -2017,7 +2017,7 @@ namespace wax
 		{
 			const SoftTint& global = m_softTint;
 
-			HiColor globalColor = global.flatColor();
+			Color globalColor = global.flatColor();
 			if (!global.isFlat())
 				global.generate(canvasStart.x + column * simpleTransform[0][0], canvasStart.y + column * simpleTransform[0][1], 0, 0, 1, &globalColor);
 
@@ -2027,7 +2027,7 @@ namespace wax
 			{
 				const SoftTint& segTint = pEdgemap->m_segmentTints[seg];
 
-				HiColor col = segTint.flatColor();
+				Color col = segTint.flatColor();
 				if (!segTint.isFlat())
 					segTint.generate(column, 0, 0, 0, 1, &col);
 
@@ -2075,7 +2075,7 @@ namespace wax
 		// Device tint along the column
 
 		bool bGlobalFlat = global.isFlat();
-		HiColor globalFlat = global.flatColor();
+		Color globalFlat = global.flatColor();
 
 		if (!bGlobalFlat)
 		{
@@ -2094,14 +2094,14 @@ namespace wax
 			if (top >= bottom)
 				return;
 
-			HiColor* pOut = t.pColumns + seg * t.pitch + top;
+			Color* pOut = t.pColumns + seg * t.pitch + top;
 			int length = bottom - top;
 
 			const SoftTint& segTint = pEdgemap->m_segmentTints[seg];
 
 			if (segTint.isFlat())
 			{
-				HiColor col = segTint.flatColor();
+				Color col = segTint.flatColor();
 
 				if (bGlobalFlat)
 				{
@@ -2111,7 +2111,7 @@ namespace wax
 				}
 				else
 				{
-					const HiColor* pGlobal = t.pGlobal + top;
+					const Color* pGlobal = t.pGlobal + top;
 					for (int i = 0; i < length; i++)
 						pOut[i] = pGlobal[i] * col;
 				}
@@ -2122,11 +2122,11 @@ namespace wax
 
 				if (!bGlobalFlat)
 				{
-					const HiColor* pGlobal = t.pGlobal + top;
+					const Color* pGlobal = t.pGlobal + top;
 					for (int i = 0; i < length; i++)
 						pOut[i] = pOut[i] * pGlobal[i];
 				}
-				else if (globalFlat != HiColor::White)
+				else if (globalFlat != Color::White)
 				{
 					for (int i = 0; i < length; i++)
 						pOut[i] = pOut[i] * globalFlat;
@@ -2191,12 +2191,12 @@ namespace wax
 		if (!t.bPerPixel)
 			return;
 
-		HiColor global;
+		Color global;
 		m_softTint.generate(canvasCenter.x, canvasCenter.y, 0, 0, 1, &global);
 
 		for (int seg = 0; seg < nSegments; seg++)
 		{
-			HiColor col;
+			Color col;
 			pEdgemap->m_segmentTints[seg].generate(pEdgemap->m_size.w / 2, pEdgemap->m_size.h / 2, 0, 0, 1, &col);
 			col = col * global;
 
@@ -2400,7 +2400,7 @@ namespace wax
 
 	//____ _tintRowBuffer() ____________________________________________________
 
-	HiColor* SoftBackend::_tintRowBuffer(int length)
+	Color* SoftBackend::_tintRowBuffer(int length)
 	{
 		if ((int)m_tintRow.size() < length)
 			m_tintRow.resize(length);
@@ -2535,7 +2535,7 @@ namespace wax
 		Returns false if nothing should be drawn.
 	*/
 
-	bool SoftBackend::_beginShape(Backend::ShapeKind kind, const uint16_t* pPayload, const HiColor* pColors)
+	bool SoftBackend::_beginShape(Backend::ShapeKind kind, const uint16_t* pPayload, const Color* pColors)
 	{
 		if (m_blendMode == BlendMode::Ignore)
 			return false;
@@ -2582,8 +2582,8 @@ namespace wax
 
 			const uint16_t* pTintWords = box.pTints;
 
-			HiColor fillColor = has(RoundedBoxFlags::HasFill) ? *pColors++ : HiColor::Transparent;
-			HiColor outlineColor = has(RoundedBoxFlags::HasOutline) ? *pColors++ : HiColor::Transparent;
+			Color fillColor = has(RoundedBoxFlags::HasFill) ? *pColors++ : Color::Transparent;
+			Color outlineColor = has(RoundedBoxFlags::HasOutline) ? *pColors++ : Color::Transparent;
 
 			if (m_shapeSegments.size() < 2)
 				m_shapeSegments.resize(2);
@@ -2616,11 +2616,11 @@ namespace wax
 
 			const uint16_t* pTintWords = ring.pTints;
 
-			HiColor outlineColor = has(RingFlags::HasOutline) ? *pColors++ : HiColor::Transparent;
-			HiColor hubColor = has(RingFlags::HasHub) ? *pColors++ : HiColor::Transparent;
-			HiColor backColor = has(RingFlags::HasBack) ? *pColors++ : HiColor::Transparent;
+			Color outlineColor = has(RingFlags::HasOutline) ? *pColors++ : Color::Transparent;
+			Color hubColor = has(RingFlags::HasHub) ? *pColors++ : Color::Transparent;
+			Color backColor = has(RingFlags::HasBack) ? *pColors++ : Color::Transparent;
 
-			const HiColor* pSliceColors = pColors;
+			const Color* pSliceColors = pColors;
 
 			for (int i = 0; i < nSlices; i++)
 				if (sliceHas(i, RingSliceFlags::Drawn))
@@ -2637,7 +2637,7 @@ namespace wax
 			for (int i = 0; i < nSlices; i++)
 			{
 				const bool bDrawn = sliceHas(i, RingSliceFlags::Drawn);
-				HiColor color = bDrawn ? *pSliceColors++ : HiColor::Transparent;
+				Color color = bDrawn ? *pSliceColors++ : Color::Transparent;
 
 				_setupShapeSegment(m_shapeSegments[SoftShapes::c_ringFirstSliceSegment + i], bDrawn, color, sliceHas(i, RingSliceFlags::Tinted), pTintWords, pColors);
 			}
@@ -2664,13 +2664,13 @@ namespace wax
 
 	//____ _setupShapeSegment() ________________________________________________
 
-	void SoftBackend::_setupShapeSegment(ShapeSegment& seg, bool bActive, HiColor color, bool bTint, const uint16_t*& pTintWords, const HiColor*& pTintColors)
+	void SoftBackend::_setupShapeSegment(ShapeSegment& seg, bool bActive, Color color, bool bTint, const uint16_t*& pTintWords, const Color*& pTintColors)
 	{
 		seg.bActive = bActive;
 		if (!bActive)
 			return;
 
-		HiColor linear = color.toLinear();
+		Color linear = color.toLinear();
 
 		if (bTint)
 		{
@@ -2685,7 +2685,7 @@ namespace wax
 
 		if (seg.bFlat)
 		{
-			const HiColor c = seg.tint.flatColor() * m_softTint.flatColor();
+			const Color c = seg.tint.flatColor() * m_softTint.flatColor();
 
 			seg.mix[0] = int16_t((c.b * c.a) >> 12);
 			seg.mix[1] = int16_t((c.g * c.a) >> 12);
@@ -2702,7 +2702,7 @@ namespace wax
 		{
 			auto pKernels = m_pKernels[(int)m_canvasSoftFormat];
 
-			HiColor color = seg.tint.flatColor();
+			Color color = seg.tint.flatColor();
 
 			BlendMode mode = m_blendMode;
 			if (mode == BlendMode::Blend && color.a == 4096 && m_colTrans.bTintOpaque)
@@ -2736,7 +2736,7 @@ namespace wax
 			return seg.mix;
 
 		const int length = end - begin;
-		HiColor* pColors = pB->_shapeBuffer(0, length);
+		Color* pColors = pB->_shapeBuffer(0, length);
 		pB->_shapeSegmentColors(segment, begin, y, length, pColors);
 
 		if ((int)pB->m_shapeMixBuffers.size() <= segment)
@@ -2750,7 +2750,7 @@ namespace wax
 
 		for (int i = 0; i < length; i++)
 		{
-			const HiColor& c = pColors[i];
+			const Color& c = pColors[i];
 			p[0] = int16_t((c.b * c.a) >> 12);
 			p[1] = int16_t((c.g * c.a) >> 12);
 			p[2] = int16_t((c.r * c.a) >> 12);
@@ -2832,15 +2832,15 @@ namespace wax
 
 					for (int y = yBeg; y < yEnd; y++)
 					{
-						HiColor* pColors = _shapeBuffer(0, length);
+						Color* pColors = _shapeBuffer(0, length);
 						_shapeSegmentColors(run.segment, run.begin, y, length, pColors);
 
 						uint8_t* pDst = pOrigin + y * pitch + run.begin * pixelBytes;
 
 						TintMode	savedMode = m_colTrans.mode;
-						const HiColor* pSavedAxisX = m_colTrans.pTintAxisX;
+						const Color* pSavedAxisX = m_colTrans.pTintAxisX;
 						int			savedTintX = m_colTrans.tintRect.x;
-						HiColor		savedFlatTint = m_colTrans.flatTintColor;
+						Color		savedFlatTint = m_colTrans.flatTintColor;
 
 						FillOp_p pOp = pKernels->pFillKernels[(int)TintMode::GradientX][(int)m_blendMode];
 
@@ -2850,7 +2850,7 @@ namespace wax
 							m_colTrans.pTintAxisX = pColors;
 							m_colTrans.tintRect.x = run.begin;
 
-							pOp(pDst, pixelBytes, 0, 1, length, HiColor::White, m_colTrans, { run.begin, y });
+							pOp(pDst, pixelBytes, 0, 1, length, Color::White, m_colTrans, { run.begin, y });
 						}
 						else
 						{
@@ -2867,7 +2867,7 @@ namespace wax
 									end++;
 
 								m_colTrans.flatTintColor = pColors[beg];
-								pOp(pDst + beg * pixelBytes, pixelBytes, 0, 1, end - beg, HiColor::White, m_colTrans, { run.begin + beg, y });
+								pOp(pDst + beg * pixelBytes, pixelBytes, 0, 1, end - beg, Color::White, m_colTrans, { run.begin + beg, y });
 								beg = end;
 							}
 						}
@@ -2927,7 +2927,7 @@ namespace wax
 	//____ _shapeSegmentColors() _______________________________________________
 	// Colors of a segment that isn't flat, including the device tint, for a row of pixels.
 
-	void SoftBackend::_shapeSegmentColors(int segment, int x, int y, int length, HiColor* pOutput)
+	void SoftBackend::_shapeSegmentColors(int segment, int x, int y, int length, Color* pOutput)
 	{
 		ShapeSegment& seg = m_shapeSegments[segment];
 
@@ -2935,7 +2935,7 @@ namespace wax
 
 		if (!m_softTint.isFlat())
 		{
-			HiColor* pDevice = _shapeBuffer(1, length);
+			Color* pDevice = _shapeBuffer(1, length);
 			m_softTint.generate(x, y, 1, 0, length, pDevice);
 
 			for (int i = 0; i < length; i++)
@@ -2943,7 +2943,7 @@ namespace wax
 		}
 		else if (!m_softTint.flatColor().isOpaqueWhite())
 		{
-			HiColor device = m_softTint.flatColor();
+			Color device = m_softTint.flatColor();
 
 			for (int i = 0; i < length; i++)
 				pOutput[i] = pOutput[i] * device;
@@ -2979,7 +2979,7 @@ namespace wax
 	//____ _coveragePixel() _____________________________________________________
 	// A pixel for the coverage kernel, covered by coverage (0 -> 4096) of color.
 
-	SoftBackend::CoveragePixel SoftBackend::_coveragePixel(const HiColor& color, int coverage)
+	SoftBackend::CoveragePixel SoftBackend::_coveragePixel(const Color& color, int coverage)
 	{
 		int alpha = (color.a * coverage) >> 12;
 
@@ -2997,7 +2997,7 @@ namespace wax
 	// coverage kernel. The tint is applied as the fill kernels do. Pixel (x,y) is at
 	// pOrigin + y * pitch + x * m_canvasPixelBytes.
 
-	void SoftBackend::_drawCoverageEdge(CoverageOp_p pOp, const RectI& rect, int coverage, HiColor color, uint8_t* pOrigin, int pitch)
+	void SoftBackend::_drawCoverageEdge(CoverageOp_p pOp, const RectI& rect, int coverage, Color color, uint8_t* pOrigin, int pitch)
 	{
 		if (rect.w <= 0 || rect.h <= 0)
 			return;
@@ -3018,7 +3018,7 @@ namespace wax
 		}
 		else
 		{
-			HiColor* pColors = _shapeBuffer(0, length);
+			Color* pColors = _shapeBuffer(0, length);
 			m_softTint.generate(rect.x, rect.y, bRow ? 1 : 0, bRow ? 0 : 1, length, pColors);
 
 			for (int i = 0; i < length; i++)
@@ -3037,7 +3037,7 @@ namespace wax
 	// and positions in canvas coordinates. Pixel (x,y) is at pOrigin + y * pitch + x * m_canvasPixelBytes.
 
 	void SoftBackend::_drawTintedLine(CoverageOp_p pOp, bool bHorizontal, int majorBeg, int length, int width, int pos, int slope,
-									  int clipStart, int clipEnd, HiColor color, uint8_t* pOrigin, int pitch)
+									  int clipStart, int clipEnd, Color color, uint8_t* pOrigin, int pitch)
 	{
 		for (int i = 0; i < length; i++, pos += slope)
 		{
@@ -3050,7 +3050,7 @@ namespace wax
 			int nPixels = ((end - 1) >> 16) - first + 1;
 			int major = majorBeg + i;
 
-			HiColor* pColors = _shapeBuffer(0, nPixels);
+			Color* pColors = _shapeBuffer(0, nPixels);
 
 			if (bHorizontal)
 				m_softTint.generate(major, first, 0, 1, nPixels, pColors);
@@ -3082,7 +3082,7 @@ namespace wax
 		Prepares a line with caps for _drawCappedLine(). Returns false if nothing should be drawn.
 	*/
 
-	bool SoftBackend::_beginCappedLine(CoordSPX begin, CoordSPX end, spx thickness, LineCaps caps, HiColor color)
+	bool SoftBackend::_beginCappedLine(CoordSPX begin, CoordSPX end, spx thickness, LineCaps caps, Color color)
 	{
 		if (m_blendMode == BlendMode::Ignore)
 			return false;
@@ -3111,7 +3111,7 @@ namespace wax
 		m_pTintedLineOp = m_softTint.isFlat() ? nullptr : pKernels->pCoverageKernels[(int)m_blendMode];
 
 		m_tintedLineColor = color.toLinear();
-		m_lineColor = m_tintColor != HiColor::White ? m_tintedLineColor * m_tintColor : m_tintedLineColor;
+		m_lineColor = m_tintColor != Color::White ? m_tintedLineColor * m_tintColor : m_tintedLineColor;
 
 		// Ends, as shapes of one segment.
 
@@ -3121,7 +3121,7 @@ namespace wax
 			m_shapeSegments.resize(1);
 
 		const uint16_t* pNoTint = nullptr;
-		const HiColor* pNoTintColors = nullptr;
+		const Color* pNoTintColors = nullptr;
 		_setupShapeSegment(m_shapeSegments[0], true, color, false, pNoTint, pNoTintColors);
 
 		return true;
@@ -3180,7 +3180,7 @@ namespace wax
 
 	//____ _shapeBuffer() ______________________________________________________
 
-	HiColor* SoftBackend::_shapeBuffer(int index, int length)
+	Color* SoftBackend::_shapeBuffer(int index, int length)
 	{
 		auto& buffer = m_shapeBuffers[index];
 		if ((int)buffer.size() < length)

@@ -62,7 +62,7 @@ namespace wg
 		void			_addGridLineDrawers(PackPanel* pList, DynamicVector<GridLine>& lines, int begin);
 
 		DrawerPanel_p	m_pGridColorDrawer;
-		HiColor			m_displayedGridColor;
+		Color			m_displayedGridColor;
 
 		DrawerPanel_p	m_pXLinesDrawer;
 		DrawerPanel_p	m_pYLinesDrawer;

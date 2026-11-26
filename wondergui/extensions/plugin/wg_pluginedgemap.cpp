@@ -53,15 +53,15 @@ namespace wg
 
 		// Our copies of flat colors and tints. The Edgemap destructor frees them.
 
-		m_pBuffer			= new char[m_nbSegments * sizeof(HiColor)];
-		m_pFlatColors		= (HiColor*) m_pBuffer;
+		m_pBuffer			= new char[m_nbSegments * sizeof(Color)];
+		m_pFlatColors		= (Color*) m_pBuffer;
 		m_pTints			= new Tint_p[m_nbSegments];
 
 		const wax_color * pFlatColors = PluginCalls::edgemap->edgemapFlatColors(object);
 
 		for( int i = 0 ; i < m_nbSegments ; i++ )
 		{
-			m_pFlatColors[i] = pFlatColors ? reinterpret_cast<const HiColor*>(pFlatColors)[i] : HiColor::Transparent;
+			m_pFlatColors[i] = pFlatColors ? reinterpret_cast<const Color*>(pFlatColors)[i] : Color::Transparent;
 			m_pTints[i] = PluginCalls::_localTint( PluginCalls::edgemap->edgemapTint(object, i) );
 			if( m_pTints[i] )
 				m_nbTints++;
@@ -97,7 +97,7 @@ namespace wg
 
 	//____ setColors() ___________________________________________________________
 
-	bool PluginEdgemap::setColors( int begin, int end, const HiColor * pColors )
+	bool PluginEdgemap::setColors( int begin, int end, const Color * pColors )
 	{
 		if( !Edgemap::setColors(begin, end, pColors) )
 			return false;

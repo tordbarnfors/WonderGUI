@@ -248,7 +248,7 @@ PackPanel_p pWindowPanel = PackPanel::create( { .axis = Axis::Y, .layout = pLayo
 
 PackPanel_p pMainSection = PackPanel::create({
     .axis = Axis::X, .layout = pLayout, 
-    .skin = ColorSkin::create( { .color = Color8::Transparent, .padding = 5 } ), 
+    .skin = ColorSkin::create( { .color = Color::Transparent, .padding = 5 } ), 
     .spacing = 5 }
 );
 
@@ -314,7 +314,7 @@ PackLayout_p pLayout = PackLayout::create( {.expandFactor = PackLayout::Factor::
                                             .shrinkFactor = PackLayout::Factor::Weight });
 
 PackPanel_p pWindowPanel = PackPanel::create( { .axis = Axis::Y, .layout = pLayout } );
-PackPanel_p pMainSection = PackPanel::create( { .axis = Axis::X, .layout = pLayout, .skin = ColorSkin::create( { .color = Color8::Transparent, .padding = 5 }), .spacing = 5 });
+PackPanel_p pMainSection = PackPanel::create( { .axis = Axis::X, .layout = pLayout, .skin = ColorSkin::create( { .color = Color::Transparent, .padding = 5 }), .spacing = 5 });
 PackPanel_p pButtonColumn = PackPanel::create( { .axis = Axis::Y, .layout = pLayout });
 
 pButtonColumn->slots.pushBack({ Filler::create(),

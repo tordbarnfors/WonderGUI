@@ -18,13 +18,13 @@ ColorSkin is the most simple StateSkin. It fills the whole are with a single col
 ## Examples
 
 ```c++
-auto pColorSkin1 = ColorSkin::create( { .color = Color8::White } );
+auto pColorSkin1 = ColorSkin::create( { .color = Color::White } );
 
 auto pColorSkin2 = ColorSkin::create( { 
-    .states ={ { State::Default, { .color = Color8::Green }},
-               { State::Hovered, { .color = Color8::Yellow }},
-               { State::Pressed, { .color = Color8::Red, .contentShift = {1,1} }},
-               { State::Disabled, { .color = Color8::Gray }}
+    .states ={ { State::Default, { .color = Color::Green }},
+               { State::Hovered, { .color = Color::Yellow }},
+               { State::Pressed, { .color = Color::Red, .contentShift = {1,1} }},
+               { State::Disabled, { .color = Color::Gray }}
 });
 
 ```
@@ -32,13 +32,13 @@ auto pColorSkin2 = ColorSkin::create( {
 There are shorthand versions for specifying just a single color and for single parameter state specifications:
 
 ```c++
-auto pColorSkin1 = ColorSkin::create( Color8::White );
+auto pColorSkin1 = ColorSkin::create( Color::White );
 
 auto pColorSkin2 = ColorSkin::create( { 
-    .states ={ { State::Default, Color8::Green },
-               { State::Hovered, Color8::Yellow },
-               { State::Pressed, { .color = Color8::Red, .contentShift = {1,1}  },
-               { State::Disabled, Color8::Gray }
+    .states ={ { State::Default, Color::Green },
+               { State::Hovered, Color::Yellow },
+               { State::Pressed, { .color = Color::Red, .contentShift = {1,1}  },
+               { State::Disabled, Color::Gray }
 });
 ```
 

@@ -88,21 +88,21 @@ public:
 
 		pDevice->setRenderLayer(1);
 		pDevice->setBlitSource(m_pOne);
-		pDevice->setTintColor(HiColor(1.f, 1.f, 1.f,0.25f) );
+		pDevice->setTintColor(Color(1.f, 1.f, 1.f,0.25f) );
 		pDevice->stretchBlit(canvas);
 
 		pDevice->setRenderLayer(2);
 		pDevice->setBlitSource(m_pTwo);
-		pDevice->setTintColor(HiColor(0.5f, 0.5f, 0.5f,1.f) );
+		pDevice->setTintColor(Color(0.5f, 0.5f, 0.5f,1.f) );
 		pDevice->blit( {canvas.w/2,canvas.h/2} );
 
 		pDevice->setRenderLayer(3);
-		pDevice->setTintColor(HiColor::White);
-		pDevice->fill( {0,0,canvas.w/2+m_pTwo->pixelWidth()*64/2,canvas.h}, HiColor(4096,4096,4096,1024) );
+		pDevice->setTintColor(Color::White);
+		pDevice->fill( {0,0,canvas.w/2+m_pTwo->pixelWidth()*64/2,canvas.h}, Color(4096,4096,4096,1024) );
 		
 		pDevice->setRenderLayer(4);
 		pDevice->setBlitSource(m_pThree);
-		pDevice->setTintColor(Color8::Blue);
+		pDevice->setTintColor(Color::Blue);
 		pDevice->blit( {canvas.w/2,0 } );
 
 		pDevice->endCanvasUpdate();

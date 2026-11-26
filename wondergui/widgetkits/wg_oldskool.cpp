@@ -62,26 +62,26 @@ namespace wg::oldskool
 		Fonts::Italic	= pItalic ? pItalic : pNormalFont.rawPtr();
 		Fonts::Mono		= pMonospace ? pMonospace : pNormalFont.rawPtr();
 
-		TextStyles::Strong		= TextStyle::create(WGBP(TextStyle, _.color = HiColor::Black, _.font = Fonts::Bold, _.size = TextSizes::Normal ));
-		TextStyles::Emphasis	= TextStyle::create(WGBP(TextStyle, _.color = HiColor::Black, _.font = Fonts::Italic, _.size = TextSizes::Normal ));
-		TextStyles::Code		= TextStyle::create(WGBP(TextStyle, _.font = Fonts::Mono, _.color = HiColor::Black, _.size = TextSizes::Normal));
-		TextStyles::Mono		= TextStyle::create(WGBP(TextStyle, _.font = Fonts::Mono, _.color = HiColor::Black, _.size = TextSizes::Normal));
-		TextStyles::FinePrint	= TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = HiColor::Black, _.size = 9));
+		TextStyles::Strong		= TextStyle::create(WGBP(TextStyle, _.color = Color::Black, _.font = Fonts::Bold, _.size = TextSizes::Normal ));
+		TextStyles::Emphasis	= TextStyle::create(WGBP(TextStyle, _.color = Color::Black, _.font = Fonts::Italic, _.size = TextSizes::Normal ));
+		TextStyles::Code		= TextStyle::create(WGBP(TextStyle, _.font = Fonts::Mono, _.color = Color::Black, _.size = TextSizes::Normal));
+		TextStyles::Mono		= TextStyle::create(WGBP(TextStyle, _.font = Fonts::Mono, _.color = Color::Black, _.size = TextSizes::Normal));
+		TextStyles::FinePrint	= TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = Color::Black, _.size = 9));
 
-		TextStyles::NormalDark	= TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = HiColor::Black, _.size = TextSizes::Normal,
-									_.states = { {State::Disabled, Color8::DarkGrey} }));
+		TextStyles::NormalDark	= TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = Color::Black, _.size = TextSizes::Normal,
+									_.states = { {State::Disabled, Color::DarkGrey} }));
 
-		TextStyles::NormalBright = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = HiColor::White, _.size = TextSizes::Normal,
-								_.states = { {State::Disabled, Color8::LightGrey} }));
+		TextStyles::NormalBright = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = Color::White, _.size = TextSizes::Normal,
+								_.states = { {State::Disabled, Color::LightGrey} }));
 
 		TextStyles::Default = TextStyles::NormalDark;
 
-		TextStyles::Heading1 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = HiColor::Black, _.size = 20));
-		TextStyles::Heading2 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Bold, _.color = HiColor::Black, _.size = 20));
-		TextStyles::Heading3 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = HiColor::Black, _.size = 16));
-		TextStyles::Heading4 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Bold, _.color = HiColor::Black, _.size = 16));
-		TextStyles::Heading5 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Bold, _.color = HiColor::Black, _.size = 14));
-		TextStyles::Heading6 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = HiColor::Black, _.size = 14));
+		TextStyles::Heading1 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = Color::Black, _.size = 20));
+		TextStyles::Heading2 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Bold, _.color = Color::Black, _.size = 20));
+		TextStyles::Heading3 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = Color::Black, _.size = 16));
+		TextStyles::Heading4 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Bold, _.color = Color::Black, _.size = 16));
+		TextStyles::Heading5 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Bold, _.color = Color::Black, _.size = 14));
+		TextStyles::Heading6 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = Color::Black, _.size = 14));
 
 		TextLayouts::LeftNoWrap = PlainTextLayout::create(WGBP(PlainTextLayout,
 			_.autoEllipsis = true,
@@ -126,7 +126,7 @@ namespace wg::oldskool
 			_.states = { {State::Flagged,Colors::TitlebarSelected,Colors::TitlebarBorderSelected} }));
 		
 		_pLabelCapsuleSkin = BoxSkin::create(WGBP(BoxSkin,
-			_.color = HiColor::Transparent,
+			_.color = Color::Transparent,
 			_.outlineColor = Colors::Border,
 			_.outlineThickness = 1,
 			_.spacing = { 8,2,2,2 },
@@ -138,13 +138,13 @@ namespace wg::oldskool
 		));
 
 		_pCapsuleLabelSkin2 = ColorSkin::create(WGBP(ColorSkin,
-			_.color = HiColor::Transparent,
+			_.color = Color::Transparent,
 			_.padding = { 2,2,2,2 }
 		));
 
 
 		_pInvisibleBoxSkin = ColorSkin::create(WGBP(ColorSkin,
-			_.color = HiColor::Transparent,
+			_.color = Color::Transparent,
 			_.spacing = { 6,2,2,2 },
 			_.padding = { 16, 4, 4, 4 }));
 
@@ -157,9 +157,9 @@ namespace wg::oldskool
 
 		_pSelectableEntrySkin = BoxSkin::create(WGBP(BoxSkin,
 			_.markAlpha = 0,
-			_.states = { {State::Default, Color8::Transparent,Color8::Transparent},
-						 {State::Hovered, HiColor(Color8::LightCyan).withAlpha(1024), HiColor(Color8::DarkCyan).withAlpha(1024)},
-						 {State::Selekted, Color8::LightCyan,Color8::DarkCyan }
+			_.states = { {State::Default, Color::Transparent,Color::Transparent},
+						 {State::Hovered, Color(Color::LightCyan).withAlpha(1024), Color(Color::DarkCyan).withAlpha(1024)},
+						 {State::Selekted, Color::LightCyan,Color::DarkCyan }
 			}
 		));
 
@@ -222,15 +222,15 @@ namespace wg::oldskool
 		));
 
 		Skins::SelectBoxEntry = BoxSkin::create(WGBP(BoxSkin,
-			_.states = { {State::Default, Color8::Transparent, Color8::Transparent},
-						 {State::Hovered, HiColor(Color8::LightCyan).withAlpha(2048), HiColor(Color8::DarkCyan).withAlpha(2048)},
-						 {State::Selekted, Color8::LightCyan,Color8::DarkCyan }
+			_.states = { {State::Default, Color::Transparent, Color::Transparent},
+						 {State::Hovered, Color(Color::LightCyan).withAlpha(2048), Color(Color::DarkCyan).withAlpha(2048)},
+						 {State::Selekted, Color::LightCyan,Color::DarkCyan }
 			}
 		));
 
 		Skins::ScrollbarTrack = BoxSkin::create(WGBP(BoxSkin,
-			_.color = Color8::DarkGray,
-			_.outlineColor = Color8::Black,
+			_.color = Color::DarkGray,
+			_.outlineColor = Color::Black,
 			_.outlineThickness = 1,
 			_.padding = 0));
 

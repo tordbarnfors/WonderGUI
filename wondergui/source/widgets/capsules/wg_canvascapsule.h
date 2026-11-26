@@ -63,7 +63,7 @@ namespace wg
 			Object_p		baggage;
 			BlendMode		blendMode		= BlendMode::Blend;
 			Widget_p		child;
-			HiColor			clearColor		= HiColor::Undefined;
+			Color			clearColor		= Color::Undefined;
 			ColorSpace		colorSpace		= ColorSpace::Undefined;	// Undefined: same as the canvas we are rendered onto.
 			bool			disabled		= false;
 			bool			dropTarget		= false;
@@ -87,7 +87,7 @@ namespace wg
 			SurfaceFactory_p surfaceFactory;
 			bool			tabLock			= false;
 			bool			takesFocusFromChild = true;
-			HiColor			tintColor		= HiColor::Undefined;
+			Color			tintColor		= Color::Undefined;
 			Tint_p		tint;
 			std::string			tooltip;
 			bool			usePickHandles = false;
@@ -124,8 +124,8 @@ namespace wg
 		void				setSkinAroundCanvas(bool bSkin);
 		bool				isSkinAroundCanvas() const { return m_bSkinAroundCanvas; }
 
-		void				setTintColor(HiColor color, ColorTransition* pTransition = nullptr);
-		inline HiColor		tintColor() { return m_tintColor; }
+		void				setTintColor(Color color, ColorTransition* pTransition = nullptr);
+		inline Color		tintColor() { return m_tintColor; }
 
 		void				setTint(Tint * pTint, ValueTransition* pTransition = nullptr);
 		inline Tint_p	tint() { return m_pTint; }
@@ -145,8 +145,8 @@ namespace wg
 		void				setCanvasLayers(CanvasLayers * pLayers);
 		CanvasLayers_p	 	canvasLayers() const { return m_pCanvasLayers; }
 
-		void				setClearColor( HiColor color );
-		HiColor				clearColor() const { return m_clearColor; }
+		void				setClearColor( Color color );
+		Color				clearColor() const { return m_clearColor; }
 
 		void				setRenderLayer(int layer);
 		int					renderLayer() const { return m_renderLayer; }
@@ -179,7 +179,7 @@ namespace wg
 
 			m_blendMode		= bp.blendMode;
 			
-			if( bp.tintColor != HiColor::Undefined )
+			if( bp.tintColor != Color::Undefined )
 				m_tintColor	= bp.tintColor;
 
 			m_pTint		= bp.tint;
@@ -246,10 +246,10 @@ namespace wg
 		SurfaceFactory_p	m_pFactory;
 		PixelFormat			m_canvasFormat = PixelFormat::ARGB_8;
 		ColorSpace			m_canvasColorSpace = ColorSpace::Undefined;		// Undefined: same as the canvas we are rendered onto.
-		HiColor				m_clearColor = HiColor::Undefined;
+		Color				m_clearColor = Color::Undefined;
 		int					m_renderLayer = -1;
 
-		HiColor				m_tintColor = HiColor::White;
+		Color				m_tintColor = Color::White;
 		Tint_p			m_pTint;
 		BlendMode			m_blendMode = BlendMode::Blend;
 
@@ -263,8 +263,8 @@ namespace wg
 		
 		// Transitions
 
-		HiColor				m_startTintColor;
-		HiColor				m_endTintColor;
+		Color				m_startTintColor;
+		Color				m_endTintColor;
 
 		Tint_p			m_pStartTint;
 		Tint_p			m_pEndTint;

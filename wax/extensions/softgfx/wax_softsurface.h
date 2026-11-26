@@ -89,7 +89,7 @@ namespace wax
 		inline int			pitch() const { return m_pitch; }
 		inline uint8_t *	pixels() const { return m_pData; }
 		inline CoordI		wrapTilePos(CoordI pos) const { return { _wrap(pos.x, m_size.w), _wrap(pos.y, m_size.h) }; }
-		inline const HiColor * palette4096() const { return m_pPalette4096; }		// Palette in linear 0 -> 4096.
+		inline const Color * palette4096() const { return m_pPalette4096; }		// Palette in linear 0 -> 4096.
 		inline SoftFormat	softFormat() const { return m_softFormat; }			// Undefined if no kernels can be made for the pixels.
 		
 		//.____ Deprecated ____________________________________________________
@@ -119,7 +119,7 @@ namespace wax
 		Blob_p		m_pBlob;
 		uint8_t*	m_pData;
 
-		HiColor*	m_pPalette4096 = nullptr;
+		Color*	m_pPalette4096 = nullptr;
 	};
 
 

@@ -61,13 +61,13 @@ namespace wax
 		struct Blueprint
 		{
 			spx					bottomOutlineThickness = 64;
-			HiColor				color = Color8::LightGrey;
+			Color				color = Color::LightGrey;
 			EdgemapFactory_p	factory;								// Default edgemap factory of Base if not set.
 			Finalizer_p			finalizer = nullptr;
 			GfxFlip				flip = GfxFlip::None;					// Flip of the wave, which runs along x before it. Fixed once created.
 			bool				optimize = true;						// Check for re-setting of same values to minimize updated regions.
 			SampleOrigo			origo = SampleOrigo::Top;
-			HiColor				outlineColor = Color8::DarkGrey;
+			Color				outlineColor = Color::DarkGrey;
 			Tint_p				outlineTint;							// Overrides outlineColor when set.
 			SizeSPX				size;									// Mandatory. Size before flip. Rounded to whole pixels.
 			Tint_p				tint;									// Overrides color when set. Placed in the rect of the wave.
@@ -92,15 +92,15 @@ namespace wax
 
 		//.____ Appearance ____________________________________________________
 
-		bool		setColor( HiColor col );
-		HiColor		color() const { return m_color; }
+		bool		setColor( Color col );
+		Color		color() const { return m_color; }
 
 		void		setTint( Tint * pTint );
 		void		clearTint() { setTint(nullptr); }
 		Tint_p		tint() const { return m_pTint; }
 
-		bool		setOutlineColor( HiColor col );
-		HiColor		outlineColor() const { return m_outlineColor; }
+		bool		setOutlineColor( Color col );
+		Color		outlineColor() const { return m_outlineColor; }
 
 		void		setOutlineTint( Tint * pTint );
 		void		clearOutlineTint() { setOutlineTint(nullptr); }
@@ -146,7 +146,7 @@ namespace wax
 		void		_optimizeRangeSetSamples( spx * pDestBegin, spx * pDestEnd, const spx * pSource, spx * pSampleStart );
 		void		_optimizeRangeSetSamples( spx * pDestBegin, spx * pDestEnd, const float * pSource, spx * pSampleStart );
 
-		int			_generateColorPalette( HiColor * pDest );
+		int			_generateColorPalette( Color * pDest );
 		int			_generateTintPalette( Tint_p * pDest );
 
 		void		_setupBuffer(int nbSamples, bool bClearSamples);
@@ -162,8 +162,8 @@ namespace wax
 		bool		m_bColorsChanged = false;		// Colors or tints set since last generate().
 		bool		m_bSizeChanged = false;			// Size set since last generate(), which needs a new edgemap.
 
-		HiColor		m_color = HiColor::Undefined;
-		HiColor		m_outlineColor = HiColor::Undefined;
+		Color		m_color = Color::Undefined;
+		Color		m_outlineColor = Color::Undefined;
 
 		Tint_p		m_pTint;
 		Tint_p		m_pOutlineTint;

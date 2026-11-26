@@ -98,7 +98,7 @@ void WgTextDisplay::SetEditMode(WgTextEditMode mode)
 }
 
 //_______________________________________________________________
-void WgTextDisplay::SetFixedBlendColor( wg::HiColor color )
+void WgTextDisplay::SetFixedBlendColor( wg::Color color )
 {
 	m_fixedBlendColor = color;
 	_requestRender();
@@ -241,7 +241,7 @@ void WgTextDisplay::_onRender( wg::GfxDevice * pDevice, const WgRect& _canvas, c
 	auto kChronoDiff = std::chrono::steady_clock::now() - m_kAnimTimeStart;
 	auto kMillisecDiff = std::chrono::duration_cast<std::chrono::milliseconds>(kChronoDiff);
 
-	if( m_fixedBlendColor != wg::HiColor::Undefined )
+	if( m_fixedBlendColor != wg::Color::Undefined )
 	{
 		pDevice->setFixedBlendColor(m_fixedBlendColor);
 		pDevice->setBlendMode(wg::BlendMode::BlendFixedColor);

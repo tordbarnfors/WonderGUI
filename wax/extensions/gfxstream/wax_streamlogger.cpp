@@ -441,7 +441,7 @@ namespace wax
 			{
 				uint16_t	surfaceId;
 				RectI		region;
-				HiColor		col;
+				Color		col;
 
 				decoder >> surfaceId;
 				decoder >> region;
@@ -528,7 +528,7 @@ namespace wax
 				m_charStream << "    begin       = " << begin << std::endl;
 				m_charStream << "    end         = " << end << std::endl;
 
-				HiColor col;
+				Color col;
 				int nColors = end - begin;
 				for( int i = 0 ; i < nColors ; i++ )
 				{
@@ -799,7 +799,7 @@ namespace wax
 
 	//____ _printColor() _________________________________________________
 
-	void StreamLogger::_printColor( const char * header, HiColor color )
+	void StreamLogger::_printColor( const char * header, Color color )
 	{
 		m_charStream << header << " = " << (int)color.r << ", " << (int)color.g << ", " << (int)color.b << ", " << (int)color.a << std::endl;
 	}

@@ -52,7 +52,7 @@ namespace wg
 		struct Blueprint
 		{
 			BlendMode				blendMode = BlendMode::Blend;
-			HiColor					color = HiColor::Undefined;
+			Color					color = Color::Undefined;
 			Finalizer_p				finalizer = nullptr;
 			std::vector<FrameBP>	frames;			// Mandatory
 			Border					gfxPadding;
@@ -120,7 +120,7 @@ namespace wg
 		bool			m_bAllFramesOpaque = false;
 
 		BlendMode		m_blendMode;
-		HiColor			m_color;
+		Color			m_color;
 		Tint_p		m_pTint;
 
 		int					m_duration;		// Millisec

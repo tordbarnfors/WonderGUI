@@ -39,7 +39,7 @@ namespace wax
 	struct ColorStop
 	{
 		float		pos = 0.f;					// 0.0 -> 1.0 along the gradient.
-		HiColor		color = HiColor::White;
+		Color		color = Color::White;
 	};
 
 
@@ -96,8 +96,8 @@ namespace wax
 		//.____ Creation __________________________________________________________
 
 		static Tint_p	create(const Blueprint& blueprint);
-		static Tint_p	create(HiColor color);
-		static Tint_p	create(HiColor from, HiColor to, CoordF begin = { 0.f, 0.f }, CoordF end = { 0.f, 1.f });
+		static Tint_p	create(Color color);
+		static Tint_p	create(Color from, Color to, CoordF begin = { 0.f, 0.f }, CoordF end = { 0.f, 1.f });
 		static Tint_p	create(std::initializer_list<ColorStop> stops, CoordF begin = { 0.f, 0.f }, CoordF end = { 0.f, 1.f });
 
 		static Tint_p	mix(Tint* pFrom, Tint* pTo, float progress);
@@ -134,9 +134,9 @@ namespace wax
 		//.____ Misc ______________________________________________________
 
 		float		position(CoordF pos, const RectF& rect) const;	// Position along gradient before spread is applied. Simple Tints only.
-		HiColor		colorAtPosition(float position) const;			// Spread is applied. Simple Tints only.
+		Color		colorAtPosition(float position) const;			// Spread is applied. Simple Tints only.
 
-		HiColor		colorAt(CoordSPX pos, const RectSPX& rect) const;	// Color of pixel whose top-left corner is at pos.
+		Color		colorAt(CoordSPX pos, const RectSPX& rect) const;	// Color of pixel whose top-left corner is at pos.
 		int			alpha(CoordSPX pos, const RectSPX& rect) const;	// 0 -> 4096.
 
 		bool		isMorphableTo(const Tint* pOther) const;
@@ -147,8 +147,8 @@ namespace wax
 		virtual ~Tint() {}
 
 		static bool		_morphStops(const Tint* pFrom, const Tint* pTo, float progress, ColorStop* pOutput, int& nOutput);
-		static HiColor	_mixColors(HiColor from, HiColor to, float fraction);
-		HiColor			_colorAtStops(float position, bool bLeftLimit) const;
+		static Color	_mixColors(Color from, Color to, float fraction);
+		Color			_colorAtStops(float position, bool bLeftLimit) const;
 
 		void			_updateFlags();
 

@@ -312,13 +312,13 @@ void MemHeap::drawFragmentMap( int nSectors, uint16_t * pSectorTable, Surface * 
 
 	// Generate pixel values for the colors we want.
 	
-	uint16_t colEmpty 	= pSurface16bits->colorToPixel( Color8::LightGreen );
-	uint16_t colFrag 	= pSurface16bits->colorToPixel( Color8::Yellow );
-	uint16_t colFull 	= pSurface16bits->colorToPixel( Color8::Red );
+	uint16_t colEmpty 	= pSurface16bits->colorToPixel( Color::LightGreen );
+	uint16_t colFrag 	= pSurface16bits->colorToPixel( Color::Yellow );
+	uint16_t colFull 	= pSurface16bits->colorToPixel( Color::Red );
 
 	// Clear surface
 	
-	pSurface16bits->fill(Color8::Black);
+	pSurface16bits->fill(Color::Black);
 	
 	// Draw fragment map.
 

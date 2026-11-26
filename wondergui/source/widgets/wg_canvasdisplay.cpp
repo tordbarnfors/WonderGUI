@@ -105,7 +105,7 @@ namespace wg
 
 	//____ setTintColor() ______________________________________________________
 
-	void CanvasDisplay::setTintColor(HiColor color, ColorTransition* pTransition)
+	void CanvasDisplay::setTintColor(Color color, ColorTransition* pTransition)
 	{
 		if (color != m_tintColor)
 		{
@@ -268,7 +268,7 @@ namespace wg
 			else
 			{
 				m_tintColorTransitionProgress = timestamp;
-				HiColor color = m_pTintColorTransition->snapshot(timestamp, m_startTintColor, m_endTintColor);
+				Color color = m_pTintColorTransition->snapshot(timestamp, m_startTintColor, m_endTintColor);
 
 				if (color != m_tintColor)
 				{
@@ -328,7 +328,7 @@ namespace wg
 
 //				int		rl = pDevice->renderLayer();
 				BlendMode bm = pDevice->blendMode();
-				HiColor c = pDevice->tintColor();
+				Color c = pDevice->tintColor();
 
 //				if (m_renderLayer != -1)
 //					pDevice->setRenderLayer(m_renderLayer);

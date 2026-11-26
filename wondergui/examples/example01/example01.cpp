@@ -137,7 +137,7 @@ int main ( int argc, char** argv )
 		// Now we create the background by creating and setting a skin
 		// for the FlexPanel.
 
-		pFlexPanel->setSkin( ColorSkin::create(Color8::Bisque) );
+		pFlexPanel->setSkin( ColorSkin::create(Color::Bisque) );
 
 		// Now we create the button, using a clickable skin built from the BMP
 		// with the button graphics. First we specify the Surface and a rectangle

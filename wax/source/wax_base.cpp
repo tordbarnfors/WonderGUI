@@ -83,7 +83,7 @@ namespace wax
 
 			s_pContext = new Context();
 
-			HiColor::_initTables();
+			Color::_initTables();
 			PixelTools::_initTables();
 			_genCurveTab();
 		}

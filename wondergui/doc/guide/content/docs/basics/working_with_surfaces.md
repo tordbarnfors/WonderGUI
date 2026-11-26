@@ -22,12 +22,12 @@ Accessing pixels directly through PixelBuffers are the exception. Using pixel bu
 To clear a surface you simply fill it with the color you want, using the fill() method. A rectangle can be specified in which case only that rectangle will be filled.
 
 ```c++
-pMySurface->fill( Color8::Black );
+pMySurface->fill( Color::Black );
 
-pMySurface->fill( {10,10,200,100}, Color8::White );
+pMySurface->fill( {10,10,200,100}, Color::White );
 ```
 
-The alpha channel is written as well as the color components. No blending takes place. To clear the alpha channel, simply specify a color with 0 alpha or just use Color8::Transparent.
+The alpha channel is written as well as the color components. No blending takes place. To clear the alpha channel, simply specify a color with 0 alpha or just use Color::Transparent.
 
 
 

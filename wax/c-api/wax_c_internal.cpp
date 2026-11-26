@@ -30,7 +30,7 @@ void convertSurfaceBlueprint(Surface::Blueprint* pDest, const wax_surfaceBP* pSo
 		pDest->bigEndian = (pSource->byteOrder == WAX_BYTEORDER_BIG_ENDIAN);
 	pDest->canvas = pSource->canvas;
 	pDest->colorSpace = (ColorSpace)pSource->colorSpace;
-	pDest->fillColor = pSource->useFillColor ? HiColor(pSource->fillColor.r, pSource->fillColor.g, pSource->fillColor.b, pSource->fillColor.a) : HiColor::Undefined;
+	pDest->fillColor = pSource->useFillColor ? Color(pSource->fillColor.r, pSource->fillColor.g, pSource->fillColor.b, pSource->fillColor.a) : Color::Undefined;
 	pDest->palette = (Color8*)pSource->palette;
 	pDest->paletteCapacity = pSource->paletteCapacity;
 	pDest->paletteSize = pSource->paletteSize;
@@ -57,7 +57,7 @@ void convertSurfaceBlueprint(Surface::Blueprint* pDest, const wax_surfaceBP* pSo
 
 void convertEdgemapBlueprint(Edgemap::Blueprint* pDest, const wax_edgemapBP* pSource, Tint_p * pSpaceForTints )
 {
-	pDest->colors		= (HiColor*) pSource->colors;
+	pDest->colors		= (Color*) pSource->colors;
 	pDest->segments		= pSource->segments;
 	pDest->size			= { pSource->size.w, pSource->size.h };
 	pDest->tiling		= pSource->tiling != 0;

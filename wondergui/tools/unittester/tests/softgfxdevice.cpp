@@ -40,7 +40,7 @@ bool SoftGfxDeviceTest::drawRingTest(std::ostream& output)
 	
 	pDevice->beginCanvasUpdate(pCanvas);
 
-	RingSlice slice = { 1.f, HiColor( 4096, 0, 0, 4096), nullptr };
+	RingSlice slice = { 1.f, Color( 4096, 0, 0, 4096), nullptr };
 
 	RingSpec ring;
 	ring.rect = {59,59,1288,1288};

@@ -43,7 +43,7 @@ namespace wg
 
 		Coord		contentShift;
 		Surface_p	surface;
-		HiColor		color;
+		Color		color;
 		bool		m_bOpaque;
 	};
 
@@ -61,7 +61,7 @@ namespace wg
 
 		struct StateData
 		{
-			HiColor			color = HiColor::Undefined;
+			Color			color = Color::Undefined;
 			Coord			contentShift;
 			Surface_p		surface;
 		};
@@ -72,7 +72,7 @@ namespace wg
 			StateBP() {}
 			StateBP( State state ) : state(state) {}
 			StateBP( State state, StateData data ) : state(state), data(data) {}
-			StateBP( State state, HiColor color ) : state(state) { data.color = color; }
+			StateBP( State state, Color color ) : state(state) { data.color = color; }
 			StateBP( State state, Coord contentShift ) : state(state)	{ data.contentShift = contentShift; }
 			StateBP( State state, Surface_p surface ) : state(state)	{ data.surface = surface; }
 
@@ -83,7 +83,7 @@ namespace wg
 		struct Blueprint
 		{
 			BlendMode		blendMode = BlendMode::Blend;
-			HiColor			color = HiColor::Undefined;
+			Color			color = Color::Undefined;
 			Finalizer_p		finalizer = nullptr;
 			int				layer = -1;
 			int				markAlpha = 1;
@@ -98,7 +98,7 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static TileSkin_p	create(Surface * pSurface, HiColor color = HiColor::Undefined, int layer = -1 );
+		static TileSkin_p	create(Surface * pSurface, Color color = Color::Undefined, int layer = -1 );
 		static TileSkin_p	create(const Blueprint& blueprint);
 
 		//.____ Identification __________________________________________
@@ -135,7 +135,7 @@ namespace wg
 						return m_pStateSurfaces[entry];
 		}
 
-		const HiColor&	_getColor(State state) const
+		const Color&	_getColor(State state) const
 		{
 						int idxTabEntry = (state.index() & m_stateColorIndexMask) >> m_stateColorIndexShift;
 						int entry = m_pStateColorIndexTab[idxTabEntry];
@@ -151,7 +151,7 @@ namespace wg
 		uint8_t			m_stateColorIndexMask;
 		uint8_t			m_stateColorIndexShift;
 		uint8_t*		m_pStateColorIndexTab;		// Table with index values into m_pStateColors for each mode (72) or less.
-		HiColor*		m_pStateColors;				// Contains colors for states.
+		Color*		m_pStateColors;				// Contains colors for states.
 
 		uint8_t			m_stateSurfaceIndexMask;
 		uint8_t			m_stateSurfaceIndexShift;

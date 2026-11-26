@@ -70,7 +70,7 @@ namespace wax
 			TransitionCurve		curve = TransitionCurve::Linear;
 			int					duration = 250*1000;					// Microseconds!
 			Finalizer_p			finalizer = nullptr;
-			HiColor				midPointColor = HiColor::Undefined;
+			Color				midPointColor = Color::Undefined;
 			int					midPointDelay = 0;
 			TransitionCurve		midPointCurve = TransitionCurve::Linear;
 			int					midPointOffset = 0;
@@ -90,9 +90,9 @@ namespace wax
 
 		int		duration() const { return m_duration; }
 
-		HiColor	snapshot(int timestampMicroSec, HiColor startColor, HiColor endColor );
+		Color	snapshot(int timestampMicroSec, Color startColor, Color endColor );
 
-		void	snapshot(int timestampMicroSec, int nColors, const HiColor* pStartColors, const HiColor* pEndColors, HiColor* pOutput);
+		void	snapshot(int timestampMicroSec, int nColors, const Color* pStartColors, const Color* pEndColors, Color* pOutput);
 
 
 	protected:
@@ -104,7 +104,7 @@ namespace wax
 		int				m_midPointBegin;
 		int				m_midPointEnd;
 
-		HiColor			m_midPoint;
+		Color			m_midPoint;
 	};
 
 	//____ CoordTransition ____________________________________________________

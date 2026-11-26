@@ -83,7 +83,7 @@ namespace wax
 		void	setObjects(Object* const * pBeg, Object* const * pEnd) override;
 
 		void	setRects(const RectSPX* pBeg, const RectSPX* pEnd) override;
-		void	setColors(const HiColor* pBeg, const HiColor* pEnd) override;
+		void	setColors(const Color* pBeg, const Color* pEnd) override;
 		void	setTransforms(const Transform * pBeg, const Transform * pEnd) override;
 
 		void	processCommands( const uint16_t* pBeg, const uint16_t * pEnd, int version = 2) override;
@@ -338,7 +338,7 @@ namespace wax
 		bool				_bindBlitSource();
 		void				_bindBlitSamplerAndFlags();
 
-		int					_addColor( HiColor color );			// Returns offset into color buffer, -1 if full.
+		int					_addColor( Color color );			// Returns offset into color buffer, -1 if full.
 		void				_setTint( const TintTools::DecodedTint& tint );
 		void				_clearTint();
 		void				_updatePixelInfo();					// Blend mode, morph factor or canvas has changed.
@@ -351,14 +351,14 @@ namespace wax
 		void				_addQuad( const CoordF corners[4], int colorOfs, int extrasOfs );		// Six vertices, corners in order around the quad.
 		void				_addQuad( float x1, float y1, float x2, float y2, int colorOfs, int extrasOfs );
 
-		void				_drawFillRects( const RectSPX * pRects, int nRects, HiColor color );
+		void				_drawFillRects( const RectSPX * pRects, int nRects, Color color );
 		void				_drawFillRun( PipelineKind kind, int firstVertex, int nRects );
 		void				_drawBlitRects( const uint16_t*& pCmd, const RectSPX*& pRects, int nRects, int version, PipelineKind kind, bool bClip );
-		void				_drawLines( const uint16_t*& pCmd, const RectSPX*& pRects, const HiColor*& pColors, int nClipRects, int nLines );
+		void				_drawLines( const uint16_t*& pCmd, const RectSPX*& pRects, const Color*& pColors, int nClipRects, int nLines );
 		void				_drawCappedLines( const RectSPX * pClipRects, int nClipRects );
 		void				_drawScissored( const RectSPX * pClipRects, int nClipRects, int firstVertex, int nVertices );
 		void				_drawEdgemap( const uint16_t*& pCmd, const RectSPX*& pRects, int nRects, bool bTile );
-		void				_drawShape( ShapeKind kind, const uint16_t * pPayload, const RectSPX * pRects, int nRects, const HiColor * pColors );
+		void				_drawShape( ShapeKind kind, const uint16_t * pPayload, const RectSPX * pRects, int nRects, const Color * pColors );
 		void				_drawWarp( Command cmd, const WarpParams& params, const RectSPX * pRects );
 
 		// What we tell the error handler of once for each backend, as it would come again with
@@ -430,9 +430,9 @@ namespace wax
 		const RectSPX*		m_pRectsEnd = nullptr;
 		const RectSPX*		m_pRectsPtr = nullptr;
 
-		const HiColor*		m_pColorsBeg = nullptr;
-		const HiColor*		m_pColorsEnd = nullptr;
-		const HiColor*		m_pColorsPtr = nullptr;
+		const Color*		m_pColorsBeg = nullptr;
+		const Color*		m_pColorsEnd = nullptr;
+		const Color*		m_pColorsPtr = nullptr;
 
 		const Transform*	m_pTransformsBeg = nullptr;
 		const Transform*	m_pTransformsEnd = nullptr;
@@ -465,7 +465,7 @@ namespace wax
 
 		// State set by StateChange commands.
 
-		HiColor				m_tintColor = HiColor::White;	// Multiplied into every color _addColor() writes.
+		Color				m_tintColor = Color::White;	// Multiplied into every color _addColor() writes.
 		BlendMode			m_activeBlendMode = BlendMode::Blend;
 		float				m_morphFactor = 0.5f;			// Only used by BlendMode::Morph.
 

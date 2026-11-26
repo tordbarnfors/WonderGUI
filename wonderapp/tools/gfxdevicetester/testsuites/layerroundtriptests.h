@@ -58,7 +58,7 @@ public:
 			for (int spl = 0; spl <= c_edgemapWidth; spl++)
 				samples[edge][spl] = int((20 + edge * 30 + std::sin(spl / 15.0 + edge * 2) * 14) * 64);
 
-		HiColor colors[4] = { HiColor::Transparent, HiColor(4096, 0, 0, 1536), HiColor(0, 4096, 0, 3072), HiColor(0, 0, 4096, 1024) };
+		Color colors[4] = { Color::Transparent, Color(4096, 0, 0, 1536), Color(0, 4096, 0, 3072), Color(0, 0, 4096, 1024) };
 
 		m_pEdgemap = pDevice->edgemapFactory()->createEdgemap(WGBP(Edgemap,
 			_.size = { c_edgemapWidth, c_edgemapHeight },
@@ -68,7 +68,7 @@ public:
 
 		// Tint going from opaque to transparent.
 
-		m_pTint = Tint::create(HiColor(4096, 4096, 0, 4096), HiColor(0, 4096, 4096, 0), { 0.f, 0.f }, { 1.f, 1.f });
+		m_pTint = Tint::create(Color(4096, 4096, 0, 4096), Color(0, 4096, 4096, 0), { 0.f, 0.f }, { 1.f, 1.f });
 
 		return m_pLayerSurface && m_pLayeredCanvas && m_pCanvasLayers && m_pEdgemap;
 	}
@@ -95,7 +95,7 @@ public:
 
 		pDevice->beginCanvasUpdate(m_pLayerSurface);
 		pDevice->setBlendMode(BlendMode::Replace);
-		pDevice->fill(HiColor::Transparent);
+		pDevice->fill(Color::Transparent);
 		drawScene(pDevice, { 0,0 });
 		pDevice->endCanvasUpdate();
 
@@ -133,7 +133,7 @@ private:
 
 	void drawBackground(GfxDevice * pDevice, const RectSPX& canvas)
 	{
-		HiColor stripes[4] = { Color8(40, 40, 60), Color8(200, 200, 200), Color8(120, 30, 90), Color8(30, 120, 60) };
+		Color stripes[4] = { Color8(40, 40, 60), Color8(200, 200, 200), Color8(120, 30, 90), Color8(30, 120, 60) };
 
 		pDevice->setBlendMode(BlendMode::Replace);
 
@@ -152,15 +152,15 @@ private:
 
 		// Overlapping semi-transparent fills with subpixel edges.
 
-		pDevice->fill(RectSPX(ofs.x + 10 * 64 + 21, ofs.y + 10 * 64 + 40, 150 * 64 + 13, 90 * 64 + 7), HiColor(4096, 2048, 0, 2048));
-		pDevice->fill(RectSPX(ofs.x + 80 * 64 + 7, ofs.y + 50 * 64 + 50, 160 * 64 + 30, 80 * 64 + 20), HiColor(0, 1024, 4096, 2867));
+		pDevice->fill(RectSPX(ofs.x + 10 * 64 + 21, ofs.y + 10 * 64 + 40, 150 * 64 + 13, 90 * 64 + 7), Color(4096, 2048, 0, 2048));
+		pDevice->fill(RectSPX(ofs.x + 80 * 64 + 7, ofs.y + 50 * 64 + 50, 160 * 64 + 30, 80 * 64 + 20), Color(0, 1024, 4096, 2867));
 
 		// Anti-aliased lines, opaque and semi-transparent, crossing each other.
 
 		for (int i = 0; i < 6; i++)
 		{
-			pDevice->drawLine(ofs + CoordSPX(10 + i * 40, 150) * 64, ofs + CoordSPX(240 - i * 30, 240) * 64, HiColor::White, 2 * 64 + i * 32);
-			pDevice->drawLine(ofs + CoordSPX(10, 160 + i * 14) * 64, ofs + CoordSPX(245, 170 + i * 10) * 64, HiColor(4096, 0, 2048, 2048), 3 * 64);
+			pDevice->drawLine(ofs + CoordSPX(10 + i * 40, 150) * 64, ofs + CoordSPX(240 - i * 30, 240) * 64, Color::White, 2 * 64 + i * 32);
+			pDevice->drawLine(ofs + CoordSPX(10, 160 + i * 14) * 64, ofs + CoordSPX(245, 170 + i * 10) * 64, Color(4096, 0, 2048, 2048), 3 * 64);
 		}
 
 		// Edgemap with semi-transparent segments.
@@ -175,9 +175,9 @@ private:
 		pDevice->setBlitSource(m_pLogo);
 		pDevice->blit(ofs + CoordSPX(28, 330) * 64);
 
-		pDevice->setTintColor(HiColor(4096, 4096, 4096, 2048));
+		pDevice->setTintColor(Color(4096, 4096, 4096, 2048));
 		pDevice->blit(ofs + CoordSPX(50, 360) * 64);
-		pDevice->setTintColor(HiColor::White);
+		pDevice->setTintColor(Color::White);
 
 		// Rotated bilinear blit, with transparent surroundings.
 
@@ -187,7 +187,7 @@ private:
 
 		RectSPX tintRect(ofs.x + 140 * 64, ofs.y + 250 * 64, 100 * 64, 70 * 64);
 		pDevice->setTint(tintRect, m_pTint);
-		pDevice->fill(tintRect, HiColor::White);
+		pDevice->fill(tintRect, Color::White);
 		pDevice->clearTint();
 	}
 

@@ -106,7 +106,7 @@ namespace wg
 		void		setSurfacePlacement(Placement placement);
 		Placement	surfacePlacement() const { return m_placement;  }
 
-		//		void		setGrid(int x, int y, HiColor color, float thickness);
+		//		void		setGrid(int x, int y, Color color, float thickness);
 
 
 		//.____ Internal ____________________________________________

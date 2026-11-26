@@ -35,7 +35,7 @@ namespace
 
 		pDevice->beginRender();
 		pDevice->beginCanvasUpdate(pCanvas);
-		pDevice->fill(HiColor::Black);
+		pDevice->fill(Color::Black);
 		draw(pDevice);
 		pDevice->endCanvasUpdate();
 		pDevice->endRender();
@@ -51,9 +51,9 @@ namespace
 
 	const int c_fillSegment = 2;					// Transparent, outline, fill, outline, transparent.
 
-	EdgemapWave_p makeWave(HiColor color)
+	EdgemapWave_p makeWave(Color color)
 	{
-		return EdgemapWave::create(WGBP(EdgemapWave, _.size = c_waveSize, _.color = color, _.outlineColor = HiColor::White,
+		return EdgemapWave::create(WGBP(EdgemapWave, _.size = c_waveSize, _.color = color, _.outlineColor = Color::White,
 										_.topOutlineThickness = 2 * 64, _.bottomOutlineThickness = 64,
 										_.factory = SoftEdgemapFactory::create()));
 	}
@@ -90,7 +90,7 @@ EdgemapWaveTest::~EdgemapWaveTest()
 
 bool EdgemapWaveTest::heldEdgemapTest(std::ostream& output)
 {
-	const HiColor red(4096, 0, 0, 4096), blue(0, 0, 4096, 4096), green(0, 4096, 0, 4096);
+	const Color red(4096, 0, 0, 4096), blue(0, 0, 4096, 4096), green(0, 4096, 0, 4096);
 
 	auto pWave = makeWave(red);
 	setSamples(pWave, 0.2f);
@@ -150,7 +150,7 @@ bool EdgemapWaveTest::heldEdgemapTest(std::ostream& output)
 
 bool EdgemapWaveTest::drawnTwiceTest(std::ostream& output)
 {
-	const HiColor red(4096, 0, 0, 4096), blue(0, 0, 4096, 4096), green(0, 4096, 0, 4096);
+	const Color red(4096, 0, 0, 4096), blue(0, 0, 4096, 4096), green(0, 4096, 0, 4096);
 
 	auto one = render([&](GfxDevice* pDevice)
 	{

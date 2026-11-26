@@ -524,7 +524,7 @@ namespace wax
 			_loadIntoDataBuffer(dataInfo, m_colorsDataBuffer, header.size - dataInfo.encodedSize);
 
 			if (m_colorsDataBuffer.size > 0)
-				m_pBackend->setColors((HiColor*)m_colorsDataBuffer.pBuffer, (HiColor*)(m_colorsDataBuffer.pBuffer + m_colorsDataBuffer.size) );
+				m_pBackend->setColors((Color*)m_colorsDataBuffer.pBuffer, (Color*)(m_colorsDataBuffer.pBuffer + m_colorsDataBuffer.size) );
 
 			break;
 		}
@@ -881,7 +881,7 @@ namespace wax
 		{
 			uint16_t	objectId;
 			RectI		region;
-			HiColor		col;
+			Color		col;
 
 			decoder >> objectId;
 			decoder >> region;
@@ -1005,12 +1005,12 @@ namespace wax
 			{
 				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SetEdgemapColors with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
-				m_pDecoder->skip(sizeof(HiColor)*nColors);
+				m_pDecoder->skip(sizeof(Color)*nColors);
 				break;
 			}
 
-			int memAllocated = sizeof(HiColor)*nColors;
-			auto * pColors = (HiColor*) Base::memStackAlloc(memAllocated);
+			int memAllocated = sizeof(Color)*nColors;
+			auto * pColors = (Color*) Base::memStackAlloc(memAllocated);
 			
 			for( int i = 0 ; i < nColors ; i++ )
 				decoder >> pColors[i];

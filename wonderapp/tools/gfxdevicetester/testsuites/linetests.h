@@ -35,11 +35,11 @@ public:
 			m_endCoordsSolaris[i] = end;
 		}
 
-		HiColor red = Color8::Red;
-		HiColor green = Color8::Green;
-		HiColor blue = Color8::Blue;
-		HiColor white = Color8::White;
-		HiColor yellow = Color8::Yellow;
+		Color red = Color::Red;
+		Color green = Color::Green;
+		Color blue = Color::Blue;
+		Color white = Color::White;
+		Color yellow = Color::Yellow;
 
 		m_pLinearTint = Tint::create( { {0.f, red}, {0.3f, yellow}, {0.6f, green}, {1.f, blue} }, {0.1f, 0.f}, {0.9f, 1.f} );
 
@@ -57,7 +57,7 @@ public:
 			bp.shape = TintShape::Radial;
 			bp.center = { 0.5f, 0.5f };
 			bp.radius = { 0.5f, 0.3f };
-			bp.stops = { {0.f, white}, {0.5f, yellow}, {1.f, HiColor(0, 0, 4096, 1024)} };
+			bp.stops = { {0.f, white}, {0.5f, yellow}, {1.f, Color(0, 0, 4096, 1024)} };
 			m_pRadialTint = Tint::create(bp);
 		}
 
@@ -92,7 +92,7 @@ public:
 	bool setRadialTintAndTintColor(GfxDevice * pDevice, const RectSPX& canvas)
 	{
 		pDevice->setTint(canvas, m_pRadialTint);
-		pDevice->setTintColor(HiColor(4096, 2048, 4096, 3072));
+		pDevice->setTintColor(Color(4096, 2048, 4096, 3072));
 		return true;
 	}
 
@@ -104,7 +104,7 @@ public:
 
 	bool clearTint(GfxDevice * pDevice, const RectSPX& canvas)
 	{
-		pDevice->setTintColor(Color8::White);
+		pDevice->setTintColor(Color::White);
 		pDevice->clearTint();
 		return true;
 	}
@@ -115,7 +115,7 @@ public:
 	{
 		for (int i = 0; i < c_nbSolarisLines; i++)
 		{
-			pDevice->drawLine(m_begCoordsSolaris[i], m_endCoordsSolaris[i], Color8::Yellow, 64);
+			pDevice->drawLine(m_begCoordsSolaris[i], m_endCoordsSolaris[i], Color::Yellow, 64);
 		}
 
 		return true;
@@ -130,7 +130,7 @@ public:
 		{
 			spx thickness = 64 + (i % 4) * 3 * 64;
 
-			pDevice->drawLine(m_begCoordsSolaris[i], m_endCoordsSolaris[i], Color8::White, thickness);
+			pDevice->drawLine(m_begCoordsSolaris[i], m_endCoordsSolaris[i], Color::White, thickness);
 		}
 
 		return true;

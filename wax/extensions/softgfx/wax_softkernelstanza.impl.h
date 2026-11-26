@@ -67,7 +67,7 @@ template<SoftFormat format> constexpr int _ofsA() { return SoftFormatInfo::isBig
 // Reads a pixel with 8 bits per channel, without color space conversion.
 
 template<SoftFormat format>
-static inline void _read_pixel_fast8(const uint8_t* WAX_RESTRICT pPixel, const Color8* WAX_RESTRICT pPalette, const HiColor* WAX_RESTRICT pPalette4096, int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA)
+static inline void _read_pixel_fast8(const uint8_t* WAX_RESTRICT pPixel, const Color8* WAX_RESTRICT pPalette, const Color* WAX_RESTRICT pPalette4096, int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA)
 {
 	constexpr PixelFormat layout = SoftFormatInfo::pixelFormat(format);
 
@@ -75,10 +75,10 @@ static inline void _read_pixel_fast8(const uint8_t* WAX_RESTRICT pPixel, const C
 	{
 		const int16_t* p = (const int16_t*)pPixel;
 
-		outB = HiColor::packLinearTab[p[0]];
-		outG = HiColor::packLinearTab[p[1]];
-		outR = HiColor::packLinearTab[p[2]];
-		outA = HiColor::packLinearTab[p[3]];
+		outB = Color::packLinearTab[p[0]];
+		outG = Color::packLinearTab[p[1]];
+		outR = Color::packLinearTab[p[2]];
+		outA = Color::packLinearTab[p[3]];
 	}
 	else if constexpr(layout == PixelFormat::ARGB_8)
 	{
@@ -129,7 +129,7 @@ static inline void _read_pixel_fast8(const uint8_t* WAX_RESTRICT pPixel, const C
 // Reads a pixel with 12 bits per channel (0 -> 4096), converted to linear.
 
 template<SoftFormat format>
-static inline void _read_pixel(const uint8_t* WAX_RESTRICT pPixel, const Color8* WAX_RESTRICT pPalette, const HiColor* WAX_RESTRICT pPalette4096, int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA)
+static inline void _read_pixel(const uint8_t* WAX_RESTRICT pPixel, const Color8* WAX_RESTRICT pPalette, const Color* WAX_RESTRICT pPalette4096, int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA)
 {
 	constexpr PixelFormat layout = SoftFormatInfo::pixelFormat(format);
 
@@ -144,12 +144,12 @@ static inline void _read_pixel(const uint8_t* WAX_RESTRICT pPixel, const Color8*
 	}
 	else if constexpr(layout == PixelFormat::ARGB_8 || layout == PixelFormat::XRGB_8)
 	{
-		const int16_t* pUnpack = SoftFormatInfo::isLinear(format) ? HiColor::unpackLinearTab : HiColor::unpackSRGBTab;
+		const int16_t* pUnpack = SoftFormatInfo::isLinear(format) ? Color::unpackLinearTab : Color::unpackSRGBTab;
 
 		outB = pUnpack[pPixel[_ofsB<format>()]];
 		outG = pUnpack[pPixel[_ofsG<format>()]];
 		outR = pUnpack[pPixel[_ofsR<format>()]];
-		outA = layout == PixelFormat::ARGB_8 ? HiColor::unpackLinearTab[pPixel[_ofsA<format>()]] : 4096;
+		outA = layout == PixelFormat::ARGB_8 ? Color::unpackLinearTab[pPixel[_ofsA<format>()]] : 4096;
 	}
 	else if constexpr(layout == PixelFormat::RGB_565 || layout == PixelFormat::BGR_565)
 	{
@@ -171,11 +171,11 @@ static inline void _read_pixel(const uint8_t* WAX_RESTRICT pPixel, const Color8*
 		outB = 4096;
 		outG = 4096;
 		outR = 4096;
-		outA = HiColor::unpackLinearTab[*pPixel];
+		outA = Color::unpackLinearTab[*pPixel];
 	}
 	else if constexpr(layout == PixelFormat::Index_8 || layout == PixelFormat::Index_16)
 	{
-		const HiColor* p = &pPalette4096[layout == PixelFormat::Index_8 ? *pPixel : _load16<format>(pPixel)];
+		const Color* p = &pPalette4096[layout == PixelFormat::Index_8 ? *pPixel : _load16<format>(pPixel)];
 		outB = p->b;
 		outG = p->g;
 		outR = p->r;
@@ -196,10 +196,10 @@ static inline void _write_pixel_fast8(uint8_t* pPixel, int16_t b, int16_t g, int
 	{
 		int16_t* p = (int16_t*)pPixel;
 
-		p[0] = HiColor::unpackLinearTab[b];
-		p[1] = HiColor::unpackLinearTab[g];
-		p[2] = HiColor::unpackLinearTab[r];
-		p[3] = HiColor::unpackLinearTab[a];
+		p[0] = Color::unpackLinearTab[b];
+		p[1] = Color::unpackLinearTab[g];
+		p[2] = Color::unpackLinearTab[r];
+		p[3] = Color::unpackLinearTab[a];
 	}
 	else if constexpr(layout == PixelFormat::ARGB_8)
 	{
@@ -255,13 +255,13 @@ static inline void _write_pixel(uint8_t* pPixel, int16_t b, int16_t g, int16_t r
 	}
 	else if constexpr(layout == PixelFormat::Alpha_8)
 	{
-		pPixel[0] = HiColor::packLinearTab[a];
+		pPixel[0] = Color::packLinearTab[a];
 	}
 	else
 	{
-		const uint8_t* pPackTab = SoftFormatInfo::isLinear(format) ? HiColor::packLinearTab : HiColor::packSRGBTab;
+		const uint8_t* pPackTab = SoftFormatInfo::isLinear(format) ? Color::packLinearTab : Color::packSRGBTab;
 
-		_write_pixel_fast8<format>(pPixel, pPackTab[b], pPackTab[g], pPackTab[r], HiColor::packLinearTab[a]);
+		_write_pixel_fast8<format>(pPixel, pPackTab[b], pPackTab[g], pPackTab[r], Color::packLinearTab[a]);
 	}
 }
 
@@ -944,7 +944,7 @@ static inline void _write_transparent(uint8_t* pDst, int16_t fixedB, int16_t fix
 //____ _color_tint_init() _________________________________________________
 template<TintMode tintMode>
 static inline void _color_tint_init(const SoftBackend::ColTrans& tint, int bits, int16_t inB, int16_t inG, int16_t inR, int16_t inA,
-							 int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA, const HiColor*& WAX_RESTRICT pTintmapX, const HiColor*& WAX_RESTRICT pTintmapY, CoordI patchPos)
+							 int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA, const Color*& WAX_RESTRICT pTintmapX, const Color*& WAX_RESTRICT pTintmapY, CoordI patchPos)
 {
 	if constexpr(tintMode == TintMode::None)
 	{
@@ -977,7 +977,7 @@ template<TintMode tintMode>
 static inline void _color_tint_line(const SoftBackend::ColTrans& tint, int bits, int16_t inB, int16_t inG, int16_t inR, int16_t inA,
 														int16_t& lineB, int16_t& lineG, int16_t& lineR, int16_t& lineA,
 														int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA,
-														const HiColor*& pTintmapX, const HiColor*& pTintmapY, CoordI patchPos)
+														const Color*& pTintmapX, const Color*& pTintmapY, CoordI patchPos)
 {
 	if constexpr(tintMode == TintMode::GradientX || tintMode == TintMode::GradientXY )
 	{
@@ -1008,7 +1008,7 @@ static inline void _color_tint_line(const SoftBackend::ColTrans& tint, int bits,
 template<TintMode tintMode>
 static inline void _color_tint_pixel(int16_t inB, int16_t inG, int16_t inR, int16_t inA,
 							  int16_t& lineB, int16_t& lineG, int16_t& lineR, int16_t& lineA,
-							  int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA, const HiColor*& pTintmapX)
+							  int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA, const Color*& pTintmapX)
 {
 	if constexpr(tintMode == TintMode::GradientX)
 	{
@@ -1034,7 +1034,7 @@ static inline void _color_tint_pixel(int16_t inB, int16_t inG, int16_t inR, int1
 template<TintMode tintMode>
 inline void _texel_tint_init(const SoftBackend::ColTrans& tint, int bits,
 							 int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA,
-							 const HiColor*& pTintmapX, const HiColor*& pTintmapY, CoordI patchPos)
+							 const Color*& pTintmapX, const Color*& pTintmapY, CoordI patchPos)
 {
 	if constexpr(tintMode == TintMode::Flat)
 	{
@@ -1060,7 +1060,7 @@ template <TintMode tintMode>
 inline void _texel_tint_line(const SoftBackend::ColTrans& tint, int bits,
 							 int16_t& lineB, int16_t& lineG, int16_t& lineR, int16_t& lineA,
 							 int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA,
-							 const HiColor*& pTintmapX, const HiColor*&  pTintmapY, CoordI patchPos)
+							 const Color*& pTintmapX, const Color*&  pTintmapY, CoordI patchPos)
 {
 	if constexpr(tintMode == TintMode::GradientX || tintMode == TintMode::GradientXY )
 	{
@@ -1091,7 +1091,7 @@ inline void _texel_tint_line(const SoftBackend::ColTrans& tint, int bits,
 template<TintMode tintMode>
 inline void _texel_tint_pixel(int bits, int16_t& pixelB, int16_t& pixelG, int16_t& pixelR, int16_t& pixelA,
 							  int16_t& lineB, int16_t& lineG, int16_t& lineR, int16_t& lineA,
-							  int16_t& tintB, int16_t& tintG, int16_t& tintR, int16_t& tintA, const HiColor*& pTintmapX)
+							  int16_t& tintB, int16_t& tintG, int16_t& tintR, int16_t& tintA, const Color*& pTintmapX)
 {
 	if constexpr(tintMode == TintMode::None)
 	{
@@ -1194,7 +1194,7 @@ static inline void _blend_line_edge(uint8_t* WAX_RESTRICT pDst, int coverage, in
 //____ _draw_line() _______________________________________________________
 
 template<BlendMode BLEND, TintMode TINT, SoftFormat DSTFORMAT>
-void _draw_line(uint8_t* WAX_RESTRICT pRow, int rowInc, int pixelInc, int length, int width, int pos, int slope, HiColor color, const SoftBackend::ColTrans& tint, CoordI patchPos)
+void _draw_line(uint8_t* WAX_RESTRICT pRow, int rowInc, int pixelInc, int length, int width, int pos, int slope, Color color, const SoftBackend::ColTrans& tint, CoordI patchPos)
 {
 	constexpr bool bFast8 = SoftFormatInfo::isLinear(DSTFORMAT);
 
@@ -1205,12 +1205,12 @@ void _draw_line(uint8_t* WAX_RESTRICT pRow, int rowInc, int pixelInc, int length
 
 	if constexpr(bFast8)
 	{
-		const uint8_t* WAX_RESTRICT pPackTab = HiColor::packLinearTab;
+		const uint8_t* WAX_RESTRICT pPackTab = Color::packLinearTab;
 
 		srcB = pPackTab[color.b];
 		srcG = pPackTab[color.g];
 		srcR = pPackTab[color.r];
-		srcA = HiColor::packLinearTab[color.a];
+		srcA = Color::packLinearTab[color.a];
 	}
 	else
 	{
@@ -1237,12 +1237,12 @@ void _draw_line(uint8_t* WAX_RESTRICT pRow, int rowInc, int pixelInc, int length
 
 	if constexpr(bFast8)
 	{
-		const uint8_t* pPackTab = HiColor::packLinearTab;
+		const uint8_t* pPackTab = Color::packLinearTab;
 
 		fixedB = pPackTab[tint.fixedBlendColor.b];
 		fixedG = pPackTab[tint.fixedBlendColor.g];
 		fixedR = pPackTab[tint.fixedBlendColor.r];
-		fixedA = HiColor::packLinearTab[tint.fixedBlendColor.a];
+		fixedA = Color::packLinearTab[tint.fixedBlendColor.a];
 	}
 	else
 	{
@@ -1323,7 +1323,7 @@ void _draw_line(uint8_t* WAX_RESTRICT pRow, int rowInc, int pixelInc, int length
 //____ _clip_draw_line() __________________________________________________
 
 template<BlendMode BLEND, TintMode TINT, SoftFormat DSTFORMAT>
-void _clip_draw_line(int clipStart, int clipEnd, uint8_t* WAX_RESTRICT pRow, int rowInc, int pixelInc, int length, int width, int pos, int slope, HiColor color, const SoftBackend::ColTrans& tint, CoordI patchPos)
+void _clip_draw_line(int clipStart, int clipEnd, uint8_t* WAX_RESTRICT pRow, int rowInc, int pixelInc, int length, int width, int pos, int slope, Color color, const SoftBackend::ColTrans& tint, CoordI patchPos)
 {
 	constexpr bool bFast8 = false;
 
@@ -1334,12 +1334,12 @@ void _clip_draw_line(int clipStart, int clipEnd, uint8_t* WAX_RESTRICT pRow, int
 
 	if constexpr(bFast8)
 	{
-		const uint8_t* WAX_RESTRICT pPackTab = HiColor::packLinearTab;
+		const uint8_t* WAX_RESTRICT pPackTab = Color::packLinearTab;
 
 		srcB = pPackTab[color.b];
 		srcG = pPackTab[color.g];
 		srcR = pPackTab[color.r];
-		srcA = HiColor::packLinearTab[color.a];
+		srcA = Color::packLinearTab[color.a];
 	}
 	else
 	{
@@ -1365,12 +1365,12 @@ void _clip_draw_line(int clipStart, int clipEnd, uint8_t* WAX_RESTRICT pRow, int
 
 	if constexpr(bFast8)
 	{
-		const uint8_t* WAX_RESTRICT pPackTab = HiColor::packLinearTab;
+		const uint8_t* WAX_RESTRICT pPackTab = Color::packLinearTab;
 
 		fixedB = pPackTab[tint.fixedBlendColor.b];
 		fixedG = pPackTab[tint.fixedBlendColor.g];
 		fixedR = pPackTab[tint.fixedBlendColor.r];
-		fixedA = HiColor::packLinearTab[tint.fixedBlendColor.a];
+		fixedA = Color::packLinearTab[tint.fixedBlendColor.a];
 	}
 	else
 	{
@@ -1477,7 +1477,7 @@ void _clip_draw_line(int clipStart, int clipEnd, uint8_t* WAX_RESTRICT pRow, int
 //____ _fill() ____________________________________________________________
 
 template<TintMode TINT, BlendMode BLEND, SoftFormat DSTFORMAT>
-void _fill(uint8_t* WAX_RESTRICT pDst, int pitchX, int pitchY, int nLines, int lineLength, HiColor col, const SoftBackend::ColTrans& tint, CoordI patchPos)
+void _fill(uint8_t* WAX_RESTRICT pDst, int pitchX, int pitchY, int nLines, int lineLength, Color col, const SoftBackend::ColTrans& tint, CoordI patchPos)
 {
 //	if( TINT == TintMode::None || TINT == TintMode::Flat )
 
@@ -1491,7 +1491,7 @@ void _fill(uint8_t* WAX_RESTRICT pDst, int pitchX, int pitchY, int nLines, int l
 
 	if constexpr(bFast8)
 	{
-		const uint8_t* WAX_RESTRICT pPackTab = HiColor::packLinearTab;
+		const uint8_t* WAX_RESTRICT pPackTab = Color::packLinearTab;
 
 		srcB = pPackTab[col.b];
 		srcG = pPackTab[col.g];
@@ -1510,8 +1510,8 @@ void _fill(uint8_t* WAX_RESTRICT pDst, int pitchX, int pitchY, int nLines, int l
 	
 	int16_t tintedB, tintedG, tintedR, tintedA;
 
-	const HiColor* pTintmapX;
-	const HiColor* pTintmapY;
+	const Color* pTintmapX;
+	const Color* pTintmapY;
 
 	_color_tint_init<TINT>(tint, bits, srcB, srcG, srcR, srcA, tintedB, tintedG, tintedR, tintedA,
 							pTintmapX, pTintmapY, patchPos);
@@ -1522,7 +1522,7 @@ void _fill(uint8_t* WAX_RESTRICT pDst, int pitchX, int pitchY, int nLines, int l
 
 	if constexpr(bFast8)
 	{
-		const uint8_t* WAX_RESTRICT pPackTab = HiColor::packLinearTab;
+		const uint8_t* WAX_RESTRICT pPackTab = Color::packLinearTab;
 
 		fixedB = pPackTab[tint.fixedBlendColor.b];
 		fixedG = pPackTab[tint.fixedBlendColor.g];
@@ -1687,7 +1687,7 @@ void _straight_blit(const uint8_t* WAX_RESTRICT pSrc, uint8_t* WAX_RESTRICT pDst
 
 	constexpr int bits = bFast8 ? 8 : 12;
 
-	// Fast track for transparent black pixels in the HiColor buffers of two-pass blits.
+	// Fast track for transparent black pixels in the Color buffers of two-pass blits.
 	// Not done for other source formats (like the ARGB_8_linear buffers), since those
 	// kernels are also used for blits from ordinary surfaces, which should stay fast.
 
@@ -1754,14 +1754,14 @@ void _straight_blit(const uint8_t* WAX_RESTRICT pSrc, uint8_t* WAX_RESTRICT pDst
 	}
 
 	const Color8* WAX_RESTRICT pPalette = pSrcSurf->palette();
-	const HiColor* WAX_RESTRICT pPalette4096 = pSrcSurf->palette4096();
+	const Color* WAX_RESTRICT pPalette4096 = pSrcSurf->palette4096();
 
 	// Step 1: Prepare any tint gradient
 
 	int16_t	tintB, tintG, tintR, tintA;
 
-	const HiColor* pTintmapX;
-	const HiColor* pTintmapY;
+	const Color* pTintmapX;
+	const Color* pTintmapY;
 
 	_texel_tint_init<TINT>(tint, bits, tintB, tintG, tintR, tintA, pTintmapX, pTintmapY, patchPos);
 
@@ -1771,7 +1771,7 @@ void _straight_blit(const uint8_t* WAX_RESTRICT pSrc, uint8_t* WAX_RESTRICT pDst
 	
 	if constexpr (bFast8)
 	{
-		const uint8_t* WAX_RESTRICT pPackTab = HiColor::packLinearTab;
+		const uint8_t* WAX_RESTRICT pPackTab = Color::packLinearTab;
 
 		fixedB = pPackTab[tint.fixedBlendColor.b];
 		fixedG = pPackTab[tint.fixedBlendColor.g];
@@ -2102,7 +2102,7 @@ void _scale_blit_bilinear(const SoftSurface* WAX_RESTRICT pSrcSurf, BinalCoord p
 	int srcPitch = pSrcSurf->pitch();
 
 	const Color8* WAX_RESTRICT pPalette = pSrcSurf->palette();
-	const HiColor* WAX_RESTRICT pPalette4096 = pSrcSurf->palette4096();
+	const Color* WAX_RESTRICT pPalette4096 = pSrcSurf->palette4096();
 
 	// Columns of the source that are sampled, same as by _transform_blit(): the right
 	// neighbour of a sample is only read when it has a weight.
@@ -2286,7 +2286,7 @@ void _transform_blit(const SoftSurface* WAX_RESTRICT pSrcSurf, BinalCoord pos, c
 	}
 
 	const Color8* WAX_RESTRICT pPalette = pSrcSurf->palette();
-	const HiColor* WAX_RESTRICT pPalette4096 = pSrcSurf->palette4096();
+	const Color* WAX_RESTRICT pPalette4096 = pSrcSurf->palette4096();
 
 	// Step 1: Setup fixed blend color
 	
@@ -2294,7 +2294,7 @@ void _transform_blit(const SoftSurface* WAX_RESTRICT pSrcSurf, BinalCoord pos, c
 
 	if constexpr(bFast8)
 	{
-		const uint8_t* WAX_RESTRICT pPackTab = HiColor::packLinearTab;
+		const uint8_t* WAX_RESTRICT pPackTab = Color::packLinearTab;
 
 		fixedB = pPackTab[tint.fixedBlendColor.b];
 		fixedG = pPackTab[tint.fixedBlendColor.g];
@@ -2637,7 +2637,7 @@ void _transform_blit(const SoftSurface* WAX_RESTRICT pSrcSurf, BinalCoord pos, c
 //____ _add_segment_color() _______________________________________________
 
 template<SoftBackend::StripSource SOURCE>
-static inline void _add_segment_color(int blendFraction, int offset, const int16_t* WAX_RESTRICT pSegmentColor, const HiColor* WAX_RESTRICT pSegmentTintmap, int& accB, int& accG, int& accR, int& accA)
+static inline void _add_segment_color(int blendFraction, int offset, const int16_t* WAX_RESTRICT pSegmentColor, const Color* WAX_RESTRICT pSegmentTintmap, int& accB, int& accG, int& accR, int& accA)
 {
 	if constexpr(SOURCE == SoftBackend::StripSource::Colors)
 	{
@@ -2664,7 +2664,7 @@ static inline void _add_segment_color(int blendFraction, int offset, const int16
 
 //____ _draw_segment_strip() _______________________________________________
 template<SoftBackend::StripSource SOURCE, BlendMode BLEND, SoftFormat DSTFORMAT>
-void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WAX_RESTRICT pStripStart, int pixelPitch, int nEdges, SoftBackend::SegmentEdge* WAX_RESTRICT pEdges, const int16_t* WAX_RESTRICT pSegmentColors, const HiColor* WAX_RESTRICT pSegmentTintmap, int segmentTintmapPitch, const bool* WAX_RESTRICT pTransparentSegments, const bool* WAX_RESTRICT pOpaqueSegments, const SoftBackend::ColTrans& tint)
+void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WAX_RESTRICT pStripStart, int pixelPitch, int nEdges, SoftBackend::SegmentEdge* WAX_RESTRICT pEdges, const int16_t* WAX_RESTRICT pSegmentColors, const Color* WAX_RESTRICT pSegmentTintmap, int segmentTintmapPitch, const bool* WAX_RESTRICT pTransparentSegments, const bool* WAX_RESTRICT pOpaqueSegments, const SoftBackend::ColTrans& tint)
 {
 	constexpr bool bFast8 = SoftFormatInfo::isLinear(DSTFORMAT);
 
@@ -2676,7 +2676,7 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WAX_RESTRICT pStripSta
 
 	if constexpr(bFast8)
 	{
-		const uint8_t* WAX_RESTRICT pPackTab = HiColor::packLinearTab;
+		const uint8_t* WAX_RESTRICT pPackTab = Color::packLinearTab;
 
 		fixedB = pPackTab[tint.fixedBlendColor.b];
 		fixedG = pPackTab[tint.fixedBlendColor.g];
@@ -2716,10 +2716,10 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WAX_RESTRICT pStripSta
 				{
 					if constexpr(bFast8)
 					{
-						inB = HiColor::packLinearTab[pSegmentColors[0]];
-						inG = HiColor::packLinearTab[pSegmentColors[1]];
-						inR = HiColor::packLinearTab[pSegmentColors[2]];
-						inA = HiColor::packLinearTab[pSegmentColors[3]];
+						inB = Color::packLinearTab[pSegmentColors[0]];
+						inG = Color::packLinearTab[pSegmentColors[1]];
+						inR = Color::packLinearTab[pSegmentColors[2]];
+						inA = Color::packLinearTab[pSegmentColors[3]];
 					}
 					else
 					{
@@ -2798,10 +2798,10 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WAX_RESTRICT pStripSta
 						{
 							if constexpr(bFast8)
 							{
-								inB = HiColor::packLinearTab[pSegmentTintmap[offset >> 8].b];
-								inG = HiColor::packLinearTab[pSegmentTintmap[offset >> 8].g];
-								inR = HiColor::packLinearTab[pSegmentTintmap[offset >> 8].r];
-								inA = HiColor::packLinearTab[pSegmentTintmap[offset >> 8].a];
+								inB = Color::packLinearTab[pSegmentTintmap[offset >> 8].b];
+								inG = Color::packLinearTab[pSegmentTintmap[offset >> 8].g];
+								inR = Color::packLinearTab[pSegmentTintmap[offset >> 8].r];
+								inA = Color::packLinearTab[pSegmentTintmap[offset >> 8].a];
 
 							}
 							else
@@ -2817,10 +2817,10 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WAX_RESTRICT pStripSta
 						{
 							if constexpr(bFast8)
 							{
-								inB = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].b * pSegmentColors[0]) >> 12];
-								inG = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].g * pSegmentColors[1]) >> 12];
-								inR = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].r * pSegmentColors[2]) >> 12];
-								inA = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].a * pSegmentColors[3]) >> 12];
+								inB = Color::packLinearTab[(pSegmentTintmap[offset >> 8].b * pSegmentColors[0]) >> 12];
+								inG = Color::packLinearTab[(pSegmentTintmap[offset >> 8].g * pSegmentColors[1]) >> 12];
+								inR = Color::packLinearTab[(pSegmentTintmap[offset >> 8].r * pSegmentColors[2]) >> 12];
+								inA = Color::packLinearTab[(pSegmentTintmap[offset >> 8].a * pSegmentColors[3]) >> 12];
 							}
 							else
 							{
@@ -2852,10 +2852,10 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WAX_RESTRICT pStripSta
 						{
 							if constexpr(bFast8)
 							{
-								inB = HiColor::packLinearTab[pSegmentTintmap[offset >> 8].b];
-								inG = HiColor::packLinearTab[pSegmentTintmap[offset >> 8].g];
-								inR = HiColor::packLinearTab[pSegmentTintmap[offset >> 8].r];
-								inA = HiColor::packLinearTab[pSegmentTintmap[offset >> 8].a];
+								inB = Color::packLinearTab[pSegmentTintmap[offset >> 8].b];
+								inG = Color::packLinearTab[pSegmentTintmap[offset >> 8].g];
+								inR = Color::packLinearTab[pSegmentTintmap[offset >> 8].r];
+								inA = Color::packLinearTab[pSegmentTintmap[offset >> 8].a];
 							}
 							else
 							{
@@ -2869,10 +2869,10 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WAX_RESTRICT pStripSta
 						{
 							if constexpr(bFast8)
 							{
-								inB = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].b * pSegmentColors[0]) >> 12];
-								inG = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].g * pSegmentColors[1]) >> 12];
-								inR = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].r * pSegmentColors[2]) >> 12];
-								inA = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].a * pSegmentColors[3]) >> 12];
+								inB = Color::packLinearTab[(pSegmentTintmap[offset >> 8].b * pSegmentColors[0]) >> 12];
+								inG = Color::packLinearTab[(pSegmentTintmap[offset >> 8].g * pSegmentColors[1]) >> 12];
+								inR = Color::packLinearTab[(pSegmentTintmap[offset >> 8].r * pSegmentColors[2]) >> 12];
+								inA = Color::packLinearTab[(pSegmentTintmap[offset >> 8].a * pSegmentColors[3]) >> 12];
 							}
 							else
 							{

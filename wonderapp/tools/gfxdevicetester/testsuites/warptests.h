@@ -66,15 +66,15 @@ public:
 				samples[2 * (w + 1) + i] = spx(std::lround(h * (0.82 + 0.04 * std::sin(a * 12)) * 64));
 			}
 
-			HiColor colors[4] = { HiColor(4096, 4096, 4096, 4096), HiColor(400, 1800, 4000, 3500), HiColor(4000, 2000, 300, 4096), HiColor::Transparent };
+			Color colors[4] = { Color(4096, 4096, 4096, 4096), Color(400, 1800, 4000, 3500), Color(4000, 2000, 300, 4096), Color::Transparent };
 
 			m_pGauge = pEdgemapFactory->createEdgemap(WGBP(Edgemap, _.size = { w, h }, _.segments = 4, _.colors = colors, _.tiling = true),
 													  SampleOrigo::Top, samples.data(), nEdges, w + 1);
 
 			Tint_p tints[4];
-			tints[1] = Tint::create(HiColor(4096, 4096, 0, 4096), HiColor(0, 4096, 4096, 2500), { 0.f, 0.f }, { 1.f, 0.f });
+			tints[1] = Tint::create(Color(4096, 4096, 0, 4096), Color(0, 4096, 4096, 2500), { 0.f, 0.f }, { 1.f, 0.f });
 			tints[2] = Tint::create(WGBP(Tint, _.shape = TintShape::Radial, _.center = { 0.3f, 0.6f },
-										 _.stops = { { 0.f, HiColor(4096, 0, 4096, 4096) }, { 1.f, HiColor(0, 4096, 0, 3000) } }));
+										 _.stops = { { 0.f, Color(4096, 0, 4096, 4096) }, { 1.f, Color(0, 4096, 0, 3000) } }));
 
 			m_pTintedGauge = pEdgemapFactory->createEdgemap(WGBP(Edgemap, _.size = { w, h }, _.segments = 4, _.colors = colors, _.tints = tints, _.tiling = true),
 															SampleOrigo::Top, samples.data(), nEdges, w + 1);
@@ -92,7 +92,7 @@ public:
 				samples[(w + 1) + i] = spx(std::lround((55 + 8 * std::cos(i * 0.11)) * 64));
 			}
 
-			HiColor colors[3] = { HiColor(4096, 1000, 1000, 4096), HiColor(1000, 4096, 1000, 2500), HiColor(1000, 1000, 4096, 4096) };
+			Color colors[3] = { Color(4096, 1000, 1000, 4096), Color(1000, 4096, 1000, 2500), Color(1000, 1000, 4096, 4096) };
 
 			m_pSmall = pEdgemapFactory->createEdgemap(WGBP(Edgemap, _.size = { w, h }, _.segments = 3, _.colors = colors),
 													  SampleOrigo::Top, samples.data(), nEdges, w + 1);
@@ -326,13 +326,13 @@ public:
 
 	bool deviceTint(GfxDevice * pDevice, const RectSPX& canvas)
 	{
-		pDevice->setTint(canvas, Tint::create(HiColor(4096, 4096, 4096, 4096), HiColor(4096, 1500, 500, 2500), { 0.f, 0.f }, { 1.f, 1.f }));
+		pDevice->setTint(canvas, Tint::create(Color(4096, 4096, 4096, 4096), Color(4096, 1500, 500, 2500), { 0.f, 0.f }, { 1.f, 1.f }));
 		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 10 }, m_forGauge.ring, m_pTintedGauge);
 		pDevice->setBlitSource(m_pTiling);
 		pDevice->warpBlit({ 64 * 260, 64 * 260 }, m_forSurface.ring);
 		pDevice->clearTint();
 
-		pDevice->setTintColor(HiColor(2000, 4096, 4096, 3000));
+		pDevice->setTintColor(Color(2000, 4096, 4096, 3000));
 		pDevice->warpDrawEdgemap({ 64 * 260, 64 * 10 }, m_forGauge.arc, m_pGauge);
 		pDevice->warpBlit({ 64 * 10, 64 * 260 }, m_forSurface.wave);
 		pDevice->clearTintColor();
@@ -421,7 +421,7 @@ public:
 		// Stripes to blend onto.
 
 		for (int i = 0; i < 8; i++)
-			pDevice->fill({ 64 * i * 64, 0, 64 * 32, canvas.h }, HiColor(4096 - i * 400, 1000 + i * 300, 2000, 4096));
+			pDevice->fill({ 64 * i * 64, 0, 64 * 32, canvas.h }, Color(4096 - i * 400, 1000 + i * 300, 2000, 4096));
 
 		pDevice->setMorphFactor(0.4f);
 
@@ -515,7 +515,7 @@ public:
 
 	void _drawCylinders(GfxDevice * pDevice, const CylinderWarps& w)
 	{
-		HiColor rim(1200, 1200, 1300, 4096), light = HiColor::White;
+		Color rim(1200, 1200, 1300, 4096), light = Color::White;
 		auto shadeAcross = [&](CoordSPX pos, SizeI size, bool bVertical)
 		{
 			pDevice->setTint({ pos, size * 64 }, Tint::create({ { 0.f, rim }, { 0.5f, light }, { 1.f, rim } }, { 0.f, 0.f }, bVertical ? CoordF(0.f, 1.f) : CoordF(1.f, 0.f)));
@@ -742,7 +742,7 @@ public:
 		pDevice->blit({ 64 * 10, 64 * 10 }, { 0, 0, map.w, map.h });
 
 		pDevice->setTint({ { 64 * 270, 64 * 10 }, SizeSPX(64 * 200, 64 * 200) },
-						 Tint::create({ { 0.f, HiColor::White }, { 1.f, HiColor(900, 900, 1100, 4096) } }, { 0.f, 0.f }, { 1.f, 1.f }));
+						 Tint::create({ { 0.f, Color::White }, { 1.f, Color(900, 900, 1100, 4096) } }, { 0.f, 0.f }, { 1.f, 1.f }));
 		pDevice->warpBlit({ 64 * 270, 64 * 10 }, w.earth->generate(), w.earth->rotationOffset(30.f));
 		pDevice->clearTint();
 

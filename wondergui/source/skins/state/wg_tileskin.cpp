@@ -35,7 +35,7 @@ namespace wg
 	//____ create() _______________________________________________________________
 
 
-	TileSkin_p TileSkin::create(Surface * pSurface, HiColor color, int layer )
+	TileSkin_p TileSkin::create(Surface * pSurface, Color color, int layer )
 	{
 		if (pSurface == nullptr || !pSurface->isTiling() )
 			return nullptr;
@@ -71,7 +71,7 @@ namespace wg
 		Coord	stateShifts[State::NbStates];
 
 		State	colorStates[State::NbStates];
-		HiColor stateColors[State::NbStates];
+		Color stateColors[State::NbStates];
 
 		State	surfaceStates[State::NbStates];
 		Surface * stateSurfaces[State::NbStates];
@@ -107,7 +107,7 @@ namespace wg
 				stateSurfaces[index] = stateInfo.data.surface;
 			}
 
-			if(stateInfo.data.color != HiColor::Undefined )
+			if(stateInfo.data.color != Color::Undefined )
 			{
 				int index = stateInfo.state == State::Default ? 0 : nbColorStates++;
 				colorStates[index] = stateInfo.state;
@@ -128,7 +128,7 @@ namespace wg
 
 		int shiftBytes 		= _bytesNeededForContentShiftData(nbShiftingStates, shiftingStates);
 		int surfaceBytes	= sizeof(Surface*) * nbSurfaceStates;
-		int colorBytes		= sizeof(HiColor) * nbColorStates;
+		int colorBytes		= sizeof(Color) * nbColorStates;
 		int indexBytes		= surfaceIndexEntries+colorIndexEntries;
 
 		// Allocate and pupulate memory for state data
@@ -155,7 +155,7 @@ namespace wg
 
 		pDest += surfaceBytes;
 
-		auto pColors = (HiColor*) pDest;
+		auto pColors = (Color*) pDest;
 		for( int i = 0 ; i < nbColorStates ; i++ )
 			pColors[i] = stateColors[i];
 
@@ -265,7 +265,7 @@ namespace wg
 	RectSPX TileSkin::_coverage(const RectSPX& geo, int scale, State state) const
 	{
 		Surface * pSurface = _getSurface(state);
-		const HiColor& color = _getColor(state);
+		const Color& color = _getColor(state);
 
 		if (color.a == 4096 && pSurface->isOpaque())
 			return geo - align(ptsToSpx(m_spacing,scale)) + align(ptsToSpx(m_overflow,scale));

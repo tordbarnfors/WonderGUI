@@ -166,7 +166,7 @@ namespace wg
 		// Widget blueprints.
 
 		theme.classCapsule = WGBP(LabelCapsule,
-			_.skin = ColorSkin::create(HiColor::Transparent, { 10,0,0,8 }),
+			_.skin = ColorSkin::create(Color::Transparent, { 10,0,0,8 }),
 			_.label.style = dbgkit::TextStyles::FinePrint
 		);
 

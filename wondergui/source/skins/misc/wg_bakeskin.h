@@ -47,7 +47,7 @@ namespace wg
 		struct Blueprint
 		{
 			BlendMode	blendMode = BlendMode::Undefined;
-			HiColor		color = HiColor::Undefined;
+			Color		color = Color::Undefined;
 			int			layer = -1;
 			Border		padding;
 
@@ -112,7 +112,7 @@ namespace wg
 
 		Surface_p			m_pBakeSurface;
 		BlendMode			m_blendMode = BlendMode::Undefined;
-		HiColor				m_tintColor = HiColor::White;
+		Color				m_tintColor = Color::White;
 		Tint_p			m_pTint;
 		bool				m_bContentPaddingSet = false;
 		bool				m_bSkinInSkin = false;

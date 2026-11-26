@@ -57,7 +57,7 @@ int wax_getRenderSegments(wax_obj edgemap)
 
 int wax_setEdgemapColors(wax_obj edgemap, int begin, int end, const wax_color * pColors)
 {
-	return getPtr(edgemap)->setColors(begin, end, reinterpret_cast<const HiColor *>(pColors) );
+	return getPtr(edgemap)->setColors(begin, end, reinterpret_cast<const Color *>(pColors) );
 }
 
 int wax_setEdgemapTints(wax_obj edgemap, int begin, int end, const wax_obj * pTints )

@@ -396,15 +396,15 @@ void renderOutput( Device * pDevice, Surface * pWindowCanvas, Surface * pStreamC
 	pDevice->beginRender();
 	pDevice->beginCanvasUpdate(pWindowCanvas);
 
-	pDevice->fill( Color8::Burlywood );
+	pDevice->fill( Color::Burlywood );
 
 	for( int i = 0 ; i < 2 ; i++ )
 	{
 		RectI frame = frames[i];
 		RectI content = { frame.x + border, frame.y + border, frame.w - border*2, frame.h - border*2 };
 
-		pDevice->fill( frame*64, Color8::Black );
-		pDevice->fill( content*64, Color8::HotPink );
+		pDevice->fill( frame*64, Color::Black );
+		pDevice->fill( content*64, Color::HotPink );
 
 		if( i == 0 )
 		{
@@ -555,19 +555,19 @@ void playSurfaceStressTest(Device_p pDevice, CanvasRef canvasRef, SurfaceFactory
         pDevice->beginRender();
         pDevice->beginCanvasUpdate(pCanvas);
         
-        pDevice->fill(Color8::Black);
+        pDevice->fill(Color::Black);
 
         if( pOldCanvas )
         {
             pDevice->setBlitSource(pOldCanvas);
-            pDevice->setTintColor(HiColor(4096,3800,3500,3930));
+            pDevice->setTintColor(Color(4096,3800,3500,3930));
 //            pDevice->blit( CoordI( (canvasSize.w - logoSize.w)/2*64, (canvasSize.h - logoSize.h)/2*64 ));
             pDevice->rotScaleBlit( backCanvasSize*64, 3, 1.02f );
         }
 
         
         pDevice->setBlitSource(pLogoSurf);
-        pDevice->setTintColor(HiColor(4096,4096,4096,4096));
+        pDevice->setTintColor(Color(4096,4096,4096,4096));
 //        pDevice->rotScaleBlit( canvasSize, -ticker, 1.f );
 //        pDevice->blit( CoordI( (canvasSize.w - logoSize.w)/2, (canvasSize.h - logoSize.h)/2 ));
 
@@ -613,10 +613,10 @@ void playLogoFadeIn(Device_p pDevice, CanvasRef canvasRef, SurfaceFactory_p pFac
         pDevice->beginRender();
         pDevice->beginCanvasUpdate(canvasRef);
         
-        pDevice->fill(Color8::Black);
+        pDevice->fill(Color::Black);
         
         pDevice->setBlitSource(pLogoSurf);
-        pDevice->setTintColor(HiColor(4096,4096,4096,ticker*4096/(length-1)));
+        pDevice->setTintColor(Color(4096,4096,4096,ticker*4096/(length-1)));
         pDevice->blit( CoordSPX( (canvasSize.w - logoSize.w)/2*64, (canvasSize.h - logoSize.h)/2*64 ));
         
         pDevice->endCanvasUpdate();
@@ -640,10 +640,10 @@ void playRectangleDance(Device_p pDevice, CanvasRef canvasRef )
 		pDevice->beginRender();
         pDevice->beginCanvasUpdate(canvasRef);
         
-		pDevice->fill(Color8::Black);
-		pDevice->fill({ positionSprite(moveDim, ticker, length, 0, 3),spriteSize }, Color8::Red);
-		pDevice->fill({ positionSprite(moveDim, ticker, length, 1, 3),spriteSize }, Color8::Green);
-		pDevice->fill({ positionSprite(moveDim, ticker, length, 2, 3),spriteSize }, Color8::Blue);
+		pDevice->fill(Color::Black);
+		pDevice->fill({ positionSprite(moveDim, ticker, length, 0, 3),spriteSize }, Color::Red);
+		pDevice->fill({ positionSprite(moveDim, ticker, length, 1, 3),spriteSize }, Color::Green);
+		pDevice->fill({ positionSprite(moveDim, ticker, length, 2, 3),spriteSize }, Color::Blue);
 
         pDevice->endCanvasUpdate();
 		pDevice->endRender();
@@ -685,10 +685,10 @@ void playDirectUpdate(Device_p pDevice, CanvasRef canvasRef )
 		pMyDevice->beginRender();
 		pMyDevice->beginCanvasUpdate(pMyCanvas);
 
-		pMyDevice->fill(Color8::Black);
-		pMyDevice->fill({ positionSprite(moveDim, ticker*100, length*100, 0, 3),spriteSize }, Color8::Red);
-		pMyDevice->fill({ positionSprite(moveDim, ticker*100, length*100, 1, 3),spriteSize }, Color8::Green);
-		pMyDevice->fill({ positionSprite(moveDim, ticker*100, length*100, 2, 3),spriteSize }, Color8::Blue);
+		pMyDevice->fill(Color::Black);
+		pMyDevice->fill({ positionSprite(moveDim, ticker*100, length*100, 0, 3),spriteSize }, Color::Red);
+		pMyDevice->fill({ positionSprite(moveDim, ticker*100, length*100, 1, 3),spriteSize }, Color::Green);
+		pMyDevice->fill({ positionSprite(moveDim, ticker*100, length*100, 2, 3),spriteSize }, Color::Blue);
 
 		pMyDevice->endCanvasUpdate();
 		pMyDevice->endRender();
@@ -729,7 +729,7 @@ void playBounceRects(Device_p pDevice, CanvasRef canvasRef)
 								{100 * 64,100 * 64,15*2 * 64,15*2 * 64},
 								{100 * 64,100 * 64,10*2 * 64,10*2 * 64} };
 
-	Color8	spriteColors[8] = { Color8::Red, Color8::Green, Color8::Blue, Color8::Pink, Color8::Purple, Color8::Brown, Color8::Yellow, Color8::Magenta };
+	Color8	spriteColors[8] = { Color::Red, Color::Green, Color::Blue, Color::Pink, Color::Purple, Color::Brown, Color::Yellow, Color::Magenta };
 
 
 	CoordSPX spriteMovement[8] = { { 64,128 },
@@ -745,7 +745,7 @@ void playBounceRects(Device_p pDevice, CanvasRef canvasRef)
 	pDevice->beginRender();
 	pDevice->beginCanvasUpdate(canvasRef);
 
-	pDevice->fill(Color8::Black);
+	pDevice->fill(Color::Black);
 
 	pDevice->endCanvasUpdate();
 	pDevice->endRender();
@@ -812,7 +812,7 @@ void playBounceRects(Device_p pDevice, CanvasRef canvasRef)
 		pDevice->beginRender();
 		pDevice->beginCanvasUpdate(canvasRef, clip.size(), clip.begin() );
 
-		pDevice->fill(Color8::Black);
+		pDevice->fill(Color::Black);
 
 		for (int i = 0 ; i < nSprites; i++)
 			pDevice->fill(spriteRects[i], spriteColors[i]);
@@ -854,7 +854,7 @@ void playDualScreenBounceRects(Device_p pDevice, CanvasRef canvasRef1, CanvasRef
 									{10 * 64,10 * 64,10*2 * 64,10*2 * 64} }};
 
 	
-	Color8	spriteColors[8] = { Color8::Red, Color8::Green, Color8::Blue, Color8::Pink, Color8::Purple, Color8::Brown, Color8::Yellow, Color8::Magenta };
+	Color8	spriteColors[8] = { Color::Red, Color::Green, Color::Blue, Color::Pink, Color::Purple, Color::Brown, Color::Yellow, Color::Magenta };
 
 
 	CoordSPX spriteMovement[2][8] = { { { 64,128 },
@@ -878,11 +878,11 @@ void playDualScreenBounceRects(Device_p pDevice, CanvasRef canvasRef1, CanvasRef
 	pDevice->beginRender();
 
 	pDevice->beginCanvasUpdate(canvasRef1);
-	pDevice->fill(Color8::Black);
+	pDevice->fill(Color::Black);
 	pDevice->endCanvasUpdate();
 
 	pDevice->beginCanvasUpdate(canvasRef2);
-	pDevice->fill(Color8::Black);
+	pDevice->fill(Color::Black);
 	pDevice->endCanvasUpdate();
 
 	pDevice->endRender();
@@ -975,7 +975,7 @@ void playDualScreenBounceRects(Device_p pDevice, CanvasRef canvasRef1, CanvasRef
 			CanvasRef canvas = s == 0 ? canvasRef1 : canvasRef2;
 			pDevice->beginCanvasUpdate(canvas, clip.size(), clip.begin() );
 
-			pDevice->fill(Color8::Black);
+			pDevice->fill(Color::Black);
 
 			for (int i = 0 ; i < nSprites; i++)
 				pDevice->fill(spriteRects[s][i], spriteColors[i]);
@@ -1011,16 +1011,16 @@ void playRectangleDanceDualScreen(Device_p pDevice, CanvasRef canvasRef1, Canvas
 
 		pDevice->beginCanvasUpdate(canvasRef1);
 		
-		pDevice->fill(Color8::Black);
-		pDevice->fill({ positionSprite(moveDim1, ticker, length, 0, 3),spriteSize1 }, Color8::Red);
-		pDevice->fill({ positionSprite(moveDim1, ticker, length, 1, 3),spriteSize1 }, Color8::Green);
-		pDevice->fill({ positionSprite(moveDim1, ticker, length, 2, 3),spriteSize1 }, Color8::Blue);
+		pDevice->fill(Color::Black);
+		pDevice->fill({ positionSprite(moveDim1, ticker, length, 0, 3),spriteSize1 }, Color::Red);
+		pDevice->fill({ positionSprite(moveDim1, ticker, length, 1, 3),spriteSize1 }, Color::Green);
+		pDevice->fill({ positionSprite(moveDim1, ticker, length, 2, 3),spriteSize1 }, Color::Blue);
 
 		pDevice->endCanvasUpdate();
 
 		pDevice->beginCanvasUpdate(canvasRef2);
 		
-		pDevice->fill(Color8::Black);
+		pDevice->fill(Color::Black);
 		pDevice->fill({ positionSprite(moveDim2, ticker, length, 8, 9),spriteSize2 }, Color8(255,0,0) );
 		pDevice->fill({ positionSprite(moveDim2, ticker, length, 7, 9),spriteSize2 }, Color8(224,0,0) );
 		pDevice->fill({ positionSprite(moveDim2, ticker, length, 6, 9),spriteSize2 }, Color8(192,0,0) );
@@ -1058,8 +1058,8 @@ void playScroll(Device_p pDevice, RectI canvas )
         pDevice->beginRender();
         pDevice->beginCanvasUpdate(CanvasRef::Canvas_1);
         
-        pDevice->fill( canvas, Color8::Black);
-        pDevice->fill( RectI( pos, spriteSize ), Color8::Red);
+        pDevice->fill( canvas, Color::Black);
+        pDevice->fill( RectI( pos, spriteSize ), Color::Red);
 
         pDevice->endCanvasUpdate();
         pDevice->endRender();

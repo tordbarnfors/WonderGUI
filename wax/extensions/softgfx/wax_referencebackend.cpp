@@ -232,7 +232,7 @@ namespace wax
 
 	//____ setColors() _____________________________________________
 
-	void ReferenceBackend::setColors(const HiColor* pBeg, const HiColor* pEnd)
+	void ReferenceBackend::setColors(const Color* pBeg, const Color* pEnd)
 	{
 		m_pColorsPtr = pBeg;
 	}
@@ -272,7 +272,7 @@ namespace wax
 				case Command::Fill:
 				{
 					int nRects = *p++;
-					Color color = _toLinear(*m_pColorsPtr++);
+					LinearColor color = _toLinear(*m_pColorsPtr++);
 
 					for (int i = 0; i < nRects; i++)
 						_fill(*m_pRectsPtr++, color);
@@ -290,7 +290,7 @@ namespace wax
 
 					for (int i = 0; i < nLines; i++)
 					{
-						Color color = _toLinear(*m_pColorsPtr++);
+						LinearColor color = _toLinear(*m_pColorsPtr++);
 
 						CoordSPX begin, end;
 						begin.x = _read32(p);
@@ -455,7 +455,7 @@ namespace wax
 		by the overlap of the pixel and the rectangle.
 	*/
 
-	void ReferenceBackend::_fill(const RectSPX& rect, const Color& color)
+	void ReferenceBackend::_fill(const RectSPX& rect, const LinearColor& color)
 	{
 		double left = rect.x / 64.0;
 		double top = rect.y / 64.0;
@@ -491,7 +491,7 @@ namespace wax
 		each pixel.
 	*/
 
-	void ReferenceBackend::_drawLine(CoordSPX _begin, CoordSPX _end, spx thickness, const Color& color, int nClipRects, const RectSPX* pClipRects)
+	void ReferenceBackend::_drawLine(CoordSPX _begin, CoordSPX _end, spx thickness, const LinearColor& color, int nClipRects, const RectSPX* pClipRects)
 	{
 		CoordI begin = Util::roundToPixels(_begin);
 		CoordI end = Util::roundToPixels(_end);
@@ -612,7 +612,7 @@ namespace wax
 					}
 				}
 
-				Color texel = (cmd == Command::Blur) ? _sampleBlurred(srcX, srcY) : _sampleSource(srcX, srcY, edgeMode);
+				LinearColor texel = (cmd == Command::Blur) ? _sampleBlurred(srcX, srcY) : _sampleSource(srcX, srcY, edgeMode);
 
 				_plotPixel(x, y, texel * _deviceTint(x, y), 1.0);
 			}
@@ -699,12 +699,12 @@ namespace wax
 			if (pTint)
 			{
 				uint16_t	words[TintTools::c_maxEncodedTintWords];
-				HiColor		colors[TintTools::c_maxEncodedTintColors];
+				Color		colors[TintTools::c_maxEncodedTintColors];
 				int			nColors;
 
 				TintTools::encodeTint(pTint, RectSPX(0, 0, mapSize.w * 64, mapSize.h * 64), words, colors, nColors);
 
-				const HiColor* pColors = colors;
+				const Color* pColors = colors;
 				TintTools::decodeTint(words, pColors, m_segmentTints[seg]);
 			}
 		}
@@ -742,8 +742,8 @@ namespace wax
 		if (!_isInsideCanvas(canvasPixel.x, canvasPixel.y))
 			return;
 
-		Color dst = _canvasPixel(canvasPixel.x, canvasPixel.y);
-		Color colors[Edgemap::maxSegments];
+		LinearColor dst = _canvasPixel(canvasPixel.x, canvasPixel.y);
+		LinearColor colors[Edgemap::maxSegments];
 
 		for (int seg = 0; seg < nSegments; seg++)
 			colors[seg] = _segmentColor(pEdgemap, seg, column, row) * _deviceTint(canvasPixel.x, canvasPixel.y);
@@ -757,7 +757,7 @@ namespace wax
 			return;
 		}
 
-		Color results[Edgemap::maxSegments];
+		LinearColor results[Edgemap::maxSegments];
 
 		for (int seg = 0; seg < nSegments; seg++)
 			results[seg] = _blend(colors[seg], dst);
@@ -1124,7 +1124,7 @@ namespace wax
 				nearestCopy(centerX, srcW, periodX);
 				nearestCopy(centerY, srcH, periodY);
 
-				Color tint = _deviceTint(x, y);
+				LinearColor tint = _deviceTint(x, y);
 
 				if (!pEdgemap)
 				{
@@ -1149,21 +1149,21 @@ namespace wax
 						readY = keepInside(readY, srcY, srcH);
 					}
 
-					Color texel = _sampleSource(readX, readY, edgeMode);
+					LinearColor texel = _sampleSource(readX, readY, edgeMode);
 					_plotPixel(x, y, texel * tint, covered);
 					continue;
 				}
 
-				Color colors[Edgemap::maxSegments];
+				LinearColor colors[Edgemap::maxSegments];
 
 				for (int seg = 0; seg < nSegments; seg++)
 				{
-					Color segColor = pEdgemap->tints()[seg] ? _tintColorAt(m_segmentTints[seg], centerX, centerY)
+					LinearColor segColor = pEdgemap->tints()[seg] ? _tintColorAt(m_segmentTints[seg], centerX, centerY)
 															: _toLinear(pEdgemap->flatColors()[seg]);
 					colors[seg] = segColor * tint;
 				}
 
-				Color dst = _canvasPixel(x, y);
+				LinearColor dst = _canvasPixel(x, y);
 
 				// Effect modes apply the segments together, see _effectSource(). Parts of the pixel
 				// outside the source are transparent, which has no effect.
@@ -1177,7 +1177,7 @@ namespace wax
 				// Paint modes average what each segment gives its part of the pixel, with the
 				// part outside the source keeping the canvas.
 
-				Color results[Edgemap::maxSegments + 1];
+				LinearColor results[Edgemap::maxSegments + 1];
 				double weights[Edgemap::maxSegments + 1];
 
 				for (int seg = 0; seg < nSegments; seg++)
@@ -1240,17 +1240,17 @@ namespace wax
 
 	//____ _canvasPixel() _________________________________________________________
 
-	ReferenceBackend::Color ReferenceBackend::_canvasPixel(int x, int y) const
+	ReferenceBackend::LinearColor ReferenceBackend::_canvasPixel(int x, int y) const
 	{
 		if (!_isInsideCanvas(x, y))
-			return Color();
+			return LinearColor();
 
 		return _readPixel(m_canvasBuffer, x, y);
 	}
 
 	//____ _setCanvasPixel() ______________________________________________________
 
-	void ReferenceBackend::_setCanvasPixel(int x, int y, const Color& color)
+	void ReferenceBackend::_setCanvasPixel(int x, int y, const LinearColor& color)
 	{
 		if (_isInsideCanvas(x, y))
 			_writePixel(m_canvasBuffer, x, y, color);
@@ -1268,12 +1268,12 @@ namespace wax
 		Effect modes are applied with a strength scaled by the coverage, see _effectSource().
 	*/
 
-	void ReferenceBackend::_plotPixel(int x, int y, const Color& color, double coverage)
+	void ReferenceBackend::_plotPixel(int x, int y, const LinearColor& color, double coverage)
 	{
 		if (m_blendMode == BlendMode::Ignore || coverage <= 0.0 || !_isInsideCanvas(x, y))
 			return;
 
-		Color dst = _canvasPixel(x, y);
+		LinearColor dst = _canvasPixel(x, y);
 
 		if (coverage < 1.0 && _isEffectMode())
 		{
@@ -1281,11 +1281,11 @@ namespace wax
 			return;
 		}
 
-		Color result = _blend(color, dst);
+		LinearColor result = _blend(color, dst);
 
 		if (coverage < 1.0)
 		{
-			Color colors[2] = { dst, result };
+			LinearColor colors[2] = { dst, result };
 			double areas[2] = { 1.0 - coverage, coverage };
 
 			result = _averageColors(2, colors, areas, true);
@@ -1324,9 +1324,9 @@ namespace wax
 		value that has no effect instead, which is 1.0 for Multiply and Min.
 	*/
 
-	ReferenceBackend::Color ReferenceBackend::_effectSource(int nColors, const Color* pColors, const double* pCoverage) const
+	ReferenceBackend::LinearColor ReferenceBackend::_effectSource(int nColors, const LinearColor* pColors, const double* pCoverage) const
 	{
-		Color src = _averageColors(nColors, pColors, pCoverage, true);
+		LinearColor src = _averageColors(nColors, pColors, pCoverage, true);
 
 		if (m_bAlphaOnlyCanvas && (m_blendMode == BlendMode::Multiply || m_blendMode == BlendMode::Min))
 		{
@@ -1348,9 +1348,9 @@ namespace wax
 		color channels are averaged as they are.
 	*/
 
-	ReferenceBackend::Color ReferenceBackend::_averageColors(int nColors, const Color* pColors, const double* pWeights, bool bPremultiplied)
+	ReferenceBackend::LinearColor ReferenceBackend::_averageColors(int nColors, const LinearColor* pColors, const double* pWeights, bool bPremultiplied)
 	{
-		Color sum;
+		LinearColor sum;
 		double colorWeightSum = 0.0;
 
 		for (int i = 0; i < nColors; i++)
@@ -1389,12 +1389,12 @@ namespace wax
 		on the canvas, see _blendEffect().
 	*/
 
-	ReferenceBackend::Color ReferenceBackend::_blend(const Color& src, const Color& dst) const
+	ReferenceBackend::LinearColor ReferenceBackend::_blend(const LinearColor& src, const LinearColor& dst) const
 	{
 		if (m_bAlphaOnlyCanvas)
 			return { 1.0, 1.0, 1.0, _blendAlphaOnly(src.a, dst.a) };
 
-		Color result;
+		LinearColor result;
 
 		switch (m_blendMode)
 		{
@@ -1416,7 +1416,7 @@ namespace wax
 			{
 				// Cross-fade from the canvas to the source, as premultiplied colors.
 
-				Color colors[2] = { dst, src };
+				LinearColor colors[2] = { dst, src };
 				double weights[2] = { 1.0 - m_morphFactor, m_morphFactor };
 
 				result = _averageColors(2, colors, weights, true);
@@ -1467,7 +1467,7 @@ namespace wax
 		colors in a single pass. On an opaque canvas they are the familiar ones, applied to the color.
 	*/
 
-	ReferenceBackend::Color ReferenceBackend::_blendEffect(const Color& src, const Color& dst) const
+	ReferenceBackend::LinearColor ReferenceBackend::_blendEffect(const LinearColor& src, const LinearColor& dst) const
 	{
 		double back[3] = { dst.r * dst.a, dst.g * dst.a, dst.b * dst.a };
 		double light[3] = { src.r * src.a, src.g * src.a, src.b * src.a };
@@ -1523,9 +1523,9 @@ namespace wax
 		opaque it is the familiar src * src.a + dst * (1 - src.a).
 	*/
 
-	ReferenceBackend::Color ReferenceBackend::_over(const Color& src, const Color& dst)
+	ReferenceBackend::LinearColor ReferenceBackend::_over(const LinearColor& src, const LinearColor& dst)
 	{
-		Color colors[2] = { src, dst };
+		LinearColor colors[2] = { src, dst };
 		double weights[2] = { 1.0, 1.0 - src.a };
 
 		return _averageColors(2, colors, weights, true);
@@ -1582,7 +1582,7 @@ namespace wax
 		the color of transparent pixels doesn't bleed into their neighbours.
 	*/
 
-	ReferenceBackend::Color ReferenceBackend::_sampleSource(double x, double y, EdgeMode edgeMode) const
+	ReferenceBackend::LinearColor ReferenceBackend::_sampleSource(double x, double y, EdgeMode edgeMode) const
 	{
 		if (m_pBlitSource->sampleMethod() != SampleMethod::Bilinear)
 			return _sourcePixel(int(std::floor(x)), int(std::floor(y)), edgeMode);
@@ -1598,7 +1598,7 @@ namespace wax
 		double fracX = cx - x0;
 		double fracY = cy - y0;
 
-		Color pixels[4] = { _sourcePixel(x0, y0, edgeMode), _sourcePixel(x0 + 1, y0, edgeMode),
+		LinearColor pixels[4] = { _sourcePixel(x0, y0, edgeMode), _sourcePixel(x0 + 1, y0, edgeMode),
 							_sourcePixel(x0, y0 + 1, edgeMode), _sourcePixel(x0 + 1, y0 + 1, edgeMode) };
 
 		double weights[4] = { (1.0 - fracX) * (1.0 - fracY), fracX * (1.0 - fracY),
@@ -1616,7 +1616,7 @@ namespace wax
 		center sample. Samples outside the source read the pixels on its edge.
 	*/
 
-	ReferenceBackend::Color ReferenceBackend::_sampleBlurred(double x, double y) const
+	ReferenceBackend::LinearColor ReferenceBackend::_sampleBlurred(double x, double y) const
 	{
 		double r = m_blurRadius;
 		double d = m_blurRadius * 0.7;
@@ -1625,11 +1625,11 @@ namespace wax
 										{ -r,  0 }, { 0,  0 }, { r,  0 },
 										{ -d,  d }, { 0,  r }, { d,  d } };
 
-		Color result;
+		LinearColor result;
 
 		for (int i = 0; i < 9; i++)
 		{
-			Color sample = _sampleSource(x + offsets[i][0], y + offsets[i][1], EdgeMode::Clamp);
+			LinearColor sample = _sampleSource(x + offsets[i][0], y + offsets[i][1], EdgeMode::Clamp);
 
 			result.r += sample.r * m_blurWeights[0][i];
 			result.g += sample.g * m_blurWeights[1][i];
@@ -1648,7 +1648,7 @@ namespace wax
 
 	//____ _sourcePixel() _________________________________________________________
 
-	ReferenceBackend::Color ReferenceBackend::_sourcePixel(int x, int y, EdgeMode edgeMode) const
+	ReferenceBackend::LinearColor ReferenceBackend::_sourcePixel(int x, int y, EdgeMode edgeMode) const
 	{
 		SizeI size = m_pBlitSource->pixelSize();
 
@@ -1659,7 +1659,7 @@ namespace wax
 			switch (edgeMode)
 			{
 				case EdgeMode::Clip:
-					return Color();
+					return LinearColor();
 
 				case EdgeMode::Tile:
 					x = _wrap(x, size.w);
@@ -1682,7 +1682,7 @@ namespace wax
 		the Tint (if any) at the center of the pixel.
 	*/
 
-	ReferenceBackend::Color ReferenceBackend::_deviceTint(int x, int y) const
+	ReferenceBackend::LinearColor ReferenceBackend::_deviceTint(int x, int y) const
 	{
 		if (m_tint.nLayers == 0)
 			return m_tintColor;
@@ -1696,7 +1696,7 @@ namespace wax
 		the center of the pixel or its flat color.
 	*/
 
-	ReferenceBackend::Color ReferenceBackend::_segmentColor(SoftEdgemap* pEdgemap, int segment, int column, int row) const
+	ReferenceBackend::LinearColor ReferenceBackend::_segmentColor(SoftEdgemap* pEdgemap, int segment, int column, int row) const
 	{
 		if (pEdgemap->tints()[segment])
 			return _tintColorAt(m_segmentTints[segment], column + 0.5, row + 0.5);
@@ -1714,12 +1714,12 @@ namespace wax
 		resulting color is converted to linear and the layers are mixed by their weights.
 	*/
 
-	ReferenceBackend::Color ReferenceBackend::_tintColorAt(const TintTools::DecodedTint& tint, double x, double y)
+	ReferenceBackend::LinearColor ReferenceBackend::_tintColorAt(const TintTools::DecodedTint& tint, double x, double y)
 	{
 		if (tint.nLayers == 0)
 			return { 1, 1, 1, 1 };
 
-		Color result;
+		LinearColor result;
 
 		for (int l = 0; l < tint.nLayers; l++)
 		{
@@ -1768,9 +1768,9 @@ namespace wax
 			for (int i = 0; i < layer.nStops; i++)
 				pStopPos[i] = layer.stopPos16[i] / 65535.f;
 
-			const HiColor* pStopColors = layer.stopColors;
+			const Color* pStopColors = layer.stopColors;
 
-			HiColor from, to;
+			Color from, to;
 			double fraction = 0.0;
 
 			int stop = layer.nStops - 1;
@@ -1790,7 +1790,7 @@ namespace wax
 
 			// Interpolate in sRGB, then convert to linear.
 
-			Color color;
+			LinearColor color;
 			color.r = _sRGBToLinear(_mix(from.r, to.r, fraction) / 4096.0);
 			color.g = _sRGBToLinear(_mix(from.g, to.g, fraction) / 4096.0);
 			color.b = _sRGBToLinear(_mix(from.b, to.b, fraction) / 4096.0);
@@ -1804,10 +1804,10 @@ namespace wax
 
 	//____ _toLinear() ____________________________________________________________
 	/*
-		Converts a HiColor, which has sRGB color channels and linear alpha, all 0 -> 4096.
+		Converts a Color, which has sRGB color channels and linear alpha, all 0 -> 4096.
 	*/
 
-	ReferenceBackend::Color ReferenceBackend::_toLinear(HiColor color)
+	ReferenceBackend::LinearColor ReferenceBackend::_toLinear(Color color)
 	{
 		return { _sRGBToLinear(color.r / 4096.0), _sRGBToLinear(color.g / 4096.0), _sRGBToLinear(color.b / 4096.0), color.a / 4096.0 };
 	}
@@ -1840,7 +1840,7 @@ namespace wax
 		Formats without color channels are white, formats without alpha are opaque.
 	*/
 
-	ReferenceBackend::Color ReferenceBackend::_readPixel(const PixelBuffer& buffer, int x, int y)
+	ReferenceBackend::LinearColor ReferenceBackend::_readPixel(const PixelBuffer& buffer, int x, int y)
 	{
 		int bytesPerPixel = Util::pixelFormatToDescription(buffer.format).bits / 8;
 		const uint8_t* p = buffer.pixels + (y - buffer.rect.y) * buffer.pitch + (x - buffer.rect.x) * bytesPerPixel;
@@ -1895,14 +1895,14 @@ namespace wax
 				int index = (buffer.format == PixelFormat::Index_8) ? p[0] : buffer.bigEndian ? (p[0] << 8) | p[1] : (p[1] << 8) | p[0];
 
 				if (!buffer.palette)
-					return Color();
+					return LinearColor();
 
 				Color8 c = buffer.palette[index];
 				return { decode(c.r, 255), decode(c.g, 255), decode(c.b, 255), c.a / 255.0 };
 			}
 
 			default:
-				return Color();
+				return LinearColor();
 		}
 	}
 
@@ -1912,7 +1912,7 @@ namespace wax
 		to nearest value the pixel can hold. Padding bits are left as they are.
 	*/
 
-	void ReferenceBackend::_writePixel(const PixelBuffer& buffer, int x, int y, const Color& color)
+	void ReferenceBackend::_writePixel(const PixelBuffer& buffer, int x, int y, const LinearColor& color)
 	{
 		int bytesPerPixel = Util::pixelFormatToDescription(buffer.format).bits / 8;
 		uint8_t* p = buffer.pixels + (y - buffer.rect.y) * buffer.pitch + (x - buffer.rect.x) * bytesPerPixel;
@@ -2169,7 +2169,7 @@ namespace wax
 		struct Segment
 		{
 			bool					bDrawn = false;
-			Color					color;					// Linear.
+			LinearColor					color;					// Linear.
 			TintTools::DecodedTint	tint = {};				// Placed on the canvas, nLayers is 0 if none.
 		};
 
@@ -2181,7 +2181,7 @@ namespace wax
 		// Sets up a segment: its color from pColors if drawn and its tint from pTint if tinted,
 		// stepping both forward. The colors of the tints follow the colors of all segments.
 
-		void setupSegment(int index, bool bDrawn, const HiColor*& pColors, bool bTinted, const uint16_t*& pTint, const HiColor*& pTintColors)
+		void setupSegment(int index, bool bDrawn, const Color*& pColors, bool bTinted, const uint16_t*& pTint, const Color*& pTintColors)
 		{
 			Segment& segment = segments[index];
 			segment.bDrawn = bDrawn;
@@ -2267,7 +2267,7 @@ namespace wax
 
 		//____ create() _________________________________________________________
 
-		static std::unique_ptr<Shape> create(const uint16_t* pPayload, const HiColor* pColors)
+		static std::unique_ptr<Shape> create(const uint16_t* pPayload, const Color* pColors)
 		{
 			using Flags = Backend::RoundedBoxFlags;
 
@@ -2315,7 +2315,7 @@ namespace wax
 
 			// Segments. Colors come first, then the colors of the tints in the same order.
 
-			const HiColor* pTintColors = pColors + (has(Flags::HasFill) ? 1 : 0) + (has(Flags::HasOutline) ? 1 : 0);
+			const Color* pTintColors = pColors + (has(Flags::HasFill) ? 1 : 0) + (has(Flags::HasOutline) ? 1 : 0);
 			const uint16_t* pTint = box.pTints;
 
 			pShape->segments.resize(2);
@@ -2379,7 +2379,7 @@ namespace wax
 
 		//____ create() _________________________________________________________
 
-		static std::unique_ptr<Shape> create(const uint16_t* pPayload, const HiColor* pColors)
+		static std::unique_ptr<Shape> create(const uint16_t* pPayload, const Color* pColors)
 		{
 			using Flags = Backend::RingFlags;
 			using SliceFlags = Backend::RingSliceFlags;
@@ -2472,7 +2472,7 @@ namespace wax
 			// Segments. Colors come first, then the colors of the tints in the same order:
 			// outline, hub, back and the slices.
 
-			const HiColor* pTintColors = pColors + (has(Flags::HasOutline) ? 1 : 0) + (has(Flags::HasHub) ? 1 : 0) + (has(Flags::HasBack) ? 1 : 0);
+			const Color* pTintColors = pColors + (has(Flags::HasOutline) ? 1 : 0) + (has(Flags::HasHub) ? 1 : 0) + (has(Flags::HasBack) ? 1 : 0);
 			for (int i = 0; i < ring.nSlices; i++)
 				if (sliceHas(i, SliceFlags::Drawn))
 					pTintColors++;
@@ -2648,7 +2648,7 @@ namespace wax
 		double	length;
 		double	r;								// Half the thickness.
 
-		LineShape(CoordSPX _begin, CoordSPX _end, spx thickness, LineCaps caps, const Color& color)
+		LineShape(CoordSPX _begin, CoordSPX _end, spx thickness, LineCaps caps, const LinearColor& color)
 		{
 			double dx = (_end.x - _begin.x) / 64.0;
 			double dy = (_end.y - _begin.y) / 64.0;
@@ -2739,7 +2739,7 @@ namespace wax
 		Draws a line with caps, see LineShape, within the clip rectangles.
 	*/
 
-	void ReferenceBackend::_drawCappedLine(CoordSPX begin, CoordSPX end, spx thickness, LineCaps caps, const Color& color, int nClipRects, const RectSPX* pClipRects)
+	void ReferenceBackend::_drawCappedLine(CoordSPX begin, CoordSPX end, spx thickness, LineCaps caps, const LinearColor& color, int nClipRects, const RectSPX* pClipRects)
 	{
 		if (m_blendMode == BlendMode::Ignore)
 			return;
@@ -2805,9 +2805,9 @@ namespace wax
 		std::vector<double> coverage;
 		_shapeCoverage(shape, x, y, coverage);
 
-		Color dst = _canvasPixel(x, y);
+		LinearColor dst = _canvasPixel(x, y);
 
-		std::vector<Color> sources;
+		std::vector<LinearColor> sources;
 		std::vector<double> sourceAreas;
 
 		for (int seg = 0; seg < (int) shape.segments.size(); seg++)
@@ -2817,7 +2817,7 @@ namespace wax
 			if (!segment.bDrawn || coverage[seg] <= 0.0)
 				continue;
 
-			Color color = segment.color;
+			LinearColor color = segment.color;
 			if (segment.tint.nLayers > 0)
 				color = color * _tintColorAt(segment.tint, x + 0.5, y + 0.5);
 
@@ -2834,7 +2834,7 @@ namespace wax
 			return;
 		}
 
-		std::vector<Color> colors = { dst };
+		std::vector<LinearColor> colors = { dst };
 		std::vector<double> areas = { 1.0 };
 
 		for (size_t i = 0; i < sources.size(); i++)

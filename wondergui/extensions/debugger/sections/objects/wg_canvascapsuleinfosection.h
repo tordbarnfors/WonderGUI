@@ -60,8 +60,8 @@ namespace wg
 		DrawerPanel_p	m_pTintColorDrawer;
 		DrawerPanel_p	m_pGlowDrawer;
 
-		HiColor			m_displayedClearColor;
-		HiColor			m_displayedTintColor;
+		Color			m_displayedClearColor;
+		Color			m_displayedTintColor;
 	};
 
 } // namespace wg

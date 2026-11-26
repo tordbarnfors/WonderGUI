@@ -110,7 +110,7 @@ namespace wax
 		void	setObjects(Object* const * pBeg, Object* const * pEnd) override;
 
 		void	setRects(const RectSPX * pBeg, const RectSPX * pEnd) override;
-		void	setColors(const HiColor * pBeg, const HiColor * pEnd) override;
+		void	setColors(const Color * pBeg, const Color * pEnd) override;
 		void	setTransforms(const Transform * pBeg, const Transform * pEnd) override;
 
 		void	processCommands( const uint16_t* pBeg, const uint16_t * pEnd, int version = 2) override;
@@ -138,13 +138,13 @@ namespace wax
 
 		// A color in linear color space with straight (not premultiplied) alpha. All channels 0.0 -> 1.0.
 
-		struct Color
+		struct LinearColor
 		{
 			double r = 0, g = 0, b = 0, a = 0;
 
-			Color operator*(const Color& k) const { return { r * k.r, g * k.g, b * k.b, a * k.a }; }
-			Color operator*(double f) const { return { r * f, g * f, b * f, a * f }; }
-			Color operator+(const Color& k) const { return { r + k.r, g + k.g, b + k.b, a + k.a }; }
+			LinearColor operator*(const LinearColor& k) const { return { r * k.r, g * k.g, b * k.b, a * k.a }; }
+			LinearColor operator*(double f) const { return { r * f, g * f, b * f, a * f }; }
+			LinearColor operator+(const LinearColor& k) const { return { r + k.r, g + k.g, b + k.b, a + k.a }; }
 		};
 
 		// What a sample outside the source surface reads.
@@ -172,9 +172,9 @@ namespace wax
 
 		const uint16_t*	_changeStates(const uint16_t* p);
 
-		void	_fill(const RectSPX& rect, const Color& color);
-		void	_drawLine(CoordSPX begin, CoordSPX end, spx thickness, const Color& color, int nClipRects, const RectSPX* pClipRects);
-		void	_drawCappedLine(CoordSPX begin, CoordSPX end, spx thickness, LineCaps caps, const Color& color, int nClipRects, const RectSPX* pClipRects);
+		void	_fill(const RectSPX& rect, const LinearColor& color);
+		void	_drawLine(CoordSPX begin, CoordSPX end, spx thickness, const LinearColor& color, int nClipRects, const RectSPX* pClipRects);
+		void	_drawCappedLine(CoordSPX begin, CoordSPX end, spx thickness, LineCaps caps, const LinearColor& color, int nClipRects, const RectSPX* pClipRects);
 		void	_blit(Command cmd, CoordI source, CoordSPX dest, const Transform& transform, bool bCustomTransform, const RectSPX& rect);
 		void	_drawEdgemap(SoftEdgemap* pEdgemap, bool bTile, GfxFlip flip, CoordSPX origo, const RectSPX& rect);
 
@@ -187,40 +187,40 @@ namespace wax
 		// Pixels of the canvas
 
 		bool	_isInsideCanvas(int x, int y) const;
-		Color	_canvasPixel(int x, int y) const;
-		void	_setCanvasPixel(int x, int y, const Color& color);
-		void	_plotPixel(int x, int y, const Color& color, double coverage);
+		LinearColor	_canvasPixel(int x, int y) const;
+		void	_setCanvasPixel(int x, int y, const LinearColor& color);
+		void	_plotPixel(int x, int y, const LinearColor& color, double coverage);
 
 		bool	_isEffectMode() const;
-		Color	_effectSource(int nColors, const Color* pColors, const double* pCoverage) const;
+		LinearColor	_effectSource(int nColors, const LinearColor* pColors, const double* pCoverage) const;
 
-		Color	_blend(const Color& src, const Color& dst) const;
-		Color	_blendEffect(const Color& src, const Color& dst) const;
+		LinearColor	_blend(const LinearColor& src, const LinearColor& dst) const;
+		LinearColor	_blendEffect(const LinearColor& src, const LinearColor& dst) const;
 		double	_blendAlphaOnly(double src, double dst) const;
 
-		static Color	_over(const Color& src, const Color& dst);
-		static Color	_averageColors(int nColors, const Color* pColors, const double* pWeights, bool bPremultiplied);
+		static LinearColor	_over(const LinearColor& src, const LinearColor& dst);
+		static LinearColor	_averageColors(int nColors, const LinearColor* pColors, const double* pWeights, bool bPremultiplied);
 
 		// Pixels of the blit source
 
-		Color	_sampleSource(double x, double y, EdgeMode edgeMode) const;
-		Color	_sampleBlurred(double x, double y) const;
-		Color	_sourcePixel(int x, int y, EdgeMode edgeMode) const;
+		LinearColor	_sampleSource(double x, double y, EdgeMode edgeMode) const;
+		LinearColor	_sampleBlurred(double x, double y) const;
+		LinearColor	_sourcePixel(int x, int y, EdgeMode edgeMode) const;
 
 		// Tints
 
-		Color			_deviceTint(int x, int y) const;
-		Color			_segmentColor(SoftEdgemap* pEdgemap, int segment, int column, int row) const;
-		static Color	_tintColorAt(const TintTools::DecodedTint& tint, double x, double y);
+		LinearColor			_deviceTint(int x, int y) const;
+		LinearColor			_segmentColor(SoftEdgemap* pEdgemap, int segment, int column, int row) const;
+		static LinearColor	_tintColorAt(const TintTools::DecodedTint& tint, double x, double y);
 
 		// Conversions
 
-		static Color	_toLinear(HiColor color);
+		static LinearColor	_toLinear(Color color);
 		static double	_sRGBToLinear(double value);
 		static double	_linearToSRGB(double value);
 
-		static Color	_readPixel(const PixelBuffer& buffer, int x, int y);
-		static void		_writePixel(const PixelBuffer& buffer, int x, int y, const Color& color);
+		static LinearColor	_readPixel(const PixelBuffer& buffer, int x, int y);
+		static void		_writePixel(const PixelBuffer& buffer, int x, int y, const LinearColor& color);
 
 		static RectI	_pixelRect(const RectSPX& rect);
 
@@ -251,7 +251,7 @@ namespace wax
 
 		Object * const *	m_pObjectsBeg = nullptr;		// Object table, commands refer to objects by index.
 		const RectSPX *		m_pRectsPtr = nullptr;
-		const HiColor *		m_pColorsPtr = nullptr;
+		const Color *		m_pColorsPtr = nullptr;
 		const Transform *	m_pTransformsBeg = nullptr;
 
 		// Canvas
@@ -267,7 +267,7 @@ namespace wax
 		PixelBuffer			m_blitSourceBuffer;
 
 		BlendMode			m_blendMode = BlendMode::Blend;
-		Color				m_tintColor;					// Flat tint color, linear.
+		LinearColor				m_tintColor;					// Flat tint color, linear.
 		TintTools::DecodedTint	m_tint;						// Tint over the canvas, nLayers is 0 if none.
 		double				m_morphFactor = 0.5;
 

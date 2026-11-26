@@ -74,13 +74,13 @@ bool MyApp::_setupGUI(wapp::API* pAPI)
 	m_pTextStyle = TextStyle::create(WGBP(TextStyle,
 									_.font = pFont,
 									_.size = 14,
-									_.color = Color8::Black,
-									_.states = {{State::Disabled, Color8::DarkGrey}} ));
+									_.color = Color::Black,
+									_.states = {{State::Disabled, Color::DarkGrey}} ));
 
 	m_pLabelStyle = TextStyle::create(WGBP(TextStyle,
 									_.font = pFont,
 									_.size = 16,
-									_.color = Color8::Black));
+									_.color = Color::Black));
 
 
 	wg::Base::setDefaultStyle(m_pTextStyle);
@@ -96,14 +96,14 @@ bool MyApp::_setupGUI(wapp::API* pAPI)
 
 	
 	auto pBasePanel = FlexPanel::create();
-	pBasePanel->setSkin(ColorSkin::create(Color8::Beige));
+	pBasePanel->setSkin(ColorSkin::create(Color::Beige));
 
 	m_pBasePanel = pBasePanel;
 
 	m_pWindow->mainCapsule()->slot = pBasePanel;
 	
 	
-	auto pLegacyRoot = LegacyRootCapsule::create( { .skin = ColorSkin::create(Color8::Black) });
+	auto pLegacyRoot = LegacyRootCapsule::create( { .skin = ColorSkin::create(Color::Black) });
 	
 //	auto pLegacyRoot = Filler::create( { .skin = ColorSkin::create(Color::Black) } );
 	
@@ -141,8 +141,8 @@ WgWidget * MyApp::_buildLegacyGUI()
 	pDisplay->SetEditMode(WgTextEditMode::Editable);
 	pDisplay->SetText("\nTEXT  1.");
 	pDisplay->SetSkin( ColorSkin::create({
-		.states = { { State::Default, Color8::Pink },
-			{ State::Hovered, Color8::Red }
+		.states = { { State::Default, Color::Pink },
+			{ State::Hovered, Color::Red }
 		}
 	}));
 
@@ -212,9 +212,9 @@ bool MyApp::_loadSkins(wapp::API * pAPI)
 	));
 
 	m_pSectionSkin = BoxSkin::create(WGBP(BoxSkin,
-		_.color = HiColor::White,
+		_.color = Color::White,
 		_.outlineThickness = 1,
-		_.outlineColor = Color8::Black,
+		_.outlineColor = Color::Black,
 		_.padding = { 2,2,2,2 }
 	));
 

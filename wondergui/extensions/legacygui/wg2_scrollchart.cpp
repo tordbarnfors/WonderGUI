@@ -1012,7 +1012,7 @@ namespace
 	// Fills the area between two edges with a temporary EdgemapWave, both edges outlined
 	// in outlineColor, as GfxDevice::drawWave() did before it was removed.
 
-	void renderWave(wg::GfxDevice* pDevice, const wg::RectSPX& dest, const WaveEdge& top, const WaveEdge& bottom, wg::HiColor outlineColor, wg::HiColor fill)
+	void renderWave(wg::GfxDevice* pDevice, const wg::RectSPX& dest, const WaveEdge& top, const WaveEdge& bottom, wg::Color outlineColor, wg::Color fill)
 	{
 		wg::RectI pixDest = dest / 64;
 

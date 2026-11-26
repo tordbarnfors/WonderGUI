@@ -43,19 +43,19 @@ namespace wg
 
 		struct StateData
 		{
-			HiColor			color = HiColor::Undefined;
+			Color			color = Color::Undefined;
 			Coord			contentShift;
-			HiColor			outlineColor = HiColor::Undefined;
+			Color			outlineColor = Color::Undefined;
 		};
 
 		struct StateBP
 		{
 			StateBP() {}
 			StateBP( State state, StateData data ) : state(state), data(data) {}
-			StateBP( State state, HiColor color ) : state(state) { data.color = color; }
+			StateBP( State state, Color color ) : state(state) { data.color = color; }
 			StateBP( State state, Coord contentShift ) : state(state)	{ data.contentShift = contentShift; }
 
-			StateBP( State state, HiColor color, HiColor outlineColor ) : state(state)
+			StateBP( State state, Color color, Color outlineColor ) : state(state)
 			{
 				data.color = color;
 				data.outlineColor = outlineColor;
@@ -68,12 +68,12 @@ namespace wg
 		struct Blueprint
 		{
 			BlendMode		blendMode = BlendMode::Blend;
-			HiColor			color = HiColor::White;
+			Color			color = Color::White;
 			Corners			cornerRadius;
 			Finalizer_p		finalizer = nullptr;
 			int				layer = -1;
 			int				markAlpha = 1;
-			HiColor			outlineColor = HiColor::Black;
+			Color			outlineColor = Color::Black;
 			Border			outlineThickness = 1;
 			Border			overflow;
 			Border			padding;
@@ -85,7 +85,7 @@ namespace wg
 		//.____ Creation __________________________________________
 
 		static BoxSkin_p	create( const Blueprint& blueprint );
-		static BoxSkin_p 	create(Border outlineThickness, HiColor fillColor, HiColor outlineColor, Border padding = Border() );
+		static BoxSkin_p 	create(Border outlineThickness, Color fillColor, Color outlineColor, Border padding = Border() );
 
 		//.____ Identification __________________________________________
 
@@ -124,14 +124,14 @@ namespace wg
 		CornersSPX		_cornerRadii(const RectSPX& canvas, int scale) const;
 		RectSPX			_roundedCoverage(const RectSPX& canvas, const RectSPX& coverage, int scale) const;
 
-		const HiColor&	_getFillColor(State state) const
+		const Color&	_getFillColor(State state) const
 		{
 						int idxTabEntry = (state.index() & m_fillColorIndexMask) >> m_fillColorIndexShift;
 						int entry = m_pFillColorIndexTab[idxTabEntry];
 						return m_pFillColors[entry];
 		}
 
-		const HiColor&	_getOutlineColor(State state) const
+		const Color&	_getOutlineColor(State state) const
 		{
 						int idxTabEntry = (state.index() & m_outlineColorIndexMask) >> m_outlineColorIndexShift;
 						int entry = m_pOutlineColorIndexTab[idxTabEntry];
@@ -144,12 +144,12 @@ namespace wg
 		uint8_t			m_fillColorIndexMask;
 		uint8_t			m_fillColorIndexShift;
 		uint8_t*		m_pFillColorIndexTab;		// Table with index values into m_pFillColors for each mode (72) or less.
-		HiColor*		m_pFillColors;				// Contains colors for states.
+		Color*		m_pFillColors;				// Contains colors for states.
 
 		uint8_t			m_outlineColorIndexMask;
 		uint8_t			m_outlineColorIndexShift;
 		uint8_t*		m_pOutlineColorIndexTab;		// Table with index values into m_pFillColors for each mode (72) or less.
-		HiColor*		m_pOutlineColors;				// Contains colors for states.
+		Color*		m_pOutlineColors;				// Contains colors for states.
 	};
 
 

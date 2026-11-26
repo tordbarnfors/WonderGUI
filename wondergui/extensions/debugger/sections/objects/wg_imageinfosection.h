@@ -60,7 +60,7 @@ namespace wg
 		DrawerPanel_p	m_pImageTintDrawer;
 
 		Rect			m_displayedImageRect;
-		HiColor			m_displayedImageTint;
+		Color			m_displayedImageTint;
 	};
 
 } // namespace wg

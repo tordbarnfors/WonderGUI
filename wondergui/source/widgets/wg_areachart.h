@@ -49,10 +49,10 @@ namespace wg
 		struct Blueprint
 		{
 			pts					bottomOutlineThickness = 1;
-			HiColor				color = Color8::LightGrey;
+			Color				color = Color::LightGrey;
 			Tint_p				tint;									// Overrides color when set. Placed in the rect of the waveform.
 			int					id = 0;
-			HiColor				outlineColor = Color8::DarkGrey;
+			Color				outlineColor = Color::DarkGrey;
 			Tint_p				outlineTint;							// Overrides outlineColor when set.
 			float				rangeBegin = 0.f;
 			float				rangeEnd = 1.f;
@@ -66,7 +66,7 @@ namespace wg
 		void	setId(int id) { m_id = id; }
 		int		id() const { return m_id; }
 
-		bool	setColors(HiColor fill, HiColor outline, ColorTransition* pTransition = nullptr);
+		bool	setColors(Color fill, Color outline, ColorTransition* pTransition = nullptr);
 		bool	setTints(Tint * pFill, Tint * pOutline, ValueTransition* pTransition = nullptr);
 
 		bool	setOutlineThickness( pts topOutline, pts bottomOutline );
@@ -88,8 +88,8 @@ namespace wg
 		bool	isTransitioningTints() const { return m_pTintTransition; }
 		bool	isTransitioningSamples() const { return m_pSampleTransition; }
 
-		HiColor	color() const { return m_fillColor; }
-		HiColor	outlineColor() const { return m_outlineColor; }
+		Color	color() const { return m_fillColor; }
+		Color	outlineColor() const { return m_outlineColor; }
 
 		std::tuple<int, const float*>	topSamples() const;
 		std::tuple<int, const float*>	bottomSamples() const;
@@ -108,8 +108,8 @@ namespace wg
 
 		bool				m_bVisible = true;
 
-		HiColor				m_fillColor = Color8::LightGray;
-		HiColor				m_outlineColor = Color8::Black;
+		Color				m_fillColor = Color::LightGray;
+		Color				m_outlineColor = Color::Black;
 		Tint_p				m_pFillTint;
 		Tint_p				m_pOutlineTint;
 
@@ -121,11 +121,11 @@ namespace wg
 		ColorTransition_p	m_pColorTransition;
 		int					m_colorTransitionProgress = 0;
 
-		HiColor				m_startFillColor;
-		HiColor				m_endFillColor;
+		Color				m_startFillColor;
+		Color				m_endFillColor;
 
-		HiColor				m_startOutlineColor;
-		HiColor				m_endOutlineColor;
+		Color				m_startOutlineColor;
+		Color				m_endOutlineColor;
 
 		ValueTransition_p	m_pTintTransition;
 		int					m_tintTransitionProgress = 0;
@@ -203,7 +203,7 @@ namespace wg
 
 			Glow::Blueprint	glow;
 
-			HiColor			gridColor = Color8::DarkGray;
+			Color			gridColor = Color::DarkGray;
 			bool			gridOnTop = false;
 			pts				gridThickness = 1;
 

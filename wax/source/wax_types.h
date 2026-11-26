@@ -445,7 +445,7 @@ template<typename T, typename T2, typename T3> inline void limit(T& x, T2 min, T
 	/**
 	 * Color space of the color channels of a Surface. Alpha is always linear.
 	 *
-	 * Colors given to Wax, as Color8 and HiColor, are always sRGB.
+	 * Colors given to Wax, as Color8 and Color, are always sRGB.
 	 * Undefined is only used in blueprints, where it gives the default (sRGB).
 	 */
 

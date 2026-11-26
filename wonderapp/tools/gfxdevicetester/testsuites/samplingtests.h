@@ -162,7 +162,7 @@ private:
 	void _background(GfxDevice * pDevice, const RectSPX& canvas)
 	{
 		pDevice->setBlendMode(BlendMode::Replace);
-		pDevice->fill(canvas, HiColor(Color8(110, 160, 90, 255)));
+		pDevice->fill(canvas, Color(Color8(110, 160, 90, 255)));
 		pDevice->setBlendMode(BlendMode::Blend);
 	}
 
@@ -170,7 +170,7 @@ private:
 	{
 		_background(pDevice, canvas);
 		if (bTint)
-			pDevice->setTintColor(HiColor(Color8(255, 255, 255, 128)));
+			pDevice->setTintColor(Color(Color8(255, 255, 255, 128)));
 		pDevice->setBlitSource(pSource);
 		pDevice->rotScaleBlit(canvas, 32.f, 18.f);		// Not 30 degrees, where samples land exactly on pixel edges.
 		if (bTint)
@@ -182,7 +182,7 @@ private:
 	{
 		pDevice->beginCanvasUpdate(m_pBlurCanvas);
 		pDevice->setBlendMode(BlendMode::Replace);
-		pDevice->fill(HiColor::Black);
+		pDevice->fill(Color::Black);
 		pDevice->setBlendMode(BlendMode::Blend);
 		pDevice->setBlitSource(pSource);
 		pDevice->setBlurbrush(m_pBrush);

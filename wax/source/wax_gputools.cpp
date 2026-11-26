@@ -54,7 +54,7 @@ namespace wax
 
 		//____ decodeStateChange() ____________________________________________
 
-		const uint16_t* decodeStateChange(const uint16_t* p, const HiColor*& pColors, StateChangeParams& params)
+		const uint16_t* decodeStateChange(const uint16_t* p, const Color*& pColors, StateChangeParams& params)
 		{
 			// Every payload has to be stepped past even when a backend ignores it, or it loses
 			// track of where it is in the command stream. The order is fixed by DeviceGen2.
@@ -150,9 +150,9 @@ namespace wax
 						{
 							if( bSRGB )
 							{
-								int linear = HiColor::unpackSRGBTab[c[i]];
+								int linear = Color::unpackSRGBTab[c[i]];
 								linear = bPremultiply ? (linear * a + 127) / 255 : (std::min)(4096, (linear * 255 + a / 2) / a);
-								c[i] = HiColor::packSRGBTab[linear];
+								c[i] = Color::packSRGBTab[linear];
 							}
 							else
 								c[i] = bPremultiply ? (c[i] * a + 127) / 255 : (std::min)(255, (c[i] * 255 + a / 2) / a);
@@ -206,7 +206,7 @@ namespace wax
 
 			for( int i = 0; i < capacity; i++ )
 			{
-				HiColor col = pPalette[i];			// Same color space, just more bits.
+				Color col = pPalette[i];			// Same color space, just more bits.
 
 				float c[4];
 

@@ -57,7 +57,7 @@ namespace wg
 
 			Glow::Blueprint glow;
 
-			HiColor			gridColor = Color8::DarkGray;
+			Color			gridColor = Color::DarkGray;
 			bool			gridOnTop = false;
 			pts				gridThickness = 1;
 
@@ -171,7 +171,7 @@ namespace wg
 		spx			m_dirtLen = 0;
 
 		PixelFormat	m_scrollSurfaceFormat = PixelFormat::ARGB_8;
-		HiColor		m_scrollSurfaceBgColor = HiColor::Transparent;
+		Color		m_scrollSurfaceBgColor = Color::Transparent;
 
 		GfxFlip		m_flip = GfxFlip::None;
 		bool		m_bAxisSwapped = false;				// Set if flip results in X and Y being swapped.

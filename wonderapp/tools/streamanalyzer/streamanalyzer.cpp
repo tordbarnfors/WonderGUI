@@ -118,19 +118,19 @@ bool MyApp::_setupGUI(API* pAPI)
 	m_pTextStyle = TextStyle::create(WGBP(TextStyle,
 									_.font = pFont,
 									_.size = 14,
-									_.color = Color8::Black,
-									_.states = {{State::Disabled, Color8::DarkGrey}
+									_.color = Color::Black,
+									_.states = {{State::Disabled, Color::DarkGrey}
 	} ));
 
 	m_pLabelStyle = TextStyle::create(WGBP(TextStyle,
 									_.font = pFont,
 									_.size = 16,
-									_.color = Color8::Black));
+									_.color = Color::Black));
 
 	m_pBigWhiteStyle = TextStyle::create(WGBP(TextStyle,
 									_.font = pFont,
 									_.size = 20,
-									_.color = HiColor::White));
+									_.color = Color::White));
 
 	
 
@@ -248,7 +248,7 @@ Widget_p MyApp::createDisplayPanel()
 {
 	auto pWindow = _standardScrollPanel();
 
-	pWindow->setSkin(ColorSkin::create({ .color = Color8::DarkSlateBlue }));
+	pWindow->setSkin(ColorSkin::create({ .color = Color::DarkSlateBlue }));
 	pWindow->setSizeConstraints(SizeConstraint::None, SizeConstraint::GreaterOrEqual);
 	pWindow->setChildPlacement(Placement::Center);
 
@@ -416,7 +416,7 @@ Widget_p MyApp::createLogPanel()
 	pLogButtonRow->setSlotWeight(0, 8, 0.f );
 	
 	TextEditor::Blueprint displayBP;
-	displayBP.skin = ColorSkin::create(Color8::LightYellow);
+	displayBP.skin = ColorSkin::create(Color::LightYellow);
 	displayBP.editor.editMode = TextEditMode::Selectable;
 	
 	// Create frame log hierarchy
@@ -502,7 +502,7 @@ Widget_p MyApp::createLogPanel()
 	
 	auto pResourcesPanel = PackPanel::create();
 	pResourcesPanel->setAxis(Axis::Y);
-	pResourcesPanel->setSkin(ColorSkin::create(Color8::Black));
+	pResourcesPanel->setSkin(ColorSkin::create(Color::Black));
 	pResourcesWindow->slot = pResourcesPanel;
 	
 	m_pResourcePanel = pResourcesPanel;
@@ -549,7 +549,7 @@ Widget_p MyApp::createNavigationPanel()
 	auto pProgressStyle = TextStyle::create(WGBP(TextStyle,
 									_.font = m_pFont,
 									_.size = 48,
-									_.color = HiColor::Black));
+									_.color = Color::Black));
 
 	
 	auto pProgressText = TextDisplay::create(WGBP(TextDisplay,
@@ -558,7 +558,7 @@ Widget_p MyApp::createNavigationPanel()
 	m_pProgressText = pProgressText;
 
 	auto pSlider = Slider::create({ .handle = m_pButtonSkin,
-									 .skin = ColorSkin::create(Color8::Black)
+									 .skin = ColorSkin::create(Color::Black)
 		});
 
 	wg::Base::msgRouter()->addRoute(pSlider, MsgType::ValueUpdate, [this](Msg* pMsg)
@@ -850,16 +850,16 @@ bool MyApp::_loadSkins(API * pAPI)
 	));
 
 	m_pSectionSkin = BoxSkin::create(WGBP(BoxSkin,
-		_.color = HiColor::White,
+		_.color = Color::White,
 		_.outlineThickness = 1,
-		_.outlineColor = Color8::Black,
+		_.outlineColor = Color::Black,
 		_.padding = { 2,2,2,2 }
 	));
 
 	m_pRedOutlinedBlackSkin = BoxSkin::create(WGBP(BoxSkin,
-		_.color = HiColor::Black,
+		_.color = Color::Black,
 		_.outlineThickness = 2,
-		_.outlineColor = Color8::Red,
+		_.outlineColor = Color::Red,
 		_.padding = { 3,3,3,3 }
 	));
 
@@ -1053,7 +1053,7 @@ void MyApp::setupScreens(const CanvasInfo* pBeg, const CanvasInfo* pEnd)
 
 		auto pSurf = pFactory->createSurface({ .bigEndian = pCanvas->bigEndian, .colorSpace = pCanvas->colorSpace, .format = format,
 											   .identity = int(pCanvas->ref), .scale = pCanvas->scale, .size = pCanvas->size/64 });
-		pSurf->fill(HiColor::Black);
+		pSurf->fill(Color::Black);
 
 		m_screens.push_back(pSurf);
 
@@ -1079,7 +1079,7 @@ void MyApp::setupScreens()
 	for (int i = 0; i < 11; i++)
 	{
 		auto pSurf = pFactory->createSurface({ .colorSpace = ColorSpace::sRGB, .format = PixelFormat::RGB_565, .identity = int(CanvasRef::Default) + i, .size = {800,480}});
-		pSurf->fill(HiColor::Black);
+		pSurf->fill(Color::Black);
 
 		m_screens.push_back(pSurf);
 
@@ -1537,7 +1537,7 @@ void MyApp::_updateDebugOverlays()
 {
 	auto pDevice = wax::Base::defaultDevice();
 	
-	auto pOverlaySkin = BoxSkin::create( Border(1), HiColor(4096,0,0,1024), HiColor(4096,0,0,4096));
+	auto pOverlaySkin = BoxSkin::create( Border(1), Color(4096,0,0,1024), Color(4096,0,0,4096));
 	
 	pDevice->beginRender();
 	
@@ -1549,7 +1549,7 @@ void MyApp::_updateDebugOverlays()
 
 		pDevice->beginCanvasUpdate(m_debugOverlays[i]);
 		pDevice->setBlendMode(BlendMode::Replace);
-		pDevice->fill(Color8::Transparent);
+		pDevice->fill(Color::Transparent);
 		pDevice->setBlendMode(BlendMode::Blend);
 		for( int x = 0 ; x < nRects ; x++ )
 		{
@@ -1570,15 +1570,15 @@ ScrollPanel_p MyApp::_standardScrollPanel()
 	auto pWidget = ScrollPanel::create();
 
 	pWidget->scrollbarX.setBackSkin(BoxSkin::create(WGBP(BoxSkin,
-		_.color = Color8::DarkOliveGreen,
+		_.color = Color::DarkOliveGreen,
 		_.outlineThickness = 1,
-		_.outlineColor = Color8::Black)));
+		_.outlineColor = Color::Black)));
 	pWidget->scrollbarX.setBarSkin(m_pPlateSkin);
 
 	pWidget->scrollbarY.setBackSkin(BoxSkin::create(WGBP(BoxSkin,
-		_.color = Color8::DarkOliveGreen,
+		_.color = Color::DarkOliveGreen,
 		_.outlineThickness = 1,
-		_.outlineColor = Color8::Black)));
+		_.outlineColor = Color::Black)));
 	pWidget->scrollbarY.setBarSkin(m_pPlateSkin);
 
 	pWidget->setAutohideScrollbars(true, true);

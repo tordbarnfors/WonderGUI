@@ -39,7 +39,7 @@ namespace wg
 		return ColorSkin_p(new ColorSkin(blueprint));
 	}
 
-	ColorSkin_p ColorSkin::create(HiColor color, Border padding )
+	ColorSkin_p ColorSkin::create(Color color, Border padding )
 	{
 		Blueprint bp;
 		bp.color = color;
@@ -60,7 +60,7 @@ namespace wg
 		Coord	stateShifts[State::NbStates];
 
 		State	colorStates[State::NbStates];
-		HiColor stateColors[State::NbStates];
+		Color stateColors[State::NbStates];
 
 		int 	nbShiftingStates = 1;
 		int		nbColorStates = 1;
@@ -83,7 +83,7 @@ namespace wg
 				m_bContentShifting = true;
 			}
 
-			if(stateInfo.data.color != HiColor::Undefined )
+			if(stateInfo.data.color != Color::Undefined )
 			{
 				int index = stateInfo.state == State::Default ? 0 : nbColorStates++;
 				colorStates[index] = stateInfo.state;
@@ -100,7 +100,7 @@ namespace wg
 		// Calculate memory needed for all state data
 
 		int shiftBytes 		= _bytesNeededForContentShiftData(nbShiftingStates, shiftingStates);
-		int colorBytes		= sizeof(HiColor) * nbColorStates;
+		int colorBytes		= sizeof(Color) * nbColorStates;
 		int indexBytes		= colorIndexEntries;
 
 		// Allocate and populate memory for state data
@@ -115,7 +115,7 @@ namespace wg
 
 		pDest += shiftBytes;
 
-		auto pColors = (HiColor*) pDest;
+		auto pColors = (Color*) pDest;
 		for( int i = 0 ; i < nbColorStates ; i++ )
 			pColors[i] = stateColors[i];
 

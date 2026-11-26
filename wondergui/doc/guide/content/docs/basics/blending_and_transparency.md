@@ -11,7 +11,7 @@ weight: 25
 
 ## Colors
 
-Blending happens in **linear light**, with every channel going from 0.0 to 1.0. Colors given to GfxDevice (HiColor) are sRGB and pixels of sRGB surfaces are converted to linear before blending and back again afterwards. Mixing of colors in Tint gradients is the exception, it happens in sRGB before the result is converted to linear.
+Blending happens in **linear light**, with every channel going from 0.0 to 1.0. Colors given to GfxDevice (Color) are sRGB and pixels of sRGB surfaces are converted to linear before blending and back again afterwards. Mixing of colors in Tint gradients is the exception, it happens in sRGB before the result is converted to linear.
 
 Pixels are stored with **straight alpha**, e.g. the color channels are not multiplied with alpha.
 

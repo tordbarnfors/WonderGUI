@@ -72,7 +72,7 @@ bool MyApp::_setupGUI(API* pAPI)
 	auto pFont = FreeTypeFont::create(pFontBlob);
 
 	m_pTextStyle = TextStyle::create({
-		.color = Color8::Black,
+		.color = Color::Black,
 		.font = pFont, 
 		.size = 14,
 	});
@@ -81,7 +81,7 @@ bool MyApp::_setupGUI(API* pAPI)
 
 	//
 
-	auto pBgSkin = ColorSkin::create( Color8::PapayaWhip );
+	auto pBgSkin = ColorSkin::create( Color::PapayaWhip );
 
 	auto pTextDisplay = TextDisplay::create({
 

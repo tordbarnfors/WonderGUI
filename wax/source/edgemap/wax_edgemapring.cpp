@@ -397,7 +397,7 @@ namespace wax
 
 			auto addRegion = [&](int color, const spx* pEnds, int stride)
 			{
-				HiColor hiColor = color >= 0 ? m_colors[color] : HiColor::Transparent;
+				Color hiColor = color >= 0 ? m_colors[color] : Color::Transparent;
 
 				if (build.colors.empty() || hiColor != build.colors.back())
 				{
@@ -663,7 +663,7 @@ namespace wax
 
 		// Colors: back, outline, hub and slices. Undefined ones are not drawn.
 
-		auto isDrawn = [](HiColor color) { return !color.isUndefined(); };
+		auto isDrawn = [](Color color) { return !color.isUndefined(); };
 
 		m_colors.clear();
 		m_colors.push_back(spec.backColor);

@@ -102,7 +102,7 @@ namespace wax
 		inline StreamEncoder& operator<< (const BorderI&);
 		inline StreamEncoder& operator<< (const Border&);
 
-		inline StreamEncoder& operator<< (HiColor);
+		inline StreamEncoder& operator<< (Color);
 		inline StreamEncoder& operator<< (PixelFormat);
 		inline StreamEncoder& operator<< (ColorSpace);
 		inline StreamEncoder& operator<< (SampleMethod);
@@ -348,7 +348,7 @@ namespace wax
 	}
 
 
-	StreamEncoder& StreamEncoder::operator<< (HiColor color)
+	StreamEncoder& StreamEncoder::operator<< (Color color)
 	{
 		_pushShort(color.b);
 		_pushShort(color.g);

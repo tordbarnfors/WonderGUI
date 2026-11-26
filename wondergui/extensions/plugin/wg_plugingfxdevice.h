@@ -83,8 +83,8 @@ namespace wg
         const RectSPX& clipBounds() const override;
 
 
-        void        setTintColor( HiColor color ) override;
-        HiColor		tintColor() const override;
+        void        setTintColor( Color color ) override;
+        Color		tintColor() const override;
         void        clearTintColor() override;
         bool        hasTintColor() const override;
 
@@ -106,8 +106,8 @@ namespace wg
 		void		setBlurbrush( Blurbrush * pBrush) override;
 		Blurbrush_p	blurbrush() const override;
 		
-		void		setFixedBlendColor( HiColor color ) override;
-		HiColor		fixedBlendColor() const override;
+		void		setFixedBlendColor( Color color ) override;
+		Color		fixedBlendColor() const override;
 		
         void        setRenderLayer(int layer) override;
         int			renderLayer() const override;
@@ -130,11 +130,11 @@ namespace wg
         
         // Draw methods.
 
-        void    fill(HiColor col) override;
-        void    fill( const RectSPX& rect, HiColor col ) override;
+        void    fill(Color col) override;
+        void    fill( const RectSPX& rect, Color col ) override;
 
-        void    drawLine( CoordSPX begin, CoordSPX end, HiColor color, spx thickness = 64, LineCaps caps = LineCaps() ) override;
-        void    drawLine( CoordSPX begin, Direction dir, int length, HiColor col, spx thickness = 64, LineCaps caps = LineCaps() ) override;
+        void    drawLine( CoordSPX begin, CoordSPX end, Color color, spx thickness = 64, LineCaps caps = LineCaps() ) override;
+        void    drawLine( CoordSPX begin, Direction dir, int length, Color col, spx thickness = 64, LineCaps caps = LineCaps() ) override;
 
         void    drawRoundedBox(const RoundedBoxSpec& spec) override;
         void    drawRing(const RingSpec& spec) override;

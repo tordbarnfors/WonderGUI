@@ -170,9 +170,9 @@ namespace wg
 		RectSPX rect = canvas - align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_overflow, scale));
 		auto pTint = _getTint(state);
 
-		RenderSettingsWithTint settings(pDevice, m_layer, m_blendMode, HiColor::Undefined, rect, pTint);
+		RenderSettingsWithTint settings(pDevice, m_layer, m_blendMode, Color::Undefined, rect, pTint);
 
-		pDevice->fill( rect, HiColor::White );
+		pDevice->fill( rect, Color::White );
 	}
 
 	//____ _markTest() _____________________________________________________________

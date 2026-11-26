@@ -68,13 +68,13 @@ bool MyApp::_setupGUI(wapp::API* pAPI)
 	m_pTextStyle = TextStyle::create(WGBP(TextStyle,
 									_.font = pFont,
 									_.size = 14,
-									_.color = Color8::Black,
-									_.states = {{State::Disabled, Color8::DarkGrey}} ));
+									_.color = Color::Black,
+									_.states = {{State::Disabled, Color::DarkGrey}} ));
 
 	m_pLabelStyle = TextStyle::create(WGBP(TextStyle,
 									_.font = pFont,
 									_.size = 16,
-									_.color = Color8::Black));
+									_.color = Color::Black));
 
 
 	wg::Base::setDefaultStyle(m_pTextStyle);
@@ -93,7 +93,7 @@ bool MyApp::_setupGUI(wapp::API* pAPI)
 		
 	
 	auto pBasePanel = FlexPanel::create();
-	pBasePanel->setSkin(ColorSkin::create(Color8::Beige));
+	pBasePanel->setSkin(ColorSkin::create(Color::Beige));
 	auto pControlPanel = _createControlPanel();
 	auto pStretchPanel = _createStretchPanel();
 
@@ -303,9 +303,9 @@ Widget_p MyApp::_createStretchPanel()
 	auto pBase = FlexPanel::create();
 
 	auto pPackPanel = PackPanel::create();
-	pPackPanel->setSkin(ColorSkin::create(Color8::LightGrey));
+	pPackPanel->setSkin(ColorSkin::create(Color::LightGrey));
 
-	auto pItemSkin = BoxSkin::create(1, Color8::AntiqueWhite, Color8::Black, 2);
+	auto pItemSkin = BoxSkin::create(1, Color::AntiqueWhite, Color::Black, 2);
 
 	for (int i = 0; i < 5; i++)
 		pPackPanel->slots << TextEditor::create({ .skin = pItemSkin } );
@@ -395,9 +395,9 @@ bool MyApp::_loadSkins(wapp::API * pAPI)
 	));
 
 	m_pSectionSkin = BoxSkin::create(WGBP(BoxSkin,
-		_.color = HiColor::White,
+		_.color = Color::White,
 		_.outlineThickness = 1,
-		_.outlineColor = Color8::Black,
+		_.outlineColor = Color::Black,
 		_.padding = { 2,2,2,2 }
 	));
 

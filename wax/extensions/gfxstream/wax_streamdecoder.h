@@ -95,7 +95,7 @@ namespace wax
 		inline StreamDecoder& operator>> (BorderI&);
 		inline StreamDecoder& operator>> (Border&);
 
-		inline StreamDecoder& operator>> (HiColor&);
+		inline StreamDecoder& operator>> (Color&);
 		inline StreamDecoder& operator>> (Direction&);
 		inline StreamDecoder& operator>> (BlendMode&);
 		inline StreamDecoder& operator>> (TintMode&);
@@ -288,7 +288,7 @@ namespace wax
 		return *this;
 	}
 
-	StreamDecoder& StreamDecoder::operator>> (HiColor& color)
+	StreamDecoder& StreamDecoder::operator>> (Color& color)
 	{
 		color.b = _pullShort();
 		color.g = _pullShort();

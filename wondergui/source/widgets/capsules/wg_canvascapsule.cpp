@@ -85,7 +85,7 @@ namespace wg
 
 	//____ setTintColor() ______________________________________________________
 
-	void CanvasCapsule::setTintColor(HiColor color, ColorTransition* pTransition)
+	void CanvasCapsule::setTintColor(Color color, ColorTransition* pTransition)
 	{
 		if (color != m_tintColor)
 		{
@@ -252,7 +252,7 @@ namespace wg
 
 	//____ setClearColor() _______________________________________________________
 
-	void CanvasCapsule::setClearColor( HiColor color )
+	void CanvasCapsule::setClearColor( Color color )
 	{
 		if (color != m_clearColor)
 		{
@@ -374,16 +374,16 @@ namespace wg
 
 			// Possibly clear the canvas before rendering
 
-			HiColor clearColor = m_clearColor;
+			Color clearColor = m_clearColor;
 
-			if( clearColor == HiColor::Undefined )
+			if( clearColor == Color::Undefined )
 			{
 				auto canvasDesc = Util::pixelFormatToDescription(m_canvasFormat);
 				if( canvasDesc.A_mask != 0 )
-					clearColor = HiColor::Transparent;
+					clearColor = Color::Transparent;
 			}
 
-			if( clearColor != HiColor::Undefined )
+			if( clearColor != Color::Undefined )
 			{
 				pDevice->setBlendMode(BlendMode::Replace);
 				pDevice->fill( clearColor );
@@ -429,7 +429,7 @@ namespace wg
 			else
 			{
 				m_tintColorTransitionProgress = timestamp;
-				HiColor color = m_pTintColorTransition->snapshot(timestamp, m_startTintColor, m_endTintColor);
+				Color color = m_pTintColorTransition->snapshot(timestamp, m_startTintColor, m_endTintColor);
 
 				if (color != m_tintColor)
 				{
@@ -489,7 +489,7 @@ namespace wg
 
 		int		rl = pDevice->renderLayer();
 		BlendMode bm = pDevice->blendMode();
-		HiColor c = pDevice->tintColor();
+		Color c = pDevice->tintColor();
 
 		if (m_renderLayer != -1)
 			pDevice->setRenderLayer(m_renderLayer);

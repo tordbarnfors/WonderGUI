@@ -79,7 +79,7 @@ public:
 		float blue[9] = { 0.3f, 0.f, 0.f, 0.f, 0.4f, 0.f, 0.f, 0.f, 0.3f };
 
 		m_pBrush = Blurbrush::create(WGBP(Blurbrush, _.red = red, _.green = green, _.blue = blue, _.size = 64 * 3));
-		m_pTint = Tint::create(HiColor(Color8(255, 255, 255, 255)), HiColor(Color8(255, 64, 0, 160)), { 0.f, 0.f }, { 1.f, 1.f });
+		m_pTint = Tint::create(Color(Color8(255, 255, 255, 255)), Color(Color8(255, 64, 0, 160)), { 0.f, 0.f }, { 1.f, 1.f });
 		return true;
 	}
 
@@ -121,13 +121,13 @@ private:
 			{
 				pDevice->beginCanvasUpdate(canvases[r][s]);
 				pDevice->setBlendMode(BlendMode::Replace);
-				pDevice->fill(HiColor(Color8(40, 40, 40, bA8 ? 30 : 255)));
+				pDevice->fill(Color(Color8(40, 40, 40, bA8 ? 30 : 255)));
 				pDevice->setBlendMode(BlendMode::Blend);
 
 				if (r == 1)
 					pDevice->setTint({ 0, 0, 64 * c_srcSize, 64 * c_srcSize }, m_pTint);
 				else if (r == 2)
-					pDevice->setTintColor(HiColor(Color8(120, 200, 255, 255)));
+					pDevice->setTintColor(Color(Color8(120, 200, 255, 255)));
 
 				pDevice->setBlitSource(m_pSources[s]);
 				pDevice->setBlurbrush(m_pBrush);
@@ -143,7 +143,7 @@ private:
 		}
 
 		pDevice->setBlendMode(BlendMode::Replace);
-		pDevice->fill(canvas, HiColor(Color8(20, 20, 60, 255)));
+		pDevice->fill(canvas, Color(Color8(20, 20, 60, 255)));
 		pDevice->setBlendMode(BlendMode::Blend);
 
 		const spx cell = 64 * 80, size = 64 * c_srcSize * 4;
@@ -155,7 +155,7 @@ private:
 		}
 
 		if (bA8)
-			pDevice->setTintColor(HiColor(Color8(255, 160, 40, 255)));
+			pDevice->setTintColor(Color(Color8(255, 160, 40, 255)));
 
 		for (int r = 0; r < c_nbRows; r++)
 		{

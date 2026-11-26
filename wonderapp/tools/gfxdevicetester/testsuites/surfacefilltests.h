@@ -27,7 +27,7 @@ public:
 			bool bIndexed = (c.format == PixelFormat::Index_8);
 
 			m_pSurfaces[i] = pFactory->createSurface(WGBP(Surface, _.size = { c_width, c_height }, _.format = c.format, _.canvas = c.bCanvas,
-														  _.fillColor = HiColor(c.color), _.palette = bIndexed ? c_palette : nullptr, _.paletteSize = bIndexed ? c_paletteSize : 0,
+														  _.fillColor = Color(c.color), _.palette = bIndexed ? c_palette : nullptr, _.paletteSize = bIndexed ? c_paletteSize : 0,
 														  _.restorer = c.bRestorer ? Surface::declineRestore : nullptr, _.sampleMethod = SampleMethod::Nearest));
 			if (!m_pSurfaces[i])
 				return false;
@@ -46,7 +46,7 @@ public:
 	bool fillColor(GfxDevice * pDevice, const RectSPX& canvas)
 	{
 		pDevice->setBlendMode(BlendMode::Replace);
-		pDevice->fill(canvas, HiColor(Color8(60, 60, 90, 255)));
+		pDevice->fill(canvas, Color(Color8(60, 60, 90, 255)));
 		pDevice->setBlendMode(BlendMode::Blend);
 
 		SizeSPX size = SizeSPX(c_width * 4, c_height * 4) * 64;
@@ -57,7 +57,7 @@ public:
 			pDevice->setBlitSource(m_pSurfaces[i]);
 			pDevice->stretchBlit({ 64 * 8, y, size });
 
-			pDevice->fill({ 64 * 16 + size.w, y, size.h, size.h }, _readsAsFilled(i) ? HiColor(Color8::Green) : HiColor(Color8::Red));
+			pDevice->fill({ 64 * 16 + size.w, y, size.h, size.h }, _readsAsFilled(i) ? Color(Color::Green) : Color(Color::Red));
 
 			y += size.h + 64 * 8;
 		}

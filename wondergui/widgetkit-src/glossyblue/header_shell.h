@@ -239,26 +239,26 @@ namespace wg::glossyblue
 		Fonts::Italic	= pItalic;
 		Fonts::Mono		= pMonospace;
 
-		TextStyles::Strong		= TextStyle::create(WGBP(TextStyle, _.color = HiColor::Black, _.font = Fonts::Bold, _.size = TextSizes::Normal ));
-		TextStyles::Emphasis	= TextStyle::create(WGBP(TextStyle, _.color = HiColor::Black, _.font = Fonts::Italic, _.size = TextSizes::Normal ));
-		TextStyles::Code		= TextStyle::create(WGBP(TextStyle, _.font = Fonts::Mono, _.color = HiColor::Black, _.size = TextSizes::Normal));
-		TextStyles::Mono		= TextStyle::create(WGBP(TextStyle, _.font = Fonts::Mono, _.color = HiColor::Black, _.size = TextSizes::Normal));
-		TextStyles::FinePrint	= TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = HiColor::Black, _.size = 9));
+		TextStyles::Strong		= TextStyle::create(WGBP(TextStyle, _.color = Color::Black, _.font = Fonts::Bold, _.size = TextSizes::Normal ));
+		TextStyles::Emphasis	= TextStyle::create(WGBP(TextStyle, _.color = Color::Black, _.font = Fonts::Italic, _.size = TextSizes::Normal ));
+		TextStyles::Code		= TextStyle::create(WGBP(TextStyle, _.font = Fonts::Mono, _.color = Color::Black, _.size = TextSizes::Normal));
+		TextStyles::Mono		= TextStyle::create(WGBP(TextStyle, _.font = Fonts::Mono, _.color = Color::Black, _.size = TextSizes::Normal));
+		TextStyles::FinePrint	= TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = Color::Black, _.size = 9));
 
-		TextStyles::NormalDark	= TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = HiColor::Black, _.size = TextSizes::Normal,
-									_.states = { {State::Disabled, Color8::DarkGrey} }));
+		TextStyles::NormalDark	= TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = Color::Black, _.size = TextSizes::Normal,
+									_.states = { {State::Disabled, Color::DarkGrey} }));
 
-		TextStyles::NormalBright = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = HiColor::White, _.size = TextSizes::Normal,
-								_.states = { {State::Disabled, Color8::LightGrey} }));
+		TextStyles::NormalBright = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = Color::White, _.size = TextSizes::Normal,
+								_.states = { {State::Disabled, Color::LightGrey} }));
 
 		TextStyles::Default = TextStyles::NormalDark;
 
-		TextStyles::Heading1 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = HiColor::Black, _.size = 20));
-		TextStyles::Heading2 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Bold, _.color = HiColor::Black, _.size = 20));
-		TextStyles::Heading3 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = HiColor::Black, _.size = 16));
-		TextStyles::Heading4 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Bold, _.color = HiColor::Black, _.size = 16));
-		TextStyles::Heading5 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Bold, _.color = HiColor::Black, _.size = 14));
-		TextStyles::Heading6 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = HiColor::Black, _.size = 14));
+		TextStyles::Heading1 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = Color::Black, _.size = 20));
+		TextStyles::Heading2 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Bold, _.color = Color::Black, _.size = 20));
+		TextStyles::Heading3 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = Color::Black, _.size = 16));
+		TextStyles::Heading4 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Bold, _.color = Color::Black, _.size = 16));
+		TextStyles::Heading5 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Bold, _.color = Color::Black, _.size = 14));
+		TextStyles::Heading6 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = Color::Black, _.size = 14));
 
 		// PlainTextLayout's selection defaults are selectionBackBlend =
 		// BlendMode::Invert and selectionCharBlend = BlendMode::Invert, which
@@ -271,7 +271,7 @@ namespace wg::glossyblue
 		// TextSelectionText, whatever tint the editor happens to have set.
 		// BlendMode::Blend would modulate the fill by that tint, and
 		// BlendMode::Ignore on the chars would hand back the text's own
-		// colour (HiColor::blend returns baseColor for it) -- leaving
+		// colour (Color::blend returns baseColor for it) -- leaving
 		// selected glyphs rendered identically to unselected ones.
 		TextLayouts::LeftNoWrap = PlainTextLayout::create(WGBP(PlainTextLayout,
 			_.autoEllipsis = true,
@@ -329,7 +329,7 @@ namespace wg::glossyblue
 			_.states = { {State::Flagged,Colors::TitlebarSelected,Colors::TitlebarBorderSelected} }));
 
 		_pLabelCapsuleSkin = BoxSkin::create(WGBP(BoxSkin,
-			_.color = HiColor::Transparent,
+			_.color = Color::Transparent,
 			_.outlineColor = Colors::Border,
 			_.outlineThickness = 1,
 			_.spacing = { 8,2,2,2 },
@@ -345,21 +345,21 @@ namespace wg::glossyblue
 		));
 
 		_pCapsuleLabelSkin2 = ColorSkin::create(WGBP(ColorSkin,
-			_.color = HiColor::Transparent,
+			_.color = Color::Transparent,
 			_.padding = { 2,2,2,2 }
 		));
 
 		_pInvisibleBoxSkin = ColorSkin::create(WGBP(ColorSkin,
-			_.color = HiColor::Transparent,
+			_.color = Color::Transparent,
 			_.spacing = { 6,2,2,2 },
 			// 4 -> 3 on the content sides, as above; 16 is label clearance.
 			_.padding = { 16, 3, 3, 3 }));
 
 		_pSelectableEntrySkin = BoxSkin::create(WGBP(BoxSkin,
 			_.markAlpha = 0,
-			_.states = { {State::Default, Color8::Transparent,Color8::Transparent},
-						 {State::Hovered, HiColor(Colors::Accent).withAlpha(700), HiColor(Colors::Accent).withAlpha(1400)},
-						 {State::Selekted, HiColor(Colors::Accent).withAlpha(1400),HiColor(Colors::Accent).withAlpha(2400) }
+			_.states = { {State::Default, Color::Transparent,Color::Transparent},
+						 {State::Hovered, Color(Colors::Accent).withAlpha(700), Color(Colors::Accent).withAlpha(1400)},
+						 {State::Selekted, Color(Colors::Accent).withAlpha(1400),Color(Colors::Accent).withAlpha(2400) }
 			}
 		));
 
@@ -386,9 +386,9 @@ namespace wg::glossyblue
 			// list's default width (entryDefault.w + listPadding.w), so nothing
 			// gets truncated.
 			_.padding = { 0, 6, 0, 6 },
-			_.states = { {State::Default, Color8::Transparent, Color8::Transparent},
-						 {State::Hovered, HiColor(Colors::Accent).withAlpha(700), HiColor(Colors::Accent).withAlpha(1400)},
-						 {State::Selekted, HiColor(Colors::Accent).withAlpha(1400),HiColor(Colors::Accent).withAlpha(2400) }
+			_.states = { {State::Default, Color::Transparent, Color::Transparent},
+						 {State::Hovered, Color(Colors::Accent).withAlpha(700), Color(Colors::Accent).withAlpha(1400)},
+						 {State::Selekted, Color(Colors::Accent).withAlpha(1400),Color(Colors::Accent).withAlpha(2400) }
 			}
 		));
 

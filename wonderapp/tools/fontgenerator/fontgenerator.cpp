@@ -69,14 +69,14 @@ bool MyApp::_setupGUI(wapp::API* pAPI)
 	m_pTextStyle = TextStyle::create(WGBP(TextStyle,
 									_.font = pFont,
 									_.size = 14,
-									_.color = Color8::Black,
-									_.states = {{State::Disabled, Color8::DarkGrey}
+									_.color = Color::Black,
+									_.states = {{State::Disabled, Color::DarkGrey}
 	} ));
 
 	m_pLabelStyle = TextStyle::create(WGBP(TextStyle,
 									_.font = pFont,
 									_.size = 16,
-									_.color = Color8::Black));
+									_.color = Color::Black));
 
 
 	wg::Base::setDefaultStyle(m_pTextStyle);
@@ -361,20 +361,20 @@ bool MyApp::generateFontSurface( FreeTypeFont * pFont, const std::u32string& cha
 	auto pSurface = wg::Base::defaultSurfaceFactory()->createSurface( { .canvas = true, .colorSpace = outputColorSpace, .format = PixelFormat::ARGB_8, .size = surfaceSize });
 	auto pDevice = wg::Base::defaultDevice();
 
-	HiColor lineColor(1024,0,0,4096);
+	Color lineColor(1024,0,0,4096);
 	
 	pDevice->beginRender();
 	
 	pDevice->beginCanvasUpdate(pSurface);
 	pDevice->setBlendMode(BlendMode::Replace);
-	pDevice->fill(Color8::Transparent);
+	pDevice->fill(Color::Transparent);
 	pDevice->setBlendMode(BlendMode::Replace);
 
 	CoordSPX pos;
 	int rowHeight = (pFont->maxAscend() + pFont->maxDescend()) / 64;
 	spx baselineOfs = pFont->maxAscend();
 	
-	pDevice->setTintColor(Color8::White);
+	pDevice->setTintColor(Color::White);
 	pDevice->drawLine(pos, Direction::Right, surfaceSize.w*64, lineColor);
 	pos.y += 64;
 	
@@ -422,9 +422,9 @@ bool MyApp::generateFontSurface( FreeTypeFont * pFont, const std::u32string& cha
 
 	pDevice->beginRender();
 	pDevice->beginCanvasUpdate(m_pFontDisplaySurface);
-	pDevice->fill( HiColor::White );
+	pDevice->fill( Color::White );
 	pDevice->setBlitSource(pSurface);
-	pDevice->setTintColor(HiColor::Black);
+	pDevice->setTintColor(Color::Black);
 	pDevice->blit({0,0});
 	pDevice->endCanvasUpdate();
 	pDevice->endRender();
@@ -573,15 +573,15 @@ Widget_p MyApp::createCharsPanel()
 	auto pWindow = ScrollPanel::create();
 
 	pWindow->scrollbarX.setBackSkin(BoxSkin::create(WGBP(BoxSkin,
-		_.color = Color8::DarkOliveGreen,
+		_.color = Color::DarkOliveGreen,
 		_.outlineThickness = 1,
-		_.outlineColor = Color8::Black)));
+		_.outlineColor = Color::Black)));
 	pWindow->scrollbarX.setBarSkin(m_pPlateSkin);
 
 	pWindow->scrollbarY.setBackSkin(BoxSkin::create(WGBP(BoxSkin,
-		_.color = Color8::DarkOliveGreen,
+		_.color = Color::DarkOliveGreen,
 		_.outlineThickness = 1,
-		_.outlineColor = Color8::Black)));
+		_.outlineColor = Color::Black)));
 	pWindow->scrollbarY.setBarSkin(m_pPlateSkin);
 
 	pWindow->setAutohideScrollbars(true, true);
@@ -651,15 +651,15 @@ Widget_p MyApp::createOutputPanel()
 	pWindow->setSkin(m_pSectionSkin);
 	
 	pWindow->scrollbarX.setBackSkin(BoxSkin::create(WGBP(BoxSkin,
-		_.color = Color8::DarkOliveGreen,
+		_.color = Color::DarkOliveGreen,
 		_.outlineThickness = 1,
-		_.outlineColor = Color8::Black)));
+		_.outlineColor = Color::Black)));
 	pWindow->scrollbarX.setBarSkin(m_pPlateSkin);
 	
 	pWindow->scrollbarY.setBackSkin(BoxSkin::create(WGBP(BoxSkin,
-		_.color = Color8::DarkOliveGreen,
+		_.color = Color::DarkOliveGreen,
 		_.outlineThickness = 1,
-		_.outlineColor = Color8::Black)));
+		_.outlineColor = Color::Black)));
 	pWindow->scrollbarY.setBarSkin(m_pPlateSkin);
 	
 	pWindow->setAutohideScrollbars(true, false);
@@ -729,9 +729,9 @@ bool MyApp::_loadSkins(wapp::API * pAPI)
 	));
 
 	m_pSectionSkin = BoxSkin::create(WGBP(BoxSkin,
-		_.color = HiColor::White,
+		_.color = Color::White,
 		_.outlineThickness = 1,
-		_.outlineColor = Color8::Black,
+		_.outlineColor = Color::Black,
 		_.padding = { 2,2,2,2 }
 	));
 

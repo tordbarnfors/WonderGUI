@@ -41,7 +41,7 @@ namespace wax
 
 	enum class SoftFormat : uint8_t
 	{
-		Undefined,					///< Buffer of HiColor, used by kernels for the first pass of two-pass blits.
+		Undefined,					///< Buffer of Color, used by kernels for the first pass of two-pass blits.
 
 		XRGB_8_sRGB,
 		XRGB_8_linear,
@@ -127,7 +127,7 @@ namespace wax
 		constexpr bool			needsSwap(SoftFormat f) { return c_entries[int(f)].bigEndian != (WAX_IS_BIG_ENDIAN == 1); }
 
 		// Channels are kept linear in 8 bits. Blending them directly is blending in linear space.
-		// True for alpha only, since alpha always is linear. Not true for the HiColor buffer (Undefined).
+		// True for alpha only, since alpha always is linear. Not true for the Color buffer (Undefined).
 
 		constexpr bool			isLinear(SoftFormat f) { return f != SoftFormat::Undefined && c_entries[int(f)].colorSpace == ColorSpace::Linear; }
 

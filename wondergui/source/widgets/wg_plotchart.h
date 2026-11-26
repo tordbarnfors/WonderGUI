@@ -36,10 +36,10 @@ namespace wg
 
 		struct Blueprint
 		{
-			HiColor				color = HiColor::White;
+			Color				color = Color::White;
 			Tint_p			tint;
 
-			HiColor				outlineColor = HiColor::Black;
+			Color				outlineColor = Color::Black;
 			pts					outlineThickness = 1;
 
 			pts					radius = 1;
@@ -52,7 +52,7 @@ namespace wg
 
 		bool	setTint(Tint * pTint, ValueTransition* pTransition = nullptr);
 
-		bool	setColors(HiColor fill, HiColor outline, ColorTransition* pTransition = nullptr);
+		bool	setColors(Color fill, Color outline, ColorTransition* pTransition = nullptr);
 
 		bool	setSize(pts radius, pts outlineThickness, ValueTransition * pTransition = nullptr);
 
@@ -68,8 +68,8 @@ namespace wg
 		bool	isTransitioningSize() const { return m_pSizeTransition; }
 		bool	isTransitioningTint() const { return m_pTintTransition; }
 
-		HiColor	color() const { return m_fillColor; }
-		HiColor	outlineColor() const { return m_outlineColor; }
+		Color	color() const { return m_fillColor; }
+		Color	outlineColor() const { return m_outlineColor; }
 
 		std::tuple<int, const CoordF*>	samples() const;
 
@@ -87,8 +87,8 @@ namespace wg
 
 		bool				m_bVisible = true;
 
-		HiColor				m_fillColor = Color8::White;
-		HiColor				m_outlineColor = Color8::Black;
+		Color				m_fillColor = Color::White;
+		Color				m_outlineColor = Color::Black;
 
 		Tint_p			m_pTint;
 
@@ -113,11 +113,11 @@ namespace wg
 		ColorTransition_p	m_pColorTransition;
 		int					m_colorTransitionProgress = 0;
 
-		HiColor				m_startFillColor;
-		HiColor				m_endFillColor;
+		Color				m_startFillColor;
+		Color				m_endFillColor;
 
-		HiColor				m_startOutlineColor;
-		HiColor				m_endOutlineColor;
+		Color				m_startOutlineColor;
+		Color				m_endOutlineColor;
 
 		// Tint gradient transitions
 
@@ -168,7 +168,7 @@ namespace wg
 
 			Glow::Blueprint	glow;
 
-			HiColor			gridColor = Color8::DarkGray;
+			Color			gridColor = Color::DarkGray;
 			bool			gridOnTop = false;
 			pts				gridThickness = 1;
 

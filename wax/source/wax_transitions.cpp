@@ -160,7 +160,7 @@ namespace wax
 
 	//____ ColorTransition::snapshot() ________________________________________
 
-	HiColor	ColorTransition::snapshot(int timestamp, HiColor startColor, HiColor endColor)
+	Color	ColorTransition::snapshot(int timestamp, Color startColor, Color endColor)
 	{
 		limit(timestamp, 0, m_duration);
 
@@ -169,12 +169,12 @@ namespace wax
 			if (timestamp < m_midPointBegin)
 			{
 				int progress = _normalize(m_curve, m_midPointBegin, timestamp);
-				return HiColor::mix(startColor, m_midPoint, progress >> (24-12));
+				return Color::mix(startColor, m_midPoint, progress >> (24-12));
 			}
 			else if (timestamp >= m_midPointEnd)
 			{
 				int progress = _normalize(m_curve2, m_duration - m_midPointEnd, timestamp - m_midPointEnd);
-				return HiColor::mix(m_midPoint, endColor, progress >> (24-12));
+				return Color::mix(m_midPoint, endColor, progress >> (24-12));
 			}
 			else
 				return m_midPoint;
@@ -182,11 +182,11 @@ namespace wax
 		else
 		{
 			int progress = _normalize(m_curve, m_duration, timestamp);
-			return HiColor::mix(startColor, endColor, progress >> (24-12));
+			return Color::mix(startColor, endColor, progress >> (24-12));
 		}
 	}
 
-	void ColorTransition::snapshot(int timestamp, int nColors, const HiColor* pStartColors, const HiColor* pEndColors, HiColor* pOutput)
+	void ColorTransition::snapshot(int timestamp, int nColors, const Color* pStartColors, const Color* pEndColors, Color* pOutput)
 	{
 		limit(timestamp, 0, m_duration);
 
@@ -197,14 +197,14 @@ namespace wax
 				int progress = _normalize(m_curve, m_midPointBegin, timestamp) >> (24 - 12);
 
 				for (int i = 0; i < nColors; i++)
-					pOutput[i] = HiColor::mix(pStartColors[i], m_midPoint, progress);
+					pOutput[i] = Color::mix(pStartColors[i], m_midPoint, progress);
 			}
 			else if (timestamp >= m_midPointEnd)
 			{
 				int progress = _normalize(m_curve2, m_duration - m_midPointEnd, timestamp - m_midPointEnd) >> (24 - 12);
 
 				for (int i = 0; i < nColors; i++)
-					pOutput[i] = HiColor::mix(m_midPoint, pEndColors[i], progress);
+					pOutput[i] = Color::mix(m_midPoint, pEndColors[i], progress);
 			}
 			else
 			{
@@ -217,7 +217,7 @@ namespace wax
 			int progress = _normalize(m_curve, m_duration, timestamp) >> (24 - 12);
 
 			for (int i = 0; i < nColors; i++)
-				pOutput[i] = HiColor::mix(pStartColors[i], pEndColors[i], progress);
+				pOutput[i] = Color::mix(pStartColors[i], pEndColors[i], progress);
 		}
 	}
 

@@ -105,30 +105,30 @@ namespace wax
 
 		struct PadLookup
 		{
-			const HiColor*	pLUT;
+			const Color*	pLUT;
 			int				N;
-			HiColor			low;			// Below position 0.0.
+			Color			low;			// Below position 0.0.
 
-			inline HiColor operator()(int idx) const { return idx < 0 ? low : pLUT[idx > N ? N : idx]; }
+			inline Color operator()(int idx) const { return idx < 0 ? low : pLUT[idx > N ? N : idx]; }
 		};
 
 		struct RepeatLookup
 		{
-			const HiColor*	pLUT;
+			const Color*	pLUT;
 			int				mask;			// N - 1
 
-			inline HiColor operator()(int idx) const { return pLUT[idx & mask]; }
+			inline Color operator()(int idx) const { return pLUT[idx & mask]; }
 		};
 
 		struct ReflectLookup
 		{
-			const HiColor*	pLUT;
+			const Color*	pLUT;
 			int				bits;
 			int				mask;			// 2N - 1
 
 			// Span r >= N mirrors span 2N-1-r, which is r with all bits below 2N flipped.
 
-			inline HiColor operator()(int idx) const { int r = idx & mask; return pLUT[r ^ (-(r >> bits) & mask)]; }
+			inline Color operator()(int idx) const { int r = idx & mask; return pLUT[r ^ (-(r >> bits) & mask)]; }
 		};
 
 		//____ radialSpan() ___________________________________________________
@@ -164,7 +164,7 @@ namespace wax
 		const int64_t	c_radialMaxFastStep = int64_t(16) << 32;
 
 		template<bool PAD, class Lookup>
-		void radialSpan(const Lookup& lookup, int N, int64_t u, int64_t v, int64_t du, int64_t dv, int length, HiColor* pOutput, int* pHints)
+		void radialSpan(const Lookup& lookup, int N, int64_t u, int64_t v, int64_t du, int64_t dv, int length, Color* pOutput, int* pHints)
 		{
 			auto absMax = [](int64_t a, int64_t b) { return std::max(a < 0 ? -a : a, b < 0 ? -b : b); };
 
@@ -255,7 +255,7 @@ namespace wax
 						{
 							// Outside and moving away (D only grows from here), so the rest has the last color.
 
-							HiColor last = lookup(N);
+							Color last = lookup(N);
 							for (int j = i; j < length; j++)
 								pOutput[j] = last;
 
@@ -289,22 +289,22 @@ namespace wax
 
 	//____ set() ______________________________________________________________
 
-	void SoftTint::set(const Tint* pTint, const RectSPX& rect, HiColor multiplier)
+	void SoftTint::set(const Tint* pTint, const RectSPX& rect, Color multiplier)
 	{
 		uint16_t	words[TintTools::c_maxEncodedTintWords];
-		HiColor		colors[TintTools::c_maxEncodedTintColors];
+		Color		colors[TintTools::c_maxEncodedTintColors];
 		int			nColors;
 
 		TintTools::encodeTint(pTint, rect, words, colors, nColors);
 
-		const HiColor* pColors = colors;
+		const Color* pColors = colors;
 		TintTools::DecodedTint decoded;
 		TintTools::decodeTint(words, pColors, decoded);
 
 		set(decoded, multiplier);
 	}
 
-	void SoftTint::set(const TintTools::DecodedTint& tint, HiColor multiplier)
+	void SoftTint::set(const TintTools::DecodedTint& tint, Color multiplier)
 	{
 		m_nLayers = 0;
 
@@ -438,11 +438,11 @@ namespace wax
 					// LUT is built in sRGB, then converted to linear and multiplied.
 
 					int entries = (1 << layer.lutBits) + 1;
-					HiColor* pLUT = m_lut.data() + layer.lutOfs;
+					Color* pLUT = m_lut.data() + layer.lutOfs;
 
 					TintTools::buildLUT(src, entries, pLUT);
 
-					if (multiplier == HiColor::White)
+					if (multiplier == Color::White)
 					{
 						for (int i = 0; i < entries; i++)
 							pLUT[i] = pLUT[i].toLinear();
@@ -479,7 +479,7 @@ namespace wax
 			int r = 0, g = 0, b = 0, a = 0;
 			for (int l = 0; l < m_nLayers; l++)
 			{
-				const HiColor& c = m_layers[l].flatColor;
+				const Color& c = m_layers[l].flatColor;
 				int w = m_layers[l].weight;
 				r += c.r * w;
 				g += c.g * w;
@@ -488,7 +488,7 @@ namespace wax
 			}
 
 			m_bFlat = true;
-			m_flatColor = HiColor(r >> 12, g >> 12, b >> 12, a >> 12);
+			m_flatColor = Color(r >> 12, g >> 12, b >> 12, a >> 12);
 		}
 		else
 			m_bFlat = false;
@@ -496,7 +496,7 @@ namespace wax
 
 	//____ setFlat() __________________________________________________________
 
-	void SoftTint::setFlat(HiColor color)
+	void SoftTint::setFlat(Color color)
 	{
 		m_nLayers = 0;
 		m_bFlat = true;
@@ -509,9 +509,9 @@ namespace wax
 
 	//____ generate() _________________________________________________________
 
-	void SoftTint::generate(int x, int y, int dx, int dy, int length, HiColor* pOutput) const
+	void SoftTint::generate(int x, int y, int dx, int dy, int length, Color* pOutput) const
 	{
-		_mixLayers(length, pOutput, [&](const Layer& layer, HiColor* pLayerOutput)
+		_mixLayers(length, pOutput, [&](const Layer& layer, Color* pLayerOutput)
 		{
 			if (layer.shape == TintShape::Linear)
 				_generateLinear(layer, x, y, dx, dy, length, pLayerOutput);
@@ -522,9 +522,9 @@ namespace wax
 
 	//____ generateSpan() _____________________________________________________
 
-	void SoftTint::generateSpan(int64_t x, int64_t y, int64_t dx, int64_t dy, int length, HiColor* pOutput) const
+	void SoftTint::generateSpan(int64_t x, int64_t y, int64_t dx, int64_t dy, int length, Color* pOutput) const
 	{
-		_mixLayers(length, pOutput, [&](const Layer& layer, HiColor* pLayerOutput)
+		_mixLayers(length, pOutput, [&](const Layer& layer, Color* pLayerOutput)
 		{
 			// Positions are relative to pixel centers in the layers, which are at x + 0.5.
 
@@ -552,7 +552,7 @@ namespace wax
 	// Colors of all layers, generated by generateLayer(layer, pOutput), mixed by their weights.
 
 	template<class LayerGenerator>
-	void SoftTint::_mixLayers(int length, HiColor* pOutput, LayerGenerator&& generateLayer) const
+	void SoftTint::_mixLayers(int length, Color* pOutput, LayerGenerator&& generateLayer) const
 	{
 		if (m_bFlat)
 		{
@@ -561,7 +561,7 @@ namespace wax
 			return;
 		}
 
-		auto generate = [&](const Layer& layer, HiColor* pLayerOutput)
+		auto generate = [&](const Layer& layer, Color* pLayerOutput)
 		{
 			if (layer.bFlat)
 			{
@@ -589,7 +589,7 @@ namespace wax
 		int* pAcc = m_accumulator.data();
 		std::memset(pAcc, 0, length * 4 * sizeof(int));
 
-		HiColor* pLayerColors = m_layerBuffer.data();
+		Color* pLayerColors = m_layerBuffer.data();
 
 		for (int l = 0; l < m_nLayers; l++)
 		{
@@ -601,7 +601,7 @@ namespace wax
 			int* p = pAcc;
 			for (int i = 0; i < length; i++)
 			{
-				const HiColor& c = pLayerColors[i];
+				const Color& c = pLayerColors[i];
 				p[0] += c.r * w;
 				p[1] += c.g * w;
 				p[2] += c.b * w;
@@ -613,7 +613,7 @@ namespace wax
 		int* p = pAcc;
 		for (int i = 0; i < length; i++)
 		{
-			HiColor& c = pOutput[i];
+			Color& c = pOutput[i];
 			c.r = int16_t(p[0] >> 12);
 			c.g = int16_t(p[1] >> 12);
 			c.b = int16_t(p[2] >> 12);
@@ -624,7 +624,7 @@ namespace wax
 
 	//____ _generateLinear() __________________________________________________
 
-	void SoftTint::_generateLinear(const Layer& layer, int x, int y, int dx, int dy, int length, HiColor* pOutput) const
+	void SoftTint::_generateLinear(const Layer& layer, int x, int y, int dx, int dy, int length, Color* pOutput) const
 	{
 		// Position in LUT entries with 16 binals, exact at the first pixel, then stepped.
 
@@ -637,9 +637,9 @@ namespace wax
 	//____ _linearSpan() ______________________________________________________
 	// Colors of a linear layer for positions pos, pos + step ... in LUT entries with 16 binals.
 
-	void SoftTint::_linearSpan(const Layer& layer, int64_t pos, int64_t step, int length, HiColor* pOutput) const
+	void SoftTint::_linearSpan(const Layer& layer, int64_t pos, int64_t step, int length, Color* pOutput) const
 	{
-		const HiColor* pLUT = m_lut.data() + layer.lutOfs;
+		const Color* pLUT = m_lut.data() + layer.lutOfs;
 		const int bits = layer.lutBits;
 
 		switch (layer.spread)
@@ -715,7 +715,7 @@ namespace wax
 
 	//____ _generateRadial() __________________________________________________
 
-	void SoftTint::_generateRadial(const Layer& layer, int x, int y, int dx, int dy, int length, HiColor* pOutput) const
+	void SoftTint::_generateRadial(const Layer& layer, int x, int y, int dx, int dy, int length, Color* pOutput) const
 	{
 		// Steps without 64-bit multiplication for dx and dy of -1, 0 and 1.
 
@@ -732,9 +732,9 @@ namespace wax
 	//____ _radialSpan() ______________________________________________________
 	// Colors of a radial layer for u, v (LUT entries with 32 binals) stepped by du, dv.
 
-	void SoftTint::_radialSpan(const Layer& layer, int64_t u, int64_t v, int64_t du, int64_t dv, int length, HiColor* pOutput) const
+	void SoftTint::_radialSpan(const Layer& layer, int64_t u, int64_t v, int64_t du, int64_t dv, int length, Color* pOutput) const
 	{
-		const HiColor* pLUT = m_lut.data() + layer.lutOfs;
+		const Color* pLUT = m_lut.data() + layer.lutOfs;
 		const int bits = layer.lutBits;
 		const int N = 1 << bits;
 

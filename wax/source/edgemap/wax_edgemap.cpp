@@ -38,12 +38,12 @@ namespace wax
 		// Setup buffers. We always store m_size.w + 1 columns, see _mirrorFirstColumn().
 
 		int sampleArraySize = (bp.size.w + 1) * bp.segments * sizeof(spx);
-		int flatColorsSize = bp.segments * sizeof(HiColor);
+		int flatColorsSize = bp.segments * sizeof(Color);
 
 		m_pBuffer = new char[sampleArraySize + flatColorsSize];
 		char* pDest = m_pBuffer;
 
-		m_pFlatColors = (HiColor*)pDest;
+		m_pFlatColors = (Color*)pDest;
 		pDest += flatColorsSize;
 
 		m_pSamples = (spx*) pDest;
@@ -56,7 +56,7 @@ namespace wax
 		// Fill in colors
 
 		for (int i = 0; i < bp.segments; i++)
-			m_pFlatColors[i] = bp.colors ? bp.colors[i] : HiColor::Transparent;
+			m_pFlatColors[i] = bp.colors ? bp.colors[i] : Color::Transparent;
 
 		if (bp.tints)
 			setColors(0, bp.segments, bp.tints);
@@ -98,7 +98,7 @@ namespace wax
 	 * Any Tints of these segments are removed.
 	 */
 
-	bool Edgemap::setColors(int begin, int end, const HiColor* pColors)
+	bool Edgemap::setColors(int begin, int end, const Color* pColors)
 	{
 		if (begin < 0 || end > m_nbSegments || begin > end || !pColors)
 			return false;

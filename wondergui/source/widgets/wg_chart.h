@@ -42,7 +42,7 @@ class Chart;
 
 		struct Blueprint
 		{
-			HiColor			color = HiColor::Undefined;
+			Color			color = Color::Undefined;
 			
 			std::string		label;
 			Coord			labelAdjustment;
@@ -88,7 +88,7 @@ class Chart;
 
 
 		float			pos() const { return m_pos; }
-		HiColor			color() const { return m_color; }
+		Color			color() const { return m_color; }
 		pts				thickness() const { return m_thickness; }
 		bool			isVisible() const { return m_bVisible; }
 		const std::string& label() const { return m_label; }
@@ -138,7 +138,7 @@ class Chart;
 		RectSPX			m_labelGeo;
 
 		float			m_pos;
-		HiColor			m_color;
+		Color			m_color;
 		pts				m_thickness;
 
 		bool			m_bVisible;
@@ -179,7 +179,7 @@ class Chart;
 		void	setDisplayRange(float ceiling, float floor, ValueTransition * pTransition = nullptr );
 
 
-		HiColor		gridColor() const { return m_gridColor; }
+		Color		gridColor() const { return m_gridColor; }
 		pts			gridThickness() const { return m_gridThickness; }
 		bool		gridOnTop() const { return m_bGridLinesOnTop; }
 
@@ -274,7 +274,7 @@ class Chart;
 
 		SkinSlot		m_displaySkin;
 
-		HiColor			m_gridColor = Color8::DarkGray;
+		Color			m_gridColor = Color::DarkGray;
 		pts				m_gridThickness = 1;
 		TextStyle_p		m_pTextStyle;
 		TextLayout_p	m_pTextLayout;

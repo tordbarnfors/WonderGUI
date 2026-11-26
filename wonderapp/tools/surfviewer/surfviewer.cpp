@@ -81,14 +81,14 @@ bool MyApp::_setupGUI(wapp::API* pAPI)
 	m_pTextStyle = TextStyle::create(WGBP(TextStyle,
 									_.font = pFont,
 									_.size = 14,
-									_.color = Color8::Black,
-									_.states = {{State::Disabled, Color8::DarkGrey}
+									_.color = Color::Black,
+									_.states = {{State::Disabled, Color::DarkGrey}
 	} ));
 
 	m_pLabelStyle = TextStyle::create(WGBP(TextStyle,
 									_.font = pFont,
 									_.size = 16,
-									_.color = Color8::Black));
+									_.color = Color::Black));
 
 
 	wg::Base::setDefaultStyle(m_pTextStyle);
@@ -209,22 +209,22 @@ Widget_p MyApp::createImagePanel()
 	auto pWindow = ScrollPanel::create();
 
 	pWindow->scrollbarX.setBackSkin(BoxSkin::create(WGBP(BoxSkin,
-		_.color = Color8::DarkOliveGreen,
+		_.color = Color::DarkOliveGreen,
 		_.outlineThickness = 1,
-		_.outlineColor = Color8::Black)));
+		_.outlineColor = Color::Black)));
 	pWindow->scrollbarX.setBarSkin(m_pPlateSkin);
 
 	pWindow->scrollbarY.setBackSkin(BoxSkin::create(WGBP(BoxSkin,
-		_.color = Color8::DarkOliveGreen,
+		_.color = Color::DarkOliveGreen,
 		_.outlineThickness = 1,
-		_.outlineColor = Color8::Black)));
+		_.outlineColor = Color::Black)));
 	pWindow->scrollbarY.setBarSkin(m_pPlateSkin);
 
 	pWindow->setAutohideScrollbars(true, true);
 	pWindow->setSizeConstraints(SizeConstraint::GreaterOrEqual, SizeConstraint::GreaterOrEqual);
 
 	m_pImageDisplay = SurfaceDisplay::create( WGBP(SurfaceDisplay,
-											_.skin = ColorSkin::create( Color8::AntiqueWhite)
+											_.skin = ColorSkin::create( Color::AntiqueWhite)
 											));
 	
 	pWindow->slot = m_pImageDisplay;
@@ -292,9 +292,9 @@ bool MyApp::_loadSkins(wapp::API * pAPI)
 	));
 
 	m_pSectionSkin = BoxSkin::create(WGBP(BoxSkin,
-		_.color = HiColor::White,
+		_.color = Color::White,
 		_.outlineThickness = 1,
-		_.outlineColor = Color8::Black,
+		_.outlineColor = Color::Black,
 		_.padding = { 2,2,2,2 }
 	));
 

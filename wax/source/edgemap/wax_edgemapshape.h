@@ -139,7 +139,7 @@ namespace wax
 
 		// Builds the pieces, kept until generate() makes them into edgemaps with pFactory.
 
-		BuildResult	_buildPieces( const std::vector<Layout>& layout, const RegionFunc& regions, const HiColor * pColors, EdgemapFactory * pFactory );
+		BuildResult	_buildPieces( const std::vector<Layout>& layout, const RegionFunc& regions, const Color * pColors, EdgemapFactory * pFactory );
 
 		// Makes the pieces built into edgemaps, if any. Returns false if an edgemap couldn't be created.
 
@@ -150,7 +150,7 @@ namespace wax
 			RectI					rect;
 			bool					bRows = true;
 			bool					bEmpty = true;			// Nothing is drawn.
-			std::vector<HiColor>	colors;					// Of the segments.
+			std::vector<Color>	colors;					// Of the segments.
 			std::vector<spx>		samples;				// Edges of the first sample, then of the second and so on.
 		};
 
@@ -159,11 +159,11 @@ namespace wax
 			RectI					rect;
 			bool					bRows = true;
 			int						capacity = 0;			// Segments of the edgemap, some may be unused.
-			std::vector<HiColor>	colors;
+			std::vector<Color>	colors;
 			std::vector<spx>		samples;
 		};
 
-		bool		_buildPiece( const Layout& layout, const RegionFunc& regions, const HiColor * pColors, Build& out );
+		bool		_buildPiece( const Layout& layout, const RegionFunc& regions, const Color * pColors, Build& out );
 		bool		_applyPieces( std::vector<Build>& builds, EdgemapFactory * pFactory );
 
 		// Called for each piece built, for a subclass to change edges that are straight between

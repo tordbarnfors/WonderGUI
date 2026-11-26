@@ -170,9 +170,9 @@ namespace wg
 			float		paragraphSpacing	= 0.f;
 			Placement	placement			= Placement::NorthWest;
 			BlendMode	selectionBackBlend	= BlendMode::Invert;
-			HiColor		selectionBackColor	= HiColor::White;
+			Color		selectionBackColor	= Color::White;
 			BlendMode	selectionCharBlend	= BlendMode::Invert;
-			HiColor		selectionCharColor	= HiColor::White;
+			Color		selectionCharColor	= Color::White;
 			int			tabWidth			= 8;
 			bool		wrap				= false;
 		};
@@ -240,7 +240,7 @@ namespace wg
 
 		void 			_renderBack( TextItem * pText, GfxDevice * pDevice, const RectSPX& canvas );
 		void 			_renderBackSection( TextItem * pText, GfxDevice * pDevice, const RectSPX& canvas,
-											int begChar, int endChar, HiColor color );
+											int begChar, int endChar, Color color );
 
 		inline spx		_tabWidthSPX(spx whitespaceWidth, spx ofs) const
 		{
@@ -265,9 +265,9 @@ namespace wg
 		Caret_p			m_pCaret;
 		bool			m_bLineWrap = false;
 		bool			m_bReceivingUpdates = false;
-		HiColor			m_selectionBackColor;
+		Color			m_selectionBackColor;
 		BlendMode		m_selectionBackBlend;
-		HiColor			m_selectionCharColor;
+		Color			m_selectionCharColor;
 		BlendMode		m_selectionCharBlend;
 		float			m_hardLineSpacing = 1.f;
 		float			m_softLineSpacing = 1.f;

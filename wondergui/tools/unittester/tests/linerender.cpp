@@ -50,8 +50,8 @@ namespace
 {
 	const SizeI c_canvasSize = { 256, 256 };
 
-	const HiColor c_background = HiColor(800, 1500, 2600, 4096);
-	const HiColor c_lineColor = HiColor(4096, 3000, 1200, 3000);
+	const Color c_background = Color(800, 1500, 2600, 4096);
+	const Color c_lineColor = Color(4096, 3000, 1200, 3000);
 
 	enum class TestBackend
 	{
@@ -251,7 +251,7 @@ namespace
 
 	// Line from center cx, cy (pixels) at angle (degrees, clockwise from along x) and length.
 
-	void drawLineAt(GfxDevice* pDevice, double cx, double cy, double angle, double length, double thickness, LineCaps caps, HiColor color = c_lineColor)
+	void drawLineAt(GfxDevice* pDevice, double cx, double cy, double angle, double length, double thickness, LineCaps caps, Color color = c_lineColor)
 	{
 		double rad = angle * M_PI / 180;
 		double dx = std::cos(rad) * length / 2;
@@ -364,10 +364,10 @@ bool LineRenderTest::capsCommandTest(std::ostream& output)
 
 	pDevice->beginRender();
 	pDevice->beginCanvasUpdate(pCanvas);
-	pDevice->drawLine({ 64, 64 }, { 64 * 20, 64 * 8 }, Color8::Black, 64);
-	pDevice->drawLine({ 64, 64 }, { 64 * 20, 64 * 8 }, Color8::Black, 64, LineCap::Round);
-	pDevice->drawLine({ 64, 64 }, { 64 * 20, 64 * 8 }, Color8::Black, 64, { LineCap::Flat, LineCap::Spear(50) });
-	pDevice->drawLine({ 64 * 4, 64 * 4 }, Direction::Down, 64 * 10, Color8::Black, 128, LineCap::Square);
+	pDevice->drawLine({ 64, 64 }, { 64 * 20, 64 * 8 }, Color::Black, 64);
+	pDevice->drawLine({ 64, 64 }, { 64 * 20, 64 * 8 }, Color::Black, 64, LineCap::Round);
+	pDevice->drawLine({ 64, 64 }, { 64 * 20, 64 * 8 }, Color::Black, 64, { LineCap::Flat, LineCap::Spear(50) });
+	pDevice->drawLine({ 64 * 4, 64 * 4 }, Direction::Down, 64 * 10, Color::Black, 128, LineCap::Square);
 	pDevice->endCanvasUpdate();
 	pDevice->endRender();
 
@@ -528,10 +528,10 @@ bool LineRenderTest::tintTest(std::ostream& output)
 {
 	auto scene = [&](GfxDevice* pDevice)
 	{
-		pDevice->setTintColor(HiColor(3000, 4096, 2000, 3500));
+		pDevice->setTintColor(Color(3000, 4096, 2000, 3500));
 		capsScene(pDevice, 4.0, 20.0);
 
-		auto pTint = Tint::create(HiColor(4096, 1000, 1000, 4096), HiColor(1000, 1000, 4096, 2000), { 0.f, 0.f }, { 1.f, 1.f });
+		auto pTint = Tint::create(Color(4096, 1000, 1000, 4096), Color(1000, 1000, 4096, 2000), { 0.f, 0.f }, { 1.f, 1.f });
 		pDevice->setTint(RectSPX(64 * 20, 64 * 20, 64 * 200, 64 * 200), pTint);
 		drawLineAt(pDevice, 128.3, 128.6, 33.0, 180.0, 9.0, LineCap::Round);
 		drawLineAt(pDevice, 128.3, 128.6, 123.0, 180.0, 6.0, { LineCap::Spear(200), LineCap::Horizontal });

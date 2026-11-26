@@ -45,10 +45,10 @@ namespace wg
 
 		struct StateData
 		{
-			HiColor			color = HiColor::Undefined;
+			Color			color = Color::Undefined;
 			Coord			contentShift;
 
-			HiColor			outlineColor = HiColor::Undefined;
+			Color			outlineColor = Color::Undefined;
 			pts				outlineThickness = -1;
 
 			float			size = -1;
@@ -59,10 +59,10 @@ namespace wg
 		{
 			StateBP() {}
 			StateBP( State state, StateData data ) : state(state), data(data) {}
-			StateBP( State state, HiColor color ) : state(state) { data.color = color; }
+			StateBP( State state, Color color ) : state(state) { data.color = color; }
 			StateBP( State state, Coord contentShift ) : state(state)	{ data.contentShift = contentShift; }
 
-			StateBP( State state, HiColor color, HiColor outlineColor ) : state(state)
+			StateBP( State state, Color color, Color outlineColor ) : state(state)
 			{
 				data.color = color;
 				data.outlineColor = outlineColor;
@@ -76,7 +76,7 @@ namespace wg
 		{
 			BlendMode		blendMode = BlendMode::Blend;
 
-			HiColor			color = HiColor::White;
+			Color			color = Color::White;
 
 			// If set, the circle is drawn as edgemaps made by it, kept by the skin and only changed
 			// where needed. Faster where shapes are slow to draw, such as with SoftwareBackend.
@@ -90,7 +90,7 @@ namespace wg
 			int				layer = -1;
 			int				markAlpha = 1;
 
-			HiColor			outlineColor = HiColor::Black;
+			Color			outlineColor = Color::Black;
 			pts				outlineThickness = 0;
 			Border			overflow;
 			Border			padding;
@@ -130,7 +130,7 @@ namespace wg
 		CircleSkin( const Blueprint& blueprint );
 		~CircleSkin();
 
-		const HiColor& _getColor(State state) const
+		const Color& _getColor(State state) const
 		{
 			int idxTabEntry = (state.index() & m_colorIndexMask) >> m_colorIndexShift;
 			int entry = m_pColorIndexTab[idxTabEntry];
@@ -151,7 +151,7 @@ namespace wg
 			return m_pThickness[entry];
 		}
 
-		const HiColor& _getOutlineColor(State state) const
+		const Color& _getOutlineColor(State state) const
 		{
 			int idxTabEntry = (state.index() & m_outlineColorIndexMask) >> m_outlineColorIndexShift;
 			int entry = m_pOutlineColorIndexTab[idxTabEntry];
@@ -172,7 +172,7 @@ namespace wg
 		uint8_t		m_colorIndexMask;
 		uint8_t		m_colorIndexShift;
 		uint8_t*	m_pColorIndexTab;
-		HiColor*	m_pColors;
+		Color*	m_pColors;
 
 		uint8_t		m_sizeIndexMask;
 		uint8_t		m_sizeIndexShift;
@@ -192,7 +192,7 @@ namespace wg
 		uint8_t		m_outlineColorIndexMask;
 		uint8_t		m_outlineColorIndexShift;
 		uint8_t*	m_pOutlineColorIndexTab;
-		HiColor*	m_pOutlineColors;
+		Color*	m_pOutlineColors;
 
 		EdgemapFactory_p		m_pEdgemapFactory;
 		mutable EdgemapRing_p	m_pEdgemapRings[2];	// Kept between renders, so only changes are remade.

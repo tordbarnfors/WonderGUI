@@ -130,7 +130,7 @@ namespace wg
 
 	//____ setWireColor() ________________________________________________________
 
-	bool NodeWires::setWireColor( HiColor color )
+	bool NodeWires::setWireColor( Color color )
 	{
 		if( !color.isValid() )
 		{

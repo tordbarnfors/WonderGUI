@@ -71,8 +71,8 @@ namespace wg
 
 		//.____  Rendering ____________________________________________________
 
-		bool				fill(HiColor col) override;
-		bool				fill(const RectI& region, HiColor col ) override;
+		bool				fill(Color col) override;
+		bool				fill(const RectI& region, Color col ) override;
 
 //		bool				copy(CoordI dest, Surface* pSrcSurf, const RectI& srcRect) override;		//The default implementation should work through the CABI-wall ...
 //		bool				copy(CoordI dest, Surface* pSrcSurf) override;								//The default implementation should work through the CABI-wall ...

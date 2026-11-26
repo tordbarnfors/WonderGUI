@@ -87,7 +87,7 @@ public:
     void    ChangeText(std::string kStr);
     void    ChangeText(const char* kStr);
 
-    void	SetFixedBlendColor( wg::HiColor color );
+    void	SetFixedBlendColor( wg::Color color );
     void    StartRecieveTicks() {
         _startReceiveTicks();
     }
@@ -138,7 +138,7 @@ private:
     bool m_reachedEnd = false;
 
     wg::String			m_kStr;
-    wg::HiColor			m_fixedBlendColor = wg::HiColor::Undefined;
+    wg::Color			m_fixedBlendColor = wg::Color::Undefined;
 
     std::chrono::steady_clock::time_point m_kAnimTimeStart;
     std::chrono::steady_clock::time_point m_kAnimTimeStopDelay;

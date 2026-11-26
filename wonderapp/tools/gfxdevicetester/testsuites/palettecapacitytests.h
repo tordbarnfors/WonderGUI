@@ -69,7 +69,7 @@ public:
 
 		m_pA8Canvas = pFactory->createSurface(WGBP(Surface, _.size = canvas.size() / 64, _.format = PixelFormat::Alpha_8, _.canvas = true, _.sampleMethod = SampleMethod::Nearest));
 
-		m_pTint = Tint::create(HiColor(Color8(255, 255, 255, 255)), HiColor(Color8(255, 64, 0, 200)), { 0.f, 0.f }, { 1.f, 1.f });
+		m_pTint = Tint::create(Color(Color8(255, 255, 255, 255)), Color(Color8(255, 64, 0, 200)), { 0.f, 0.f }, { 1.f, 1.f });
 		m_pBrush = Blurbrush::create();
 		return true;
 	}
@@ -104,14 +104,14 @@ private:
 	bool _test(GfxDevice * pDevice, const RectSPX& canvas, int setup, bool bA8Canvas)
 	{
 		pDevice->setBlendMode(BlendMode::Replace);
-		pDevice->fill(canvas, HiColor(Color8(40, 40, 40, 255)));
+		pDevice->fill(canvas, Color(Color8(40, 40, 40, 255)));
 		pDevice->setBlendMode(BlendMode::Blend);
 
 		if (bA8Canvas)
 		{
 			pDevice->beginCanvasUpdate(m_pA8Canvas);
 			pDevice->setBlendMode(BlendMode::Replace);
-			pDevice->fill(HiColor(Color8(0, 0, 0, 30)));
+			pDevice->fill(Color(Color8(0, 0, 0, 30)));
 			pDevice->setBlendMode(BlendMode::Blend);
 		}
 
@@ -121,7 +121,7 @@ private:
 		if (bA8Canvas)
 		{
 			pDevice->endCanvasUpdate();
-			pDevice->setTintColor(HiColor(Color8(255, 220, 120, 255)));
+			pDevice->setTintColor(Color(Color8(255, 220, 120, 255)));
 			pDevice->setBlitSource(m_pA8Canvas);
 			pDevice->blit({ 0, 0 });
 			pDevice->clearTintColor();

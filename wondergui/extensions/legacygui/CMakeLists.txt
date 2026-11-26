@@ -33,6 +33,7 @@ set( SOURCES
 	wg2_chart2.h
 	wg2_checkbox.cpp
 	wg2_checkbox.h
+	wg2_color.cpp
 	wg2_color.h
 	wg2_colorset.cpp
 	wg2_colorset.h

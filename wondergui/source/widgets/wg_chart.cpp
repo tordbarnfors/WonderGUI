@@ -203,7 +203,7 @@ namespace wg
 
 			pDevice->beginCanvasUpdate(m_pChartCanvas);
 			pDevice->setBlendMode(BlendMode::Replace);
-			pDevice->fill(HiColor::Transparent);
+			pDevice->fill(Color::Transparent);
 			pDevice->setBlendMode(BlendMode::Blend);
 			_renderCharts( pDevice, graphCanvas.size() );
 			pDevice->endCanvasUpdate();
@@ -284,7 +284,7 @@ namespace wg
 					CoordSPX pos = canvas.pos();
 					pos.y += (line.m_pos - m_displayCeiling) * valueFactor;
 
-					HiColor color = line.m_color == HiColor::Undefined ? m_gridColor : line.m_color;
+					Color color = line.m_color == Color::Undefined ? m_gridColor : line.m_color;
 					pts thickness = line.m_thickness > 0 ? line.m_thickness : m_gridThickness;
 
 					pDevice->drawLine(pos, Direction::Right, canvas.w, color, thickness * m_scale);
@@ -302,7 +302,7 @@ namespace wg
 					CoordSPX pos = canvas.pos();
 					pos.x += line.m_pos * canvas.w;
 
-					HiColor color = line.m_color == HiColor::Undefined ? m_gridColor : line.m_color;
+					Color color = line.m_color == Color::Undefined ? m_gridColor : line.m_color;
 					pts thickness = line.m_thickness > 0 ? line.m_thickness : m_gridThickness;
 
 					pDevice->drawLine(pos, Direction::Down, canvas.h, color, thickness * m_scale);

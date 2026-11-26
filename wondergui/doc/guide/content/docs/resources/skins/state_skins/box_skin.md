@@ -23,21 +23,21 @@ Rounded corners are drawn with subpixel precision and antialiased, so a rounded 
 
 ```c++
 auto pBoxSkin1 = BoxSkin::create({ 
-  .color = Color8::White, 
+  .color = Color::White, 
   .outlineThickness = 2,
-  .outlineColor = Color8::Pink });
+  .outlineColor = Color::Pink });
 
 auto pBoxSkin2 = BoxSkin::create({
   .outlineThickness = 2,
-  .states ={{ State::Default, { .color = Color8::Green, 
-                                .outlineColor = Color8::DarkGreen }},
-            { State::Hovered, { .color = Color8::Yellow, 
-                                .outlineColor = Color8::DarkYellow }},
-            { State::Pressed, { .color = Color8::Red, 
+  .states ={{ State::Default, { .color = Color::Green, 
+                                .outlineColor = Color::DarkGreen }},
+            { State::Hovered, { .color = Color::Yellow, 
+                                .outlineColor = Color::Olive }},
+            { State::Pressed, { .color = Color::Red, 
                                .contentShift = { 1, 1 }, 
-                               .outlineColor = Color8::DarkRed }},
-            { State::Disabled, { .color = Color8::Gray, 
-                                 .outlineColor = Color8::DarkGray }}
+                               .outlineColor = Color::DarkRed }},
+            { State::Disabled, { .color = Color::Gray, 
+                                 .outlineColor = Color::DarkGray }}
 });
 
 ```
@@ -46,24 +46,24 @@ A button with rounded corners, a thicker outline to the right and below for a hi
 
 ```c++
 auto pButtonSkin = BoxSkin::create({
-  .color = Color8::LightBlue,
+  .color = Color::LightBlue,
   .cornerRadius = 6,
-  .outlineColor = Color8::DarkBlue,
+  .outlineColor = Color::DarkBlue,
   .outlineThickness = { 1, 2, 2, 1 } });
 ```
 
 There are shorthand versions for creating a skin with all parameters (+ optional padding) and states with color and outline color:
 
 ```c++
-auto pBoxSkin1 = BoxSkin::create( 2, Color8::White, Color8::Pink );
+auto pBoxSkin1 = BoxSkin::create( 2, Color::White, Color::Pink );
 
 auto pBoxSkin2 = BoxSkin::create({
   .outlineThickness = 2,
-  .states ={{ State::Default, Color8::Green, Color8::DarkGreen },
-            { State::Hovered, Color8::Yellow, Color8::DarkYellow },
-            { State::Pressed, {.color = Color8::Red, 
+  .states ={{ State::Default, Color::Green, Color::DarkGreen },
+            { State::Hovered, Color::Yellow, Color::Olive },
+            { State::Pressed, {.color = Color::Red, 
                                .contentShift = { 1, 1 }, 
-                               .outlineColor = Color8::DarkRed }},
-            { State::Disabled,Color8::Gray, Color8::DarkGray }
+                               .outlineColor = Color::DarkRed }},
+            { State::Disabled,Color::Gray, Color::DarkGray }
 });
 ```

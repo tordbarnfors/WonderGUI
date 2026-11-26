@@ -237,13 +237,13 @@ void wax_freePixelBuffer(wax_obj surface, const wax_pixelBuffer* buffer)
 
 int wax_fillSurface(wax_obj surface, wax_color color)
 {
-	return getPtr(surface)->fill(*(HiColor*)&color);
+	return getPtr(surface)->fill(*(Color*)&color);
 }
 
 
 int wax_fillSurfaceRect(wax_obj surface, const wax_rectI* region, wax_color color )
 {
-	return getPtr(surface)->fill( * (const RectI*) region, * (HiColor*)&color);
+	return getPtr(surface)->fill( * (const RectI*) region, * (Color*)&color);
 }
 
 

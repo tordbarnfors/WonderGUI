@@ -557,7 +557,7 @@ namespace wg
 
 	//____ AreaScrollChartEntry::setColors() _________________________________
 
-	bool AreaScrollChartEntry::setColors(HiColor fill, HiColor outline, ColorTransition* pTransition)
+	bool AreaScrollChartEntry::setColors(Color fill, Color outline, ColorTransition* pTransition)
 	{
 		if (!fill.isValid() || !outline.isValid())
 			return false;

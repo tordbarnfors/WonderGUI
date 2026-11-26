@@ -257,7 +257,7 @@ private:
 	bool			m_bStaticMode = false;
 	int				m_fadeTailLength = 16;		// Pixels of "fade out tail" if m_bScrolling == false.
 	
-	wg::Tint_p		m_pFadeTailTint = wg::Tint::create( wg::HiColor(4096, 4096, 4096, 0), wg::HiColor::White, { 0.f, 0.f }, { 1.f, 0.f } );	// Transparent to opaque, left to right.
+	wg::Tint_p		m_pFadeTailTint = wg::Tint::create( wg::Color(4096, 4096, 4096, 0), wg::Color::White, { 0.f, 0.f }, { 1.f, 0.f } );	// Transparent to opaque, left to right.
 
 	
 	std::vector<Wave>		m_waves;

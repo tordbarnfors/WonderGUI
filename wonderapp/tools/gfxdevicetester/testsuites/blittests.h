@@ -78,13 +78,13 @@ public:
 	bool setAlphaOnlyWithTint(GfxDevice * pDevice, const RectI& canvas)
 	{
 		pDevice->setBlitSource(m_pAlphaOnly);
-		pDevice->setTintColor( Color8::DarkBlue );
+		pDevice->setTintColor( Color::DarkBlue );
 		return true;
 	}
 
 	bool resetTint(GfxDevice * pDevice, const RectI& canvas)
 	{
-		pDevice->setTintColor( Color8::White );
+		pDevice->setTintColor( Color::White );
 		return true;
 	}
 

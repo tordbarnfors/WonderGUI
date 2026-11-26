@@ -150,7 +150,7 @@ namespace wg
 
 	//____ setSeedTint() ________________________________________________
 
-	void Glow::setSeedTint(HiColor tint)
+	void Glow::setSeedTint(Color tint)
 	{
 		m_seedTint = tint;
 	}
@@ -164,7 +164,7 @@ namespace wg
 
 	//____ setGlowTint() ______________________________________________
 
-	void Glow::setGlowTint(HiColor tint)
+	void Glow::setGlowTint(Color tint)
 	{
 		m_glowTint = tint;
 	}
@@ -249,7 +249,7 @@ namespace wg
 		{
 			m_surface[1] = _createGlowCanvas(pDevice->surfaceFactory(), colorSpace);
 			pDevice->beginCanvasUpdate(m_surface[1]);
-			pDevice->fill(HiColor::Black);
+			pDevice->fill(Color::Black);
 			pDevice->endCanvasUpdate();
 
 			if (m_surface[0] == nullptr)
@@ -262,7 +262,7 @@ namespace wg
 			else
 			{
 				pDevice->beginCanvasUpdate(m_surface[1]);
-				pDevice->fill(Color8::Black);
+				pDevice->fill(Color::Black);
 
 				pDevice->setBlitSource(m_surface[0]);
 				SizeSPX destSize = (m_surface[1]->pixelSize() * 64) - SizeSPX(128, 128);
@@ -283,7 +283,7 @@ namespace wg
 
 				m_surface[0] = _createGlowCanvas(pDevice->surfaceFactory(), colorSpace);
 				pDevice->beginCanvasUpdate(m_surface[0]);
-				pDevice->fill(HiColor::Black);
+				pDevice->fill(Color::Black);
 				pDevice->endCanvasUpdate();
 
 				std::swap(m_surface[0], m_surface[1]);
@@ -295,7 +295,7 @@ namespace wg
 		if (m_bClear)
 		{
 			pDevice->beginCanvasUpdate(m_surface[0]);
-			pDevice->fill(HiColor::Black);
+			pDevice->fill(Color::Black);
 			pDevice->endCanvasUpdate();
 
 			m_bClear = false;
@@ -343,7 +343,7 @@ namespace wg
 		// Blit to destination, first updated blur, then local canvas.
 
 		BlendMode bm = pDevice->blendMode();
-		HiColor c = pDevice->tintColor();
+		Color c = pDevice->tintColor();
 
 		pDevice->setBlendMode(m_glowBlend);
 		pDevice->setTintColor(m_glowTint);

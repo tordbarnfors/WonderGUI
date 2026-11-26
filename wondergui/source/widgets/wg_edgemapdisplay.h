@@ -88,7 +88,7 @@ namespace wg
 		void		setEdgemapPlacement(Placement placement);
 		Placement	edgemapPlacement() const { return m_placement;  }
 
-		//		void		setGrid(int x, int y, HiColor color, float thickness);
+		//		void		setGrid(int x, int y, Color color, float thickness);
 
 
 		//.____ Internal ____________________________________________

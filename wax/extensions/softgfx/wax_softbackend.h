@@ -96,7 +96,7 @@ namespace wax
 		void	setObjects(Object* const * pBeg, Object* const * pEnd) override;
 
 		void	setRects(const RectSPX * pBeg, const RectSPX * pEnd) override;
-		void	setColors(const HiColor * pBeg, const HiColor * pEnd) override;
+		void	setColors(const Color * pBeg, const Color * pEnd) override;
 		void	setTransforms(const Transform * pBeg, const Transform * pEnd) override;
 
 		void	processCommands( const uint16_t* pBeg, const uint16_t * pEnd, int version) override;
@@ -144,7 +144,7 @@ namespace wax
 		{
 			TintMode	mode;
 
-			HiColor		flatTintColor;	// Used in TintMode::Color
+			Color		flatTintColor;	// Used in TintMode::Color
 
 			bool		bTintOpaque;	// Set if the tint is opaque.
 
@@ -152,14 +152,14 @@ namespace wax
 
 			RectI		tintRect;
 
-			const HiColor*	pTintAxisX;
-			const HiColor*	pTintAxisY;
+			const Color*	pTintAxisX;
+			const Color*	pTintAxisY;
 
 			// Other values we also store here
 
 			int			morphFactor;	// Scale: 0 -> 4096
 
-			HiColor		fixedBlendColor;
+			Color		fixedBlendColor;
 
 			int			blurMtxR[9];
 			int			blurMtxG[9];
@@ -191,12 +191,12 @@ namespace wax
 
 		using CoveragePixel = SoftShapes::CoveragePixel;
 
-		typedef	void(*LineOp_p)(uint8_t* pRow, int rowInc, int pixelInc, int length, int width, int pos, int slope, HiColor color, const ColTrans& tint, CoordI patchPos);
-		typedef	void(*ClipLineOp_p)(int clipStart, int clipEnd, uint8_t* pRow, int rowInc, int pixelInc, int length, int width, int pos, int slope, HiColor color, const ColTrans& tint, CoordI patchPos);
-		typedef	void(*FillOp_p)(uint8_t* pDst, int pitchX, int pitchY, int nLines, int lineLength, HiColor col, const ColTrans& tint, CoordI patchPos);
+		typedef	void(*LineOp_p)(uint8_t* pRow, int rowInc, int pixelInc, int length, int width, int pos, int slope, Color color, const ColTrans& tint, CoordI patchPos);
+		typedef	void(*ClipLineOp_p)(int clipStart, int clipEnd, uint8_t* pRow, int rowInc, int pixelInc, int length, int width, int pos, int slope, Color color, const ColTrans& tint, CoordI patchPos);
+		typedef	void(*FillOp_p)(uint8_t* pDst, int pitchX, int pitchY, int nLines, int lineLength, Color col, const ColTrans& tint, CoordI patchPos);
 		typedef	void(*StraightBlitOp_p)(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const Pitches& pitches, int nLines, int lineLength, const ColTrans& tint, CoordI patchPos, const Transform * pMatrix);
 		typedef	void(*TransformBlitOp_p)(const SoftSurface* pSrcSurf, BinalCoord pos, const binalInt matrix[2][2], uint8_t* pDst, int dstPitchX, int dstPitchY, int nLines, int lineLength, const ColTrans& tint, CoordI patchPos);
-		typedef void(*SegmentOp_p)(int clipBeg, int clipEnd, uint8_t* pStripStart, int pixelPitch, int nEdges, SegmentEdge* pEdges, const int16_t* pSegmentColors, const HiColor * pSegmentTintmap, int segmentTintmapPitch, const bool* pTransparentSegments, const bool* pOpaqueSegments, const ColTrans& tint);
+		typedef void(*SegmentOp_p)(int clipBeg, int clipEnd, uint8_t* pStripStart, int pixelPitch, int nEdges, SegmentEdge* pEdges, const int16_t* pSegmentColors, const Color * pSegmentTintmap, int segmentTintmapPitch, const bool* pTransparentSegments, const bool* pOpaqueSegments, const ColTrans& tint);
 		typedef void(*CoverageOp_p)(uint8_t* pDst, int pixelPitch, int length, const CoveragePixel* pPixels, const ColTrans& tint);
 
 		alignas(kCacheLineSize) static const int16_t s_channel_5_linear[32];
@@ -262,19 +262,19 @@ namespace wax
 			General			// Tint varies in both directions. Drawn row by row with TintMode::GradientX.
 		};
 
-		void	_setTintColor(HiColor color);
-		const uint16_t* _setTint(const uint16_t* p, const HiColor*& pColors);
+		void	_setTintColor(Color color);
+		const uint16_t* _setTint(const uint16_t* p, const Color*& pColors);
 		void	_updateTint();
-		inline void	_generateTintRow(int x, int y, int length, HiColor* pOutput) { m_softTint.generate(x, y, 1, 0, length, pOutput); }
-		HiColor* _tintRowBuffer(int length);
+		inline void	_generateTintRow(int x, int y, int length, Color* pOutput) { m_softTint.generate(x, y, 1, 0, length, pOutput); }
+		Color* _tintRowBuffer(int length);
 
 		// Edgemap tinting, shared with LinearBackend.
 
 		struct EdgemapTinting
 		{
 			bool		bPerPixel;					// Colors per pixel (StripSource::Tintmaps), otherwise flat colors per segment (StripSource::Colors).
-			HiColor*	pColumns;					// Per segment: one column of colors, indexed by edgemap row.
-			HiColor*	pGlobal;					// One column of device tint colors.
+			Color*	pColumns;					// Per segment: one column of colors, indexed by edgemap row.
+			Color*	pGlobal;					// One column of device tint colors.
 			int			pitch;						// Colors between segments in pColumns.
 			int			bufferBytes;				// Allocated from memStack.
 			bool		bColumnInvariant;			// Colors are the same for every column, pColumns only needs to be generated once.
@@ -319,7 +319,7 @@ namespace wax
 
 			FillOp_p	pFillOp;				// Fully covered runs, if tint is flat. Device tint applied by kernel.
 			bool		bFillRuns;				// pFillOp draws runs of device tint colors.
-			HiColor		fillColor;				// Color for pFillOp.
+			Color		fillColor;				// Color for pFillOp.
 			int16_t		mix[4];					// Color with tints as b, g, r, a for coverage pixels, colors weighted by alpha. If bFlat.
 		};
 
@@ -336,19 +336,19 @@ namespace wax
 			int				rowEnd;				// Row below the clip rectangle.
 		};
 
-		bool	_beginShape(Backend::ShapeKind kind, const uint16_t* pPayload, const HiColor* pColors);
-		void	_setupShapeSegment(ShapeSegment& seg, bool bActive, HiColor color, bool bTint, const uint16_t*& pTintWords, const HiColor*& pTintColors);
+		bool	_beginShape(Backend::ShapeKind kind, const uint16_t* pPayload, const Color* pColors);
+		void	_setupShapeSegment(ShapeSegment& seg, bool bActive, Color color, bool bTint, const uint16_t*& pTintWords, const Color*& pTintColors);
 		void	_drawShape(const RectI& clip, uint8_t* pOrigin, int pitch);
 		void	_drawShapeRuns(uint8_t* pOrigin, int pitch, int yBeg, int yEnd, int nRuns, const SoftShapes::Run* pRuns, const CoveragePixel* pPixels, int prefetchRow);
-		void	_shapeSegmentColors(int segment, int x, int y, int length, HiColor* pOutput);
-		HiColor* _shapeBuffer(int index, int length);
+		void	_shapeSegmentColors(int segment, int x, int y, int length, Color* pOutput);
+		Color* _shapeBuffer(int index, int length);
 
 		bool	_fadeByCoverage(BlendMode mode, bool bOpaqueSource) const;
-		static CoveragePixel _coveragePixel(const HiColor& color, int coverage);
+		static CoveragePixel _coveragePixel(const Color& color, int coverage);
 		static binalInt	_transformStep(float step);
-		void	_drawCoverageEdge(CoverageOp_p pOp, const RectI& rect, int coverage, HiColor color, uint8_t* pOrigin, int pitch);
+		void	_drawCoverageEdge(CoverageOp_p pOp, const RectI& rect, int coverage, Color color, uint8_t* pOrigin, int pitch);
 		void	_drawTintedLine(CoverageOp_p pOp, bool bHorizontal, int majorBeg, int length, int width, int pos, int slope,
-								int clipStart, int clipEnd, HiColor color, uint8_t* pOrigin, int pitch);
+								int clipStart, int clipEnd, Color color, uint8_t* pOrigin, int pitch);
 
 		int		_scaleLineThickness(float thickness, int slope);
 
@@ -357,7 +357,7 @@ namespace wax
 		// is at pOrigin + y * pitch + x * m_canvasPixelBytes. Whole columns between the ends are
 		// drawn by the line kernels, the parts around the ends as shapes, see SoftShapes::prepareLine().
 
-		bool	_beginCappedLine(CoordSPX begin, CoordSPX end, spx thickness, LineCaps caps, HiColor color);
+		bool	_beginCappedLine(CoordSPX begin, CoordSPX end, spx thickness, LineCaps caps, Color color);
 		void	_drawCappedLine(const RectI& clip, uint8_t* pOrigin, int pitch);
 
 		// Warps (Command::WarpBlit and WarpDrawEdgemap), shared with LinearBackend. _beginWarp()
@@ -429,7 +429,7 @@ namespace wax
 			bool			bTinted[c_maxSegments];		// Colors from segment tint, otherwise mix.
 			bool			bSkip[c_maxSegments];		// Transparent segment that can be skipped.
 			int16_t			mix[c_maxSegments][4];		// Flat color as b, g, r, a weighted by alpha. Device tint included if flat.
-			HiColor			flat[c_maxSegments];		// Flat color of segment, without device tint.
+			Color			flat[c_maxSegments];		// Flat color of segment, without device tint.
 
 			bool			bOpaquePaint;		// Replace or Morph onto canvas without alpha, see _beginWarp().
 			int				opaqueMorph;		// Morph factor for bOpaquePaint, 4096 for Replace.
@@ -441,7 +441,7 @@ namespace wax
 			int64_t			readMax[2];			// source rectangle, in kernel positions (relative to pixel centers if bilinear).
 			bool			bBilinear;
 			bool			bTileRead;			// Surface is tiling, read with ReadOp::Tile.
-			TransformBlitOp_p	pReadOp;		// Reads into a HiColor buffer.
+			TransformBlitOp_p	pReadOp;		// Reads into a Color buffer.
 			TransformBlitOp_p	pDirectOp;		// Draws straight onto the canvas, for cells inside the source. Null if not usable, see _beginWarp().
 		};
 
@@ -460,11 +460,11 @@ namespace wax
 		int		_warpAxisCoverage(int axis, int64_t s, int64_t gx, int64_t gy) const;
 		void			_warpInsideRange( const WarpSpan& span, const int64_t * pos, int length, int& insideBeg, int& insideEnd ) const;
 		int		_warpEdgemapCoverage(int64_t sx, int64_t sy, int64_t ax, int64_t bx, int64_t ay, int64_t by, int* pCoverage, int& solidSegment) const;
-		void	_warpTintSpan(const SoftTint& tint, int64_t x, int64_t y, int64_t dx, int64_t dy, int length, HiColor* pOutput);
-		bool	_warpReadSpan(int64_t x, int64_t y, int64_t dx, int64_t dy, int length, HiColor* pOutput, const int* pCoverage,
+		void	_warpTintSpan(const SoftTint& tint, int64_t x, int64_t y, int64_t dx, int64_t dy, int length, Color* pOutput);
+		bool	_warpReadSpan(int64_t x, int64_t y, int64_t dx, int64_t dy, int length, Color* pOutput, const int* pCoverage,
 								  uint8_t* pDirect = nullptr, CoordI directPos = { 0,0 }, uint8_t* pDrawn = nullptr);
 		int		_warpOpaqueAlpha(int a) const;
-		HiColor* _warpBuffer(int index, int length);
+		Color* _warpBuffer(int index, int length);
 
 
 
@@ -482,9 +482,9 @@ namespace wax
 		const RectSPX *		m_pRectsEnd = nullptr;
 		const RectSPX *		m_pRectsPtr = nullptr;
 
-		const HiColor*		m_pColorsBeg = nullptr;
-		const HiColor*		m_pColorsEnd = nullptr;
-		const HiColor*		m_pColorsPtr = nullptr;
+		const Color*		m_pColorsBeg = nullptr;
+		const Color*		m_pColorsEnd = nullptr;
+		const Color*		m_pColorsPtr = nullptr;
 
 		const Transform *	m_pTransformsBeg = nullptr;
 		const Transform *	m_pTransformsEnd = nullptr;
@@ -511,11 +511,11 @@ namespace wax
 
 		// Tint
 
-		HiColor				m_tintColor = HiColor::White;		// Flat tint color (StateChange::TintColor).
+		Color				m_tintColor = Color::White;		// Flat tint color (StateChange::TintColor).
 		TintTools::DecodedTint	m_tint;							// Current Tint (StateChange::Tint), nLayers == 0 if none.
 		SoftTint			m_softTint;							// Tint and tint color combined, prepared for rendering.
 		TintLayout			m_tintLayout = TintLayout::None;
-		std::vector<HiColor>	m_tintRow;
+		std::vector<Color>	m_tintRow;
 		bool				m_bBlitTintRuns = false;			// Blits need to use runs with Flat kernels, GradientX kernels missing.
 
 		// Shapes
@@ -526,7 +526,7 @@ namespace wax
 		std::vector<uint32_t>		m_ringSliceSizes;
 		Backend::ShapeKind		m_shapeKind;
 		std::vector<ShapeSegment>	m_shapeSegments;
-		std::vector<HiColor>		m_shapeBuffers[2];				// Colors of a segment (0) and the device tint (1) along a row.
+		std::vector<Color>		m_shapeBuffers[2];				// Colors of a segment (0) and the device tint (1) along a row.
 		std::vector<std::vector<int16_t>>	m_shapeMixBuffers;		// Colors of segments that aren't flat, for coverage pixels.
 		std::vector<CoveragePixel>	m_coverageColumn;
 		std::vector<CoveragePixel>	m_coverageEdge;					// Edge of a fill or span of a tinted line, see _drawCoverageEdge().
@@ -537,8 +537,8 @@ namespace wax
 		SoftShapes::LineParts		m_lineParts;
 		ClipLineOp_p				m_pLineOp = nullptr;			// Body of line, unless tinted...
 		CoverageOp_p				m_pTintedLineOp = nullptr;		// ...by a Tint.
-		HiColor						m_lineColor;					// Linear, with tint color for m_pLineOp.
-		HiColor						m_tintedLineColor;				// Linear, for m_pTintedLineOp.
+		Color						m_lineColor;					// Linear, with tint color for m_pLineOp.
+		Color						m_tintedLineColor;				// Linear, for m_pTintedLineOp.
 
 		// Warps
 
@@ -562,7 +562,7 @@ namespace wax
 		std::vector<CoveragePixel>	m_warpPixels;
 		std::vector<int>			m_warpCoverage;
 		std::vector<uint8_t>		m_warpDrawn;						// Pixels of a span drawn by WarpSetup::pDirectOp.
-		std::vector<HiColor>		m_warpBuffers[c_maxSegments + 2];	// Colors of segments, then source or device tint.
+		std::vector<Color>		m_warpBuffers[c_maxSegments + 2];	// Colors of segments, then source or device tint.
 
 
 //		PixelBuffer		m_canvasPixelBuffer;
@@ -683,7 +683,7 @@ namespace wax
 
 		// Draws one row of tint colors (already in buffer) as runs of same color with Flat kernels.
 
-		auto drawRuns = [&](const HiColor* pRow, int y, int h)
+		auto drawRuns = [&](const Color* pRow, int y, int h)
 		{
 			int i = 0;
 			while (i < rect.w)
@@ -706,7 +706,7 @@ namespace wax
 
 			case TintLayout::Horizontal:
 			{
-				HiColor* pRow = _tintRowBuffer(rect.w);
+				Color* pRow = _tintRowBuffer(rect.w);
 				_generateTintRow(rect.x, rect.y, rect.w, pRow);
 
 				if (bRuns)
@@ -724,7 +724,7 @@ namespace wax
 			{
 				// Rows with same color are drawn together.
 
-				HiColor* pCol = _tintRowBuffer(rect.h);
+				Color* pCol = _tintRowBuffer(rect.h);
 				for (int i = 0; i < rect.h; i++)
 					_generateTintRow(rect.x, rect.y + i, 1, pCol + i);
 
@@ -744,7 +744,7 @@ namespace wax
 
 			case TintLayout::General:
 			{
-				HiColor* pRow = _tintRowBuffer(rect.w);
+				Color* pRow = _tintRowBuffer(rect.w);
 
 				for (int y = rect.y; y < rect.y + rect.h; y++)
 				{

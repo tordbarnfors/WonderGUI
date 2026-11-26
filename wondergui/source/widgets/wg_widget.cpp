@@ -489,7 +489,7 @@ namespace wg
 
 		pDevice->beginCanvasUpdate(pCanvas);
 		pDevice->setBlendMode(wg::BlendMode::Replace);
-		pDevice->fill( HiColor::Transparent );
+		pDevice->fill( Color::Transparent );
 		pDevice->setBlendMode(wg::BlendMode::Blend);
 		_render(pDevice, geoWithOffset, geoWithOffset);
 		pDevice->endCanvasUpdate();

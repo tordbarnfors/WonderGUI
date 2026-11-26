@@ -59,7 +59,7 @@ namespace wg
 		DrawerPanel_p	m_pWireColorDrawer;
 		DrawerPanel_p	m_pAnchorInsetDrawer;
 
-		HiColor			m_displayedWireColor;
+		Color			m_displayedWireColor;
 		Border			m_displayedAnchorInset;
 	};
 

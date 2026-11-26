@@ -77,9 +77,9 @@ namespace wg
 			Placement	placement			= Placement::NorthWest;
 			TextStyle_p	quote;										// > Block quote
 			BlendMode	selectionBackBlend	= BlendMode::Invert;
-			HiColor		selectionBackColor	= HiColor::White;
+			Color		selectionBackColor	= Color::White;
 			BlendMode	selectionCharBlend	= BlendMode::Invert;
-			HiColor		selectionCharColor	= HiColor::White;
+			Color		selectionCharColor	= Color::White;
 			bool		showMarkup			= false;				// Display source with visible markers, for editing.
 			TextStyle_p	strikethrough;								// ~~strikethrough~~, typically with TextDecoration::Strikethrough.
 			TextStyle_p	strong;										// **strong**

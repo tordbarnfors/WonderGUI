@@ -37,7 +37,7 @@ inline Tint* getPtr(wax_obj obj) {
 
 static_assert( sizeof(wax_colorStop) == sizeof(ColorStop) && offsetof(wax_colorStop, color) == offsetof(ColorStop, color),
 			   "wax_colorStop must be binary equivalent to ColorStop." );
-static_assert( sizeof(wax_color) == sizeof(HiColor), "wax_color must be binary equivalent to HiColor." );
+static_assert( sizeof(wax_color) == sizeof(Color), "wax_color must be binary equivalent to Color." );
 
 wax_tintBP wax_defaultTintBP()
 {
@@ -68,7 +68,7 @@ wax_obj wax_createTint( const wax_tintBP* pBP )
 	bp.spread = (TintSpread) pBP->spread;
 
 	for( int i = 0 ; i < pBP->nbStops ; i++ )
-		bp.stops.push_back( { pBP->stops[i].pos, * reinterpret_cast<const HiColor*>(&pBP->stops[i].color) } );
+		bp.stops.push_back( { pBP->stops[i].pos, * reinterpret_cast<const Color*>(&pBP->stops[i].color) } );
 
 	auto pTint = Tint::create(bp);
 	if( !pTint )
@@ -163,7 +163,7 @@ float wax_tintMixWeight( wax_obj tint, int index )
 
 wax_color wax_tintColorAt( wax_obj tint, wax_coordSPX pos, const wax_rectSPX* pRect )
 {
-	HiColor col = getPtr(tint)->colorAt( { pos.x, pos.y }, * reinterpret_cast<const RectSPX*>(pRect) );
+	Color col = getPtr(tint)->colorAt( { pos.x, pos.y }, * reinterpret_cast<const RectSPX*>(pRect) );
 	return * reinterpret_cast<wax_color*>(&col);
 }
 

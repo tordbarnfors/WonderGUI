@@ -103,7 +103,7 @@ namespace wg
 	//____ wax_color.h _____________________________________________________________
 
 	using wax::Color8;
-	using wax::HiColor;
+	using wax::Color;
 
 	//____ wax_componentptr.h ______________________________________________________
 

@@ -108,7 +108,7 @@ namespace wg
 		Coord	stateShifts[State::NbStates];
 
 		State	colorStates[State::NbStates];
-		HiColor stateColors[State::NbStates];
+		Color stateColors[State::NbStates];
 
 		State	blockStates[State::NbStates];
 		Coord	stateBlocks[State::NbStates];
@@ -147,7 +147,7 @@ namespace wg
 				blockStates[index] = stateInfo.state;
 			}
 
-			if(stateInfo.data.color != HiColor::Undefined )
+			if(stateInfo.data.color != Color::Undefined )
 			{
 				int index = stateInfo.state == State::Default ? 0 : nbColorStates++;
 				colorStates[index] = stateInfo.state;
@@ -168,7 +168,7 @@ namespace wg
 
 		int shiftBytes 		= _bytesNeededForContentShiftData(nbShiftingStates, shiftingStates);
 		int blockBytes		= sizeof(Coord) * nbBlockStates;
-		int colorBytes		= sizeof(HiColor) * nbColorStates;
+		int colorBytes		= sizeof(Color) * nbColorStates;
 		int indexBytes		= blockIndexEntries+colorIndexEntries;
 
 		// Allocate and pupulate memory for state data
@@ -190,7 +190,7 @@ namespace wg
 		m_pBlocks = pBlocks;
 		pDest += blockBytes;
 
-		auto pColors = (HiColor*) pDest;
+		auto pColors = (Color*) pDest;
 		for( int i = 0 ; i < nbColorStates ; i++ )
 			pColors[i] = stateColors[i];
 

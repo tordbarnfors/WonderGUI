@@ -71,7 +71,7 @@ namespace wax
 	 *
 	 **/
 
-	bool Surface::fill( HiColor color )
+	bool Surface::fill( Color color )
 	{
 		return fill(RectI(0, 0, pixelSize()), color );
 	}
@@ -91,7 +91,7 @@ namespace wax
 	 * pixel value most closely resembling the one specified.
 	 *
 	 **/
-	bool Surface::fill(const RectI& region, HiColor color  )
+	bool Surface::fill(const RectI& region, Color color  )
 	{
 		auto pixbuf = allocPixelBuffer(region);
 
@@ -364,7 +364,7 @@ namespace wax
 
 		uint8_t alpha;
 		if( PixelTools::extractAlphaChannel(buffer.format, buffer.bigEndian, buffer.pixels, buffer.pitch, { coord, 1, 1 }, &alpha, 1, buffer.palette) )
-			return HiColor::unpackLinearTab[alpha];
+			return Color::unpackLinearTab[alpha];
 
 		return 4096;
 	}

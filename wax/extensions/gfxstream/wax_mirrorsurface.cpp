@@ -68,7 +68,7 @@ namespace wax
 		if( blueprint.canvasRef == CanvasRef::None )
 		{
 			m_surfaceId = m_pEncoder->allocObjectId();
-			_sendCreateSurface( blueprint.streamOnCreate ? HiColor::Undefined : blueprint.fillColor );
+			_sendCreateSurface( blueprint.streamOnCreate ? Color::Undefined : blueprint.fillColor );
 		}
 
 		if (blueprint.streamOnCreate )
@@ -143,12 +143,12 @@ namespace wax
 
 	//____ fill() ____________________________________________________________
 
-	bool MirrorSurface::fill(HiColor col)
+	bool MirrorSurface::fill(Color col)
 	{
 		return m_pSurface->fill(col);
 	}
 
-	bool MirrorSurface::fill(const RectI& region, HiColor col)
+	bool MirrorSurface::fill(const RectI& region, Color col)
 	{
 		return m_pSurface->fill(region, col);
 	}
@@ -168,7 +168,7 @@ namespace wax
 	// A fill color makes the other end fill its surface as ours was when created, which
 	// saves sending the pixels. Undefined when the pixels follow.
 
-	void MirrorSurface::_sendCreateSurface( HiColor fillColor )
+	void MirrorSurface::_sendCreateSurface( Color fillColor )
 	{
 		StreamEncoder& encoder = * m_pEncoder;
 

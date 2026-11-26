@@ -23,9 +23,9 @@ public:
 
 	bool init(GfxDevice * pDevice, const RectI& canvas, wapp::API * pAppAPI)
 	{
-		m_pVerticalTint = Tint::create(HiColor(4096, 4096, 4096, 4096), HiColor(1000, 1500, 4096, 4096));
-		m_pDiagonalTint = Tint::create(HiColor(4096, 4096, 4096, 4096), HiColor(500, 500, 500, 4096), { 0.f, 0.f }, { 1.f, 1.f });
-		m_pRadialTint = Tint::create(WGBP(Tint, _.shape = TintShape::Radial, _.stops = { {0.f, HiColor(4096,4096,0,4096)}, {1.f, HiColor(4096,0,0,4096)} }));
+		m_pVerticalTint = Tint::create(Color(4096, 4096, 4096, 4096), Color(1000, 1500, 4096, 4096));
+		m_pDiagonalTint = Tint::create(Color(4096, 4096, 4096, 4096), Color(500, 500, 500, 4096), { 0.f, 0.f }, { 1.f, 1.f });
+		m_pRadialTint = Tint::create(WGBP(Tint, _.shape = TintShape::Radial, _.stops = { {0.f, Color(4096,4096,0,4096)}, {1.f, Color(4096,0,0,4096)} }));
 		return true;
 	}
 
@@ -37,7 +37,7 @@ public:
 		return true;
 	}
 
-	RoundedBoxSpec box(spx x, spx y, spx w, spx h, spx radius, spx outline, HiColor fill, HiColor outlineColor)
+	RoundedBoxSpec box(spx x, spx y, spx w, spx h, spx radius, spx outline, Color fill, Color outlineColor)
 	{
 		RoundedBoxSpec spec;
 		spec.rect = { x, y, w, h };
@@ -57,7 +57,7 @@ public:
 			spx x = 64 * 20 + (i % 3) * 64 * 160 + i * 5;
 			spx y = 64 * 20 + (i / 3) * 64 * 50 + i * 7;
 
-			pDevice->drawRoundedBox(box(x, y, 64 * 120, 64 * 32, 64 * (2 + i), 64, HiColor(1200, 2400, 4096, 4096), HiColor::Black));
+			pDevice->drawRoundedBox(box(x, y, 64 * 120, 64 * 32, 64 * (2 + i), 64, Color(1200, 2400, 4096, 4096), Color::Black));
 		}
 		return true;
 	}
@@ -66,19 +66,19 @@ public:
 
 	bool radii(GfxDevice * pDevice, const RectI& canvas)
 	{
-		RoundedBoxSpec spec = box(64 * 20 + 13, 64 * 20 + 41, 64 * 200, 64 * 140, 0, 64 * 2, HiColor(4096, 3000, 1000, 4096), HiColor(2000, 1000, 0, 4096));
+		RoundedBoxSpec spec = box(64 * 20 + 13, 64 * 20 + 41, 64 * 200, 64 * 140, 0, 64 * 2, Color(4096, 3000, 1000, 4096), Color(2000, 1000, 0, 4096));
 		spec.radius[0] = 64 * 60;
 		spec.radius[1] = 64 * 10;
 		spec.radius[2] = 64 * 2 + 32;
 		spec.radius[3] = 64 * 30;
 		pDevice->drawRoundedBox(spec);
 
-		pDevice->drawRoundedBox(box(64 * 250 + 20, 64 * 20 + 9, 64 * 240, 64 * 40 + 30, 64 * 1000, 64 * 3, HiColor(1000, 4096, 1000, 4096), HiColor(0, 1500, 0, 4096)));
-		pDevice->drawRoundedBox(box(64 * 250 + 20, 64 * 80 + 9, 64 * 30 + 30, 64 * 120, 64 * 1000, 64 * 3, HiColor(1000, 4096, 1000, 4096), HiColor(0, 1500, 0, 4096)));
-		pDevice->drawRoundedBox(box(64 * 300 + 40, 64 * 80 + 9, 64 * 150, 64 * 150, 64 * 1000, 64 * 6, HiColor(4096, 1000, 1000, 4096), HiColor(1500, 0, 0, 4096)));
+		pDevice->drawRoundedBox(box(64 * 250 + 20, 64 * 20 + 9, 64 * 240, 64 * 40 + 30, 64 * 1000, 64 * 3, Color(1000, 4096, 1000, 4096), Color(0, 1500, 0, 4096)));
+		pDevice->drawRoundedBox(box(64 * 250 + 20, 64 * 80 + 9, 64 * 30 + 30, 64 * 120, 64 * 1000, 64 * 3, Color(1000, 4096, 1000, 4096), Color(0, 1500, 0, 4096)));
+		pDevice->drawRoundedBox(box(64 * 300 + 40, 64 * 80 + 9, 64 * 150, 64 * 150, 64 * 1000, 64 * 6, Color(4096, 1000, 1000, 4096), Color(1500, 0, 0, 4096)));
 
 		for (int i = 0; i < 8; i++)
-			pDevice->drawRoundedBox(box(64 * 20 + i * 64 * 30 + i * 9, 64 * 260 + i * 5, 64 * 25, 64 * 25, i * 32, 0, HiColor(4096, 4096, 4096, 4096), HiColor::Black));
+			pDevice->drawRoundedBox(box(64 * 20 + i * 64 * 30 + i * 9, 64 * 260 + i * 5, 64 * 25, 64 * 25, i * 32, 0, Color(4096, 4096, 4096, 4096), Color::Black));
 
 		return true;
 	}
@@ -87,14 +87,14 @@ public:
 
 	bool outlines(GfxDevice * pDevice, const RectI& canvas)
 	{
-		RoundedBoxSpec spec = box(64 * 20 + 13, 64 * 20 + 41, 64 * 200, 64 * 100, 64 * 20, 0, HiColor(3500, 3500, 3500, 4096), HiColor(1000, 1000, 1000, 4096));
+		RoundedBoxSpec spec = box(64 * 20 + 13, 64 * 20 + 41, 64 * 200, 64 * 100, 64 * 20, 0, Color(3500, 3500, 3500, 4096), Color(1000, 1000, 1000, 4096));
 		spec.outline = { 64 * 2, 64 * 6, 64 * 8, 64 * 2 };
 		pDevice->drawRoundedBox(spec);
 
-		pDevice->drawRoundedBox(box(64 * 250 + 31, 64 * 20 + 5, 64 * 200, 64 * 100, 64 * 10, 64 * 24, HiColor(4096, 4096, 1000, 4096), HiColor(2000, 0, 2000, 4096)));
-		pDevice->drawRoundedBox(box(64 * 20 + 51, 64 * 160 + 22, 64 * 200, 64 * 100, 64 * 16, 20, HiColor(4096, 4096, 4096, 4096), HiColor::Black));
-		pDevice->drawRoundedBox(box(64 * 250 + 3, 64 * 160 + 37, 64 * 200, 64 * 100, 64 * 16, 64 * 3, HiColor::Transparent, HiColor(0, 0, 4096, 4096)));
-		pDevice->drawRoundedBox(box(64 * 20, 64 * 300, 64 * 200, 64 * 100, 64 * 16, 64 * 4, HiColor(4096, 0, 0, 2048), HiColor(0, 0, 4096, 2048)));
+		pDevice->drawRoundedBox(box(64 * 250 + 31, 64 * 20 + 5, 64 * 200, 64 * 100, 64 * 10, 64 * 24, Color(4096, 4096, 1000, 4096), Color(2000, 0, 2000, 4096)));
+		pDevice->drawRoundedBox(box(64 * 20 + 51, 64 * 160 + 22, 64 * 200, 64 * 100, 64 * 16, 20, Color(4096, 4096, 4096, 4096), Color::Black));
+		pDevice->drawRoundedBox(box(64 * 250 + 3, 64 * 160 + 37, 64 * 200, 64 * 100, 64 * 16, 64 * 3, Color::Transparent, Color(0, 0, 4096, 4096)));
+		pDevice->drawRoundedBox(box(64 * 20, 64 * 300, 64 * 200, 64 * 100, 64 * 16, 64 * 4, Color(4096, 0, 0, 2048), Color(0, 0, 4096, 2048)));
 
 		return true;
 	}
@@ -108,7 +108,7 @@ public:
 			spx x = 64 * 10 + (i % 8) * 64 * 60 + i * 8;
 			spx y = 64 * 10 + (i / 8) * 64 * 60 + i * 8;
 
-			pDevice->drawRoundedBox(box(x, y, 64 * 40 + i * 3, 64 * 40 + i * 5, 64 * 12, 64 + i, HiColor(4096, 4096, 4096, 4096), HiColor::Black));
+			pDevice->drawRoundedBox(box(x, y, 64 * 40 + i * 3, 64 * 40 + i * 5, 64 * 12, 64 + i, Color(4096, 4096, 4096, 4096), Color::Black));
 		}
 		return true;
 	}
@@ -124,7 +124,7 @@ public:
 			spx x = 64 * 10 + (i % 5) * 64 * 96 + i * 11;
 			spx y = 64 * 10 + (i / 5) * 64 * 110 + i * 13;
 
-			RoundedBoxSpec spec = box(x, y, 64 * 70 + i * 7, 64 * 80 + i * 5, 0, (i % 4) * 64 + i * 5, HiColor(1000, 2000, 4096, 4096), HiColor::Black);
+			RoundedBoxSpec spec = box(x, y, 64 * 70 + i * 7, 64 * 80 + i * 5, 0, (i % 4) * 64 + i * 5, Color(1000, 2000, 4096, 4096), Color::Black);
 
 			if (i % 2 == 1)
 			{
@@ -141,7 +141,7 @@ public:
 
 	bool tinted(GfxDevice * pDevice, const RectI& canvas)
 	{
-		RoundedBoxSpec spec = box(64 * 20 + 13, 64 * 20 + 41, 64 * 200, 64 * 100, 64 * 24, 64 * 6, HiColor::White, HiColor::White);
+		RoundedBoxSpec spec = box(64 * 20 + 13, 64 * 20 + 41, 64 * 200, 64 * 100, 64 * 24, 64 * 6, Color::White, Color::White);
 		spec.pFillTint = m_pVerticalTint;
 		spec.pOutlineTint = m_pDiagonalTint;
 		pDevice->drawRoundedBox(spec);
@@ -155,8 +155,8 @@ public:
 		spec.rect = { 64 * 20 + 13, 64 * 160 + 41, 64 * 200, 64 * 100 };
 		spec.pFillTint = nullptr;
 		spec.pOutlineTint = nullptr;
-		spec.fillColor = HiColor(4096, 2000, 1000, 4096);
-		spec.outlineColor = HiColor(1000, 1000, 1000, 4096);
+		spec.fillColor = Color(4096, 2000, 1000, 4096);
+		spec.outlineColor = Color(1000, 1000, 1000, 4096);
 		pDevice->drawRoundedBox(spec);
 
 		spec.rect.x += 64 * 240;
@@ -164,7 +164,7 @@ public:
 		pDevice->drawRoundedBox(spec);
 
 		pDevice->clearTint();
-		pDevice->setTintColor(HiColor(4096, 4096, 4096, 2048));
+		pDevice->setTintColor(Color(4096, 4096, 4096, 2048));
 
 		spec.rect = { 64 * 20 + 13, 64 * 300 + 41, 64 * 440, 64 * 100 };
 		pDevice->drawRoundedBox(spec);
@@ -178,13 +178,13 @@ public:
 	bool blendModes(GfxDevice * pDevice, const RectI& canvas)
 	{
 		for (int i = 0; i < 16; i++)
-			pDevice->fill(RectSPX(0, i * 64 * 32, canvas.w, 64 * 16), HiColor(i * 256, 4096 - i * 256, 2048, 4096));
+			pDevice->fill(RectSPX(0, i * 64 * 32, canvas.w, 64 * 16), Color(i * 256, 4096 - i * 256, 2048, 4096));
 
 		BlendMode modes[] = { BlendMode::Replace, BlendMode::Blend, BlendMode::Add, BlendMode::Subtract, BlendMode::Multiply,
 							  BlendMode::Invert, BlendMode::Min, BlendMode::Max, BlendMode::Morph, BlendMode::BlendFixedColor };
 
 		pDevice->setMorphFactor(0.5f);
-		pDevice->setFixedBlendColor(HiColor(0, 4096, 4096, 4096));
+		pDevice->setFixedBlendColor(Color(0, 4096, 4096, 4096));
 
 		for (int i = 0; i < 10; i++)
 		{
@@ -193,7 +193,7 @@ public:
 			spx x = 64 * 10 + (i % 5) * 64 * 100 + i * 7;
 			spx y = 64 * 40 + (i / 5) * 64 * 200 + i * 11;
 
-			pDevice->drawRoundedBox(box(x, y, 64 * 80, 64 * 160, 64 * 25, 64 * 5, HiColor(4096, 2000, 500, 3000), HiColor(500, 500, 4096, 4096)));
+			pDevice->drawRoundedBox(box(x, y, 64 * 80, 64 * 160, 64 * 25, 64 * 5, Color(4096, 2000, 500, 3000), Color(500, 500, 4096, 4096)));
 		}
 
 		pDevice->setBlendMode(BlendMode::Blend);
@@ -207,7 +207,7 @@ public:
 		RectSPX clips[3] = { { 64 * 40, 64 * 40, 64 * 100, 64 * 100 }, { 64 * 200, 64 * 60, 64 * 200, 64 * 50 }, { 64 * 100, 64 * 250, 64 * 300, 64 * 200 } };
 
 		pDevice->setClipList(3, clips);
-		pDevice->drawRoundedBox(box(64 * 20 + 13, 64 * 20 + 41, 64 * 460, 64 * 440, 64 * 120, 64 * 8, HiColor(4096, 3000, 1000, 4096), HiColor(2000, 1000, 0, 4096)));
+		pDevice->drawRoundedBox(box(64 * 20 + 13, 64 * 20 + 41, 64 * 460, 64 * 440, 64 * 120, 64 * 8, Color(4096, 3000, 1000, 4096), Color(2000, 1000, 0, 4096)));
 		pDevice->resetClipList();
 		return true;
 	}

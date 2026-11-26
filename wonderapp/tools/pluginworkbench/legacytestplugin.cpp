@@ -58,15 +58,15 @@ DLLEXPORTPREFIX int init( wg_plugin_interface * pInterface, void * pRealHostBrid
 	g_pTextStyle = TextStyle::create(WGBP(TextStyle,
 									_.font = pFont,
 									_.size = 14,
-									_.color = Color8::Black,
-									_.states = {{State::Disabled, Color8::DarkGrey}
+									_.color = Color::Black,
+									_.states = {{State::Disabled, Color::DarkGrey}
 	} ));
 
 //	WgPluginBase::setDefaultStyle(g_pTextStyle);
 
-	auto pSkin1 = ColorSkin::create({ .padding = 1, .states = { {State::Default, Color8::Red}, {State::Hovered, Color8::Pink}, {State::Pressed, Color8::DarkRed} }  });
-	auto pSkin2 = ColorSkin::create({ .padding = 1, .states = { {State::Default, Color8::Green}, {State::Hovered, Color8::LightGreen}, {State::Pressed, Color8::DarkGreen} }  });
-	auto pSkin3 = ColorSkin::create({ .states = { {State::Default, Color8::Blue}, {State::Hovered, Color8::LightBlue}, {State::Pressed, Color8::DarkBlue} }  });
+	auto pSkin1 = ColorSkin::create({ .padding = 1, .states = { {State::Default, Color::Red}, {State::Hovered, Color::Pink}, {State::Pressed, Color::DarkRed} }  });
+	auto pSkin2 = ColorSkin::create({ .padding = 1, .states = { {State::Default, Color::Green}, {State::Hovered, Color::LightGreen}, {State::Pressed, Color::DarkGreen} }  });
+	auto pSkin3 = ColorSkin::create({ .states = { {State::Default, Color::Blue}, {State::Hovered, Color::LightBlue}, {State::Pressed, Color::DarkBlue} }  });
 
 	
 	auto pPacker = new WgPackPanel();
@@ -82,12 +82,12 @@ DLLEXPORTPREFIX int init( wg_plugin_interface * pInterface, void * pRealHostBrid
 	auto pEditor = new WgTextDisplay();
 	pEditor->SetTextStyle(g_pTextStyle);
 	pEditor->SetText( "Editable Text" );
-	pEditor->SetSkin( ColorSkin::create( Color8::White ) );
+	pEditor->SetSkin( ColorSkin::create( Color::White ) );
 	pEditor->SetEditMode(WgTextEditMode::Editable);
 	
 	pPacker->AddChild(pEditor);
 	
-	pPacker->SetSkin( ColorSkin::create( Color8::Blue ) );
+	pPacker->SetSkin( ColorSkin::create( Color::Blue ) );
 	
 	pPluginRoot->SetChild(pPacker);
 	

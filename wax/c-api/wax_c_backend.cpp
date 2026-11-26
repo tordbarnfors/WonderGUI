@@ -76,7 +76,7 @@ void wax_backendSetRects(wax_obj backend, const wax_rectSPX* pBeg, const wax_rec
 
 void wax_backendSetColors(wax_obj backend, const wax_color * pBeg, const wax_color * pEnd)
 {
-	getPtr(backend)->setColors( (const HiColor *) pBeg, (const HiColor *) pEnd );
+	getPtr(backend)->setColors( (const Color *) pBeg, (const Color *) pEnd );
 }
 
 void wax_backendSetTransforms(wax_obj backend, const wax_transform * pBeg, const wax_transform * pEnd)

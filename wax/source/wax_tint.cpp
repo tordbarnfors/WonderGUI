@@ -67,14 +67,14 @@ namespace wax
 		return p;
 	}
 
-	Tint_p Tint::create(HiColor color)
+	Tint_p Tint::create(Color color)
 	{
 		Blueprint bp;
 		bp.stops = { {0.f, color} };
 		return create(bp);
 	}
 
-	Tint_p Tint::create(HiColor from, HiColor to, CoordF begin, CoordF end)
+	Tint_p Tint::create(Color from, Color to, CoordF begin, CoordF end)
 	{
 		Blueprint bp;
 		bp.begin = begin;
@@ -96,7 +96,7 @@ namespace wax
 	/**
 	 * @brief Get a Tint in between two Tints.
 	 *
-	 * Named after HiColor::mix(), which does the same for two colors.
+	 * Named after Color::mix(), which does the same for two colors.
 	 *
 	 * If the Tints are morphable into each other (same shape, spread
 	 * and radius mode) the result is a simple Tint with interpolated geometry
@@ -127,7 +127,7 @@ namespace wax
 
 		if (!pFrom || !pTo)
 		{
-			pWhite = create(HiColor::White);
+			pWhite = create(Color::White);
 			if (!pFrom)
 				pFrom = pWhite;
 			else
@@ -399,10 +399,10 @@ namespace wax
 	 * Returns White for a mix, which has no single position.
 	 */
 
-	HiColor Tint::colorAtPosition(float position) const
+	Color Tint::colorAtPosition(float position) const
 	{
 		if (isMix())
-			return HiColor::White;
+			return Color::White;
 
 		return _colorAtStops(TintTools::applySpread(position, m_spread), false);
 	}
@@ -415,7 +415,7 @@ namespace wax
 	 * @param rect	Rectangle the Tint is placed in, in spx.
 	 */
 
-	HiColor Tint::colorAt(CoordSPX pos, const RectSPX& rect) const
+	Color Tint::colorAt(CoordSPX pos, const RectSPX& rect) const
 	{
 		if (isMix())
 		{
@@ -423,7 +423,7 @@ namespace wax
 
 			for (int i = 0; i < m_nMixComponents; i++)
 			{
-				HiColor c = m_mixComponents[i]->colorAt(pos, rect);
+				Color c = m_mixComponents[i]->colorAt(pos, rect);
 				float w = m_mixWeights[i];
 
 				r += c.r * w;
@@ -432,7 +432,7 @@ namespace wax
 				a += c.a * w;
 			}
 
-			return HiColor( (int) std::lround(r), (int) std::lround(g), (int) std::lround(b), (int) std::lround(a) );
+			return Color( (int) std::lround(r), (int) std::lround(g), (int) std::lround(b), (int) std::lround(a) );
 		}
 
 		CoordF	center = { float(pos.x + 32), float(pos.y + 32) };
@@ -502,12 +502,12 @@ namespace wax
 		{
 			float pos = positions[i];
 
-			HiColor fromLeft = pFrom->_colorAtStops(pos, true);
-			HiColor fromRight = pFrom->_colorAtStops(pos, false);
-			HiColor toLeft = pTo->_colorAtStops(pos, true);
-			HiColor toRight = pTo->_colorAtStops(pos, false);
+			Color fromLeft = pFrom->_colorAtStops(pos, true);
+			Color fromRight = pFrom->_colorAtStops(pos, false);
+			Color toLeft = pTo->_colorAtStops(pos, true);
+			Color toRight = pTo->_colorAtStops(pos, false);
 
-			HiColor right = _mixColors(fromRight, toRight, progress);
+			Color right = _mixColors(fromRight, toRight, progress);
 
 			if (fromLeft != fromRight || toLeft != toRight)
 			{
@@ -527,7 +527,7 @@ namespace wax
 
 	//____ _mixColors() _______________________________________________________
 
-	HiColor Tint::_mixColors(HiColor from, HiColor to, float fraction)
+	Color Tint::_mixColors(Color from, Color to, float fraction)
 	{
 		return TintTools::mixColors(from, to, fraction);
 	}
@@ -540,7 +540,7 @@ namespace wax
 	 * stop and the left limit is the first.
 	 */
 
-	HiColor Tint::_colorAtStops(float position, bool bLeftLimit) const
+	Color Tint::_colorAtStops(float position, bool bLeftLimit) const
 	{
 		if (m_nStops == 1)
 			return m_stops[0].color;

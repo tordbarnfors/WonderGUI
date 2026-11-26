@@ -43,7 +43,7 @@ namespace wg
 
 		struct StateData
 		{
-			HiColor			color = HiColor::Undefined;
+			Color			color = Color::Undefined;
 			Coord			contentShift;
 		};
 
@@ -51,7 +51,7 @@ namespace wg
 		{
 			StateBP() {}
 			StateBP( State state, StateData data ) : state(state), data(data) {}
-			StateBP( State state, HiColor color ) : state(state) { data.color = color; }
+			StateBP( State state, Color color ) : state(state) { data.color = color; }
 			StateBP( State state, Coord contentShift ) : state(state)	{ data.contentShift = contentShift; }
 			
 			State			state = State::Default;
@@ -62,7 +62,7 @@ namespace wg
 		{
 			BlendMode		blendMode = BlendMode::Blend;
 
-			HiColor			color = HiColor::White;
+			Color			color = Color::White;
 			Finalizer_p		finalizer = nullptr;
 
 			int				layer = -1;
@@ -78,7 +78,7 @@ namespace wg
 		//.____ Creation __________________________________________
 
 		static ColorSkin_p	create( const Blueprint& blueprint );
-		static ColorSkin_p create( HiColor color, Border padding = Border() );
+		static ColorSkin_p create( Color color, Border padding = Border() );
 
 		//.____ Identification __________________________________________
 
@@ -104,7 +104,7 @@ namespace wg
 		ColorSkin(const Blueprint& blueprint );
 		~ColorSkin();
 
-		const HiColor&	_getColor(State state) const
+		const Color&	_getColor(State state) const
 		{
 						int idxTabEntry = (state.index() & m_stateColorIndexMask) >> m_stateColorIndexShift;
 						int entry = m_pStateColorIndexTab[idxTabEntry];
@@ -118,7 +118,7 @@ namespace wg
 		uint8_t			m_stateColorIndexMask;
 		uint8_t			m_stateColorIndexShift;
 		uint8_t*		m_pStateColorIndexTab;		// Table with index values into m_pStateColors for each mode (72) or less.
-		HiColor*		m_pStateColors;				// Contains colors for states.
+		Color*		m_pStateColors;				// Contains colors for states.
 	};
 
 

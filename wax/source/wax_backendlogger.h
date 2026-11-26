@@ -64,7 +64,7 @@ public:
 	void	setCanvas( CanvasRef ref ) override;
 	void	setObjects(Object* const * pBeg, Object* const * pEnd) override;
 	void	setRects(const RectSPX* pBeg, const RectSPX* pEnd) override;
-	void	setColors(const HiColor* pBeg, const HiColor* pEnd) override;
+	void	setColors(const Color* pBeg, const Color* pEnd) override;
 	void	setTransforms(const Transform * pBeg, const Transform * pEnd) override;
 	void	processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int version) override;
 
@@ -97,9 +97,9 @@ protected:
 
 	void	_printRects(std::ostream& stream, int nRects, const RectSPX* pRects);
 
-	const HiColor*	m_pColorsBeg = nullptr;
-	const HiColor*	m_pColorsEnd = nullptr;
-	const HiColor*	m_pColorsPtr = nullptr;
+	const Color*	m_pColorsBeg = nullptr;
+	const Color*	m_pColorsEnd = nullptr;
+	const Color*	m_pColorsPtr = nullptr;
 
 	const RectSPX*	m_pRectsBeg = nullptr;
 	const RectSPX*	m_pRectsEnd = nullptr;

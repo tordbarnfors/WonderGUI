@@ -84,7 +84,7 @@ namespace wax
 		void	setObjects(Object* const * pBeg, Object* const * pEnd) override;
 
 		void	setRects(const RectSPX* pBeg, const RectSPX* pEnd) override;
-		void	setColors(const HiColor* pBeg, const HiColor* pEnd) override;
+		void	setColors(const Color* pBeg, const Color* pEnd) override;
 		void	setTransforms(const Transform * pBeg, const Transform * pEnd) override;
 
 		void	processCommands( const uint16_t* pBeg, const uint16_t * pEnd, int version ) override;

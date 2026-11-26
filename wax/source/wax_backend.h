@@ -347,7 +347,7 @@ namespace wax
 		virtual void	setObjects(Object* const * pBeg, Object* const * pEnd) = 0;
 
 		virtual void	setRects(const RectSPX* pBeg, const RectSPX* pEnd) = 0;
-		virtual void	setColors(const HiColor* pBeg, const HiColor* pEnd) = 0;
+		virtual void	setColors(const Color* pBeg, const Color* pEnd) = 0;
 		virtual void	setTransforms(const Transform * pBeg, const Transform * pEnd) = 0;
 
 		virtual void	processCommands( const uint16_t* pBeg, const uint16_t * pEnd, int version = 2) = 0;

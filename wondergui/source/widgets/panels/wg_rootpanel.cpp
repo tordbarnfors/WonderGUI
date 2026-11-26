@@ -92,14 +92,14 @@ namespace wg
 	RootPanel::RootPanel() : slot(this), m_skin(this)
 	{
 		BoxSkin::Blueprint bp;
-		bp.color = HiColor(4096, 0, 0, 2048);
+		bp.color = Color(4096, 0, 0, 2048);
 		bp.outlineThickness = 1;
-		bp.outlineColor = HiColor(4096, 0, 0, 2048);
+		bp.outlineColor = Color(4096, 0, 0, 2048);
 
 		BoxSkin::StateBP sbp;
 		sbp.state = State::Focused;
-		sbp.data.color = HiColor(4096, 0, 0, 2048);
-		sbp.data.outlineColor = HiColor(4096, 0, 0, 4096);
+		sbp.data.color = Color(4096, 0, 0, 2048);
+		sbp.data.outlineColor = Color(4096, 0, 0, 4096);
 		bp.states.push_back(sbp);
 
 		m_pDebugOverlay = BoxSkin::create(bp);
@@ -155,14 +155,14 @@ namespace wg
 		else
 		{
 			BoxSkin::Blueprint bp;
-			bp.color = HiColor(4096, 0, 0, 2048);
+			bp.color = Color(4096, 0, 0, 2048);
 			bp.outlineThickness = 1;
-			bp.outlineColor = HiColor(4096, 0, 0, 2048);
+			bp.outlineColor = Color(4096, 0, 0, 2048);
 
 			BoxSkin::StateBP sbp;
 			sbp.state = State::Focused;
-			sbp.data.color = HiColor(4096, 0, 0, 2048);
-			sbp.data.outlineColor = HiColor(4096, 0, 0, 4096);
+			sbp.data.color = Color(4096, 0, 0, 2048);
+			sbp.data.outlineColor = Color(4096, 0, 0, 4096);
 			bp.states.push_back(sbp);
 
 			m_pDebugOverlay = BoxSkin::create(bp);

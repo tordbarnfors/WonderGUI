@@ -173,7 +173,7 @@ namespace wg
 		RingSlice slices[c_maxSlices + 2];			// Room for empty slices before and after.
 		int nSlices = 0;
 
-		HiColor hubColor = m_hubColor.a == 4096 ? m_hubColor : HiColor::blend(m_backColor, m_hubColor, BlendMode::Blend);
+		Color hubColor = m_hubColor.a == 4096 ? m_hubColor : Color::blend(m_backColor, m_hubColor, BlendMode::Blend);
 
 		float startPos, totalLength;
 		
@@ -210,7 +210,7 @@ namespace wg
 
 			for (int i = 0; i < m_nSlices; i++)
 			{
-				HiColor color = HiColor::mix(m_slices[i].minColor, m_slices[i].maxColor, int(value*4096));
+				Color color = Color::mix(m_slices[i].minColor, m_slices[i].maxColor, int(value*4096));
 
 				float size = m_slices[i].size*m_maxRange;
 				if (length + size >= totalLength)
@@ -233,7 +233,7 @@ namespace wg
 				float size = m_slices[i].size*m_maxRange;
 				if (length + size > gapSize )
 				{
-					slices[nSlices++] = { length < gapSize ? length + size - gapSize : size, HiColor::mix(m_slices[i].minColor, m_slices[i].maxColor, int(value * 4096)) };
+					slices[nSlices++] = { length < gapSize ? length + size - gapSize : size, Color::mix(m_slices[i].minColor, m_slices[i].maxColor, int(value * 4096)) };
 				}
 				length += size;
 			}

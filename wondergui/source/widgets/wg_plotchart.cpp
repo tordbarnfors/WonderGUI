@@ -137,7 +137,7 @@ namespace wg
 
 					pDevice->beginCanvasUpdate(pSurface);
 					pDevice->setBlendMode(BlendMode::Replace);
-					pDevice->fill(HiColor::Transparent);
+					pDevice->fill(Color::Transparent);
 					pDevice->setBlendMode(BlendMode::Blend);
 					RingSlice slice;
 					slice.size = 1.f;
@@ -291,7 +291,7 @@ namespace wg
 
 	//____ setColors() ________________________________________________________
 
-	bool PlotChartEntry::setColors(HiColor fill, HiColor outline, ColorTransition* pTransition)
+	bool PlotChartEntry::setColors(Color fill, Color outline, ColorTransition* pTransition)
 	{
 		if( !fill.isValid() || !outline.isValid() )
 			return false;

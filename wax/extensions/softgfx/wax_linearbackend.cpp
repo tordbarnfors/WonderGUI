@@ -213,7 +213,7 @@ namespace wax
 		}
 
 		const RectSPX *	pRects = m_pRectsPtr;
-		const HiColor*	pColors = m_pColorsPtr;
+		const Color*	pColors = m_pColorsPtr;
 
 		Segment *	pSegBeg = m_canvasSegments.data();
 		Segment *	pSegEnd = m_canvasSegments.data() + m_canvasSegments.size();
@@ -303,7 +303,7 @@ namespace wax
 			{
 				int32_t nRects = *p++;
 
-				HiColor col = (*pColors++).toLinear();
+				Color col = (*pColors++).toLinear();
 
 				// Optimize calls
 
@@ -379,7 +379,7 @@ namespace wax
 
 					// Fills a rectangle of whole pixels with given kernel, taking tint into account.
 
-					auto fillPixels = [&](FillOp_p pOp, bool bRunsForOp, const RectI& rect, HiColor color)
+					auto fillPixels = [&](FillOp_p pOp, bool bRunsForOp, const RectI& rect, Color color)
 					{
 						_forTintSpans(rect, bRunsForOp, [&](const RectI& sub)
 						{
@@ -485,7 +485,7 @@ namespace wax
 						{
 							if (alpha != 0)
 							{
-								HiColor color = col;
+								Color color = col;
 								color.a = alpha;
 								fillPixels(pEdgeFunc, bEdgeRuns, rect, color);
 							}
@@ -551,11 +551,11 @@ namespace wax
 
 				for (int line = 0; line < nLines; line++)
 				{
-					HiColor color = *pColors++;
-					HiColor fillColor = color.toLinear();
-					HiColor tintedColor = fillColor;
+					Color color = *pColors++;
+					Color fillColor = color.toLinear();
+					Color tintedColor = fillColor;
 
-					if( m_tintColor != HiColor::White )
+					if( m_tintColor != Color::White )
 						fillColor = fillColor * m_tintColor;
 
 					CoordSPX beg, end;
@@ -999,7 +999,7 @@ namespace wax
 				const RectSPX* pMyRects = pRects;
 				pRects += nRects;
 
-				const HiColor* pMyColors = pColors;
+				const Color* pMyColors = pColors;
 				pColors += nColors;
 
 				if (_beginShape(kind, pPayload, pMyColors))

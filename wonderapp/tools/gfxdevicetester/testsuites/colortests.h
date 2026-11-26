@@ -27,6 +27,6 @@ public:
 
 private:
 
-	HiColor	m_rainbowColors[7] = { Color8::Red, Color8::Orange, Color8::Yellow, Color8::Green, Color8::Blue, Color8::Indigo, Color8::Violet };
+	Color	m_rainbowColors[7] = { Color::Red, Color::Orange, Color::Yellow, Color::Green, Color::Blue, Color::Indigo, Color::Violet };
 
 };

@@ -39,7 +39,7 @@ namespace wg
 		return BoxSkin_p(new BoxSkin(blueprint));
 	}
 
-	BoxSkin_p BoxSkin::create(Border outline, HiColor fillColor, HiColor outlineColor, Border padding )
+	BoxSkin_p BoxSkin::create(Border outline, Color fillColor, Color outlineColor, Border padding )
 	{
 		Blueprint bp;
 		bp.outlineThickness = outline;
@@ -69,10 +69,10 @@ namespace wg
 		Coord	stateShifts[State::NbStates];
 
 		State	fillColorStates[State::NbStates];
-		HiColor stateFillColors[State::NbStates];
+		Color stateFillColors[State::NbStates];
 
 		State	outlineColorStates[State::NbStates];
-		HiColor stateOutlineColors[State::NbStates];
+		Color stateOutlineColors[State::NbStates];
 
 		int		nbShiftingStates = 1;
 		int		nbFillColorStates = 1;
@@ -98,14 +98,14 @@ namespace wg
 				m_bContentShifting = true;
 			}
 
-			if(stateInfo.data.color != HiColor::Undefined )
+			if(stateInfo.data.color != Color::Undefined )
 			{
 				int index = stateInfo.state == State::Default ? 0 : nbFillColorStates++;
 				fillColorStates[index] = stateInfo.state;
 				stateFillColors[index] = stateInfo.data.color;
 			}
 
-			if(stateInfo.data.outlineColor != HiColor::Undefined )
+			if(stateInfo.data.outlineColor != Color::Undefined )
 			{
 				int index = stateInfo.state == State::Default ? 0 : nbOutlineColorStates++;
 				outlineColorStates[index] = stateInfo.state;
@@ -124,8 +124,8 @@ namespace wg
 		// Calculate memory needed for all state data
 
 		int shiftBytes 			= _bytesNeededForContentShiftData(nbShiftingStates, shiftingStates);
-		int fillColorBytes		= sizeof(HiColor) * nbFillColorStates;
-		int outlineColorBytes	= sizeof(HiColor) * nbOutlineColorStates;
+		int fillColorBytes		= sizeof(Color) * nbFillColorStates;
+		int outlineColorBytes	= sizeof(Color) * nbOutlineColorStates;
 		int indexBytes			= fillColorIndexEntries+outlineColorIndexEntries;
 
 		// Allocate and pupulate memory for state data
@@ -140,14 +140,14 @@ namespace wg
 
 		pDest += shiftBytes;
 
-		auto pFillColors = (HiColor*) pDest;
+		auto pFillColors = (Color*) pDest;
 		for( int i = 0 ; i < nbFillColorStates ; i++ )
 			pFillColors[i] = stateFillColors[i];
 
 		m_pFillColors = pFillColors;
 		pDest += fillColorBytes;
 
-		auto pOutlineColors = (HiColor*) pDest;
+		auto pOutlineColors = (Color*) pDest;
 		for( int i = 0 ; i < nbOutlineColorStates ; i++ )
 			pOutlineColors[i] = stateOutlineColors[i];
 
@@ -187,8 +187,8 @@ namespace wg
 
 		BorderSPX outline = align(ptsToSpx(m_outline, scale));
 
-		const HiColor& fillColor = _getFillColor(state);
-		const HiColor& outlineColor = _getOutlineColor(state);
+		const Color& fillColor = _getFillColor(state);
+		const Color& outlineColor = _getOutlineColor(state);
 
 		if( m_bRounded )
 		{

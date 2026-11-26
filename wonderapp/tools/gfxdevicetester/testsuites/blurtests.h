@@ -24,7 +24,7 @@ public:
 		m_pBlurSurface[0] = pDevice->surfaceFactory()->createSurface( { .canvas = true, .format = PixelFormat::XRGB_8, .size = canvas.size() / 64 } );
 		m_pBlurSurface[1] = pDevice->surfaceFactory()->createSurface( { .canvas = true, .format = PixelFormat::XRGB_8, .size = canvas.size() / 64 } );
 
-		m_pGradient = Tint::create(Color8::Red, Color8::Blue, {0,0}, {1,0});
+		m_pGradient = Tint::create(Color::Red, Color::Blue, {0,0}, {1,0});
 
 		return true;
 	}
@@ -51,7 +51,7 @@ public:
 
 	bool setTintAndBlurbrush(GfxDevice* pDevice, const RectI& canvas)
 	{
-		pDevice->setTintColor(Color8::Blue);
+		pDevice->setTintColor(Color::Blue);
 		setBlurbrush(pDevice, canvas);
 		return true;
 	}
@@ -66,8 +66,8 @@ public:
 
 	bool setBlurbrush(GfxDevice* pDevice, const RectI& canvas)
 	{
-		m_pBlurSurface[0]->fill(HiColor::Transparent);
-		m_pBlurSurface[1]->fill(HiColor::Transparent);
+		m_pBlurSurface[0]->fill(Color::Transparent);
+		m_pBlurSurface[1]->fill(Color::Transparent);
 
 		float blue[9] = { 0.15f, 0.15f, 0.15f, 0, 0.4f, 0, 0,0,0 };
 		float green[9] = {0,0,0, 0,0.7f,0, 0,0,0};
@@ -82,15 +82,15 @@ public:
 
 		pDevice->beginCanvasUpdate(m_pCanvasSurface);
 		pDevice->setBlendMode(BlendMode::Replace);
-		pDevice->fill(HiColor::Transparent);
-		pDevice->fill( RectSPX(100,100,64,64)*64, HiColor::White);
+		pDevice->fill(Color::Transparent);
+		pDevice->fill( RectSPX(100,100,64,64)*64, Color::White);
 		pDevice->endCanvasUpdate();
 
 		for( int i = 0 ; i < 2 ; i++ )
 		{
 			pDevice->beginCanvasUpdate(m_pBlurSurface[i]);
 			pDevice->setBlendMode(BlendMode::Replace);
-			pDevice->fill(HiColor::Black);
+			pDevice->fill(Color::Black);
 			pDevice->endCanvasUpdate();
 		}
 		return true;
@@ -103,7 +103,7 @@ public:
 		for( int i = 0 ; i < 10 ; i++ )
 		{
 			pDevice->beginCanvasUpdate(m_pBlurSurface[0]);
-			pDevice->fill({100*64,100*64,200*64,200*64}, HiColor::White);
+			pDevice->fill({100*64,100*64,200*64,200*64}, Color::White);
 			pDevice->endCanvasUpdate();
 
 			pDevice->beginCanvasUpdate(m_pBlurSurface[1]);

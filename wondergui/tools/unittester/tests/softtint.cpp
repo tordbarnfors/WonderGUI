@@ -34,12 +34,12 @@ namespace
 	TintTools::DecodedTint decode(Tint* pTint, const RectSPX& rect)
 	{
 		uint16_t	words[TintTools::c_maxEncodedTintWords];
-		HiColor		colors[TintTools::c_maxEncodedTintColors];
+		Color		colors[TintTools::c_maxEncodedTintColors];
 		int			nColors;
 
 		TintTools::encodeTint(pTint, rect, words, colors, nColors);
 
-		const HiColor* pColors = colors;
+		const Color* pColors = colors;
 		TintTools::DecodedTint decoded;
 		TintTools::decodeTint(words, pColors, decoded);
 		return decoded;
@@ -69,7 +69,7 @@ namespace
 	{
 		int n = layer.nStops;
 		auto pos = [&](int s) { return layer.stopPos16[s] / 65535.0; };
-		auto copy = [&](int s) { const HiColor& c = layer.stopColors[s]; pOut[0] = c.r; pOut[1] = c.g; pOut[2] = c.b; pOut[3] = c.a; };
+		auto copy = [&](int s) { const Color& c = layer.stopColors[s]; pOut[0] = c.r; pOut[1] = c.g; pOut[2] = c.b; pOut[3] = c.a; };
 
 		if (n == 1 || (t <= pos(0) && !(t == pos(0) && pos(1) == pos(0))))
 			copy(0);
@@ -82,8 +82,8 @@ namespace
 				s--;
 
 			double f = (t - pos(s)) / (pos(s + 1) - pos(s));
-			const HiColor& c0 = layer.stopColors[s];
-			const HiColor& c1 = layer.stopColors[s + 1];
+			const Color& c0 = layer.stopColors[s];
+			const Color& c1 = layer.stopColors[s + 1];
 
 			pOut[0] = c0.r + (c1.r - c0.r) * f;
 			pOut[1] = c0.g + (c1.g - c0.g) * f;
@@ -96,7 +96,7 @@ namespace
 	// Linear color of the LUT entry for index floor(position * N), spread applied. Entries are
 	// sampled in the middle of the span they cover, except below 0.0 and above 1.0 with Pad.
 
-	HiColor lutEntryColor(const TintTools::TintLayer& layer, int bits, int64_t idx, HiColor multiplier)
+	Color lutEntryColor(const TintTools::TintLayer& layer, int bits, int64_t idx, Color multiplier)
 	{
 		int64_t N = int64_t(1) << bits;
 		double t;
@@ -122,15 +122,15 @@ namespace
 		stopColorAt(layer, t, c);
 
 		auto round = [](double v) { return int(std::floor(v + 0.5)); };
-		HiColor color = HiColor(round(c[0]), round(c[1]), round(c[2]), round(c[3])).toLinear();
-		return multiplier == HiColor::White ? color : color * multiplier;
+		Color color = Color(round(c[0]), round(c[1]), round(c[2]), round(c[3])).toLinear();
+		return multiplier == Color::White ? color : color * multiplier;
 	}
 
 	//____ gpuTintColor() ________________________________________________________
 	// Linear color (0.0 - 1.0) of a tint at the center of pixel (x,y), evaluated like tint.hlsl.
 	// The tint color is sRGB, like it is given to GfxDevice.
 
-	void gpuTintColor(const TintTools::DecodedTint& tint, int x, int y, HiColor tintColor, double* pOut)
+	void gpuTintColor(const TintTools::DecodedTint& tint, int x, int y, Color tintColor, double* pOut)
 	{
 		auto toLinear = [](double c) { return c <= 0.04045 ? c / 12.92 : std::pow((c + 0.055) / 1.055, 2.4); };
 
@@ -177,7 +177,7 @@ namespace
 
 	//____ nearlyEqual() _________________________________________________________
 
-	bool nearlyEqual(HiColor a, HiColor b, int tolerance)
+	bool nearlyEqual(Color a, Color b, int tolerance)
 	{
 		return std::abs(a.r - b.r) <= tolerance && std::abs(a.g - b.g) <= tolerance &&
 			   std::abs(a.b - b.b) <= tolerance && std::abs(a.a - b.a) <= tolerance;
@@ -209,13 +209,13 @@ bool SoftTintTest::init(std::ostream& output)
 
 bool SoftTintTest::lookupTableTest(std::ostream& output)
 {
-	HiColor red = Color8::Red, white = Color8::White, blue = Color8::Blue, green = Color8::Green, yellow = Color8::Yellow;
+	Color red = Color::Red, white = Color::White, blue = Color::Blue, green = Color::Green, yellow = Color::Yellow;
 
 	std::vector<std::vector<ColorStop>> stopSets = {
 		{ {0.f, red}, {0.3f, yellow}, {0.6f, green}, {1.f, blue} },
-		{ {0.f, white}, {0.5f, yellow}, {1.f, HiColor(0, 0, 4096, 2048)} },
+		{ {0.f, white}, {0.5f, yellow}, {1.f, Color(0, 0, 4096, 2048)} },
 		{ {0.f, red}, {0.5f, red}, {0.5f, white}, {1.f, blue} },
-		{ {0.1f, HiColor(1234, 77, 4000, 3000)}, {0.13f, HiColor(17, 3999, 2, 4096)}, {0.77f, green}, {0.9f, HiColor(2048, 2048, 2048, 100)} },
+		{ {0.1f, Color(1234, 77, 4000, 3000)}, {0.13f, Color(17, 3999, 2, 4096)}, {0.77f, green}, {0.9f, Color(2048, 2048, 2048, 100)} },
 		{ {0.f, red}, {0.f, white}, {0.25f, blue}, {1.f, blue}, {1.f, green} },
 		{ {0.4f, red}, {0.40001f, blue} }
 	};
@@ -235,7 +235,7 @@ bool SoftTintTest::lookupTableTest(std::ostream& output)
 		for (int bits = 1; bits <= 12; bits++)
 		{
 			int entries = (1 << bits) + 1;
-			std::vector<HiColor> lut(entries);
+			std::vector<Color> lut(entries);
 			TintTools::buildLUT(layer, entries, lut.data());
 
 			for (int i = 0; i < entries; i++)
@@ -267,11 +267,11 @@ bool SoftTintTest::lookupTableTest(std::ostream& output)
 
 		double c[4];
 		stopColorAt(layer, 0.0, c);
-		HiColor low = TintTools::layerColorAtFixed(layer, 0);
+		Color low = TintTools::layerColorAtFixed(layer, 0);
 		TEST_ASSERT(low.r == int(std::floor(c[0] + 0.5)) && low.g == int(std::floor(c[1] + 0.5)) && low.b == int(std::floor(c[2] + 0.5)) && low.a == int(std::floor(c[3] + 0.5)));
 
 		stopColorAt(layer, 1.0, c);
-		HiColor high = TintTools::layerColorAtFixed(layer, 65535);
+		Color high = TintTools::layerColorAtFixed(layer, 65535);
 		TEST_ASSERT(high.r == int(std::floor(c[0] + 0.5)) && high.g == int(std::floor(c[1] + 0.5)) && high.b == int(std::floor(c[2] + 0.5)) && high.a == int(std::floor(c[3] + 0.5)));
 	}
 
@@ -293,7 +293,7 @@ bool SoftTintTest::tintRowsTest(std::ostream& output)
 {
 	const double c_maxError = 2.0 / 1024;
 
-	HiColor red = Color8::Red, blue = Color8::Blue, yellow = Color8::Yellow, green = Color8::Green, white = Color8::White;
+	Color red = Color::Red, blue = Color::Blue, yellow = Color::Yellow, green = Color::Green, white = Color::White;
 
 	std::vector<std::pair<std::string, Tint_p>> tints;
 
@@ -325,7 +325,7 @@ bool SoftTintTest::tintRowsTest(std::ostream& output)
 		bp.radiusMode = TintRadius::Fit;
 		bp.center = { 0.4f, 0.6f };
 		bp.radius = { 0.5f, 0.3f };
-		bp.stops = { {0.f, white}, {0.5f, yellow}, {1.f, HiColor(0, 0, 4096, 2048)} };
+		bp.stops = { {0.f, white}, {0.5f, yellow}, {1.f, Color(0, 0, 4096, 2048)} };
 		tints.push_back({ "Radial ellipse" + spreadName, Tint::create(bp) });
 
 		bp.radiusMode = TintRadius::Circle;
@@ -348,10 +348,10 @@ bool SoftTintTest::tintRowsTest(std::ostream& output)
 						RectSPX(60 * 64, 50 * 64, 3 * 64 + 20, 5 * 64 + 3), RectSPX(-5000 * 64, -3000 * 64, 4000 * 64, 6000 * 64),
 						RectSPX(-20000 * 64, 100 * 64, 10 * 64, 10 * 64) };
 
-	HiColor multipliers[2] = { HiColor::White, HiColor(4096, 2048, 3000, 3072) };
+	Color multipliers[2] = { Color::White, Color(4096, 2048, 3000, 3072) };
 
 	const int size = 128;
-	std::vector<HiColor> line(size);
+	std::vector<Color> line(size);
 
 	for (auto& tint : tints)
 	{
@@ -370,7 +370,7 @@ bool SoftTintTest::tintRowsTest(std::ostream& output)
 				SoftTint softTint;
 				softTint.set(tint.second, rect, multiplier);
 
-				auto check = [&](int x, int y, HiColor color) -> bool
+				auto check = [&](int x, int y, Color color) -> bool
 				{
 					double position = positionAt(layer, x, y) * (1 << bits);
 					int64_t idx = int64_t(std::floor(position));
@@ -450,7 +450,7 @@ bool SoftTintTest::tintRowsTest(std::ostream& output)
 
 bool SoftTintTest::tintedRenderingTest(std::ostream& output)
 {
-	HiColor red = Color8::Red, blue = Color8::Blue, yellow = Color8::Yellow, green = Color8::Green, white = Color8::White;
+	Color red = Color::Red, blue = Color::Blue, yellow = Color::Yellow, green = Color::Green, white = Color::White;
 
 	const SizeI	canvasSize = { 256, 256 };
 
@@ -460,7 +460,7 @@ bool SoftTintTest::tintedRenderingTest(std::ostream& output)
 	multiStop.end = { 0.9f, 1.f };
 
 	Tint::Blueprint reflect;
-	reflect.stops = { {0.f, red}, {1.f, HiColor(0, 4096, 4096, 2048)} };
+	reflect.stops = { {0.f, red}, {1.f, Color(0, 4096, 4096, 2048)} };
 	reflect.begin = { 0.2f, 0.2f };
 	reflect.end = { 0.35f, 0.25f };
 	reflect.spread = TintSpread::Reflect;
@@ -469,7 +469,7 @@ bool SoftTintTest::tintedRenderingTest(std::ostream& output)
 	ellipse.shape = TintShape::Radial;
 	ellipse.center = { 0.4f, 0.6f };
 	ellipse.radius = { 0.5f, 0.3f };
-	ellipse.stops = { {0.f, white}, {0.5f, yellow}, {1.f, HiColor(0, 0, 4096, 2048)} };
+	ellipse.stops = { {0.f, white}, {0.5f, yellow}, {1.f, Color(0, 0, 4096, 2048)} };
 
 	Tint::Blueprint circleRepeat;
 	circleRepeat.shape = TintShape::Radial;
@@ -483,16 +483,16 @@ bool SoftTintTest::tintedRenderingTest(std::ostream& output)
 	{
 		const char*	name;
 		Tint_p		pTint;
-		HiColor		tintColor;
+		Color		tintColor;
 	};
 
 	Case cases[] = {
-		{ "Multi stop linear", Tint::create(multiStop), HiColor::White },
-		{ "Reflected linear", Tint::create(reflect), HiColor::White },
-		{ "Radial ellipse", Tint::create(ellipse), HiColor::White },
-		{ "Repeated circle", Tint::create(circleRepeat), HiColor::White },
-		{ "Mix", Tint::mix(Tint::create(multiStop), Tint::create(ellipse), 0.4f), HiColor::White },
-		{ "Radial ellipse with tint color", Tint::create(ellipse), HiColor(4096, 2048, 4096, 3072) }
+		{ "Multi stop linear", Tint::create(multiStop), Color::White },
+		{ "Reflected linear", Tint::create(reflect), Color::White },
+		{ "Radial ellipse", Tint::create(ellipse), Color::White },
+		{ "Repeated circle", Tint::create(circleRepeat), Color::White },
+		{ "Mix", Tint::mix(Tint::create(multiStop), Tint::create(ellipse), 0.4f), Color::White },
+		{ "Radial ellipse with tint color", Tint::create(ellipse), Color(4096, 2048, 4096, 3072) }
 	};
 
 	RectSPX tintRects[] = { RectSPX(0, 0, canvasSize.w * 64, canvasSize.h * 64), RectSPX(20 * 64 + 21, 12 * 64 + 40, 150 * 64 + 13, 170 * 64 + 7) };
@@ -503,7 +503,7 @@ bool SoftTintTest::tintedRenderingTest(std::ostream& output)
 
 	auto pCanvas = SoftSurface::create(WGBP(Surface, _.size = canvasSize, _.format = PixelFormat::ARGB_8, _.colorSpace = ColorSpace::sRGB, _.canvas = true));
 	auto pSource = SoftSurface::create(WGBP(Surface, _.size = canvasSize, _.format = PixelFormat::ARGB_8, _.colorSpace = ColorSpace::sRGB));
-	pSource->fill(HiColor::White);
+	pSource->fill(Color::White);
 
 	RectSPX canvasRect(0, 0, canvasSize.w * 64, canvasSize.h * 64);
 
@@ -524,14 +524,14 @@ bool SoftTintTest::tintedRenderingTest(std::ostream& output)
 				pDevice->beginCanvasUpdate(pCanvas);
 
 				pDevice->setBlendMode(BlendMode::Replace);
-				pDevice->fill(canvasRect, HiColor::Black);
+				pDevice->fill(canvasRect, Color::Black);
 				pDevice->setBlendMode(BlendMode::Blend);
 
 				pDevice->setTint(tintRect, c.pTint);
 				pDevice->setTintColor(c.tintColor);
 
 				if (op == 0)
-					pDevice->fill(canvasRect, HiColor::White);
+					pDevice->fill(canvasRect, Color::White);
 				else
 				{
 					pDevice->setBlitSource(pSource);
@@ -539,7 +539,7 @@ bool SoftTintTest::tintedRenderingTest(std::ostream& output)
 				}
 
 				pDevice->clearTint();
-				pDevice->setTintColor(HiColor::White);
+				pDevice->setTintColor(Color::White);
 
 				pDevice->endCanvasUpdate();
 				pDevice->endRender();

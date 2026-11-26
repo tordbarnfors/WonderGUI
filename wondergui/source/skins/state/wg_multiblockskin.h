@@ -62,8 +62,8 @@ namespace wg
 		int		addLayer(Surface * pSurf, Coord blockStartOfs, Size blockPitch, std::initializer_list<State> stateBlocks);		// DEPRECATED!!!
 		int		addLayer(Surface * pSurf, std::initializer_list<State> stateBlocks, Axis axis = Axis::Y, pts spacing = 0, Coord blockStartOfs = { 0,0 } );
 
-		bool	setLayerColor(int layerIdx, HiColor tintColor);
-		bool	setLayerColor(int layerIdx, std::initializer_list< std::pair<State,HiColor> > stateColors);
+		bool	setLayerColor(int layerIdx, Color tintColor);
+		bool	setLayerColor(int layerIdx, std::initializer_list< std::pair<State,Color> > stateColors);
 		bool	setLayerBlendMode(int layerIdx, BlendMode blendMode);
 
 		//.____ Internal _________________________________________________
@@ -95,7 +95,7 @@ namespace wg
 //			Bitmask<uint32_t>   stateColorMask = 1;         // Normal state always exist for colors and is by default white.
 
 			Coord				blockOfs[State::NbStates];		// Block for each state
-			HiColor				tintColor[State::NbStates];
+			Color				tintColor[State::NbStates];
 	//		Placement			placementOrigo;
 	//		CoordI			placementOfs;
 	//		SizeI			dimensions;                   // Stored in pixels

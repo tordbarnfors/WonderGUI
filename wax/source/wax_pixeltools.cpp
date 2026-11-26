@@ -1191,7 +1191,7 @@ bool copyPixels(int width, int height,
 
 //____ colorToPixelBytes() ____________________________________________________
 
-int colorToPixelBytes(HiColor color, PixelFormat format, ColorSpace colorSpace, bool bigEndian, uint8_t pixelArea[18], const Color8* pPalette, int paletteSize)
+int colorToPixelBytes(Color color, PixelFormat format, ColorSpace colorSpace, bool bigEndian, uint8_t pixelArea[18], const Color8* pPalette, int paletteSize)
 {
 	_initTables();
 
@@ -1273,7 +1273,7 @@ int colorToPixelBytes(HiColor color, PixelFormat format, ColorSpace colorSpace, 
 //____ fillBitmap() ___________________________________________________________
 
 void fillBitmap(uint8_t* pBitmap, PixelFormat format, ColorSpace colorSpace, bool bigEndian, int pitch, const RectI& fillRect,
-				HiColor color, const Color8* pPalette, int paletteSize)
+				Color color, const Color8* pPalette, int paletteSize)
 {
 	auto desc = Util::pixelFormatToDescription(format, bigEndian);
 
@@ -1339,7 +1339,7 @@ void fillBitmap(uint8_t* pBitmap, PixelFormat format, ColorSpace colorSpace, boo
 
 //____ findBestMatchInPalette() ____________________________________________
 
-int findBestMatchInPalette(HiColor color, ColorSpace paletteColorSpace, const Color8* pPalette, int paletteSize)
+int findBestMatchInPalette(Color color, ColorSpace paletteColorSpace, const Color8* pPalette, int paletteSize)
 {
 	if (pPalette == nullptr || paletteSize <= 0)
 		return 0;

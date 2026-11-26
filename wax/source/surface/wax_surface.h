@@ -189,7 +189,7 @@ namespace wax
 			bool				bigEndian = (WAX_IS_BIG_ENDIAN == 1);	// Byte order of the pixels. Defaults to the byte order of the system.
 			bool				canvas = false;
 			ColorSpace			colorSpace = ColorSpace::Undefined;		// Color space of the pixels. Defaults to sRGB.
-			HiColor				fillColor = HiColor::Undefined;			// What a surface created without pixels is filled with. Undefined leaves its content unspecified.
+			Color				fillColor = Color::Undefined;			// What a surface created without pixels is filled with. Undefined leaves its content unspecified.
 			Finalizer_p			finalizer = nullptr;
 			const Color8* 		palette = nullptr;
 			int					paletteCapacity = 0;		// Default to paletteSize. Must be >= paletteSize if set.
@@ -281,8 +281,8 @@ namespace wax
 
 		//.____  Rendering ____________________________________________________
 
-		virtual bool		fill( HiColor color );								///< @brief Fill surface with specified color.
-		virtual bool		fill(const RectI& region, HiColor color );			///< @brief Fill section of surface with specified color
+		virtual bool		fill( Color color );								///< @brief Fill surface with specified color.
+		virtual bool		fill(const RectI& region, Color color );			///< @brief Fill section of surface with specified color
 		virtual bool		copy( CoordI dest, Surface * pSrcSurf, const RectI& srcRect );	///< @brief Copy block of graphics from other surface
 		virtual bool		copy( CoordI dest, Surface * pSrcSurf );		///< @brief Copy other surface as a block
 		virtual Surface_p	convert( const Surface::Blueprint& bp, SurfaceFactory* pFactory = nullptr);

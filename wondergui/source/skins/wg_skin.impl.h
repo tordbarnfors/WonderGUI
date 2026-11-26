@@ -51,11 +51,11 @@ namespace wg
 		if (pDevice->blendMode() == BlendMode::Blend)
 		{
 			if (local.backColor.a == 0)
-				local.backColor = HiColor::Undefined;
+				local.backColor = Color::Undefined;
 			if (local.hubColor.a == 0)
-				local.hubColor = HiColor::Undefined;
+				local.hubColor = Color::Undefined;
 			if (local.outlineColor.a == 0)
-				local.outlineColor = HiColor::Undefined;
+				local.outlineColor = Color::Undefined;
 		}
 
 		bool bOk = pRing ? pRing->update(local) : (pRing = EdgemapRing::create(WGBP(EdgemapRing, _.factory = pFactory), local)) != nullptr;
@@ -75,7 +75,7 @@ namespace wg
 	class RenderSettings
 	{
 	public:
-		RenderSettings(GfxDevice* pDevice, int layer, BlendMode blendMode = BlendMode::Undefined, HiColor tintColor = HiColor::White)
+		RenderSettings(GfxDevice* pDevice, int layer, BlendMode blendMode = BlendMode::Undefined, Color tintColor = Color::White)
 		{
 			m_pDevice = pDevice;
 
@@ -91,7 +91,7 @@ namespace wg
 				pDevice->setBlendMode(blendMode);
 			}
 
-			if (tintColor != HiColor::Undefined && tintColor != HiColor::White)
+			if (tintColor != Color::Undefined && tintColor != Color::White)
 			{
 				m_prevTintColor = pDevice->tintColor();
 				pDevice->setTintColor(tintColor);
@@ -113,7 +113,7 @@ namespace wg
 		GfxDevice* m_pDevice;
 		int			m_prevLayer = -1;
 		BlendMode	m_prevBlendMode = BlendMode::Undefined;
-		HiColor		m_prevTintColor;
+		Color		m_prevTintColor;
 		bool		m_bTintChanged = false;
 	};
 
@@ -126,7 +126,7 @@ namespace wg
 	class RenderSettingsWithTint
 	{
 	public:
-		RenderSettingsWithTint(GfxDevice* pDevice, int layer, BlendMode blendMode, HiColor tintColor, const RectSPX& rect, Tint * pTint )
+		RenderSettingsWithTint(GfxDevice* pDevice, int layer, BlendMode blendMode, Color tintColor, const RectSPX& rect, Tint * pTint )
 		{
 			m_pDevice = pDevice;
 
@@ -150,7 +150,7 @@ namespace wg
 				m_bTint = true;
 			}
 
-			if (tintColor != HiColor::Undefined && tintColor != HiColor::White )
+			if (tintColor != Color::Undefined && tintColor != Color::White )
 			{
 				m_prevTintColor = pDevice->tintColor();
 				if (tintColor != m_prevTintColor)
@@ -181,7 +181,7 @@ namespace wg
 		GfxDevice* m_pDevice;
 		int			m_prevLayer = -1;
 		BlendMode	m_prevBlendMode = BlendMode::Undefined;
-		HiColor		m_prevTintColor;
+		Color		m_prevTintColor;
 		bool		m_bTintChanged = false;
 		bool		m_bTint = false;
 		Tint_p		m_pPrevTint;

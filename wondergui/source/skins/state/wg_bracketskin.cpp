@@ -59,7 +59,7 @@ namespace wg
 		Coord	stateShifts[State::NbStates];
 
 		State	colorStates[State::NbStates];
-		HiColor stateColors[State::NbStates];
+		Color stateColors[State::NbStates];
 
 		int 	nbShiftingStates = 1;
 		int		nbColorStates = 1;
@@ -82,7 +82,7 @@ namespace wg
 				m_bContentShifting = true;
 			}
 
-			if (stateInfo.data.color != HiColor::Undefined)
+			if (stateInfo.data.color != Color::Undefined)
 			{
 				int index = stateInfo.state == State::Default ? 0 : nbColorStates++;
 				colorStates[index] = stateInfo.state;
@@ -99,7 +99,7 @@ namespace wg
 		// Calculate memory needed for all state data
 
 		int shiftBytes = _bytesNeededForContentShiftData(nbShiftingStates, shiftingStates);
-		int colorBytes = sizeof(HiColor) * nbColorStates;
+		int colorBytes = sizeof(Color) * nbColorStates;
 		int indexBytes = colorIndexEntries;
 
 		// Allocate and populate memory for state data
@@ -114,7 +114,7 @@ namespace wg
 
 		pDest += shiftBytes;
 
-		auto pColors = (HiColor*)pDest;
+		auto pColors = (Color*)pDest;
 		for (int i = 0; i < nbColorStates; i++)
 			pColors[i] = stateColors[i];
 
@@ -156,7 +156,7 @@ namespace wg
 		spx thickness = align(ptsToSpx(m_thickness, scale));
 		SizeSPX size = align(ptsToSpx(m_size, scale));
 
-		const HiColor& color = _getColor(state);
+		const Color& color = _getColor(state);
 
 		if (thickness*2 >= canvas.w || thickness*2 >= canvas.h)
 		{

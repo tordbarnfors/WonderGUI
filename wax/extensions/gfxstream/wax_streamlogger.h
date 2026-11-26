@@ -82,7 +82,7 @@ namespace wax
 		void	_readPrintRects( const char * header, int amount );
 		void	_printRect( const char * header, const RectI& rect );
 		void	_printRect( const char * header, const RectF& rect );
-		void	_printColor( const char * header, HiColor color );
+		void	_printColor( const char * header, Color color );
 		void	_printBorder( const char * header, const BorderI& border );
 		void	_printBorder(const char* header, const Border& border);
 

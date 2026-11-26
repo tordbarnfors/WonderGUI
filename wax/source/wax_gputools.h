@@ -51,11 +51,11 @@ namespace wax
 			uint8_t						changed;			// Backend::StateChange bits.
 
 			uint32_t					blitSource;			// Index in the object table.
-			HiColor						tintColor;
+			Color						tintColor;
 			TintTools::DecodedTint		tint;				// nLayers is 0 for no tint.
 			BlendMode					blendMode;
 			uint16_t					morphFactor;		// 4096 is 1.0.
-			HiColor						fixedBlendColor;
+			Color						fixedBlendColor;
 			spx							blurRadius;
 			const uint16_t*				pBlurWeights;		// 27 weights: nine taps of red, then green, then blue. See blurColorMatrix().
 		};
@@ -66,7 +66,7 @@ namespace wax
 		 * the word after the payload, which is 32-bit aligned as the next command needs.
 		 */
 
-		const uint16_t*	decodeStateChange(const uint16_t* p, const HiColor*& pColors, StateChangeParams& params);
+		const uint16_t*	decodeStateChange(const uint16_t* p, const Color*& pColors, StateChangeParams& params);
 
 		inline bool		hasChanged(const StateChangeParams& params, Backend::StateChange state) { return (params.changed & uint8_t(state)) != 0; }
 
@@ -186,7 +186,7 @@ namespace wax
 			CoordSPX	end;
 			spx			thickness;
 			uint16_t	caps;
-			HiColor		color;
+			Color		color;
 		};
 	}
 }

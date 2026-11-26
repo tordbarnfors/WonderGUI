@@ -47,7 +47,7 @@ public:
 			_.baseLayer = 0,
 			_.layers = { { .format = PixelFormat::ARGB_8 },
 						 { .format = PixelFormat::ARGB_8, .blendFunc = [](GfxDevice* pDevice) {
-							 pDevice->setTintColor(HiColor(4096, 4096, 4096, 2867));
+							 pDevice->setTintColor(Color(4096, 4096, 4096, 2867));
 							 pDevice->blit({ 0,0 }); } } }));
 
 		return m_pHalves[0] && m_pHalves[1] && m_pCanvasLayers;
@@ -128,7 +128,7 @@ private:
 		pDevice->fill(Color8(40, 40, 60));
 
 		pDevice->setBlendMode(BlendMode::Blend);
-		pDevice->fill(RectSPX(10, 10, 150, 120) * 64, HiColor(4096, 2048, 0, 2048));
+		pDevice->fill(RectSPX(10, 10, 150, 120) * 64, Color(4096, 2048, 0, 2048));
 
 		pDevice->setBlitSource(m_pLogo);
 		pDevice->blit(CoordSPX(28, 150) * 64);
@@ -137,13 +137,13 @@ private:
 		if (bLayers)
 		{
 			pDevice->setRenderLayer(1);
-			pDevice->fill(RectSPX(100, 60, 140, 200) * 64, HiColor(0, 4096, 1024, 2048));
-			pDevice->setTintColor(HiColor(4096, 4096, 4096, 2048));
+			pDevice->fill(RectSPX(100, 60, 140, 200) * 64, Color(0, 4096, 1024, 2048));
+			pDevice->setTintColor(Color(4096, 4096, 4096, 2048));
 			pDevice->blit(CoordSPX(40, 200) * 64);
 			pDevice->clearTintColor();
 
 			pDevice->setRenderLayer(2);
-			pDevice->fill(RectSPX(60, 250, 180, 60) * 64, HiColor(0, 0, 4096, 3072));
+			pDevice->fill(RectSPX(60, 250, 180, 60) * 64, Color(0, 0, 4096, 3072));
 
 			pDevice->setRenderLayer(0);
 			pDevice->fill(RectSPX(0, 100, 256, 30) * 64, Color8(200, 200, 200));
@@ -158,7 +158,7 @@ private:
 
 		pDevice->clearTintColor();
 		pDevice->setBlendMode(BlendMode::Blend);
-		pDevice->fill(RectSPX(50, 40, 180, 100) * 64, HiColor(4096, 4096, 0, 1536));
+		pDevice->fill(RectSPX(50, 40, 180, 100) * 64, Color(4096, 4096, 0, 1536));
 
 		pDevice->setBlitSource(m_pLogo);
 		pDevice->rotScaleBlit(RectSPX(90, 300, 150, 150) * 64, -40.f, 0.8f);
@@ -166,10 +166,10 @@ private:
 		if (bLayers)
 		{
 			pDevice->setRenderLayer(1);
-			pDevice->fill(RectSPX(20, 180, 120, 120) * 64, HiColor(4096, 0, 4096, 2048));
+			pDevice->fill(RectSPX(20, 180, 120, 120) * 64, Color(4096, 0, 4096, 2048));
 
 			pDevice->setRenderLayer(2);
-			pDevice->fill(RectSPX(140, 400, 100, 90) * 64, HiColor(0, 4096, 4096, 2560));
+			pDevice->fill(RectSPX(140, 400, 100, 90) * 64, Color(0, 4096, 4096, 2560));
 
 			pDevice->setRenderLayer(0);
 			pDevice->blit(CoordSPX(10, 330) * 64);

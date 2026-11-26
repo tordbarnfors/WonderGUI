@@ -68,9 +68,9 @@ public:
 
 		for( int i = 0 ; i < 8 ; i++ )
 		{
-			tintsX[i] = Tint::create(m_rainbowColors[i], Color8::Black, {0,0}, {1,0});
-			tintsY[i] = Tint::create(m_rainbowColors[i], Color8::Black, {0,0}, {0,1});
-			tintsXY[i] = Tint::create(m_rainbowColors[i], Color8::Black, {0,0}, {1,1});
+			tintsX[i] = Tint::create(m_rainbowColors[i], Color::Black, {0,0}, {1,0});
+			tintsY[i] = Tint::create(m_rainbowColors[i], Color::Black, {0,0}, {0,1});
+			tintsXY[i] = Tint::create(m_rainbowColors[i], Color::Black, {0,0}, {1,1});
 
 		}
 		
@@ -90,7 +90,7 @@ public:
 		m_pSmallEdgemap = pFactory->createEdgemap(WGBP(Edgemap, _.colors = m_rainbowColors, _.size = {100, 50}, _.segments = 4),
 			SampleOrigo::Top, sampleBuffer[0], 3, 513 );
 
-		m_pGlobalTint = Tint::create(HiColor::TransparentWhite, HiColor::White, {0,0}, {0,1});
+		m_pGlobalTint = Tint::create(Color::TransparentWhite, Color::White, {0,0}, {0,1});
 
 		// Tiling edgemaps. Samples wrap around horizontally, so there is one sample per pixel of width.
 
@@ -136,7 +136,7 @@ public:
 
 	bool globalFlatTint(GfxDevice* pDevice, const RectI& canvas)
 	{
-		pDevice->setTintColor( HiColor{4096,4096,4096,1024} );
+		pDevice->setTintColor( Color{4096,4096,4096,1024} );
 		pDevice->drawEdgemap(CoordSPX(100, 50) * 64, m_pSmallEdgemap);
 		pDevice->clearTintColor();
 		return true;
@@ -259,6 +259,6 @@ private:
 	Edgemap_p	m_pTilingEdgemap;
 	Edgemap_p	m_pTilingEdgemapGradientXY;
 
-	HiColor	m_rainbowColors[8] = { Color8::Red, Color8::Orange, Color8::Yellow, Color8::Green, Color8::Blue, Color8::Indigo, Color8::Violet, Color8( 255,255,255,128 ) };
+	Color	m_rainbowColors[8] = { Color::Red, Color::Orange, Color::Yellow, Color::Green, Color::Blue, Color::Indigo, Color::Violet, Color8( 255,255,255,128 ) };
 };
  

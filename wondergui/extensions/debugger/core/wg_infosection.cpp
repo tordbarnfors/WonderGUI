@@ -43,7 +43,7 @@ namespace wg
 		: LabelCapsule( theme.classCapsule )
 		, m_pContext(pContext)
 	{
-		m_pIndentationSkin = ColorSkin::create(Color8::Transparent, { 0,0,0,16 });
+		m_pIndentationSkin = ColorSkin::create(Color::Transparent, { 0,0,0,16 });
 
 		label.setText(pLabel);
 	}
@@ -94,7 +94,7 @@ namespace wg
 
 	//____ _createColorDrawer() _________________________________________________
 
-	DrawerPanel_p InfoSection::_createColorDrawer(std::string_view label, const HiColor& color)
+	DrawerPanel_p InfoSection::_createColorDrawer(std::string_view label, const Color& color)
 	{
 		bool bValid = color.isValid();
 		bool bUndefined = color.isUndefined();
@@ -118,7 +118,7 @@ namespace wg
 
 	//____ _refreshColorDrawer() _____________________________________________
 
-	void InfoSection::_refreshColorDrawer(DrawerPanel* pColorDrawer, const HiColor& color, HiColor& displayedColor )
+	void InfoSection::_refreshColorDrawer(DrawerPanel* pColorDrawer, const Color& color, Color& displayedColor )
 	{
 		if( color == displayedColor )
 			return;
@@ -410,7 +410,7 @@ namespace wg
 
 			TextStyle::Blueprint bp = pEntryStyle ? pEntryStyle->blueprint() : TextStyle::Blueprint();
 			bp.link = pLink;
-			bp.color = Color8::DarkRed;
+			bp.color = Color::DarkRed;
 			bp.decoration = TextDecoration::Underline;
 
 			pDisplay->display.setStyle( TextStyle::create(bp) );
