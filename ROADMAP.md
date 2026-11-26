@@ -1377,10 +1377,21 @@ On Windows (Arc B580, Release): gfxdevicetester gives the same lines as before w
 (13 differ of 266), GlBackend (2) and SdlGpuBackend with D3D12 (10), and unittester passes with
 SdlGpuBackend. With Vulkan the same 13 differ, by amounts that vary from run to run, see
 KNOWN_ISSUES.md. With `WAPP_GPU_DIRECT=1` widgetbench, workbench and helloworld show the same
-window as without it, pixel for pixel as PrintWindow gives it, with D3D12, and widgetbench with
-Vulkan too, and the debug layer of D3D12 says nothing while drawing. GlBackend with a framebuffer
-of the application's as default canvas showed the same window as before in widgetbench and
-workbench, tried with a change to `wappsdl3gl` that wasn't kept.
+window as without it, pixel for pixel as PrintWindow gives it, with D3D12 and with Vulkan, and
+the debug layer of D3D12 says nothing while drawing. What the application has rendered stays
+where the widgets don't draw: with the clear made magenta and only the left half of the window
+redrawn each frame, the right half was magenta, with both drivers. GlBackend with a framebuffer
+of the application's as default canvas showed the same window as before in the three
+applications. The last two were tried with changes to `wappsdl3gpu` and `wappsdl3gl` that
+weren't kept.
 
-Not run: DX12Backend with RENDER_TARGET as resting state, and what an application has rendered
-showing through, as the applications tried cover their whole window.
+On Linux (7a50178a, Debug): all of `linux-wappsdl3gl`, `linux-wappsdl3vk` and
+`linux-wappsdl3gpu` builds with no fix, unittester passes with each, and gfxdevicetester gives
+the same lines as before: VulkanBackend and SdlGpuBackend 4 that differ of 266 (Intel UHD 770),
+GlBackend 3 (llvmpipe). With `WAPP_GPU_DIRECT=1` widgetbench and workbench show the same window
+as without it, pixel for pixel, on lavapipe under Xvfb, which is the device there that can
+present, with the validation layer of Vulkan silent. With GlBackend the two show the same windows
+as at b3de9d77.
+
+Not run: DX12Backend with RENDER_TARGET as resting state, and direct mode on a display of an
+Intel GPU on Linux.
