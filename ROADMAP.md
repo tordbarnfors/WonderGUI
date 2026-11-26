@@ -1487,8 +1487,25 @@ Decided with Tord 2026-11-26, for the canvases:
 With wappsdl3gl on Windows (Arc B580, Release) widgetbench, helloworld and editera show the same
 windows as before, pixel for pixel, gfxdevicetester gives the same lines and unittester passes.
 
-Not compiled: the changes for Vulkan and for wappcocoametal, which Windows has nothing to build
-with.
+On Linux (a7cd6fd0, Debug): `linux-wappsdl3vk` and `linux-wappsdl3gl` build with no fix,
+unittester passes and gfxdevicetester gives the same lines as before, VulkanBackend 4 that differ
+of 266 and GlBackend 3. With wappsdl3vk on lavapipe under Xvfb, where the swap chain has three
+images, and the validation layer on and silent: widgetbench with clicks one at a time, clicks
+faster than a frame, and more of both after a resize, gave 24 pictures that are each the same as
+with wappsdl3vk of v4 and with wappsdl3gl, in three runs. editera with its blinking caret gave
+90 pictures that are each one of two states, 15 pixels apart, the same ones as before. So no
+picture had anything old in it. With wappsdl3gl the same pictures are as before, and llvmpipe
+renders into GL_SRGB8.
+
+- **The swap chain of wappsdl3vk is not clipped,** from the review of that run. A clipped swap
+  chain, which it was, may leave the pixels of an image undefined where another window covered
+  it when it was presented. Copying all of the canvas for every change hid that, and copying
+  only what has changed would not. With `clipped` off an image owns all of its pixels, by the
+  specification, and we do nothing in the images that clipping would have saved. A window that
+  is covered and uncovered has not been tried: Xvfb has no window manager.
+
+Not compiled: the change for wappcocoametal, which Windows has nothing to build with. Not run:
+wappsdl3vk on a display, and with `clipped` off.
 
 Also seen, and not changed: the main loops wait a fixed time each turn, 10 ms with SDL3, which
 keeps a window under 100 frames a second, 1 ms with Win32, and up to 10 ms for an event with

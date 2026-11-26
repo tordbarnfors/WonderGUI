@@ -636,7 +636,12 @@ bool SDLWindowVulkan::_createSwapchain()
 	info.preTransform = caps.currentTransform;
 	info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 	info.presentMode = VK_PRESENT_MODE_FIFO_KHR;
-	info.clipped = VK_TRUE;
+
+	// Not clipped: an image must own all of its pixels, also those under another window when
+	// it is presented, as we only copy to it what has changed. We do nothing in the images
+	// that clipping would have saved.
+
+	info.clipped = VK_FALSE;
 	info.oldSwapchain = m_swapchain;
 
 	if (!(caps.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR))
