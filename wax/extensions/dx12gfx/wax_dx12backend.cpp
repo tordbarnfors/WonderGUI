@@ -1124,22 +1124,33 @@ namespace wax
 
 		_restoreBlitSourceCanvases();
 
-		if (m_bSessionOnDefaultCanvas && m_defaultCanvasBuffer && m_bCommandListOpen)
-		{
-			D3D12_RESOURCE_BARRIER barrier = {};
-			barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-			barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-			barrier.Transition.pResource = m_defaultCanvasBuffer;
-			barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-			barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-			barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-
-			m_commandList->ResourceBarrier(1, &barrier);
-		}
+		if (m_bSessionOnDefaultCanvas)
+			_transitionDefaultCanvas(D3D12_RESOURCE_STATE_RENDER_TARGET, m_defaultCanvasRestingState);
 
 		m_bSessionOnDefaultCanvas = false;
 		m_activeCanvasRTV.ptr = 0;
 		m_activeCanvasFormat = DXGI_FORMAT_UNKNOWN;
+	}
+
+	//____ _transitionDefaultCanvas() ____________________________________________
+	//
+	// Nothing to do for a default canvas that rests in RENDER_TARGET, see
+	// setDefaultCanvas().
+
+	void DX12Backend::_transitionDefaultCanvas(D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after)
+	{
+		if (!m_bCommandListOpen || !m_defaultCanvasBuffer || before == after)
+			return;
+
+		D3D12_RESOURCE_BARRIER barrier = {};
+		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		barrier.Transition.pResource = m_defaultCanvasBuffer;
+		barrier.Transition.StateBefore = before;
+		barrier.Transition.StateAfter = after;
+		barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+		m_commandList->ResourceBarrier(1, &barrier);
 	}
 
 	//____ _transitionCanvas() ________________________________________________
@@ -1412,16 +1423,7 @@ namespace wax
 
 			if (!m_bSessionOnDefaultCanvas && m_defaultCanvasBuffer)
 			{
-				D3D12_RESOURCE_BARRIER barrier = {};
-				barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-				barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-				barrier.Transition.pResource = m_defaultCanvasBuffer;
-				barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-				barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-				barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-
-				m_commandList->ResourceBarrier(1, &barrier);
-
+				_transitionDefaultCanvas(m_defaultCanvasRestingState, D3D12_RESOURCE_STATE_RENDER_TARGET);
 				m_bSessionOnDefaultCanvas = true;
 			}
 
@@ -1988,11 +1990,13 @@ namespace wax
 	//____ setDefaultCanvas() ___________________________________________
 
 	bool DX12Backend::setDefaultCanvas(D3D12_CPU_DESCRIPTOR_HANDLE renderTargetView, ID3D12Resource* renderTargetBuffer,
-									   DXGI_FORMAT renderTargetFormat, SizeSPX size, int scale)
+									   DXGI_FORMAT renderTargetFormat, SizeSPX size, int scale,
+									   D3D12_RESOURCE_STATES restingState)
 	{
 		m_defaultCanvasRTV = renderTargetView;
 		m_defaultCanvasBuffer = renderTargetBuffer;
 		m_defaultCanvasFormat = renderTargetFormat;
+		m_defaultCanvasRestingState = restingState;
 		m_defaultCanvas.ref = CanvasRef::Default;		// Starts as Undefined until this method is called.
 		m_defaultCanvas.size = size;
 		m_defaultCanvas.scale = scale;

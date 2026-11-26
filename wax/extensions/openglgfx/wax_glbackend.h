@@ -88,6 +88,12 @@ namespace wax
 
 		//.____ Misc _________________________________________________________
 
+		// The default canvas is the framebuffer that is bound for drawing when beginRender() is
+		// called: that of the window, or one the application has bound, as when it draws its
+		// frame into a framebuffer of its own and wants us on top of it. Its first row is at the
+		// bottom, as the window has it. What is in it stays where we don't draw, and it is bound
+		// again when endRender() returns.
+
 		bool	setDefaultCanvas(SizeSPX size, int scale, ColorSpace colorSpace = ColorSpace::sRGB);
 
 		const CanvasInfo* canvasInfo(CanvasRef ref) const override;
@@ -260,7 +266,7 @@ namespace wax
 
 		CanvasInfo		m_defaultCanvas;
 		CanvasInfo		m_dummyCanvas;
-		bool			m_bDefaultCanvasHasAlpha = true;	// The default framebuffer might not have alpha.
+		bool			m_bDefaultCanvasHasAlpha = true;	// The framebuffer might not have alpha.
 
 		// GL states saved between beginRender() and endRender().
 

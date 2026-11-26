@@ -60,8 +60,16 @@ namespace wax
 	public:
 		//.____ Creation ________________________________________________
 
-		static void setMetalDevice( id<MTLDevice> device );
+		// Sets the device shared by all backends, surfaces, edgemaps and Warpmaps, before any of
+		// them is created. Sessions are committed to commandQueue, which we make ourselves when
+		// none is given. An application that renders into the default canvas itself gives the
+		// queue it commits to, as command buffers only run in the order they were committed
+		// when they are on the same queue: what it has committed before a session ends is then
+		// in the drawable before us, and what it commits afterwards comes on top.
+
+		static void setMetalDevice( id<MTLDevice> device, id<MTLCommandQueue> commandQueue = nil );
 		static id<MTLDevice> metalDevice() { return s_metalDevice; }
+		static id<MTLCommandQueue> metalCommandQueue() { return s_metalCommandQueue; }
 
 		static MetalBackend_p	create();
 

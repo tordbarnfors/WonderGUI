@@ -350,22 +350,25 @@ void GlBackend::beginRender()
 	glDisable(GL_CULL_FACE);
 	glEnable(GL_SCISSOR_TEST);
 
-	// The default framebuffer might not have alpha.
+	// The default canvas is the framebuffer bound for drawing now, see setDefaultCanvas(). It
+	// might not have alpha.
 
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	GLenum attachment = GL_COLOR_ATTACHMENT0;
 
-	GLint drawBuffer = GL_BACK;
-	glGetIntegerv(GL_DRAW_BUFFER, &drawBuffer);
+	if (m_glDrawFrameBuffer == 0)
+	{
+		GLint drawBuffer = GL_BACK;
+		glGetIntegerv(GL_DRAW_BUFFER, &drawBuffer);
+
+		attachment = (drawBuffer == GL_FRONT || drawBuffer == GL_FRONT_LEFT) ? GL_FRONT_LEFT : GL_BACK_LEFT;
+	}
 
 	GLint alphaBits = 8;
-	glGetFramebufferAttachmentParameteriv(GL_DRAW_FRAMEBUFFER, (drawBuffer == GL_FRONT || drawBuffer == GL_FRONT_LEFT) ? GL_FRONT_LEFT : GL_BACK_LEFT,
-										  GL_FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE, &alphaBits);
+	glGetFramebufferAttachmentParameteriv(GL_DRAW_FRAMEBUFFER, attachment, GL_FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE, &alphaBits);
 	if (glGetError() != GL_NO_ERROR)
 		alphaBits = 8;
 
 	m_bDefaultCanvasHasAlpha = (alphaBits > 0);
-
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, GLuint(m_glDrawFrameBuffer));
 
 	m_bRendering = true;
 
@@ -920,14 +923,16 @@ void GlBackend::_executeBindCanvas( GlSurface * pCanvas )
 	{
 		size = { m_defaultCanvas.size.w / 64, m_defaultCanvas.size.h / 64 };
 
-		// The default framebuffer needs to be sRGB-capable for this to have any effect.
+		// The framebuffer needs to be sRGB-capable for this to have any effect.
 
 		if (m_defaultCanvas.colorSpace == ColorSpace::sRGB)
 			glEnable(GL_FRAMEBUFFER_SRGB);
 		else
 			glDisable(GL_FRAMEBUFFER_SRGB);
 
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		// The one that was bound for drawing when beginRender() was called.
+
+		glBindFramebuffer(GL_FRAMEBUFFER, GLuint(m_glDrawFrameBuffer));
 
 		m_execTargetKind = m_bDefaultCanvasHasAlpha ? CanvasKind::WithAlpha : CanvasKind::WithoutAlpha;
 	}

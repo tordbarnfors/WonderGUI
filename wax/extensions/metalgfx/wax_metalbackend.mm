@@ -48,16 +48,19 @@ id<MTLCommandQueue> MetalBackend::s_metalCommandQueue = nil;
 
 //____ setMetalDevice() ______________________________________________________
 
-void MetalBackend::setMetalDevice( id<MTLDevice> device )
+void MetalBackend::setMetalDevice( id<MTLDevice> device, id<MTLCommandQueue> commandQueue )
 {
+	// The new queue is ours before we let go of the old one, as they may be the same.
+
+	id<MTLCommandQueue> newQueue = nil;
+
+	if( device != nil )
+		newQueue = commandQueue != nil ? [commandQueue retain] : [device newCommandQueue];
+
 	[s_metalCommandQueue release];
 
 	s_metalDevice = device;
-
-	if( device == nil )
-		s_metalCommandQueue = nil;
-	else
-		s_metalCommandQueue = [s_metalDevice newCommandQueue];
+	s_metalCommandQueue = newQueue;
 }
 
 //____ create() _______________________________________________________________

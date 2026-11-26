@@ -190,9 +190,16 @@ namespace wax
 		// renderTargetFormat is the format of the view, not of the buffer. They
 		// differ when the window wants an sRGB view over a plain swap chain buffer,
 		// and it is the view's format the pipelines have to match.
+		//
+		// restingState is the state the buffer is in between sessions: a session
+		// that renders into it moves it to RENDER_TARGET and back. An application
+		// that renders into the buffer itself before us, in a command list it has
+		// executed on the queue we share, can give RENDER_TARGET and present it
+		// from that, which saves the two transitions.
 
 		bool	setDefaultCanvas(D3D12_CPU_DESCRIPTOR_HANDLE renderTargetView, ID3D12Resource * renderTargetBuffer,
-								 DXGI_FORMAT renderTargetFormat, SizeSPX size, int scale);
+								 DXGI_FORMAT renderTargetFormat, SizeSPX size, int scale,
+								 D3D12_RESOURCE_STATES restingState = D3D12_RESOURCE_STATE_PRESENT);
 
 		const CanvasInfo* canvasInfo(CanvasRef ref) const override;
 
@@ -282,6 +289,7 @@ namespace wax
 		bool _createPipeline(PipelineKind kind, const BlendState& blend, DXGI_FORMAT rtvFormat, Microsoft::WRL::ComPtr<ID3D12PipelineState>& pPipeline);
 
 		void _transitionCanvas(DX12Surface* pCanvas, D3D12_RESOURCE_STATES state);
+		void _transitionDefaultCanvas(D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after);
 
 		// Uploads of pending surfaces, recorded into our open command list. See
 		// "Uploads" in the public section and DX12Surface::_updatePending().
@@ -328,6 +336,7 @@ namespace wax
 		D3D12_CPU_DESCRIPTOR_HANDLE	m_defaultCanvasRTV = {};
 		ID3D12Resource*		m_defaultCanvasBuffer = nullptr;
 		DXGI_FORMAT			m_defaultCanvasFormat = DXGI_FORMAT_UNKNOWN;		// Until setDefaultCanvas() says otherwise.
+		D3D12_RESOURCE_STATES	m_defaultCanvasRestingState = D3D12_RESOURCE_STATE_PRESENT;	// Between sessions.
 		CanvasInfo			m_defaultCanvas;
 		CanvasInfo			m_dummyCanvas;
 
@@ -338,7 +347,7 @@ namespace wax
 		D3D12_CPU_DESCRIPTOR_HANDLE	m_activeCanvasRTV = {};			// Zero when there is nothing to render into.
 		DXGI_FORMAT					m_activeCanvasFormat = DXGI_FORMAT_UNKNOWN;
 		SizeI						m_targetSize;					// Of the canvas, in pixels.
-		bool						m_bSessionOnDefaultCanvas = false;	// Swap chain buffer is in RENDER_TARGET state.
+		bool						m_bSessionOnDefaultCanvas = false;	// The default canvas has left its resting state for RENDER_TARGET.
 
 		const static int	c_nbSRVDescriptors = 1024;			// Per frame resource to begin with, grows when needed. One per distinct blit source.
 
