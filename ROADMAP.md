@@ -1469,14 +1469,14 @@ Decided with Tord 2026-11-26, for the canvases:
   it was last copied to, and that is copied. An image that has never been copied to, or whose
   list has grown past 64 rects, gets all of it, taken from UNDEFINED, the others from
   PRESENT_SRC.
-- **wappsdl3metal and wappsdl2metal are not changed.** They copy all of the canvas to a drawable
-  for every change, with a Wax session that blits it with the blend mode a session starts with,
-  onto a drawable whose content isn't loaded, so it also reads pixels that aren't there where
-  the canvas isn't opaque. Tord wanted a plain copy in its place, with a blit encoder. That is
-  written and held back: it needs `framebufferOnly` turned off for the layer, which
+- **wappsdl3metal and wappsdl2metal copy with Replace.** They copy all of the canvas to a
+  drawable for every change, with a Wax session that blits it. It did so with the blend mode a
+  session starts with, onto a drawable whose content isn't loaded, so it read pixels that
+  weren't there where the canvas wasn't opaque. A plain copy with a blit encoder was written in
+  its place and dropped (Tord): it needs `framebufferOnly` turned off for the layer, which
   CAMetalLayer.h recommends against for most applications and Apple's page says is "at a cost
-  to performance". It would still copy everything, as nothing from Apple says that the texture
-  of a drawable still has what was presented in it when it comes back.
+  to performance". They still copy everything, as nothing from Apple says that the texture of a
+  drawable still has what was presented in it when it comes back.
 - **Only documented ways** (Tord): nothing is built on how it happens to work on the machines we
   test on.
 - **wappcocoametal draws into buffers of its own,** so that one framework on a Mac sends no more

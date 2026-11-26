@@ -152,7 +152,9 @@ SDLWindowMetal::SDLWindowMetal(wapp::Window* pUserWindow, wg::Placement origin, 
 
 void SDLWindowMetal::render()
 {
-	//TODO: This is awful! We are re-rendering and presenting whole screen every time!
+	// Only what is dirty is rendered, into our canvas, but all of the canvas is copied to the
+	// drawable for every change: nothing says what a drawable has in it when it comes back.
+	// wappcocoametal sends only what has changed, with buffers of its own.
 
 	if( m_pRootPanel->nbDirtyRects() == 0 )
 		return;
@@ -181,6 +183,7 @@ void SDLWindowMetal::render()
 
 		pDevice->beginRender();
 		pDevice->beginCanvasUpdate(CanvasRef::Default);
+		pDevice->setBlendMode(BlendMode::Replace);		// The drawable has nothing to blend with, its content isn't loaded.
 		pDevice->setBlitSource(m_pCanvas);
 		pDevice->blit({0,0});
 		pDevice->endCanvasUpdate();
@@ -226,6 +229,7 @@ void SDLWindowMetal::onWindowSizeUpdated( int w, int h )
 
 		pDevice->beginRender();
 		pDevice->beginCanvasUpdate(CanvasRef::Default);
+		pDevice->setBlendMode(BlendMode::Replace);		// The drawable has nothing to blend with, its content isn't loaded.
 		pDevice->setBlitSource(m_pCanvas);
 		pDevice->blit({0,0});
 		pDevice->endCanvasUpdate();
