@@ -1251,7 +1251,9 @@ SdlGpuWarpmap and their factories. All share one device, set by `SdlGpuBackend::
   uploaded in a copy pass in front of its render passes. That is when the Wax design says the
   objects are read. A command buffer per session also puts every session in front of what comes
   after it, so reading back needs no flushing of other backends. It costs about 0.1 ms per session
-  more than VulkanBackend on Intel UHD 770, which otherwise is as fast.
+  more than VulkanBackend on Intel UHD 770, which otherwise is as fast. The render pass of a
+  session on the default canvas can go into a command buffer of the application's instead, see
+  "Drawing into a frame of the application's".
 - **The same HLSL,** compiled to SPIR-V, DXIL and MSL by `sdlgpugfx/compile_shaders.py` and
   checked in, as for the other backends. Each platform has the formats SDL_GPU can have a device
   for there: SPIR-V everywhere but on Apple's, which have MSL, and DXIL too on Windows. SDL_GPU
@@ -1323,10 +1325,62 @@ the others the unused input was gone from what DXC and SPIRV-Cross made, so only
 - **The values are the same:** whole pixels and a half, which a float holds exactly on either
   side. gfxdevicetester gives the same lines as before, the worst pixel aside, with DX12Backend
   and GlBackend on Windows (Arc B580, Release) and with VulkanBackend, SdlGpuBackend and GlBackend
-  on Linux (Intel UHD 770 and llvmpipe, Debug), the validation layer of Vulkan silent. Not run on
-  a Mac yet, where `wax_metalbackend.mm` isn't compiled with it either.
+  on Linux (Intel UHD 770 and llvmpipe, Debug), the validation layer of Vulkan silent. On a Mac
+  (x86_64, Debug, e5d6c4ae) MetalBackend and SdlGpuBackend with Metal give the same lines as at
+  d9508fe6.
 - **Compiled in two places:** the shaders of DX12Backend on Windows, which has FXC, and the rest
   on Linux, which has DXC with SPIR-V and SPIRV-Cross (e5d6c4ae). Only segmentsVS changed, and
   shapeVS where the unused input had stayed: in the bytecode of FXC and in the DXIL.
 - **Rule for the shaders,** in `hlsl/README.md`: a vertex shader declares only the inputs it
   reads.
+
+### Drawing into a frame of the application's (2026-11-26)
+
+An application with graphics of its own, such as a 3D view, wants its widgets drawn straight onto
+its frame in the window, not into a texture that is then copied or blended there. Cybersim, which
+renders with SDL_GPU, had to keep a frame texture and copy it to the window every frame, as
+SdlGpuBackend couldn't draw into a texture of a swap chain. Decided with Tord 2026-11-26. The
+application renders first and then has its root panel rendered with everything dirty, as nothing
+of a frame is kept. What each backend has for it:
+
+- **SdlGpuBackend: `setCommandBuffer()`.** A texture of a swap chain is only valid for the
+  command buffer it was acquired with, and is presented when that one is submitted, so our draws
+  have to go into the command buffer of the application. It is set before a render and forgotten
+  by `endRender()`, as `autopresent()` of MetalBackend and the semaphores of VulkanBackend are.
+- **Only the render pass of a session on the default canvas goes there** ("uploads kept apart",
+  Tord). Its uploads, and everything of sessions on surfaces, are still in command buffers of
+  ours, submitted when the session ends. So all that surfaces hold is on its way to the GPU when
+  a session has ended, and pixels can be read back at any time. With everything in the
+  application's command buffer, a read-back before it was submitted would have got pixels from
+  before the frame, and could have put an older upload on top of a newer one. It costs a command
+  buffer of ours per frame, about 0.1 ms on Intel UHD 770. What is left for the application to
+  know: what it changes of a surface after the render and before it submits is what the window
+  gets, a frame early, and we push uniform data to slots 0-3 of its command buffer.
+- **Mip levels are made before the render pass,** for all that a session blits from, in every
+  session. The pass was ended and begun again for each before. A session has one canvas and
+  reads what it draws from when it ends, so nothing changes in between.
+- **MetalBackend: `setMetalDevice()` takes the command queue** of the application. Command
+  buffers only run in the order they were committed when they are on the same queue, and we had
+  one of our own.
+- **GlBackend: the default canvas is the framebuffer bound for drawing at `beginRender()`,** not
+  always that of the window, for an application that renders its frame into a framebuffer of its
+  own.
+- **DX12Backend: `setDefaultCanvas()` takes the resting state** of the buffer, PRESENT unless
+  given, as VulkanBackend takes a resting layout. With RENDER_TARGET an application that renders
+  into the buffer first saves the two transitions.
+- **VulkanBackend needed nothing:** it takes an image of the swap chain as default canvas, and
+  has `commandBuffer()` and the semaphores.
+- **`wappsdl3gpu` with `WAPP_GPU_DIRECT=1`** draws straight into the swap chain this way, with a
+  clear where an application has its graphics, to have it run and tested.
+
+On Windows (Arc B580, Release): gfxdevicetester gives the same lines as before with DX12Backend
+(13 differ of 266), GlBackend (2) and SdlGpuBackend with D3D12 (10), and unittester passes with
+SdlGpuBackend. With Vulkan the same 13 differ, by amounts that vary from run to run, see
+KNOWN_ISSUES.md. With `WAPP_GPU_DIRECT=1` widgetbench, workbench and helloworld show the same
+window as without it, pixel for pixel as PrintWindow gives it, with D3D12, and widgetbench with
+Vulkan too, and the debug layer of D3D12 says nothing while drawing. GlBackend with a framebuffer
+of the application's as default canvas showed the same window as before in widgetbench and
+workbench, tried with a change to `wappsdl3gl` that wasn't kept.
+
+Not run: DX12Backend with RENDER_TARGET as resting state, and what an application has rendered
+showing through, as the applications tried cover their whole window.

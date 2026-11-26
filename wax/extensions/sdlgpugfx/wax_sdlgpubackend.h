@@ -51,8 +51,11 @@ namespace wax
 	 * copy passes, outside render passes. So the hooks GpuBackend calls only record what to do, as
 	 * in GlBackend, and endSession() plays the recording back into a command buffer of its own,
 	 * which it submits: a copy pass with the vertices, colors and extras of the session and what the
-	 * surfaces, edgemaps and Warpmaps it draws have changed, then a render pass for each canvas.
+	 * surfaces, edgemaps and Warpmaps it draws have changed, then a render pass on the canvas.
 	 * The objects drawn are read when the session ends, which is when the Wax design says they are.
+	 *
+	 * An application that renders its own frame with SDL_GPU can have us draw on top of it, also
+	 * straight into the window, see setCommandBuffer().
 	 *
 	 * SDL_GPU has no dual-source blending either. Replace and Morph, which keep a part of the canvas
 	 * that only the shader knows, are drawn twice: once to take that part away, once to add the
@@ -95,13 +98,40 @@ namespace wax
 
 		//.____ Misc _________________________________________________________
 
-		// The default canvas is a texture of the owner of the backend, with COLOR_TARGET usage, which
-		// keeps what is rendered into it. Not a texture of a swap chain, as those don't keep their
-		// content and are only valid for the command buffer they were acquired with, while every
-		// session has one of its own: render into a surface, or a texture of your own, and copy that
-		// to the window. Supported formats are B8G8R8A8 and R8G8B8A8, UNORM or UNORM_SRGB.
+		// The default canvas is a texture of the owner of the backend, with COLOR_TARGET usage. What
+		// is in it stays where we don't draw. Supported formats are B8G8R8A8 and R8G8B8A8, UNORM or
+		// UNORM_SRGB, where UNORM is taken as linear, so a window wants an sRGB swap chain
+		// (SDL_GPU_SWAPCHAINCOMPOSITION_SDR_LINEAR) not to come out too dark.
+		//
+		// A texture of a swap chain is only valid for the command buffer it was acquired with, so
+		// it can only be the default canvas together with that command buffer, see
+		// setCommandBuffer(), and has to be set for each frame. It doesn't keep its content between
+		// frames either, so everything has to be drawn each time.
 
 		bool	setDefaultCanvas( SDL_GPUTexture * pTexture, SDL_GPUTextureFormat format, SizeSPX size, int scale );
+
+		// For drawing into a frame of the owner's, as on top of what it has rendered into the
+		// window itself. The render pass of a session on the default canvas goes into
+		// pCommandBuffer instead of a command buffer of ours, and it is the owner who submits it:
+		//
+		//		SDL_GPUCommandBuffer * pCmd = SDL_AcquireGPUCommandBuffer(pDevice);
+		//		SDL_WaitAndAcquireGPUSwapchainTexture(pCmd, pWindow, &pTexture, &w, &h);
+		//		...the owner's render passes, all ended...
+		//		pBackend->setDefaultCanvas(pTexture, format, {w*64, h*64}, scale);
+		//		pBackend->setCommandBuffer(pCmd);
+		//		pRootPanel->render();
+		//		SDL_SubmitGPUCommandBuffer(pCmd);
+		//
+		// Set before a render and forgotten by endRender(), so it is given for each one, on the
+		// thread that acquired it and with no pass of the owner's open. Sessions on surfaces still
+		// have command buffers of their own, as do the uploads of all sessions, so everything but
+		// the draws into the default canvas is submitted when a session ends, as without it.
+		//
+		// We push uniform data to slots 0-3 of both stages, so an owner that draws more in the
+		// command buffer afterwards pushes its own again. And what the owner changes of a surface
+		// after the render but before it submits is what the default canvas gets.
+
+		void	setCommandBuffer( SDL_GPUCommandBuffer * pCommandBuffer );
 
 		const CanvasInfo*	canvasInfo(CanvasRef ref) const override;
 
@@ -208,6 +238,7 @@ namespace wax
 
 		void		_execute();
 		void		_recordUploads( SDL_GPUCopyPass * pCopyPass );
+		void		_generateMipmaps( SDL_GPUCommandBuffer * pCmd );
 		void		_executeBindCanvas( SdlGpuSurface * pCanvas );
 		void		_executeScissor( const RectI& rect );
 		bool		_beginPass();					// Into the canvas being played back for, unless already.
@@ -250,7 +281,7 @@ namespace wax
 
 		// Playing back.
 
-		SDL_GPUCommandBuffer *	m_pCmd = nullptr;
+		SDL_GPUCommandBuffer *	m_pCmd = nullptr;			// The one draws go into.
 		SDL_GPURenderPass *		m_pPass = nullptr;
 
 		SDL_GPUTexture *		m_pExecTarget = nullptr;	// Null when there is nothing to draw into.
@@ -270,6 +301,8 @@ namespace wax
 
 		SDL_GPUTexture *		m_pDefaultTexture = nullptr;
 		SDL_GPUTextureFormat	m_defaultFormat = SDL_GPU_TEXTUREFORMAT_INVALID;
+		SDL_GPUCommandBuffer *	m_pOwnerCmd = nullptr;		// See setCommandBuffer(). Null between renders.
+		bool					m_bSessionOnDefaultCanvas = false;
 		CanvasInfo				m_defaultCanvas;
 		CanvasInfo				m_dummyCanvas;
 

@@ -299,6 +299,11 @@ Mesa). Besides Mipmapped_0.4, ReplaceVerticalAndFlat and the two of ReadbackTest
     WarpTests       BlendModes           max 255  mean 4.579  over  35934
     LineCapTests    BlendModes           max 255  mean 1.373  over   9746
 
+The amounts vary from run to run of the same build (2026-11-26): two runs after each other gave
+A8_Fills mean 0.665 over 22425 and mean 0.423 over 13974, and CanvasWithoutAlpha mean 1.220 over
+9777 and mean 0.788 over 6238, with the same max. The tests that differ are the same each time.
+So something is read that isn't settled when it is read, rather than blended by another rule.
+
 All are about blending, none about what was drawn, so a guess is a blend factor or operation
 this driver does differently, or that SDL_GPU sets up differently for it. Not looked into, and
 not run before e5d6c4ae, so that it is the driver and not that commit is taken from Linux, where

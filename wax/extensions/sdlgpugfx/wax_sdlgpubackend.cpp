@@ -226,6 +226,14 @@ namespace wax
 	void SdlGpuBackend::endRender()
 	{
 		m_bRendering = false;
+		m_pOwnerCmd = nullptr;
+	}
+
+	//____ setCommandBuffer() ____________________________________________________
+
+	void SdlGpuBackend::setCommandBuffer( SDL_GPUCommandBuffer * pCommandBuffer )
+	{
+		m_pOwnerCmd = pCommandBuffer;
 	}
 
 	//____ _isRecording() ________________________________________________________
@@ -411,6 +419,7 @@ namespace wax
 		}
 
 		m_bTargetBound = false;
+		m_bSessionOnDefaultCanvas = (pSurface == nullptr);
 
 		if (pSurface)
 		{
@@ -812,8 +821,14 @@ namespace wax
 	//
 	// Plays back the recording of a session in a command buffer of its own, which is submitted, so
 	// that it is in front of anything that comes after: other sessions, and reading back. First a
-	// copy pass with what the session wrote and what it draws from has changed, then a render pass
-	// for each canvas.
+	// copy pass with what the session wrote and what it draws from has changed, then the mip levels
+	// that have to be made anew, then a render pass on the canvas.
+	//
+	// A session on the default canvas whose owner has given a command buffer, see
+	// setCommandBuffer(), has its render pass there instead, for the owner to submit. What comes
+	// before the render pass is still submitted here, so all that surfaces, edgemaps and Warpmaps
+	// have is on its way to the GPU when a session has ended, and only draws into a texture that
+	// nothing of ours reads wait for the owner.
 
 	void SdlGpuBackend::_execute()
 	{
@@ -828,14 +843,26 @@ namespace wax
 		if (m_ops.empty() || !pDevice)
 			return;
 
-		m_pCmd = SDL_AcquireGPUCommandBuffer(pDevice);
+		SDL_GPUCommandBuffer * pOwnCmd = SDL_AcquireGPUCommandBuffer(pDevice);
 
-		if (!WAX_SDL_CHECK(m_pCmd != nullptr, "SDL_AcquireGPUCommandBuffer"))
+		if (!WAX_SDL_CHECK(pOwnCmd != nullptr, "SDL_AcquireGPUCommandBuffer"))
 			return;
 
-		SDL_GPUCopyPass * pCopyPass = SDL_BeginGPUCopyPass(m_pCmd);
+		SDL_GPUCopyPass * pCopyPass = SDL_BeginGPUCopyPass(pOwnCmd);
 		_recordUploads(pCopyPass);
 		SDL_EndGPUCopyPass(pCopyPass);
+
+		_generateMipmaps(pOwnCmd);
+
+		bool bOwnerDraws = m_pOwnerCmd && m_bSessionOnDefaultCanvas;
+
+		if (bOwnerDraws)
+		{
+			WAX_SDL_CHECK(SDL_SubmitGPUCommandBuffer(pOwnCmd), "SDL_SubmitGPUCommandBuffer");
+			m_pCmd = m_pOwnerCmd;
+		}
+		else
+			m_pCmd = pOwnCmd;
 
 		// All uniform buffers get something before the first draw, which may not set them all.
 
@@ -903,20 +930,6 @@ namespace wax
 				{
 					auto pSource = static_cast<SdlGpuSurface*>(op.pObject);
 
-					// Mip levels that no longer match level 0 are made anew before anything reads
-					// them, outside of the render pass.
-
-					if (pSource->isMipmapStale())
-					{
-						if (pSource->mipLevels() > 1)
-						{
-							_endPass();
-							SDL_GenerateMipmapsForGPUTexture(m_pCmd, pSource->texture());
-						}
-
-						pSource->clearMipmapStale();
-					}
-
 					m_pExecBlitTexture = pSource->texture();
 
 					// A palette based source has its palette where edgemaps go, which is free while we blit.
@@ -966,11 +979,37 @@ namespace wax
 
 		_endPass();
 
-		WAX_SDL_CHECK(SDL_SubmitGPUCommandBuffer(m_pCmd), "SDL_SubmitGPUCommandBuffer");
+		if (!bOwnerDraws)
+			WAX_SDL_CHECK(SDL_SubmitGPUCommandBuffer(m_pCmd), "SDL_SubmitGPUCommandBuffer");
 
 		m_pCmd = nullptr;
 		m_pExecTarget = nullptr;
 		m_pExecPipeline = nullptr;
+	}
+
+	//____ _generateMipmaps() ____________________________________________________
+	//
+	// Mip levels that no longer match level 0 are made anew before anything reads them, for all
+	// the session blits from. A session reads what it draws from when it ends, so they are all
+	// made before its render pass, which they can't be made in.
+
+	void SdlGpuBackend::_generateMipmaps( SDL_GPUCommandBuffer * pCmd )
+	{
+		for (const Op_t& op : m_ops)
+		{
+			if (op.op != Op::BindBlitTexture)
+				continue;
+
+			auto pSource = static_cast<SdlGpuSurface*>(op.pObject);
+
+			if (!pSource->isMipmapStale())
+				continue;
+
+			if (pSource->mipLevels() > 1)
+				SDL_GenerateMipmapsForGPUTexture(pCmd, pSource->texture());
+
+			pSource->clearMipmapStale();
+		}
 	}
 
 	//____ _recordUploads() ______________________________________________________
@@ -1104,7 +1143,7 @@ namespace wax
 
 	//____ _executeScissor() _____________________________________________________
 	//
-	// Kept for render passes that start over, as for mipmaps. Scissors must be within the canvas.
+	// Kept for the render pass, which begins with the first draw. Scissors must be within the canvas.
 
 	void SdlGpuBackend::_executeScissor( const RectI& rect )
 	{
@@ -1277,7 +1316,8 @@ namespace wax
 
 	//____ waitForCompletion() ___________________________________________________
 	//
-	// Every session has been submitted when it ended.
+	// Every session has been submitted when it ended, but for draws into a default canvas that
+	// went into the command buffer of its owner, see setCommandBuffer(), which we can't wait for.
 
 	void SdlGpuBackend::waitForCompletion()
 	{

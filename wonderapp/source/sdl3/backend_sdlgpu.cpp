@@ -51,6 +51,13 @@ using namespace wax;
 //   SDL_GPU_DRIVER=vulkan|direct3d12|metal	Picks the driver, which SDL otherwise does.
 //   WAPP_GPU_DEBUG=1						Debug mode of SDL_GPU, with the validation
 //											layers of the driver where installed.
+//   WAPP_GPU_DIRECT=1						Draws straight into the swap chain, see below.
+//
+// With WAPP_GPU_DIRECT=1 there is no canvas of our own. Each frame that has something to draw
+// acquires a texture of the swap chain, clears it, where an application with graphics of its own
+// would render them, and has Wax draw all widgets on top of that in the same command buffer, see
+// SdlGpuBackend::setCommandBuffer(). That is how an application that owns the frame uses the
+// backend, and this is here to have it run and tested.
 //
 // A window that can't be shown with the device, as on a display the GPU can't
 // present to, is still rendered into, but shows nothing. That is enough for tests
@@ -74,8 +81,10 @@ private:
 
 	void	_createCanvas();
 	bool	_present();
+	bool	_renderDirect();
 
-	SdlGpuSurface_p	m_pCanvas;
+	SdlGpuSurface_p	m_pCanvas;						// Null when drawing straight into the swap chain.
+	bool			m_bDirect = false;				// Draws straight into the swap chain.
 	bool			m_bClaimed = false;				// Has a swap chain of the device.
 	bool			m_bPresentPending = false;		// Rendered but not yet presented.
 };
@@ -83,6 +92,7 @@ private:
 
 static SDL_GPUDevice *	g_pDevice = nullptr;
 static SdlGpuBackend_p	g_pBackend;
+static bool				g_bDirect = false;				// WAPP_GPU_DIRECT=1
 
 //____ backend_specific_init() ________________________________________________
 
@@ -90,6 +100,9 @@ bool backend_specific_init()
 {
 	const char * pDebug = getenv("WAPP_GPU_DEBUG");
 	bool bDebug = pDebug && strcmp(pDebug, "1") == 0;
+
+	const char * pDirect = getenv("WAPP_GPU_DIRECT");
+	g_bDirect = pDirect && strcmp(pDirect, "1") == 0;
 
 	g_pDevice = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV | SDL_GPU_SHADERFORMAT_DXIL | SDL_GPU_SHADERFORMAT_MSL, bDebug, nullptr);
 	if (!g_pDevice)
@@ -173,8 +186,16 @@ SDLWindowGPU::SDLWindowGPU(wapp::Window* pUserWindow, wg::Placement origin, wg::
 	else
 		printf("Unable to show a window with the SDL GPU device, it is rendered into but shows nothing: %s\n", SDL_GetError());
 
+	// Without a swap chain there is nothing to draw straight into.
+
+	m_bDirect = g_bDirect && m_bClaimed;
+
 	_createCanvas();
-	m_pRootPanel = RootPanel::create(m_pCanvas);
+
+	if (m_bDirect)
+		m_pRootPanel = RootPanel::create(CanvasRef::Default, wg::Base::defaultDevice());
+	else
+		m_pRootPanel = RootPanel::create(m_pCanvas);
 
 	//TODO: This is ugly. It should be handled when windows gets focused.
 
@@ -199,6 +220,22 @@ void SDLWindowGPU::render()
 	if (!m_pRootPanel)
 		return;
 
+	bool bHidden = (SDL_GetWindowFlags(m_pSDLWindow) & SDL_WINDOW_HIDDEN) != 0;
+
+	if (m_bDirect)
+	{
+		// Nothing is kept between frames, so a frame is drawn in full when anything has changed,
+		// once there is a texture of the swap chain to draw it into.
+
+		if (m_pRootPanel->nbDirtyRects() > 0)
+			m_bPresentPending = true;
+
+		if (m_bPresentPending && !bHidden)
+			m_bPresentPending = !_renderDirect();
+
+		return;
+	}
+
 	if (m_pRootPanel->nbDirtyRects() > 0)
 	{
 		m_pRootPanel->render();
@@ -208,7 +245,7 @@ void SDLWindowGPU::render()
 	// A hidden window has nothing to present to, so what was rendered waits until it is
 	// shown, and so does what finds no swap chain texture free.
 
-	if (m_bPresentPending && !(SDL_GetWindowFlags(m_pSDLWindow) & SDL_WINDOW_HIDDEN))
+	if (m_bPresentPending && !bHidden)
 		m_bPresentPending = !_present();
 }
 
@@ -221,15 +258,32 @@ void SDLWindowGPU::onWindowSizeUpdated()
 
 	_createCanvas();
 
-	m_pRootPanel->setCanvas(m_pCanvas);
+	if (m_bDirect)
+		m_pRootPanel->setCanvas(CanvasRef::Default);
+	else
+		m_pRootPanel->setCanvas(m_pCanvas);
+
 	_notifyUserWindowOfResize();
 	render();
 }
 
 //____ _createCanvas() ________________________________________________________
 
+//
+// When drawing straight into the swap chain, the default canvas of the backend gets the size and
+// format of the window, for the root panel to read. Its texture is set for each frame.
+
 void SDLWindowGPU::_createCanvas()
 {
+	if (m_bDirect)
+	{
+		SizeI size = _sizeInPixels();
+
+		g_pBackend->setDefaultCanvas(nullptr, SDL_GetGPUSwapchainTextureFormat(g_pDevice, m_pSDLWindow),
+									 { spx(size.w * 64), spx(size.h * 64) }, _scale());
+		return;
+	}
+
 	m_pCanvas = SdlGpuSurface::create( WGBP(Surface, _.canvas = true, _.format = PixelFormat::ARGB_8, _.scale = _scale(), _.size = _sizeInPixels() ) );
 }
 
@@ -272,6 +326,61 @@ bool SDLWindowGPU::_present()
 		blit.filter = SDL_GPU_FILTER_NEAREST;
 
 		SDL_BlitGPUTexture(pCmd, &blit);
+	}
+
+	SDL_SubmitGPUCommandBuffer(pCmd);
+	return pTarget != nullptr;
+}
+
+//____ _renderDirect() ________________________________________________________
+//
+// Draws a frame straight into the next texture of the swap chain: what the application has of its
+// own, here only a clear, and then all widgets on top of it, in the command buffer the texture was
+// acquired with. Returns false if it has to be done again, as when there was no texture free.
+
+bool SDLWindowGPU::_renderDirect()
+{
+	SDL_GPUCommandBuffer * pCmd = SDL_AcquireGPUCommandBuffer(g_pDevice);
+	if (!pCmd)
+		return true;
+
+	SDL_GPUTexture * pTarget = nullptr;
+	Uint32 width = 0, height = 0;
+
+	if (!SDL_AcquireGPUSwapchainTexture(pCmd, m_pSDLWindow, &pTarget, &width, &height))
+	{
+		SDL_CancelGPUCommandBuffer(pCmd);
+		return true;
+	}
+
+	if (pTarget)
+	{
+		SDL_GPUColorTargetInfo target = {};
+		target.texture = pTarget;
+		target.clear_color = { 0.f, 0.f, 0.f, 1.f };
+		target.load_op = SDL_GPU_LOADOP_CLEAR;
+		target.store_op = SDL_GPU_STOREOP_STORE;
+
+		SDL_EndGPURenderPass(SDL_BeginGPURenderPass(pCmd, &target, 1, nullptr));
+
+		// The swap chain decides the size of the frame, which the window follows.
+
+		SizeSPX size = { spx(width * 64), spx(height * 64) };
+		SDL_GPUTextureFormat format = SDL_GetGPUSwapchainTextureFormat(g_pDevice, m_pSDLWindow);
+
+		g_pBackend->setDefaultCanvas(pTarget, format, size, _scale());
+		g_pBackend->setCommandBuffer(pCmd);
+
+		if (m_pRootPanel->canvasSize() != size)
+			m_pRootPanel->setCanvas(CanvasRef::Default);
+
+		m_pRootPanel->addDirtyPatch(size);
+		m_pRootPanel->render();
+
+		// The texture is gone once the command buffer is submitted.
+
+		g_pBackend->setCommandBuffer(nullptr);
+		g_pBackend->setDefaultCanvas(nullptr, format, size, _scale());
 	}
 
 	SDL_SubmitGPUCommandBuffer(pCmd);

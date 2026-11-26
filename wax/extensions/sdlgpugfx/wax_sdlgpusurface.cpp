@@ -433,7 +433,8 @@ namespace wax
 	//
 	// Copies a rectangle of our texture to pDest, by a transfer buffer made for it. This stalls
 	// until the GPU is done, but only happens when someone asks for the pixels of a canvas. Every
-	// session has been submitted when it ended, so what was rendered into us is in front of us.
+	// session on a surface has been submitted when it ended, so what was rendered into us is in
+	// front of us.
 
 	bool SdlGpuSurface::_readBack( const RectI& rect, uint8_t * pDest, int destPitch )
 	{

@@ -48,7 +48,9 @@
 - `wappsdl3gpu` renders with SDL's GPU API, which picks Vulkan, D3D12 or Metal (`SDL_GPU_DRIVER`
   overrides). Headless on Linux, `SDL_VIDEO_DRIVER=offscreen` renders on the Intel GPU, and
   `VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.json` on lavapipe. `WAPP_GPU_DEBUG=1` turns on
-  SDL's debug mode, with the validation layer.
+  SDL's debug mode, with the validation layer. `WAPP_GPU_DIRECT=1` draws straight into the swap
+  chain, in a command buffer of the window's, as an application that owns the frame would: it
+  needs a window that can be shown, so not `SDL_VIDEO_DRIVER=offscreen`.
 - After changing a shader in `wax/extensions/hlsl`, run `wax/extensions/vulkangfx/compile_shaders.py`
   (needs DXC), `wax/extensions/metalgfx/compile_shaders.py`, `wax/extensions/openglgfx/compile_shaders.py`
   and `wax/extensions/sdlgpugfx/compile_shaders.py` (also need spirv-cross, and glslangValidator
