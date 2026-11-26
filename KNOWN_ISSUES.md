@@ -181,8 +181,10 @@ b3de9d77 and 7a50178a alike, but three of PaletteCapacityTests on A8 canvases ch
 runs of the same binary: four runs of only that suite gave Palette8OnA8Canvas DIFFERS with mean
 0.190, 0.190, 0.187 and 1.253, and in a full run it was SPECKS with mean 0.021, where
 Palette8Capacity16OnA8Canvas was DIFFERS with mean 1.096 in one full run and SPECKS in another.
-So something is read there before it is settled, with Apple's OpenGL at least. Not looked into,
-and there is no run of GlBackend on a Mac from before to compare with.
+Palette5sRGBOnA8Canvas was DIFFERS every time, with mean 0.216 and 0.199 in the two full runs and
+1.006 in all four runs of the suite alone. Maybe something is read there before it is settled,
+with Apple's OpenGL at least: nothing that was run shows the cause. Not looked into, and there is
+no run of GlBackend on a Mac from before to compare with.
 
 `wax/extensions/openglgfx`, `wonderapp/tools/gfxdevicetester/testsuites`
 
@@ -324,7 +326,8 @@ Mesa). Besides Mipmapped_0.4, ReplaceVerticalAndFlat and the two of ReadbackTest
 The amounts vary from run to run of the same build (2026-11-26): two runs after each other gave
 A8_Fills mean 0.665 over 22425 and mean 0.423 over 13974, and CanvasWithoutAlpha mean 1.220 over
 9777 and mean 0.788 over 6238, with the same max. The tests that differ are the same each time.
-So something is read that isn't settled when it is read, rather than blended by another rule.
+So it is not, or not only, a rule of blending that differs: maybe something is read that isn't
+settled when it is read. Nothing that was run shows the cause.
 
 All are about blending, none about what was drawn, so a guess is a blend factor or operation
 this driver does differently, or that SDL_GPU sets up differently for it. Not looked into, and
