@@ -1376,22 +1376,37 @@ of a frame is kept. What each backend has for it:
 On Windows (Arc B580, Release): gfxdevicetester gives the same lines as before with DX12Backend
 (13 differ of 266), GlBackend (2) and SdlGpuBackend with D3D12 (10), and unittester passes with
 SdlGpuBackend. With Vulkan the same 13 differ, by amounts that vary from run to run, see
-KNOWN_ISSUES.md. With `WAPP_GPU_DIRECT=1` widgetbench, workbench and helloworld show the same
+KNOWN_ISSUES.md. With `WAPP_GPU_DIRECT=1` widgetbench, editera and helloworld show the same
 window as without it, pixel for pixel as PrintWindow gives it, with D3D12 and with Vulkan, and
 the debug layer of D3D12 says nothing while drawing. What the application has rendered stays
 where the widgets don't draw: with the clear made magenta and only the left half of the window
 redrawn each frame, the right half was magenta, with both drivers. GlBackend with a framebuffer
-of the application's as default canvas showed the same window as before in the three
-applications. The last two were tried with changes to `wappsdl3gpu` and `wappsdl3gl` that
-weren't kept.
+of the application's as default canvas showed the same window as before in widgetbench and
+helloworld. The last two were tried with changes to `wappsdl3gpu` and `wappsdl3gl` that weren't
+kept.
 
 On Linux (7a50178a, Debug): all of `linux-wappsdl3gl`, `linux-wappsdl3vk` and
 `linux-wappsdl3gpu` builds with no fix, unittester passes with each, and gfxdevicetester gives
 the same lines as before: VulkanBackend and SdlGpuBackend 4 that differ of 266 (Intel UHD 770),
-GlBackend 3 (llvmpipe). With `WAPP_GPU_DIRECT=1` widgetbench and workbench show the same window
-as without it, pixel for pixel, on lavapipe under Xvfb, which is the device there that can
-present, with the validation layer of Vulkan silent. With GlBackend the two show the same windows
-as at b3de9d77.
+GlBackend 3 (llvmpipe). With `WAPP_GPU_DIRECT=1` widgetbench shows the same window as without
+it, pixel for pixel, on lavapipe under Xvfb, which is the device there that can present, with
+the validation layer of Vulkan silent. With GlBackend it shows the same window as at b3de9d77.
 
-Not run: DX12Backend with RENDER_TARGET as resting state, and direct mode on a display of an
-Intel GPU on Linux.
+On a Mac (7a50178a, x86_64, Debug): `macos-wappcocoametal`, `macos-wappsdl3metal` and
+`macos-wappsdl3gpu` build with no fix, but for the two bundle steps in KNOWN_ISSUES.md, and so
+do gfxdevicetester and unittester of `macos-wappsdl3gl`. unittester passes with each.
+gfxdevicetester gives the same lines as before: MetalBackend 13 that differ of 266 with both
+frameworks, SdlGpuBackend with Metal 10. GlBackend has 16, at b3de9d77 too, the same lines but
+for three tests that vary from run to run there, see KNOWN_ISSUES.md. With `WAPP_GPU_DIRECT=1`
+widgetbench and editera show the same window as without it, pixel for pixel, also after the
+window was resized, with the validation of Metal turned on and saying nothing. With a queue of
+the application's given to `setMetalDevice()`, in a change to `cocoawindow_metal.mm` that wasn't
+kept, `metalCommandQueue()` returned it, gfxdevicetester gave the same lines and the two
+applications the same windows.
+
+workbench was compared too, on Windows and Linux, which says nothing: it isn't built on WonderApp
+and draws with SoftBackend.
+
+Not run: DX12Backend with RENDER_TARGET as resting state, direct mode on a display of an Intel
+GPU on Linux, and an application that commits command buffers of its own to the queue it gives
+MetalBackend.

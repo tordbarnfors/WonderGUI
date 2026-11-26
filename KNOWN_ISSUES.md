@@ -174,6 +174,28 @@ case every application has it. Harmless at exit, but it would hide a real leak. 
 
 `wonderapp/source/sdl3/backend_sdlgpu.cpp`
 
+### GlBackend on a Mac: palette tests on A8 canvases vary from run to run
+
+With `macos-wappsdl3gl` (x86_64, Debug) gfxdevicetester has 16 tests that differ of 266, at
+b3de9d77 and 7a50178a alike, but three of PaletteCapacityTests on A8 canvases change between
+runs of the same binary: four runs of only that suite gave Palette8OnA8Canvas DIFFERS with mean
+0.190, 0.190, 0.187 and 1.253, and in a full run it was SPECKS with mean 0.021, where
+Palette8Capacity16OnA8Canvas was DIFFERS with mean 1.096 in one full run and SPECKS in another.
+So something is read there before it is settled, with Apple's OpenGL at least. Not looked into,
+and there is no run of GlBackend on a Mac from before to compare with.
+
+`wax/extensions/openglgfx`, `wonderapp/tools/gfxdevicetester/testsuites`
+
+### WonderApp on SDL3 doesn't quit when asked to
+
+`wonderapp/source/sdl3/main.cpp` has no case for `SDL_EVENT_QUIT`: the one for SDL2's `SDL_QUIT`
+is in a block that is commented out. SDL turns SIGTERM into that event, so on a Mac widgetbench
+and editera had to be killed with SIGKILL (7a50178a, `macos-wappsdl3gpu`), where workbench, which
+isn't built on WonderApp, quits. Whatever else SDL sends it for, such as Cmd+Q on a Mac, hasn't
+been tried.
+
+`wonderapp/source/sdl3/main.cpp`
+
 ### macOS: example01 and streamanalyzer embed SDL frameworks that aren't there
 
 With the Xcode generator both fail in a step that copies a framework into the bundle, after they
