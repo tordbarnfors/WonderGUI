@@ -22,7 +22,7 @@
 #include "wg_widgettreeview.h"
 #include <wg_textdisplay.h>
 #include <wg_packpanel.h>
-#include <wg_drawerpanel.h>
+#include <wg_expanderpanel.h>
 #include <wg_selectcapsule.h>
 #include <wg_filler.h>
 #include <wg_debugcapsule.h>
@@ -190,9 +190,9 @@ namespace wg
 		if (pWidget == nullptr)
 			return;
 
-		if (pWidget->typeInfo() == DrawerPanel::TYPEINFO)
+		if (pWidget->typeInfo() == ExpanderPanel::TYPEINFO)
 		{
-			auto pDrawer = static_cast<DrawerPanel*>(pWidget);
+			auto pDrawer = static_cast<ExpanderPanel*>(pWidget);
 
 			auto pPackPanel = static_cast<PackPanel*>(pDrawer->slots[1]._widget());
 

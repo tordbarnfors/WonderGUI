@@ -57,7 +57,7 @@ namespace wg
 		LambdaPanelInfoSection(const DebugTheme& theme, IDebugContext* pContext, LambdaPanel * pInspected );
 		~LambdaPanelInfoSection() {}
 
-		DrawerPanel_p	m_pSlotsDrawer;
+		ExpanderPanel_p	m_pSlotsDrawer;
 	};
 
 } // namespace wg

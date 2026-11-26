@@ -88,7 +88,7 @@ protected:
 		TestSuite*		pSuites[2] = { nullptr, nullptr };	// One instance per backend, they hold backend specific resources.
 		int				firstTest = 0;
 		int				nbTests = 0;
-		DrawerPanel_p	pTreeDrawer;
+		ExpanderPanel_p	pTreeDrawer;
 	};
 
 	struct AccuracyResult

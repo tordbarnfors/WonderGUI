@@ -37,7 +37,7 @@ extern "C" {
 											   wax_getWritePtr_func getWritePtrFunc,
 											   wax_setReadPtr_func setReadPtrFunc);
 
-	WAX_EXPORT wax_component	wax_getStreamLoopWrapperOutput(wax_obj loopWrapper);
+	WAX_EXPORT wax_part	wax_getStreamLoopWrapperOutput(wax_obj loopWrapper);
 
 
 #ifdef __cplusplus

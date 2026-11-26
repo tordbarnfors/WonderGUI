@@ -43,7 +43,7 @@ namespace wax
 		static StreamSplitter_p	create();
 		static StreamSplitter_p	create( const std::initializer_list<StreamSink_p>& outputs );
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		StreamSink		input;
 

@@ -46,7 +46,7 @@ namespace wax
 
 		static StreamReader_p	create( std::function<int(int nBytes, void * pDest)> dataFetcher );
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		StreamSource		output;
 

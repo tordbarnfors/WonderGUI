@@ -14,7 +14,7 @@ set( SOURCES
 	source/wax_chain.h
 	source/wax_color.cpp
 	source/wax_color.h
-	source/wax_componentptr.h
+	source/wax_partptr.h
 	source/wax_dataset.cpp
 	source/wax_dataset.h
 	source/wax_dynamicbuffer.h

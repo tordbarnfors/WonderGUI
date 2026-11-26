@@ -1,0 +1,152 @@
+/*=========================================================================
+
+                             >>> WonderGUI <<<
+
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
+
+                                -----------
+
+  The WonderGUI UI Toolkit is free software; you can redistribute
+  this file and/or modify it under the terms of the GNU General Public
+  License as published by the Free Software Foundation; either
+  version 2 of the License, or (at your option) any later version.
+
+                                -----------
+
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
+
+=========================================================================*/
+#ifndef	WG_GLOW_DOT_H
+#define	WG_GLOW_DOT_H
+#pragma once
+
+#include <wg_types.h>
+#include <wg_part.h>
+#include <wax_geo.h>
+#include <wg_skin.h>
+#include <wg_util.h>
+#include <wax_blurbrush.h>
+
+namespace wg
+{
+
+	//____ Glow _____________________________________________________________
+
+	class Glow : public Part
+	{
+		friend class GlowInfoSection;
+
+	public:
+		Glow(Widget* pWidget);
+		virtual ~Glow() {};
+
+
+		//____ Blueprint ______________________________________________________
+
+		struct Blueprint
+		{
+			bool				active = false;
+
+			Blurbrush_p			blurbrush;
+
+			int					refreshRate = 30;
+
+			SizeI				resolution;
+
+			Color				seedTint = Color::White;
+			BlendMode			seedBlend = BlendMode::Blend;
+
+			Color				glowTint = Color::White;
+			BlendMode			glowBlend = BlendMode::Add;
+
+			Placement			resizePlacement = Placement::NorthWest;
+			bool				stretchOnResize = false;
+			bool				clearOnResize	= false;
+		};
+
+		//.____ Identification _________________________________________________
+
+		const TypeInfo& typeInfo(void) const override;
+		const static TypeInfo	TYPEINFO;
+
+		//.____ Control _____________________________________________
+
+		void				setActive(bool bActive);
+		bool				isActive();
+
+		void				clear();
+
+		//.____ Behavior ______________________________________________________
+
+		void				setResizeAction(Placement moveGlow, bool bStretchGlow, bool bClearGlow);
+		Placement			resizePlacement() const { return m_resizePlacement; }
+		bool				stretchOnResize() const { return m_bStretchOnResize; }
+		bool				clearOnResize() const { return m_bClearOnResize; }
+
+		void				setRefreshRate(int updatesPerSecond);
+		int					refreshRate() const;
+
+		//.____ Appearance _____________________________________________
+
+		void				setBlurbrush(Blurbrush* pBrush);
+		Blurbrush_p			blurbrush() const { return m_pBrush;  }
+
+		void				setPixelResolution(SizeI pixels);
+		SizeI				pixelResolution() const;
+
+		void				setSeedTint(Color seedTint);
+		Color				seedTint() const { return m_seedTint; }
+
+		void				setSeedBlend(BlendMode seedBlend);
+		BlendMode			seedBlend() const { return m_seedBlend; }
+
+		void				setGlowTint(Color glowTint);
+		Color				glowTint() const { return m_glowTint; }
+
+		void				setGlowBlend(BlendMode glowBlend);
+		BlendMode			glowBlend() const { return m_glowBlend; }
+
+		//.____ Internal ______________________________________________________
+
+		void				_initFromBlueprint(const Blueprint& blueprint);
+
+		void				_setSize(SizeSPX size, int scale);
+		void				_update(int microPassed);
+		void				_render(GfxDevice* pDevice, const RectSPX& canvas, Bitmap_p pSeed, const RectSPX& seedArea );
+
+
+	protected:
+
+		SizeI				_glowResolution();
+		Bitmap_p			_createGlowCanvas( BitmapFactory * pFactory, ColorSpace colorSpace );
+
+		Blurbrush_p			m_pBrush;
+
+		int					m_refreshRate = 30;
+
+		Bitmap_p			m_bitmap[2];
+		SizeI				m_resolution;
+
+		Color				m_seedTint = Color::White;
+		BlendMode			m_seedBlend = BlendMode::Blend;
+
+		Color				m_glowTint = Color::White;
+		BlendMode			m_glowBlend = BlendMode::Add;
+
+		int					m_microSecAccumulator = 0;
+
+		bool				m_bClear = false;
+
+		Placement			m_resizePlacement = Placement::NorthWest;
+		bool				m_bStretchOnResize = false;
+		bool				m_bClearOnResize = false;
+
+		bool				m_bActive = false;
+	};
+
+
+} // namespace wg
+#endif	// WG_GLOW_DOT_H

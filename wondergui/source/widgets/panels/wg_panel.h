@@ -140,7 +140,7 @@ namespace wg
 		
 		using		iterator = typename DynamicSlotVector<SlotType>::iterator;
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		DynamicSlotVector<SlotType>		slots;
 		

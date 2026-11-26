@@ -81,7 +81,7 @@ namespace wg
 		static Capsule_p	create();
 		static Capsule_p	create(const Blueprint& blueprint);
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		DynamicSlot		slot;
 

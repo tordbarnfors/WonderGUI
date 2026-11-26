@@ -56,7 +56,7 @@ namespace wg
 		ModalOverlayInfoSection(const DebugTheme& theme, IDebugContext* pContext, ModalOverlay * pInspected );
 		~ModalOverlayInfoSection() {}
 
-		DrawerPanel_p	m_pModalSlotsDrawer;
+		ExpanderPanel_p	m_pModalSlotsDrawer;
 	};
 
 } // namespace wg

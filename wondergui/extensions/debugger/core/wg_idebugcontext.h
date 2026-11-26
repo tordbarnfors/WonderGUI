@@ -25,7 +25,7 @@
 
 #include <wax_object.h>
 #include <wax_pointers.h>
-#include <wg_component.h>
+#include <wg_part.h>
 #include <wg_slot.h>
 
 #include <wg_debugtheme.h>
@@ -38,7 +38,7 @@ namespace wg
 	//
 	// What an InfoSection or InspectorView needs from its surroundings: the
 	// shared theme, a way to report that the user picked an object, and a way
-	// to build the stack of info sections for an object, slot or component.
+	// to build the stack of info sections for an object, slot or part.
 	// Implemented by DebugBackend.
 
 	class IDebugContext
@@ -54,7 +54,7 @@ namespace wg
 
 		virtual void	addObjectInfoSections(PackPanel* pPanel, Object* pObject) = 0;
 		virtual void	addSlotInfoSections(PackPanel* pPanel, StaticSlot* pSlot) = 0;
-		virtual void	addComponentInfoSections(PackPanel* pPanel, Component* pComponent) = 0;
+		virtual void	addPartInfoSections(PackPanel* pPanel, Part* pPart) = 0;
 	};
 
 } // namespace wg

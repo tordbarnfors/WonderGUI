@@ -35,7 +35,7 @@ extern "C" {
 
 	WAX_EXPORT wax_obj		wax_createStreamPlayer(wax_obj backend, wax_obj bitmapFactory, wax_obj edgemapFactory);
 
-	WAX_EXPORT wax_component	wax_getStreamPlayerInput(wax_obj streamPlayer);
+	WAX_EXPORT wax_part	wax_getStreamPlayerInput(wax_obj streamPlayer);
 
 	WAX_EXPORT void			wax_resetStreamPlayer(wax_obj streamPlayer);
 

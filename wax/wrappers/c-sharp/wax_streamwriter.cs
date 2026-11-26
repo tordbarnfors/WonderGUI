@@ -16,8 +16,8 @@ public class StreamWriter : Objekt
 
     public StreamSink GetSink()
     {
-        C_Component c_comp = wax_getStreamWriterInput(_obj);
-        StreamSink sink = new StreamSink(c_comp.component, this);
+        C_Part c_comp = wax_getStreamWriterInput(_obj);
+        StreamSink sink = new StreamSink(c_comp.part, this);
         return sink;
     }
 
@@ -37,7 +37,7 @@ public class StreamWriter : Objekt
     protected static extern IntPtr wax_createStreamWriter(WriteStreamCallback dispatcher);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern C_Component	wax_getStreamWriterInput(IntPtr streamWriter);
+    private static extern C_Part	wax_getStreamWriterInput(IntPtr streamWriter);
 
 
 }

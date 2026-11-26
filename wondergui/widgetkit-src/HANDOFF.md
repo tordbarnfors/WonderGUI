@@ -1,4 +1,4 @@
-# glossyblue / SelectBox — session handoff
+# glossyblue / Dropdown — session handoff
 
 Written 2026-09-28, at the end of a long Cowork session, to hand the work to a
 Claude Code session. Everything below is either in the repo now or was verified
@@ -64,25 +64,25 @@ headers. There is no separate step.
    where it is), and 1pt of clear space around every part including the atlas
    edge.
 
-2. **SelectBox pressed state.** `glyph_shift: {Pressed: [1,1]}` moves the arrow
+2. **Dropdown pressed state.** `glyph_shift: {Pressed: [1,1]}` moves the arrow
    and divider (artwork), `content_shift: {Pressed: [1,1]}` moves the text.
-   Note `Pressed` here means *the drop-down is open* — `SelectBox::_setState`
+   Note `Pressed` here means *the drop-down is open* — `Dropdown::_setState`
    forces it while the popup is up.
 
-3. **SelectBox rigid part fixed.** The arrow had been smearing when the box was
+3. **Dropdown rigid part fixed.** The arrow had been smearing when the box was
    stretched (10.5pts tall instead of 6.5 at a 40pt height, 21.5 at 100pt),
    because the run was sized from nominal glyph geometry (5pts centred at y=10)
    rather than the drawn footprint with outline and AA (7.0..13.5). Now
    `5.5..14.5`. Every other rigid part in the kit was audited the same way and
    is correct.
 
-4. **`text` → `display` rename** (Tord's change to `wg::SelectBox`, plus the
+4. **`text` → `display` rename** (Tord's change to `wg::Dropdown`, plus the
    two compile breaks it left — see below). He confirmed: *"It builds and works
    fine now."*
 
 ### Done, checked in a real build (Claude Code session, 2026-09-28)
 
-5. **SelectBox entry indent.** `Skins::SelectBoxEntry` carries
+5. **Dropdown entry indent.** `Skins::DropdownEntry` carries
    `_.padding = { 0, 6, 0, 6 }` so drop-down entries line up with the closed
    box's text *while the list is open* — the only time the two are on screen
    together. Then the box is `Pressed` and its `content_shift` adds 1pt, so
@@ -93,18 +93,18 @@ headers. There is no separate step.
    arithmetic is in the pipeline doc under "Two paddings, one apparent
    indent".
 
-6. **Engine fix: SelectBox popup was too short.** The last entry was clipped
+6. **Engine fix: Dropdown popup was too short.** The last entry was clipped
    by exactly the list skin's vertical padding (2pt on `Skins::Canvas`, 8pt on
-   widgetbench's own Plate-backed picker). `SelectBox::_resize()` calls
+   widgetbench's own Plate-backed picker). `Dropdown::_resize()` calls
    `_recalcListCanvasSize()`, which rebuilt the list's default height from zero
    as the sum of entries and dropped the list skin's padding — the width, the
    constructor, `setListSkin()` and `_sideCanvasResize()` all counted it.
-   Fixed in `wg_selectbox.cpp`/`.h` (the matching height is now seeded with the
+   Fixed in `wg_dropdown.cpp`/`.h` (the matching height is now seeded with the
    padding in the constructor and tracked by `setListSkin()` too). Verified by
    screenshot and by the popup's spx sizes: 5 × 17px entries + 2px = 87px.
 
 7. **Everything builds** on Linux (gcc, SDL2 software wapp), glossyblue and
-   oldskool SelectBox wrappers both instantiated. `render --force` + `pack`
+   oldskool Dropdown wrappers both instantiated. `render --force` + `pack`
    reproduce the committed parts, atlas and header byte-identically with
    Linux Pillow/numpy as well.
 
@@ -120,7 +120,7 @@ never committed.
 
 ## The `text` → `display` rename — full picture
 
-Tord renamed `wg::SelectBox`'s text component from `text` to `display` and gave
+Tord renamed `wg::Dropdown`'s text part from `text` to `display` and gave
 the Blueprint a `DynamicText::Blueprint display` field, initialised the standard
 way (`display._initFromBlueprint(bp.display)`), which also fixed a long-standing
 engine bug: the closed box previously had no way to get a style at all, so it
@@ -128,21 +128,21 @@ drew nothing however many entries it held.
 
 Two things his rename missed, both now fixed:
 
-- `wg_selectbox.h`'s **template constructor's member-init list** still said
+- `wg_dropdown.h`'s **template constructor's member-init list** still said
   `text(this)`. (The default constructor in the .cpp was already updated.)
-- `wg_oldskool.h`'s SelectBox wrapper no longer compiled. Adding `display` to
+- `wg_oldskool.h`'s Dropdown wrapper no longer compiled. Adding `display` to
   the base Blueprint makes `bp.display` a hard requirement of the template
   constructor, and oldskool's wrapper is a bare forward whose Blueprint had no
   such field. It now declares one, styled `NormalDark` to match that kit.
 
-**Rule to carry forward:** a nested component Blueprint in a base class is a
+**Rule to carry forward:** a nested part Blueprint in a base class is a
 contract every wrapper must satisfy. When a widget gains one, grep *both*
 widgetkits.
 
 A repo-wide sweep of all 374 source files under `wondergui`, `widgetkits`,
-`tools` and `examples` found that **no application code touches the component
-at all** — eight files mention `SelectBox`, and every `.text` near one is
-`SelectBoxEntry::Blueprint{ .id = …, .text = … }`, which is that struct's own
+`tools` and `examples` found that **no application code touches the part
+at all** — eight files mention `Dropdown`, and every `.text` near one is
+`DropdownEntry::Blueprint{ .id = …, .text = … }`, which is that struct's own
 field and correctly unchanged. So the rename needed no call-site changes beyond
 the two widgetkits.
 
@@ -168,7 +168,7 @@ session turned out to be this.
 **Nested Blueprints are replaced, never merged.**
 `wkit::Button::create({ .label = { .text = "Save" } })` constructs a *fresh*
 `DynamicText::Blueprint`, so the wrapper's `.style` default is silently gone —
-and a text component with no style has no font, so you get no text at all, not a
+and a text part with no style has no font, so you get no text at all, not a
 wrong font. Two guards exist now: `init()` sets `Base::setDefaultStyle` /
 `setDefaultTextLayout`, and all ten wrapper constructors gap-fill
 (`if( !label.style() ) label.setStyle(...)`). Because of that,
@@ -205,15 +205,15 @@ not a compiler. A code session with a working `ninja` should just build first.
 
 ## Done in the follow-up session (2026-10-02)
 
-- `SelectBox::_sideCanvasMatchingHeight()` measured entry padding at `m_scale`
+- `Dropdown::_sideCanvasMatchingHeight()` measured entry padding at `m_scale`
   instead of the `scale` it is asked about, and returned the cached height for
   any scale as long as the width matched. Both fixed.
 - Wrapper audit (see PIPELINE.md, "Known open items"): `TreeListDrawer`
   `buttonSize` 14 -> 12 to stop stretching the PlusMinusToggle artwork.
-- widgetbench's test picker is now a `wkit::SelectBox` instead of a bare
-  `wg::SelectBox` with no `display` style (its closed text was dark on blue).
+- widgetbench's test picker is now a `wkit::Dropdown` instead of a bare
+  `wg::Dropdown` with no `display` style (its closed text was dark on blue).
 
-**New finding, not fixed:** clicking an entry in an open SelectBox selects it
+**New finding, not fixed:** clicking an entry in an open Dropdown selects it
 but leaves the popup open — `_sideCanvasReceive` calls `_selectEntry()` on
 MouseRelease and nothing calls `_close()`. Engine behaviour; needs a decision
 on press-drag-release vs. click semantics.
@@ -253,5 +253,5 @@ on press-drag-release vs. click semantics.
 
 6. **Also fine to ignore:** the drop-down popup's left edge sits 1pt left of the
    *visible* closed box, because the popup attaches to the widget geo while
-   `Skins::SelectBox`'s 1pt spacing insets the drawn box. Fixing it is an engine
+   `Skins::Dropdown`'s 1pt spacing insets the drawn box. Fixing it is an engine
    change (offset the popup by the skin's margin), not a kit one.

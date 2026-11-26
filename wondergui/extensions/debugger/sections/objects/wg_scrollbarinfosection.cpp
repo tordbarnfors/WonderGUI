@@ -47,7 +47,7 @@ namespace wg
 			decimalRow( "Fractional view length: ",   [](Scrollbar* s) { return s->fracViewLength(); } )
 		});
 
-		m_pScrollbarDrawer = _createComponentDrawer("Scrollbar", &pInspected->scrollbar);
+		m_pScrollbarDrawer = _createPartDrawer("Scrollbar", &pInspected->scrollbar);
 
 		pPanel->slots.pushBack({ pTable, m_pScrollbarDrawer });
 		this->slot = pPanel;
@@ -66,7 +66,7 @@ namespace wg
 	{
 		TypedInfoSection<Scrollbar>::refresh();
 
-		_refreshComponentDrawer(m_pScrollbarDrawer);
+		_refreshPartDrawer(m_pScrollbarDrawer);
 	}
 
 } // namespace wg

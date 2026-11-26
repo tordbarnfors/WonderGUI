@@ -66,7 +66,7 @@ namespace wax
 
 		static StreamPlayer_p	create(Backend * pBackend, BitmapFactory * pBitmapFactory, EdgemapFactory * pEdgemapFactory);
 
-		//.____ Components __________________________________________________________
+		//.____ Parts _______________________________________________________________
 
 		StreamSink		input;
 

@@ -52,7 +52,7 @@
 #include <wg_codepages.h>
 #include <wg_colorskin.h>
 #include <wg_columnheader.h>
-#include <wg_component.h>
+#include <wg_part.h>
 #include <wg_container.h>
 #include <wg_lambdaskin.h>
 #include <wax_dataset.h>
@@ -67,7 +67,7 @@
 #include <wg_filler.h>
 #include <wg_fillmeterskin.h>
 #include <wg_flexpanel.h>
-#include <wg_drawerpanel.h>
+#include <wg_expanderpanel.h>
 #include <wg_fpsdisplay.h>
 #include <wg_framemeterskin.h>
 #include <wg_glow.h>
@@ -98,7 +98,7 @@
 #include <wg_pianokeyboard.h>
 #include <wg_piemeterskin.h>
 #include <wg_plotchart.h>
-#include <wg_popupopener.h>
+#include <wg_menubutton.h>
 #include <wg_popupoverlay.h>
 #include <wg_rangeslider.h>
 #include <wg_receiver.h>
@@ -108,11 +108,11 @@
 #include <wg_rootpanel.h>
 #include <wg_scrollbar.h>
 #include <wg_scrollcapsule.h>
-#include <wg_scroller.h>
+#include <wg_scrollbarpart.h>
 #include <wg_scrollpanel.h>
 #include <wg_selectcapsule.h>
 #include <wg_scalecapsule.h>
-#include <wg_selectbox.h>
+#include <wg_dropdown.h>
 #include <wg_sidecanvas.h>
 #include <wg_sizecapsule.h>
 #include <wg_skin.h>

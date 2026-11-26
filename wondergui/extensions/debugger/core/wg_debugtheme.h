@@ -28,7 +28,7 @@
 #include <wg_textdisplay.h>
 #include <wg_numberdisplay.h>
 #include <wg_tablepanel.h>
-#include <wg_drawerpanel.h>
+#include <wg_expanderpanel.h>
 #include <wg_paddingcapsule.h>
 
 #include <widgetkits/wg_oldskool.h>

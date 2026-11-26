@@ -26,7 +26,7 @@
 #include <wax_object.h>
 #include <wax_strongptr.h>
 #include <wax_weakptr.h>
-#include <wax_componentptr.h>
+#include <wax_partptr.h>
 
 template <class Type_p>
 Type_p wax_dynamic_cast(wax::Object * pObject) {

@@ -33,7 +33,7 @@ namespace wax
 {
 
 	class StreamSource;
-	typedef	ComponentPtr<StreamSource>	StreamSource_p;
+	typedef	PartPtr<StreamSource>	StreamSource_p;
 
 
 	//____ StreamSource ________________________________________________________

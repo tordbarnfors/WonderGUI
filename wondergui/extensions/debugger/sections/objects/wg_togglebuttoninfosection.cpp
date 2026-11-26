@@ -62,8 +62,8 @@ namespace wg
 			objectRow( "Toggle group: ",    [](ToggleButton* b) -> Object* { return b->toggleGroup().rawPtr(); } )
 		});
 
-		m_pLabelDrawer = _createComponentDrawer("Label", &pInspected->label);
-		m_pIconDrawer = _createComponentDrawer("Icon", &pInspected->icon);
+		m_pLabelDrawer = _createPartDrawer("Label", &pInspected->label);
+		m_pIconDrawer = _createPartDrawer("Icon", &pInspected->icon);
 
 		pPanel->slots.pushBack({ pTable, m_pLabelDrawer, m_pIconDrawer });
 		this->slot = pPanel;
@@ -82,8 +82,8 @@ namespace wg
 	{
 		TypedInfoSection<ToggleButton>::refresh();
 
-		_refreshComponentDrawer(m_pLabelDrawer);
-		_refreshComponentDrawer(m_pIconDrawer);
+		_refreshPartDrawer(m_pLabelDrawer);
+		_refreshPartDrawer(m_pIconDrawer);
 	}
 
 } // namespace wg

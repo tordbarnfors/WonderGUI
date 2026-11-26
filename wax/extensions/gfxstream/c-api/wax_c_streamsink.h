@@ -29,7 +29,7 @@
 extern "C" {
 #endif
 
-	WAX_EXPORT void	wax_processStreamChunks( wax_component streamSink, const void * pBegin, const void * pEnd );
+	WAX_EXPORT void	wax_processStreamChunks( wax_part streamSink, const void * pBegin, const void * pEnd );
 
 #ifdef __cplusplus
 }

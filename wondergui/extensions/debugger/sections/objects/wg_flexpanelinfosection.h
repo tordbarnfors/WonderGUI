@@ -56,7 +56,7 @@ namespace wg
 		FlexPanelInfoSection(const DebugTheme& theme, IDebugContext* pContext, FlexPanel * pInspected );
 		~FlexPanelInfoSection() {}
 
-		DrawerPanel_p	m_pSlotsDrawer;
+		ExpanderPanel_p	m_pSlotsDrawer;
 	};
 
 } // namespace wg

@@ -31,8 +31,8 @@ extern "C" {
 
 	WAX_EXPORT wax_obj		wax_createStreamBuffer(int initialCapacity);
 
-	WAX_EXPORT wax_component	wax_getStreamBufferOutput(wax_obj streamBuffer);
-	WAX_EXPORT wax_component	wax_getStreamBufferInput(wax_obj streamBuffer);
+	WAX_EXPORT wax_part	wax_getStreamBufferOutput(wax_obj streamBuffer);
+	WAX_EXPORT wax_part	wax_getStreamBufferInput(wax_obj streamBuffer);
 
 	WAX_EXPORT int			wax_streamBufferCapacity(wax_obj streamBuffer);
 	WAX_EXPORT int			wax_streamBufferHasChunk(wax_obj streamBuffer);

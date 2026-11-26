@@ -74,7 +74,7 @@ Putting a widget into a ModalOverlay blocks all the widgets under the ModalOverl
 
 ### PopupOverlay
 
-Any widget opening a popup (e.g. SelectBox, PopupOpener) will place the popup in the closest ancestor PopupOverlay. A PopupOverlay is necessary for these widgets to work.
+Any widget opening a popup (e.g. Dropdown, MenuButton) will place the popup in the closest ancestor PopupOverlay. A PopupOverlay is necessary for these widgets to work.
 
 ### TooltipOverlay
 
@@ -128,7 +128,7 @@ Overrides the widgets default, min and max size with specific values. Can be use
 
 Basic push-button. 
 
-### PopupOpener
+### MenuButton
 
 Opens a pop-up widget next to itself when pressed.
 
@@ -180,7 +180,7 @@ Typical scrollbar with optional buttons at the ends.
 
 ## Select widgets
 
-### SelectBox
+### Dropdown
 
 Displays a text-entry with a drop-down menu from which to select entries.
 
@@ -248,4 +248,4 @@ Displays a piano keyboard with pressable keys.
 
 ### SideCanvas
 
-Internally used by certain widgets (e.g. SelectBox when the menu is opened) to open a secondary rectangle on screen for drawing. Not to be used explicitly.
+Internally used by certain widgets (e.g. Dropdown when the menu is opened) to open a secondary rectangle on screen for drawing. Not to be used explicitly.

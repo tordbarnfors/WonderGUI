@@ -108,7 +108,7 @@ namespace wg
 		static SplitPanel_p	create() { return SplitPanel_p(new SplitPanel()); }
 		static SplitPanel_p	create(const Blueprint& blueprint) { return SplitPanel_p(new SplitPanel(blueprint)); }
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		SlotArray<Slot, 2>		slots;
 

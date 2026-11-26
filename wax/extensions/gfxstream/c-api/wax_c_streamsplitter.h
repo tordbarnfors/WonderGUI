@@ -31,13 +31,13 @@ extern "C" {
 #endif
 
 	WAX_EXPORT wax_obj	wax_createStreamSplitter();
-	WAX_EXPORT wax_obj	wax_createStreamSplitterWithOutputs( wax_component output1, wax_component output2 );
+	WAX_EXPORT wax_obj	wax_createStreamSplitterWithOutputs( wax_part output1, wax_part output2 );
 
-	WAX_EXPORT wax_component	wax_getStreamSplitterInput(wax_obj streamSplitter);
+	WAX_EXPORT wax_part	wax_getStreamSplitterInput(wax_obj streamSplitter);
 
 	WAX_EXPORT void		wax_clearStreamSplitterOutputs(wax_obj streamSplitter);
-	WAX_EXPORT void		wax_addStreamSplitterOutput(wax_obj streamSplitter, wax_component output);
-	WAX_EXPORT void		wax_removeStreamSplitterOutput(wax_obj streamSplitter, wax_component output);
+	WAX_EXPORT void		wax_addStreamSplitterOutput(wax_obj streamSplitter, wax_part output);
+	WAX_EXPORT void		wax_removeStreamSplitterOutput(wax_obj streamSplitter, wax_part output);
 
 
 #ifdef __cplusplus

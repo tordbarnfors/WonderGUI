@@ -25,7 +25,7 @@
 
 
 #include <wg_capsule.h>
-#include <wg_scroller.h>
+#include <wg_scrollbarpart.h>
 #include <wax_transitions.h>
 
 namespace wg
@@ -35,7 +35,7 @@ namespace wg
 	typedef	WeakPtr<ScrollCapsule>		ScrollCapsule_wp;
 
 
-	class ScrollCapsule : public Capsule, protected Scroller::Holder
+	class ScrollCapsule : public Capsule, protected ScrollbarPart::Holder
 	{
 	public:
 
@@ -59,8 +59,8 @@ namespace wg
 			uint8_t				pickCategory = 0;
 			bool				pickHandle = false;
 			PointerStyle		pointer = PointerStyle::Undefined;
-			Scroller::Blueprint	scrollbarX;
-			Scroller::Blueprint	scrollbarY;
+			ScrollbarPart::Blueprint	scrollbarX;
+			ScrollbarPart::Blueprint	scrollbarY;
 			bool				scrollX = true;
 			bool				scrollY = true;
 			bool				selectable = false;
@@ -92,10 +92,10 @@ namespace wg
 		static ScrollCapsule_p	create();
 		static ScrollCapsule_p	create(const Blueprint& blueprint);
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
-		Scroller		scrollbarX;
-		Scroller		scrollbarY;
+		ScrollbarPart		scrollbarX;
+		ScrollbarPart		scrollbarY;
 
 
 		//.____ Identification ________________________________________________
@@ -229,18 +229,18 @@ namespace wg
 
 		//
 
-		CoordSPX	_componentPos(const Component* pComponent) const override;
-		SizeSPX		_componentSize(const Component* pComponent) const override;
-		RectSPX		_componentGeo(const Component* pComponent) const override;
+		CoordSPX	_partPos(const Part* pPart) const override;
+		SizeSPX		_partSize(const Part* pPart) const override;
+		RectSPX		_partGeo(const Part* pPart) const override;
 
 
-		// Needed for Scroller
+		// Needed for ScrollbarPart
 
-		void		_scrollbarStep(const Scroller* pComponent, int dir) override;
-		void		_scrollbarPage(const Scroller* pComponent, int dir) override;
-		void		_scrollbarWheel(const Scroller* pComponent, int dir) override;
-		spx			_scrollbarMove(const Scroller* pComponent, spx pos) override;
-		std::tuple<spx, spx, spx> _scrollbarOfsLenContent(const Scroller* pComponent) override;
+		void		_scrollbarStep(const ScrollbarPart* pPart, int dir) override;
+		void		_scrollbarPage(const ScrollbarPart* pPart, int dir) override;
+		void		_scrollbarWheel(const ScrollbarPart* pPart, int dir) override;
+		spx			_scrollbarMove(const ScrollbarPart* pPart, spx pos) override;
+		std::tuple<spx, spx, spx> _scrollbarOfsLenContent(const ScrollbarPart* pPart) override;
 
 
 

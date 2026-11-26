@@ -26,7 +26,7 @@
 #include <wg_tablepanel.h>
 #include <wg_inspectorview.h>
 #include <wg_skindisplay.h>
-#include <wg_selectbox.h>
+#include <wg_dropdown.h>
 
 
 namespace wg
@@ -60,7 +60,7 @@ namespace wg
 		Skin_p	m_pSkin;			// Keep our skin alive as long as we are, so refresh won't fail.
 
 		SkinDisplay_p	m_pSkinDisplay;
-		SelectBox_p		m_pStateSelector;
+		Dropdown_p		m_pStateSelector;
 
 	};
 

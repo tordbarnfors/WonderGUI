@@ -347,9 +347,9 @@ namespace wg
 		};
 	}
 
-	//____ _componentPos() ______________________________________________________________
+	//____ _partPos() ___________________________________________________________________
 
-	CoordSPX ToggleButton::_componentPos(const Component* pComponent) const
+	CoordSPX ToggleButton::_partPos(const Part* pPart) const
 	{
 		RectSPX contentRect = m_skin.contentRect(contentRect, m_scale, m_state);
 
@@ -357,22 +357,22 @@ namespace wg
 
 		RectSPX iconRect = _icon()._getIconRect(contentRect, m_scale);
 
-		if (pComponent == &icon)
+		if (pPart == &icon)
 			return iconRect.pos();
 
 		RectSPX textRect = _icon()._getTextRect(contentRect, iconRect, m_scale);
 		return textRect.pos();
 	}
 
-	//____ _componentSize() ______________________________________________________________
+	//____ _partSize() ___________________________________________________________________
 
-	SizeSPX ToggleButton::_componentSize(const Component* pComponent) const
+	SizeSPX ToggleButton::_partSize(const Part* pPart) const
 	{
 		SizeSPX	sz = m_size - m_skin.contentBorderSize(m_scale);
 
 		RectSPX iconRect = _icon()._getIconRect(sz, m_scale);
 
-		if (pComponent == &icon)
+		if (pPart == &icon)
 			return iconRect.size();
 
 		RectSPX textRect = _icon()._getTextRect(sz, iconRect, m_scale);
@@ -380,9 +380,9 @@ namespace wg
 
 	}
 
-	//____ _componentGeo() ______________________________________________________________
+	//____ _partGeo() ___________________________________________________________________
 
-	RectSPX ToggleButton::_componentGeo(const Component* pComponent) const
+	RectSPX ToggleButton::_partGeo(const Part* pPart) const
 	{
 		RectSPX	contentRect = m_skin.contentRect(m_size, m_scale, m_state);
 
@@ -390,7 +390,7 @@ namespace wg
 
 		RectSPX iconRect = _icon()._getIconRect(contentRect, m_scale);
 
-		if (pComponent == &icon)
+		if (pPart == &icon)
 			return iconRect;
 
 		RectSPX textRect = _icon()._getTextRect(contentRect, iconRect, m_scale);

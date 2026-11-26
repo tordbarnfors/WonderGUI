@@ -43,7 +43,7 @@ namespace wg
 	// 
 	// These are used in the API where a specific (non-default) PrimState 
 	// needs to be specified. They are also used internally when a State
-	// needs to be broken up into its components for certain calculations.
+	// needs to be broken up into its parts for certain calculations.
 	//
 	// They are numbered in order of priority, where a higher PrimState
 	// trumps a lower one when only one can be chosen.
@@ -487,9 +487,9 @@ namespace wg
 	}
 
 
-	//____ ComponentNotif ___________________________________________________________
+	//____ PartNotif ________________________________________________________________
 
-	enum class ComponentNotif
+	enum class PartNotif
 	{
 		StartReceiveUpdates,
 		StopReceiveUpdates,

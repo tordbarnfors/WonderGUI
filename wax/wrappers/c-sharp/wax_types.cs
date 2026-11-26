@@ -2,13 +2,13 @@ using System.Runtime.InteropServices;
 
 namespace Wax;
 
-//____ C_Component ____________________________________________________________
+//____ C_Part _________________________________________________________________
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct C_Component
+internal struct C_Part
 {
     public IntPtr objekt;
-    public IntPtr component;
+    public IntPtr part;
 }
 
 //____ ErrorLevel _____________________________________________________________
@@ -59,7 +59,7 @@ public enum BlendMode
 						///< Color Blending: DstRGBA = SrcRGBA - TintRGBA
 	Multiply,           ///< Blitting: RGB Multiply, alpha is ignored.
 						///< Color Blending: DstRGB = SrcRGBA * TintRGBA/255
-	Invert,             ///< Blitting: Inverts destination RGB values where alpha of source is non-zero. Ignores RBG components. Uses alpha of tint-color.
+	Invert,             ///< Blitting: Inverts destination RGB values where alpha of source is non-zero. Ignores RBG parts. Uses alpha of tint-color.
 						///< Color Blending: DstA = SrcA, DstRGB = ((255 - SrcRGB)*TintA + SrcRGB*(255-TintA))/255
 	Min,                ///< Blitting: Minimum value of each RGB component, alpha is ignored.
 						///< Color Blending: DstRGBA = min(SrcRGBA,DstRGBA)

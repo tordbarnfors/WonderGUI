@@ -56,7 +56,7 @@ namespace wg
 		LabelCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, LabelCapsule * pInspected );
 		~LabelCapsuleInfoSection() {}
 
-		DrawerPanel_p	m_pLabelDrawer;
+		ExpanderPanel_p	m_pLabelDrawer;
 	};
 
 } // namespace wg

@@ -72,7 +72,7 @@ namespace wg
 
 		void			addObjectInfoSections( PackPanel * pPanel, Object * pObject ) override;
 		void			addSlotInfoSections( PackPanel * pPanel, StaticSlot * pSlot ) override;
-		void			addComponentInfoSections( PackPanel * pPanel, Component * pComponent ) override;
+		void			addPartInfoSections( PackPanel * pPanel, Part * pPart ) override;
 
 		ObjectInspector_p	createObjectInspector(Object* pObject);
 		WidgetInspector_p	createWidgetInspector(Widget* pWidget);
@@ -114,9 +114,9 @@ namespace wg
 		}
 
 		template<class Inspected, class Section>
-		void _registerComponent()
+		void _registerPart()
 		{
-			m_componentInfoFactories[&Inspected::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Component* p)
+			m_partInfoFactories[&Inspected::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Part* p)
 				{ return Widget_p(Section::create(theme, pContext, static_cast<Inspected*>(p))); };
 		}
 
@@ -131,7 +131,7 @@ namespace wg
 
 		std::map<const TypeInfo*, InfoSectionFactory<Object>>		m_objectInfoFactories;
 		std::map<const TypeInfo*, InfoSectionFactory<StaticSlot>>	m_slotInfoFactories;
-		std::map<const TypeInfo*, InfoSectionFactory<Component>>	m_componentInfoFactories;
+		std::map<const TypeInfo*, InfoSectionFactory<Part>>	m_partInfoFactories;
 
 		std::vector<const TypeInfo*>	m_ignoreClasses;
 

@@ -141,23 +141,23 @@ namespace wg
 		label._setState(state);
 	}
 
-	//____ _componentPos() ____________________________________________________
+	//____ _partPos() _________________________________________________________
 
-	CoordSPX LabelCapsule::_componentPos(const Component* pComponent) const
+	CoordSPX LabelCapsule::_partPos(const Part* pPart) const
 	{
 		return _labelGeo(m_size, m_scale) - m_labelSkin.contentBorder(m_scale, m_state);
 	}
 
-	//____ _componentSize() ___________________________________________________
+	//____ _partSize() ________________________________________________________
 
-	SizeSPX LabelCapsule::_componentSize(const Component* pComponent) const
+	SizeSPX LabelCapsule::_partSize(const Part* pPart) const
 	{
 		return _labelGeo(m_size, m_scale) - m_labelSkin.contentBorder(m_scale, m_state);
 	}
 
-	//____ _componentGeo() ____________________________________________________
+	//____ _partGeo() _________________________________________________________
 
-	RectSPX LabelCapsule::_componentGeo(const Component* pComponent) const
+	RectSPX LabelCapsule::_partGeo(const Part* pPart) const
 	{
 		return _labelGeo(m_size, m_scale) - m_labelSkin.contentBorder(m_scale,m_state);
 	}

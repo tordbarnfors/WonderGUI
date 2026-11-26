@@ -56,7 +56,7 @@ namespace wg
 		PopupOverlayInfoSection(const DebugTheme& theme, IDebugContext* pContext, PopupOverlay * pInspected );
 		~PopupOverlayInfoSection() {}
 
-		DrawerPanel_p	m_pPopupSlotsDrawer;
+		ExpanderPanel_p	m_pPopupSlotsDrawer;
 	};
 
 } // namespace wg

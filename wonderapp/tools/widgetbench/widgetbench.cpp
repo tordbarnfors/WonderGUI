@@ -72,11 +72,11 @@ bool MyApp::_setupGUI(API* pAPI)
 
 	// Picker, sits at the top of the window.
 
-	m_pPicker = wkit::SelectBox::create();
+	m_pPicker = wkit::Dropdown::create();
 
 	int id = 0;
 	for (auto pTest : m_sortedTests)
-		m_pPicker->entries << SelectBoxEntry::Blueprint{ .id = id++, .text = pTest->name.c_str() };
+		m_pPicker->entries << DropdownEntry::Blueprint{ .id = id++, .text = pTest->name.c_str() };
 
 	Base::msgRouter()->addRoute(m_pPicker, MsgType::Select, [this](Msg*)
 		{

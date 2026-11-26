@@ -57,7 +57,7 @@ namespace wg
 		TextEditorInfoSection(const DebugTheme& theme, IDebugContext* pContext, TextEditor * pInspected );
 		~TextEditorInfoSection() {}
 
-		DrawerPanel_p	m_pEditorDrawer;
+		ExpanderPanel_p	m_pEditorDrawer;
 	};
 
 } // namespace wg

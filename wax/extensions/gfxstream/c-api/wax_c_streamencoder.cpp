@@ -44,7 +44,7 @@ wax_obj wax_createStreamEncoder( const wax_streamEncoderBP* blueprint)
 	return static_cast<Object*>(pObj.rawPtr());
 }
 
-void wax_setEncoderStream(wax_obj encoder, wax_component sinkForStream)
+void wax_setEncoderStream(wax_obj encoder, wax_part sinkForStream)
 {
 	getPtr(encoder)->setStream(StreamSink_p(reinterpret_cast<Object*>(sinkForStream.object), *reinterpret_cast<StreamSink*>(sinkForStream.pInterface)));
 }

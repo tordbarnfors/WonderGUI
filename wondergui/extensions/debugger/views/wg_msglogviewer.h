@@ -34,7 +34,7 @@
 #include <wg_msglogger.h>
 #include <wg_msgrouter.h>
 #include <wg_scrollcapsule.h>
-#include <wg_selectbox.h>
+#include <wg_dropdown.h>
 
 namespace wg
 {
@@ -129,7 +129,7 @@ namespace wg
 
 		ToggleButton_p		m_pRecordButton;
 		Button_p			m_pClearButton;
-		SelectBox_p			m_pSourceSelector;
+		Dropdown_p			m_pSourceSelector;
 
 		ToggleButton_p		m_pLogMoveToggle;
 		ToggleButton_p		m_pLogDragToggle;

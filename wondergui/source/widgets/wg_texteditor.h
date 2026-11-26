@@ -69,7 +69,7 @@ namespace wg
 		static TextEditor_p	create() { return TextEditor_p(new TextEditor()); }
 		static TextEditor_p	create(const Blueprint& blueprint) { return TextEditor_p(new TextEditor(blueprint)); }
 
-		//.____ Components ____________________________________
+		//.____ Parts _________________________________________
 
 		EditableText		editor;
 
@@ -110,7 +110,7 @@ namespace wg
 
 		bool			_markTest(const CoordSPX& ofs) override;
 
-		void			_receiveComponentNotif( Component * pComponent, ComponentNotif notification, int value, void * pData ) override;
+		void			_receivePartNotif( Part * pPart, PartNotif notification, int value, void * pData ) override;
 
 		
 		KeyAction	m_returnKeyAction = KeyAction::Insert;

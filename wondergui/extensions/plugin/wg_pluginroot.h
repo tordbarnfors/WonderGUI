@@ -72,7 +72,7 @@ namespace wg
 		static PluginRoot_p	create();
 		static PluginRoot_p	create( wax_obj myPluginCapsule, PluginContext * pContext );
 
-		//.____ Components ____________________________________
+		//.____ Parts _________________________________________
 
 		DynamicSlot			slot;
 

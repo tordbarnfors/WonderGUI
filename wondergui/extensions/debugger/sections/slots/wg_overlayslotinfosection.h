@@ -57,7 +57,7 @@ namespace wg
 		OverlaySlotInfoSection(const DebugTheme& theme, IDebugContext* pContext, Overlay::Slot * pInspected );
 		~OverlaySlotInfoSection() {}
 
-		DrawerPanel_p	m_pGeoDrawer;
+		ExpanderPanel_p	m_pGeoDrawer;
 		Rect			m_displayedGeo;
 	};
 

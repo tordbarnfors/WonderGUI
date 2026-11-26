@@ -65,7 +65,7 @@ namespace wg
 		static TextDisplay_p	create() { return TextDisplay_p(new TextDisplay()); }
 		static TextDisplay_p	create(const Blueprint& blueprint) { return TextDisplay_p(new TextDisplay(blueprint)); }
 
-		//.____ Components ____________________________________
+		//.____ Parts _________________________________________
 
 		DynamicText			display;
 

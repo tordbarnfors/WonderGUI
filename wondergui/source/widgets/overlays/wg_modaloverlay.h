@@ -128,7 +128,7 @@ namespace wg
 		static ModalOverlay_p	create() { return ModalOverlay_p(new ModalOverlay()); }
 		static ModalOverlay_p	create( const Blueprint& blueprint ) { return ModalOverlay_p(new ModalOverlay(blueprint)); }
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		DynamicSlotVector<Slot>		modalSlots;
 

@@ -57,7 +57,7 @@ namespace wg
 		NodePanelInfoSection(const DebugTheme& theme, IDebugContext* pContext, NodePanel * pInspected );
 		~NodePanelInfoSection() {}
 
-		DrawerPanel_p	m_pSlotsDrawer;
+		ExpanderPanel_p	m_pSlotsDrawer;
 	};
 
 } // namespace wg

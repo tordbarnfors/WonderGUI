@@ -57,7 +57,7 @@ namespace wg
 		PackPanelInfoSection(const DebugTheme& theme, IDebugContext* pContext, PackPanel * pInspected );
 		~PackPanelInfoSection() {}
 
-		DrawerPanel_p	m_pSlotsDrawer;
+		ExpanderPanel_p	m_pSlotsDrawer;
 	};
 
 } // namespace wg

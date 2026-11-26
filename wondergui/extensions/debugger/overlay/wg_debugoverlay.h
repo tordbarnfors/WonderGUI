@@ -121,7 +121,7 @@ namespace wg
 
 		static DebugOverlay_p	create( const Blueprint& blueprint ) { return DebugOverlay_p(new DebugOverlay(blueprint)); }
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		CWindowVector	windows;
 

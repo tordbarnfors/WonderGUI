@@ -60,7 +60,7 @@ namespace wg
 
 		@timestamp Timestamp in milliseconds.
 
-		@return Pointer to the frame for the timestamp or nullptr if component contains
+		@return Pointer to the frame for the timestamp or nullptr if part contains
 				no frames.
 	*/
 	const AnimFrame* AnimFrames::find(int timestamp) const

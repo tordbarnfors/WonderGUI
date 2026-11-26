@@ -36,14 +36,14 @@
 
 #include <wg_splitpanel.h>
 #include <wg_tablepanel.h>
-#include <wg_drawerpanel.h>
+#include <wg_expanderpanel.h>
 
 #include <wg_button.h>
 #include <wg_togglebutton.h>
 #include <wg_lineeditor.h>
 #include <wg_texteditor.h>
 #include <wg_textdisplay.h>
-#include <wg_selectbox.h>
+#include <wg_dropdown.h>
 
 
 namespace wg::oldskool
@@ -117,8 +117,8 @@ namespace wg::oldskool
 		inline Skin_p		ToggleButton;
 		inline Skin_p		Checkbox;
 		inline Skin_p		RadioButton;
-		inline Skin_p		SelectBox;
-		inline Skin_p		SelectBoxEntry;
+		inline Skin_p		Dropdown;
+		inline Skin_p		DropdownEntry;
 		inline Skin_p		ScrollbarTrack;
 		inline Skin_p		ScrollbarHandleX;
 		inline Skin_p		ScrollbarHandleY;
@@ -420,11 +420,11 @@ namespace wg::oldskool
 			uint8_t				pickCategory = 0;
 			bool				pickHandle = false;
 			PointerStyle		pointer = PointerStyle::Undefined;
-			Scroller::Blueprint	scrollbarX = WGBP(Scroller, _.back = Skins::ScrollbarTrack, 
+			ScrollbarPart::Blueprint	scrollbarX = WGBP(ScrollbarPart, _.back = Skins::ScrollbarTrack, 
 															_.backwardButton = Skins::ScrollbarButtonLeft,
 															_.bar = Skins::ScrollbarHandleX,
 															_.forwardButton = Skins::ScrollbarButtonRight);
-			Scroller::Blueprint	scrollbarY = WGBP(Scroller, _.back = Skins::ScrollbarTrack, 
+			ScrollbarPart::Blueprint	scrollbarY = WGBP(ScrollbarPart, _.back = Skins::ScrollbarTrack, 
 															_.backwardButton = Skins::ScrollbarButtonUp, 
 															_.bar = Skins::ScrollbarHandleY,
 															_.forwardButton = Skins::ScrollbarButtonDown );
@@ -487,11 +487,11 @@ namespace wg::oldskool
 			uint8_t				pickCategory = 0;
 			bool				pickHandle = false;
 			PointerStyle		pointer = PointerStyle::Undefined;
-			Scroller::Blueprint	scrollbarX = WGBP(Scroller, _.back = Skins::ScrollbarTrack, 
+			ScrollbarPart::Blueprint	scrollbarX = WGBP(ScrollbarPart, _.back = Skins::ScrollbarTrack, 
 															_.backwardButton = Skins::ScrollbarButtonLeft,
 															_.bar = Skins::ScrollbarHandleX,
 															_.forwardButton = Skins::ScrollbarButtonRight);
-			Scroller::Blueprint	scrollbarY = WGBP(Scroller, _.back = Skins::ScrollbarTrack, 
+			ScrollbarPart::Blueprint	scrollbarY = WGBP(ScrollbarPart, _.back = Skins::ScrollbarTrack, 
 															_.backwardButton = Skins::ScrollbarButtonUp, 
 															_.bar = Skins::ScrollbarHandleY,
 															_.forwardButton = Skins::ScrollbarButtonDown );
@@ -554,11 +554,11 @@ namespace wg::oldskool
 			uint8_t				pickCategory = 0;
 			bool				pickHandle = false;
 			PointerStyle		pointer = PointerStyle::Undefined;
-			Scroller::Blueprint	scrollbarX = WGBP(Scroller, _.back = Skins::ScrollbarTrack, 
+			ScrollbarPart::Blueprint	scrollbarX = WGBP(ScrollbarPart, _.back = Skins::ScrollbarTrack, 
 															_.backwardButton = Skins::ScrollbarButtonLeft,
 															_.bar = Skins::ScrollbarHandleX,
 															_.forwardButton = Skins::ScrollbarButtonRight);
-			Scroller::Blueprint	scrollbarY = WGBP(Scroller, _.back = Skins::ScrollbarTrack, 
+			ScrollbarPart::Blueprint	scrollbarY = WGBP(ScrollbarPart, _.back = Skins::ScrollbarTrack, 
 															_.backwardButton = Skins::ScrollbarButtonUp, 
 															_.bar = Skins::ScrollbarHandleY,
 															_.forwardButton = Skins::ScrollbarButtonDown );
@@ -680,7 +680,7 @@ namespace wg::oldskool
 
 	//____ TreeListDrawer ______________________________________________________
 
-	class TreeListDrawer : public wg::DrawerPanel
+	class TreeListDrawer : public wg::ExpanderPanel
 	{
 	public:
 
@@ -712,12 +712,12 @@ namespace wg::oldskool
 			Object_p			userData;
 		};
 
-		inline static wg::DrawerPanel_p	create() { return new TreeListDrawer(Blueprint()); }
-		inline static wg::DrawerPanel_p	create(const Blueprint& blueprint) { return new TreeListDrawer(blueprint); }
+		inline static wg::ExpanderPanel_p	create() { return new TreeListDrawer(Blueprint()); }
+		inline static wg::ExpanderPanel_p	create(const Blueprint& blueprint) { return new TreeListDrawer(blueprint); }
 
 	protected:
 
-		TreeListDrawer(const Blueprint& bp) : wg::DrawerPanel(bp) {}
+		TreeListDrawer(const Blueprint& bp) : wg::ExpanderPanel(bp) {}
 	};
 
 	//____ TreeListEntry ______________________________________________________
@@ -890,9 +890,9 @@ namespace wg::oldskool
 		LineEditor(const Blueprint& bp) : wg::LineEditor(bp) {}
 	};
 
-	//____ SelectBox ______________________________________________________
+	//____ Dropdown _______________________________________________________
 
-	class SelectBox : public wg::SelectBox
+	class Dropdown : public wg::Dropdown
 	{
 	public:
 
@@ -902,7 +902,7 @@ namespace wg::oldskool
 			DynamicText::Blueprint display = WGBP( DynamicText, _.layout = TextLayouts::LeftNoWrap, 
 																_.style = TextStyles::NormalDark );
 			bool			dropTarget = false;
-			Skin_p			entrySkin = Skins::SelectBoxEntry;
+			Skin_p			entrySkin = Skins::DropdownEntry;
 			TextStyle_p		entryTextStyle = TextStyles::NormalDark;
 			TextLayout_p	entryTextLayout;
 			Finalizer_p		finalizer = nullptr;
@@ -914,19 +914,19 @@ namespace wg::oldskool
 			bool			pickHandle = false;
 	    	PointerStyle	pointer = PointerStyle::Undefined;
 			bool			selectable = false;
-			Skin_p			skin = Skins::SelectBox;
+			Skin_p			skin = Skins::Dropdown;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			std::string			tooltip;
 			Object_p		userData;
 		};
 
-		inline static wg::SelectBox_p	create() { return new SelectBox(Blueprint()); }
-		inline static wg::SelectBox_p	create(const Blueprint& blueprint) { return new SelectBox(blueprint); }
+		inline static wg::Dropdown_p	create() { return new Dropdown(Blueprint()); }
+		inline static wg::Dropdown_p	create(const Blueprint& blueprint) { return new Dropdown(blueprint); }
 
 	protected:
 
-		SelectBox(const Blueprint& bp) : wg::SelectBox(bp) {}
+		Dropdown(const Blueprint& bp) : wg::Dropdown(bp) {}
 	};
 
 	//____ WindowTitleBar ______________________________________________________

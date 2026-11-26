@@ -88,7 +88,7 @@ namespace wg
 		static RootPanel_p	create(Bitmap* pCanvasBitmap, GfxDevice* pDevice = nullptr);
 		static RootPanel_p	create(CanvasRef canvasRef, GfxDevice* pDevice = nullptr);
 
-		//.____ Components ____________________________________
+		//.____ Parts _________________________________________
 
 		DynamicSlot			slot;
 

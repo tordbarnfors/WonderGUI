@@ -163,7 +163,7 @@ namespace wg
 		static PopupOverlay_p	create() { return PopupOverlay_p(new PopupOverlay()); }
 		static PopupOverlay_p	create(const Blueprint& blueprint) { return PopupOverlay_p(new PopupOverlay(blueprint)); }
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		MySlots	popupSlots;
 

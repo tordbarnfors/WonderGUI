@@ -98,7 +98,7 @@ namespace wg
 		static CanvasCapsule_p	create() { return CanvasCapsule_p(new CanvasCapsule()); }
 		static CanvasCapsule_p	create( const Blueprint& bp ) { return CanvasCapsule_p(new CanvasCapsule(bp)); }
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		Glow				glow;
 		

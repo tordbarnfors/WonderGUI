@@ -46,7 +46,7 @@ namespace wg
 
 	//____ TextItem ___________________________________________________________
 	/**
-		Interface between a text component and its TextLayout.
+		Interface between a text part and its TextLayout.
 
 		The text is UTF-8 encoded and may contain markup that the TextLayout
 		interprets. All character offsets passed between TextItem and TextLayout

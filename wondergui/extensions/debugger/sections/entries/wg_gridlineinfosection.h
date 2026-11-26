@@ -62,7 +62,7 @@ namespace wg
 		GridLineInfoSection(const DebugTheme& theme, IDebugContext* pContext, GridLine * pInspected );
 		~GridLineInfoSection() {}
 
-		DrawerPanel_p	m_pColorDrawer;
+		ExpanderPanel_p	m_pColorDrawer;
 		Color			m_displayedColor;
 	};
 

@@ -61,7 +61,7 @@ namespace wg
 
 		m_pClearColorDrawer = _createColorDrawer("Clear color: ", m_displayedClearColor);
 		m_pTintColorDrawer = _createColorDrawer("Tint color: ", m_displayedTintColor);
-		m_pGlowDrawer = _createComponentDrawer("Glow", &pInspected->glow);
+		m_pGlowDrawer = _createPartDrawer("Glow", &pInspected->glow);
 
 		pPanel->slots.pushBack({ pTable, m_pClearColorDrawer, m_pTintColorDrawer, m_pGlowDrawer });
 		this->slot = pPanel;
@@ -82,7 +82,7 @@ namespace wg
 
 		_refreshColorDrawer(m_pClearColorDrawer, inspected()->clearColor(), m_displayedClearColor);
 		_refreshColorDrawer(m_pTintColorDrawer, inspected()->tintColor(), m_displayedTintColor);
-		_refreshComponentDrawer(m_pGlowDrawer);
+		_refreshPartDrawer(m_pGlowDrawer);
 	}
 
 } // namespace wg

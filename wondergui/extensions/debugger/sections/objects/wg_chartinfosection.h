@@ -57,16 +57,16 @@ namespace wg
 		ChartInfoSection(const DebugTheme& theme, IDebugContext* pContext, Chart * pInspected );
 		~ChartInfoSection() {}
 
-		DrawerPanel_p	_createGridLinesDrawer(std::string_view label, DynamicVector<GridLine>& lines);
-		void			_refreshGridLinesDrawer(DrawerPanel* pDrawer, DynamicVector<GridLine>& lines);
+		ExpanderPanel_p	_createGridLinesDrawer(std::string_view label, DynamicVector<GridLine>& lines);
+		void			_refreshGridLinesDrawer(ExpanderPanel* pDrawer, DynamicVector<GridLine>& lines);
 		void			_addGridLineDrawers(PackPanel* pList, DynamicVector<GridLine>& lines, int begin);
 
-		DrawerPanel_p	m_pGridColorDrawer;
+		ExpanderPanel_p	m_pGridColorDrawer;
 		Color			m_displayedGridColor;
 
-		DrawerPanel_p	m_pXLinesDrawer;
-		DrawerPanel_p	m_pYLinesDrawer;
-		DrawerPanel_p	m_pGlowDrawer;
+		ExpanderPanel_p	m_pXLinesDrawer;
+		ExpanderPanel_p	m_pYLinesDrawer;
+		ExpanderPanel_p	m_pGlowDrawer;
 	};
 
 } // namespace wg

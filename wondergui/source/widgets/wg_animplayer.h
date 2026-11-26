@@ -73,7 +73,7 @@ namespace wg
 		static AnimPlayer_p	create() { return AnimPlayer_p(new AnimPlayer()); }
 		static AnimPlayer_p	create(const Blueprint& blueprint) { return AnimPlayer_p(new AnimPlayer(blueprint)); }
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		AnimFrames		frames;
 
@@ -131,8 +131,8 @@ namespace wg
 		bool			_playPosUpdated();
 		int				_playPosToTimestamp(int playPos) const;
 
-		void			_didSetAnimFrameSize(AnimFrames* pComponent) override;
-		void			_didSetAnimBitmap(AnimFrames* pComponent) override;
+		void			_didSetAnimFrameSize(AnimFrames* pPart) override;
+		void			_didSetAnimBitmap(AnimFrames* pPart) override;
 		void			_didAddEntries(AnimFrame* pEntry, int nb) override;
 		void			_didMoveEntries(AnimFrame* pFrom, AnimFrame* pTo, int nb) override;
 		void			_willEraseEntries(AnimFrame* pEntry, int nb) override;

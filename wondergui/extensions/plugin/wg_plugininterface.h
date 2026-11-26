@@ -299,8 +299,8 @@ typedef struct wg_streambuffer_calls_struct
 	int					structSize;
 
 	wax_obj				(*createStreamBuffer)(int initialCapacity);
-	wax_component		(*getStreamBufferOutput)(wax_obj streamBuffer);
-	wax_component		(*getStreamBufferInput)(wax_obj streamBuffer);
+	wax_part		(*getStreamBufferOutput)(wax_obj streamBuffer);
+	wax_part		(*getStreamBufferInput)(wax_obj streamBuffer);
 	int					(*streamBufferCapacity)(wax_obj streamBuffer);
 	int					(*streamBufferHasChunk)(wax_obj streamBuffer);
 	int					(*streamBufferBytes)(wax_obj streamBuffer);
@@ -315,7 +315,7 @@ typedef struct wg_streamplayer_calls_struct
 	int					structSize;
 
 	wax_obj				(*createStreamPlayer)(wax_obj device, wax_obj bitmapFactory, wax_obj edgemapFactory);
-	wax_component		(*getStreamPlayerInput)(wax_obj streamPlayer);
+	wax_part		(*getStreamPlayerInput)(wax_obj streamPlayer);
 	void				(*setStreamPlayerStoreDirtyRects)(wax_obj streamPlayer, int bStore);
 	void				(*setStreamPlayerMaxDirtyRects)(wax_obj streamPlayer, int max);
 	int					(*getStreamPlayerDirtyRects)(wax_obj streamPlayer, wax_canvasRef canvas, const wax_rectI** pRects);
@@ -331,9 +331,9 @@ typedef struct wg_streampump_calls_struct
 	int					structSize;
 
 	wax_obj				(*createStreamPump)();
-	wax_obj				(*createStreamPumpWithInputOutput)(wax_component input, wax_component output);
-	void				(*setStreamPumpInput)(wax_obj streamPump, wax_component input);
-	void				(*setStreamPumpOutput)(wax_obj streamPump, wax_component output);
+	wax_obj				(*createStreamPumpWithInputOutput)(wax_part input, wax_part output);
+	void				(*setStreamPumpInput)(wax_obj streamPump, wax_part input);
+	void				(*setStreamPumpOutput)(wax_obj streamPump, wax_part output);
 	wax_streamChunkId		(*peekChunk)(wax_obj streamPump);
 	int					(*pumpChunk)(wax_obj streamPump);
 	int					(*pumpUntilFrame)(wax_obj streamPump);
@@ -350,7 +350,7 @@ typedef struct wg_streamreader_calls_struct
 	int					structSize;
 
 	wax_obj				(*createStreamReader)(wax_readStream_func callback);
-	wax_component		(*getStreamReaderOutput)(wax_obj streamReader);
+	wax_part		(*getStreamReaderOutput)(wax_obj streamReader);
 	int					(*streamReaderCapacity)(wax_obj streamReader);
 	int					(*streamReaderHasChunk)(wax_obj streamReader);
 	int					(*streamReaderBytes)(wax_obj streamReader);

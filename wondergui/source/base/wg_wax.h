@@ -105,9 +105,9 @@ namespace wg
 	using wax::Color8;
 	using wax::Color;
 
-	//____ wax_componentptr.h ______________________________________________________
+	//____ wax_partptr.h ___________________________________________________________
 
-	using wax::ComponentPtr;
+	using wax::PartPtr;
 
 	//____ wax_compression.h _______________________________________________________
 

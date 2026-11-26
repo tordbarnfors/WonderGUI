@@ -57,7 +57,7 @@ namespace wg
 		PaddingCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, PaddingCapsule * pInspected );
 		~PaddingCapsuleInfoSection() {}
 
-		DrawerPanel_p	m_pPaddingDrawer;
+		ExpanderPanel_p	m_pPaddingDrawer;
 		Border			m_displayedPadding;
 	};
 

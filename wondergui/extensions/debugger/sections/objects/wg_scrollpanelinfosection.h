@@ -57,9 +57,9 @@ namespace wg
 		ScrollPanelInfoSection(const DebugTheme& theme, IDebugContext* pContext, ScrollPanel * pInspected );
 		~ScrollPanelInfoSection() {}
 
-		DrawerPanel_p	m_pScrollbarXDrawer;
-		DrawerPanel_p	m_pScrollbarYDrawer;
-		DrawerPanel_p	m_pSlotDrawer;
+		ExpanderPanel_p	m_pScrollbarXDrawer;
+		ExpanderPanel_p	m_pScrollbarYDrawer;
+		ExpanderPanel_p	m_pSlotDrawer;
 	};
 
 } // namespace wg

@@ -246,7 +246,7 @@ namespace wg
 		static AreaChart_p	create( const Blueprint& blueprint ) { return AreaChart_p(new AreaChart(blueprint)); }
 
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		DynamicVector<AreaChartEntry>	entries;
 

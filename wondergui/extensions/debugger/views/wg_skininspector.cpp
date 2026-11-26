@@ -58,11 +58,11 @@ namespace wg
 
 		//----
 
-		m_pStateSelector = WGCREATE(dbgkit::SelectBox);
+		m_pStateSelector = WGCREATE(dbgkit::Dropdown);
 
 		for (int i = 0; i < StateEnum_size; i++)
 		{
-			m_pStateSelector->entries.pushBack(WGBP(SelectBoxEntry, _.id = i, _.text = toString((StateEnum(i) ))));
+			m_pStateSelector->entries.pushBack(WGBP(DropdownEntry, _.id = i, _.text = toString((StateEnum(i) ))));
 		}
 
 		Base::msgRouter()->addRoute(m_pStateSelector, MsgType::Select, [this](Msg* pMsg) { this->_refreshState(); });;

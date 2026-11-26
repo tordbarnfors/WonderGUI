@@ -10,7 +10,7 @@ glyph: {type: plusminus}
 # The plus/minus sinks 1pt down-right while the button is held, matching
 # Button, ToggleButton and Checkbox. It has to be glyph_shift rather than
 # BlockSkin's contentShift: the sign is drawn into the block, and this skin is
-# used as a DrawerPanel's buttonSkin, whose content is nothing -- there is
+# used as a ExpanderPanel's buttonSkin, whose content is nothing -- there is
 # nothing at runtime for contentShift to move.
 #
 # Both pressed states get it. This toggle has a full six-state strip, so the

@@ -70,7 +70,7 @@ namespace wg
 
 	//____ _createDrawer() ________________________________________________________
 
-	DrawerPanel_p InfoSection::_createDrawer(std::string_view label, Widget* pHeaderValue, Widget* pContent)
+	ExpanderPanel_p InfoSection::_createDrawer(std::string_view label, Widget* pHeaderValue, Widget* pContent)
 	{
 		auto pDrawer = WGCREATE(dbgkit::TreeListDrawer, _.skin = m_pIndentationSkin, _.buttonOfs.x -= 16);
 
@@ -86,7 +86,7 @@ namespace wg
 
 	//____ _setDrawerHeaderValue() __________________________________________
 
-	void InfoSection::_setDrawerHeaderValue(DrawerPanel* pDrawer, Widget* pHeaderValue)
+	void InfoSection::_setDrawerHeaderValue(ExpanderPanel* pDrawer, Widget* pHeaderValue)
 	{
 		auto pHeaderPanel = static_cast<TwoSlotPanel*>(pDrawer->slots[0]._widget());
 		pHeaderPanel->slots[1] = pHeaderValue;
@@ -94,7 +94,7 @@ namespace wg
 
 	//____ _createColorDrawer() _________________________________________________
 
-	DrawerPanel_p InfoSection::_createColorDrawer(std::string_view label, const Color& color)
+	ExpanderPanel_p InfoSection::_createColorDrawer(std::string_view label, const Color& color)
 	{
 		bool bValid = color.isValid();
 		bool bUndefined = color.isUndefined();
@@ -118,7 +118,7 @@ namespace wg
 
 	//____ _refreshColorDrawer() _____________________________________________
 
-	void InfoSection::_refreshColorDrawer(DrawerPanel* pColorDrawer, const Color& color, Color& displayedColor )
+	void InfoSection::_refreshColorDrawer(ExpanderPanel* pColorDrawer, const Color& color, Color& displayedColor )
 	{
 		if( color == displayedColor )
 			return;
@@ -142,7 +142,7 @@ namespace wg
 
 	//____ _createRectDrawer() _________________________________________________
 
-	DrawerPanel_p InfoSection::_createRectDrawer(std::string_view label, const Rect& rect)
+	ExpanderPanel_p InfoSection::_createRectDrawer(std::string_view label, const Rect& rect)
 	{
 		bool bEmpty = rect.isEmpty();
 		bool bValid = rect.isValid();
@@ -166,7 +166,7 @@ namespace wg
 
 	//____ _refreshRectDrawer() _____________________________________________
 
-	void InfoSection::_refreshRectDrawer(DrawerPanel* pRectDrawer, const Rect& rect, Rect& displayedRect)
+	void InfoSection::_refreshRectDrawer(ExpanderPanel* pRectDrawer, const Rect& rect, Rect& displayedRect)
 	{
 		if (rect == displayedRect)
 			return;
@@ -193,7 +193,7 @@ namespace wg
 
 	//____ _createBorderDrawer() ________________________________________________________
 
-	DrawerPanel_p InfoSection::_createBorderDrawer(std::string_view label, const Border& border)
+	ExpanderPanel_p InfoSection::_createBorderDrawer(std::string_view label, const Border& border)
 	{
 		auto pHeaderValue = WGCREATE(TextDisplay, _ = m_pContext->theme().listEntryText, _.display.text = border.isEmpty() ? "none" : "");
 
@@ -214,7 +214,7 @@ namespace wg
 
 	//____ _refreshBorderDrawer() _____________________________________________
 
-	void InfoSection::_refreshBorderDrawer(DrawerPanel* pBorderDrawer, const Border& border, Border& displayedBorder)
+	void InfoSection::_refreshBorderDrawer(ExpanderPanel* pBorderDrawer, const Border& border, Border& displayedBorder)
 	{
 		if( border == displayedBorder )
 			return;
@@ -233,21 +233,21 @@ namespace wg
 	}
 
 
-	//____ _createComponentDrawer() _________________________________________________
+	//____ _createPartDrawer() ______________________________________________________
 
-	DrawerPanel_p InfoSection::_createComponentDrawer(std::string_view label, Component* pComponent)
+	ExpanderPanel_p InfoSection::_createPartDrawer(std::string_view label, Part* pPart)
 	{
-		auto pComponentParts = WGCREATE(PackPanel, _.axis = Axis::Y);
-		m_pContext->addComponentInfoSections(pComponentParts, pComponent);
+		auto pPartSections = WGCREATE(PackPanel, _.axis = Axis::Y);
+		m_pContext->addPartInfoSections(pPartSections, pPart);
 
-		return _createDrawer(label, nullptr, pComponentParts);
+		return _createDrawer(label, nullptr, pPartSections);
 	}
 
-	//____ _refreshComponentDrawer() _____________________________________________
+	//____ _refreshPartDrawer() __________________________________________________
 
-	void InfoSection::_refreshComponentDrawer(DrawerPanel * pComponentDrawer)
+	void InfoSection::_refreshPartDrawer(ExpanderPanel * pPartDrawer)
 	{
-		auto pPanel = static_cast<PackPanel*>(pComponentDrawer->slots[1]._widget());
+		auto pPanel = static_cast<PackPanel*>(pPartDrawer->slots[1]._widget());
 
 		for( auto& slot : pPanel->slots )
 		{
@@ -426,7 +426,7 @@ namespace wg
 
 	//____ createSingleSlotDrawer() ___________________________________________________
 
-	DrawerPanel_p InfoSection::_createSingleSlotDrawer(std::string_view label, StaticSlot* pSlot)
+	ExpanderPanel_p InfoSection::_createSingleSlotDrawer(std::string_view label, StaticSlot* pSlot)
 	{
 		auto pSlotContent = WGCREATE(PackPanel, _.axis = Axis::Y);
 		m_pContext->addSlotInfoSections(pSlotContent, pSlot);
@@ -436,7 +436,7 @@ namespace wg
 
 	//____ refreshSingleSlotDrawer() ___________________________________________________
 
-	void InfoSection::_refreshSingleSlotDrawer(DrawerPanel* pDrawer, StaticSlot* pSlot)
+	void InfoSection::_refreshSingleSlotDrawer(ExpanderPanel* pDrawer, StaticSlot* pSlot)
 	{
 		auto pContainer = static_cast<PackPanel*>(pDrawer->slots[1]._widget());
 		for (auto& slot : pContainer->slots)

@@ -94,7 +94,7 @@ otherwise. It used to force everything through `int()`, which silently truncated
   stretches. Glyph sizes are therefore explicit in the specs, not derived
   from the block size.
 - **Size a rigid run against the glyph's DRAWN footprint, never its nominal
-  geometry.** The select box's arrow is specified as 5pts tall centred at y=10,
+  geometry.** The dropdown's arrow is specified as 5pts tall centred at y=10,
   so its run was written as 7..13 — but with its outline and antialiasing the
   arrow actually covers 7.0..13.5, and the half point that fell outside was
   stretched along with the gradient. At a 40pt-tall box the arrow rendered
@@ -127,7 +127,7 @@ skin unless set explicitly — so the padding is stated on the DoubleSkin.
 `Skins::<Name>`, which is how the layers become private pointers.
 
 This is also the escape hatch whenever a rigid part is costing too much
-stretchable material (see the select box under `glyph_shift`): move the pinned
+stretchable material (see the dropdown under `glyph_shift`): move the pinned
 detail to a transparent overlay and the layer underneath needs no rigid part at
 all. Check first that DoubleSkin forwards whatever the lower layer was
 providing — `contentShift`, in particular.
@@ -206,11 +206,11 @@ Three different things, easy to confuse:
   packing detail with no visual meaning. Spelled `block_spacing_pts` in specs so
   it can never be mistaken for the above.
 
-Who carries spacing in glossyblue: **1pt** on Button, ToggleButton, SelectBox
+Who carries spacing in glossyblue: **1pt** on Button, ToggleButton, Dropdown
 and Field — free-standing controls that get lined up in a PackPanel. Nothing
 else, on purpose: backdrops (Plate/Canvas/Window/Titlebar) must reach their
-edge; PlateNoBevel abuts the scrollbars; SelectBoxEntry rows must touch; the
-Scroller lays its track/handle/buttons out adjacent; the split handles fill the
+edge; PlateNoBevel abuts the scrollbars; DropdownEntry rows must touch; the
+ScrollbarPart lays its track/handle/buttons out adjacent; the split handles fill the
 drag gap exactly; and Checkbox/RadioButton are *icon* skins, where
 `Icon::spacing` sets the gap to the label.
 
@@ -231,32 +231,32 @@ Net effect: a control is the same distance from its panel edge as before spacing
 existed (5pts on a Plate), and 2pts from its neighbour instead of 0.
 
 `Skins::Field` is `Skins::Canvas` plus that margin, for LineEditor and
-TextEditor. They had to be split because Canvas is also the SelectBox
+TextEditor. They had to be split because Canvas is also the Dropdown
 drop-down's background, where a margin would inset the list inside the popup.
 The split also let their paddings diverge usefully: Canvas went to 1 (its
-SelectBoxEntry rows want their highlight to reach the edge) while Field kept 2
+DropdownEntry rows want their highlight to reach the edge) while Field kept 2
 (text should clear the border). Note padding does *not* need compensating on
 Field itself — spacing is outside the border, padding inside, so a widget's own
 two values never stack.
 
 ### Two paddings, one apparent indent
 
-The select box's drop-down entries looked indented relative to the closed box's
+The dropdown's drop-down entries looked indented relative to the closed box's
 own text, and the cause is worth remembering because nothing in either skin
 looks wrong on its own. The two texts share an origin — the popup attaches to
 the widget's geo (`Placement::SouthWest` on `globalGeo()`), so its left edge and
 the widget's coincide — but they are inset by different routes:
 
-    closed box  = Skins::SelectBox spacing (1) + padding-left (5)  = 6pts
+    closed box  = Skins::Dropdown spacing (1) + padding-left (5)  = 6pts
     entry       = Skins::Canvas padding-left (1) + entry skin (0)  = 1pt
 
-`Skins::SelectBoxEntry` now carries `_.padding = { 0, 6, 0, 6 }`, putting the
+`Skins::DropdownEntry` now carries `_.padding = { 0, 6, 0, 6 }`, putting the
 entry text at 1 + 6 = 7 — one more than the resting box, see below. Three things that made this the right lever rather
 than shrinking the closed box's padding (which exists to clear its outline and
 rounded corners):
 
 - Padding on a BoxSkin moves the **text** only. The skin fills and outlines the
-  rect it is handed, and `SelectBox::_render` hands it the list canvas's full
+  rect it is handed, and `Dropdown::_render` hands it the list canvas's full
   content width, so the hover/selection highlight still reaches both edges —
   which is exactly why `Skins::Canvas` was taken down to padding 1 earlier.
 - The engine folds the entry skin's padding into the list's default width
@@ -273,7 +273,7 @@ At 6, closed text and entries start on the same pixel column with the list
 open (verified in widgetbench at scale 64). Aim at the state the comparison
 actually happens in, not the one the arithmetic starts from.
 
-A related engine bug, now fixed: `SelectBox::_recalcListCanvasSize()` (called
+A related engine bug, now fixed: `Dropdown::_recalcListCanvasSize()` (called
 from every `_resize()`) rebuilt the popup's default height as the bare sum of
 entries, dropping the list skin's top+bottom padding, so the last entry was
 clipped by exactly that much. It now seeds both the default and the matching
@@ -281,7 +281,7 @@ height with `listPadding.h`, like the constructor and `_sideCanvasResize()`.
 
 Still unaligned by 1pt and left alone: the popup's left edge sits 1pt left of
 the *visible* box, because the popup attaches to the widget geo while
-`Skins::SelectBox`'s 1pt spacing insets the drawn box. Fixing that means the
+`Skins::Dropdown`'s 1pt spacing insets the drawn box. Fixing that means the
 engine offsetting the popup by the skin's margin — an engine change, not a kit
 one.
 
@@ -293,7 +293,7 @@ push-button effect where the caption sinks with the bitmap. BlockSkin adds it
 in `_contentOfs` (`wg_stateskin.cpp`), in pts, so it costs no atlas space and
 needs no extra blocks. Currently **1pt** down-right on Button's `Pressed`,
 ToggleButton's `Checked`/`CheckedHovered` (a toggle has no Pressed block; the
-checked states are the ones whose artwork looks pushed in), and SelectBox's
+checked states are the ones whose artwork looks pushed in), and Dropdown's
 `Pressed`.
 
 On amount: a static side-by-side mock-up argued for 2, but testing in a real
@@ -332,10 +332,10 @@ into the artwork, where `contentShift` has nothing to move. Used at 1pt by:
 | part | states | why not contentShift |
 |---|---|---|
 | Checkbox | `CheckedPressed` | `Skins::Checkbox` is an *icon* skin; its content is nothing. (`Pressed` has no tick to move — with `flipOnRelease` false, clicking an unticked box goes straight to `CheckedPressed`.) |
-| PlusMinusToggle | `Pressed`, `CheckedPressed` | a DrawerPanel's `buttonSkin`; no content |
+| PlusMinusToggle | `Pressed`, `CheckedPressed` | a ExpanderPanel's `buttonSkin`; no content |
 | ScrollbarButton{Up,Down,Left,Right} | `Pressed` | no content |
 | ScrollbarHandle{X,Y} | `Pressed` | no content |
-| SelectBox | `Pressed` | the arrow and divider are artwork; the *text* moves by contentShift, so the box uses both |
+| Dropdown | `Pressed` | the arrow and divider are artwork; the *text* moves by contentShift, so the box uses both |
 
 **A shifted glyph must stay inside its rigid part**, or the part that pokes out
 lands in stretchable material and smears as the widget grows. The scrollbar
@@ -344,7 +344,7 @@ rigid run of 16..40px, and the shift moves it to 24..35 — still inside, 2pts o
 margin left. Measure this after any change to glyph size or rigid span; it
 fails silently.
 
-The select box is the case where it cost something. The run has to hold the
+The dropdown is the case where it cost something. The run has to hold the
 arrow in **both** positions, 7.0..14.5, and it has to stay centred on the band
 or the arrow drifts (measured: an off-centre 6.5..13.5 run puts it 3.5pts low at
 a 40pt height). Centred and containing that union means 5.5..14.5 of a 5..15
@@ -355,7 +355,7 @@ mean deviation from the box's own centre column goes 8.9 → 13.3 levels at 40pt
 and 11.9 → 17.6 at 100pt. Invisible unless something forces the box taller than
 its natural 20pts, which a form control rarely is — and the alternative was a
 visibly smeared arrow when it does. The DoubleSkin escape hatch above is the fix
-if select boxes ever do get stretched hard.
+if dropdowns ever do get stretched hard.
 
 Not applied to the split handles: at 8pts thick a 1pt cross-axis shift is an
 eighth of the bar's width, so the dots read as badly centred rather than
@@ -363,8 +363,8 @@ pressed (and the dots overlay has no `Pressed` block, and the shifted run would
 sit flush against the edge of its rigid span). A shift along the bar's length
 only would avoid all three.
 
-Note that for SelectBox, `Pressed` means *the drop-down is open*:
-`SelectBox::_setState` forces it for as long as the popup is up. The shift is a
+Note that for Dropdown, `Pressed` means *the drop-down is open*:
+`Dropdown::_setState` forces it for as long as the popup is up. The shift is a
 sustained open-state look, not a click flash, which is one more reason 1pt was
 the right amount.
 
@@ -425,7 +425,7 @@ Two layers now guard this, both in `header_shell.h`:
 
 1. `init()` calls `Base::setDefaultStyle(TextStyles::Default)` and
    `Base::setDefaultTextLayout(TextLayouts::LeftNoWrap)`. `StaticText::_style()`
-   *already* falls back to `Base::defaultStyle()` when the component has none —
+   *already* falls back to `Base::defaultStyle()` when the part has none —
    the machinery was there all along, but nothing in WonderGUI ever called the
    setters, so the fallback was null. Two lines turn "invisible" into "visibly
    wrong style" toolkit-wide, including for plain `wg::` widgets built without
@@ -435,24 +435,24 @@ Two layers now guard this, both in `header_shell.h`:
    and the same for layout. That restores the *right* style rather than a
    generic one, effectively giving nested blueprints merge semantics. Nine
    wrappers: Button, ToggleButton, Checkbox, RadioButton, both LabelCapsules,
-   TextEditor, LineEditor, WindowTitleBar — plus SelectBox, below.
+   TextEditor, LineEditor, WindowTitleBar — plus Dropdown, below.
 
 With both in place, `.label = { .text = "..." }` works directly, and
 `gallery_test.cpp` was rewritten to use it: no more create-then-`setText`
 helpers, every widget a single create call.
 
-A third layer, not done: a one-time `reportError` when a text component renders
+A third layer, not done: a one-time `reportError` when a text part renders
 with no style and no default, in the spirit of the `scale != 128` guard.
 
-**`wg::SelectBox` used to be a genuine engine bug — now fixed upstream.** It
+**`wg::Dropdown` used to be a genuine engine bug — now fixed upstream.** It
 took `entryTextStyle` for the drop-down list but never initialised its own text
-component from anything, and its Blueprint had no field for it, so the closed
+part from anything, and its Blueprint had no field for it, so the closed
 box drew nothing however many entries it held and no caller could fix it. The
 kit carried a workaround (its own `textStyle`/`textLayout` fields, applied
-unconditionally). That is all gone. `wg::SelectBox::Blueprint` now has
+unconditionally). That is all gone. `wg::Dropdown::Blueprint` now has
 `DynamicText::Blueprint display`, the constructor does
 `display._initFromBlueprint(bp.display)` like `TextDisplay` and `Button`, and
-the component itself was renamed `text` → `display` for consistency with the
+the part itself was renamed `text` → `display` for consistency with the
 rest of the toolkit. The kit's wrapper is now ordinary gap-filling like the
 other nine.
 
@@ -461,13 +461,13 @@ closed box is a blue raised control, the same bitmap as a Button, while the
 list is drawn on `Skins::Canvas`. Two backgrounds, two styles — sharing one left
 the closed box with black text on blue.
 
-**A nested component Blueprint in a base class is a contract.** Adding `display`
-made `bp.display` a hard requirement of `wg::SelectBox`'s template constructor,
+**A nested part Blueprint in a base class is a contract.** Adding `display`
+made `bp.display` a hard requirement of `wg::Dropdown`'s template constructor,
 so every wrapper Blueprint passed to it must carry that field or it no longer
-compiles. `wg_oldskool.h`'s SelectBox wrapper is a bare forward
-(`SelectBox(const Blueprint& bp) : wg::SelectBox(bp) {}`) and broke on exactly
+compiles. `wg_oldskool.h`'s Dropdown wrapper is a bare forward
+(`Dropdown(const Blueprint& bp) : wg::Dropdown(bp) {}`) and broke on exactly
 this; it now declares `display` too, styled `NormalDark` to match that kit's own
-controls. Remember this whenever a widget gains a component blueprint: grep both
+controls. Remember this whenever a widget gains a part blueprint: grep both
 widgetkits, not just the one in front of you.
 
 Related sizing trap in the same family: `SizeCapsule::defaultSize` takes **-1**,
@@ -540,18 +540,18 @@ second check that a packing change moved pixels without altering them.
 
 State of the kit as of the last pass, all of it measured rather than assumed:
 
-- **Every rigid part holds its glyph's drawn footprint.** After the select box's
+- **Every rigid part holds its glyph's drawn footprint.** After the dropdown's
   arrow turned out to be smearing, all six parts carrying a rigid part were
   checked the same way: build a glyph-only mask by differencing the block
   against a no-glyph render, push it through `simulate_stretch` along the axis
   the widget *actually* grows on, and compare the glyph's bounding box with its
-  natural size. ScrollbarHandleX/Y, SelectBox and both SplitHandle dot overlays
+  natural size. ScrollbarHandleX/Y, Dropdown and both SplitHandle dot overlays
   hold their glyph exactly, in every state, from natural size to 12x. The select
   box was the only one that was wrong.
   Two traps in writing that audit, both of which produced false alarms first
   time round: stretch only the axis the widget stretches on (a scrollbar
   handle's thickness is fixed, so growing it across the grain proves nothing),
-  and exclude elements that are *supposed* to stretch (the select box's divider
+  and exclude elements that are *supposed* to stretch (the dropdown's divider
   line spans the box height by design, and lumping it in with the arrow makes
   the arrow look like it grew).
 - **`wondergui.h` now includes `wg_skindisplay.h`.** The two widgetbench tests
@@ -583,5 +583,5 @@ State of the kit as of the last pass, all of it measured rather than assumed:
   slot that draws it at the wrong size: one more found and fixed —
   `TreeListDrawer`'s `buttonSize` was 14x14 while `PlusMinusToggle` is drawn
   at 12x12 and has no frame, so the whole sign was resampled 17% larger. It is
-  now 12x12; keep it equal to the spec's `size_pts`. Scroller skins
+  now 12x12; keep it equal to the spec's `size_pts`. ScrollbarPart skins
   (backward = Left/Up, forward = Right/Down) and everything else were correct.

@@ -56,8 +56,8 @@ namespace wg
 		ToggleButtonInfoSection(const DebugTheme& theme, IDebugContext* pContext, ToggleButton * pInspected );
 		~ToggleButtonInfoSection() {}
 
-		DrawerPanel_p	m_pLabelDrawer;
-		DrawerPanel_p	m_pIconDrawer;
+		ExpanderPanel_p	m_pLabelDrawer;
+		ExpanderPanel_p	m_pIconDrawer;
 	};
 
 } // namespace wg

@@ -24,11 +24,11 @@
 
 using namespace wax;
 
-inline StreamSink* getPtr(wax_component sink) {
+inline StreamSink* getPtr(wax_part sink) {
 	return static_cast<StreamSink*>(reinterpret_cast<StreamSink*>(sink.pInterface));
 }
 
-void wax_processStreamChunks( wax_component streamSink, const void * pBegin, const void * pEnd )
+void wax_processStreamChunks( wax_part streamSink, const void * pBegin, const void * pEnd )
 {
     auto p = getPtr(streamSink);
     p->processChunks(pBegin, pEnd);

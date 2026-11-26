@@ -167,11 +167,11 @@ namespace wg
 		return Widget::_markTest(ofs);
 	}
 
-	//____ _receiveComponentNotif() ______________________________________________
+	//____ _receivePartNotif() ___________________________________________________
 
-	void TextEditor::_receiveComponentNotif( Component * pComponent, ComponentNotif notification, int value, void * pData )
+	void TextEditor::_receivePartNotif( Part * pPart, PartNotif notification, int value, void * pData )
 	{
-		if( notification == ComponentNotif::TextModified )
+		if( notification == PartNotif::TextModified )
 		{
 			auto p = static_cast<StaticText::NotifData*>(pData);
 			

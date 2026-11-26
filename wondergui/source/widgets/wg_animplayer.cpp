@@ -274,14 +274,14 @@ namespace wg
 
 	//____ _didSetAnimFrameSize() _____________________________________________
 
-	void AnimPlayer::_didSetAnimFrameSize(AnimFrames* pComponent)
+	void AnimPlayer::_didSetAnimFrameSize(AnimFrames* pPart)
 	{
 		_requestResize();
 	}
 
 	//____ _didSetAnimBitmap() _______________________________________________
 
-	void AnimPlayer::_didSetAnimBitmap(AnimFrames* pComponent)
+	void AnimPlayer::_didSetAnimBitmap(AnimFrames* pPart)
 	{
 		_requestRender();
 	}

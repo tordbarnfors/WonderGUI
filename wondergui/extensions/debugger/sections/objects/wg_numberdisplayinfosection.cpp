@@ -36,7 +36,7 @@ namespace wg
 	{
 		auto pPanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 
-		m_pDisplayDrawer = _createComponentDrawer("Display", &pInspected->display);
+		m_pDisplayDrawer = _createPartDrawer("Display", &pInspected->display);
 
 		pPanel->slots.pushBack({ m_pDisplayDrawer });
 		this->slot = pPanel;
@@ -55,7 +55,7 @@ namespace wg
 	{
 		TypedInfoSection<NumberDisplay>::refresh();
 
-		_refreshComponentDrawer(m_pDisplayDrawer);
+		_refreshPartDrawer(m_pDisplayDrawer);
 	}
 
 } // namespace wg

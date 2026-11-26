@@ -163,7 +163,7 @@ class Chart;
 	public:
 
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		DynamicVector<GridLine>	xLines;
 		DynamicVector<GridLine>	yLines;

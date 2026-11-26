@@ -64,7 +64,7 @@ namespace wg
 	/**
 		@brief Vector of frames for a bitmap-based animation.
 
-		The AnimFrames component contains a vector of rectangular bitmap
+		The AnimFrames part contains a vector of rectangular bitmap
 		areas, all of the same size, used as frames in an animation.
 
 		All frames must be from the same Bitmap. Each frame
@@ -81,8 +81,8 @@ namespace wg
 		class Holder : public DynamicVector<AnimFrame>::Holder
 		{
 		public:
-			virtual void	_didSetAnimFrameSize(AnimFrames * pComponent) = 0;
-			virtual void	_didSetAnimBitmap(AnimFrames * pComponent) = 0;
+			virtual void	_didSetAnimFrameSize(AnimFrames * pPart) = 0;
+			virtual void	_didSetAnimBitmap(AnimFrames * pPart) = 0;
 		};
 
 		AnimFrames(Holder * pHolder) : DynamicVector(pHolder) {}

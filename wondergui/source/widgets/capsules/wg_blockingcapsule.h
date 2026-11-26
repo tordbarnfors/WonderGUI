@@ -76,7 +76,7 @@ namespace wg
 		static BlockingCapsule_p	create();
 		static BlockingCapsule_p	create(const Blueprint& blueprint);
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		std::vector<Widget_wp>		blockedWidgets;
 		std::vector<Rect>			blockedAreas;

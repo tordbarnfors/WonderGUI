@@ -38,8 +38,8 @@ namespace wg
 
 		auto pPanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 
-		m_pLabelsDrawer = _createComponentDrawer("Labels", &pInspected->labels);
-		m_pValuesDrawer = _createComponentDrawer("Values", &pInspected->values);
+		m_pLabelsDrawer = _createPartDrawer("Labels", &pInspected->labels);
+		m_pValuesDrawer = _createPartDrawer("Values", &pInspected->values);
 
 		pPanel->slots.pushBack({ m_pLabelsDrawer, m_pValuesDrawer });
 		this->slot = pPanel;
@@ -58,8 +58,8 @@ namespace wg
 	{
 		TypedInfoSection<FpsDisplay>::refresh();
 
-		_refreshComponentDrawer(m_pLabelsDrawer);
-		_refreshComponentDrawer(m_pValuesDrawer);
+		_refreshPartDrawer(m_pLabelsDrawer);
+		_refreshPartDrawer(m_pValuesDrawer);
 	}
 
 } // namespace wg

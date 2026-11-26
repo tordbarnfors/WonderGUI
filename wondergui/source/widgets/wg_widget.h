@@ -47,7 +47,7 @@ namespace wg
 	class Capsule;
 	class MsgRouter;
 	class SlotHolder;
-    class Component;
+    class Part;
 
 	class Widget;
 	typedef	StrongPtr<Widget>	Widget_p;
@@ -75,7 +75,7 @@ namespace wg
 	class Widget : public Receiver, protected SkinSlot::Holder
 	{
 		friend class Container;
-		friend class Component;
+		friend class Part;
 		friend class StaticSlot;
 		friend class DynamicSlot;
 		friend class Base;
@@ -344,31 +344,31 @@ namespace wg
 		inline RectSPX		_windowSection() const { if( m_pHolder ) return m_pHolder->_childWindowSection( m_pSlot ); return RectSPX(); }
 
 
-		// Methods for components to access
+		// Methods for parts to access
 
-		virtual State		_componentState(const Component* pComponent) const;
-		virtual CoordSPX	_componentPos( const Component * pComponent ) const;
-		virtual SizeSPX		_componentSize( const Component * pComponent ) const;
-		virtual RectSPX		_componentGeo( const Component * pComponent ) const;
-		virtual CoordSPX	_globalComponentPos( const Component * pComponent ) const;
-		virtual RectSPX		_globalComponentGeo( const Component * pComponent ) const;
+		virtual State		_partState(const Part* pPart) const;
+		virtual CoordSPX	_partPos( const Part * pPart ) const;
+		virtual SizeSPX		_partSize( const Part * pPart ) const;
+		virtual RectSPX		_partGeo( const Part * pPart ) const;
+		virtual CoordSPX	_globalPartPos( const Part * pPart ) const;
+		virtual RectSPX		_globalPartGeo( const Part * pPart ) const;
 
-		virtual CoordSPX	_componentToGlobal( const Component * pComponent, CoordSPX coord ) const;
-		virtual CoordSPX	_componentToGlobal( const Component * pComponent, RectSPX rect ) const;
+		virtual CoordSPX	_partToGlobal( const Part * pPart, CoordSPX coord ) const;
+		virtual CoordSPX	_partToGlobal( const Part * pPart, RectSPX rect ) const;
 
-		virtual CoordSPX	_componentToLocal( const Component * pComponent, CoordSPX coord ) const;
-		virtual CoordSPX	_componentToLocal( const Component * pComponent, RectSPX rect ) const;
+		virtual CoordSPX	_partToLocal( const Part * pPart, CoordSPX coord ) const;
+		virtual CoordSPX	_partToLocal( const Part * pPart, RectSPX rect ) const;
 
 
-		virtual void		_componentRequestRender( const Component * pComponent );
-		virtual void		_componentRequestRender( const Component * pComponent, const RectSPX& rect );
-		virtual void		_componentRequestResize( const Component * pComponent );
+		virtual void		_partRequestRender( const Part * pPart );
+		virtual void		_partRequestRender( const Part * pPart, const RectSPX& rect );
+		virtual void		_partRequestResize( const Part * pPart );
 
-		virtual void		_componentRequestFocus( const Component * pComponent, bool bRaiseWindow );
-		virtual void		_componentRequestInView( const Component * pComponent );
-		virtual void		_componentRequestInView( const Component * pComponent, const RectSPX& mustHave, const RectSPX& niceToHave );
+		virtual void		_partRequestFocus( const Part * pPart, bool bRaiseWindow );
+		virtual void		_partRequestInView( const Part * pPart );
+		virtual void		_partRequestInView( const Part * pPart, const RectSPX& mustHave, const RectSPX& niceToHave );
 
-		virtual void		_receiveComponentNotif( Component * pComponent, ComponentNotif notification, int value, void * pData );
+		virtual void		_receivePartNotif( Part * pPart, PartNotif notification, int value, void * pData );
 
 		// Methods for skin to access
 

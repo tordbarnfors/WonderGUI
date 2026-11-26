@@ -134,7 +134,7 @@ def _draw_glyph(img, glyph, palette, pal, state, w_px, h_px, density):
     gcolor = glyph_color(palette, state)
     outline = palette["glyph_outline"]
     if gtype == "arrow":
-        # Default proportions match the select box's arrow (base twice the
+        # Default proportions match the dropdown's arrow (base twice the
         # base-to-tip depth), transposed for the horizontal directions.
         dw, dh = (10, 5) if glyph["direction"] in ("up", "down") else (5, 10)
         img = T.add_arrow_glyph(img, glyph["direction"], gcolor, outline,
@@ -1100,7 +1100,7 @@ def build_preview_html(kit, atlas, manifest, density):
                 d64 = base64.b64encode(buf.getvalue()).decode()
                 # The dashed box is the content rect (size minus padding) --
                 # it shows at a glance whether text would collide with an
-                # inset glyph such as the select box's arrow.
+                # inset glyph such as the dropdown's arrow.
                 html.append(
                     f"<div class='demo' style='width:{w*zoom}px;height:{h*zoom}px' "
                     f"title='{name} stretched to {w}x{h} pts'>"
@@ -1129,7 +1129,7 @@ def cmd_pack(kit):
     (REPO_ROOT / "resources").mkdir(parents=True, exist_ok=True)
     (REPO_ROOT / "wondergui" / "widgetkits").mkdir(parents=True, exist_ok=True)
     atlas.save(REPO_ROOT / "resources" / atlas_name)
-    (REPO_ROOT / "src" / "wondergui" / "widgetkits" / header_name).write_text((kit_dir / header_name).read_text())
+    (REPO_ROOT / "wondergui" / "widgetkits" / header_name).write_text((kit_dir / header_name).read_text())
 
     print(f"Packed {len(manifest)} widgets into {atlas.size[0]}x{atlas.size[1]} atlas @ {density}x density")
     print(f"Wrote {kit_dir / atlas_name}, {kit_dir / header_name}, {kit_dir / 'preview.html'}")

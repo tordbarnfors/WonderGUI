@@ -2,7 +2,7 @@ recipe: raised_control
 shape: rect
 # Square, matching the scrollbar's thickness on both axes -- ScrollbarHandleX's height
 # fixes the 16. It was [11, 16], which looked squashed next to the handle.
-# The arrow is unchanged (5x10, the same shape as the select box's,
+# The arrow is unchanged (5x10, the same shape as the dropdown's,
 # transposed for the horizontal directions); add_arrow_glyph centres it in
 # whatever block it is given via centered_span(), so growing the block just
 # gives it more room rather than moving it off centre.

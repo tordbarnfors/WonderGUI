@@ -64,8 +64,8 @@ namespace wg
 			objectRow( "Corner skin: ",             [](ScrollCapsule* c) -> Object* { return c->cornerSkin().rawPtr(); } )
 		});
 
-		m_pScrollbarXDrawer = _createComponentDrawer("Scrollbar X", &pInspected->scrollbarX);
-		m_pScrollbarYDrawer = _createComponentDrawer("Scrollbar Y", &pInspected->scrollbarY);
+		m_pScrollbarXDrawer = _createPartDrawer("Scrollbar X", &pInspected->scrollbarX);
+		m_pScrollbarYDrawer = _createPartDrawer("Scrollbar Y", &pInspected->scrollbarY);
 
 		pPanel->slots.pushBack({ pTable, m_pScrollbarXDrawer, m_pScrollbarYDrawer });
 		this->slot = pPanel;
@@ -84,8 +84,8 @@ namespace wg
 	{
 		TypedInfoSection<ScrollCapsule>::refresh();
 
-		_refreshComponentDrawer(m_pScrollbarXDrawer);
-		_refreshComponentDrawer(m_pScrollbarYDrawer);
+		_refreshPartDrawer(m_pScrollbarXDrawer);
+		_refreshPartDrawer(m_pScrollbarYDrawer);
 	}
 
 } // namespace wg

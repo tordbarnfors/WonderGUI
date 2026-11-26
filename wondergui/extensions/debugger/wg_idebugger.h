@@ -25,13 +25,13 @@
 
 #include <wax_object.h>
 #include <wax_pointers.h>
-#include <wg_component.h>
+#include <wg_part.h>
 
 #include <wg_labelcapsule.h>
 #include <wg_textdisplay.h>
 #include <wg_numberdisplay.h>
 #include <wg_tablepanel.h>
-#include <wg_drawerpanel.h>
+#include <wg_expanderpanel.h>
 #include <wg_paddingcapsule.h>
 
 #include <widgetkits/wg_oldskool.h>
@@ -77,7 +77,7 @@ namespace wg
 
 		virtual Widget_p createObjectInfoPanel(const TypeInfo* pType, Object* pObject) = 0;
 		virtual Widget_p createSlotInfoPanel(const TypeInfo* pType, StaticSlot* pSlot) = 0;
-		virtual Widget_p createComponentInfoPanel(const TypeInfo* pType, Component* pComponent) = 0;
+		virtual Widget_p createPartInfoPanel(const TypeInfo* pType, Part* pPart) = 0;
 	};
 
 } // namespace wg

@@ -104,7 +104,7 @@ namespace wg
 
 		m_pRecordButton = WGCREATE(dbgkit::ToggleButton, _.icon.skin = pRecordIcon);
 		m_pClearButton = WGCREATE(dbgkit::Button, _.icon.skin = pClearIcon	);
-		m_pSourceSelector = WGCREATE(dbgkit::SelectBox);
+		m_pSourceSelector = WGCREATE(dbgkit::Dropdown);
 
 		auto pPadding = WGCREATE(Filler, _.defaultSize = { 20,0 });
 
@@ -296,7 +296,7 @@ namespace wg
 
 		_applyLogSettings(pSource->pLogger);
 
-		m_pSourceSelector->entries.pushBack(WGBP(SelectBoxEntry, _.id = pSource->id, _.text = name.c_str()));
+		m_pSourceSelector->entries.pushBack(WGBP(DropdownEntry, _.id = pSource->id, _.text = name.c_str()));
 
 		if( m_bRecording )
 			_startRecording(pSource);
@@ -430,7 +430,7 @@ namespace wg
 				bool bSelected = (m_pSourceSelector->selectedEntryId() == pSource->id);
 
 				entries.erase(i);
-				entries.insert(i, WGBP(SelectBoxEntry, _.id = pSource->id, _.text = text.c_str()));
+				entries.insert(i, WGBP(DropdownEntry, _.id = pSource->id, _.text = text.c_str()));
 
 				if( bSelected )
 					m_pSourceSelector->selectEntryById(pSource->id);

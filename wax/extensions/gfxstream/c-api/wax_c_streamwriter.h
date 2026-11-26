@@ -34,7 +34,7 @@ typedef	void(*wax_writeStream_func)(int nBytes, const void* pDest);
 
 WAX_EXPORT wax_obj		wax_createStreamWriter(wax_writeStream_func dispatcher);
 
-WAX_EXPORT wax_component	wax_getStreamWriterInput(wax_obj streamWriter);
+WAX_EXPORT wax_part	wax_getStreamWriterInput(wax_obj streamWriter);
 
 #ifdef __cplusplus
 }

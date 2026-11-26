@@ -57,7 +57,7 @@ namespace wg
 		TwoSlotPanelInfoSection(const DebugTheme& theme, IDebugContext* pContext, TwoSlotPanel * pInspected );
 		~TwoSlotPanelInfoSection() {}
 
-		DrawerPanel_p	m_pSlotsDrawer;
+		ExpanderPanel_p	m_pSlotsDrawer;
 	};
 
 } // namespace wg

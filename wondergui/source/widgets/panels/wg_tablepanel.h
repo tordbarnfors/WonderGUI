@@ -230,7 +230,7 @@ namespace wg
 		static TablePanel_p	create() { return TablePanel_p(new TablePanel()); }
 		static TablePanel_p	create( const Blueprint& blueprint ) { return TablePanel_p(new TablePanel(blueprint)); }
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		DynamicVector<TablePanelRow>	rows;
 		DynamicVector<TablePanelColumn>	columns;

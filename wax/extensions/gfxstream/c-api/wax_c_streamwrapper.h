@@ -32,7 +32,7 @@ extern "C" {
 
 	WAX_EXPORT wax_obj	wax_createStreamWrapper( const void * pBegin, const void * pEnd );
 
-	WAX_EXPORT wax_component	wax_getStreamWrapperOutput(wax_obj streamWrapper);
+	WAX_EXPORT wax_part	wax_getStreamWrapperOutput(wax_obj streamWrapper);
 
 	WAX_EXPORT int	wax_chunkInStreamWrapper(wax_obj streamWrapper);
 	WAX_EXPORT int	wax_bytesInStreamWrapper(wax_obj streamWrapper);

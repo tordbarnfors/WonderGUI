@@ -70,7 +70,7 @@ namespace wg
 		static LabelCapsule_p	create();
 		static LabelCapsule_p	create(const Blueprint& blueprint);
 
-		//.____ Components ____________________________________________________
+		//.____ Parts _________________________________________________________
 
 		DynamicText			label;
 
@@ -126,9 +126,9 @@ namespace wg
 		void			_resize(const SizeSPX& size, int scale) override;
 		void			_setState(State state) override;
 
-		CoordSPX		_componentPos(const Component* pComponent) const override;
-		SizeSPX			_componentSize(const Component* pComponent) const override;
-		RectSPX			_componentGeo(const Component* pComponent) const override;
+		CoordSPX		_partPos(const Part* pPart) const override;
+		SizeSPX			_partSize(const Part* pPart) const override;
+		RectSPX			_partGeo(const Part* pPart) const override;
 
 		SizeSPX			_skinSize(const SkinSlot* pSlot) const override;
 		void			_skinRequestRender(const SkinSlot* pSlot, const RectSPX& rect) override;

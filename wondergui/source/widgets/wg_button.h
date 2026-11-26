@@ -74,7 +74,7 @@ namespace wg
 		static Button_p	create() { return Button_p(new Button()); }
 		static Button_p	create( const Blueprint& blueprint ) { return Button_p(new Button(blueprint)); }
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		DynamicText	label;
 		Icon		icon;
@@ -119,9 +119,9 @@ namespace wg
 		void			_setState( State state ) override;
 
 
-		CoordSPX		_componentPos( const Component * pComponent ) const override;
-		SizeSPX			_componentSize( const Component * pComponent ) const override;
-		RectSPX			_componentGeo( const Component * pComponent ) const override;
+		CoordSPX		_partPos( const Part * pPart ) const override;
+		SizeSPX			_partSize( const Part * pPart ) const override;
+		RectSPX			_partGeo( const Part * pPart ) const override;
 
 		class IconAccess : public Icon { friend class Button; };
 		const IconAccess& _icon() const { return reinterpret_cast<const IconAccess&>(icon); }

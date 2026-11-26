@@ -32,10 +32,10 @@ extern "C" {
 #endif
 
 	WAX_EXPORT wax_obj			wax_createStreamPump(void);
-	WAX_EXPORT wax_obj			wax_createStreamPumpWithInputOutput( wax_component input, wax_component output);
+	WAX_EXPORT wax_obj			wax_createStreamPumpWithInputOutput( wax_part input, wax_part output);
 
-	WAX_EXPORT void				wax_setStreamPumpInput(wax_obj streamPump, wax_component input);
-	WAX_EXPORT void				wax_setStreamPumpOutput(wax_obj streamPump, wax_component output);
+	WAX_EXPORT void				wax_setStreamPumpInput(wax_obj streamPump, wax_part input);
+	WAX_EXPORT void				wax_setStreamPumpOutput(wax_obj streamPump, wax_part output);
 
 	WAX_EXPORT void				wax_setFlowControl(wax_obj streamPump, uint16_t fenceId, int credits, int bytesPerCredit );
 	WAX_EXPORT void				wax_restartFlowControl(wax_obj streamPump, int credits);

@@ -57,7 +57,7 @@ namespace wg
 		SplitPanelInfoSection(const DebugTheme& theme, IDebugContext* pContext, SplitPanel * pInspected );
 		~SplitPanelInfoSection() {}
 
-		DrawerPanel_p	m_pSlotsDrawer;
+		ExpanderPanel_p	m_pSlotsDrawer;
 	};
 
 } // namespace wg

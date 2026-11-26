@@ -28,8 +28,8 @@ extern "C" {
 
 }
 
-bool areaChartTest(ComponentPtr<DynamicSlot> pEntry);
-bool canvasCapsuleGlowTest(ComponentPtr<DynamicSlot> pEntry);
+bool areaChartTest(PartPtr<DynamicSlot> pEntry);
+bool canvasCapsuleGlowTest(PartPtr<DynamicSlot> pEntry);
 
 
 Blob_p loadBlob(const std::string& path);
@@ -170,7 +170,7 @@ Blob_p loadBlob(const std::string& path)
 
 //____ areaChartTest() ______________________________________________________
 
-bool areaChartTest(ComponentPtr<DynamicSlot> pEntry)
+bool areaChartTest(PartPtr<DynamicSlot> pEntry)
 {
 	auto pFlex = FlexPanel::create();
 
@@ -280,7 +280,7 @@ bool areaChartTest(ComponentPtr<DynamicSlot> pEntry)
 
 //____ canvasCapsuleGlowTest() ______________________________________________________
 
-bool canvasCapsuleGlowTest(ComponentPtr<DynamicSlot> pEntry)
+bool canvasCapsuleGlowTest(PartPtr<DynamicSlot> pEntry)
 {
 	auto pBack = FlexPanel::create({ .skin = ColorSkin::create(Color::Black) });
 	*pEntry = pBack;

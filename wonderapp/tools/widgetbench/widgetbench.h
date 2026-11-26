@@ -28,7 +28,7 @@ private:
 	wapp::API *		m_pAPI = nullptr;
 	wapp::Window_p	m_pWindow;
 
-	SelectBox_p		m_pPicker;
+	Dropdown_p		m_pPicker;
 	Capsule_p		m_pContent;
 
 	std::vector<const Test*>	m_sortedTests;

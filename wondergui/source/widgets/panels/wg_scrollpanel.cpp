@@ -1361,32 +1361,32 @@ namespace wg
 		_requestResize();
 	}
 
-	//____ _componentPos() ____________________________________________________
+	//____ _partPos() _________________________________________________________
 
-	CoordSPX ScrollPanel::_componentPos(const Component* pComponent) const
+	CoordSPX ScrollPanel::_partPos(const Part* pPart) const
 	{
-		if (pComponent == &scrollbarX)
+		if (pPart == &scrollbarX)
 			return m_scrollbarXRegion.pos();
 		else
 			return m_scrollbarYRegion.pos();
 	}
 
-	//____ _componentSize() ___________________________________________________
+	//____ _partSize() ________________________________________________________
 
-	SizeSPX ScrollPanel::_componentSize(const Component* pComponent) const
+	SizeSPX ScrollPanel::_partSize(const Part* pPart) const
 	{
-		if (pComponent == &scrollbarX)
+		if (pPart == &scrollbarX)
 			return m_scrollbarXRegion.size();
 		else
 			return m_scrollbarYRegion.size();
 
 	}
 
-	//____ _componentGeo() ____________________________________________________
+	//____ _partGeo() _________________________________________________________
 
-	RectSPX ScrollPanel::_componentGeo(const Component* pComponent) const
+	RectSPX ScrollPanel::_partGeo(const Part* pPart) const
 	{
-		if (pComponent == &scrollbarX)
+		if (pPart == &scrollbarX)
 			return m_scrollbarXRegion;
 		else
 			return m_scrollbarYRegion;
@@ -1394,9 +1394,9 @@ namespace wg
 
 	//____ _scrollbarStep() ___________________________________________________
 
-	void ScrollPanel::_scrollbarStep(const Scroller* pComponent, int dir)
+	void ScrollPanel::_scrollbarStep(const ScrollbarPart* pPart, int dir)
 	{
-		if (pComponent == &scrollbarX)
+		if (pPart == &scrollbarX)
 		{
 			spx movement = dir * align(ptsToSpx(m_stepSizeX, m_scale));
 			m_childCanvas.x -= movement;
@@ -1416,9 +1416,9 @@ namespace wg
 
 	//____ _scrollbarPage() ___________________________________________________
 
-	void ScrollPanel::_scrollbarPage(const Scroller* pComponent, int dir)
+	void ScrollPanel::_scrollbarPage(const ScrollbarPart* pPart, int dir)
 	{
-		if (pComponent == &scrollbarX)
+		if (pPart == &scrollbarX)
 		{
 			spx movement = dir * (m_childWindow.w - align(ptsToSpx(m_pageOverlapX, m_scale)));
 			m_childCanvas.x -= movement;
@@ -1436,9 +1436,9 @@ namespace wg
 
 	//____ _scrollbarWheel() __________________________________________________
 
-	void ScrollPanel::_scrollbarWheel(const Scroller* pComponent, int dir)
+	void ScrollPanel::_scrollbarWheel(const ScrollbarPart* pPart, int dir)
 	{
-		if (pComponent == &scrollbarX)
+		if (pPart == &scrollbarX)
 		{
 			spx movement = dir * align(ptsToSpx(m_wheelStepSizeX, m_scale));
 			m_childCanvas.x += movement;
@@ -1456,11 +1456,11 @@ namespace wg
 
 	//____ _scrollbarMove() ___________________________________________________
 
-	spx ScrollPanel::_scrollbarMove(const Scroller* pComponent, spx pos)
+	spx ScrollPanel::_scrollbarMove(const ScrollbarPart* pPart, spx pos)
 	{
 		pos = align(pos);
 
-		if (pComponent == &scrollbarX)
+		if (pPart == &scrollbarX)
 		{
 			m_childCanvas.x = m_childWindow.x - pos;
 		}
@@ -1478,9 +1478,9 @@ namespace wg
 
 	//____ _scrollbarOfsLenContent() __________________________________________
 
-	std::tuple<spx, spx, spx> ScrollPanel::_scrollbarOfsLenContent(const Scroller* pComponent)
+	std::tuple<spx, spx, spx> ScrollPanel::_scrollbarOfsLenContent(const ScrollbarPart* pPart)
 	{
-		if (pComponent == &scrollbarX)
+		if (pPart == &scrollbarX)
 			return std::make_tuple(m_viewXOfs, m_viewXLen, m_canvasXLen);
 		else
 			return std::make_tuple(m_viewYOfs, m_viewYLen, m_canvasYLen);

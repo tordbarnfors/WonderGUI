@@ -65,6 +65,26 @@ namespace wg
 	using SurfaceFactory = BitmapFactory;
 	using SurfaceFactory_p = BitmapFactory_p;
 	using SurfaceFactory_wp = BitmapFactory_wp;
+
+	class Part;
+	class ScrollbarPart;
+	class Dropdown;
+	class DropdownEntry;
+	class ExpanderPanel;
+	class MenuButton;
+
+	using Component = Part;
+	using Scroller = ScrollbarPart;
+	using SelectBox = Dropdown;
+	using SelectBox_p = StrongPtr<Dropdown>;
+	using SelectBox_wp = WeakPtr<Dropdown>;
+	using SelectBoxEntry = DropdownEntry;
+	using DrawerPanel = ExpanderPanel;
+	using DrawerPanel_p = StrongPtr<ExpanderPanel>;
+	using DrawerPanel_wp = WeakPtr<ExpanderPanel>;
+	using PopupOpener = MenuButton;
+	using PopupOpener_p = StrongPtr<MenuButton>;
+	using PopupOpener_wp = WeakPtr<MenuButton>;
 }
 typedef wg::PixelFormat WgPixelType;
 

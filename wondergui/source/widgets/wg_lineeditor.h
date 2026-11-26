@@ -67,7 +67,7 @@ namespace wg
 		static LineEditor_p	create() { return LineEditor_p(new LineEditor()); }
 		static LineEditor_p	create(const Blueprint& blueprint) { return LineEditor_p(new LineEditor(blueprint)); }
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		EditableText		editor;
 
@@ -109,16 +109,16 @@ namespace wg
 		void			_receive( Msg * pMsg ) override;
 		void			_setState( State state ) override;
 
-		CoordSPX		_componentPos( const Component * pComponent ) const override;
-		SizeSPX			_componentSize( const Component * pComponent ) const override;
-		RectSPX			_componentGeo( const Component * pComponent ) const override;
+		CoordSPX		_partPos( const Part * pPart ) const override;
+		SizeSPX			_partSize( const Part * pPart ) const override;
+		RectSPX			_partGeo( const Part * pPart ) const override;
 
-		void			_componentRequestRender(const Component * pComponent) override;
-		void			_componentRequestRender( const Component * pComponent, const RectSPX& rect ) override;
-		void			_componentRequestResize( const Component * pComponent ) override;
-		void			_componentRequestInView(const Component * pComponent, const RectSPX& mustHave, const RectSPX& niceToHave) override;
+		void			_partRequestRender(const Part * pPart) override;
+		void			_partRequestRender( const Part * pPart, const RectSPX& rect ) override;
+		void			_partRequestResize( const Part * pPart ) override;
+		void			_partRequestInView(const Part * pPart, const RectSPX& mustHave, const RectSPX& niceToHave) override;
 
-		void			_receiveComponentNotif( Component * pComponent, ComponentNotif notification, int value, void * pData ) override;
+		void			_receivePartNotif( Part * pPart, PartNotif notification, int value, void * pData ) override;
 
 		spx				_editorWidth() const;
 

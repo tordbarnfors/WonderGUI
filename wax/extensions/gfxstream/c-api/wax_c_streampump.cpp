@@ -36,7 +36,7 @@ wax_obj wax_createStreamPump()
 	return p.rawPtr();
 }
 
-wax_obj wax_createStreamPumpWithInputOutput(wax_component input, wax_component output)
+wax_obj wax_createStreamPumpWithInputOutput(wax_part input, wax_part output)
 {
 	StreamSource_p pInput(reinterpret_cast<Object*>(input.object), * reinterpret_cast<StreamSource*>(input.pInterface));
 	StreamSink_p pOutput(reinterpret_cast<Object*>(output.object), *reinterpret_cast<StreamSink*>(output.pInterface));
@@ -46,13 +46,13 @@ wax_obj wax_createStreamPumpWithInputOutput(wax_component input, wax_component o
 	return p.rawPtr();
 }
 
-void wax_setStreamPumpInput(wax_obj streamPump, wax_component input)
+void wax_setStreamPumpInput(wax_obj streamPump, wax_part input)
 {
 	StreamSource_p pInput(reinterpret_cast<Object*>(input.object), *reinterpret_cast<StreamSource*>(input.pInterface));
 	getPtr(streamPump)->setInput(pInput);
 }
 
-void wax_setStreamPumpOutput(wax_obj streamPump, wax_component output)
+void wax_setStreamPumpOutput(wax_obj streamPump, wax_part output)
 {
 	StreamSink_p pOutput(reinterpret_cast<Object*>(output.object), *reinterpret_cast<StreamSink*>(output.pInterface));
 	getPtr(streamPump)->setOutput(pOutput);

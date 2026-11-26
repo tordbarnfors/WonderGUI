@@ -26,8 +26,8 @@ private:
 	wg::Widget_p 	_createControlPanel();
 	wg::Widget_p	_createStretchPanel();
 
-	wg::SelectBox_p	_createSelectBox();
-	wg::SelectBox_p	_createSizeSourceSelectBox();
+	wg::Dropdown_p	_createDropdown();
+	wg::Dropdown_p	_createSizeSourceDropdown();
 
 	wapp::Window_p		m_pWindow;
 
@@ -50,13 +50,13 @@ private:
 
 	wg::FlexPanel_p		m_pBasePanel;
 
-	wg::SelectBox_p		m_pStartSizeSelector;
-	wg::SelectBox_p		m_pExpandFactorSelector;
-	wg::SelectBox_p		m_pShrinkFactorSelector;
-	wg::SelectBox_p		m_pHideSelector;
-	wg::SelectBox_p		m_pMinSizeSourceSelector;
-	wg::SelectBox_p		m_pDefaultSizeSourceSelector;
-	wg::SelectBox_p		m_pMaxSizeSourceSelector;
+	wg::Dropdown_p		m_pStartSizeSelector;
+	wg::Dropdown_p		m_pExpandFactorSelector;
+	wg::Dropdown_p		m_pShrinkFactorSelector;
+	wg::Dropdown_p		m_pHideSelector;
+	wg::Dropdown_p		m_pMinSizeSourceSelector;
+	wg::Dropdown_p		m_pDefaultSizeSourceSelector;
+	wg::Dropdown_p		m_pMaxSizeSourceSelector;
 
 	wg::TextEditor_p	m_pList1Input;
 	wg::TextEditor_p	m_pList2Input;

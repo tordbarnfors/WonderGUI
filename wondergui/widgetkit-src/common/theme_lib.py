@@ -259,7 +259,7 @@ def add_triangle(canvas, box, direction, color, outline=None):
 
 def add_arrow_glyph(canvas, direction, color, outline, arrow_w_px, arrow_h_px):
     """Anti-aliased arrow centred in the canvas, sharing add_triangle() with
-    the select box's arrow so all five arrows in a kit are the same shape.
+    the dropdown's arrow so all five arrows in a kit are the same shape.
 
     `arrow_w_px`/`arrow_h_px` are the triangle's bounding box, so the caller
     states the proportions directly rather than deriving them from the

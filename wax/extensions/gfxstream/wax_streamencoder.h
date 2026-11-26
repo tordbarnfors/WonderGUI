@@ -26,7 +26,7 @@
 #include <cstring>
 
 #include <wax_streamsink.h>
-#include <wax_componentptr.h>
+#include <wax_partptr.h>
 #include <wax_types.h>
 #include <wax_geo.h>
 #include <wax_color.h>
@@ -148,7 +148,7 @@ namespace wax
 		int			m_freeIdStackCapacity = 0;
 		int			m_freeIdStackSize = 0;
 		
-		ComponentPtr<StreamSink>	m_pStream;
+		PartPtr<StreamSink>	m_pStream;
 		
 		uint8_t*	m_pBuffer = nullptr;
 		int			m_capacity = 0;

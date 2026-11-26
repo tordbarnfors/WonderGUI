@@ -32,7 +32,7 @@ namespace wax
 {
 
 	class StreamSink;
-	typedef	ComponentPtr<StreamSink>	StreamSink_p;
+	typedef	PartPtr<StreamSink>	StreamSink_p;
 
 
 	//____ StreamSink __________________________________________________________

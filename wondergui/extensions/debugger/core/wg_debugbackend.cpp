@@ -50,8 +50,8 @@
 #include <wg_edgemapdisplayinfosection.h>
 #include <wg_imageinfosection.h>
 #include <wg_nodewiresinfosection.h>
-#include <wg_popupopenerinfosection.h>
-#include <wg_selectboxinfosection.h>
+#include <wg_menubuttoninfosection.h>
+#include <wg_dropdowninfosection.h>
 #include <wg_sidecanvasinfosection.h>
 #include <wg_skindisplayinfosection.h>
 #include <wg_bitmapdisplayinfosection.h>
@@ -70,7 +70,7 @@
 #include <wg_flexpanelinfosection.h>
 #include <wg_scrollpanelinfosection.h>
 #include <wg_twoslotpanelinfosection.h>
-#include <wg_drawerpanelinfosection.h>
+#include <wg_expanderpanelinfosection.h>
 #include <wg_splitpanelinfosection.h>
 #include <wg_tablepanelinfosection.h>
 #include <wg_lambdapanelinfosection.h>
@@ -114,7 +114,7 @@
 #include <wg_statictextinfosection.h>
 #include <wg_editabletextinfosection.h>
 #include <wg_iconinfosection.h>
-#include <wg_scrollerinfosection.h>
+#include <wg_scrollbarpartinfosection.h>
 #include <wg_glowinfosection.h>
 
 #include <wg_panel.h>
@@ -155,8 +155,8 @@ namespace wg
 		_registerObject<EdgemapDisplay, EdgemapDisplayInfoSection>();
 		_registerObject<Image, ImageInfoSection>();
 		_registerObject<NodeWires, NodeWiresInfoSection>();
-		_registerObject<PopupOpener, PopupOpenerInfoSection>();
-		_registerObject<SelectBox, SelectBoxInfoSection>();
+		_registerObject<MenuButton, MenuButtonInfoSection>();
+		_registerObject<Dropdown, DropdownInfoSection>();
 		_registerObject<SideCanvas, SideCanvasInfoSection>();
 		_registerObject<SkinDisplay, SkinDisplayInfoSection>();
 		_registerObject<BitmapDisplay, BitmapDisplayInfoSection>();
@@ -174,7 +174,7 @@ namespace wg
 		_registerObject<FlexPanel, FlexPanelInfoSection>();
 		_registerObject<TwoSlotPanel, TwoSlotPanelInfoSection>();
 		_registerObject<ScrollPanel, ScrollPanelInfoSection>();
-		_registerObject<DrawerPanel, DrawerPanelInfoSection>();
+		_registerObject<ExpanderPanel, ExpanderPanelInfoSection>();
 		_registerObject<SplitPanel, SplitPanelInfoSection>();
 		_registerObject<TablePanel, TablePanelInfoSection>();
 		_registerObject<LambdaPanel, LambdaPanelInfoSection>();
@@ -214,16 +214,16 @@ namespace wg
 		_registerSlot<LambdaPanelSlot, LambdaPanelSlotInfoSection>();
 		_registerSlot<StackPanelSlot, StackPanelSlotInfoSection>();
 
-		_registerComponent<StaticText, StaticTextInfoSection>();
-		_registerComponent<EditableText, EditableTextInfoSection>();
-		_registerComponent<Icon, IconInfoSection>();
-		_registerComponent<Scroller, ScrollerInfoSection>();
-		_registerComponent<Glow, GlowInfoSection>();
+		_registerPart<StaticText, StaticTextInfoSection>();
+		_registerPart<EditableText, EditableTextInfoSection>();
+		_registerPart<Icon, IconInfoSection>();
+		_registerPart<ScrollbarPart, ScrollbarPartInfoSection>();
+		_registerPart<Glow, GlowInfoSection>();
 
 		_ignore<DynamicSlot>();
 		_ignore<DragNDropOverlay::Slot>();
 		_ignore<Receiver>();
-		_ignore<Component>();
+		_ignore<Part>();
 		_ignore<DynamicText>();
 		_ignore<StateSkin>();
 	}
@@ -296,11 +296,11 @@ namespace wg
 		_addInfoSections(pPanel, pSlot, m_slotInfoFactories);
 	}
 
-	//____ addComponentInfoSections() __________________________________________
+	//____ addPartInfoSections() _______________________________________________
 
-	void DebugBackend::addComponentInfoSections(PackPanel* pPanel, Component* pComponent)
+	void DebugBackend::addPartInfoSections(PackPanel* pPanel, Part* pPart)
 	{
-		_addInfoSections(pPanel, pComponent, m_componentInfoFactories);
+		_addInfoSections(pPanel, pPart, m_partInfoFactories);
 	}
 
 	//____ createObjectInspector() ________________________________________________

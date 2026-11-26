@@ -97,13 +97,13 @@ bool MyApp::_setupGUI(API* pAPI)
 	auto pRunButton = WGCREATE( wkit::Button, _.label.text = "Run tests" );
 	auto pSyntheticTestButton = WGCREATE( wkit::Button, _.label.text = "Run 'synthetic' test" );
 
-	m_pCompressorSelector = wkit::SelectBox::create();
-	m_pCompressorSelector->entries.pushBack( SelectBoxEntry::Blueprint{ .id = 0, .text = "LZWP (Lempel-Ziw based w improvements)" } );
-	m_pCompressorSelector->entries.pushBack( SelectBoxEntry::Blueprint{ .id = 1, .text = "Q565 (QOI inspired for RGB565)" } );
-	m_pCompressorSelector->entries.pushBack( SelectBoxEntry::Blueprint{ .id = 2, .text = "RLEx-1 (Simple one byte run length encoding)" } );
-	m_pCompressorSelector->entries.pushBack( SelectBoxEntry::Blueprint{ .id = 3, .text = "RLEx-2 (Simple two byte run length encoding)" } );
-	m_pCompressorSelector->entries.pushBack( SelectBoxEntry::Blueprint{ .id = 4, .text = "RLEx-4 (Simple four byte run length encoding)" } );
-	m_pCompressorSelector->entries.pushBack( SelectBoxEntry::Blueprint{ .id = 5, .text = "QOI (for ARGB_8 and XRGB_8)" } );
+	m_pCompressorSelector = wkit::Dropdown::create();
+	m_pCompressorSelector->entries.pushBack( DropdownEntry::Blueprint{ .id = 0, .text = "LZWP (Lempel-Ziw based w improvements)" } );
+	m_pCompressorSelector->entries.pushBack( DropdownEntry::Blueprint{ .id = 1, .text = "Q565 (QOI inspired for RGB565)" } );
+	m_pCompressorSelector->entries.pushBack( DropdownEntry::Blueprint{ .id = 2, .text = "RLEx-1 (Simple one byte run length encoding)" } );
+	m_pCompressorSelector->entries.pushBack( DropdownEntry::Blueprint{ .id = 3, .text = "RLEx-2 (Simple two byte run length encoding)" } );
+	m_pCompressorSelector->entries.pushBack( DropdownEntry::Blueprint{ .id = 4, .text = "RLEx-4 (Simple four byte run length encoding)" } );
+	m_pCompressorSelector->entries.pushBack( DropdownEntry::Blueprint{ .id = 5, .text = "QOI (for ARGB_8 and XRGB_8)" } );
 	m_pCompressorSelector->selectEntryByIndex(0);
 
 	pButtonPanel->slots.pushBack({

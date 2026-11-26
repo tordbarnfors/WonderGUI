@@ -206,7 +206,7 @@ namespace wg
 		static PlotChart_p	create( const Blueprint& blueprint ) { return PlotChart_p(new PlotChart(blueprint)); }
 
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		DynamicVector<PlotChartEntry>	entries;
 

@@ -57,7 +57,7 @@ namespace wg
 		SplitPanelSlotInfoSection(const DebugTheme& theme, IDebugContext* pContext, SplitPanel::Slot * pInspected );
 		~SplitPanelSlotInfoSection() {}
 
-		DrawerPanel_p	m_pGeoDrawer;
+		ExpanderPanel_p	m_pGeoDrawer;
 		Rect			m_displayedGeo;
 	};
 

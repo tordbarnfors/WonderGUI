@@ -57,7 +57,7 @@ namespace wg
 		TextDisplayInfoSection(const DebugTheme& theme, IDebugContext* pContext, TextDisplay * pInspected );
 		~TextDisplayInfoSection() {}
 
-		DrawerPanel_p	m_pDisplayDrawer;
+		ExpanderPanel_p	m_pDisplayDrawer;
 	};
 
 } // namespace wg

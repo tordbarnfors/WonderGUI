@@ -52,14 +52,14 @@
 
 #include <wg_splitpanel.h>
 #include <wg_tablepanel.h>
-#include <wg_drawerpanel.h>
+#include <wg_expanderpanel.h>
 
 #include <wg_button.h>
 #include <wg_togglebutton.h>
 #include <wg_lineeditor.h>
 #include <wg_texteditor.h>
 #include <wg_textdisplay.h>
-#include <wg_selectbox.h>
+#include <wg_dropdown.h>
 
 
 namespace wg::glossyblue
@@ -118,7 +118,7 @@ namespace wg::glossyblue
 	// keeps its own distance from its neighbours without every caller setting
 	// panel spacing. Set per-spec in widgetkit-src/glossyblue/specs/.
 	//
-	//   1pt on every side -- Button, ToggleButton, SelectBox, Field.
+	//   1pt on every side -- Button, ToggleButton, Dropdown, Field.
 	//     Free-standing controls that get lined up in a PackPanel; two
 	//     neighbours end up 2pts apart. A caller who wants them welded into a
 	//     segmented strip can still override the skin.
@@ -126,8 +126,8 @@ namespace wg::glossyblue
 	//   none -- everything else, on purpose:
 	//     Plate / Canvas / Window / Titlebar   backdrops, must reach their edge
 	//     PlateNoBevel                         table corner, abuts the scrollbars
-	//     SelectBoxEntry                       list rows must touch
-	//     ScrollbarTrack / Handle* / Button*   the Scroller lays these out
+	//     DropdownEntry                       list rows must touch
+	//     ScrollbarTrack / Handle* / Button*   the ScrollbarPart lays these out
 	//                                          adjacent; a margin would leave
 	//                                          gaps in the bar
 	//     SplitHandleX / Y                     fills the drag gap exactly
@@ -144,7 +144,7 @@ namespace wg::glossyblue
 	//
 	// Skins::Field is Skins::Canvas plus that margin -- literally the same
 	// atlas block (see `blocks_from` in specs/Field.yaml). They are separate
-	// entries because Canvas is also the SelectBox drop-down's background,
+	// entries because Canvas is also the Dropdown drop-down's background,
 	// where a margin would inset the list inside the popup.
 	namespace Skins
 	{
@@ -158,8 +158,8 @@ namespace wg::glossyblue
 		inline Skin_p		ToggleButton;
 		inline Skin_p		Checkbox;
 		inline Skin_p		RadioButton;
-		inline Skin_p		SelectBox;
-		inline Skin_p		SelectBoxEntry;
+		inline Skin_p		Dropdown;
+		inline Skin_p		DropdownEntry;
 		inline Skin_p		ScrollbarTrack;
 		inline Skin_p		ScrollbarHandleX;
 		inline Skin_p		ScrollbarHandleY;
@@ -297,7 +297,7 @@ namespace wg::glossyblue
 		//     if (m_pStyle) return m_pStyle; return Base::defaultStyle();
 		// and _layout() does the same with Base::defaultTextLayout() -- but
 		// nothing in WonderGUI ever calls the setters, so those defaults are
-		// null. A text component that ends up without a style therefore has no
+		// null. A text part that ends up without a style therefore has no
 		// FONT, and draws nothing at all.
 		//
 		// That is a miserable failure mode, because the usual way to end up
@@ -363,12 +363,12 @@ namespace wg::glossyblue
 			}
 		));
 
-		Skins::SelectBoxEntry = BoxSkin::create(WGBP(BoxSkin,
+		Skins::DropdownEntry = BoxSkin::create(WGBP(BoxSkin,
 			// 6pts left, to line an entry's text up with the closed box's own.
 			// The two are measured from the same origin -- the popup attaches to
 			// the widget's geo, so its left edge and the widget's coincide -- but
 			// they were reached by different routes: the closed box insets its
-			// text by Skins::SelectBox's spacing (1) plus its padding (5) = 6pts,
+			// text by Skins::Dropdown's spacing (1) plus its padding (5) = 6pts,
 			// while an entry only had Skins::Canvas's padding (1).
 			//
 			// Plus one more point, because the two texts are only ever seen
@@ -378,7 +378,7 @@ namespace wg::glossyblue
 			// text 1pt left of the box's in the one moment it can be compared.
 			//
 			// Padding moves the TEXT only: BoxSkin fills and outlines the rect it
-			// is given, and SelectBox gives it the list canvas's full content
+			// is given, and Dropdown gives it the list canvas's full content
 			// width, so the hover/selection highlight still reaches both edges.
 			// Same on the right, for symmetry -- the closed box's 18 is arrow
 			// clearance, which the list has no use for. Top and bottom stay 0 so
@@ -478,8 +478,8 @@ namespace wg::glossyblue
 		Skins::ToggleButton = nullptr;
 		Skins::Checkbox = nullptr;
 		Skins::RadioButton = nullptr;
-		Skins::SelectBox = nullptr;
-		Skins::SelectBoxEntry = nullptr;
+		Skins::Dropdown = nullptr;
+		Skins::DropdownEntry = nullptr;
 		Skins::ScrollbarTrack = nullptr;
 		Skins::ScrollbarHandleX = nullptr;
 		Skins::ScrollbarHandleY = nullptr;
@@ -518,7 +518,7 @@ namespace wg::glossyblue
 	//
 	// constructs a fresh DynamicText::Blueprint whose `style` and `layout` are
 	// null, and the default is gone. Nothing warns; the button just has no
-	// caption, because a text component with no style has no font.
+	// caption, because a text part with no style has no font.
 	//
 	// Filling the gaps here turns that from "replace" into "merge", so naming
 	// one field of a nested blueprint keeps the rest. A caller who genuinely
@@ -824,11 +824,11 @@ namespace wg::glossyblue
 			uint8_t				pickCategory = 0;
 			bool				pickHandle = false;
 			PointerStyle		pointer = PointerStyle::Undefined;
-			Scroller::Blueprint	scrollbarX = WGBP(Scroller, _.back = Skins::ScrollbarTrack,
+			ScrollbarPart::Blueprint	scrollbarX = WGBP(ScrollbarPart, _.back = Skins::ScrollbarTrack,
 															_.backwardButton = Skins::ScrollbarButtonLeft,
 															_.bar = Skins::ScrollbarHandleX,
 															_.forwardButton = Skins::ScrollbarButtonRight);
-			Scroller::Blueprint	scrollbarY = WGBP(Scroller, _.back = Skins::ScrollbarTrack,
+			ScrollbarPart::Blueprint	scrollbarY = WGBP(ScrollbarPart, _.back = Skins::ScrollbarTrack,
 															_.backwardButton = Skins::ScrollbarButtonUp,
 															_.bar = Skins::ScrollbarHandleY,
 															_.forwardButton = Skins::ScrollbarButtonDown );
@@ -891,11 +891,11 @@ namespace wg::glossyblue
 			uint8_t				pickCategory = 0;
 			bool				pickHandle = false;
 			PointerStyle		pointer = PointerStyle::Undefined;
-			Scroller::Blueprint	scrollbarX = WGBP(Scroller, _.back = Skins::ScrollbarTrack,
+			ScrollbarPart::Blueprint	scrollbarX = WGBP(ScrollbarPart, _.back = Skins::ScrollbarTrack,
 															_.backwardButton = Skins::ScrollbarButtonLeft,
 															_.bar = Skins::ScrollbarHandleX,
 															_.forwardButton = Skins::ScrollbarButtonRight);
-			Scroller::Blueprint	scrollbarY = WGBP(Scroller, _.back = Skins::ScrollbarTrack,
+			ScrollbarPart::Blueprint	scrollbarY = WGBP(ScrollbarPart, _.back = Skins::ScrollbarTrack,
 															_.backwardButton = Skins::ScrollbarButtonUp,
 															_.bar = Skins::ScrollbarHandleY,
 															_.forwardButton = Skins::ScrollbarButtonDown );
@@ -958,11 +958,11 @@ namespace wg::glossyblue
 			uint8_t				pickCategory = 0;
 			bool				pickHandle = false;
 			PointerStyle		pointer = PointerStyle::Undefined;
-			Scroller::Blueprint	scrollbarX = WGBP(Scroller, _.back = Skins::ScrollbarTrack,
+			ScrollbarPart::Blueprint	scrollbarX = WGBP(ScrollbarPart, _.back = Skins::ScrollbarTrack,
 															_.backwardButton = Skins::ScrollbarButtonLeft,
 															_.bar = Skins::ScrollbarHandleX,
 															_.forwardButton = Skins::ScrollbarButtonRight);
-			Scroller::Blueprint	scrollbarY = WGBP(Scroller, _.back = Skins::ScrollbarTrack,
+			ScrollbarPart::Blueprint	scrollbarY = WGBP(ScrollbarPart, _.back = Skins::ScrollbarTrack,
 															_.backwardButton = Skins::ScrollbarButtonUp,
 															_.bar = Skins::ScrollbarHandleY,
 															_.forwardButton = Skins::ScrollbarButtonDown );
@@ -1084,7 +1084,7 @@ namespace wg::glossyblue
 
 	//____ TreeListDrawer ______________________________________________________
 
-	class TreeListDrawer : public wg::DrawerPanel
+	class TreeListDrawer : public wg::ExpanderPanel
 	{
 	public:
 
@@ -1117,12 +1117,12 @@ namespace wg::glossyblue
 			Object_p			userData;
 		};
 
-		inline static wg::DrawerPanel_p	create() { return new TreeListDrawer(Blueprint()); }
-		inline static wg::DrawerPanel_p	create(const Blueprint& blueprint) { return new TreeListDrawer(blueprint); }
+		inline static wg::ExpanderPanel_p	create() { return new TreeListDrawer(Blueprint()); }
+		inline static wg::ExpanderPanel_p	create(const Blueprint& blueprint) { return new TreeListDrawer(blueprint); }
 
 	protected:
 
-		TreeListDrawer(const Blueprint& bp) : wg::DrawerPanel(bp) {}
+		TreeListDrawer(const Blueprint& bp) : wg::ExpanderPanel(bp) {}
 	};
 
 	//____ TreeListEntry ______________________________________________________
@@ -1303,9 +1303,9 @@ namespace wg::glossyblue
 		}
 	};
 
-	//____ SelectBox ______________________________________________________
+	//____ Dropdown _______________________________________________________
 
-	class SelectBox : public wg::SelectBox
+	class Dropdown : public wg::Dropdown
 	{
 	public:
 
@@ -1323,7 +1323,7 @@ namespace wg::glossyblue
 			DynamicText::Blueprint display = WGBP(DynamicText, _.layout = TextLayouts::LeftNoWrap, _.style = TextStyles::NormalBright );
 
 			bool			dropTarget = false;
-			Skin_p			entrySkin = Skins::SelectBoxEntry;
+			Skin_p			entrySkin = Skins::DropdownEntry;
 			TextStyle_p		entryTextStyle = TextStyles::NormalDark;
 			TextLayout_p	entryTextLayout;
 			Finalizer_p		finalizer = nullptr;
@@ -1335,27 +1335,27 @@ namespace wg::glossyblue
 			bool			pickHandle = false;
 			PointerStyle	pointer = PointerStyle::Undefined;
 			bool			selectable = false;
-			Skin_p			skin = Skins::SelectBox;
+			Skin_p			skin = Skins::Dropdown;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			std::string			tooltip;
 			Object_p		userData;
 		};
 
-		inline static wg::SelectBox_p	create() { return new SelectBox(Blueprint()); }
-		inline static wg::SelectBox_p	create(const Blueprint& blueprint) { return new SelectBox(blueprint); }
+		inline static wg::Dropdown_p	create() { return new Dropdown(Blueprint()); }
+		inline static wg::Dropdown_p	create(const Blueprint& blueprint) { return new Dropdown(blueprint); }
 
 	protected:
 
-		SelectBox(const Blueprint& bp) : wg::SelectBox(bp)
+		Dropdown(const Blueprint& bp) : wg::Dropdown(bp)
 		{
 			// Ordinary gap-filling now, exactly like the other wrappers: the base
 			// class applies `bp.display` itself, so this only has to cover the
 			// case where a caller replaced the nested blueprint with a designated
 			// initializer and lost the kit's defaults with it.
 			//
-			// This used to be a workaround. wg::SelectBox had no way at all to
-			// reach its own text component -- no Blueprint field, no init -- so
+			// This used to be a workaround. wg::Dropdown had no way at all to
+			// reach its own text part -- no Blueprint field, no init -- so
 			// the closed box drew nothing however many entries it held, and the
 			// kit had to add its own `textStyle` and apply it unconditionally.
 			// The engine now carries `display`, so that is all gone.

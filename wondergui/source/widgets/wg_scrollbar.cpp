@@ -189,7 +189,7 @@ namespace wg
 
 	//____ _scrollbarStep() ___________________________________________________
 
-	void Scrollbar::_scrollbarStep(const Scroller* pComponent, int dir)
+	void Scrollbar::_scrollbarStep(const ScrollbarPart* pPart, int dir)
 	{
 		spx newViewPos = m_viewPos + m_singleStep * dir;
 		limit(newViewPos, 0, m_contentLen - m_viewLen);
@@ -199,21 +199,21 @@ namespace wg
 
 	//____ _scrollbarPage() ___________________________________________________
 
-	void Scrollbar::_scrollbarPage(const Scroller* pComponent, int dir)
+	void Scrollbar::_scrollbarPage(const ScrollbarPart* pPart, int dir)
 	{
 		_setViewPos(m_viewPos + (m_viewLen - m_pageOverlap) * dir);
 	}
 
 	//____ _scrollbarWheel() __________________________________________________
 
-	void Scrollbar::_scrollbarWheel(const Scroller* pComponent, int dir)
+	void Scrollbar::_scrollbarWheel(const ScrollbarPart* pPart, int dir)
 	{
 		_setViewPos(m_viewPos + m_wheelRoll * dir);
 	}
 
 	//____ _scrollbarMove() ___________________________________________________
 
-	spx Scrollbar::_scrollbarMove(const Scroller* pComponent, spx pos)
+	spx Scrollbar::_scrollbarMove(const ScrollbarPart* pPart, spx pos)
 	{
 		spx viewLen = align(ptsToSpx(m_viewLen, m_scale));
 		spx contentLen = align(ptsToSpx(m_contentLen, m_scale));
@@ -228,7 +228,7 @@ namespace wg
 
 	//____ _scrollbarOfsLenContent() __________________________________________
 
-	std::tuple<spx, spx, spx> Scrollbar::_scrollbarOfsLenContent(const Scroller* pComponent)
+	std::tuple<spx, spx, spx> Scrollbar::_scrollbarOfsLenContent(const ScrollbarPart* pPart)
 	{
 		return std::make_tuple(align(ptsToSpx(m_viewPos,m_scale)), align(ptsToSpx(m_viewLen, m_scale)), align(ptsToSpx(m_contentLen, m_scale)) );
 	}

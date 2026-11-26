@@ -43,7 +43,7 @@ namespace wax
 		as one U+FFFD per invalid byte.
 
 		Functions named "...Unchecked" assume valid UTF-8 and are meant for text
-		that already has been validated, like the text in a text component.
+		that already has been validated, like the text in a text part.
 	*/
 
 	namespace Utf8

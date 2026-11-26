@@ -55,7 +55,7 @@ private:
 	Compressor_p	m_pCompressor;
 	Decompressor_p	m_pDecompressor;
 
-	SelectBox_p		m_pCompressorSelector;
+	Dropdown_p		m_pCompressorSelector;
 
 	TextLayout_p	m_pLayoutRight;
 

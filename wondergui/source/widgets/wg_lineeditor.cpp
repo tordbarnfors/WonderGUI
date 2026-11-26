@@ -201,11 +201,11 @@ namespace wg
 		editor._setSize( SizeSPX( _editorWidth(), size.h - m_skin.contentBorderSize(m_scale).h ), scale );
 	}
 
-	//____ _componentPos() __________________________________________________________
+	//____ _partPos() _______________________________________________________________
 
-	CoordSPX LineEditor::_componentPos( const Component * pComponent ) const
+	CoordSPX LineEditor::_partPos( const Part * pPart ) const
 	{
-		if (pComponent != &editor)
+		if (pPart != &editor)
 			return CoordSPX();
 
 		CoordSPX c(-m_textScrollOfs, 0);
@@ -213,21 +213,21 @@ namespace wg
 		return m_skin.contentOfs( m_scale, m_state ) + c;
 	}
 
-	//____ _componentSize() _________________________________________________________
+	//____ _partSize() ______________________________________________________________
 
-	SizeSPX LineEditor::_componentSize( const Component * pComponent ) const
+	SizeSPX LineEditor::_partSize( const Part * pPart ) const
 	{
-		if (pComponent != &editor)
+		if (pPart != &editor)
 			return m_size;
 
 		return SizeSPX( _editorWidth(), m_size.h - m_skin.contentBorderSize(m_scale).h );
 	}
 
-	//____ _componentGeo() __________________________________________________________
+	//____ _partGeo() _______________________________________________________________
 
-	RectSPX LineEditor::_componentGeo( const Component * pComponent ) const
+	RectSPX LineEditor::_partGeo( const Part * pPart ) const
 	{
-		if (pComponent != &editor)
+		if (pPart != &editor)
 			return m_size;
 
 		RectSPX r = m_skin.contentRect( m_size, m_scale, m_state );
@@ -236,19 +236,19 @@ namespace wg
 		return r;
 	}
 
-	//____ _componentRequestRender() ______________________________________________
+	//____ _partRequestRender() ___________________________________________________
 
-	void LineEditor::_componentRequestRender(const Component * pComponent)
+	void LineEditor::_partRequestRender(const Part * pPart)
 	{
-		if (pComponent != &editor)
+		if (pPart != &editor)
 			return _requestRender();
 
 		_requestRender(m_skin.contentRect(m_size, m_scale, m_state));
 	}
 
-	void LineEditor::_componentRequestRender( const Component * pComponent, const RectSPX& rect )
+	void LineEditor::_partRequestRender( const Part * pPart, const RectSPX& rect )
 	{
-		if (pComponent != &editor)
+		if (pPart != &editor)
 			return _requestRender(rect);
 
 		RectSPX dirt = rect;
@@ -261,12 +261,12 @@ namespace wg
 			_requestRender(RectSPX::overlap(dirt, visible));
 	}
 
-	//____ _componentRequestResize() ______________________________________________
+	//____ _partRequestResize() ___________________________________________________
 
-	void LineEditor::_componentRequestResize( const Component * pComponent )
+	void LineEditor::_partRequestResize( const Part * pPart )
 	{
-		if (pComponent != &editor)
-			return Widget::_componentRequestResize(pComponent);
+		if (pPart != &editor)
+			return Widget::_partRequestResize(pPart);
 
 		SizeSPX defaultSize = editor._defaultSize(m_scale);
 
@@ -278,12 +278,12 @@ namespace wg
 			editor._setSize( SizeSPX(_editorWidth(), contentSize.h ),m_scale);
 	}
 
-	//____ _componentRequestInView() ____________________________________________
+	//____ _partRequestInView() _________________________________________________
 
-	void LineEditor::_componentRequestInView(const Component * pComponent, const RectSPX& mustHave, const RectSPX& niceToHave)
+	void LineEditor::_partRequestInView(const Part * pPart, const RectSPX& mustHave, const RectSPX& niceToHave)
 	{
 		spx scrollOfs = m_textScrollOfs;
-		SizeSPX canvas = _componentSize(pComponent);
+		SizeSPX canvas = _partSize(pPart);
 
 		SizeSPX window = m_size - m_skin.contentBorderSize(m_scale);
 
@@ -303,11 +303,11 @@ namespace wg
 		}
 	}
 
-	//____ _receiveComponentNotif() ______________________________________________
+	//____ _receivePartNotif() ___________________________________________________
 
-	void LineEditor::_receiveComponentNotif( Component * pComponent, ComponentNotif notification, int value, void * pData )
+	void LineEditor::_receivePartNotif( Part * pPart, PartNotif notification, int value, void * pData )
 	{
-		if( notification == ComponentNotif::TextModified )
+		if( notification == PartNotif::TextModified )
 		{
 			auto p = static_cast<StaticText::NotifData*>(pData);
 

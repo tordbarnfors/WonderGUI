@@ -25,7 +25,7 @@
 
 #include <wax_geo.h>
 #include <wax_object.h>
-#include <wax_componentptr.h>
+#include <wax_partptr.h>
 
 #include <wax_streamsource.h>
 #include <wax_streamsink.h>

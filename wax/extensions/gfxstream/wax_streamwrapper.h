@@ -47,7 +47,7 @@ namespace wax
 		static StreamWrapper_p	create( const void * pBegin, const void * pEnd );
 		static StreamWrapper_p	create( GfxStream::iterator begin, GfxStream::iterator end );
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		StreamSource		output;
 

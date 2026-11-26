@@ -37,15 +37,15 @@ extern "C" {
 		uint16_t		objectIdStart;
 		wax_pixelFormat	pixelFormat;
 		wax_sampleMethod	sampleMethod;
-		wax_component	sink;
+		wax_part	sink;
 	} wax_streamEncoderBP;
 
 	//
 
-//	wax_obj			wax_createStreamEncoder(wax_component sinkForStream, int bufferBytes );
+//	wax_obj			wax_createStreamEncoder(wax_part sinkForStream, int bufferBytes );
 	WAX_EXPORT wax_obj			wax_createStreamEncoder( const wax_streamEncoderBP* blueprint);
 
-	WAX_EXPORT void				wax_setEncoderStream(wax_obj encoder, wax_component sinkForStream);
+	WAX_EXPORT void				wax_setEncoderStream(wax_obj encoder, wax_part sinkForStream);
 
 	WAX_EXPORT void				wax_setEncoderDefaultPixelFormat(wax_obj encoder, wax_pixelFormat pixelFormat);
 	WAX_EXPORT wax_pixelFormat 	wax_getEncoderDefaultPixelFormat(wax_obj encoder);

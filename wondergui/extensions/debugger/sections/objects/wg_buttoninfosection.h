@@ -57,8 +57,8 @@ namespace wg
 		ButtonInfoSection(const DebugTheme& theme, IDebugContext* pContext, Button * pInspected );
 		~ButtonInfoSection() {}
 
-		DrawerPanel_p	m_pLabelDrawer;
-		DrawerPanel_p	m_pIconDrawer;
+		ExpanderPanel_p	m_pLabelDrawer;
+		ExpanderPanel_p	m_pIconDrawer;
 	};
 
 } // namespace wg

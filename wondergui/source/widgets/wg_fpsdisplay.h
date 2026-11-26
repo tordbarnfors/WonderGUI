@@ -49,7 +49,7 @@ namespace wg
 		static FpsDisplay_p	create() { return FpsDisplay_p(new FpsDisplay()); }
 
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		DynamicText		labels;
 		StaticText		values;

@@ -42,7 +42,7 @@ wax_obj wax_createStreamPlayer(wax_obj backend, wax_obj bitmapFactory, wax_obj e
 	return p.rawPtr();
 }
 
-wax_component wax_getStreamPlayerInput(wax_obj streamPlayer)
+wax_part wax_getStreamPlayerInput(wax_obj streamPlayer)
 {
 	auto p = getPtr(streamPlayer);
 	return { static_cast<Object*>(p), &p->input };

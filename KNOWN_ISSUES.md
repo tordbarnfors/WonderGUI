@@ -87,7 +87,7 @@ each time, hitting the `assert` in `_addGlyph()` in debug builds.
 It returns early when `size == m_size`, even if the scale changed, so the `TextLayout`
 isn't told about the new scale.
 
-`wondergui/source/components/wg_statictext.cpp`
+`wondergui/source/parts/wg_statictext.cpp`
 
 ## Widgets
 

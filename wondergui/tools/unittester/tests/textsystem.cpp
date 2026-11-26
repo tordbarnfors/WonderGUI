@@ -92,7 +92,7 @@ TextSystemTest::TextSystemTest()
 	ADD_TEST(hitTestTest);
 	ADD_TEST(wordNavigationTest);
 	ADD_TEST(renderTest);
-	ADD_TEST(componentEditTest);
+	ADD_TEST(partEditTest);
 	ADD_TEST(numberLayoutTest);
 	ADD_TEST(markdownMarkersTest);
 	ADD_TEST(markdownBlocksTest);
@@ -464,9 +464,9 @@ bool TextSystemTest::renderTest(std::ostream& output)
 	return true;
 }
 
-//____ componentEditTest() ____________________________________________________
+//____ partEditTest() _________________________________________________________
 
-bool TextSystemTest::componentEditTest(std::ostream& output)
+bool TextSystemTest::partEditTest(std::ostream& output)
 {
 	auto pDisplay = TextDisplay::create();
 	auto& text = pDisplay->display;

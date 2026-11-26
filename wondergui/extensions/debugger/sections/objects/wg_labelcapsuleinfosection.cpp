@@ -41,7 +41,7 @@ namespace wg
 			objectRow( "Label skin: ",      [](LabelCapsule* c) -> Object* { return c->labelSkin(); } )
 		});
 
-		m_pLabelDrawer = _createComponentDrawer("Label", &pInspected->label);
+		m_pLabelDrawer = _createPartDrawer("Label", &pInspected->label);
 
 		pPanel->slots.pushBack({ pTable, m_pLabelDrawer });
 		this->slot = pPanel;
@@ -60,7 +60,7 @@ namespace wg
 	{
 		TypedInfoSection<LabelCapsule>::refresh();
 
-		_refreshComponentDrawer(m_pLabelDrawer);
+		_refreshPartDrawer(m_pLabelDrawer);
 	}
 
 } // namespace wg

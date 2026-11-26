@@ -34,7 +34,7 @@ extern "C" {
 
 	WAX_EXPORT wax_obj		wax_createStreamReader(wax_readStream_func callback);
 
-	WAX_EXPORT wax_component	wax_getStreamReaderOutput(wax_obj streamReader);
+	WAX_EXPORT wax_part	wax_getStreamReaderOutput(wax_obj streamReader);
 
 	WAX_EXPORT void			wax_resetStreamReader(wax_obj streamReader);
 

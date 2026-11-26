@@ -211,7 +211,7 @@ namespace wg::oldskool
 			_.states = { State::Default, State::Checked, State::Disabled }
 		));
 
-		Skins::SelectBox = BlockSkin::create(WGBP(BlockSkin,
+		Skins::Dropdown = BlockSkin::create(WGBP(BlockSkin,
 			_.bitmap = pSkinBlocks,
 			_.firstBlock = { 96,0,34,22 },
 			_.frame = { 4,25,4,4 },
@@ -221,7 +221,7 @@ namespace wg::oldskool
 			_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled }
 		));
 
-		Skins::SelectBoxEntry = BoxSkin::create(WGBP(BoxSkin,
+		Skins::DropdownEntry = BoxSkin::create(WGBP(BoxSkin,
 			_.states = { {State::Default, Color::Transparent, Color::Transparent},
 						 {State::Hovered, Color(Color::LightCyan).withAlpha(2048), Color(Color::DarkCyan).withAlpha(2048)},
 						 {State::Selekted, Color::LightCyan,Color::DarkCyan }
@@ -336,8 +336,8 @@ namespace wg::oldskool
 		Skins::ToggleButton = nullptr;
 		Skins::Checkbox = nullptr;
 		Skins::RadioButton = nullptr;
-		Skins::SelectBox = nullptr;
-		Skins::SelectBoxEntry = nullptr;
+		Skins::Dropdown = nullptr;
+		Skins::DropdownEntry = nullptr;
 		Skins::ScrollbarTrack = nullptr;
 		Skins::ScrollbarHandleX = nullptr;
 		Skins::ScrollbarHandleY = nullptr;

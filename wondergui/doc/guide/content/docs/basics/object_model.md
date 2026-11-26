@@ -168,31 +168,31 @@ TypeInfo * pSuperClass = pObject->typeInfo().pSuperClass;
 
 
 
-## Components and component pointers
+## Parts and part pointers
 
-The term *Component* is used in WonderGUI to refer to a public member of an Object with its own API. Components are used to easily add functionality to Objects, particularly Widgets, through composition instead of inheritance such as a text-field or a container for child widgets. Typically (but not always) they contain a reference to the object containing them so they can notify the object of changes.
+The term *Part* is used in WonderGUI to refer to a public member of an Object with its own API. Parts are used to easily add functionality to Objects, particularly Widgets, through composition instead of inheritance such as a text-field or a container for child widgets. Typically (but not always) they contain a reference to the object containing them so they can notify the object of changes.
 
-Sometimes it might be useful to point to a specific component inside an object directly. This can naturally be done using raw pointers like this:
+Sometimes it might be useful to point to a specific part inside an object directly. This can naturally be done using raw pointers like this:
 
 ```c++
 Text * pLabel = pMyButton->label;
 ```
 
-However, that only works as long as you keep a strong pointer to the object around, so it isn't destroyed. In order to make sure the object isn't destroyed under your feet, you can use a *ComponentPtr* which points at the component but keeps a reference to the Object, guaranteeing that it isn't destroyed while the pointer is being used. It works like this:
+However, that only works as long as you keep a strong pointer to the object around, so it isn't destroyed. In order to make sure the object isn't destroyed under your feet, you can use a *PartPtr* which points at the part but keeps a reference to the Object, guaranteeing that it isn't destroyed while the pointer is being used. It works like this:
 
 ```c++
-auto pLabel = ComponentPtr( pMyButton, pMyButton->label );
+auto pLabel = PartPtr( pMyButton, pMyButton->label );
 ```
 
-First parameter is a pointer to the object and the second is a reference to the component.
+First parameter is a pointer to the object and the second is a reference to the part.
 
 If you need to declare it, it can be declared like this:
 
 ```c++
-ComponentPtr<Text>	pLabel;
+PartPtr<Text>	pLabel;
 ```
 
-But in most cases the component has a typedef:ed pointer that can be used for brevity and readability:
+But in most cases the part has a typedef:ed pointer that can be used for brevity and readability:
 
 ```c++
 Text_p	pLabel;

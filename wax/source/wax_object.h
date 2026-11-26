@@ -58,8 +58,8 @@ namespace wax
 		template<class T> friend class StrongPtr;
 		template<class T> friend class WeakPtr;
 
-		template<class T> friend class StrongComponentPtr;
-		template<class T> friend class WeakComponentPtr;
+		template<class T> friend class StrongPartPtr;
+		template<class T> friend class WeakPartPtr;
 
 		friend class WeakPtrHub;
 	public:

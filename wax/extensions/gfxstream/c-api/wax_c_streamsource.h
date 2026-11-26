@@ -30,11 +30,11 @@
 extern "C" {
 #endif
 
-	WAX_EXPORT int				wax_hasStreamChunks( wax_component streamSource );
-	WAX_EXPORT int				wax_showStreamChunks( wax_component streamSource, wax_streamData ** pSegments );
-    WAX_EXPORT void				wax_discardStreamChunks( wax_component streamSource, int bytes );
-    WAX_EXPORT int				wax_fetchStreamChunks( wax_component streamSource );
-    WAX_EXPORT wax_streamChunkId	wax_peekStreamChunk( wax_component streamSource );
+	WAX_EXPORT int				wax_hasStreamChunks( wax_part streamSource );
+	WAX_EXPORT int				wax_showStreamChunks( wax_part streamSource, wax_streamData ** pSegments );
+    WAX_EXPORT void				wax_discardStreamChunks( wax_part streamSource, int bytes );
+    WAX_EXPORT int				wax_fetchStreamChunks( wax_part streamSource );
+    WAX_EXPORT wax_streamChunkId	wax_peekStreamChunk( wax_part streamSource );
 
 #ifdef __cplusplus
 }

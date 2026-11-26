@@ -117,7 +117,7 @@ namespace wg
 		static TwoSlotPanel_p	create() { return TwoSlotPanel_p(new TwoSlotPanel()); }
 		static TwoSlotPanel_p	create(const Blueprint& blueprint) { return TwoSlotPanel_p(new TwoSlotPanel(blueprint)); }
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		SlotArray<Slot, 2>		slots;
 

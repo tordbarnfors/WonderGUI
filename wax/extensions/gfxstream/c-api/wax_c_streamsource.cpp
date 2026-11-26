@@ -24,17 +24,17 @@
 
 using namespace wax;
 
-inline StreamSource* getPtr(wax_component sink) {
+inline StreamSource* getPtr(wax_part sink) {
 	return static_cast<StreamSource*>(reinterpret_cast<StreamSource*>(sink.pInterface));
 }
 
-int wax_hasStreamChunks( wax_component streamSource )
+int wax_hasStreamChunks( wax_part streamSource )
 {
     auto p = getPtr(streamSource);
     return p->hasChunks();
 }
 
-int wax_showStreamChunks( wax_component streamSource, wax_streamData ** pSegments )
+int wax_showStreamChunks( wax_part streamSource, wax_streamData ** pSegments )
 {
     auto p = getPtr(streamSource);
 
@@ -46,19 +46,19 @@ int wax_showStreamChunks( wax_component streamSource, wax_streamData ** pSegment
     return nbSegments;
 }
 
-void wax_discardStreamChunks( wax_component streamSource, int bytes )
+void wax_discardStreamChunks( wax_part streamSource, int bytes )
 {
     auto p = getPtr(streamSource);
     p->discardChunks(bytes);
 }
 
-int wax_fetchStreamChunks( wax_component streamSource )
+int wax_fetchStreamChunks( wax_part streamSource )
 {
     auto p = getPtr(streamSource);
     return p->fetchChunks();
 }
 
-wax_streamChunkId wax_peekStreamChunk( wax_component streamSource )
+wax_streamChunkId wax_peekStreamChunk( wax_part streamSource )
 {
     auto p = getPtr(streamSource);
     return (wax_streamChunkId) p->peekChunk();

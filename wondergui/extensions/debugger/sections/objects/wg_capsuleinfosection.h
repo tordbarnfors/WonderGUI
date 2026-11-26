@@ -56,7 +56,7 @@ namespace wg
 		CapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, Capsule * pInspected );
 		~CapsuleInfoSection() {}
 
-		DrawerPanel_p	m_pSlotDrawer;
+		ExpanderPanel_p	m_pSlotDrawer;
 	};
 
 } // namespace wg

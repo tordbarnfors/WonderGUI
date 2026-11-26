@@ -248,7 +248,7 @@ namespace wg
 		static AreaScrollChart_p create() { return AreaScrollChart_p(new AreaScrollChart()); }
 		static AreaScrollChart_p create(const Blueprint& blueprint) { return AreaScrollChart_p(new AreaScrollChart(blueprint)); }
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		DynamicVector<AreaScrollChartEntry>	entries;
 

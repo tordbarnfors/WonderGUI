@@ -38,7 +38,7 @@ wax_obj	wax_createStreamLoopWrapper(const void * pBufferBegin, const void * pBuf
 
 }
 
-wax_component	wax_getStreamLoopWrapperOutput(wax_obj loopWrapper)
+wax_part	wax_getStreamLoopWrapperOutput(wax_obj loopWrapper)
 {
 	auto p = getPtr(loopWrapper);
 	return { static_cast<Object*>(p), &p->output };

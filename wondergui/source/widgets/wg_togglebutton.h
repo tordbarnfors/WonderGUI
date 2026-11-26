@@ -101,7 +101,7 @@ namespace wg
 		static ToggleButton_p	create() { return ToggleButton_p(new ToggleButton()); }
 		static ToggleButton_p	create(const Blueprint& blueprint) { return ToggleButton_p(new ToggleButton(blueprint)); }
 
-		//.____ Components ____________________________________
+		//.____ Parts _________________________________________
 
 		DynamicText	label;
 		Icon		icon;
@@ -154,9 +154,9 @@ namespace wg
 		void		_setToggleGroup( ToggleGroup * pGroup );
 		ToggleGroup * _toggleGroup() const { return m_pToggleGroup.rawPtr(); }
 
-		CoordSPX	_componentPos( const Component * pComponent ) const override;
-		SizeSPX		_componentSize( const Component * pComponent ) const override;
-		RectSPX		_componentGeo( const Component * pComponent ) const override;
+		CoordSPX	_partPos( const Part * pPart ) const override;
+		SizeSPX		_partSize( const Part * pPart ) const override;
+		RectSPX		_partGeo( const Part * pPart ) const override;
 
 
 

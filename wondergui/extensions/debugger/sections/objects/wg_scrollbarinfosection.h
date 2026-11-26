@@ -56,7 +56,7 @@ namespace wg
 		ScrollbarInfoSection(const DebugTheme& theme, IDebugContext* pContext, Scrollbar * pInspected );
 		~ScrollbarInfoSection() {}
 
-		DrawerPanel_p	m_pScrollbarDrawer;
+		ExpanderPanel_p	m_pScrollbarDrawer;
 	};
 
 } // namespace wg

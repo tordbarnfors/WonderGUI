@@ -55,7 +55,7 @@ namespace wg
 
 	typedef WeakPtr<Object>		Object_wp;
 
-	typedef	ComponentPtr<EditableText>	EditableText_p;
+	typedef	PartPtr<EditableText>	EditableText_p;
 
 	typedef    StrongPtr<BasicDataset>  BasicDataset_p;
 	typedef    WeakPtr<BasicDataset>    BasicDataset_wp;

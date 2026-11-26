@@ -48,7 +48,7 @@ namespace wax
 												std::function<const void *()> getWritePtrFunc,
 												std::function<void(const void * pReadPos)> setReadPtrFunc );
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		StreamSource		output;
 

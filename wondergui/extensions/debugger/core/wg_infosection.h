@@ -30,7 +30,7 @@
 #include <wg_textdisplay.h>
 #include <wg_numberdisplay.h>
 #include <wg_tablepanel.h>
-#include <wg_drawerpanel.h>
+#include <wg_expanderpanel.h>
 #include <wg_paddingcapsule.h>
 #include <wg_packpanel.h>
 #include <wg_msgrouter.h>
@@ -72,30 +72,30 @@ namespace wg
 
 
 		TablePanel_p		_createTable(int rows, int columns);
-		DrawerPanel_p		_createDrawer(std::string_view label, Widget * pHeaderValue, Widget * pContent );
-		void				_setDrawerHeaderValue(DrawerPanel* pDrawer, Widget* pHeaderValue);
+		ExpanderPanel_p		_createDrawer(std::string_view label, Widget * pHeaderValue, Widget * pContent );
+		void				_setDrawerHeaderValue(ExpanderPanel* pDrawer, Widget* pHeaderValue);
 
-		DrawerPanel_p		_createRectDrawer(std::string_view label, const Rect& rect);
-		void				_refreshRectDrawer(DrawerPanel* pRectDrawer, const Rect& rect, Rect& displayedRect);
+		ExpanderPanel_p		_createRectDrawer(std::string_view label, const Rect& rect);
+		void				_refreshRectDrawer(ExpanderPanel* pRectDrawer, const Rect& rect, Rect& displayedRect);
 
-		DrawerPanel_p		_createColorDrawer(std::string_view label, const Color& color);
-		void				_refreshColorDrawer(DrawerPanel* pColorDrawer, const Color& color, Color& displayedColor );
+		ExpanderPanel_p		_createColorDrawer(std::string_view label, const Color& color);
+		void				_refreshColorDrawer(ExpanderPanel* pColorDrawer, const Color& color, Color& displayedColor );
 
-		DrawerPanel_p		_createBorderDrawer(std::string_view label, const Border& border);
-		void				_refreshBorderDrawer(DrawerPanel* pBorderDrawer, const Border& border, Border& displayedBorder );
+		ExpanderPanel_p		_createBorderDrawer(std::string_view label, const Border& border);
+		void				_refreshBorderDrawer(ExpanderPanel* pBorderDrawer, const Border& border, Border& displayedBorder );
 
-		DrawerPanel_p		_createComponentDrawer(std::string_view label, Component* pComponent);
-		void				_refreshComponentDrawer(DrawerPanel * pComponentDrawer );
+		ExpanderPanel_p		_createPartDrawer(std::string_view label, Part* pPart);
+		void				_refreshPartDrawer(ExpanderPanel * pPartDrawer );
 
 		template<typename Iterator>
-		DrawerPanel_p		_createSlotsDrawer(std::string_view label, Iterator slotsBegin, Iterator slotsEnd);
+		ExpanderPanel_p		_createSlotsDrawer(std::string_view label, Iterator slotsBegin, Iterator slotsEnd);
 		template<typename Iterator>
-		void				_refreshSlotsDrawer(DrawerPanel * pDrawer, Iterator slotsBegin, Iterator slotsEnd);
+		void				_refreshSlotsDrawer(ExpanderPanel * pDrawer, Iterator slotsBegin, Iterator slotsEnd);
 		template<typename Iterator>
 		void				_addSlotInfoSections(PackPanel * pPanel, int numberingStart, Iterator slotsBegin, Iterator slotsEnd);
 
-		DrawerPanel_p		_createSingleSlotDrawer(std::string_view label, StaticSlot * pSlot);
-		void				_refreshSingleSlotDrawer(DrawerPanel* pDrawer, StaticSlot * pSlot);
+		ExpanderPanel_p		_createSingleSlotDrawer(std::string_view label, StaticSlot * pSlot);
+		void				_refreshSingleSlotDrawer(ExpanderPanel* pDrawer, StaticSlot * pSlot);
 
 
 		// Table rows are made in two steps: _init*Entry() puts the label and an
@@ -130,7 +130,7 @@ namespace wg
 	//____ createSlotsDrawer() ___________________________________________________
 
 	template<typename Iterator>
-	DrawerPanel_p InfoSection::_createSlotsDrawer(std::string_view label, Iterator slotsBegin, Iterator slotsEnd)
+	ExpanderPanel_p InfoSection::_createSlotsDrawer(std::string_view label, Iterator slotsBegin, Iterator slotsEnd)
 	{
 		auto pSlotList = WGCREATE(PackPanel, _.axis = Axis::Y);
 
@@ -147,7 +147,7 @@ namespace wg
 //____ refreshSlotsDrawer() ___________________________________________________
 
 template<typename Iterator>
-void InfoSection::_refreshSlotsDrawer(DrawerPanel * pDrawer, Iterator slotsBegin, Iterator slotsEnd)
+void InfoSection::_refreshSlotsDrawer(ExpanderPanel * pDrawer, Iterator slotsBegin, Iterator slotsEnd)
 {
 	auto pContainer = static_cast<PackPanel*>(pDrawer->slots[1]._widget());
 
@@ -162,7 +162,7 @@ void InfoSection::_refreshSlotsDrawer(DrawerPanel * pDrawer, Iterator slotsBegin
 	Iterator it = slotsBegin;
 	for( int i = 0 ; i < slotsToRefresh ; i++ )
 	{
-		auto pSlotDrawer = dynamic_cast<DrawerPanel*>(pContainer->slots[i]._widget() );
+		auto pSlotDrawer = dynamic_cast<ExpanderPanel*>(pContainer->slots[i]._widget() );
 		if( pSlotDrawer )
 		{
 			auto pInfoSectionContainer = dynamic_cast<PackPanel*>(pSlotDrawer->slots[1]._widget());

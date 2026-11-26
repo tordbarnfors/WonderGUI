@@ -4,7 +4,7 @@
 #
 # raised/hover/pressed/disabled/checked/checked_hover are used by every
 # "raised_control" widget (buttons, toggles, checkboxes, radio buttons,
-# scrollbar parts, select box) -- see common/build.py STATE_STYLE for which
+# scrollbar parts, dropdown) -- see common/build.py STATE_STYLE for which
 # state uses which entry.
 
 raised:        { top: [99,168,235],  bottom: [33,100,173],  border: [20,62,110,255] }
@@ -28,7 +28,7 @@ plate_disabled: { top: [222,226,232], bottom: [206,211,218], border: [168,174,18
 
 # Passive container surfaces, brightest to darkest. The hierarchy is
 # deliberate: Canvas is the brightest because it carries black text
-# (TextEditor, LineEditor, the SelectBox list), Plate sits on top of the
+# (TextEditor, LineEditor, the Dropdown list), Plate sits on top of the
 # window, and the window backdrop is the darkest so plates read as raised.
 #
 #   canvas   mean ~244   flat bevel, brightest -- black text sits on this

@@ -142,10 +142,10 @@ p->pushFront( pChild2 );
 p->pushFront( pChild3 );
 ```
 
-This is however a raw pointer, so you should only keep it around for as long as you keep the original smartpointer or might end up with a dangling pointer. A way to avoid this is to use a component pointer instead, which is a smartpointer that keeps a reference to the object while pointing at one of its public member:
+This is however a raw pointer, so you should only keep it around for as long as you keep the original smartpointer or might end up with a dangling pointer. A way to avoid this is to use a part pointer instead, which is a smartpointer that keeps a reference to the object while pointing at one of its public member:
 
 ```c++
-auto p = ComponentPtr<DynamicSlotVector>(pContainer, pContainer->slots);
+auto p = PartPtr<DynamicSlotVector>(pContainer, pContainer->slots);
 
 p->reserveFront(3);
 p->pushFront( pChild1 );

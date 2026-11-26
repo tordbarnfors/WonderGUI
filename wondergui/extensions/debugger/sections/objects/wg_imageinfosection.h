@@ -56,8 +56,8 @@ namespace wg
 		ImageInfoSection(const DebugTheme& theme, IDebugContext* pContext, Image * pInspected );
 		~ImageInfoSection() {}
 
-		DrawerPanel_p	m_pImageRectDrawer;
-		DrawerPanel_p	m_pImageTintDrawer;
+		ExpanderPanel_p	m_pImageRectDrawer;
+		ExpanderPanel_p	m_pImageTintDrawer;
 
 		Rect			m_displayedImageRect;
 		Color			m_displayedImageTint;

@@ -490,7 +490,7 @@ Widget_p MyApp::createInputPanel()
 																 _.layout = m_pTextLayoutCentered )
 												));
 	
-	auto pSizeSelector = SelectBox::create();
+	auto pSizeSelector = Dropdown::create();
 	pSizeSelector->setSkin(m_pButtonSkin);
 	pSizeSelector->setListSkin(m_pPlateSkin);
 	
@@ -498,7 +498,7 @@ Widget_p MyApp::createInputPanel()
 	for( int i = 6 ; i <= 32 ; i++ )
 	{
 		snprintf( tmp, 8, "%i", i);
-//		pSizeSelector->entries.pushBack(SelectBoxEntry(i, String(tmp)));
+//		pSizeSelector->entries.pushBack(DropdownEntry(i, String(tmp)));
 		pSizeSelector->entries.pushBack({ i, tmp } );
 
 	}
@@ -510,7 +510,7 @@ Widget_p MyApp::createInputPanel()
 																 _.layout = m_pTextLayoutCentered )
 												));
 
-	auto pModeSelector = SelectBox::create();
+	auto pModeSelector = Dropdown::create();
 	pModeSelector->setSkin(m_pButtonSkin);
 	pModeSelector->setListSkin(m_pPlateSkin);
 	pModeSelector->entries.pushBack({ 	{ int(FreeTypeFont::RenderMode::Monochrome), "Monochrome" },
@@ -524,7 +524,7 @@ Widget_p MyApp::createInputPanel()
 																 _.layout = m_pTextLayoutCentered )
 												));
 
-	auto pStemDarkeningSelector = SelectBox::create();
+	auto pStemDarkeningSelector = Dropdown::create();
 	pStemDarkeningSelector->setSkin(m_pButtonSkin);
 	pStemDarkeningSelector->setListSkin(m_pPlateSkin);
 	pStemDarkeningSelector->entries.pushBack({ 	{ 0, "Off" },
@@ -623,7 +623,7 @@ Widget_p MyApp::createOutputPanel()
 	auto pFiller = Filler::create();
 	auto pGenerateButton = Button::create( { .label = { .text = "Generate"}, .skin = m_pButtonSkin } );
 	
-	auto pImageFormatSelector = SelectBox::create();
+	auto pImageFormatSelector = Dropdown::create();
 	pImageFormatSelector->setSkin(m_pButtonSkin);
 	pImageFormatSelector->setListSkin(m_pPlateSkin);
 	pImageFormatSelector->entries.pushBack({ { 0, "Uncompressed 8-bit indexed SURF" },

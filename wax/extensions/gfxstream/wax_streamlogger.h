@@ -46,7 +46,7 @@ namespace wax
 
 		static StreamLogger_p	create( std::ostream& out );
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		StreamSink		input;
 

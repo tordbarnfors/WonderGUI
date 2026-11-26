@@ -35,7 +35,7 @@ wax_obj wax_createStreamWrapper( const void * pBegin, const void * pEnd )
 	return p.rawPtr();
 }
 
-wax_component wax_getStreamWrapperOutput(wax_obj streamWrapper)
+wax_part wax_getStreamWrapperOutput(wax_obj streamWrapper)
 {
 	auto p = getPtr(streamWrapper);
 	return { static_cast<Object*>(p), &p->output };

@@ -56,8 +56,8 @@ namespace wg
 		FpsDisplayInfoSection(const DebugTheme& theme, IDebugContext* pContext, FpsDisplay * pInspected );
 		~FpsDisplayInfoSection() {}
 
-		DrawerPanel_p	m_pLabelsDrawer;
-		DrawerPanel_p	m_pValuesDrawer;
+		ExpanderPanel_p	m_pLabelsDrawer;
+		ExpanderPanel_p	m_pValuesDrawer;
 	};
 
 } // namespace wg

@@ -181,7 +181,7 @@ namespace wg
 		static NodePanel_p	create() { return NodePanel_p(new NodePanel()); }
 		static NodePanel_p	create(const Blueprint& blueprint) { return NodePanel_p(new NodePanel(blueprint)); }
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		NodeVector		nodes;
 

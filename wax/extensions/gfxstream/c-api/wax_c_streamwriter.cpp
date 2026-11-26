@@ -35,7 +35,7 @@ wax_obj wax_createStreamWriter(wax_writeStream_func dispatcher)
 	return p.rawPtr();
 }
 
-wax_component wax_getStreamWriterInput(wax_obj streamWriter)
+wax_part wax_getStreamWriterInput(wax_obj streamWriter)
 {
 	auto p = getPtr(streamWriter);
 	return { static_cast<Object*>(p), &p->input };

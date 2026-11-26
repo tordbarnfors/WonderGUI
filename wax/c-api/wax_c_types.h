@@ -45,13 +45,13 @@ typedef void* wax_obj;
 typedef	void(*wax_finalizer_func)(wax_obj);
 typedef	uint8_t(*wax_restorer_func)(wax_obj bitmap, void * pData);		// Returns non-zero when it has put the content of the bitmap back.
 
-//____ wax_component __________________________________________________________
+//____ wax_part _______________________________________________________________
 
-typedef struct wax_component_struct
+typedef struct wax_part_struct
 {
 	wax_obj object;
 	void * pInterface;
-} wax_component;
+} wax_part;
 
 
 //____ wax_typeInfo ___________________________________________________________

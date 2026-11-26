@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_widget.h>
-#include <wg_scroller.h>
+#include <wg_scrollbarpart.h>
 
 namespace wg
 {
@@ -46,7 +46,7 @@ namespace wg
 	 *
 	 **/
 
-	class	Scrollbar : public Widget, private Scroller::Holder
+	class	Scrollbar : public Widget, private ScrollbarPart::Holder
 	{
 	public:
 
@@ -66,7 +66,7 @@ namespace wg
 			uint8_t			pickCategory = 0;
 			bool			pickHandle = false;
 			PointerStyle	pointer = PointerStyle::Undefined;
-			Scroller::Blueprint	scrollbar;
+			ScrollbarPart::Blueprint	scrollbar;
 			bool			selectable = false;
 			pts				singleStepMovement = 8;
 			Skin_p			skin;
@@ -84,9 +84,9 @@ namespace wg
 		static Scrollbar_p	create() { return Scrollbar_p(new Scrollbar()); }
 		static Scrollbar_p	create(const Blueprint& blueprint) { return Scrollbar_p(new Scrollbar(blueprint)); }
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
-		Scroller	scrollbar;
+		ScrollbarPart	scrollbar;
 
 		//.____ Identification __________________________________________
 
@@ -137,11 +137,11 @@ namespace wg
 		void	_setViewPos(pts pos);
 		void	_sendMessage();
 
-		void	_scrollbarStep(const Scroller* pComponent, int dir) override;
-		void	_scrollbarPage(const Scroller* pComponent, int dir) override;
-		void	_scrollbarWheel(const Scroller* pComponent, int dir) override;
-		spx		_scrollbarMove(const Scroller* pComponent, spx pos) override;
-		std::tuple<spx, spx, spx> _scrollbarOfsLenContent(const Scroller* pComponent) override;
+		void	_scrollbarStep(const ScrollbarPart* pPart, int dir) override;
+		void	_scrollbarPage(const ScrollbarPart* pPart, int dir) override;
+		void	_scrollbarWheel(const ScrollbarPart* pPart, int dir) override;
+		spx		_scrollbarMove(const ScrollbarPart* pPart, spx pos) override;
+		std::tuple<spx, spx, spx> _scrollbarOfsLenContent(const ScrollbarPart* pPart) override;
 
 		pts				m_singleStep = 8;
 		pts				m_wheelRoll = 8*3;

@@ -57,7 +57,7 @@ namespace wg
 		StackPanelSlotInfoSection(const DebugTheme& theme, IDebugContext* pContext, StackPanelSlot * pInspected );
 		~StackPanelSlotInfoSection() {}
 
-		DrawerPanel_p	m_pMarginDrawer;
+		ExpanderPanel_p	m_pMarginDrawer;
 		Border			m_displayedMargin;
 	};
 

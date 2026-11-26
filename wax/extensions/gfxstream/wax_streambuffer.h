@@ -45,7 +45,7 @@ namespace wax
 
 		static StreamBuffer_p	create( int initialCapacity = GfxStream::c_maxBlockSize * 4 );
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		StreamSink		input;
 		StreamSource		output;

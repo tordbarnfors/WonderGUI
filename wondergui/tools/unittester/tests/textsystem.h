@@ -22,7 +22,7 @@ private:
 	bool hitTestTest(std::ostream& output);
 	bool wordNavigationTest(std::ostream& output);
 	bool renderTest(std::ostream& output);
-	bool componentEditTest(std::ostream& output);
+	bool partEditTest(std::ostream& output);
 	bool numberLayoutTest(std::ostream& output);
 	bool markdownMarkersTest(std::ostream& output);
 	bool markdownBlocksTest(std::ostream& output);

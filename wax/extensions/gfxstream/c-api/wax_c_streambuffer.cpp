@@ -35,13 +35,13 @@ wax_obj wax_createStreamBuffer(int initialCapacity)
 	return static_cast<Object*>(pObj.rawPtr());
 }
 
-wax_component wax_getStreamBufferOutput(wax_obj streamBuffer)
+wax_part wax_getStreamBufferOutput(wax_obj streamBuffer)
 {
 	auto p = getPtr(streamBuffer);
 	return { static_cast<Object*>(p), &p->output };
 }
 
-wax_component wax_getStreamBufferInput(wax_obj streamBuffer)
+wax_part wax_getStreamBufferInput(wax_obj streamBuffer)
 {
 	auto p = getPtr(streamBuffer);
 	return { static_cast<Object*>(p), &p->input };

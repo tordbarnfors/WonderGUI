@@ -57,8 +57,11 @@ Then, on v4:
 - [ ] `setDefaultGfxDevice()` → `setDefaultDevice()` and the like; `wg_static_cast` →
       `wax_static_cast`; `WG_IS_LITTLE_ENDIAN` → `WAX_IS_LITTLE_ENDIAN`.
 - [ ] `HiColor` → `Color`, `Color8::Red` → `Color::Red`.
-- [ ] The renamed terms: `Surface` → `Bitmap`, `throwError` → `reportError`, `origo` → `origin`,
-      `hotspot` → `pivot`, `baggage` → `userData`, in every name they are part of.
+- [ ] The renamed terms: `Surface` → `Bitmap`, `Component` → `Part`, `throwError` →
+      `reportError`, `origo` → `origin`, `hotspot` → `pivot`, `baggage` → `userData`, in every name
+      they are part of.
+- [ ] The renamed widgets: `SelectBox` → `Dropdown`, `DrawerPanel` → `ExpanderPanel`,
+      `PopupOpener` → `MenuButton`, and the part `Scroller` → `ScrollbarPart`.
 - [ ] `String`, `CharSeq`, `CharBuffer` → `std::string` and `std::string_view`, UTF-8.
 - [ ] `BasicTextLayout` → `PlainTextLayout`.
 - [ ] Per-character styles → `MarkdownTextLayout`, or a `FlowTextLayout` of your own.
@@ -441,9 +444,10 @@ word, keeping its case, is enough for most code.
 
 LegacyGUI keeps its own names (`WgOrigo`, `SetHotspot()`, `SetSurfaceFactory()`, ...). Types
 that are renamed in WonderGUI and Wax get aliases with their old names in LegacyGUI, so legacy
-code keeps compiling: `wg::SampleOrigo`, `wg::Surface`, `wg::Surface_p`, `wg::Surface_wp`,
-`wg::SurfaceFactory`, `wg::SurfaceFactory_p` and `wg::SurfaceFactory_wp`. Renamed methods and
-fields can't get such aliases.
+code keeps compiling: `wg::SampleOrigo`, `wg::Surface`, `wg::SurfaceFactory`, `wg::Component`,
+`wg::Scroller`, `wg::SelectBox`, `wg::SelectBoxEntry`, `wg::DrawerPanel` and `wg::PopupOpener`,
+with their `_p` and `_wp` where they have them. Renamed methods and fields can't get such
+aliases.
 
 ### Blueprint fields in alphabetical order
 
@@ -489,6 +493,42 @@ header, so existing files load as before.
 | C: `wax_surfaceBP`, `wax_createSurface()`, `wax_c_surface.h`, ... | `wax_bitmapBP`, `wax_createBitmap()`, `wax_c_bitmap.h`, ... |
 | Plugin interface: `wg_surface_calls`, `wg_surfacefactory_calls` | `wg_bitmap_calls`, `wg_bitmapfactory_calls`, with the same members in the same order |
 | C#: `Surface`, `SurfaceFactory`, ... | `Bitmap`, `BitmapFactory`, ... |
+
+### `Component` → `Part`
+
+The members of objects with an API of their own, such as `TextDisplay::display` or the scrollbars
+of a `ScrollPanel`, are *parts*: `Component` is `Part`, in every name with *Component* in it,
+Wax's included. Where *component* means a part of a color, a vector or a mix of tints, it is
+kept: `Tint::c_maxMixComponents`, `mixComponent()`, `wax_tintMixComponents()` and their like.
+
+| Before | After |
+|---|---|
+| `Component`, `ComponentNotif` | `Part`, `PartNotif` |
+| `ComponentPtr`, `StrongComponentPtr`, `WeakComponentPtr`, `rawComponentPtr()` | `PartPtr`, `StrongPartPtr`, `WeakPartPtr`, `rawPartPtr()` |
+| The protected `_componentPos()`, `_componentSize()`, `_componentGeo()`, `_componentRequestRender()`, `_receiveComponentNotif()`, ... of widgets, for widgets of your own | `_partPos()`, `_partSize()`, `_partGeo()`, `_partRequestRender()`, `_receivePartNotif()`, ... |
+| Headers `wg_component.h`, `wax_componentptr.h`, folder `wondergui/source/components/` | `wg_part.h`, `wax_partptr.h`, `wondergui/source/parts/` |
+| C: `wax_component` | `wax_part` |
+| C#: `C_Component` | `C_Part` |
+| Debugger: `addComponentInfoSections()`, `createComponentInfoPanel()` | `addPartInfoSections()`, `createPartInfoPanel()` |
+
+### `Scroller` → `ScrollbarPart`
+
+`Scroller`, the part behind scrollbars, is `ScrollbarPart` (`wg_scrollbarpart.h`), and its
+nested `enum Part` is `ScrollbarPart::Element`, so that it doesn't hide its base class `Part`:
+`Scroller::Part::Bar` is `ScrollbarPart::Element::Bar`. The debugger's `ScrollerInfoSection` is
+`ScrollbarPartInfoSection`.
+
+### Widgets
+
+| Before | After |
+|---|---|
+| `SelectBox`, `SelectBoxEntry`, `wg_selectbox.h` | `Dropdown`, `DropdownEntry`, `wg_dropdown.h` |
+| `DrawerPanel`, `wg_drawerpanel.h` | `ExpanderPanel`, `wg_expanderpanel.h` |
+| `PopupOpener`, `wg_popupopener.h` | `MenuButton`, `wg_menubutton.h` |
+| Debugger: `SelectBoxInfoSection`, `DrawerPanelInfoSection`, `PopupOpenerInfoSection` | `DropdownInfoSection`, `ExpanderPanelInfoSection`, `MenuButtonInfoSection` |
+| Widget kits: `Skins::SelectBox` | `Skins::Dropdown` |
+
+LegacyGUI's `WgPopupOpener` keeps its name.
 
 ### `throwError` → `reportError`
 
@@ -545,8 +585,8 @@ Text is UTF-8. Setters take `std::string_view`, getters return `std::string`, mo
 | `StaticText` | `String text() const` | `const std::string& text() const` |
 | `EditableText` | `caretPut(const CharSeq&)`, `caretPut(uint16_t)` | `caretPut(std::string_view)`, `caretPut(char32_t)` |
 | `EditableText` | `String getSelection()` | `std::string getSelection()` |
-| Blueprints of the text components, `ColumnHeader`, `SelectBoxEntry` | `String text` | `std::string text` |
-| `ColumnHeader`, `SelectBoxEntry` | `setText(...)`, `String text()` | `setText(std::string_view)`, `const std::string& text()` |
+| Blueprints of the text parts, `ColumnHeader`, `DropdownEntry` | `String text` | `std::string text` |
+| `ColumnHeader`, `DropdownEntry` | `setText(...)`, `String text()` | `setText(std::string_view)`, `const std::string& text()` |
 | `GridLine` of charts | `String label`, `const String& label()` | `std::string label`, `const std::string& label()` |
 | `Widget` and all Blueprints | `setTooltip(const String&)`, `virtual String tooltip() const`, `String tooltip` | `setTooltip(std::string_view)`, `virtual std::string tooltip() const`, `std::string tooltip` |
 | `Base` | `setClipboardText(const String&)`, `String getClipboardText()` | `setClipboardText(std::string_view)`, `std::string getClipboardText()` |

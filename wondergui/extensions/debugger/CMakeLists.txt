@@ -41,8 +41,8 @@ set(SOURCES
     sections/objects/wg_containerinfosection.cpp
     sections/objects/wg_dragndropoverlayinfosection.h
     sections/objects/wg_dragndropoverlayinfosection.cpp
-    sections/objects/wg_drawerpanelinfosection.h
-    sections/objects/wg_drawerpanelinfosection.cpp
+    sections/objects/wg_expanderpanelinfosection.h
+    sections/objects/wg_expanderpanelinfosection.cpp
     sections/objects/wg_edgemapdisplayinfosection.h
     sections/objects/wg_edgemapdisplayinfosection.cpp
     sections/objects/wg_fillerinfosection.h
@@ -85,8 +85,8 @@ set(SOURCES
     sections/objects/wg_pianokeyboardinfosection.cpp
     sections/objects/wg_plotchartinfosection.h
     sections/objects/wg_plotchartinfosection.cpp
-    sections/objects/wg_popupopenerinfosection.h
-    sections/objects/wg_popupopenerinfosection.cpp
+    sections/objects/wg_menubuttoninfosection.h
+    sections/objects/wg_menubuttoninfosection.cpp
     sections/objects/wg_popupoverlayinfosection.h
     sections/objects/wg_popupoverlayinfosection.cpp
     sections/objects/wg_rangesliderinfosection.h
@@ -105,8 +105,8 @@ set(SOURCES
     sections/objects/wg_scrollchartinfosection.cpp
     sections/objects/wg_scrollpanelinfosection.h
     sections/objects/wg_scrollpanelinfosection.cpp
-    sections/objects/wg_selectboxinfosection.h
-    sections/objects/wg_selectboxinfosection.cpp
+    sections/objects/wg_dropdowninfosection.h
+    sections/objects/wg_dropdowninfosection.cpp
     sections/objects/wg_selectcapsuleinfosection.h
     sections/objects/wg_selectcapsuleinfosection.cpp
     sections/objects/wg_sidecanvasinfosection.h
@@ -170,16 +170,16 @@ set(SOURCES
     sections/slots/wg_twoslotpanelslotinfosection.h
     sections/slots/wg_twoslotpanelslotinfosection.cpp
 
-    sections/components/wg_editabletextinfosection.h
-    sections/components/wg_editabletextinfosection.cpp
-    sections/components/wg_glowinfosection.h
-    sections/components/wg_glowinfosection.cpp
-    sections/components/wg_iconinfosection.h
-    sections/components/wg_iconinfosection.cpp
-    sections/components/wg_scrollerinfosection.h
-    sections/components/wg_scrollerinfosection.cpp
-    sections/components/wg_statictextinfosection.h
-    sections/components/wg_statictextinfosection.cpp
+    sections/parts/wg_editabletextinfosection.h
+    sections/parts/wg_editabletextinfosection.cpp
+    sections/parts/wg_glowinfosection.h
+    sections/parts/wg_glowinfosection.cpp
+    sections/parts/wg_iconinfosection.h
+    sections/parts/wg_iconinfosection.cpp
+    sections/parts/wg_scrollbarpartinfosection.h
+    sections/parts/wg_scrollbarpartinfosection.cpp
+    sections/parts/wg_statictextinfosection.h
+    sections/parts/wg_statictextinfosection.cpp
 
     views/wg_msglogviewer.h
     views/wg_msglogviewer.cpp
@@ -211,7 +211,7 @@ set(INCDIRS
     ${CMAKE_CURRENT_LIST_DIR}/sections
     ${CMAKE_CURRENT_LIST_DIR}/sections/objects
     ${CMAKE_CURRENT_LIST_DIR}/sections/slots
-    ${CMAKE_CURRENT_LIST_DIR}/sections/components
+    ${CMAKE_CURRENT_LIST_DIR}/sections/parts
     ${CMAKE_CURRENT_LIST_DIR}/sections/entries
     ${CMAKE_CURRENT_LIST_DIR}/views
     ${CMAKE_CURRENT_LIST_DIR}/frontend

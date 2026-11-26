@@ -43,7 +43,7 @@ namespace wax
 		static StreamMerger_p	create();
 		static StreamMerger_p	create( const std::initializer_list<StreamSource_p>& inputs );
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		StreamSource	output;
 

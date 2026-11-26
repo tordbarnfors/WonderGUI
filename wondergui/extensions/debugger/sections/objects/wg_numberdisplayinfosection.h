@@ -56,7 +56,7 @@ namespace wg
 		NumberDisplayInfoSection(const DebugTheme& theme, IDebugContext* pContext, NumberDisplay * pInspected );
 		~NumberDisplayInfoSection() {}
 
-		DrawerPanel_p	m_pDisplayDrawer;
+		ExpanderPanel_p	m_pDisplayDrawer;
 	};
 
 } // namespace wg

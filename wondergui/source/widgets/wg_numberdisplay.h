@@ -68,7 +68,7 @@ namespace wg
 		static NumberDisplay_p	create() { return NumberDisplay_p(new NumberDisplay()); }
 		static NumberDisplay_p	create( const Blueprint& blueprint ) { return NumberDisplay_p(new NumberDisplay(blueprint)); }
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		Number		display;
 

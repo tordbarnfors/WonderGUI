@@ -44,10 +44,10 @@ private:
 	wapp::Window_p		m_pWindow;
 
 	wg::TextDisplay_p	m_pTTFPathDisplay;
-	wg::SelectBox_p		m_pSizeSelector;
-	wg::SelectBox_p		m_pModeSelector;
-	wg::SelectBox_p		m_pStemDarkeningSelector;
-	wg::SelectBox_p		m_pImageFormatSelector;
+	wg::Dropdown_p		m_pSizeSelector;
+	wg::Dropdown_p		m_pModeSelector;
+	wg::Dropdown_p		m_pStemDarkeningSelector;
+	wg::Dropdown_p		m_pImageFormatSelector;
 
 	
 	wg::TextEditor_p	m_pCharsEditor;

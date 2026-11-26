@@ -56,9 +56,9 @@ namespace wg
 		CanvasCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, CanvasCapsule * pInspected );
 		~CanvasCapsuleInfoSection() {}
 
-		DrawerPanel_p	m_pClearColorDrawer;
-		DrawerPanel_p	m_pTintColorDrawer;
-		DrawerPanel_p	m_pGlowDrawer;
+		ExpanderPanel_p	m_pClearColorDrawer;
+		ExpanderPanel_p	m_pTintColorDrawer;
+		ExpanderPanel_p	m_pGlowDrawer;
 
 		Color			m_displayedClearColor;
 		Color			m_displayedTintColor;

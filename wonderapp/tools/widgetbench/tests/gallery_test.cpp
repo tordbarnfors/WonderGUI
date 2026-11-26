@@ -134,17 +134,17 @@ namespace
 		return p;
 	}
 
-	Widget_p selectBox()
+	Widget_p dropdown()
 	{
-		auto pBox = wkit::SelectBox::create();
+		auto pBox = wkit::Dropdown::create();
 		const char* entries[] = { "First entry", "Second entry", "Third entry",
 								  "Fourth entry", "Fifth entry" };
 		int id = 0;
 		for (auto text : entries)
-			pBox->entries << SelectBoxEntry::Blueprint{ .id = id++, .text = text };
+			pBox->entries << DropdownEntry::Blueprint{ .id = id++, .text = text };
 		pBox->selectEntryByIndex(0);
 
-		auto pEmpty = wkit::SelectBox::create({ .disabled = true });
+		auto pEmpty = wkit::Dropdown::create({ .disabled = true });
 
 		auto p = row();
 		add(p, sized({ 180, -1 }, pBox));
@@ -202,7 +202,7 @@ namespace
 
 	Widget_p drawer()
 	{
-		// The only place PlusMinusToggle shows up: DrawerPanel draws it as its
+		// The only place PlusMinusToggle shows up: ExpanderPanel draws it as its
 		// button. slots[0] is the always-visible header, slots[1] the drawer.
 		// The header is padded left to clear the 14pt button.
 		auto pDrawer = wkit::TreeListDrawer::create();
@@ -281,7 +281,7 @@ namespace
 		pColumn->slots.pushBack(section("Checkboxes", checkboxes()), { .weight = 0 });
 		pColumn->slots.pushBack(section("Radio buttons (first three share a ToggleGroup)",
 										radioButtons()), { .weight = 0 });
-		pColumn->slots.pushBack(section("Select box", selectBox()), { .weight = 0 });
+		pColumn->slots.pushBack(section("Dropdown", dropdown()), { .weight = 0 });
 		pColumn->slots.pushBack(section("Text fields", textFields()), { .weight = 0 });
 		pColumn->slots.pushBack(section("Scrollbars - drag the handles", scrollbars()), { .weight = 0 });
 		pColumn->slots.pushBack(section("Split panels - drag the handles", splitPanels()), { .weight = 0 });

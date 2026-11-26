@@ -270,7 +270,7 @@ namespace wg
 	 * @brief Ḿake widget (un)selectable.
 	 *
 	 * Sets the selectable flag of the widget. Default is true, except for some
-	 * special widgets, like PopupOpener, which should perform an action instead
+	 * special widgets, like MenuButton, which should perform an action instead
 	 * of being selected when clicked.
 	 *
 	 * Parent widgets such as List that allows selection/unselection of its
@@ -372,7 +372,7 @@ namespace wg
 	* @brief Set the skin of this widget.
 	*
 	* Set the skin used by this widget. The skin covers the
-	* whole widget and provide the background for any components placed
+	* whole widget and provide the background for any parts placed
 	* on the widget (if any).
 	*
 	* A skin typically has different looks depending on the widgets state (normal,
@@ -903,125 +903,125 @@ namespace wg
 		return SizeSPX();
 	}
 
-	//____ _componentRequestRender() _________________________________________________________
+	//____ _partRequestRender() ______________________________________________________________
 
-	void Widget::_componentRequestRender( const Component * pComponent )
+	void Widget::_partRequestRender( const Part * pPart )
 	{
-		_requestRender( _componentGeo( pComponent ) );
+		_requestRender( _partGeo( pPart ) );
 	}
 
-	void Widget::_componentRequestRender( const Component * pComponent, const RectSPX& rect )
+	void Widget::_partRequestRender( const Part * pPart, const RectSPX& rect )
 	{
-		_requestRender( rect + _componentPos( pComponent ) );
+		_requestRender( rect + _partPos( pPart ) );
 	}
 
-	//____ _componentRequestResize() ________________________________________________________
+	//____ _partRequestResize() _____________________________________________________________
 
-	void Widget::_componentRequestResize( const Component * pComponent )
+	void Widget::_partRequestResize( const Part * pPart )
 	{
 		_requestResize();
 		_requestRender();
 	}
 
-	//____ _componentRequestFocus() ___________________________________________________
+	//____ _partRequestFocus() ________________________________________________________
 
-	void Widget::_componentRequestFocus( const Component * pComponent, bool bRaiseWindow )
+	void Widget::_partRequestFocus( const Part * pPart, bool bRaiseWindow )
 	{
 		grabFocus(bRaiseWindow);
 	}
 
-	//____ _componentRequestInView() ______________________________________________
+	//____ _partRequestInView() ___________________________________________________
 
-	void Widget::_componentRequestInView( const Component * pComponent )
+	void Widget::_partRequestInView( const Part * pPart )
 	{
-		RectSPX r = _componentGeo( pComponent );
+		RectSPX r = _partGeo( pPart );
 		_requestInView( r, r );
 	}
 
-	void Widget::_componentRequestInView( const Component * pComponent, const RectSPX& mustHave, const RectSPX& niceToHave )
+	void Widget::_partRequestInView( const Part * pPart, const RectSPX& mustHave, const RectSPX& niceToHave )
 	{
-		CoordSPX ofs = _componentPos( pComponent );
+		CoordSPX ofs = _partPos( pPart );
 		_requestInView(mustHave + ofs, niceToHave + ofs );
 	}
 
 
-	//____ _componentState() ______________________________________________________________
+	//____ _partState() ___________________________________________________________________
 
-	State Widget::_componentState(const Component* pComponent) const
+	State Widget::_partState(const Part* pPart) const
 	{
 		return m_state;
 	}
 
-	//____ _componentPos() ______________________________________________________________
+	//____ _partPos() ___________________________________________________________________
 
-	CoordSPX Widget::_componentPos( const Component * pComponent ) const
+	CoordSPX Widget::_partPos( const Part * pPart ) const
 	{
 			return m_skin.contentOfs( m_scale, m_state );
 	}
 
-	//____ _componentSize() ______________________________________________________________
+	//____ _partSize() ___________________________________________________________________
 
-	SizeSPX Widget::_componentSize( const Component * pComponent ) const
+	SizeSPX Widget::_partSize( const Part * pPart ) const
 	{
 			return m_size - m_skin.contentBorderSize(m_scale);
 	}
 
-	//____ _componentGeo() ____________________________________________________
+	//____ _partGeo() _________________________________________________________
 
-	RectSPX Widget::_componentGeo( const Component * pComponent ) const
+	RectSPX Widget::_partGeo( const Part * pPart ) const
 	{
 			return m_skin.contentRect( m_size, m_scale, m_state );
 	}
 
-	//____ _globalComponentPos() ______________________________________________
+	//____ _globalPartPos() ___________________________________________________
 
-	CoordSPX Widget::_globalComponentPos( const Component * pComponent ) const
+	CoordSPX Widget::_globalPartPos( const Part * pPart ) const
 	{
-		return _toGlobal(_componentPos( pComponent ));
+		return _toGlobal(_partPos( pPart ));
 	}
 
-	//____ _globalComponentGeo() ______________________________________________
+	//____ _globalPartGeo() ___________________________________________________
 
-	RectSPX Widget::_globalComponentGeo( const Component * pComponent ) const
+	RectSPX Widget::_globalPartGeo( const Part * pPart ) const
 	{
-		return _toGlobal(_componentGeo( pComponent ));
+		return _toGlobal(_partGeo( pPart ));
 	}
 
-	//____ _componentToGlobal() ______________________________________________
+	//____ _partToGlobal() ___________________________________________________
 
-	CoordSPX Widget::_componentToGlobal( const Component * pComponent, CoordSPX coord ) const
+	CoordSPX Widget::_partToGlobal( const Part * pPart, CoordSPX coord ) const
 	{
-		return _toGlobal( coord + _componentPos( pComponent ) );
+		return _toGlobal( coord + _partPos( pPart ) );
 	}
 
-	CoordSPX Widget::_componentToGlobal( const Component * pComponent, RectSPX rect ) const
+	CoordSPX Widget::_partToGlobal( const Part * pPart, RectSPX rect ) const
 	{
-		return _toGlobal( rect + _componentPos( pComponent ) );
+		return _toGlobal( rect + _partPos( pPart ) );
 	}
 
-	//____ _componentToLocal() ______________________________________________
+	//____ _partToLocal() ___________________________________________________
 
-	CoordSPX Widget::_componentToLocal( const Component * pComponent, CoordSPX coord ) const
+	CoordSPX Widget::_partToLocal( const Part * pPart, CoordSPX coord ) const
 	{
-		return _toLocal( coord ) - _componentPos( pComponent );
+		return _toLocal( coord ) - _partPos( pPart );
 	}
 
-	CoordSPX Widget::_componentToLocal( const Component * pComponent, RectSPX rect ) const
+	CoordSPX Widget::_partToLocal( const Part * pPart, RectSPX rect ) const
 	{
-		return _toLocal( rect ) - _componentPos( pComponent );
+		return _toLocal( rect ) - _partPos( pPart );
 	}
 
-	//____ _receiveComponentNotif() ___________________________________________
+	//____ _receivePartNotif() ________________________________________________
 
-	void Widget::_receiveComponentNotif( Component * pComponent, ComponentNotif notification, int value, void * pData )
+	void Widget::_receivePartNotif( Part * pPart, PartNotif notification, int value, void * pData )
 	{
 		switch (notification)
 		{
-			case ComponentNotif::StartReceiveUpdates:
+			case PartNotif::StartReceiveUpdates:
 				_startReceiveUpdates();
 				break;
 
-			case ComponentNotif::StopReceiveUpdates:
+			case PartNotif::StopReceiveUpdates:
 				_stopReceiveUpdates();
 
 			default:

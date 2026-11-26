@@ -41,7 +41,7 @@ namespace wg
 			textRow( "Return key action: ",      [](LineEditor* e) { return toString(e->returnKeyAction()); } )
 		});
 
-		m_pEditorDrawer = _createComponentDrawer("Editor", &pInspected->editor);
+		m_pEditorDrawer = _createPartDrawer("Editor", &pInspected->editor);
 
 		pPanel->slots.pushBack({ pTable, m_pEditorDrawer });
 		this->slot = pPanel;
@@ -60,7 +60,7 @@ namespace wg
 	{
 		TypedInfoSection<LineEditor>::refresh();
 
-		_refreshComponentDrawer(m_pEditorDrawer);
+		_refreshPartDrawer(m_pEditorDrawer);
 	}
 
 } // namespace wg

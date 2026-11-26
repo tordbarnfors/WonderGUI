@@ -367,32 +367,32 @@ namespace wg
 		_requestResize();
 	}
 
-	//____ _componentPos() ____________________________________________________
+	//____ _partPos() _________________________________________________________
 
-	CoordSPX ScrollCapsule::_componentPos(const Component* pComponent) const
+	CoordSPX ScrollCapsule::_partPos(const Part* pPart) const
 	{
-		if (pComponent == &scrollbarX)
+		if (pPart == &scrollbarX)
 			return m_scrollbarXRegion.pos();
 		else
 			return m_scrollbarYRegion.pos();
 	}
 
-	//____ _componentSize() ___________________________________________________
+	//____ _partSize() ________________________________________________________
 
-	SizeSPX ScrollCapsule::_componentSize(const Component* pComponent) const
+	SizeSPX ScrollCapsule::_partSize(const Part* pPart) const
 	{
-		if (pComponent == &scrollbarX)
+		if (pPart == &scrollbarX)
 			return m_scrollbarXRegion.size();
 		else
 			return m_scrollbarYRegion.size();
 
 	}
 
-	//____ _componentGeo() ____________________________________________________
+	//____ _partGeo() _________________________________________________________
 
-	RectSPX ScrollCapsule::_componentGeo(const Component* pComponent) const
+	RectSPX ScrollCapsule::_partGeo(const Part* pPart) const
 	{
-		if (pComponent == &scrollbarX)
+		if (pPart == &scrollbarX)
 			return m_scrollbarXRegion;
 		else
 			return m_scrollbarYRegion;
@@ -1012,16 +1012,16 @@ namespace wg
 		}
 
 		// Scrollbars might have become enabled/disabled by the change in geometry.
-		// Scroller::_setState() ignores the call if nothing relevant has changed.
+		// ScrollbarPart::_setState() ignores the call if nothing relevant has changed.
 
 		_updateScrollbarStates();
 	}
 
 	//____ _scrollbarStep() ______________________________________________________
 
-	void ScrollCapsule::_scrollbarStep(const Scroller* pComponent, int dir)
+	void ScrollCapsule::_scrollbarStep(const ScrollbarPart* pPart, int dir)
 	{
-		if (pComponent == &scrollbarX)
+		if (pPart == &scrollbarX)
 			_setViewOffset({ (m_viewRegion.x - m_childCanvas.x) + dir * ptsToSpx(m_stepSizeX,m_scale), (m_viewRegion.y - m_childCanvas.y) });
 		else
 			_setViewOffset({ (m_viewRegion.x - m_childCanvas.x), (m_viewRegion.y - m_childCanvas.y) + dir * ptsToSpx(m_stepSizeY,m_scale) });
@@ -1029,9 +1029,9 @@ namespace wg
 
 	//____ _scrollbarPage() ______________________________________________________
 
-	void ScrollCapsule::_scrollbarPage(const Scroller* pComponent, int dir)
+	void ScrollCapsule::_scrollbarPage(const ScrollbarPart* pPart, int dir)
 	{
-		if( pComponent == &scrollbarX )
+		if( pPart == &scrollbarX )
 			_setViewOffset({ (m_viewRegion.x - m_childCanvas.x) + dir * (m_viewRegion.w - ptsToSpx(m_pageOverlapX,m_scale)), (m_viewRegion.y - m_childCanvas.y) });
 		else
 			_setViewOffset({ (m_viewRegion.x - m_childCanvas.x), (m_viewRegion.y - m_childCanvas.y) + dir * (m_viewRegion.h - ptsToSpx(m_pageOverlapY,m_scale)) });
@@ -1039,12 +1039,12 @@ namespace wg
 
 	//____ _scrollbarWheel() ______________________________________________________
 
-	void ScrollCapsule::_scrollbarWheel(const Scroller* pComponent, int dir)
+	void ScrollCapsule::_scrollbarWheel(const ScrollbarPart* pPart, int dir)
 	{
 		if (Base::inputHandler()->modifierKeys() & m_wheelAccelerator)
 			dir *= m_wheelAccelFactor;
 
-		if (pComponent == &scrollbarX)
+		if (pPart == &scrollbarX)
 			_setViewOffset({ (m_viewRegion.x - m_childCanvas.x) - dir * ptsToSpx(m_wheelStepSizeX,m_scale), (m_viewRegion.y - m_childCanvas.y) });
 		else
 			_setViewOffset({ (m_viewRegion.x - m_childCanvas.x), (m_viewRegion.y - m_childCanvas.y) - dir * ptsToSpx(m_wheelStepSizeY,m_scale) });
@@ -1052,9 +1052,9 @@ namespace wg
 
 	//____ _scrollbarMove() ______________________________________________________
 
-	spx ScrollCapsule::_scrollbarMove(const Scroller* pComponent, spx pos)
+	spx ScrollCapsule::_scrollbarMove(const ScrollbarPart* pPart, spx pos)
 	{
-		if (pComponent == &scrollbarX)
+		if (pPart == &scrollbarX)
 		{
 			_setViewOffset({ pos - m_viewRegion.x, (m_viewRegion.y - m_childCanvas.y) });
 			return m_viewRegion.x - m_childCanvas.x;
@@ -1068,9 +1068,9 @@ namespace wg
 
 	//____ _scrollbarOfsLenContent() _____________________________________________
 
-	std::tuple<spx, spx, spx> ScrollCapsule::_scrollbarOfsLenContent(const Scroller* pComponent)
+	std::tuple<spx, spx, spx> ScrollCapsule::_scrollbarOfsLenContent(const ScrollbarPart* pPart)
 	{
-		if (pComponent == &scrollbarX)
+		if (pPart == &scrollbarX)
 			return std::make_tuple(m_viewRegion.x - m_childCanvas.x,m_viewRegion.w, m_childCanvas.w);
 		else
 			return std::make_tuple(m_viewRegion.y - m_childCanvas.y,m_viewRegion.h, m_childCanvas.h);

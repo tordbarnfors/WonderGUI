@@ -55,9 +55,9 @@ namespace wg
 		SkinInfoSection(const DebugTheme& theme, IDebugContext* pContext, Skin * pSkin );
 		~SkinInfoSection() {}
 
-		DrawerPanel_p	m_pMarginDrawer;
-		DrawerPanel_p	m_pPaddingDrawer;
-		DrawerPanel_p	m_pOverflowDrawer;
+		ExpanderPanel_p	m_pMarginDrawer;
+		ExpanderPanel_p	m_pPaddingDrawer;
+		ExpanderPanel_p	m_pOverflowDrawer;
 
 		Border			m_displayedMargin;
 		Border			m_displayedPadding;

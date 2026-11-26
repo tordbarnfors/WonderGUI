@@ -35,7 +35,7 @@ wax_obj wax_createStreamReader(wax_readStream_func callback)
 	return p.rawPtr();
 }
 
-wax_component wax_getStreamReaderOutput(wax_obj streamReader)
+wax_part wax_getStreamReaderOutput(wax_obj streamReader)
 {
 	auto p = getPtr(streamReader);
 	return { static_cast<Object*>(p), &p->output };

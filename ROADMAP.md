@@ -270,7 +270,7 @@ For SdlGpuBackend, still to do, see "SdlGpuBackend" under Decided:
 
 - **UTF-8 everywhere.** Text is stored and passed as UTF-8 `std::string`/`std::string_view`.
   Invalid UTF-8 is replaced with U+FFFD when set. `Utf8::` in Wax has the helpers.
-- **Byte offsets.** All character offsets between components and layouts are byte offsets.
+- **Byte offsets.** All character offsets between parts and layouts are byte offsets.
   The `TextLayout` decides which offsets are valid caret positions.
 - **Markup is part of the text** and interpreted by the `TextLayout`. `PlainTextLayout`
   interprets nothing. `MarkdownTextLayout` interprets CommonMark through md4c (vendored,

@@ -56,8 +56,8 @@ namespace wg
 		NodeWiresInfoSection(const DebugTheme& theme, IDebugContext* pContext, NodeWires * pInspected );
 		~NodeWiresInfoSection() {}
 
-		DrawerPanel_p	m_pWireColorDrawer;
-		DrawerPanel_p	m_pAnchorInsetDrawer;
+		ExpanderPanel_p	m_pWireColorDrawer;
+		ExpanderPanel_p	m_pAnchorInsetDrawer;
 
 		Color			m_displayedWireColor;
 		Border			m_displayedAnchorInset;

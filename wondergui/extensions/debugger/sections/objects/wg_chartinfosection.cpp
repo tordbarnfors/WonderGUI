@@ -62,7 +62,7 @@ namespace wg
 
 		m_pXLinesDrawer = _createGridLinesDrawer("X lines", pInspected->xLines);
 		m_pYLinesDrawer = _createGridLinesDrawer("Y lines", pInspected->yLines);
-		m_pGlowDrawer = _createComponentDrawer("Glow", &pInspected->glow);
+		m_pGlowDrawer = _createPartDrawer("Glow", &pInspected->glow);
 
 		pPanel->slots.pushBack({ pTable, m_pGridColorDrawer, m_pXLinesDrawer, m_pYLinesDrawer, m_pGlowDrawer });
 		this->slot = pPanel;
@@ -84,7 +84,7 @@ namespace wg
 		_refreshColorDrawer(m_pGridColorDrawer, inspected()->gridColor(), m_displayedGridColor);
 		_refreshGridLinesDrawer(m_pXLinesDrawer, inspected()->xLines);
 		_refreshGridLinesDrawer(m_pYLinesDrawer, inspected()->yLines);
-		_refreshComponentDrawer(m_pGlowDrawer);
+		_refreshPartDrawer(m_pGlowDrawer);
 	}
 
 	//____ _createGridLinesDrawer() ______________________________________________
@@ -92,7 +92,7 @@ namespace wg
 	// One drawer per line, each holding a GridLineInfoSection. Header shows the
 	// number of lines.
 
-	DrawerPanel_p ChartInfoSection::_createGridLinesDrawer(std::string_view label, DynamicVector<GridLine>& lines)
+	ExpanderPanel_p ChartInfoSection::_createGridLinesDrawer(std::string_view label, DynamicVector<GridLine>& lines)
 	{
 		auto pLineList = WGCREATE(PackPanel, _.axis = Axis::Y);
 
@@ -110,7 +110,7 @@ namespace wg
 	// Lines can be added, erased or moved in memory since last refresh, so the
 	// sections are pointed at the lines again before being refreshed.
 
-	void ChartInfoSection::_refreshGridLinesDrawer(DrawerPanel* pDrawer, DynamicVector<GridLine>& lines)
+	void ChartInfoSection::_refreshGridLinesDrawer(ExpanderPanel* pDrawer, DynamicVector<GridLine>& lines)
 	{
 		auto pLineList = static_cast<PackPanel*>(pDrawer->slots[1]._widget());
 
@@ -121,7 +121,7 @@ namespace wg
 
 		for( int i = 0 ; i < linesToRefresh ; i++ )
 		{
-			auto pLineDrawer = static_cast<DrawerPanel*>(pLineList->slots[i]._widget());
+			auto pLineDrawer = static_cast<ExpanderPanel*>(pLineList->slots[i]._widget());
 			auto pSection = static_cast<GridLineInfoSection*>(pLineDrawer->slots[1]._widget());
 
 			pSection->setInspected(&lines[i]);

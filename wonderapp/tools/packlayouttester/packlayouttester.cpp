@@ -115,7 +115,7 @@ Widget_p MyApp::_createControlPanel()
 
 
 
-	m_pStartSizeSelector = _createSelectBox();
+	m_pStartSizeSelector = _createDropdown();
 	m_pStartSizeSelector->entries.pushBack({ 
 		{ int(PackLayout::WantedSize::Default), "Default"},
 		{ int(PackLayout::WantedSize::MaxDefault), "MaxDefault" },
@@ -123,7 +123,7 @@ Widget_p MyApp::_createControlPanel()
 		{ int(PackLayout::WantedSize::MaxDefaultTimesWeight), "MaxDefaultTimesWeight" },
 	});
 
-	m_pExpandFactorSelector = _createSelectBox();
+	m_pExpandFactorSelector = _createDropdown();
 	m_pExpandFactorSelector->entries.pushBack({
 		{ int(PackLayout::Factor::Zero), "Zero"},
 		{ int(PackLayout::Factor::One), "One" },
@@ -141,7 +141,7 @@ Widget_p MyApp::_createControlPanel()
 		{ int(PackLayout::Factor::Ordered), "Ordered" },
 		});
 
-	m_pShrinkFactorSelector = _createSelectBox();
+	m_pShrinkFactorSelector = _createDropdown();
 	m_pShrinkFactorSelector->entries.pushBack({
 		{ int(PackLayout::Factor::Zero), "Zero"},
 		{ int(PackLayout::Factor::One), "One" },
@@ -159,16 +159,16 @@ Widget_p MyApp::_createControlPanel()
 		{ int(PackLayout::Factor::Ordered), "Ordered" },
 		});
 
-	m_pHideSelector = _createSelectBox();
+	m_pHideSelector = _createDropdown();
 	m_pHideSelector->entries.pushBack({
 		{ int(PackLayout::HideSetting::Never), "Never"},
 		{ int(PackLayout::HideSetting::Restrained), "Restrained" },
 		{ int(PackLayout::HideSetting::Aggressive), "Aggressive" },
 		});
 
-	m_pMinSizeSourceSelector = _createSizeSourceSelectBox();
-	m_pDefaultSizeSourceSelector = _createSizeSourceSelectBox();
-	m_pMaxSizeSourceSelector = _createSizeSourceSelectBox();
+	m_pMinSizeSourceSelector = _createSizeSourceDropdown();
+	m_pDefaultSizeSourceSelector = _createSizeSourceDropdown();
+	m_pMaxSizeSourceSelector = _createSizeSourceDropdown();
 
 
 	m_pList1Input = TextEditor::create({ .skin = m_pSectionSkin });
@@ -264,21 +264,21 @@ Widget_p MyApp::_createControlPanel()
 	return pBase;
 }
 
-//____ _createSelectBox() ___________________________________________________________________
+//____ _createDropdown() ____________________________________________________________________
 
-SelectBox_p MyApp::_createSelectBox( )
+Dropdown_p MyApp::_createDropdown( )
 {
-	auto pWidget = SelectBox::create();
+	auto pWidget = Dropdown::create();
 	pWidget->setSkin(m_pButtonSkin);
 	pWidget->setListSkin(m_pPlateSkin);
 	return pWidget;
 }
 
-//____ _createSizeSourceSelectBox() ___________________________________________________________________
+//____ _createSizeSourceDropdown() ____________________________________________________________________
 
-SelectBox_p MyApp::_createSizeSourceSelectBox()
+Dropdown_p MyApp::_createSizeSourceDropdown()
 {
-	auto pWidget = SelectBox::create();
+	auto pWidget = Dropdown::create();
 	pWidget->setSkin(m_pButtonSkin);
 	pWidget->setListSkin(m_pPlateSkin);
 

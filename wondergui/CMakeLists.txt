@@ -50,28 +50,28 @@ set( SOURCES
 	source/base/wg_util.cpp
 	source/base/wg_util.h
 
-	source/components/wg_columnheader.cpp
-	source/components/wg_columnheader.h
-	source/components/wg_editablenumber.cpp
-	source/components/wg_editablenumber.h
-	source/components/wg_editabletext.cpp
-	source/components/wg_editabletext.h
-	source/components/wg_glow.cpp
-	source/components/wg_glow.h
-	source/components/wg_icon.cpp
-	source/components/wg_icon.h
-	source/components/wg_number.cpp
-	source/components/wg_number.h
-	source/components/wg_scroller.cpp
-	source/components/wg_scroller.h
-	source/components/wg_staticnumber.cpp
-	source/components/wg_staticnumber.h
-	source/components/wg_statictext.cpp
-	source/components/wg_statictext.h
-	source/components/wg_dynamictext.cpp
-	source/components/wg_dynamictext.h
-	source/components/wg_component.cpp
-	source/components/wg_component.h
+	source/parts/wg_columnheader.cpp
+	source/parts/wg_columnheader.h
+	source/parts/wg_editablenumber.cpp
+	source/parts/wg_editablenumber.h
+	source/parts/wg_editabletext.cpp
+	source/parts/wg_editabletext.h
+	source/parts/wg_glow.cpp
+	source/parts/wg_glow.h
+	source/parts/wg_icon.cpp
+	source/parts/wg_icon.h
+	source/parts/wg_number.cpp
+	source/parts/wg_number.h
+	source/parts/wg_scrollbarpart.cpp
+	source/parts/wg_scrollbarpart.h
+	source/parts/wg_staticnumber.cpp
+	source/parts/wg_staticnumber.h
+	source/parts/wg_statictext.cpp
+	source/parts/wg_statictext.h
+	source/parts/wg_dynamictext.cpp
+	source/parts/wg_dynamictext.h
+	source/parts/wg_part.cpp
+	source/parts/wg_part.h
 
 	source/numberlayouts/wg_basicnumberlayout.cpp
 	source/numberlayouts/wg_basicnumberlayout.h
@@ -176,16 +176,16 @@ set( SOURCES
 	source/widgets/wg_pianokeyboard.h
 	source/widgets/wg_plotchart.cpp
 	source/widgets/wg_plotchart.h
-	source/widgets/wg_popupopener.cpp
-	source/widgets/wg_popupopener.h
+	source/widgets/wg_menubutton.cpp
+	source/widgets/wg_menubutton.h
 	source/widgets/wg_rangeslider.cpp
 	source/widgets/wg_rangeslider.h
 	source/widgets/wg_scrollbar.cpp
 	source/widgets/wg_scrollbar.h
 	source/widgets/wg_scrollchart.cpp
 	source/widgets/wg_scrollchart.h
-	source/widgets/wg_selectbox.cpp
-	source/widgets/wg_selectbox.h
+	source/widgets/wg_dropdown.cpp
+	source/widgets/wg_dropdown.h
 	source/widgets/wg_sidecanvas.cpp
 	source/widgets/wg_sidecanvas.h
 	source/widgets/wg_skindisplay.cpp
@@ -243,8 +243,8 @@ set( SOURCES
 	source/widgets/overlays/wg_tooltipoverlay.cpp
 	source/widgets/overlays/wg_tooltipoverlay.h
 
-	source/widgets/panels/wg_drawerpanel.cpp
-	source/widgets/panels/wg_drawerpanel.h
+	source/widgets/panels/wg_expanderpanel.cpp
+	source/widgets/panels/wg_expanderpanel.h
 	source/widgets/panels/wg_flexpanel.cpp
 	source/widgets/panels/wg_flexpanel.h
 	source/widgets/panels/wg_lambdapanel.cpp
@@ -286,7 +286,7 @@ set(INCDIRS
 	${WAX_INCDIRS}
 	${CMAKE_CURRENT_LIST_DIR}
 	${CMAKE_CURRENT_LIST_DIR}/source/base/
-	${CMAKE_CURRENT_LIST_DIR}/source/components/
+	${CMAKE_CURRENT_LIST_DIR}/source/parts/
 	${CMAKE_CURRENT_LIST_DIR}/source/numberlayouts/
 	${CMAKE_CURRENT_LIST_DIR}/source/skins/
 	${CMAKE_CURRENT_LIST_DIR}/source/skins/anim/

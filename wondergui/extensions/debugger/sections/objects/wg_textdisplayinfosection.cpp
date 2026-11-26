@@ -34,7 +34,7 @@ namespace wg
 	TextDisplayInfoSection::TextDisplayInfoSection(const DebugTheme& theme, IDebugContext* pContext, TextDisplay * pInspected)
 		: TypedInfoSection<TextDisplay>( theme, pContext, TextDisplay::TYPEINFO.className, pInspected )
 	{
-		m_pDisplayDrawer = _createComponentDrawer("Display", &pInspected->display);
+		m_pDisplayDrawer = _createPartDrawer("Display", &pInspected->display);
 		this->slot = m_pDisplayDrawer;
 	}
 
@@ -51,7 +51,7 @@ namespace wg
 	{
 		TypedInfoSection<TextDisplay>::refresh();
 
-		_refreshComponentDrawer(m_pDisplayDrawer);
+		_refreshPartDrawer(m_pDisplayDrawer);
 	}
 
 } // namespace wg

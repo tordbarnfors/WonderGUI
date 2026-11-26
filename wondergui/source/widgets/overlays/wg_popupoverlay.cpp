@@ -699,7 +699,7 @@ namespace wg
 						if (pSource->isSelectable())
 						{
 							// We send 2 messages on selected:
-							// PopupSelectMsg from opener (like a PopupOpener if availabe) or PopupOverlay itself.
+							// PopupSelectMsg from opener (like a MenuButton if availabe) or PopupOverlay itself.
 							// Normal SelectMsg from selected widget itself.
 
 							MsgRouter* pRouter = Base::msgRouter().rawPtr();
@@ -956,7 +956,7 @@ namespace wg
 	//____ _isAimingPast() ________________________________________________________
 
 	// Checks if the pointer, at pointerPos in global coordinates, is passing pHovered
-	// on its way to an open submenu of the popup that pHovered is in. A PopupOpener
+	// on its way to an open submenu of the popup that pHovered is in. A MenuButton
 	// that opens on hover should then wait with opening, see _isAimingAt().
 
 	bool PopupOverlay::_isAimingPast( Widget * pHovered, const CoordSPX& pointerPos, int64_t timestamp, int64_t hoveredSince )

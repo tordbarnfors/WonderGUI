@@ -1,5 +1,5 @@
 # Swapped with Window: Canvas carries black text (TextEditor, LineEditor,
-# SelectBox list) so it must be the brightest surface -- Colors::Canvas
+# Dropdown list) so it must be the brightest surface -- Colors::Canvas
 # has always been Color::White, the dark skin contradicted it. The flat
 # vertical bevel also stretches without the banding the diagonal showed
 # over the large areas a canvas usually covers.
@@ -17,9 +17,9 @@ states: [Default]
 # subtle enough that splitting it across frame/middle shows no banding.
 # Size is now frame*2 + middle rather than 16pts of mostly-repeated pixels.
 frame_pts: 4
-# 2 -> 1. Canvas is now only the bare surface: the SelectBox drop-down's
+# 2 -> 1. Canvas is now only the bare surface: the Dropdown drop-down's
 # background, and whatever app code paints on it. Its children there are
-# SelectBoxEntry rows, whose selection highlight wants to reach the edge, so a
+# DropdownEntry rows, whose selection highlight wants to reach the edge, so a
 # 1pt inset is right for it. The editors moved to Skins::Field, which keeps the
 # old 2 because text does want to clear the border -- that divergence is the
 # whole reason the two were split.

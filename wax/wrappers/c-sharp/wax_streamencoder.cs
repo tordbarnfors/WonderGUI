@@ -24,7 +24,7 @@ public class StreamEncoder : Objekt
         c_bp.objectIdStart = blueprint.ObjectIdStart;
         c_bp.pixelFormat = blueprint.PixelFormat;
         c_bp.sampleMethod = blueprint.SampleMethod;
-        c_bp.sink = blueprint.Sink.c_component;
+        c_bp.sink = blueprint.Sink.c_part;
 
         _obj = wax_createStreamEncoder(ref c_bp);
     }
@@ -32,7 +32,7 @@ public class StreamEncoder : Objekt
     //____ SetStream() ________________________________________________________
     public void SetStream(StreamSink stream)
     {
-        wax_setEncoderStream(_obj, stream.c_component);
+        wax_setEncoderStream(_obj, stream.c_part);
     }
 
     //____ SetDefaultPixelFormat() ____________________________________________
@@ -73,7 +73,7 @@ public class StreamEncoder : Objekt
         public UInt16 objectIdStart;
         public PixelFormat pixelFormat;
         public SampleMethod sampleMethod;
-        public C_Component sink;
+        public C_Part sink;
     }
 
    //____ DLL functions ______________________________________________________
@@ -82,7 +82,7 @@ public class StreamEncoder : Objekt
 	private static extern IntPtr wax_createStreamEncoder( ref C_Blueprint bp);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern void wax_setEncoderStream(IntPtr encoder, C_Component sinkForStream);
+	private static extern void wax_setEncoderStream(IntPtr encoder, C_Part sinkForStream);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
 	private static extern void wax_setEncoderDefaultPixelFormat(IntPtr encoder, PixelFormat pixelFormat);

@@ -369,8 +369,8 @@ bool StreamPlayer::_setupStreamPlaying()
 	m_wrapper = wax_createStreamWrapper(m_pStreamBlob->begin(), m_pStreamBlob->end());
 	m_player = wax_createStreamPlayer(backend, bitmapFactory, edgemapFactory );
 
-	wax_component tap = wax_getStreamWrapperOutput(m_wrapper);
-	wax_component sink =wax_getStreamPlayerInput(m_player);
+	wax_part tap = wax_getStreamWrapperOutput(m_wrapper);
+	wax_part sink =wax_getStreamPlayerInput(m_player);
 
 	m_pump = wax_createStreamPumpWithInputOutput(tap, sink);
 

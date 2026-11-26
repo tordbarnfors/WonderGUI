@@ -35,7 +35,7 @@ wax_obj wax_createStreamSplitter()
 	return p.rawPtr();
 }
 
-wax_obj wax_createStreamSplitterWithOutputs(wax_component output1, wax_component output2)
+wax_obj wax_createStreamSplitterWithOutputs(wax_part output1, wax_part output2)
 {
 	StreamSink_p pSink1(reinterpret_cast<Object*>(output1.object), *reinterpret_cast<StreamSink*>(output1.pInterface));
 	StreamSink_p pSink2(reinterpret_cast<Object*>(output2.object), *reinterpret_cast<StreamSink*>(output2.pInterface));
@@ -45,7 +45,7 @@ wax_obj wax_createStreamSplitterWithOutputs(wax_component output1, wax_component
 	return p.rawPtr();
 }
 
-wax_component wax_getStreamSplitterInput(wax_obj streamSplitter)
+wax_part wax_getStreamSplitterInput(wax_obj streamSplitter)
 {
 	auto p = getPtr(streamSplitter);
 	return { static_cast<Object*>(p), &p->input };
@@ -57,14 +57,14 @@ void wax_clearStreamSplitterOutputs(wax_obj streamSplitter)
 
 }
 
-void wax_addStreamSplitterOutput(wax_obj streamSplitter, wax_component output)
+void wax_addStreamSplitterOutput(wax_obj streamSplitter, wax_part output)
 {
 	StreamSink_p pSink(reinterpret_cast<Object*>(output.object), *reinterpret_cast<StreamSink*>(output.pInterface));
 	getPtr(streamSplitter)->addOutput(pSink);
 
 }
 
-void wax_removeStreamSplitterOutput(wax_obj streamSplitter, wax_component output)
+void wax_removeStreamSplitterOutput(wax_obj streamSplitter, wax_part output)
 {
 	StreamSink_p pSink(reinterpret_cast<Object*>(output.object), *reinterpret_cast<StreamSink*>(output.pInterface));
 	getPtr(streamSplitter)->removeOutput(pSink);

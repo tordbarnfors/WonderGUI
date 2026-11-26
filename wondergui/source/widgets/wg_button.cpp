@@ -285,9 +285,9 @@ namespace wg
 		return Widget::_alphaTest(ofs);
 	}
 
-	//____ _componentPos() ______________________________________________________________
+	//____ _partPos() ___________________________________________________________________
 
-	CoordSPX Button::_componentPos( const Component * pComponent ) const
+	CoordSPX Button::_partPos( const Part * pPart ) const
 	{
 		RectSPX contentRect = m_skin.contentRect(contentRect, m_scale, m_state);
 
@@ -295,22 +295,22 @@ namespace wg
 
 		RectSPX iconRect = _icon()._getIconRect( contentRect, m_scale );
 
-		if( pComponent == &icon )
+		if( pPart == &icon )
 			return iconRect.pos();
 
 		RectSPX textRect = _icon()._getTextRect( contentRect, iconRect, m_scale );
 		return textRect.pos();
 	}
 
-	//____ _componentSize() ______________________________________________________________
+	//____ _partSize() ___________________________________________________________________
 
-	SizeSPX Button::_componentSize( const Component * pComponent ) const
+	SizeSPX Button::_partSize( const Part * pPart ) const
 	{
 		SizeSPX	sz = m_size - m_skin.contentBorderSize(m_scale);
 
 		RectSPX iconRect = _icon()._getIconRect( sz, m_scale );
 
-		if( pComponent == &icon )
+		if( pPart == &icon )
 			return iconRect.size();
 
 		RectSPX textRect = _icon()._getTextRect( sz, iconRect, m_scale );
@@ -318,9 +318,9 @@ namespace wg
 
 	}
 
-	//____ _componentGeo() ______________________________________________________________
+	//____ _partGeo() ___________________________________________________________________
 
-	RectSPX Button::_componentGeo( const Component * pComponent ) const
+	RectSPX Button::_partGeo( const Part * pPart ) const
 	{
 		RectSPX	contentRect = m_skin.contentRect(m_size, m_scale, m_state);
 
@@ -328,7 +328,7 @@ namespace wg
 
 		RectSPX iconRect = _icon()._getIconRect( contentRect, m_scale );
 
-		if( pComponent == &icon )
+		if( pPart == &icon )
 			return iconRect;
 
 		RectSPX textRect = _icon()._getTextRect( contentRect, iconRect, m_scale );

@@ -56,7 +56,7 @@ namespace wg
 		OverlayInfoSection(const DebugTheme& theme, IDebugContext* pContext, Overlay * pInspected );
 		~OverlayInfoSection() {}
 
-		DrawerPanel_p	m_pMainSlotDrawer;
+		ExpanderPanel_p	m_pMainSlotDrawer;
 	};
 
 } // namespace wg

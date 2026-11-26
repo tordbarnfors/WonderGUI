@@ -42,7 +42,7 @@ namespace wax
 
 		static StreamWriter_p	create( std::function<void(int nBytes, const void * pData)> dispatcher );
 
-		//.____ Components _______________________________________
+		//.____ Parts ____________________________________________
 
 		StreamSink		input;
 
