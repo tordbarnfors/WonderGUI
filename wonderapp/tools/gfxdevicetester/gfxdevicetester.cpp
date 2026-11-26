@@ -51,6 +51,7 @@
 #include "testsuites/warptests.h"
 #include "testsuites/flattenlayerstests.h"
 #include "testsuites/linecaptests.h"
+#include "testsuites/polylinetests.h"
 
 
 using namespace wg;
@@ -261,6 +262,7 @@ void GfxDeviceTester::setup_tests()
 	add([]() { return new WarpTests(); });
 	add([]() { return new FlattenLayersTests(); });
 	add([]() { return new LineCapTests(); });
+	add([]() { return new PolylineTests(); });
 }
 
 //____ add_testsuite() ________________________________________________________
