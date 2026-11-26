@@ -1407,6 +1407,18 @@ applications the same windows.
 workbench was compared too, on Windows and Linux, which says nothing: it isn't built on WonderApp
 and draws with SoftBackend.
 
+Cybersim, the first application with graphics of its own (859d64aa, Windows, D3D12, Arc B580):
+each frame has one command buffer, with the 3D view in a render pass with four samples resolved
+into the texture of the swap chain (B8G8R8A8_UNORM_SRGB), then `setDefaultCanvas()`,
+`setCommandBuffer()` and the root panel rendered with everything dirty, and the 3D shows where no
+widget draws. Its frame texture and the copy to the window are gone. 13 pages and views drawn the
+same way into a texture of its own are pixel for pixel what they were before. A second window,
+of the debugger, with an SdlGpuBackend of its own on the same device, is drawn between the
+acquire and the submit of the first, with fonts and skins on surfaces from the first backend's
+factory. The debug mode of SDL_GPU said nothing. Not tried there: Vulkan, and a window that
+changes size between the event and the acquire.
+
 Not run: DX12Backend with RENDER_TARGET as resting state, direct mode on a display of an Intel
 GPU on Linux, and an application that commits command buffers of its own to the queue it gives
-MetalBackend.
+MetalBackend. So of the backends, only SdlGpuBackend has drawn on top of an application's own
+graphics.
