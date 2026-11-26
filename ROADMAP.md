@@ -1448,19 +1448,34 @@ Decided with Tord 2026-11-26, for the canvases:
   it was last copied to, and that is copied. An image that has never been copied to, or whose
   list has grown past 64 rects, gets all of it, taken from UNDEFINED, the others from
   PRESENT_SRC.
-- **Metal is not changed yet.** Its three frameworks copy all of the canvas to a drawable for
-  every change, with a Wax session that blits it with the blend mode a session starts with, onto
-  a drawable whose content isn't loaded, so it also reads pixels that aren't there where the
-  canvas isn't opaque. Tord wanted a plain copy in its place, with a blit encoder. That is
-  written and held back: it needs `framebufferOnly` turned off for the layer, which Apple says is
-  "at a cost to performance", and it still copies everything, as nothing from Apple says that
-  the texture of a drawable still has what was presented in it when it comes back.
+- **wappsdl3metal and wappsdl2metal are not changed.** They copy all of the canvas to a drawable
+  for every change, with a Wax session that blits it with the blend mode a session starts with,
+  onto a drawable whose content isn't loaded, so it also reads pixels that aren't there where
+  the canvas isn't opaque. Tord wanted a plain copy in its place, with a blit encoder. That is
+  written and held back: it needs `framebufferOnly` turned off for the layer, which
+  CAMetalLayer.h recommends against for most applications and Apple's page says is "at a cost
+  to performance". It would still copy everything, as nothing from Apple says that the texture
+  of a drawable still has what was presented in it when it comes back.
 - **Only documented ways** (Tord): nothing is built on how it happens to work on the machines we
-  test on. For wappcocoametal that leaves a layer on buffers of our own (IOSurface) with Metal
-  textures on them, whose content we would know, so that only what has changed is sent and no
-  canvas is needed. Whether a layer may show an IOSurface is not on Apple's page for
-  `CALayer.contents`, which names CGImage and NSImage, so the headers of the SDK are being read
-  on a Mac before anything is written.
+  test on.
+- **wappcocoametal draws into buffers of its own,** so that one framework on a Mac sends no more
+  than what has changed (Tord: "Yes, build it"). The view has a plain CALayer, and no
+  CAMetalLayer. Its contents is one of up to three IOSurfaces, each with a Metal texture on it
+  and a list of what has changed since it was last drawn into. A frame takes a buffer that
+  nobody reads, copies what it has missed from the one being shown, has Wax draw the dirty rects
+  on top as the default canvas, waits for the GPU and gives the buffer to the layer. There is no
+  canvas besides the buffers, a change is drawn once, and no more than the change is copied.
+  What it stands on is in the headers of the macOS SDK (15.4, read on a Mac): CALayer.h names an
+  IOSurfaceRef as what the contents of a layer typically is, MTLDevice makes a texture on one,
+  and IOSurfaceRef.h has the use count and `IOSurfaceIsInUse()` for knowing when a surface in a
+  pool can be taken again.
+- **Two things about it are not in the headers,** and Tord took it with them. That Core Animation
+  counts a surface as in use while a layer shows it: the header says CoreVideo "and other APIs"
+  do. Were that wrong, a part being redrawn could show half done. And when what Metal has
+  rendered can be seen by whoever shows the surface: a completed command buffer is the one point
+  where the GPU is known to be done, so the window waits for it, which holds the main thread for
+  as long as the GPU takes with the frame. Nothing holds it back to the rate of the display
+  either, as `nextDrawable` does.
 - **wappsdl3gl has a canvas without alpha,** XRGB_8, which is GL_SRGB8. Copied to the window it
   leaves alpha at 1, so the pass over the whole window that made it opaque after each copy is
   gone. Asking for a window without alpha was tried first and isn't the way: the Arc B580 gave a
@@ -1472,7 +1487,8 @@ Decided with Tord 2026-11-26, for the canvases:
 With wappsdl3gl on Windows (Arc B580, Release) widgetbench, helloworld and editera show the same
 windows as before, pixel for pixel, gfxdevicetester gives the same lines and unittester passes.
 
-Not compiled: the change for Vulkan, which Windows has nothing to build with.
+Not compiled: the changes for Vulkan and for wappcocoametal, which Windows has nothing to build
+with.
 
 Also seen, and not changed: the main loops wait a fixed time each turn, 10 ms with SDL3, which
 keeps a window under 100 frames a second, 1 ms with Win32, and up to 10 ms for an event with
