@@ -96,17 +96,17 @@ Object_wp	myWeakPtr = pMyButton;	// WeakPtr to base class Object.
 
 Just as with raw pointers, any casting to a subclass needs to be made explicit. There are two template methods to help you with this:
 
-* wg_static_cast
-* wg_dynamic_cast
+* wax_static_cast
+* wax_dynamic_cast
 
 These are equivalent to standard static_cast and dynamic_cast in the way they are used, but operates on StrongPtr. Use them like this:
 
 ```c++
-Button_p	pMyButton = wg_static_cast<Button_p>(pWidget);
-Button_p	pMyButton2 = wg_dynamic_cast<Button_p>(pWidget);
+Button_p	pMyButton = wax_static_cast<Button_p>(pWidget);
+Button_p	pMyButton2 = wax_dynamic_cast<Button_p>(pWidget);
 ```
 
-The difference between them is, like in normal C++, that wg_dynamic_cast makes a safe attempt to cast and returns nullptr if it fails, while static_cast assumes that you know what you are doing and do it the fast way.
+The difference between them is, like in normal C++, that wax_dynamic_cast makes a safe attempt to cast and returns nullptr if it fails, while static_cast assumes that you know what you are doing and do it the fast way.
 
 Finally there is one more way to cast. Since we can assign to a StrongPtr from a raw C-style pointer, we can simply get the raw pointer, cast it using normal C++ pointer casting and then assign it to the StrongPtr, like this:
 
@@ -114,7 +114,7 @@ Finally there is one more way to cast. Since we can assign to a StrongPtr from a
 	Panel_p p = static_cast<Panel*>(pWidget.rawPtr());
 ```
 
-Which is exactly what wg_static_cast does.
+Which is exactly what wax_static_cast does.
 
 
 

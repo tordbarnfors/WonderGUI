@@ -10,6 +10,9 @@
 - **SUGGESTIONS.md** lists things that work as intended but could be nicer: paper cuts, small
   conveniences, places where the first try goes wrong. Add an entry when you run into one,
   and remove it when it has been done or decided against.
+- **MIGRATION_GUIDE.md** tells projects what to change to move from breaking-changes to v4.
+  When a change on v4 makes existing code fail to build or behave differently, add it there
+  in the same commit, with the old and the new code.
 
 ## Documentation
 
