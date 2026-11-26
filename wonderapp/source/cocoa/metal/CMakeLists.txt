@@ -69,6 +69,7 @@ target_link_libraries(wappcocoametal PUBLIC
     "-framework Cocoa"
     "-framework QuartzCore"
     "-framework Metal"
+    "-framework IOSurface"
     "-framework UniformTypeIdentifiers"
 )
 

@@ -213,17 +213,21 @@ void SDLWindowGL::onWindowSizeUpdated()
 }
 
 //____ _createCanvas() ________________________________________________________
+//
+// The canvas has no alpha, as a window has none to show. Copied to the window it
+// leaves the window opaque, where a canvas with alpha would need a pass over the
+// whole window after each copy to make it so.
 
 void SDLWindowGL::_createCanvas()
 {
-	m_pCanvas = GlSurface::create( WGBP(Surface, _.canvas = true, _.format = PixelFormat::ARGB_8, _.scale = _scale(), _.size = _sizeInPixels() ) );
+	m_pCanvas = GlSurface::create( WGBP(Surface, _.canvas = true, _.format = PixelFormat::XRGB_8, _.scale = _scale(), _.size = _sizeInPixels() ) );
 }
 
 //____ _present() _____________________________________________________________
 //
 // Surfaces are upside down to GL, so the canvas is flipped when copied. The bytes
-// are copied as they are, so the window gets sRGB whether it is sRGB-capable or not,
-// and is made opaque.
+// are copied as they are, so the window gets sRGB whether it is sRGB-capable or not.
+// The window gets alpha 1 from a canvas that has none, see _createCanvas().
 
 void SDLWindowGL::_present()
 {
@@ -240,11 +244,6 @@ void SDLWindowGL::_present()
 
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	glBlitFramebuffer(0, 0, size.w, size.h, 0, size.h, size.w, 0, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
-	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
-	glClearColor(0.f, 0.f, 0.f, 1.f);
-	glClear(GL_COLOR_BUFFER_BIT);
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 

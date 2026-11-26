@@ -1443,3 +1443,119 @@ to write `HiColor` or `Color8`, and v4 then renamed `HiColor`. No `HiColor` alia
   `bHiColorBlits`).
 - **ReferenceBackend's own color in doubles is `LinearColor`,** as `Color` inside it would hide
   `wax::Color`.
+
+### How WonderApp's windows get to the screen (2026-11-26)
+
+All thirteen frameworks were read for steps they don't need between Wax and the screen. A window
+of WonderApp is redrawn where it has changed only, which takes something to draw into that
+keeps what it had. What a swap chain gives back decides how each framework does it:
+
+- **wappwin32dx12 and wappsdl3dx12** draw the dirty rects straight into the back buffer and give
+  them to `Present1()`: a flip-sequential swap chain keeps its buffers, and DXGI brings them up
+  to date.
+- **wappsdl3sw, wappsdl2sw and wappwin32sw** draw into the pixels of the window itself, and
+  **wappsdl2gl** into the front buffer of a window with one buffer.
+- **wappsdl3vk, the three with Metal, wappsdl3gl and wappsdl3gpu** draw into a canvas of their
+  own and copy it to the window. **wappcocoasw** does the same in plain memory, copying what
+  changed.
+
+Decided with Tord 2026-11-26, for the canvases:
+
+- **Vulkan keeps its canvas, and copies only what has changed.** An image of a swap chain keeps
+  its content while it is presented, by the specification of `vkQueuePresentKHR`, and we are
+  told which image we get. Drawing straight into the images would have saved the canvas, but
+  each change would have been drawn once for every image ("so we don't have to redraw same
+  widgets three times", Tord). So each image has a list of what has changed of the canvas since
+  it was last copied to, and that is copied. An image that has never been copied to, or whose
+  list has grown past 64 rects, gets all of it, taken from UNDEFINED, the others from
+  PRESENT_SRC.
+- **wappsdl3metal and wappsdl2metal are not changed.** They copy all of the canvas to a drawable
+  for every change, with a Wax session that blits it with the blend mode a session starts with,
+  onto a drawable whose content isn't loaded, so it also reads pixels that aren't there where
+  the canvas isn't opaque. Tord wanted a plain copy in its place, with a blit encoder. That is
+  written and held back: it needs `framebufferOnly` turned off for the layer, which
+  CAMetalLayer.h recommends against for most applications and Apple's page says is "at a cost
+  to performance". It would still copy everything, as nothing from Apple says that the texture
+  of a drawable still has what was presented in it when it comes back.
+- **Only documented ways** (Tord): nothing is built on how it happens to work on the machines we
+  test on.
+- **wappcocoametal draws into buffers of its own,** so that one framework on a Mac sends no more
+  than what has changed (Tord: "Yes, build it"). The view has a plain CALayer, and no
+  CAMetalLayer. Its contents is one of up to three IOSurfaces, each with a Metal texture on it
+  and a list of what has changed since it was last drawn into. A frame takes a buffer that
+  nobody reads, copies what it has missed from the one being shown, has Wax draw the dirty rects
+  on top as the default canvas, waits for the GPU and gives the buffer to the layer. There is no
+  canvas besides the buffers, a change is drawn once, and no more than the change is copied.
+  What it stands on is in the headers of the macOS SDK (15.4, read on a Mac): CALayer.h names an
+  IOSurfaceRef as what the contents of a layer typically is, MTLDevice makes a texture on one,
+  and IOSurfaceRef.h has the use count and `IOSurfaceIsInUse()` for knowing when a surface in a
+  pool can be taken again.
+- **Two things about it are not in the headers,** and Tord took it with them. That Core Animation
+  counts a surface as in use while a layer shows it: the header says CoreVideo "and other APIs"
+  do. Were that wrong, a part being redrawn could show half done. And when what Metal has
+  rendered can be seen by whoever shows the surface: a completed command buffer is the one point
+  where the GPU is known to be done, so the window waits for it, which holds the main thread for
+  as long as the GPU takes with the frame. Nothing holds it back to the rate of the display
+  either, as `nextDrawable` does.
+- **wappsdl3gl has a canvas without alpha,** XRGB_8, which is GL_SRGB8. Copied to the window it
+  leaves alpha at 1, so the pass over the whole window that made it opaque after each copy is
+  gone. Asking for a window without alpha was tried first and isn't the way: the Arc B580 gave a
+  window with 10 bits for each color and 2 of alpha for it.
+- **wappsdl3gpu is as it was.** SDL_GPU doesn't tell the textures of a swap chain apart either,
+  so it is a canvas and a copy, or all widgets drawn for every change, which
+  `WAPP_GPU_DIRECT=1` does and an application with few widgets on graphics of its own wants.
+
+With wappsdl3gl on Windows (Arc B580, Release) widgetbench, helloworld and editera show the same
+windows as before, pixel for pixel, gfxdevicetester gives the same lines and unittester passes.
+
+On Linux (a7cd6fd0, Debug): `linux-wappsdl3vk` and `linux-wappsdl3gl` build with no fix,
+unittester passes and gfxdevicetester gives the same lines as before, VulkanBackend 4 that differ
+of 266 and GlBackend 3. With wappsdl3vk on lavapipe under Xvfb, where the swap chain has three
+images, and the validation layer on and silent: widgetbench with clicks one at a time, clicks
+faster than a frame, and more of both after a resize, gave 24 pictures that are each the same as
+with wappsdl3vk of v4 and with wappsdl3gl, in three runs. editera with its blinking caret gave
+90 pictures that are each one of two states, 15 pixels apart, the same ones as before. So no
+picture had anything old in it. With wappsdl3gl the same pictures are as before, and llvmpipe
+renders into GL_SRGB8.
+
+- **The swap chain of wappsdl3vk is not clipped,** from the review of that run. A clipped swap
+  chain, which it was, may leave the pixels of an image undefined where another window covered
+  it when it was presented. Copying all of the canvas for every change hid that, and copying
+  only what has changed would not. With `clipped` off an image owns all of its pixels, by the
+  specification, and we do nothing in the images that clipping would have saved. With it
+  (ba62f004) wappsdl3vk builds and gives the same pictures on Linux, the validation layer
+  silent. A window covered by another while it is clicked, and uncovered again, shows what it
+  should, but that says nothing of `clipped`: it does so with `clipped` on too, as lavapipe's
+  images own their pixels either way, and as uncovering a window under X without a compositor
+  sends an expose event, which has the whole window drawn again.
+
+On a Mac (a874f953, x86_64, Debug, a display at scale 1), against wappcocoametal of v4:
+`macos-wappcocoametal` builds with no fix, unittester passes and gfxdevicetester gives the same
+lines, 13 that differ of 266, with the validation of Metal on and silent, also for widgetbench
+and editera. Their windows are the same as before pixel for pixel: idle, at seven sizes, and
+after a live resize by dragging a corner inwards, during which every picture had the content
+laid out for its size. Clicking in widgetbench and the blinking caret of editera gave pictures
+that are each one of the states v4 gives, never a mix, so nothing old was shown.
+
+- **Core Animation does count a surface it shows as in use,** on that Mac, which is the reading
+  the window stands on: `IOSurfaceIsInUse()` was true for the surface the layer showed, and for
+  the one shown until then right after the layer got another, in every frame logged, and free
+  again by the next frame. A Metal texture of ours on a surface doesn't make it in use. No
+  frame had to wait for a buffer, in 134 logged.
+- **Three buffers get made,** as the one shown before is still in use when the next frame comes
+  soon after. That is what a CAMetalLayer has of drawables at most, and the canvas is saved.
+- **The wait for the GPU** was 0.23 ms on average for a caret blink or a click, 0.79 ms at
+  most, and 0.54 ms on average for a frame of a live resize.
+- **A live resize makes new buffers for every step,** 54 in one drag. It looked the same as
+  before; what making them costs was not timed.
+- **Checked in the headers there:** `kIOSurfaceColorSpace` takes what
+  `CGColorSpaceCopyPropertyList()` gives, as the window has it. Nothing says which storage mode
+  a texture on an IOSurface should have, nor that copying with a blit encoder needs a usage, and
+  the validation of Metal accepts them as they are.
+
+Not run: wappcocoametal on a Retina display or with a window dragged larger, and wappsdl3vk on
+a display, or with a driver that leaves out what is covered.
+
+Also seen, and not changed: the main loops wait a fixed time each turn, 10 ms with SDL3, which
+keeps a window under 100 frames a second, 1 ms with Win32, and up to 10 ms for an event with
+Cocoa, so all three wake many times a second with nothing to do.
