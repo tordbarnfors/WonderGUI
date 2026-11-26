@@ -30,6 +30,7 @@
 
 #include <algorithm>
 #include <cfloat>
+#include <climits>
 #include <cmath>
 #include <cstring>
 #include <functional>
@@ -2578,7 +2579,35 @@ namespace wax
 			double			dirX, dirY;			// Towards the other end, of length 1.
 			double			spearLength;		// Pixels.
 
+			// A joint of a polyline instead of a cap, see _drawPolyline(). The line ends flat at the
+			// joint, with the round join beyond it: what is within half the thickness of the joint
+			// and beyond the end of both lines. The line it is joined to takes what it has of this on
+			// its own side of the line halving the joint.
+
+			bool				bJoint = false;
+			double				sideX = 0, sideY = 0;		// Normal of the line halving the joint, towards this line.
+			double				joinedX = 0, joinedY = 0;	// Direction of the line it is joined to, from the joint, of length 1.
+			const LineShape*	pJoined = nullptr;
+
 			bool contains(double px, double py, double along, double across, double r) const
+			{
+				if (!isInBody(px, py, along, across, r))
+					return false;
+
+				return !bJoint || (px - x) * sideX + (py - y) * sideY >= 0.0 || !pJoined->isInBody(px, py);
+			}
+
+			// The same without what the line it is joined to takes.
+
+			bool isInBody(double px, double py, double along, double across, double r) const
+			{
+				if (bJoint)
+					return along >= 0.0 || (std::hypot(px - x, py - y) <= r && (px - x) * joinedX + (py - y) * joinedY <= 0.0);
+
+				return isInCap(px, py, along, across, r);
+			}
+
+			bool isInCap(double px, double py, double along, double across, double r) const
 			{
 				switch (shape)
 				{
@@ -2594,13 +2623,16 @@ namespace wax
 
 			bool isEmpty() const
 			{
-				return (shape == LineCapShape::Vertical && dirX == 0.0) || (shape == LineCapShape::Horizontal && dirY == 0.0);
+				return !bJoint && ((shape == LineCapShape::Vertical && dirX == 0.0) || (shape == LineCapShape::Horizontal && dirY == 0.0));
 			}
 
 			// How far the region reaches beyond the end along the line, within the band.
 
 			double reach(double r) const
 			{
+				if (bJoint)
+					return r;
+
 				switch (shape)
 				{
 					case LineCapShape::Square:
@@ -2613,6 +2645,14 @@ namespace wax
 
 			void addEdges(std::vector<ShapeEdge>& edges, double normalX, double normalY, double r) const
 			{
+				if (bJoint)
+				{
+					edges.push_back(ShapeEdge::line(x, y, normalX, normalY));
+					edges.push_back(ShapeEdge::circle(x, y, r));
+					edges.push_back(ShapeEdge::line(x, y, -sideY, sideX));
+					return;
+				}
+
 				switch (shape)
 				{
 					case LineCapShape::Flat:
@@ -2648,7 +2688,11 @@ namespace wax
 		double	length;
 		double	r;								// Half the thickness.
 
-		LineShape(CoordSPX _begin, CoordSPX _end, spx thickness, LineCaps caps, const LinearColor& color)
+		// pBeginSide and pEndSide make the end a joint of a polyline, and are the normal of the
+		// line halving it, towards this line.
+
+		LineShape(CoordSPX _begin, CoordSPX _end, spx thickness, LineCaps caps, const LinearColor& color,
+				  const double* pBeginSide = nullptr, const double* pEndSide = nullptr)
 		{
 			double dx = (_end.x - _begin.x) / 64.0;
 			double dy = (_end.y - _begin.y) / 64.0;
@@ -2674,6 +2718,20 @@ namespace wax
 
 			setupEnd(begin, caps.begin, _begin, dirX, dirY);
 			setupEnd(end, caps.end, _end, -dirX, -dirY);
+
+			if (pBeginSide)
+			{
+				begin.bJoint = true;
+				begin.sideX = pBeginSide[0];
+				begin.sideY = pBeginSide[1];
+			}
+
+			if (pEndSide)
+			{
+				end.bJoint = true;
+				end.sideX = pEndSide[0];
+				end.sideY = pEndSide[1];
+			}
 
 			segments.resize(1);
 			segments[0].bDrawn = true;
@@ -2732,6 +2790,17 @@ namespace wax
 
 			return -1;
 		}
+
+		// If a point is in the line and the round joins at its ends, before the lines it is joined
+		// to have taken their part.
+
+		bool isInBody(double x, double y) const
+		{
+			double along = (x - begin.x) * dirX + (y - begin.y) * dirY;
+			double across = (x - begin.x) * normalX + (y - begin.y) * normalY;
+
+			return std::abs(across) <= r && begin.isInBody(x, y, along, across, r) && end.isInBody(x, y, length - along, across, r);
+		}
 	};
 
 	//____ _drawCappedLine() ______________________________________________________
@@ -2776,6 +2845,8 @@ namespace wax
 			pShape = RoundedBoxShape::create(pPayload, m_pColorsPtr);
 		else if (kind == ShapeKind::Ring)
 			pShape = RingShape::create(pPayload, m_pColorsPtr);
+		else if (kind == ShapeKind::Polyline)
+			return _drawPolyline(pPayload, nRects);
 		else
 			return;
 
@@ -2786,6 +2857,168 @@ namespace wax
 			for (int y = pixels.y; y < pixels.y + pixels.h; y++)
 				for (int x = pixels.x; x < pixels.x + pixels.w; x++)
 					_drawShapePixel(*pShape, x, y);
+		}
+	}
+
+	//____ _drawPolyline() ________________________________________________________
+	/*
+		Draws a polyline, see Polylines in wax_device.h, within its clip rectangles.
+
+		The polyline is a piece for each segment: a LineShape with the cap of the polyline where
+		the segment is its first or last, and a joint at its other ends. At a joint the segment
+		ends flat and has the round join beyond it: the part of the disc around the joint that is
+		beyond the ends of both segments, the wedge left open between them on the outside of the
+		turn. What two segments joined both cover, which is the round join and where they overlap
+		on the inside of the turn, is split between their pieces by the line halving the angle
+		between them, each piece getting what is on its side. That line is at right angle to the
+		sum of their directions, and along them if the polyline turns straight back. So the pieces
+		of two segments joined never overlap, and all pieces together cover what the segments and
+		the round joins do.
+
+		Pieces are blended in order. Pieces following each other that cover parts of the same pixel
+		are blended once, with their coverage added up, which is what joins them without the
+		background showing through. Pieces that don't follow each other are blended one after the
+		other, as lines crossing each other are.
+	*/
+
+	void ReferenceBackend::_drawPolyline(const uint16_t* pPayload, int nRects)
+	{
+		const PolylinePayload polyline = decodePolyline(pPayload);
+		const int nPieces = polyline.nPoints - 1;
+
+		if (nPieces < 1 || polyline.join != 0)
+			return;
+
+		const LinearColor color = _toLinear(*m_pColorsPtr);
+
+		// Direction of each segment and what side of the line halving each joint its first
+		// segment is on, as its normal.
+
+		std::vector<double> dirs(nPieces * 2), sides(nPieces * 2);
+
+		for (int i = 0; i < nPieces; i++)
+		{
+			CoordSPX from = polyline.point(i), to = polyline.point(i + 1);
+			double dx = double(to.x) - from.x, dy = double(to.y) - from.y;
+			double length = std::sqrt(dx * dx + dy * dy);
+
+			dirs[i * 2] = dx / length;
+			dirs[i * 2 + 1] = dy / length;
+		}
+
+		for (int i = 1; i < nPieces; i++)
+		{
+			double sumX = dirs[i * 2 - 2] + dirs[i * 2], sumY = dirs[i * 2 - 1] + dirs[i * 2 + 1];
+			double length = std::sqrt(sumX * sumX + sumY * sumY);
+
+			if (length < 1e-9)
+			{
+				sumX = -dirs[i * 2 - 1];
+				sumY = dirs[i * 2 - 2];
+				length = 1.0;
+			}
+
+			sides[i * 2] = -sumX / length;
+			sides[i * 2 + 1] = -sumY / length;
+		}
+
+		std::vector<LineShape> pieces;
+		pieces.reserve(nPieces);
+
+		for (int i = 0; i < nPieces; i++)
+		{
+			double nextSide[2] = { 0.0, 0.0 };
+
+			if (i > 0)
+			{
+				nextSide[0] = -sides[i * 2];
+				nextSide[1] = -sides[i * 2 + 1];
+			}
+
+			LineCaps caps(i == 0 ? polyline.caps.begin : LineCap::Flat, i == nPieces - 1 ? polyline.caps.end : LineCap::Flat);
+
+			pieces.emplace_back(polyline.point(i), polyline.point(i + 1), polyline.thickness, caps, color,
+								i > 0 ? nextSide : nullptr, i < nPieces - 1 ? &sides[(i + 1) * 2] : nullptr);
+		}
+
+		// An end that leaves nothing of its segment leaves nothing of the polyline.
+
+		if (pieces.front().isEmpty() || pieces.back().isEmpty())
+			return;
+
+		// Pieces know the piece they are joined to at each end, and have its edges too, as they
+		// follow them where it takes over.
+
+		std::vector<size_t> nOwnEdges(nPieces);
+
+		for (int i = 0; i < nPieces; i++)
+			nOwnEdges[i] = pieces[i].edges.size();
+
+		for (int i = 0; i < nPieces; i++)
+		{
+			for (int joined : { i - 1, i + 1 })
+			{
+				if (joined < 0 || joined >= nPieces)
+					continue;
+
+				auto& end = joined < i ? pieces[i].begin : pieces[i].end;
+
+				end.pJoined = &pieces[joined];
+				end.joinedX = joined < i ? -dirs[joined * 2] : dirs[joined * 2];
+				end.joinedY = joined < i ? -dirs[joined * 2 + 1] : dirs[joined * 2 + 1];
+				pieces[i].edges.insert(pieces[i].edges.end(), pieces[joined].edges.begin(), pieces[joined].edges.begin() + nOwnEdges[joined]);
+			}
+		}
+
+		std::vector<RectI> bounds(nPieces);
+		std::vector<double> coverage;
+
+		for (int rect = 0; rect < nRects; rect++)
+		{
+			RectI clip = _pixelRect(m_pRectsPtr[rect]);
+
+			int x1 = INT_MAX, y1 = INT_MAX, x2 = INT_MIN, y2 = INT_MIN;
+
+			for (int i = 0; i < nPieces; i++)
+			{
+				bounds[i] = pieces[i].bounds(clip);
+
+				if (bounds[i].w > 0 && bounds[i].h > 0)
+				{
+					x1 = std::min(x1, bounds[i].x);
+					y1 = std::min(y1, bounds[i].y);
+					x2 = std::max(x2, bounds[i].x + bounds[i].w);
+					y2 = std::max(y2, bounds[i].y + bounds[i].h);
+				}
+			}
+
+			for (int y = y1; y < y2; y++)
+				for (int x = x1; x < x2; x++)
+				{
+					if (!_isInsideCanvas(x, y))
+						continue;
+
+					double covered = 0.0;
+
+					for (int i = 0; i <= nPieces; i++)
+					{
+						double part = 0.0;
+
+						if (i < nPieces && x >= bounds[i].x && x < bounds[i].x + bounds[i].w && y >= bounds[i].y && y < bounds[i].y + bounds[i].h)
+						{
+							_shapeCoverage(pieces[i], x, y, coverage);
+							part = coverage[0];
+						}
+
+						if (part > 0.0)
+							covered += part;
+						else if (covered > 0.0)
+						{
+							_plotPixel(x, y, color * _deviceTint(x, y), std::min(covered, 1.0));
+							covered = 0.0;
+						}
+					}
+				}
 		}
 	}
 

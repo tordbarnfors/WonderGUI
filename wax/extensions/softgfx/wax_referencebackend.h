@@ -238,6 +238,7 @@ namespace wax
 		class LineShape;
 
 		void			_drawShape(ShapeKind kind, const uint16_t* pPayload, int nRects);
+		void			_drawPolyline(const uint16_t* pPayload, int nRects);
 		void			_drawShapePixel(const Shape& shape, int x, int y);
 		static void		_shapeCoverage(const Shape& shape, int x, int y, std::vector<double>& coverage);
 
